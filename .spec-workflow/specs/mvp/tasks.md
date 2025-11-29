@@ -48,7 +48,7 @@
 
 ## Task 4: Implement Event Processing Loop
 
-- [ ] 4. Add process_event and run_loop to Engine
+- [x] 4. Add process_event and run_loop to Engine
   - File: `core/src/engine/event_loop.rs`
   - Implement `process_event(&mut self, event: InputEvent) -> Result<OutputAction>`
   - Query ScriptRuntime's registry for remapping decision
@@ -59,9 +59,9 @@
   - _Requirements: REQ-2, REQ-4_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with async experience | Task: Add to Engine in core/src/engine/event_loop.rs: process_event(event: InputEvent) -> Result<OutputAction> that looks up event.key in script runtime's registry and returns appropriate OutputAction. Add run_loop() that polls input source in a loop, processes events, and respects self.running flag | Restrictions: Keep loop simple, no complex buffering, handle both key-down and key-up | _Leverage: Existing Engine, InputSource, ScriptRuntime | _Requirements: REQ-2, REQ-4 | Success: Events flow through pipeline, remappings applied correctly, loop exits cleanly. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 4.1 Add registry accessor to ScriptRuntime trait
+- [x] 4.1 Add registry accessor to ScriptRuntime trait
   - File: `core/src/traits/script_runtime.rs`
-  - Add `fn registry(&self) -> &RemapRegistry;` to trait
+  - Add `fn lookup_remap(&self, key: KeyCode) -> RemapAction;` to trait (cleaner than exposing full registry)
   - Update MockRuntime to implement new method
   - Purpose: Allow Engine to query remappings from any ScriptRuntime
   - _Leverage: Existing ScriptRuntime trait_
