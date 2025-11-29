@@ -70,7 +70,7 @@
 
 ## Task 5: Implement Simulate Command
 
-- [ ] 5. Create simulate command for headless testing
+- [x] 5. Create simulate command for headless testing
   - File: `core/src/cli/commands/simulate.rs`
   - Parse `--input "A,B,C"` into sequence of InputEvents
   - Load script with RhaiRuntime
@@ -82,7 +82,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with CLI experience | Task: Create SimulateCommand in core/src/cli/commands/simulate.rs. Parse --input "A,B,C" into InputEvents. Create Engine with MockInput, load script with RhaiRuntime. Process each event, collect OutputActions. Print results using OutputWriter (human: "A -> B", json: structured output) | Restrictions: No real keyboard hooks, use mocks only, handle parse errors gracefully | _Leverage: Engine, MockInput, RhaiRuntime, OutputWriter | _Requirements: REQ-5 | Success: keyrx simulate --input "A" --script test.rhai outputs remapped result. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 5.1 Wire simulate command into CLI
+- [x] 5.1 Wire simulate command into CLI
   - File: `core/src/bin/keyrx.rs`, `core/src/cli/commands/mod.rs`
   - Add `Simulate` variant to Commands enum
   - Import and call `SimulateCommand`
