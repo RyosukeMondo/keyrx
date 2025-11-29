@@ -1,7 +1,9 @@
 //! Main engine event loop.
 
+use crate::engine::{InputEvent, OutputAction, RemapAction};
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use anyhow::Result;
+use tracing::debug;
 
 /// The main KeyRx engine.
 ///
@@ -72,5 +74,56 @@ where
     /// Get mutable reference to script runtime.
     pub fn script_mut(&mut self) -> &mut S {
         &mut self.script
+    }
+
+    /// Process a single input event and return the appropriate output action.
+    ///
+    /// Queries the script runtime's registry for remapping decisions and
+    /// translates them to output actions. Handles both key-down and key-up events.
+    pub fn process_event(&self, event: &InputEvent) -> OutputAction {
+        let action = self.script.lookup_remap(event.key);
+
+        match action {
+            RemapAction::Remap(target_key) => {
+                debug!(
+                    "Remapping {:?} -> {:?} (pressed={})",
+                    event.key, target_key, event.pressed
+                );
+                if event.pressed {
+                    OutputAction::KeyDown(target_key)
+                } else {
+                    OutputAction::KeyUp(target_key)
+                }
+            }
+            RemapAction::Block => {
+                debug!("Blocking {:?} (pressed={})", event.key, event.pressed);
+                OutputAction::Block
+            }
+            RemapAction::Pass => {
+                debug!("Passing {:?} (pressed={})", event.key, event.pressed);
+                OutputAction::PassThrough
+            }
+        }
+    }
+
+    /// Run the main event loop.
+    ///
+    /// Polls the input source for events, processes each through `process_event`,
+    /// and sends the resulting output actions back to the OS. Runs until
+    /// `stop()` is called or an error occurs.
+    pub async fn run_loop(&mut self) -> Result<()> {
+        debug!("Starting event loop");
+
+        while self.running {
+            let events = self.input.poll_events().await?;
+
+            for event in events {
+                let output = self.process_event(&event);
+                self.input.send_output(output).await?;
+            }
+        }
+
+        debug!("Event loop stopped");
+        Ok(())
     }
 }
