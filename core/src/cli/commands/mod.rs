@@ -11,5 +11,5 @@ pub use bench::BenchCommand;
 pub use check::CheckCommand;
 pub use doctor::DoctorCommand;
 pub use run::RunCommand;
-pub use simulate::SimulateCommand;
+pub use simulate::{SimulateCommand, SimulationOutput, SimulationResult};
 pub use state::StateCommand;

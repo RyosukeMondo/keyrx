@@ -52,7 +52,9 @@ impl SimulateCommand {
     }
 
     /// Parse comma-separated key names into InputEvents.
-    fn parse_input(&self) -> Result<Vec<InputEvent>> {
+    ///
+    /// Each key name is converted to a key-down and key-up event pair.
+    pub fn parse_input(&self) -> Result<Vec<InputEvent>> {
         let mut events = Vec::new();
         let mut timestamp = 0u64;
 
@@ -75,7 +77,11 @@ impl SimulateCommand {
         Ok(events)
     }
 
-    pub async fn run(&self) -> Result<()> {
+    /// Execute simulation and return the output.
+    ///
+    /// This is the core simulation logic that returns the result directly,
+    /// useful for testing without stdout capture.
+    pub async fn execute(&self) -> Result<SimulationOutput> {
         // Parse input keys
         let events = self.parse_input()?;
         if events.is_empty() {
@@ -87,6 +93,9 @@ impl SimulateCommand {
         if let Some(path) = &self.script_path {
             let path_str = path.to_string_lossy();
             runtime.load_file(&path_str)?;
+
+            // Run top-level statements (e.g., remap/block/pass calls)
+            runtime.run_script()?;
 
             // Call on_init if defined
             if runtime.has_hook("on_init") {
@@ -141,17 +150,19 @@ impl SimulateCommand {
             });
         }
 
-        let simulation_output = SimulationOutput {
+        Ok(SimulationOutput {
             total: results.len(),
             results,
             remapped,
             blocked,
             passed,
-        };
+        })
+    }
 
-        // Output results
-        self.output.data(&simulation_output)?;
-
+    /// Run the simulation and output results.
+    pub async fn run(&self) -> Result<()> {
+        let output = self.execute().await?;
+        self.output.data(&output)?;
         Ok(())
     }
 }

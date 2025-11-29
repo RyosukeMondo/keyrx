@@ -52,6 +52,10 @@ impl RunCommand {
             self.output.success(&format!("Loading script: {}", path.display()));
             runtime.load_file(path.to_str().unwrap_or_default())?;
 
+            // Run top-level statements (e.g., remap/block/pass calls)
+            debug!("Running script top-level statements");
+            runtime.run_script()?;
+
             // Call on_init() hook if defined
             if runtime.has_hook("on_init") {
                 debug!("Calling on_init() hook");

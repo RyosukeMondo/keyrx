@@ -193,7 +193,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Create core/tests/engine_test.rs. Test Engine::new with mocks. Test process_event: remap A->B, block CapsLock, pass Enter. Test both key-down (pressed=true) and key-up (pressed=false) events produce correct OutputActions | Restrictions: Use only mocks, no real input, aim for 80% coverage of event_loop.rs | _Leverage: MockInput, MockRuntime, MockState | _Requirements: REQ-4 | Success: All tests pass, cover main code paths. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 12.1 Create simulate command tests
+- [-] 12.1 Create simulate command tests
   - File: `core/tests/simulate_test.rs`
   - Test input parsing ("A,B,C" -> events)
   - Test simulate with simple remap script

@@ -67,6 +67,11 @@ impl ScriptRuntime for MockRuntime {
         Ok(())
     }
 
+    fn run_script(&mut self) -> Result<()> {
+        // Mock runtime doesn't execute real scripts
+        Ok(())
+    }
+
     fn has_hook(&self, hook: &str) -> bool {
         self.defined_hooks.contains(hook)
     }

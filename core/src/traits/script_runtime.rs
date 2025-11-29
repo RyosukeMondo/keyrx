@@ -18,6 +18,12 @@ pub trait ScriptRuntime {
     /// Load a script file.
     fn load_file(&mut self, path: &str) -> Result<()>;
 
+    /// Run the loaded script's top-level statements.
+    ///
+    /// This executes the main body of the script (statements outside functions).
+    /// Call this after `load_file` to execute top-level remap/block/pass calls.
+    fn run_script(&mut self) -> Result<()>;
+
     /// Check if a hook is defined.
     fn has_hook(&self, hook: &str) -> bool;
 

@@ -142,6 +142,17 @@ impl ScriptRuntime for RhaiRuntime {
         Ok(())
     }
 
+    fn run_script(&mut self) -> Result<()> {
+        let ast = self
+            .ast
+            .as_ref()
+            .ok_or_else(|| anyhow!("No script loaded"))?;
+
+        self.engine
+            .run_ast(ast)
+            .map_err(|e| anyhow!("Script execution failed: {}", e))
+    }
+
     fn has_hook(&self, hook: &str) -> bool {
         self.defined_hooks.contains(hook)
     }
