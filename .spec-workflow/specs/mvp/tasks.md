@@ -171,7 +171,7 @@
 
 ## Task 11: Create Example Rhai Script
 
-- [ ] 11. Create example remap script
+- [x] 11. Create example remap script
   - File: `scripts/std/example.rhai`
   - Demonstrate remap(), block(), pass() functions
   - Include on_init() hook with debug message
