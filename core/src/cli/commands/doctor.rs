@@ -223,7 +223,7 @@ impl DoctorCommand {
         // and the required DLL is loadable.
 
         use windows::core::PCSTR;
-        use windows::Win32::System::LibraryLoader::{FreeLibrary, LoadLibraryA};
+        use windows::Win32::System::LibraryLoader::LoadLibraryA;
 
         // Check if user32.dll is loadable (contains SetWindowsHookExW)
         let dll_name = b"user32.dll\0";
@@ -232,11 +232,10 @@ impl DoctorCommand {
         let result = unsafe { LoadLibraryA(PCSTR::from_raw(dll_name.as_ptr())) };
 
         match result {
-            Ok(handle) => {
-                // Free the library handle
-                unsafe {
-                    let _ = FreeLibrary(handle);
-                }
+            Ok(_handle) => {
+                // Library is loadable - handle will be freed when process exits
+                // Note: We don't call FreeLibrary as the module stays loaded anyway
+                // and user32.dll is typically always loaded in Windows processes
                 DiagnosticCheck::pass(
                     "Keyboard Hook API",
                     "SetWindowsHookExW available via user32.dll",

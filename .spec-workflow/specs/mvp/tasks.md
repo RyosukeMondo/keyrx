@@ -223,7 +223,7 @@
   - _Requirements: REQ-1, REQ-8_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Build Engineer | Task: On Linux, run: cargo build --release, cargo test, ./target/release/keyrx --help, ./target/release/keyrx check scripts/std/example.rhai. Fix any build or test failures | Restrictions: All commands must exit 0 | _Requirements: REQ-1, REQ-8 | Success: All commands succeed, binary runs. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 13.1 Verify Windows build (or cross-compile)
+- [x] 13.1 Verify Windows build (or cross-compile)
   - Run `cargo build --release` on Windows OR
   - Run `cargo build --target x86_64-pc-windows-gnu` for cross-compile
   - Verify binary is produced
