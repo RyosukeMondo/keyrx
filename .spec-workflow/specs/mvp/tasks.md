@@ -144,7 +144,7 @@
 
 ## Task 9: Implement Windows Driver Stub
 
-- [ ] 9. Create Windows InputSource implementation
+- [x] 9. Create Windows InputSource implementation
   - File: `core/src/drivers/windows.rs`
   - Implement `WindowsInput` struct implementing `InputSource`
   - Start: Attempt keyboard hook registration (stub: log and succeed)
