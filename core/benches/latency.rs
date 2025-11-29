@@ -6,7 +6,7 @@ use keyrx_core::engine::{InputEvent, KeyCode};
 fn benchmark_event_creation(c: &mut Criterion) {
     c.bench_function("create_input_event", |b| {
         b.iter(|| {
-            let event = InputEvent::key_down(black_box(KeyCode(0x41)), black_box(1000));
+            let event = InputEvent::key_down(black_box(KeyCode::A), black_box(1000));
             black_box(event)
         })
     });
