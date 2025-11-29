@@ -1,5 +1,7 @@
 //! Mock script runtime for testing.
 
+use crate::engine::{KeyCode, RemapAction};
+use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::Result;
 use std::collections::HashSet;
@@ -10,6 +12,8 @@ pub struct MockRuntime {
     defined_hooks: HashSet<String>,
     /// Whether hooks should succeed.
     hooks_succeed: bool,
+    /// Registry for key remappings.
+    registry: RemapRegistry,
 }
 
 impl MockRuntime {
@@ -18,6 +22,7 @@ impl MockRuntime {
         Self {
             defined_hooks: HashSet::new(),
             hooks_succeed: true,
+            registry: RemapRegistry::new(),
         }
     }
 
@@ -29,6 +34,11 @@ impl MockRuntime {
     /// Set whether hook calls should succeed.
     pub fn set_hooks_succeed(&mut self, succeed: bool) {
         self.hooks_succeed = succeed;
+    }
+
+    /// Get mutable access to the registry for test setup.
+    pub fn registry_mut(&mut self) -> &mut RemapRegistry {
+        &mut self.registry
     }
 }
 
@@ -59,5 +69,9 @@ impl ScriptRuntime for MockRuntime {
 
     fn has_hook(&self, hook: &str) -> bool {
         self.defined_hooks.contains(hook)
+    }
+
+    fn lookup_remap(&self, key: KeyCode) -> RemapAction {
+        self.registry.lookup(key)
     }
 }

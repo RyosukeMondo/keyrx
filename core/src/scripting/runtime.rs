@@ -145,4 +145,8 @@ impl ScriptRuntime for RhaiRuntime {
     fn has_hook(&self, hook: &str) -> bool {
         self.defined_hooks.contains(hook)
     }
+
+    fn lookup_remap(&self, key: KeyCode) -> crate::engine::RemapAction {
+        self.registry.borrow().lookup(key)
+    }
 }
