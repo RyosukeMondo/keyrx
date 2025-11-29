@@ -203,7 +203,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Create core/tests/simulate_test.rs. Test input string parsing. Test simulate with remap script produces correct output. Test --json flag produces valid JSON | Restrictions: Use temp files for test scripts | _Leverage: SimulateCommand, tempfile crate | _Requirements: REQ-5 | Success: All tests pass, simulate command verified. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 12.2 Create RemapRegistry unit tests
+- [x] 12.2 Create RemapRegistry unit tests
   - File: `core/src/scripting/registry.rs` (inline tests)
   - Test remap, block, pass, lookup, clear methods
   - Test default behavior (unmapped keys return Pass)
