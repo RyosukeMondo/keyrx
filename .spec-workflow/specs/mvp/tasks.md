@@ -14,7 +14,7 @@
 
 ## Task 2: Create RemapRegistry
 
-- [ ] 2. Implement RemapRegistry for tracking key mappings
+- [x] 2. Implement RemapRegistry for tracking key mappings
   - File: `core/src/scripting/registry.rs`
   - Create `RemapRegistry` struct with `HashMap<KeyCode, RemapAction>`
   - Implement `remap()`, `block()`, `pass()`, `lookup()`, `clear()` methods
@@ -24,7 +24,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in data structures | Task: Create RemapRegistry in core/src/scripting/registry.rs. Struct holds HashMap<KeyCode, RemapAction>. Implement: remap(from, to), block(key), pass(key), lookup(key) -> RemapAction, clear(). Default returns Pass for unmapped keys | Restrictions: Keep struct simple, no async, no external deps, max 100 lines | _Leverage: KeyCode, RemapAction from engine/types.rs | _Requirements: REQ-4 | Success: All methods work correctly, lookup returns Pass by default, unit tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 2.1 Add RemapRegistry to scripting module
+- [x] 2.1 Add RemapRegistry to scripting module
   - File: `core/src/scripting/mod.rs`
   - Add `mod registry;` and `pub use registry::RemapRegistry;`
   - Purpose: Export registry from scripting module
@@ -34,7 +34,7 @@
 
 ## Task 3: Register Rhai Remap Functions
 
-- [ ] 3. Register remap/block/pass functions in RhaiRuntime
+- [x] 3. Register remap/block/pass functions in RhaiRuntime
   - File: `core/src/scripting/runtime.rs`
   - Add `RemapRegistry` field to `RhaiRuntime`
   - Register `remap(from: &str, to: &str)` that calls `registry.remap()`
