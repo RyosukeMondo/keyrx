@@ -49,6 +49,16 @@ impl OutputWriter {
         }
     }
 
+    /// Write a warning message.
+    pub fn warning(&self, message: &str) {
+        match self.format {
+            OutputFormat::Human => println!("[WARN] {}", message),
+            OutputFormat::Json => {
+                println!(r#"{{"status":"warning","message":"{}"}}"#, message);
+            }
+        }
+    }
+
     /// Write structured data.
     pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
         match self.format {

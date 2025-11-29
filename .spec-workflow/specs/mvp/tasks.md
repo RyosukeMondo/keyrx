@@ -157,7 +157,7 @@
 
 ## Task 10: Complete Run Command with Real Engine
 
-- [ ] 10. Wire up run command with full engine pipeline
+- [x] 10. Wire up run command with full engine pipeline
   - File: `core/src/cli/commands/run.rs`
   - Load script via RhaiRuntime if provided
   - Call on_init() hook if defined

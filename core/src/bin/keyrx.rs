@@ -38,6 +38,10 @@ enum Commands {
         /// Enable debug output
         #[arg(short, long)]
         debug: bool,
+
+        /// Use mock input instead of real keyboard driver
+        #[arg(short, long)]
+        mock: bool,
     },
 
     /// Inspect current engine state
@@ -100,8 +104,8 @@ async fn main() -> Result<()> {
         Commands::Check { script } => {
             CheckCommand::new(script, format).run()?;
         }
-        Commands::Run { script, debug } => {
-            RunCommand::new(script, debug, format).run().await?;
+        Commands::Run { script, debug, mock } => {
+            RunCommand::new(script, debug, mock, format).run().await?;
         }
         Commands::State { layers, modifiers } => {
             StateCommand::new(layers, modifiers, format).run()?;
