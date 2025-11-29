@@ -131,7 +131,7 @@
 
 ## Task 8: Implement Linux Driver Stub
 
-- [ ] 8. Create Linux InputSource implementation
+- [x] 8. Create Linux InputSource implementation
   - File: `core/src/drivers/linux.rs`
   - Implement `LinuxInput` struct implementing `InputSource`
   - Start: Open `/dev/uinput` or return error with remediation
