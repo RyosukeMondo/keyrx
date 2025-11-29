@@ -183,7 +183,7 @@
 
 ## Task 12: Add Unit Tests for Core Components
 
-- [ ] 12. Create engine unit tests
+- [x] 12. Create engine unit tests
   - File: `core/tests/engine_test.rs`
   - Test Engine creation with mocks
   - Test process_event with various RemapActions
