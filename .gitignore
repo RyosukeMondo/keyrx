@@ -1,0 +1,30 @@
+# Rust
+/core/target/
+**/*.rs.bk
+Cargo.lock
+
+# Flutter/Dart
+/ui/.dart_tool/
+/ui/build/
+/ui/.packages
+/ui/.pub-cache/
+/ui/.pub/
+/ui/*.iml
+/ui/.metadata
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Spec workflow temp files
+.spec-workflow/approvals/
