@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
-    commands::{CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand},
+    commands::{BenchCommand, CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand},
     OutputFormat,
 };
 use std::path::PathBuf;
@@ -66,6 +66,10 @@ enum Commands {
         /// Number of iterations
         #[arg(long, default_value = "10000")]
         iterations: usize,
+
+        /// Path to the script file
+        #[arg(short, long)]
+        script: Option<PathBuf>,
     },
 
     /// Simulate key events without real keyboard
@@ -108,8 +112,8 @@ async fn main() -> Result<()> {
         Commands::Repl => {
             println!("REPL not yet implemented");
         }
-        Commands::Bench { iterations } => {
-            println!("Benchmark with {} iterations not yet implemented", iterations);
+        Commands::Bench { iterations, script } => {
+            BenchCommand::new(iterations, script, format).run().await?;
         }
         Commands::Simulate { input, script } => {
             SimulateCommand::new(input, script, format).run().await?;

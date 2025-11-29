@@ -94,7 +94,7 @@
 
 ## Task 6: Implement Bench Command
 
-- [ ] 6. Create bench command for latency measurement
+- [x] 6. Create bench command for latency measurement
   - File: `core/src/cli/commands/bench.rs`
   - Create `BenchCommand` struct with iterations count
   - Create `BenchResult` struct (min, max, mean, p99 in nanoseconds)
@@ -106,7 +106,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec mvp, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with performance testing experience | Task: Create BenchCommand in core/src/cli/commands/bench.rs. Accept --iterations (default 10000). Time event processing using Instant::now(). Calculate min/max/mean/p99 latency. Create BenchResult struct. Output via OutputWriter. Add warning if mean > 1_000_000 ns (1ms) | Restrictions: Use mocks not real input, keep measurement overhead minimal | _Leverage: Engine, MockInput, OutputWriter | _Requirements: REQ-7 | Success: keyrx bench outputs latency stats, --json works. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 6.1 Wire bench command into CLI
+- [x] 6.1 Wire bench command into CLI
   - File: `core/src/bin/keyrx.rs`, `core/src/cli/commands/mod.rs`
   - Replace placeholder bench implementation
   - Export BenchCommand from mod.rs
