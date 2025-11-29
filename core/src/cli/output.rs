@@ -24,6 +24,11 @@ impl OutputWriter {
         Self { format }
     }
 
+    /// Get the output format.
+    pub fn format(&self) -> OutputFormat {
+        self.format
+    }
+
     /// Write a success message.
     pub fn success(&self, message: &str) {
         match self.format {
@@ -45,7 +50,7 @@ impl OutputWriter {
     }
 
     /// Write structured data.
-    pub fn data<T: Serialize>(&self, data: &T) -> io::Result<()> {
+    pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
         match self.format {
             OutputFormat::Human => {
                 // Pretty print for humans

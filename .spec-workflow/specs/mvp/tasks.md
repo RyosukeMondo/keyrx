@@ -117,7 +117,7 @@
 
 ## Task 7: Complete Doctor Command
 
-- [ ] 7. Implement platform-specific diagnostics
+- [-] 7. Implement platform-specific diagnostics
   - File: `core/src/cli/commands/doctor.rs`
   - Create `DiagnosticCheck` struct (name, status, message, remediation)
   - Linux: Check `/dev/uinput` exists and is accessible
