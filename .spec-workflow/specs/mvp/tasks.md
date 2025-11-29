@@ -214,7 +214,7 @@
 
 ## Task 13: Build Verification
 
-- [ ] 13. Verify Linux build
+- [x] 13. Verify Linux build
   - Run `cargo build --release` on Linux
   - Run `cargo test` to verify all tests pass
   - Run `keyrx --help` to verify CLI works
