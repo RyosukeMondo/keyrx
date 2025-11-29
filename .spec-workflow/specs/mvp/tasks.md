@@ -233,7 +233,7 @@
 
 ## Task 14: Documentation
 
-- [ ] 14. Update CLI help text and README
+- [x] 14. Update CLI help text and README
   - File: `core/src/bin/keyrx.rs`, `README.md`
   - Ensure all commands have descriptive help text
   - Add basic usage examples to README
