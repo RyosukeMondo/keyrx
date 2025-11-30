@@ -28,14 +28,14 @@ pub use linux::LinuxInput;
 ///
 /// This type alias resolves to:
 /// - [`LinuxInput`] on Linux (using evdev/uinput)
-/// - [`WindowsInput`] on Windows (using WH_KEYBOARD_LL hooks)
+/// - `WindowsInput` on Windows (using WH_KEYBOARD_LL hooks)
 #[cfg(target_os = "linux")]
 pub type PlatformInput = LinuxInput;
 
 /// Platform-specific input driver.
 ///
 /// This type alias resolves to:
-/// - [`LinuxInput`] on Linux (using evdev/uinput)
+/// - `LinuxInput` on Linux (using evdev/uinput)
 /// - [`WindowsInput`] on Windows (using WH_KEYBOARD_LL hooks)
 #[cfg(target_os = "windows")]
 pub type PlatformInput = WindowsInput;

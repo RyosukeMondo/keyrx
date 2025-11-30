@@ -155,7 +155,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Run full test suite and benchmarks, compare to pre-refactor baseline, document any differences | Restrictions: No regressions allowed >100 microseconds | Success: All tests pass, benchmarks within threshold | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 14. Update module exports and documentation
+- [x] 14. Update module exports and documentation
   - File: `core/src/drivers/mod.rs`
   - Update re-exports for new module structure
   - File: `core/src/lib.rs`

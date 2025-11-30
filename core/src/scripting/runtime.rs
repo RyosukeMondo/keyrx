@@ -25,7 +25,7 @@ enum PendingOp {
 /// Production Rhai script runtime.
 ///
 /// Uses a pending operations pattern to avoid `Rc<RefCell>`:
-/// - Script functions push operations to a shared Arc<Mutex<Vec>>
+/// - Script functions push operations to a shared `Arc<Mutex<Vec>>`
 /// - After script execution, operations are applied to the owned registry
 pub struct RhaiRuntime {
     engine: Engine,
