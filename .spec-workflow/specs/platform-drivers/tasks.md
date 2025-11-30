@@ -278,7 +278,7 @@
   - _Requirements: REQ-9_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update InputEvent in core/src/engine/types.rs to add: timestamp_us: u64 (μs since driver start), device_id: Option<String> (source keyboard), is_repeat: bool (auto-repeat vs initial), is_synthetic: bool (software-injected), scan_code: u16 (raw hardware code). Update Default impl. Add doc comments | Restrictions: Maintain backward compat with existing tests | Success: cargo build succeeds, existing tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 15.2 Update MockInput to populate metadata
+- [x] 15.2 Update MockInput to populate metadata
   - File: `core/src/mocks/mock_input.rs`
   - Generate timestamp_us as monotonic counter
   - Set is_synthetic=false, is_repeat=false by default
