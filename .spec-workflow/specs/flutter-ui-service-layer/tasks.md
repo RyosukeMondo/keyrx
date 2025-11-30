@@ -6,7 +6,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart architect | Task: Define AudioService/PermissionService/ErrorTranslator interfaces and data models following requirement 1, with enums for permission and error categories | Restrictions: No concrete FFI calls here, interface-only; keep files under ui/lib/services | _Leverage: ui/lib/ffi, permission_handler | _Requirements: 1 | Success: Interfaces compile, enums cover cases (granted/denied/permanentlyDenied/restricted; info/warning/error), no direct FFI calls in interfaces.
 
-- [ ] 2. Implement real services
+- [x] 2. Implement real services
   - File: ui/lib/services/audio_service_impl.dart, ui/lib/services/permission_service_impl.dart, ui/lib/services/error_translator_impl.dart
   - Implement interfaces using FFI bridge and permission_handler; translate Rust errors to UserMessage.
   - Purpose: Concrete, observable services wrapping FFI.

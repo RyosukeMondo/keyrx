@@ -4,6 +4,18 @@ library;
 /// Permission outcomes relevant to microphone access.
 enum PermissionState { granted, denied, permanentlyDenied, restricted }
 
+/// Error used when permission requests fail or are rejected.
+class PermissionDeniedError implements Exception {
+  const PermissionDeniedError(this.state, {this.shouldShowRationale = false});
+
+  final PermissionState state;
+  final bool shouldShowRationale;
+
+  @override
+  String toString() =>
+      'PermissionDeniedError($state, rationale: $shouldShowRationale)';
+}
+
 /// Result of a permission request/check.
 class PermissionResult {
   const PermissionResult({

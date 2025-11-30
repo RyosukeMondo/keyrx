@@ -19,6 +19,18 @@ enum AudioErrorCode {
   permissionDenied,
 }
 
+/// Structured error thrown when an audio operation fails.
+class AudioFailure implements Exception {
+  AudioFailure(this.code, {this.cause});
+
+  final AudioErrorCode code;
+  final Object? cause;
+
+  @override
+  String toString() =>
+      'AudioFailure($code${cause != null ? ', cause: $cause' : ''})';
+}
+
 /// Result model for audio operations.
 class AudioOperationResult {
   const AudioOperationResult({
