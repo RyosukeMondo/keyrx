@@ -104,7 +104,7 @@
   - _Requirements: REQ-1 through REQ-11_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create AdvancedEngine in core/src/engine/advanced.rs implementing the 9-step event processing flow with all state components | Restrictions: Keep process_event under 50 lines by delegating to helpers | Success: Full event flow works, safe mode works, all unit tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 10. Add engine state inspection methods
+- [x] 10. Add engine state inspection methods
   - File: `core/src/engine/advanced.rs` (extend)
   - Add `key_state()`, `modifiers()`, `layers()`, `pending()` accessors
   - Create `EngineState` struct for serializable state snapshot

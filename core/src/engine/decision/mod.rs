@@ -6,5 +6,5 @@ pub mod timing;
 
 #[allow(unused_imports)]
 pub use combos::{ComboDef, ComboRegistry};
-pub use pending::{DecisionQueue, DecisionResolution, PendingDecision};
+pub use pending::{DecisionQueue, DecisionResolution, PendingDecision, PendingDecisionState};
 pub use timing::TimingConfig;

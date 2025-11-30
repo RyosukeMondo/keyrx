@@ -1,4 +1,5 @@
 use crate::engine::{HoldAction, InputEvent, KeyCode, LayerAction, TimingConfig};
+use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 const MICROS_PER_MS: u64 = 1_000;
@@ -8,6 +9,28 @@ const MICROS_PER_MS: u64 = 1_000;
 pub enum PendingDecision {
     TapHold(TapHoldDecision),
     Combo(ComboDecision),
+}
+
+/// Serializable view of a pending decision for inspection/telemetry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PendingDecisionState {
+    TapHold {
+        key: KeyCode,
+        pressed_at: u64,
+        deadline: u64,
+        tap_action: KeyCode,
+        hold_action: HoldAction,
+        interrupted: bool,
+        eager_tap: bool,
+        hold_emitted: bool,
+    },
+    Combo {
+        keys: Vec<KeyCode>,
+        started_at: u64,
+        deadline: u64,
+        matched: Vec<KeyCode>,
+        action: LayerAction,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -268,9 +291,38 @@ impl DecisionQueue {
         &self.pending
     }
 
+    /// Snapshot pending decisions into a serializable form.
+    pub fn snapshot(&self) -> Vec<PendingDecisionState> {
+        self.pending.iter().map(PendingDecision::to_state).collect()
+    }
+
     /// Clear all pending decisions.
     pub fn clear(&mut self) {
         self.pending.clear();
+    }
+}
+
+impl PendingDecision {
+    fn to_state(&self) -> PendingDecisionState {
+        match self {
+            PendingDecision::TapHold(decision) => PendingDecisionState::TapHold {
+                key: decision.key,
+                pressed_at: decision.pressed_at,
+                deadline: decision.deadline,
+                tap_action: decision.tap_action,
+                hold_action: decision.hold_action.clone(),
+                interrupted: decision.interrupted,
+                eager_tap: decision.eager_tap,
+                hold_emitted: decision.hold_emitted,
+            },
+            PendingDecision::Combo(combo) => PendingDecisionState::Combo {
+                keys: combo.keys.iter().copied().collect(),
+                started_at: combo.started_at,
+                deadline: combo.deadline,
+                matched: combo.matched.iter().copied().collect(),
+                action: combo.action.clone(),
+            },
+        }
     }
 }
 
@@ -459,5 +511,69 @@ mod tests {
             0,
             LayerAction::Remap(KeyCode::Escape)
         ));
+    }
+
+    #[test]
+    fn snapshot_includes_tap_hold_fields() {
+        let mut queue = DecisionQueue::new(TimingConfig::default());
+        let (added, _) = queue.add_tap_hold(
+            KeyCode::CapsLock,
+            10,
+            KeyCode::Escape,
+            HoldAction::Modifier(2),
+        );
+        assert!(added);
+
+        let snapshot = queue.snapshot();
+        assert_eq!(snapshot.len(), 1);
+        match &snapshot[0] {
+            PendingDecisionState::TapHold {
+                key,
+                pressed_at,
+                tap_action,
+                hold_action,
+                interrupted,
+                eager_tap,
+                hold_emitted,
+                ..
+            } => {
+                assert_eq!(*key, KeyCode::CapsLock);
+                assert_eq!(*pressed_at, 10);
+                assert_eq!(*tap_action, KeyCode::Escape);
+                assert_eq!(*hold_action, HoldAction::Modifier(2));
+                assert!(!*interrupted);
+                assert_eq!(*eager_tap, TimingConfig::default().eager_tap);
+                assert!(!*hold_emitted);
+                // Ensure serializable
+                serde_json::to_string(&snapshot[0]).expect("serializes");
+            }
+            _ => panic!("expected tap-hold snapshot"),
+        }
+    }
+
+    #[test]
+    fn snapshot_includes_combo_state() {
+        let mut queue = DecisionQueue::new(TimingConfig::default());
+        assert!(queue.add_combo(&[KeyCode::A, KeyCode::B, KeyCode::C], 5, LayerAction::Block));
+        let _ = queue.check_event(&InputEvent::key_down(KeyCode::C, 7));
+
+        let snapshot = queue.snapshot();
+        assert_eq!(snapshot.len(), 1);
+        match &snapshot[0] {
+            PendingDecisionState::Combo {
+                keys,
+                started_at,
+                matched,
+                action,
+                ..
+            } => {
+                assert!(keys.contains(&KeyCode::A));
+                assert!(matched.contains(&KeyCode::C));
+                assert_eq!(*started_at, 5);
+                assert_eq!(*action, LayerAction::Block);
+                serde_json::to_string(&snapshot[0]).expect("serializes");
+            }
+            _ => panic!("expected combo snapshot"),
+        }
     }
 }

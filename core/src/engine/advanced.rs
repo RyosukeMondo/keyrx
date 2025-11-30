@@ -4,9 +4,28 @@
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, HoldAction, InputEvent, KeyCode,
     KeyStateTracker, LayerAction, LayerStack, Modifier, ModifierState, OutputAction,
-    PendingDecision, TimingConfig,
+    PendingDecision, PendingDecisionState, TimingConfig,
 };
 use crate::traits::{InputSource, ScriptRuntime};
+use serde::{Deserialize, Serialize};
+
+/// Single pressed key with timestamp for snapshots.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PressedKeyState {
+    pub key: KeyCode,
+    pub pressed_at: u64,
+}
+
+/// Serializable snapshot of engine state for GUI/FFI inspection.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EngineState {
+    pub pressed_keys: Vec<PressedKeyState>,
+    pub modifiers: ModifierState,
+    pub layers: LayerStack,
+    pub pending: Vec<PendingDecisionState>,
+    pub timing: TimingConfig,
+    pub safe_mode: bool,
+}
 
 /// Extended engine with timing-based decisions.
 pub struct AdvancedEngine<I, S>
@@ -160,6 +179,28 @@ where
     /// Access timing config.
     pub fn timing_config(&self) -> &TimingConfig {
         &self.timing
+    }
+
+    /// Serializable snapshot of current engine state.
+    pub fn snapshot(&self) -> EngineState {
+        let pressed_keys = self
+            .key_state
+            .pressed_keys()
+            .filter_map(|key| {
+                self.key_state
+                    .press_time(key)
+                    .map(|pressed_at| PressedKeyState { key, pressed_at })
+            })
+            .collect();
+
+        EngineState {
+            pressed_keys,
+            modifiers: self.modifiers,
+            layers: self.layers.clone(),
+            pending: self.pending.snapshot(),
+            timing: self.timing.clone(),
+            safe_mode: self.safe_mode,
+        }
     }
 
     fn check_safe_mode_toggle(&self, event: &InputEvent) -> bool {
@@ -472,5 +513,32 @@ mod tests {
         // Subsequent events should pass through while safe mode is active.
         let out2 = engine.process_event(key_down(KeyCode::A, 10_000));
         assert_eq!(out2, vec![OutputAction::PassThrough]);
+    }
+
+    #[test]
+    fn snapshot_exposes_serializable_state() {
+        let mut engine = test_engine();
+        let mut base = Layer::base();
+        base.set_mapping(
+            KeyCode::CapsLock,
+            LayerAction::TapHold {
+                tap: KeyCode::Escape,
+                hold: HoldAction::Key(KeyCode::LeftCtrl),
+            },
+        );
+        engine.layers_mut().define_layer(base);
+
+        let _ = engine.process_event(key_down(KeyCode::CapsLock, 100));
+
+        let snapshot = engine.snapshot();
+        assert!(!snapshot.safe_mode);
+        assert!(snapshot
+            .pressed_keys
+            .iter()
+            .any(|pk| pk.key == KeyCode::CapsLock && pk.pressed_at == 100));
+        assert!(snapshot.layers.is_active(0));
+        assert_eq!(snapshot.pending.len(), 1);
+
+        serde_json::to_string(&snapshot).expect("engine state serializes");
     }
 }

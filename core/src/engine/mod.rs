@@ -6,9 +6,10 @@ mod event_loop;
 mod state;
 mod types;
 
-pub use advanced::AdvancedEngine;
+pub use advanced::{AdvancedEngine, EngineState, PressedKeyState};
 pub use decision::{
-    ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision, TimingConfig,
+    ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
+    PendingDecisionState, TimingConfig,
 };
 pub use event_loop::Engine;
 pub use state::{
