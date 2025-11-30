@@ -126,7 +126,7 @@
   - _Requirements: REQ-5, REQ-9_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add tap_hold() and tap_hold_mod() Rhai functions to runtime.rs, store in TapHoldRegistry | Restrictions: Use existing pending ops pattern | Success: Scripts can define tap-hold, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 12. Add combo() Rhai function
+- [x] 12. Add combo() Rhai function
   - File: `core/src/scripting/runtime.rs` (extend)
   - Register `combo(keys_array, action_key)` function
   - Parse key array from Rhai Array type

@@ -1,11 +1,11 @@
 //! Rhai runtime implementation.
 
 use super::helpers::parse_key_or_error;
-use crate::engine::{HoldAction, KeyCode, VirtualModifiers};
+use crate::engine::{HoldAction, KeyCode, LayerAction, VirtualModifiers};
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
-use rhai::{Engine, EvalAltResult, Scope, AST};
+use rhai::{Array, Engine, EvalAltResult, Position, Scope, AST};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -31,6 +31,10 @@ enum PendingOp {
         key: KeyCode,
         tap: KeyCode,
         hold: HoldAction,
+    },
+    Combo {
+        keys: Vec<KeyCode>,
+        action: LayerAction,
     },
 }
 
@@ -79,6 +83,7 @@ impl RhaiRuntime {
         Self::register_pass(engine, pending_ops);
         Self::register_tap_hold(engine, pending_ops);
         Self::register_tap_hold_mod(engine, pending_ops);
+        Self::register_combo(engine, pending_ops);
     }
 
     fn register_debug(engine: &mut Engine) {
@@ -220,6 +225,59 @@ impl RhaiRuntime {
         );
     }
 
+    fn register_combo(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "combo",
+            move |keys: Array, action_key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let parsed_keys = Self::parse_keys_array(keys)?;
+                let action = parse_key_or_error(action_key, "combo")?;
+
+                if !(2..=4).contains(&parsed_keys.len()) {
+                    return Err(Box::new(EvalAltResult::ErrorRuntime(
+                        format!("combo: expected 2-4 keys, got {}", parsed_keys.len()).into(),
+                        Position::NONE,
+                    )));
+                }
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::Combo {
+                        keys: parsed_keys,
+                        action: LayerAction::Remap(action),
+                    });
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn parse_array_error(index: usize, value_type: &str) -> Box<EvalAltResult> {
+        Box::new(EvalAltResult::ErrorRuntime(
+            format!(
+                "combo: keys must be strings, got {} at index {}",
+                value_type, index
+            )
+            .into(),
+            Position::NONE,
+        ))
+    }
+
+    fn parse_keys_array(keys: Array) -> Result<Vec<KeyCode>, Box<EvalAltResult>> {
+        let mut parsed = Vec::with_capacity(keys.len());
+
+        for (idx, value) in keys.into_iter().enumerate() {
+            let key_name = value
+                .clone()
+                .try_cast::<String>()
+                .ok_or_else(|| Self::parse_array_error(idx, value.type_name()))?;
+
+            let key_code = parse_key_or_error(&key_name, "combo")?;
+            parsed.push(key_code);
+        }
+
+        Ok(parsed)
+    }
+
     /// Check if a function is defined in the loaded script.
     fn scan_for_hooks(&mut self) {
         self.defined_hooks.clear();
@@ -246,6 +304,17 @@ impl RhaiRuntime {
                     }
                     PendingOp::TapHold { key, tap, hold } => {
                         self.registry.register_tap_hold(key, tap, hold);
+                    }
+                    PendingOp::Combo { keys, action } => {
+                        if !self.registry.register_combo(&keys, action) {
+                            tracing::warn!(
+                                service = "keyrx",
+                                event = "rhai_combo_register_failed",
+                                component = "scripting_runtime",
+                                keys = ?keys,
+                                "Combo registration rejected (invalid key count)"
+                            );
+                        }
                     }
                 }
             }
@@ -319,7 +388,7 @@ impl ScriptRuntime for RhaiRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{HoldAction, RemapAction};
+    use crate::engine::{HoldAction, LayerAction, RemapAction};
 
     #[test]
     fn new_runtime_has_empty_registry() {
@@ -453,5 +522,30 @@ mod tests {
         let result = runtime.execute(r#"tap_hold_mod("CapsLock", "Escape", 999);"#);
         assert!(result.is_err());
         assert!(runtime.registry().tap_hold(KeyCode::CapsLock).is_none());
+    }
+
+    #[test]
+    fn execute_combo_registers_definition() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime.execute(r#"combo(["A", "B"], "Escape");"#).unwrap();
+
+        let action = runtime.registry().combos().find(&[KeyCode::A, KeyCode::B]);
+        assert_eq!(action, Some(&LayerAction::Remap(KeyCode::Escape)));
+    }
+
+    #[test]
+    fn combo_requires_between_two_and_four_keys() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        assert!(runtime.execute(r#"combo(["A"], "Escape");"#).is_err());
+        assert!(runtime
+            .execute(r#"combo(["A","B","C","D","E"], "Escape");"#)
+            .is_err());
+    }
+
+    #[test]
+    fn combo_rejects_non_string_keys() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        let err = runtime.execute(r#"combo([1, "B"], "Escape");"#);
+        assert!(err.is_err());
     }
 }

@@ -19,7 +19,7 @@ pub struct ComboDef {
 }
 
 /// Registry of combo definitions supporting order-independent lookup.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ComboRegistry {
     combos: HashMap<SmallVec<[KeyCode; 4]>, LayerAction>,
 }
