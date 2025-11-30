@@ -1,10 +1,12 @@
 //! Core engine module for event processing.
 
+mod advanced;
 mod decision;
 mod event_loop;
 mod state;
 mod types;
 
+pub use advanced::AdvancedEngine;
 pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision, TimingConfig,
 };
