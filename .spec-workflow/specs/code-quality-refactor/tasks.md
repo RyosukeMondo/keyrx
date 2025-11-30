@@ -184,7 +184,7 @@
 
 ## Phase 6: File Size Compliance (Remaining Violations)
 
-- [ ] 17. Split windows/mod.rs (786 lines → <500)
+- [x] 17. Split windows/mod.rs (786 lines → <500)
   - File: `core/src/drivers/windows/mod.rs` (currently 786 lines)
   - Extract `DeviceInfo` and `try_get_keyboard_info()` to `windows/device_info.rs` (~100 lines)
   - Extract thread-local storage helpers to `windows/tls.rs` (~80 lines)
