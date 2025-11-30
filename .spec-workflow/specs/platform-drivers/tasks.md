@@ -248,7 +248,7 @@
 
 ## Task 14: Verification
 
-- [ ] 14.1 End-to-end testing on Linux
+- [x] 14.1 End-to-end testing on Linux
   - Set up test environment with proper permissions
   - Run: keyrx devices (verify keyboard listed)
   - Run: keyrx run --script example.rhai
