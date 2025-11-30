@@ -146,7 +146,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/src/mocks/mock_input.rs to add call tracking. Add MockCall enum with variants Start, Stop, PollEvents, SendOutput(OutputAction). Add calls: Vec<MockCall> field. Record each method call. Add call_history(&self) -> &[MockCall]. Add with_error_on_start(anyhow::Error) -> Self builder that causes start() to return error | Restrictions: Keep existing functionality working | Success: Tests can verify which methods were called and in what order. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 7.2 Add call tracking to MockRuntime
+- [x] 7.2 Add call tracking to MockRuntime
   - File: `core/src/mocks/mock_runtime.rs`
   - Record calls to execute, call_hook, load_file, lookup_remap
   - Add configurable return values for lookup_remap
