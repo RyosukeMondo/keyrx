@@ -41,17 +41,12 @@ impl fmt::Display for DeviceId {
 }
 
 /// Origin of the profile (discovered on device, default, or migrated).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ProfileSource {
     Discovered,
+    #[default]
     Default,
     Migrated,
-}
-
-impl Default for ProfileSource {
-    fn default() -> Self {
-        ProfileSource::Default
-    }
 }
 
 /// Physical key metadata captured during discovery.

@@ -18,12 +18,12 @@ pub mod scripting;
 pub mod traits;
 
 // Re-export commonly used types
+pub use discovery::{
+    default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, PhysicalKey,
+    ProfileSource, SCHEMA_VERSION,
+};
 pub use engine::{Engine, InputEvent, KeyCode, Layer, ModifierSet, OutputAction};
 pub use error::KeyRxError;
 pub use mocks::{MockInput, MockRuntime, MockState};
 pub use scripting::RhaiRuntime;
 pub use traits::{InputSource, ScriptRuntime, StateStore};
-pub use discovery::{
-    device_profiles_dir, default_schema_version, DeviceId, DeviceProfile, PhysicalKey,
-    ProfileSource, SCHEMA_VERSION,
-};

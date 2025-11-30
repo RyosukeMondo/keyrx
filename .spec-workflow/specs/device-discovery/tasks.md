@@ -8,7 +8,7 @@
   - _Requirements: 1,3,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems developer focused on keyboard input | Task: Scaffold discovery module and shared types for device discovery (DeviceId, DeviceProfile, PhysicalKey, ProfileSource, schema_version, config path helper) following requirements 1/3/5 | Restrictions: Keep files under core/src/discovery/, no engine wiring yet, ensure serde derives and defaults are explicit | _Leverage: core/src/drivers/traits.rs, CLI config path helpers, serde | _Requirements: 1,3,5 | Success: Types compile with no warnings, schema_version constant exposed, config path helper resolves to ~/.config/keyrx/devices, ready for storage/session use; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 2. Implement profile storage with atomic writes and schema validation
+- [x] 2. Implement profile storage with atomic writes and schema validation
   - File: core/src/discovery/storage.rs
   - Implement read/write/migrate functions for DeviceProfile JSON, using temp-file + rename for atomicity and validating schema_version with fallback to default profile.
   - Purpose: Persist per-device profiles safely and recover from corruption.

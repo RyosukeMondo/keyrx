@@ -4,9 +4,13 @@
 //! persistence, and registry lookup. Wiring into the engine/CLI/FFI is
 //! implemented in downstream tasks.
 
+pub mod storage;
 pub mod types;
 
+pub use storage::{
+    default_profile_for, profile_path, read_profile, validate_schema, write_profile, StorageError,
+};
 pub use types::{
-    device_profiles_dir, default_schema_version, DeviceId, DeviceProfile, PhysicalKey,
+    default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, PhysicalKey,
     ProfileSource, SCHEMA_VERSION,
 };
