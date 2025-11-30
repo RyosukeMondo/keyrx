@@ -216,7 +216,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Add unit tests to driver files. Test evdev_to_keycode and keycode_to_evdev roundtrip for all keys. Test vk_to_keycode and keycode_to_vk roundtrip. Test DeviceInfo Display impl. Test error message formatting | Restrictions: Don't require real devices for unit tests | Success: cargo test passes with new tests. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 12.2 Add integration tests
+- [-] 12.2 Add integration tests
   - File: `core/tests/driver_integration_test.rs`
   - Test driver start/stop lifecycle (with mock or skip on CI)
   - Test event channel communication
