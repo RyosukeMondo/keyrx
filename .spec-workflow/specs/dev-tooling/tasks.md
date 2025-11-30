@@ -28,7 +28,7 @@
 
 ## Task 2: Pre-commit Hooks
 
-- [ ] 2.1 Create install-hooks script
+- [x] 2.1 Create install-hooks script
   - File: `scripts/install-hooks.sh`
   - Create script that copies .githooks/* to .git/hooks/
   - Make executable and cross-platform (bash)
