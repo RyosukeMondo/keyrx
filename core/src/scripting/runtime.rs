@@ -47,14 +47,27 @@ impl RhaiRuntime {
         // Shared pending operations storage
         let pending_ops: PendingOps = Arc::new(Mutex::new(Vec::new()));
 
+        // Register script functions
+        Self::register_remap_functions(&mut engine, &pending_ops);
+
+        Ok(Self {
+            engine,
+            ast: None,
+            defined_hooks: HashSet::new(),
+            registry: RemapRegistry::new(),
+            pending_ops,
+        })
+    }
+
+    /// Register remap-related functions for the Rhai engine.
+    fn register_remap_functions(engine: &mut Engine, pending_ops: &PendingOps) {
         // Register core functions
         engine.register_fn("print_debug", |msg: &str| {
             tracing::debug!("{}", msg);
         });
 
         // Register remap function: remap(from, to)
-        // Returns Result to allow scripts to catch errors with try/catch
-        let ops = Arc::clone(&pending_ops);
+        let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "remap",
             move |from: &str, to: &str| -> std::result::Result<(), Box<EvalAltResult>> {
@@ -72,8 +85,7 @@ impl RhaiRuntime {
         );
 
         // Register block function: block(key)
-        // Returns Result to allow scripts to catch errors with try/catch
-        let ops = Arc::clone(&pending_ops);
+        let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "block",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
@@ -87,8 +99,7 @@ impl RhaiRuntime {
         );
 
         // Register pass function: pass(key)
-        // Returns Result to allow scripts to catch errors with try/catch
-        let ops = Arc::clone(&pending_ops);
+        let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "pass",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
@@ -100,14 +111,6 @@ impl RhaiRuntime {
                 Ok(())
             },
         );
-
-        Ok(Self {
-            engine,
-            ast: None,
-            defined_hooks: HashSet::new(),
-            registry: RemapRegistry::new(),
-            pending_ops,
-        })
     }
 
     /// Check if a function is defined in the loaded script.
