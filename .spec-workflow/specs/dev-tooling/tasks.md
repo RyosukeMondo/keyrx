@@ -229,7 +229,7 @@
   - _Requirements: REQ-1, REQ-2_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Run cargo test and cargo test --release in core/. All tests must pass. If any fail, investigate and fix. Document any test changes needed due to error handling refactors | Restrictions: All existing tests must pass or be updated appropriately | Success: All tests pass in both debug and release modes. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 10.4 Install and test pre-commit hooks
+- [x] 10.4 Install and test pre-commit hooks
   - Run: `./scripts/install-hooks.sh`
   - Test: Make a commit with formatting issue, verify blocked
   - Test: Make a clean commit, verify accepted
