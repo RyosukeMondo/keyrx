@@ -104,7 +104,7 @@
 
 ## Task 6: Implement Windows Hook Manager
 
-- [-] 6.1 Create HookManager struct
+- [x] 6.1 Create HookManager struct
   - File: `core/src/drivers/windows.rs`
   - Use SetWindowsHookExW for WH_KEYBOARD_LL
   - Store HHOOK handle
@@ -113,7 +113,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Windows API experience | Task: Create HookManager in windows.rs. Use windows-rs SetWindowsHookExW with WH_KEYBOARD_LL. Store hook handle. Use thread_local! macro to store Sender for callback access. Implement install() that registers hook with low_level_keyboard_proc callback. Handle errors from GetLastError | Restrictions: Hook must be installed from thread with message pump | Success: Hook receives keyboard events. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 6.2 Implement hook callback
+- [x] 6.2 Implement hook callback
   - File: `core/src/drivers/windows.rs`
   - Create extern "system" callback function
   - Extract KBDLLHOOKSTRUCT from lParam
