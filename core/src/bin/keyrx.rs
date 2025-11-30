@@ -3,8 +3,8 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        BenchCommand, CheckCommand, DevicesCommand, DoctorCommand, RunCommand, SimulateCommand,
-        StateCommand,
+        BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand,
+        RunCommand, SimulateCommand, StateCommand,
     },
     OutputFormat,
 };
@@ -97,6 +97,21 @@ enum Commands {
         #[arg(short, long)]
         script: Option<PathBuf>,
     },
+
+    /// Discover a keyboard layout and write a device profile
+    Discover {
+        /// Target device vendor:product (hex or decimal). If omitted, auto-detects the first keyboard.
+        #[arg(long)]
+        device: Option<String>,
+
+        /// Force re-discovery even if a profile already exists.
+        #[arg(long)]
+        force: bool,
+
+        /// Assume yes for confirmations.
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
 }
 
 fn parse_format(s: &str) -> OutputFormat {
@@ -156,6 +171,11 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
         Commands::Simulate { input, script } => {
             SimulateCommand::new(input, script, format).run().await?;
         }
+        Commands::Discover { device, force, yes } => {
+            DiscoverCommand::new(device, force, yes, format)
+                .run()
+                .await?;
+        }
     }
     Ok(())
 }
@@ -164,8 +184,16 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
 ///
 /// - Exit code 1: General runtime errors
 /// - Exit code 2: Validation/compilation errors (script syntax issues)
+/// - Exit code 3: Discovery cancelled by user/emergency-exit
 fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
     // Check if the root cause is a KeyRxError
+    if let Some(discover) = err.downcast_ref::<DiscoverExit>() {
+        return match discover {
+            DiscoverExit::Cancelled => ExitCode::from(3),
+            DiscoverExit::Validation(_) => ExitCode::from(2),
+        };
+    }
+
     if let Some(keyrx_err) = err.downcast_ref::<KeyRxError>() {
         return match keyrx_err {
             KeyRxError::ScriptCompileError { .. } => ExitCode::from(2),
@@ -179,6 +207,12 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
             return match keyrx_err {
                 KeyRxError::ScriptCompileError { .. } => ExitCode::from(2),
                 _ => ExitCode::from(1),
+            };
+        }
+        if let Some(discover) = cause.downcast_ref::<DiscoverExit>() {
+            return match discover {
+                DiscoverExit::Cancelled => ExitCode::from(3),
+                DiscoverExit::Validation(_) => ExitCode::from(2),
             };
         }
     }

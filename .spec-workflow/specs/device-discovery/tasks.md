@@ -32,7 +32,7 @@
   - _Requirements: 1,3,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust engineer integrating subsystems | Task: Add registry layer to engine startup to load profiles by device_id, expose unknown-device trigger, and keep default fallback safe | Restrictions: Do not block event loop; errors should degrade gracefully; keep emergency-exit behavior intact | _Leverage: discovery storage, driver traits, engine init patterns | _Requirements: 1,3,5 | Success: Engine loads profiles automatically on reconnect, unknown devices flagged for discovery without crashes, unit/integration tests cover load/fallback; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 5. Add CLI command `keyrx discover`
+- [x] 5. Add CLI command `keyrx discover`
   - File: core/src/cli/commands/discover.rs; CLI wiring files as needed
   - Implement CLI entry to run discovery for unknown or specified device, showing progress, handling skip/confirm, writing profile on completion, and respecting JSON/yes flags.
   - Purpose: Provide user-facing workflow aligned with CLI-first principle.
