@@ -4,7 +4,7 @@ use crate::engine::KeyCode;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
-use rhai::{Engine, Scope, AST};
+use rhai::{Engine, EvalAltResult, Position, Scope, AST};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -52,62 +52,93 @@ impl RhaiRuntime {
         });
 
         // Register remap function: remap(from, to)
+        // Returns Result to allow scripts to catch errors with try/catch
         let ops = Arc::clone(&pending_ops);
-        engine.register_fn("remap", move |from: &str, to: &str| {
-            let from_key = match KeyCode::from_name(from) {
-                Some(k) => k,
-                None => {
-                    tracing::warn!("Unknown key in remap(): '{}'", from);
-                    return;
+        engine.register_fn(
+            "remap",
+            move |from: &str, to: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let from_key = match KeyCode::from_name(from) {
+                    Some(k) => k,
+                    None => {
+                        tracing::warn!("Unknown key in remap(): '{}'", from);
+                        return Err(Box::new(EvalAltResult::ErrorRuntime(
+                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", from)
+                                .into(),
+                            Position::NONE,
+                        )));
+                    }
+                };
+                let to_key = match KeyCode::from_name(to) {
+                    Some(k) => k,
+                    None => {
+                        tracing::warn!("Unknown key in remap(): '{}'", to);
+                        return Err(Box::new(EvalAltResult::ErrorRuntime(
+                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", to)
+                                .into(),
+                            Position::NONE,
+                        )));
+                    }
+                };
+                tracing::debug!("Registered remap: {} -> {}", from, to);
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::Remap {
+                        from: from_key,
+                        to: to_key,
+                    });
                 }
-            };
-            let to_key = match KeyCode::from_name(to) {
-                Some(k) => k,
-                None => {
-                    tracing::warn!("Unknown key in remap(): '{}'", to);
-                    return;
-                }
-            };
-            tracing::debug!("Registered remap: {} -> {}", from, to);
-            if let Ok(mut ops) = ops.lock() {
-                ops.push(PendingOp::Remap {
-                    from: from_key,
-                    to: to_key,
-                });
-            }
-        });
+                Ok(())
+            },
+        );
 
         // Register block function: block(key)
+        // Returns Result to allow scripts to catch errors with try/catch
         let ops = Arc::clone(&pending_ops);
-        engine.register_fn("block", move |key: &str| {
-            let key_code = match KeyCode::from_name(key) {
-                Some(k) => k,
-                None => {
-                    tracing::warn!("Unknown key in block(): '{}'", key);
-                    return;
+        engine.register_fn(
+            "block",
+            move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let key_code = match KeyCode::from_name(key) {
+                    Some(k) => k,
+                    None => {
+                        tracing::warn!("Unknown key in block(): '{}'", key);
+                        return Err(Box::new(EvalAltResult::ErrorRuntime(
+                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", key)
+                                .into(),
+                            Position::NONE,
+                        )));
+                    }
+                };
+                tracing::debug!("Registered block: {}", key);
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::Block { key: key_code });
                 }
-            };
-            tracing::debug!("Registered block: {}", key);
-            if let Ok(mut ops) = ops.lock() {
-                ops.push(PendingOp::Block { key: key_code });
-            }
-        });
+                Ok(())
+            },
+        );
 
         // Register pass function: pass(key)
+        // Returns Result to allow scripts to catch errors with try/catch
         let ops = Arc::clone(&pending_ops);
-        engine.register_fn("pass", move |key: &str| {
-            let key_code = match KeyCode::from_name(key) {
-                Some(k) => k,
-                None => {
-                    tracing::warn!("Unknown key in pass(): '{}'", key);
-                    return;
+        engine.register_fn(
+            "pass",
+            move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let key_code = match KeyCode::from_name(key) {
+                    Some(k) => k,
+                    None => {
+                        tracing::warn!("Unknown key in pass(): '{}'", key);
+                        return Err(Box::new(EvalAltResult::ErrorRuntime(
+                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", key)
+                                .into(),
+                            Position::NONE,
+                        )));
+                    }
+                };
+                tracing::debug!("Registered pass: {}", key);
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::Pass { key: key_code });
                 }
-            };
-            tracing::debug!("Registered pass: {}", key);
-            if let Ok(mut ops) = ops.lock() {
-                ops.push(PendingOp::Pass { key: key_code });
-            }
-        });
+                Ok(())
+            },
+        );
 
         Ok(Self {
             engine,
@@ -250,16 +281,51 @@ mod tests {
     }
 
     #[test]
-    fn unknown_key_logs_warning_but_continues() {
+    fn unknown_key_returns_error() {
         let mut runtime = RhaiRuntime::new().unwrap();
-        // Should not panic, just log warning
-        runtime.execute(r#"remap("InvalidKey", "B");"#).unwrap();
-        runtime.execute(r#"remap("A", "InvalidKey");"#).unwrap();
+        // Invalid keys should cause script errors
+        let result = runtime.execute(r#"remap("InvalidKey", "B");"#);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("InvalidKey"));
+
+        let result = runtime.execute(r#"remap("A", "InvalidKey");"#);
+        assert!(result.is_err());
+
+        let result = runtime.execute(r#"block("InvalidKey");"#);
+        assert!(result.is_err());
+
+        let result = runtime.execute(r#"pass("InvalidKey");"#);
+        assert!(result.is_err());
+
         // Valid mappings should still work
         runtime.execute(r#"remap("C", "D");"#).unwrap();
         assert_eq!(
             runtime.lookup_remap(KeyCode::C),
             RemapAction::Remap(KeyCode::D)
+        );
+    }
+
+    #[test]
+    fn errors_are_catchable_in_scripts() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        // Using try/catch in Rhai scripts should work
+        let result = runtime.execute(
+            r#"
+            let caught = false;
+            try {
+                remap("InvalidKey", "B");
+            } catch {
+                caught = true;
+            }
+            // After catching the error, valid remaps should still work
+            remap("A", "B");
+            "#,
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
         );
     }
 

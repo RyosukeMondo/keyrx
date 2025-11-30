@@ -89,7 +89,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor core/src/scripting/runtime.rs to remove Rc<RefCell<RemapRegistry>>. Store RemapRegistry directly in RhaiRuntime struct. For Rhai function registration, use a different approach: store pending operations in a Vec and apply them after script execution, OR use rhai's NativeCallContext to access engine state. The lookup_remap method should return from owned registry | Restrictions: Must not introduce runtime panics, maintain thread safety | Success: No Rc<RefCell> in runtime.rs, all tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 5.2 Add error returns to Rhai functions
+- [x] 5.2 Add error returns to Rhai functions
   - File: `core/src/scripting/runtime.rs`
   - Change remap/block/pass to return Result via Rhai's error mechanism
   - Use rhai::EvalAltResult for script-visible errors
