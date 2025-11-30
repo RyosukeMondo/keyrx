@@ -166,7 +166,7 @@
 
 ## Task 8: Documentation
 
-- [ ] 8.1 Create SCRIPTING.md
+- [x] 8.1 Create SCRIPTING.md
   - File: `docs/SCRIPTING.md`
   - Document: remap(from, to), block(key), pass(key)
   - Document: on_init() hook lifecycle
