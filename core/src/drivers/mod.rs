@@ -5,7 +5,10 @@
 //! appropriate driver for the current operating system.
 
 mod common;
+mod injector;
 pub mod keycodes;
+
+pub use injector::{InjectedKey, KeyInjector, MockKeyInjector};
 
 #[cfg(target_os = "windows")]
 mod windows;
