@@ -104,13 +104,13 @@ Physical Key Press
 
 ```mermaid
 flowchart LR
-    FW[Keyboard firmware\nscan_code (e.g., 0x1E)] --> OS[OS translation\nLinux: evdev KEY_A (30)\nWindows: VK_A (0x41)]
-    OS --> DRV[KeyRx driver\nread device + metadata]
-    DRV --> EVT[Normalize InputEvent\nKeyCode + scan_code + device_id + flags]
-    EVT --> ENG[Engine\nTokio loop + layer state]
-    ENG --> RHAI[Rhai hooks\nremap/block/pass]
-    RHAI --> OUT[OutputAction\nKeyDown/Up/Tap/Block/PassThrough]
-    OUT --> INJ[Injector\nuinput/SendInput]
+    FW["Keyboard firmware\nscan_code (e.g., 0x1E)"] --> OS["OS translation\nLinux: evdev KEY_A (30)\nWindows: VK_A (0x41)"]
+    OS --> DRV["KeyRx driver\nread device + metadata"]
+    DRV --> EVT["Normalize InputEvent\nKeyCode + scan_code + device_id + flags"]
+    EVT --> ENG["Engine\nTokio loop + layer state"]
+    ENG --> RHAI["Rhai hooks\nremap/block/pass"]
+    RHAI --> OUT["OutputAction\nKeyDown/Up/Tap/Block/PassThrough"]
+    OUT --> INJ["Injector\nuinput/SendInput"]
     style EVT fill:#eef9ff,stroke:#5b8def
     style ENG fill:#eef9ff,stroke:#5b8def
     style RHAI fill:#eef9ff,stroke:#5b8def
