@@ -586,7 +586,6 @@ impl Drop for LinuxInput {
 /// - The `/dev/input` directory cannot be read
 /// - Device enumeration fails due to permission issues
 pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
-    let mut keyboards = Vec::new();
     let input_dir = Path::new("/dev/input");
 
     if !input_dir.exists() {
@@ -599,54 +598,52 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
     }
 
     let entries = std::fs::read_dir(input_dir).context("Failed to read /dev/input directory")?;
+    let mut keyboards: Vec<DeviceInfo> = entries
+        .flatten()
+        .filter_map(|entry| try_get_keyboard_info(&entry.path()))
+        .collect();
 
-    for entry in entries.flatten() {
-        let path = entry.path();
+    keyboards.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(keyboards)
+}
 
-        // Only look at event* devices
-        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        if !file_name.starts_with("event") {
-            continue;
-        }
-
-        // Try to open and check if it's a keyboard
-        match evdev::Device::open(&path) {
-            Ok(device) => {
-                // Check if device has KEY capability with common keyboard keys
-                let has_keyboard_keys = device
-                    .supported_keys()
-                    .map(|keys| {
-                        // Check for common keyboard keys (A, Enter, Space)
-                        keys.contains(evdev::Key::KEY_A)
-                            && keys.contains(evdev::Key::KEY_ENTER)
-                            && keys.contains(evdev::Key::KEY_SPACE)
-                    })
-                    .unwrap_or(false);
-
-                if has_keyboard_keys {
-                    let name = device.name().unwrap_or("Unknown Device").to_string();
-                    let input_id = device.input_id();
-
-                    keyboards.push(DeviceInfo::new(
-                        path,
-                        name,
-                        input_id.vendor(),
-                        input_id.product(),
-                        true,
-                    ));
-                }
-            }
-            Err(e) => {
-                // Log but don't fail - device might be busy or lack permissions
-                debug!("Could not open {}: {}", path.display(), e);
-            }
-        }
+/// Attempts to open a device path and return keyboard info if it's a keyboard.
+fn try_get_keyboard_info(path: &Path) -> Option<DeviceInfo> {
+    let file_name = path.file_name().and_then(|n| n.to_str())?;
+    if !file_name.starts_with("event") {
+        return None;
     }
 
-    // Sort by path for consistent ordering
-    keyboards.sort_by(|a, b| a.path.cmp(&b.path));
+    let device = match evdev::Device::open(path) {
+        Ok(d) => d,
+        Err(e) => {
+            debug!("Could not open {}: {}", path.display(), e);
+            return None;
+        }
+    };
 
-    Ok(keyboards)
+    let has_keyboard_keys = device
+        .supported_keys()
+        .map(|keys| {
+            keys.contains(evdev::Key::KEY_A)
+                && keys.contains(evdev::Key::KEY_ENTER)
+                && keys.contains(evdev::Key::KEY_SPACE)
+        })
+        .unwrap_or(false);
+
+    if !has_keyboard_keys {
+        return None;
+    }
+
+    let name = device.name().unwrap_or("Unknown Device").to_string();
+    let input_id = device.input_id();
+    Some(DeviceInfo::new(
+        path.to_path_buf(),
+        name,
+        input_id.vendor(),
+        input_id.product(),
+        true,
+    ))
 }
 
 #[cfg(test)]

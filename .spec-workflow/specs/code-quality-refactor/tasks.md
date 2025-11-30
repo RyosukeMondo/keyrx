@@ -165,7 +165,7 @@
   - _Requirements: REQ-2, REQ-6_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update drivers/mod.rs and lib.rs exports for new module structure, verify rustdoc builds without warnings | Restrictions: Public API must be identical | Success: cargo doc succeeds, existing examples compile | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 15. Verify code metrics compliance
+- [x] 15. Verify code metrics compliance
   - Run line count on all modified files
   - Verify each file <500 lines (excluding comments/blanks)
   - Verify each function <50 lines
