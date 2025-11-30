@@ -306,7 +306,7 @@
   - _Requirements: REQ-1, REQ-9_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: In EvdevReader read loop, populate InputEvent metadata: timestamp_us from event.time (sec*1000000 + usec), scan_code from event.code, is_repeat from value==2, device_id from stored device path, is_synthetic by comparing event source fd to uinput fd | Restrictions: Handle missing metadata gracefully with defaults | Success: Linux events have complete metadata. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 15.5 Capture Windows metadata in hook callback
+- [x] 15.5 Capture Windows metadata in hook callback
   - File: `core/src/drivers/windows.rs`
   - Extract timestamp from KBDLLHOOKSTRUCT.time (convert ms→μs)
   - Set scan_code from KBDLLHOOKSTRUCT.scanCode
