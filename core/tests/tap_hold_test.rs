@@ -3,7 +3,7 @@
 use keyrx_core::engine::{
     AdvancedEngine, HoldAction, InputEvent, KeyCode, Layer, LayerAction, OutputAction, TimingConfig,
 };
-use keyrx_core::mocks::{MockInput, MockRuntime};
+use keyrx_core::mocks::MockRuntime;
 
 fn key_down(key: KeyCode, ts: u64) -> InputEvent {
     InputEvent::key_down(key, ts)
@@ -13,8 +13,8 @@ fn key_up(key: KeyCode, ts: u64) -> InputEvent {
     InputEvent::key_up(key, ts)
 }
 
-fn engine_with_config(config: TimingConfig) -> AdvancedEngine<MockInput, MockRuntime> {
-    let mut engine = AdvancedEngine::new(MockInput::new(), MockRuntime::default(), config);
+fn engine_with_config(config: TimingConfig) -> AdvancedEngine<MockRuntime> {
+    let mut engine = AdvancedEngine::new(MockRuntime::default(), config);
     let mut base = Layer::base();
     base.set_mapping(
         KeyCode::CapsLock,

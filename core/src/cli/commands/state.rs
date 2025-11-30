@@ -5,7 +5,6 @@ use crate::engine::{
     AdvancedEngine, EngineState, LayerAction, LayerStack, ModifierState, PendingDecisionState,
     PressedKeyState, RemapAction, TimingConfig,
 };
-use crate::mocks::MockInput;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Context, Result};
@@ -122,9 +121,8 @@ impl StateCommand {
         &self,
         registry: &RemapRegistry,
         runtime: RhaiRuntime,
-    ) -> AdvancedEngine<MockInput, RhaiRuntime> {
-        let mut engine =
-            AdvancedEngine::new(MockInput::new(), runtime, registry.timing_config().clone());
+    ) -> AdvancedEngine<RhaiRuntime> {
+        let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
 
         // Seed layers with mappings and tap-holds.
         let mut layers = registry.layers().clone();

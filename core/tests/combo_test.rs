@@ -3,7 +3,7 @@
 use keyrx_core::engine::{
     AdvancedEngine, InputEvent, KeyCode, LayerAction, OutputAction, TimingConfig,
 };
-use keyrx_core::mocks::{MockInput, MockRuntime};
+use keyrx_core::mocks::MockRuntime;
 
 fn key_down(key: KeyCode, ts: u64) -> InputEvent {
     InputEvent::key_down(key, ts)
@@ -13,12 +13,8 @@ fn key_up(key: KeyCode, ts: u64) -> InputEvent {
     InputEvent::key_up(key, ts)
 }
 
-fn engine_with_default_config() -> AdvancedEngine<MockInput, MockRuntime> {
-    AdvancedEngine::new(
-        MockInput::new(),
-        MockRuntime::default(),
-        TimingConfig::default(),
-    )
+fn engine_with_default_config() -> AdvancedEngine<MockRuntime> {
+    AdvancedEngine::new(MockRuntime::default(), TimingConfig::default())
 }
 
 #[test]

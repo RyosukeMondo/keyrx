@@ -5,7 +5,7 @@ use keyrx_core::engine::{
     AdvancedEngine, ComboRegistry, HoldAction, InputEvent, KeyCode, Layer, LayerAction, LayerStack,
     TimingConfig,
 };
-use keyrx_core::mocks::{MockInput, MockRuntime};
+use keyrx_core::mocks::MockRuntime;
 
 fn benchmark_event_creation(c: &mut Criterion) {
     c.bench_function("create_input_event", |b| {
@@ -36,11 +36,7 @@ fn benchmark_process_event_with_pending(c: &mut Criterion) {
     c.bench_function("process_event_tap_hold_pending", |b| {
         b.iter_batched(
             || {
-                let mut engine = AdvancedEngine::new(
-                    MockInput::new(),
-                    MockRuntime::new(),
-                    TimingConfig::default(),
-                );
+                let mut engine = AdvancedEngine::new(MockRuntime::new(), TimingConfig::default());
                 let tap_hold = LayerAction::TapHold {
                     tap: KeyCode::B,
                     hold: HoldAction::Key(KeyCode::C),

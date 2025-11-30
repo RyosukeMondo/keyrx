@@ -6,7 +6,7 @@ use crate::engine::{
     KeyStateTracker, LayerAction, LayerStack, Modifier, ModifierState, OutputAction,
     PendingDecision, PendingDecisionState, TimingConfig,
 };
-use crate::traits::{InputSource, ScriptRuntime};
+use crate::traits::ScriptRuntime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -29,12 +29,10 @@ pub struct EngineState {
 }
 
 /// Extended engine with timing-based decisions.
-pub struct AdvancedEngine<I, S>
+pub struct AdvancedEngine<S>
 where
-    I: InputSource,
     S: ScriptRuntime,
 {
-    _input: I,
     _script: S,
 
     // State
@@ -53,15 +51,13 @@ where
     _running: bool,
 }
 
-impl<I, S> AdvancedEngine<I, S>
+impl<S> AdvancedEngine<S>
 where
-    I: InputSource,
     S: ScriptRuntime,
 {
     /// Create a new engine with injected dependencies and timing config.
-    pub fn new(input: I, script: S, timing: TimingConfig) -> Self {
+    pub fn new(script: S, timing: TimingConfig) -> Self {
         Self {
-            _input: input,
             _script: script,
             key_state: KeyStateTracker::new(),
             modifiers: ModifierState::new(),
@@ -458,14 +454,10 @@ where
 mod tests {
     use super::*;
     use crate::engine::Layer;
-    use crate::mocks::{MockInput, MockRuntime};
+    use crate::mocks::MockRuntime;
 
-    fn test_engine() -> AdvancedEngine<MockInput, MockRuntime> {
-        AdvancedEngine::new(
-            MockInput::new(),
-            MockRuntime::default(),
-            TimingConfig::default(),
-        )
+    fn test_engine() -> AdvancedEngine<MockRuntime> {
+        AdvancedEngine::new(MockRuntime::default(), TimingConfig::default())
     }
 
     fn key_down(key: KeyCode, ts: u64) -> InputEvent {

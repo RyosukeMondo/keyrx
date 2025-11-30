@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, info, warn};
+use tracing::{debug, info, instrument, warn};
 use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
 
 #[cfg(target_os = "linux")]
@@ -422,9 +422,8 @@ impl RunCommand {
         &self,
         runtime: RhaiRuntime,
         registry: RemapRegistry,
-    ) -> AdvancedEngine<MockInput, RhaiRuntime> {
-        let mut engine =
-            AdvancedEngine::new(MockInput::new(), runtime, registry.timing_config().clone());
+    ) -> AdvancedEngine<RhaiRuntime> {
+        let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
 
         // Seed layer mappings and tap-holds into the base layer.
         let mut layers = registry.layers().clone();
@@ -461,9 +460,14 @@ impl RunCommand {
         engine
     }
 
+    #[instrument(
+        level = "trace",
+        skip(self, engine, input, events, last_timestamp),
+        fields(event_count = events.len())
+    )]
     async fn process_events_with_engine<I: InputSource>(
         &self,
-        engine: &mut AdvancedEngine<MockInput, RhaiRuntime>,
+        engine: &mut AdvancedEngine<RhaiRuntime>,
         input: &mut I,
         events: Vec<InputEvent>,
         last_timestamp: &mut u64,

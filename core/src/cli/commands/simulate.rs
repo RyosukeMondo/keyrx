@@ -5,7 +5,6 @@ use crate::engine::{
     AdvancedEngine, EngineState, InputEvent, KeyCode, LayerAction, OutputAction,
     PendingDecisionState, RemapAction,
 };
-use crate::mocks::MockInput;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::{bail, Context, Result};
@@ -171,9 +170,8 @@ impl SimulateCommand {
         &self,
         registry: &RemapRegistry,
         runtime: RhaiRuntime,
-    ) -> AdvancedEngine<MockInput, RhaiRuntime> {
-        let mut engine =
-            AdvancedEngine::new(MockInput::new(), runtime, registry.timing_config().clone());
+    ) -> AdvancedEngine<RhaiRuntime> {
+        let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
 
         // Seed layer stack with registry-defined layers and mappings.
         let mut layers = registry.layers().clone();
@@ -223,7 +221,7 @@ impl SimulateCommand {
     /// Process events through the engine and collect results (including timeout ticks).
     fn process_events(
         &self,
-        engine: &mut AdvancedEngine<MockInput, RhaiRuntime>,
+        engine: &mut AdvancedEngine<RhaiRuntime>,
         events: &[InputEvent],
     ) -> (Vec<SimulationResult>, usize, usize, usize) {
         let mut results = Vec::new();
