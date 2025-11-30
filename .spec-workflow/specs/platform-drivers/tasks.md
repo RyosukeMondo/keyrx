@@ -207,7 +207,7 @@
 
 ## Task 12: Testing
 
-- [ ] 12.1 Add driver unit tests
+- [x] 12.1 Add driver unit tests
   - File: `core/src/drivers/linux.rs`, `core/src/drivers/windows.rs`
   - Test key code conversions (roundtrip)
   - Test DeviceInfo creation
