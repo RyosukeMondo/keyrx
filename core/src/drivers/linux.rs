@@ -10,6 +10,7 @@ use tracing::{debug, warn};
 const UINPUT_PATH: &str = "/dev/uinput";
 
 /// Linux input source using evdev for capture and uinput for injection.
+#[derive(Default)]
 pub struct LinuxInput {
     running: bool,
     /// Placeholder for evdev device handle (full integration is post-MVP).
@@ -72,15 +73,6 @@ impl LinuxInput {
                      3. Ensure the uinput module is loaded: lsmod | grep uinput"
                 );
             }
-        }
-    }
-}
-
-impl Default for LinuxInput {
-    fn default() -> Self {
-        Self {
-            running: false,
-            _evdev_device: None,
         }
     }
 }

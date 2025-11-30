@@ -214,7 +214,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Run cargo fmt in core/ directory to format all code. Then run cargo fmt --check to verify. Fix any issues that prevent formatting | Restrictions: None | Success: cargo fmt --check exits 0. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 10.2 Fix all clippy warnings
+- [-] 10.2 Fix all clippy warnings
   - Run: `cargo clippy -- -D warnings`
   - Fix: All warnings (derive suggestions, etc.)
   - Purpose: Clean lint baseline

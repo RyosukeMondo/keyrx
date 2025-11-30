@@ -114,13 +114,16 @@ impl StateStore for MockState {
         self.layers.get_mut(name)
     }
 
+    #[allow(clippy::expect_used)] // Key is guaranteed to exist after insert above
     fn create_layer(&mut self, name: &str) -> &mut Layer {
         if !self.layers.contains_key(name) {
             self.history
                 .push(StateChange::LayerCreated(name.to_string()));
             self.layers.insert(name.to_string(), Layer::new(name));
         }
-        self.layers.get_mut(name).unwrap()
+        self.layers
+            .get_mut(name)
+            .expect("layer was just inserted or already exists")
     }
 
     fn active_modifiers(&self) -> &ModifierSet {

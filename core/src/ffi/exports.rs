@@ -1,4 +1,8 @@
 //! C-ABI exports for FFI.
+//!
+//! This module provides C-compatible functions for FFI integration.
+//! Unsafe code is required for FFI interoperability.
+#![allow(unsafe_code)]
 
 use std::ffi::{c_char, CStr, CString};
 

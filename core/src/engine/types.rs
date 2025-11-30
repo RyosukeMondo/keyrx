@@ -422,20 +422,15 @@ impl FromStr for KeyCode {
 }
 
 /// Action to take when a key is pressed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum RemapAction {
     /// Remap this key to another key.
     Remap(KeyCode),
     /// Block this key (consume it, don't pass through).
     Block,
     /// Pass this key through unchanged.
+    #[default]
     Pass,
-}
-
-impl Default for RemapAction {
-    fn default() -> Self {
-        Self::Pass
-    }
 }
 
 /// Input event from keyboard.
