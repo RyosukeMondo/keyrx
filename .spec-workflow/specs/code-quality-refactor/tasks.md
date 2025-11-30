@@ -266,7 +266,7 @@
 
 ## Phase 8: Test Coverage Improvement (66.67% → 80%+)
 
-- [ ] 25. Add tests for cli/commands/run.rs (0% → 90%)
+- [x] 25. Add tests for cli/commands/run.rs (0% → 90%)
   - File: `core/src/cli/commands/run.rs` (currently 0% coverage, CRITICAL PATH)
   - Write unit tests for `RunCommand::new()`
   - Write integration test with `MockInput` + `MockState`

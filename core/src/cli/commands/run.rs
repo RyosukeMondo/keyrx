@@ -57,29 +57,7 @@ impl RunCommand {
 
         self.output.success("Starting KeyRx engine...");
 
-        // Create script runtime
-        let mut runtime = RhaiRuntime::new()?;
-
-        // Load script if provided
-        if let Some(path) = &self.script_path {
-            self.output
-                .success(&format!("Loading script: {}", path.display()));
-            let path_str = path
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
-            runtime.load_file(path_str)?;
-
-            // Run top-level statements (e.g., remap/block/pass calls)
-            debug!("Running script top-level statements");
-            runtime.run_script()?;
-
-            // Call on_init() hook if defined
-            if runtime.has_hook("on_init") {
-                debug!("Calling on_init() hook");
-                runtime.call_hook("on_init")?;
-                self.output.success("Script initialized (on_init called)");
-            }
-        }
+        let runtime = self.prepare_runtime()?;
 
         // Create state store
         let state = MockState::new();
@@ -90,6 +68,30 @@ impl RunCommand {
         } else {
             self.run_with_platform_driver(runtime, state).await
         }
+    }
+
+    fn prepare_runtime(&self) -> Result<RhaiRuntime> {
+        let mut runtime = RhaiRuntime::new()?;
+
+        if let Some(path) = &self.script_path {
+            self.output
+                .success(&format!("Loading script: {}", path.display()));
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
+            runtime.load_file(path_str)?;
+
+            debug!("Running script top-level statements");
+            runtime.run_script()?;
+
+            if runtime.has_hook("on_init") {
+                debug!("Calling on_init() hook");
+                runtime.call_hook("on_init")?;
+                self.output.success("Script initialized (on_init called)");
+            }
+        }
+
+        Ok(runtime)
     }
 
     async fn run_with_mock(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
@@ -253,5 +255,55 @@ impl RunCommand {
         self.output
             .warning("No platform driver available for this OS, falling back to mock input");
         self.run_with_mock(runtime, state).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::{KeyCode, RemapAction};
+    use std::fs;
+    use std::path::PathBuf;
+    use tempfile::TempDir;
+
+    #[test]
+    fn prepare_runtime_loads_script_and_on_init() {
+        let temp_dir = TempDir::new().unwrap();
+        let script_path = temp_dir.path().join("script.rhai");
+
+        fs::write(
+            &script_path,
+            r#"
+remap("A", "B");
+
+fn on_init() {
+    block("CapsLock");
+}
+"#,
+        )
+        .unwrap();
+
+        let cmd = RunCommand::new(Some(script_path), false, true, None, OutputFormat::Human);
+        let runtime = cmd.prepare_runtime().expect("runtime should load script");
+
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
+        );
+        assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Block);
+    }
+
+    #[test]
+    fn prepare_runtime_errors_on_invalid_path() {
+        let cmd = RunCommand::new(
+            Some(PathBuf::from("/not/a/real/script.rhai")),
+            false,
+            true,
+            None,
+            OutputFormat::Human,
+        );
+
+        let result = cmd.prepare_runtime();
+        assert!(result.is_err());
     }
 }
