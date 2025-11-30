@@ -157,7 +157,7 @@
 
 ## Task 9: CLI Devices Command
 
-- [ ] 9.1 Create devices command
+- [x] 9.1 Create devices command
   - File: `core/src/cli/commands/devices.rs`
   - List all keyboard devices
   - Show: name, vendor:product, path
