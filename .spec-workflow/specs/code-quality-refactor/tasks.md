@@ -255,7 +255,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor CLI and injector functions by extracting single-purpose helpers | Restrictions: Preserve exact behavior | Success: All functions <50 lines, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 24. Refactor scripting/runtime.rs new() function (72 lines → <50)
+- [x] 24. Refactor scripting/runtime.rs new() function (72 lines → <50)
   - File: `core/src/scripting/runtime.rs:40` (72 lines)
   - Extract closure registrations to `register_remap_functions()` helper (~30 lines)
   - Extract hook setup to `initialize_hooks()` helper (~20 lines)
