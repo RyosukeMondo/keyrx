@@ -94,7 +94,6 @@ impl MockState {
             name, self.history
         );
     }
-
 }
 
 impl Default for MockState {
@@ -119,8 +118,7 @@ impl StateStore for MockState {
         if !self.layers.contains_key(name) {
             self.history
                 .push(StateChange::LayerCreated(name.to_string()));
-            self.layers
-                .insert(name.to_string(), Layer::new(name));
+            self.layers.insert(name.to_string(), Layer::new(name));
         }
         self.layers.get_mut(name).unwrap()
     }
@@ -131,9 +129,7 @@ impl StateStore for MockState {
 
     fn set_active_modifiers(&mut self, mods: ModifierSet) {
         // Extract active modifier IDs for history tracking
-        let active_ids: Vec<u8> = (0..=255u8)
-            .filter(|&id| mods.contains(id))
-            .collect();
+        let active_ids: Vec<u8> = (0..=255u8).filter(|&id| mods.contains(id)).collect();
         self.history.push(StateChange::ModifiersSet(active_ids));
         self.modifiers = mods;
     }

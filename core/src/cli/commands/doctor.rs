@@ -119,10 +119,7 @@ impl DoctorCommand {
 
     #[cfg(target_os = "linux")]
     fn run_linux_checks(&self, checks: &mut Vec<DiagnosticCheck>) {
-        checks.push(DiagnosticCheck::pass(
-            "Platform",
-            "Linux (evdev/uinput)",
-        ));
+        checks.push(DiagnosticCheck::pass("Platform", "Linux (evdev/uinput)"));
 
         // Check /dev/uinput exists
         checks.push(self.check_uinput_exists());
@@ -155,10 +152,7 @@ impl DoctorCommand {
         use std::fs::File;
 
         match File::open("/dev/uinput") {
-            Ok(_) => DiagnosticCheck::pass(
-                "/dev/uinput accessible",
-                "Read access confirmed",
-            ),
+            Ok(_) => DiagnosticCheck::pass("/dev/uinput accessible", "Read access confirmed"),
             Err(e) => {
                 let kind = e.kind();
                 match kind {
@@ -267,12 +261,23 @@ impl DoctorCommand {
                     }
                 }
 
-                let pass_count = checks.iter().filter(|c| c.status == CheckStatus::Pass).count();
-                let fail_count = checks.iter().filter(|c| c.status == CheckStatus::Fail).count();
-                let warn_count = checks.iter().filter(|c| c.status == CheckStatus::Warn).count();
+                let pass_count = checks
+                    .iter()
+                    .filter(|c| c.status == CheckStatus::Pass)
+                    .count();
+                let fail_count = checks
+                    .iter()
+                    .filter(|c| c.status == CheckStatus::Fail)
+                    .count();
+                let warn_count = checks
+                    .iter()
+                    .filter(|c| c.status == CheckStatus::Warn)
+                    .count();
 
-                println!("\nSummary: {} passed, {} failed, {} warnings",
-                    pass_count, fail_count, warn_count);
+                println!(
+                    "\nSummary: {} passed, {} failed, {} warnings",
+                    pass_count, fail_count, warn_count
+                );
             }
             OutputFormat::Json => {
                 self.output.data(checks)?;

@@ -116,8 +116,7 @@ impl InputSource for LinuxInput {
         }
 
         // Verify uinput is accessible before starting
-        Self::check_uinput_accessible()
-            .context("Failed to start Linux input source")?;
+        Self::check_uinput_accessible().context("Failed to start Linux input source")?;
 
         self.running = true;
         debug!("LinuxInput started successfully");

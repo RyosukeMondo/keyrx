@@ -26,10 +26,8 @@ impl CheckCommand {
         let engine = rhai::Engine::new();
         match engine.compile(&script) {
             Ok(_ast) => {
-                self.output.success(&format!(
-                    "Script '{}' is valid",
-                    self.script_path.display()
-                ));
+                self.output
+                    .success(&format!("Script '{}' is valid", self.script_path.display()));
                 Ok(())
             }
             Err(e) => {

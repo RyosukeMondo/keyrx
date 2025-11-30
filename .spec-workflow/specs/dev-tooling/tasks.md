@@ -207,7 +207,7 @@
 
 ## Task 10: Verification and Cleanup
 
-- [ ] 10.1 Run cargo fmt on entire codebase
+- [x] 10.1 Run cargo fmt on entire codebase
   - Run: `cargo fmt` in core/
   - Verify: `cargo fmt --check` passes
   - Purpose: Establish clean formatting baseline

@@ -43,7 +43,10 @@ impl RemapRegistry {
     ///
     /// Returns the mapped action, or `RemapAction::Pass` for unmapped keys.
     pub fn lookup(&self, key: KeyCode) -> RemapAction {
-        self.mappings.get(&key).copied().unwrap_or(RemapAction::Pass)
+        self.mappings
+            .get(&key)
+            .copied()
+            .unwrap_or(RemapAction::Pass)
     }
 
     /// Clear all mappings.

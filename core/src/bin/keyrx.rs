@@ -2,7 +2,9 @@
 
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
-    commands::{BenchCommand, CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand},
+    commands::{
+        BenchCommand, CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand,
+    },
     OutputFormat,
 };
 use keyrx_core::KeyRxError;
@@ -118,7 +120,11 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
         Commands::Check { script } => {
             CheckCommand::new(script, format).run()?;
         }
-        Commands::Run { script, debug, mock } => {
+        Commands::Run {
+            script,
+            debug,
+            mock,
+        } => {
             RunCommand::new(script, debug, mock, format).run().await?;
         }
         Commands::State { layers, modifiers } => {

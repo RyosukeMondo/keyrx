@@ -63,7 +63,11 @@ fn parse_keys_with_whitespace() {
 /// Test parsing special keys.
 #[test]
 fn parse_special_keys() {
-    let cmd = SimulateCommand::new("Enter,Escape,CapsLock".to_string(), None, OutputFormat::Human);
+    let cmd = SimulateCommand::new(
+        "Enter,Escape,CapsLock".to_string(),
+        None,
+        OutputFormat::Human,
+    );
     let events = cmd.parse_input().unwrap();
 
     assert_eq!(events.len(), 6);
@@ -86,8 +90,11 @@ fn parse_function_keys() {
 /// Test parsing modifier keys.
 #[test]
 fn parse_modifier_keys() {
-    let cmd =
-        SimulateCommand::new("LeftCtrl,LeftAlt,LeftShift".to_string(), None, OutputFormat::Human);
+    let cmd = SimulateCommand::new(
+        "LeftCtrl,LeftAlt,LeftShift".to_string(),
+        None,
+        OutputFormat::Human,
+    );
     let events = cmd.parse_input().unwrap();
 
     assert_eq!(events.len(), 6);

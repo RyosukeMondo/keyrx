@@ -156,79 +156,79 @@ fn vk_to_keycode(vk: u16) -> KeyCode {
         0x7A => KeyCode::F11,
         0x7B => KeyCode::F12,
         // Modifier keys
-        0x10 => KeyCode::LeftShift,   // VK_SHIFT (use left by default)
-        0xA0 => KeyCode::LeftShift,   // VK_LSHIFT
-        0xA1 => KeyCode::RightShift,  // VK_RSHIFT
-        0x11 => KeyCode::LeftCtrl,    // VK_CONTROL (use left by default)
-        0xA2 => KeyCode::LeftCtrl,    // VK_LCONTROL
-        0xA3 => KeyCode::RightCtrl,   // VK_RCONTROL
-        0x12 => KeyCode::LeftAlt,     // VK_MENU (use left by default)
-        0xA4 => KeyCode::LeftAlt,     // VK_LMENU
-        0xA5 => KeyCode::RightAlt,    // VK_RMENU
-        0x5B => KeyCode::LeftMeta,    // VK_LWIN
-        0x5C => KeyCode::RightMeta,   // VK_RWIN
+        0x10 => KeyCode::LeftShift,  // VK_SHIFT (use left by default)
+        0xA0 => KeyCode::LeftShift,  // VK_LSHIFT
+        0xA1 => KeyCode::RightShift, // VK_RSHIFT
+        0x11 => KeyCode::LeftCtrl,   // VK_CONTROL (use left by default)
+        0xA2 => KeyCode::LeftCtrl,   // VK_LCONTROL
+        0xA3 => KeyCode::RightCtrl,  // VK_RCONTROL
+        0x12 => KeyCode::LeftAlt,    // VK_MENU (use left by default)
+        0xA4 => KeyCode::LeftAlt,    // VK_LMENU
+        0xA5 => KeyCode::RightAlt,   // VK_RMENU
+        0x5B => KeyCode::LeftMeta,   // VK_LWIN
+        0x5C => KeyCode::RightMeta,  // VK_RWIN
         // Navigation keys
-        0x26 => KeyCode::Up,          // VK_UP
-        0x28 => KeyCode::Down,        // VK_DOWN
-        0x25 => KeyCode::Left,        // VK_LEFT
-        0x27 => KeyCode::Right,       // VK_RIGHT
-        0x24 => KeyCode::Home,        // VK_HOME
-        0x23 => KeyCode::End,         // VK_END
-        0x21 => KeyCode::PageUp,      // VK_PRIOR
-        0x22 => KeyCode::PageDown,    // VK_NEXT
+        0x26 => KeyCode::Up,       // VK_UP
+        0x28 => KeyCode::Down,     // VK_DOWN
+        0x25 => KeyCode::Left,     // VK_LEFT
+        0x27 => KeyCode::Right,    // VK_RIGHT
+        0x24 => KeyCode::Home,     // VK_HOME
+        0x23 => KeyCode::End,      // VK_END
+        0x21 => KeyCode::PageUp,   // VK_PRIOR
+        0x22 => KeyCode::PageDown, // VK_NEXT
         // Editing keys
-        0x2D => KeyCode::Insert,      // VK_INSERT
-        0x2E => KeyCode::Delete,      // VK_DELETE
-        0x08 => KeyCode::Backspace,   // VK_BACK
+        0x2D => KeyCode::Insert,    // VK_INSERT
+        0x2E => KeyCode::Delete,    // VK_DELETE
+        0x08 => KeyCode::Backspace, // VK_BACK
         // Whitespace
-        0x20 => KeyCode::Space,       // VK_SPACE
-        0x09 => KeyCode::Tab,         // VK_TAB
-        0x0D => KeyCode::Enter,       // VK_RETURN
+        0x20 => KeyCode::Space, // VK_SPACE
+        0x09 => KeyCode::Tab,   // VK_TAB
+        0x0D => KeyCode::Enter, // VK_RETURN
         // Lock keys
-        0x14 => KeyCode::CapsLock,    // VK_CAPITAL
-        0x90 => KeyCode::NumLock,     // VK_NUMLOCK
-        0x91 => KeyCode::ScrollLock,  // VK_SCROLL
+        0x14 => KeyCode::CapsLock,   // VK_CAPITAL
+        0x90 => KeyCode::NumLock,    // VK_NUMLOCK
+        0x91 => KeyCode::ScrollLock, // VK_SCROLL
         // Escape area
         0x1B => KeyCode::Escape,      // VK_ESCAPE
         0x2C => KeyCode::PrintScreen, // VK_SNAPSHOT
         0x13 => KeyCode::Pause,       // VK_PAUSE
         // Punctuation and symbols
-        0xC0 => KeyCode::Grave,       // VK_OEM_3 (` ~)
-        0xBD => KeyCode::Minus,       // VK_OEM_MINUS (- _)
-        0xBB => KeyCode::Equal,       // VK_OEM_PLUS (= +)
-        0xDB => KeyCode::LeftBracket, // VK_OEM_4 ([ {)
-        0xDD => KeyCode::RightBracket,// VK_OEM_6 (] })
-        0xDC => KeyCode::Backslash,   // VK_OEM_5 (\ |)
-        0xBA => KeyCode::Semicolon,   // VK_OEM_1 (; :)
-        0xDE => KeyCode::Apostrophe,  // VK_OEM_7 (' ")
-        0xBC => KeyCode::Comma,       // VK_OEM_COMMA (, <)
-        0xBE => KeyCode::Period,      // VK_OEM_PERIOD (. >)
-        0xBF => KeyCode::Slash,       // VK_OEM_2 (/ ?)
+        0xC0 => KeyCode::Grave,        // VK_OEM_3 (` ~)
+        0xBD => KeyCode::Minus,        // VK_OEM_MINUS (- _)
+        0xBB => KeyCode::Equal,        // VK_OEM_PLUS (= +)
+        0xDB => KeyCode::LeftBracket,  // VK_OEM_4 ([ {)
+        0xDD => KeyCode::RightBracket, // VK_OEM_6 (] })
+        0xDC => KeyCode::Backslash,    // VK_OEM_5 (\ |)
+        0xBA => KeyCode::Semicolon,    // VK_OEM_1 (; :)
+        0xDE => KeyCode::Apostrophe,   // VK_OEM_7 (' ")
+        0xBC => KeyCode::Comma,        // VK_OEM_COMMA (, <)
+        0xBE => KeyCode::Period,       // VK_OEM_PERIOD (. >)
+        0xBF => KeyCode::Slash,        // VK_OEM_2 (/ ?)
         // Numpad keys
-        0x60 => KeyCode::Numpad0,     // VK_NUMPAD0
-        0x61 => KeyCode::Numpad1,     // VK_NUMPAD1
-        0x62 => KeyCode::Numpad2,     // VK_NUMPAD2
-        0x63 => KeyCode::Numpad3,     // VK_NUMPAD3
-        0x64 => KeyCode::Numpad4,     // VK_NUMPAD4
-        0x65 => KeyCode::Numpad5,     // VK_NUMPAD5
-        0x66 => KeyCode::Numpad6,     // VK_NUMPAD6
-        0x67 => KeyCode::Numpad7,     // VK_NUMPAD7
-        0x68 => KeyCode::Numpad8,     // VK_NUMPAD8
-        0x69 => KeyCode::Numpad9,     // VK_NUMPAD9
-        0x6B => KeyCode::NumpadAdd,   // VK_ADD
+        0x60 => KeyCode::Numpad0,        // VK_NUMPAD0
+        0x61 => KeyCode::Numpad1,        // VK_NUMPAD1
+        0x62 => KeyCode::Numpad2,        // VK_NUMPAD2
+        0x63 => KeyCode::Numpad3,        // VK_NUMPAD3
+        0x64 => KeyCode::Numpad4,        // VK_NUMPAD4
+        0x65 => KeyCode::Numpad5,        // VK_NUMPAD5
+        0x66 => KeyCode::Numpad6,        // VK_NUMPAD6
+        0x67 => KeyCode::Numpad7,        // VK_NUMPAD7
+        0x68 => KeyCode::Numpad8,        // VK_NUMPAD8
+        0x69 => KeyCode::Numpad9,        // VK_NUMPAD9
+        0x6B => KeyCode::NumpadAdd,      // VK_ADD
         0x6D => KeyCode::NumpadSubtract, // VK_SUBTRACT
         0x6A => KeyCode::NumpadMultiply, // VK_MULTIPLY
-        0x6F => KeyCode::NumpadDivide,// VK_DIVIDE
-        0x6E => KeyCode::NumpadDecimal, // VK_DECIMAL
+        0x6F => KeyCode::NumpadDivide,   // VK_DIVIDE
+        0x6E => KeyCode::NumpadDecimal,  // VK_DECIMAL
         // Note: NumpadEnter shares VK_RETURN (0x0D) but has extended flag
         // Media keys
-        0xAF => KeyCode::VolumeUp,    // VK_VOLUME_UP
-        0xAE => KeyCode::VolumeDown,  // VK_VOLUME_DOWN
-        0xAD => KeyCode::VolumeMute,  // VK_VOLUME_MUTE
+        0xAF => KeyCode::VolumeUp,       // VK_VOLUME_UP
+        0xAE => KeyCode::VolumeDown,     // VK_VOLUME_DOWN
+        0xAD => KeyCode::VolumeMute,     // VK_VOLUME_MUTE
         0xB3 => KeyCode::MediaPlayPause, // VK_MEDIA_PLAY_PAUSE
-        0xB2 => KeyCode::MediaStop,   // VK_MEDIA_STOP
-        0xB0 => KeyCode::MediaNext,   // VK_MEDIA_NEXT_TRACK
-        0xB1 => KeyCode::MediaPrev,   // VK_MEDIA_PREV_TRACK
+        0xB2 => KeyCode::MediaStop,      // VK_MEDIA_STOP
+        0xB0 => KeyCode::MediaNext,      // VK_MEDIA_NEXT_TRACK
+        0xB1 => KeyCode::MediaPrev,      // VK_MEDIA_PREV_TRACK
         // Unknown
         _ => KeyCode::Unknown(vk),
     }

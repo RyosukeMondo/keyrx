@@ -23,7 +23,12 @@ pub struct RunCommand {
 }
 
 impl RunCommand {
-    pub fn new(script_path: Option<PathBuf>, debug: bool, use_mock: bool, format: OutputFormat) -> Self {
+    pub fn new(
+        script_path: Option<PathBuf>,
+        debug: bool,
+        use_mock: bool,
+        format: OutputFormat,
+    ) -> Self {
         Self {
             script_path,
             debug,
@@ -49,7 +54,8 @@ impl RunCommand {
 
         // Load script if provided
         if let Some(path) = &self.script_path {
-            self.output.success(&format!("Loading script: {}", path.display()));
+            self.output
+                .success(&format!("Loading script: {}", path.display()));
             let path_str = path
                 .to_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
@@ -79,7 +85,8 @@ impl RunCommand {
     }
 
     async fn run_with_mock(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
-        self.output.success("Using mock input (no real keyboard interception)");
+        self.output
+            .success("Using mock input (no real keyboard interception)");
 
         let input = MockInput::new();
         let mut engine = Engine::new(input, runtime, state);
@@ -173,7 +180,8 @@ impl RunCommand {
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
-        self.output.warning("No platform driver available for this OS, falling back to mock input");
+        self.output
+            .warning("No platform driver available for this OS, falling back to mock input");
         self.run_with_mock(runtime, state).await
     }
 }

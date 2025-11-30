@@ -63,7 +63,11 @@ impl KeyRxError {
     }
 
     /// Create a ScriptCompileError with position information.
-    pub fn script_compile(message: impl Into<String>, line: Option<usize>, column: Option<usize>) -> Self {
+    pub fn script_compile(
+        message: impl Into<String>,
+        line: Option<usize>,
+        column: Option<usize>,
+    ) -> Self {
         Self::ScriptCompileError {
             message: message.into(),
             line,

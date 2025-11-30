@@ -62,8 +62,11 @@ impl RhaiRuntime {
                     None => {
                         tracing::warn!("Unknown key in remap(): '{}'", from);
                         return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", from)
-                                .into(),
+                            format!(
+                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
+                                from
+                            )
+                            .into(),
                             Position::NONE,
                         )));
                     }
@@ -73,8 +76,11 @@ impl RhaiRuntime {
                     None => {
                         tracing::warn!("Unknown key in remap(): '{}'", to);
                         return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", to)
-                                .into(),
+                            format!(
+                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
+                                to
+                            )
+                            .into(),
                             Position::NONE,
                         )));
                     }
@@ -101,8 +107,11 @@ impl RhaiRuntime {
                     None => {
                         tracing::warn!("Unknown key in block(): '{}'", key);
                         return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", key)
-                                .into(),
+                            format!(
+                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
+                                key
+                            )
+                            .into(),
                             Position::NONE,
                         )));
                     }
@@ -126,8 +135,11 @@ impl RhaiRuntime {
                     None => {
                         tracing::warn!("Unknown key in pass(): '{}'", key);
                         return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!("Unknown key '{}'. See docs/KEYS.md for valid key names.", key)
-                                .into(),
+                            format!(
+                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
+                                key
+                            )
+                            .into(),
                             Position::NONE,
                         )));
                     }
@@ -195,7 +207,10 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn call_hook(&mut self, hook: &str) -> Result<()> {
-        let ast = self.ast.as_ref().ok_or_else(|| anyhow!("No script loaded"))?;
+        let ast = self
+            .ast
+            .as_ref()
+            .ok_or_else(|| anyhow!("No script loaded"))?;
 
         self.engine
             .call_fn::<()>(&mut Scope::new(), ast, hook, ())

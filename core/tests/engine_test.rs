@@ -150,14 +150,19 @@ fn process_event_multiple_remaps() {
 
     // Configure multiple remaps
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
-    runtime.registry_mut().remap(KeyCode::CapsLock, KeyCode::Escape);
+    runtime
+        .registry_mut()
+        .remap(KeyCode::CapsLock, KeyCode::Escape);
     runtime.registry_mut().block(KeyCode::Insert);
 
     let engine = Engine::new(input, runtime, state);
 
     // Test A -> B
     let event_a = InputEvent::key_down(KeyCode::A, 0);
-    assert_eq!(engine.process_event(&event_a), OutputAction::KeyDown(KeyCode::B));
+    assert_eq!(
+        engine.process_event(&event_a),
+        OutputAction::KeyDown(KeyCode::B)
+    );
 
     // Test CapsLock -> Escape
     let event_caps = InputEvent::key_down(KeyCode::CapsLock, 0);
@@ -172,7 +177,10 @@ fn process_event_multiple_remaps() {
 
     // Test unmapped key passes
     let event_enter = InputEvent::key_down(KeyCode::Enter, 0);
-    assert_eq!(engine.process_event(&event_enter), OutputAction::PassThrough);
+    assert_eq!(
+        engine.process_event(&event_enter),
+        OutputAction::PassThrough
+    );
 }
 
 /// Test engine start and stop lifecycle.
@@ -249,7 +257,9 @@ fn process_event_remap_modifier_keys() {
     let state = MockState::new();
 
     // Remap left ctrl to left alt
-    runtime.registry_mut().remap(KeyCode::LeftCtrl, KeyCode::LeftAlt);
+    runtime
+        .registry_mut()
+        .remap(KeyCode::LeftCtrl, KeyCode::LeftAlt);
 
     let engine = Engine::new(input, runtime, state);
 
