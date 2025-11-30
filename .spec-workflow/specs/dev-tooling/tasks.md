@@ -2,7 +2,7 @@
 
 ## Task 1: Create Configuration Files
 
-- [ ] 1.1 Create rustfmt.toml
+- [x] 1.1 Create rustfmt.toml
   - File: `rustfmt.toml` (repository root)
   - Configure: max_width=100, edition=2021, imports_granularity=Crate
   - Enable: format_code_in_doc_comments, format_strings

@@ -1,0 +1,9 @@
+# Rust formatting configuration for KeyRx
+# See https://rust-lang.github.io/rustfmt/
+# Note: Only stable options are used to ensure compatibility with stable Rust
+
+# Line width
+max_width = 100
+
+# Edition
+edition = "2021"
