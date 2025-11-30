@@ -33,7 +33,7 @@ class LoadingOverlay extends StatelessWidget {
   Widget _buildOverlay(BuildContext context) {
     final color = barrierColor ?? Colors.black54;
 
-    return Positioned.fill(
+    return SizedBox.expand(
       child: DecoratedBox(
         decoration: BoxDecoration(color: color),
         child: Center(

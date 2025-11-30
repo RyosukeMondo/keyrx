@@ -38,7 +38,7 @@
   - _Requirements: 1,2,3_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter integrator | Task: Refactor training (and relevant) screens to use PermissionService/AudioService/ErrorTranslator and shared widgets; add telemetry hooks usage | Restrictions: No raw FFI imports in screens; keep stateful logic lean; handle dispose of streams | _Requirements: 1,2,3 | Success: Screens compile, use services, show standardized dialogs/overlays, telemetry fired on start/stop/permission/stream.
 
-- [ ] 6. Tests (unit + widget)
+- [x] 6. Tests (unit + widget)
   - File: ui/test/services/audio_service_test.dart; ui/test/widgets/shared_widgets_test.dart (or similar)
   - Add unit tests for services with mocks; widget tests for shared widgets and service-wired screen flows.
   - Purpose: Ensure testability and regression safety.
