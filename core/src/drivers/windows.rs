@@ -140,6 +140,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use tracing::{debug, error, trace, warn};
+use windows::core::Error as WinError;
 use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
@@ -147,10 +148,9 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageW, GetLastError, PeekMessageW, PostThreadMessageW,
-    SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT,
-    KBDLLHOOKSTRUCT_FLAGS, LLKHF_INJECTED, MSG, PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP,
-    WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    CallNextHookEx, DispatchMessageW, PeekMessageW, PostThreadMessageW, SetWindowsHookExW,
+    TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS,
+    LLKHF_INJECTED, MSG, PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
 };
 
 /// Thread-local storage for the event sender used by the hook callback.
@@ -412,10 +412,12 @@ impl SendInputInjector {
         let result = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
 
         if result == 0 {
-            // SendInput failed, get the error code
-            let error_code = unsafe { GetLastError() };
-            error!("SendInput failed with error code: {:?}", error_code);
-            Err(WindowsDriverError::send_input_failed(error_code.0))
+            // SendInput failed, get the error code from the last Win32 error
+            let win_error = WinError::from_win32();
+            error!("SendInput failed with error: {:?}", win_error);
+            Err(WindowsDriverError::send_input_failed(
+                win_error.code().0 as u32,
+            ))
         } else {
             debug!(
                 "Injected key {:?} {} (vk={:#x}, extended={})",
