@@ -17,7 +17,7 @@
   - _Requirements: REQ-1, REQ-7_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Macro Developer specializing in declarative macros | Task: Create define_keycodes! macro in core/src/drivers/keycodes.rs that generates KeyCode enum and all conversion functions from a single definition, extracting existing mappings from linux.rs lines 1148-1387, windows.rs lines 941-1204, and types.rs | Restrictions: Must compile to match statements (no HashMap), must preserve all existing keycodes and aliases, no runtime overhead | Success: cargo build succeeds, all existing keycode tests pass, evdev/vk roundtrips verified | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 2. Create KeyInjector trait
+- [x] 2. Create KeyInjector trait
   - File: `core/src/drivers/injector.rs` (new)
   - Define `KeyInjector` trait with `inject()` and `sync()` methods
   - Create `MockKeyInjector` implementation for testing
