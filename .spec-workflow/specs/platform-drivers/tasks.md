@@ -196,7 +196,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: For Linux: use signal-hook crate to register SIGINT/SIGTERM handlers that set running=false. For Windows: use SetConsoleCtrlHandler to catch CTRL_C_EVENT. Ensure keyboard grab is released even on forced termination. Add Drop impl that calls stop() | Restrictions: Handlers must be async-signal-safe | Success: Ctrl+C releases keyboard cleanly. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 11.2 Implement panic recovery
+- [x] 11.2 Implement panic recovery
   - File: `core/src/drivers/linux.rs`, `core/src/drivers/windows.rs`
   - Wrap thread code in catch_unwind
   - On panic: release keyboard, log error
