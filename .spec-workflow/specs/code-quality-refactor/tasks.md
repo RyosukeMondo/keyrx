@@ -174,7 +174,7 @@
   - _Requirements: REQ-2, REQ-3_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Code Quality Engineer | Task: Run tokei or cloc on all driver files, verify <500 lines/file and <50 lines/function, document in implementation log | Restrictions: Must meet all metrics | Success: All files and functions within limits, metrics documented | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 16. Delete old monolithic driver files
+- [x] 16. Delete old monolithic driver files
   - Delete `core/src/drivers/linux.rs` (replaced by linux/)
   - Delete `core/src/drivers/windows.rs` (replaced by windows/)
   - Final `cargo build` and `cargo test`
