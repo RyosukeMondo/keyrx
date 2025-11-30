@@ -287,7 +287,7 @@
   - _Requirements: REQ-9_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update MockInput to populate InputEvent metadata. Add start_time field, compute timestamp_us from elapsed. Set device_id=Some("mock".to_string()), is_synthetic=false, is_repeat=false, scan_code=0 | Restrictions: Keep existing MockInput API working | Success: Mock events have valid metadata. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 15.3 Add synthetic event filtering in Engine
+- [x] 15.3 Add synthetic event filtering in Engine
   - File: `core/src/engine/event_loop.rs`
   - Check is_synthetic flag before processing
   - Skip processing and log at debug level
