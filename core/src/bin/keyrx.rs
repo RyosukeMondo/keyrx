@@ -18,8 +18,12 @@ use std::process::ExitCode;
 #[command(version)]
 struct Cli {
     /// Output format (human or json)
-    #[arg(long, default_value = "human")]
+    #[arg(long, default_value = "human", conflicts_with = "json")]
     format: String,
+
+    /// Shortcut for JSON output (equivalent to --format json)
+    #[arg(long)]
+    json: bool,
 
     #[command(subcommand)]
     command: Commands,
@@ -64,6 +68,14 @@ enum Commands {
         /// Show modifier information
         #[arg(long)]
         modifiers: bool,
+
+        /// Show pending tap-hold and combo decisions
+        #[arg(long)]
+        pending: bool,
+
+        /// Path to the script file to hydrate engine state
+        #[arg(short, long)]
+        script: Option<PathBuf>,
     },
 
     /// Run self-diagnostics
@@ -122,7 +134,11 @@ enum Commands {
     },
 }
 
-fn parse_format(s: &str) -> OutputFormat {
+fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
+    if json_flag {
+        return OutputFormat::Json;
+    }
+
     match s.to_lowercase().as_str() {
         "json" => OutputFormat::Json,
         _ => OutputFormat::Human,
@@ -132,7 +148,7 @@ fn parse_format(s: &str) -> OutputFormat {
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = Cli::parse();
-    let format = parse_format(&cli.format);
+    let format = parse_format(&cli.format, cli.json);
 
     let result = run_command(cli.command, format).await;
 
@@ -164,8 +180,13 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 .run()
                 .await?;
         }
-        Commands::State { layers, modifiers } => {
-            StateCommand::new(layers, modifiers, format).run()?;
+        Commands::State {
+            layers,
+            modifiers,
+            pending,
+            script,
+        } => {
+            StateCommand::new(layers, modifiers, pending, script, format).run()?;
         }
         Commands::Doctor { verbose } => {
             DoctorCommand::new(verbose, format).run()?;

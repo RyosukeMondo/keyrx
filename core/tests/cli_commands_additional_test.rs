@@ -66,22 +66,35 @@ fn check_command_propagates_io_errors_for_missing_file() {
 
 #[test]
 fn state_command_new_sets_flags_and_format() {
-    let cmd = StateCommand::new(true, false, OutputFormat::Json);
+    let cmd = StateCommand::new(true, false, true, None, OutputFormat::Json);
     assert!(cmd.show_layers);
     assert!(!cmd.show_modifiers);
+    assert!(cmd.show_pending);
     assert!(matches!(cmd.output.format(), OutputFormat::Json));
 }
 
 #[test]
 fn state_command_runs_with_human_output() {
-    let cmd = StateCommand::new(true, true, OutputFormat::Human);
+    let cmd = StateCommand::new(true, true, false, None, OutputFormat::Human);
     cmd.run().expect("state command should succeed");
 }
 
 #[test]
 fn state_command_runs_with_json_output() {
-    let cmd = StateCommand::new(false, true, OutputFormat::Json);
+    let cmd = StateCommand::new(false, true, true, None, OutputFormat::Json);
     cmd.run().expect("state command should succeed");
+}
+
+#[test]
+fn state_command_collects_default_snapshot() {
+    let cmd = StateCommand::new(true, true, true, None, OutputFormat::Human);
+    let state = cmd
+        .collect_state()
+        .expect("state snapshot should be available");
+
+    // Base layer is always present and active; pending decisions are empty by default.
+    assert!(state.layers.is_active(0));
+    assert!(state.pending.is_empty());
 }
 
 fn sample_devices() -> Vec<DeviceInfo> {

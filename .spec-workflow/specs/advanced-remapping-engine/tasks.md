@@ -186,7 +186,7 @@
   - _Requirements: REQ-9_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update simulate command to support hold duration and combo simulation, show pending decisions | Restrictions: Maintain backward compatibility with existing simulate | Success: keyrx simulate --input "CapsLock:hold:300" works | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 17. Add state command for debugging
+- [x] 17. Add state command for debugging
   - File: `core/src/cli/commands/state.rs` (new or extend)
   - Add `--pending` flag to show pending decisions
   - Add `--layers` flag to show active layers
