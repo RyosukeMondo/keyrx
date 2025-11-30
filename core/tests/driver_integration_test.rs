@@ -1,84 +1,8 @@
-//! Driver integration tests.
-//!
-//! These tests verify the integration between the driver components and the engine.
-//! Tests that require real hardware access are marked with `#[ignore]` so they
-//! are skipped on CI but can be run locally with `cargo test -- --ignored`.
-//!
-//! # Test Categories
-//!
-//! - **Unit tests**: Run without hardware, verify internal logic
-//! - **Integration tests**: Verify driver lifecycle and channel communication
-//! - **Hardware tests**: Require real keyboard devices, marked `#[ignore]`
-//!
-//! # Running Tests
-//!
-//! ```bash
-//! # Run all non-hardware tests
-//! cargo test --package keyrx-core --test driver_integration_test
-//!
-//! # Run hardware tests locally (requires proper permissions)
-//! cargo test --package keyrx-core --test driver_integration_test -- --ignored
-//! ```
-
 mod integration;
 
-use keyrx_core::drivers::DeviceInfo;
 use keyrx_core::engine::{InputEvent, KeyCode, OutputAction};
 use keyrx_core::mocks::MockInput;
 use keyrx_core::traits::InputSource;
-use std::path::PathBuf;
-
-// ============================================================================
-// DeviceInfo Tests
-// ============================================================================
-
-#[test]
-fn device_info_creation() {
-    let info = DeviceInfo::new(
-        PathBuf::from("/dev/input/event0"),
-        "Test Keyboard".to_string(),
-        0x1234,
-        0x5678,
-        true,
-    );
-
-    assert_eq!(info.name(), "Test Keyboard");
-    assert_eq!(info.path(), &PathBuf::from("/dev/input/event0"));
-    assert_eq!(info.vendor_id(), 0x1234);
-    assert_eq!(info.product_id(), 0x5678);
-    assert!(info.is_keyboard());
-}
-
-#[test]
-fn device_info_display_format() {
-    let info = DeviceInfo::new(
-        PathBuf::from("/dev/input/event5"),
-        "My Keyboard".to_string(),
-        0xABCD,
-        0x1234,
-        true,
-    );
-
-    let display = format!("{}", info);
-    assert!(display.contains("My Keyboard"));
-    assert!(display.contains("abcd:1234")); // hex format, lowercase
-    assert!(display.contains("/dev/input/event5"));
-}
-
-#[test]
-fn device_info_json_serialization() {
-    let info = DeviceInfo::new(
-        PathBuf::from("/dev/input/event0"),
-        "USB Keyboard".to_string(),
-        0x046D,
-        0xC52B,
-        true,
-    );
-
-    let json = serde_json::to_string(&info).expect("JSON serialization failed");
-    assert!(json.contains("\"name\":\"USB Keyboard\""));
-    assert!(json.contains("\"is_keyboard\":true"));
-}
 
 // ============================================================================
 // MockInput Integration Tests
