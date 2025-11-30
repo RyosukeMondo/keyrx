@@ -61,6 +61,120 @@ KeyRx is an advanced input remapping engine that empowers users to fully control
 
 5. **CLI First, GUI Later**: Every feature must be exercisable via CLI before GUI implementation. This enables rapid trial, automated testing, and autonomous AI agent development.
 
+6. **Progressive Complexity**: Simple things should be simple, complex things should be possible. Never overwhelm beginners, never limit experts.
+
+7. **Testable Configs**: Users can write tests for their keyboard configurations. Refactor with confidence.
+
+## Foundational Pillars
+
+### Safe Mode / Emergency Exit
+
+**Problem**: Users fear keyboard remappers because a bad config can lock them out.
+
+**Solution**: A hardcoded, never-remapped emergency exit:
+
+```
+Ctrl + Alt + Shift + Escape = Instantly disable all remapping
+```
+
+**Guarantees**:
+- This combo is NEVER intercepted by KeyRx, regardless of config
+- Works even if the engine is stuck or crashed
+- Visual indicator (system tray turns red) confirms disabled state
+- Same combo re-enables KeyRx
+- On crash/panic, keyboard automatically returns to normal
+
+**Why foundational**: Trust is the foundation. Users must never fear losing control.
+
+### Progressive Complexity
+
+**Problem**: Power users need full scripting, but beginners just want "CapsLock → Escape".
+
+**Solution**: Three-tier complexity model:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TIER 1: SIMPLE MODE (Visual, no code)                       │
+│                                                             │
+│   [CapsLock] ──────────→ [Escape]                          │
+│   [+ Add Another Remap]                                     │
+├─────────────────────────────────────────────────────────────┤
+│ TIER 2: ADVANCED MODE (Declarative syntax)                  │
+│                                                             │
+│   tap_hold("CapsLock", tap: "Escape", hold: "Ctrl");       │
+│   layer("Navigation", "Space + HJKL → Arrows");            │
+├─────────────────────────────────────────────────────────────┤
+│ TIER 3: EXPERT MODE (Full Rhai scripting)                   │
+│                                                             │
+│   on_key("CapsLock", |ctx| {                               │
+│       if ctx.held_ms > 200 { ctx.activate_mod("Ctrl") }    │
+│       else { ctx.emit("Escape") }                          │
+│   });                                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implementation**:
+- Tier 1 generates Tier 2 code under the hood
+- Tier 2 is syntactic sugar for Tier 3
+- Users can "eject" to see generated code at any time
+- GUI supports all three tiers with appropriate UI
+
+**Why foundational**: Adoption depends on approachability. Retention depends on depth.
+
+### Script Testing Framework
+
+**Problem**: Users can't verify their configs work correctly. Refactoring is scary.
+
+**Solution**: Built-in testing primitives:
+
+```rhai
+// In config file or separate test file
+#[test]
+fn capslock_tap_produces_escape() {
+    simulate_tap("CapsLock");
+    assert_output("Escape");
+}
+
+#[test]
+fn capslock_hold_activates_ctrl() {
+    simulate_hold("CapsLock", 300);
+    assert_modifier_active("Ctrl");
+}
+
+#[test]
+fn vim_navigation_layer() {
+    simulate_hold("Space");
+    simulate_tap("H");
+    assert_output("Left");
+}
+```
+
+**CLI Integration**:
+```bash
+# Run all tests
+keyrx test --script config.rhai
+
+# Run specific test
+keyrx test --script config.rhai --filter "capslock*"
+
+# Watch mode (re-run on change)
+keyrx test --watch --script config.rhai
+
+# Output for AI parsing
+keyrx test --script config.rhai --json
+```
+
+**Exit Codes**:
+- 0: All tests passed
+- 1: Test execution error
+- 2: Test assertion failed (with diff)
+- 3: Test timeout
+
+**Why foundational**:
+- Users can refactor with confidence
+- AI agents can self-verify their changes
+- Community scripts can include tests for trust
+
 ## Monitoring & Visibility
 
 - **Dashboard Type**: Flutter desktop application with integrated debugger
