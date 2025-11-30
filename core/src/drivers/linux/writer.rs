@@ -175,3 +175,34 @@ impl KeyInjector for UinputWriter {
         self.sync_internal()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::KeyCode;
+
+    #[test]
+    fn build_key_set_registers_all_keys() {
+        let keys = UinputWriter::build_key_set();
+
+        assert!(keys.contains(evdev::Key::KEY_A));
+        assert!(keys.contains(evdev::Key::KEY_ENTER));
+        assert!(keys.contains(evdev::Key::KEY_SPACE));
+
+        let evdev_count = all_evdev_codes().len();
+        assert_eq!(keys.iter().count(), evdev_count);
+    }
+
+    #[test]
+    fn keycode_to_evdev_matches_known_values() {
+        assert_eq!(
+            keycode_to_evdev(KeyCode::Escape),
+            evdev::Key::KEY_ESC.code()
+        );
+        assert_eq!(keycode_to_evdev(KeyCode::A), evdev::Key::KEY_A.code());
+        assert_eq!(
+            keycode_to_evdev(KeyCode::CapsLock),
+            evdev::Key::KEY_CAPSLOCK.code()
+        );
+    }
+}

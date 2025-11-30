@@ -268,72 +268,19 @@ impl EvdevReader {
     ///
     /// Returns `false` if the reader should stop (channel closed), `true` otherwise.
     fn process_events(&self, events: &[evdev::InputEvent]) -> bool {
-        for event in events {
-            let input_event = self.convert_event(event);
-            self.log_event(&input_event);
-
-            if self.tx.send(input_event).is_err() {
-                debug!("Event channel closed, stopping reader");
-                return false;
-            }
-        }
-        true
+        process_events_internal(&self.tx, |event| self.convert_event(event), events)
     }
 
     /// Convert an evdev event to an InputEvent.
     fn convert_event(&self, event: &evdev::InputEvent) -> InputEvent {
-        let value = event.value();
-        let is_repeat = value == 2;
-        let pressed = value == 1 || is_repeat;
-        let key_code = evdev_to_keycode(event.code());
-        let timestamp_us = event
-            .timestamp()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_micros() as u64)
-            .unwrap_or(0);
-        let scan_code = event.code();
-
-        InputEvent {
-            key: key_code,
-            pressed,
-            timestamp_us,
-            device_id: Some(self.device_id.clone()),
-            is_repeat,
-            is_synthetic: false,
-            scan_code,
-        }
-    }
-
-    /// Log an input event at trace level.
-    fn log_event(&self, event: &InputEvent) {
-        trace!(
-            "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
-            event.key,
-            if event.pressed { "down" } else { "up" },
-            event.scan_code,
-            event.is_repeat,
-            event.timestamp_us,
-            self.device_id
-        );
+        build_input_event(&self.device_id, event)
     }
 
     /// Handle a read error from the evdev device.
     ///
     /// Returns `false` if the reader should stop, `true` to continue.
     fn handle_read_error(&self, e: &std::io::Error) -> bool {
-        if !self.running.load(Ordering::Relaxed) {
-            return false;
-        }
-
-        error!(
-            "Error reading events from {}: {}",
-            self.device_path.display(),
-            e
-        );
-
-        // Small sleep to avoid busy loop on persistent errors
-        thread::sleep(std::time::Duration::from_millis(10));
-        true
+        handle_read_error_internal(&self.running, &self.device_path, e)
     }
 
     /// Handle panic recovery - ungrab keyboard and set error flags.
@@ -386,5 +333,142 @@ impl EvdevReader {
             );
         }
         debug!("EvdevReader thread stopped for {}", device_path.display());
+    }
+}
+
+fn build_input_event(device_id: &str, event: &evdev::InputEvent) -> InputEvent {
+    let value = event.value();
+    let is_repeat = value == 2;
+    let pressed = value == 1 || is_repeat;
+    let key_code = evdev_to_keycode(event.code());
+    let timestamp_us = event
+        .timestamp()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_micros() as u64)
+        .unwrap_or(0);
+    let scan_code = event.code();
+
+    InputEvent {
+        key: key_code,
+        pressed,
+        timestamp_us,
+        device_id: Some(device_id.to_string()),
+        is_repeat,
+        is_synthetic: false,
+        scan_code,
+    }
+}
+
+fn process_events_internal<F>(
+    tx: &Sender<InputEvent>,
+    convert: F,
+    events: &[evdev::InputEvent],
+) -> bool
+where
+    F: Fn(&evdev::InputEvent) -> InputEvent,
+{
+    for event in events {
+        let input_event = convert(event);
+        trace!(
+            "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
+            input_event.key,
+            if input_event.pressed { "down" } else { "up" },
+            input_event.scan_code,
+            input_event.is_repeat,
+            input_event.timestamp_us,
+            input_event.device_id.as_deref().unwrap_or("unknown-device")
+        );
+
+        if tx.send(input_event).is_err() {
+            debug!("Event channel closed, stopping reader");
+            return false;
+        }
+    }
+    true
+}
+
+fn handle_read_error_internal(
+    running: &Arc<AtomicBool>,
+    device_path: &Path,
+    e: &std::io::Error,
+) -> bool {
+    if !running.load(Ordering::Relaxed) {
+        return false;
+    }
+
+    error!("Error reading events from {}: {}", device_path.display(), e);
+
+    // Small sleep to avoid busy loop on persistent errors
+    thread::sleep(std::time::Duration::from_millis(10));
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::KeyCode;
+    use crossbeam_channel::unbounded;
+    use std::sync::atomic::AtomicBool;
+
+    fn sample_event(code: u16, value: i32) -> evdev::InputEvent {
+        evdev::InputEvent::new(evdev::EventType::KEY, code, value)
+    }
+
+    #[test]
+    fn build_input_event_sets_flags_and_metadata() {
+        let key_down = build_input_event("dev0", &sample_event(30, 1));
+        assert_eq!(key_down.key, KeyCode::A);
+        assert!(key_down.pressed);
+        assert!(!key_down.is_repeat);
+        assert_eq!(key_down.device_id.as_deref(), Some("dev0"));
+
+        let key_repeat = build_input_event("dev0", &sample_event(30, 2));
+        assert!(key_repeat.pressed);
+        assert!(key_repeat.is_repeat);
+
+        let key_up = build_input_event("dev0", &sample_event(30, 0));
+        assert!(!key_up.pressed);
+        assert!(!key_up.is_repeat);
+    }
+
+    #[test]
+    fn process_events_internal_sends_all_events() {
+        let (tx, rx) = unbounded();
+        let events = vec![sample_event(1, 1), sample_event(1, 0)];
+
+        let keep_running =
+            process_events_internal(&tx, |event| build_input_event("dev1", event), &events);
+        assert!(keep_running);
+
+        let received: Vec<_> = rx.try_iter().collect();
+        assert_eq!(received.len(), 2);
+        assert_eq!(received[0].key, KeyCode::Escape);
+        assert!(received[0].pressed);
+        assert_eq!(received[1].key, KeyCode::Escape);
+        assert!(!received[1].pressed);
+    }
+
+    #[test]
+    fn process_events_internal_stops_on_disconnected_channel() {
+        let (tx, rx) = unbounded();
+        drop(rx);
+
+        let events = vec![sample_event(1, 1)];
+        let keep_running =
+            process_events_internal(&tx, |event| build_input_event("dev1", event), &events);
+        assert!(!keep_running);
+    }
+
+    #[test]
+    fn handle_read_error_internal_respects_running_flag() {
+        let running = Arc::new(AtomicBool::new(false));
+        let path = PathBuf::from("/dev/input/event-test");
+        let err = std::io::Error::new(std::io::ErrorKind::Other, "boom");
+
+        // When not running, returns false without sleeping
+        assert!(!handle_read_error_internal(&running, &path, &err));
+
+        running.store(true, Ordering::Relaxed);
+        assert!(handle_read_error_internal(&running, &path, &err));
     }
 }

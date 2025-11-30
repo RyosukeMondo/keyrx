@@ -288,7 +288,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write tests for CLI commands focusing on output formatting and error cases | Restrictions: No external dependencies | Success: Each file >80% coverage | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 27. Add tests for drivers/linux (reader, writer, mod) (0-40% → 80%)
+- [x] 27. Add tests for drivers/linux (reader, writer, mod) (0-40% → 80%)
   - File: `core/src/drivers/linux/reader.rs` (0% coverage)
   - File: `core/src/drivers/linux/writer.rs` (0% coverage)
   - File: `core/src/drivers/linux/mod.rs` (28.29% → 80%, CRITICAL)
