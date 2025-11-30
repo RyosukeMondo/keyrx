@@ -57,34 +57,7 @@ impl SendInputInjector {
     /// - The calling process lacks required privileges
     pub fn inject_key(&self, key: KeyCode, pressed: bool) -> Result<(), WindowsDriverError> {
         let vk_code = keycode_to_vk(key);
-
-        // Determine flags
-        let mut flags = KEYBD_EVENT_FLAGS::default();
-
-        // Add KEYEVENTF_KEYUP for key release
-        if !pressed {
-            flags |= KEYEVENTF_KEYUP;
-        }
-
-        // Add KEYEVENTF_EXTENDEDKEY for extended keys
-        if is_extended_key(key) {
-            flags |= KEYEVENTF_EXTENDEDKEY;
-        }
-
-        // Build the KEYBDINPUT structure
-        let kbd_input = KEYBDINPUT {
-            wVk: VIRTUAL_KEY(vk_code),
-            wScan: 0, // Let Windows determine scan code from virtual key
-            dwFlags: flags,
-            time: 0,        // System will fill in the time
-            dwExtraInfo: 0, // No extra info
-        };
-
-        // Build the INPUT structure with the keyboard input
-        let input = INPUT {
-            r#type: INPUT_KEYBOARD,
-            Anonymous: INPUT_0 { ki: kbd_input },
-        };
+        let input = build_keyboard_input(key, vk_code, pressed);
 
         // Call SendInput with a single input event
         // SAFETY: We pass a valid INPUT structure with correct size
@@ -138,6 +111,40 @@ impl KeyInjector for SendInputInjector {
 
 // SAFETY: SendInputInjector is stateless and safe to send between threads
 unsafe impl Send for SendInputInjector {}
+
+/// Build a Windows INPUT structure for keyboard input.
+///
+/// Constructs the INPUT structure with proper flags based on the key type
+/// (extended vs. regular) and the press/release state.
+fn build_keyboard_input(key: KeyCode, vk_code: u16, pressed: bool) -> INPUT {
+    // Determine flags
+    let mut flags = KEYBD_EVENT_FLAGS::default();
+
+    // Add KEYEVENTF_KEYUP for key release
+    if !pressed {
+        flags |= KEYEVENTF_KEYUP;
+    }
+
+    // Add KEYEVENTF_EXTENDEDKEY for extended keys
+    if is_extended_key(key) {
+        flags |= KEYEVENTF_EXTENDEDKEY;
+    }
+
+    // Build the KEYBDINPUT structure
+    let kbd_input = KEYBDINPUT {
+        wVk: VIRTUAL_KEY(vk_code),
+        wScan: 0, // Let Windows determine scan code from virtual key
+        dwFlags: flags,
+        time: 0,        // System will fill in the time
+        dwExtraInfo: 0, // No extra info
+    };
+
+    // Build the INPUT structure with the keyboard input
+    INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 { ki: kbd_input },
+    }
+}
 
 /// Check if a key is an extended key that requires KEYEVENTF_EXTENDEDKEY.
 ///

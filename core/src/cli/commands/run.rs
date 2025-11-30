@@ -126,28 +126,8 @@ impl RunCommand {
     async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
         self.output.success("Using Linux input driver");
 
-        // Show which device we're using
-        if let Some(ref device) = self.device_path {
-            self.output
-                .success(&format!("Using device: {}", device.display()));
-        } else {
-            self.output.success("Auto-detecting keyboard device...");
-        }
-
-        let input = match LinuxInput::new(self.device_path.clone()) {
-            Ok(input) => {
-                self.output.success(&format!(
-                    "Opened keyboard: {}",
-                    input.device_path().display()
-                ));
-                input
-            }
-            Err(e) => {
-                self.output
-                    .error(&format!("Failed to initialize driver: {e:#}"));
-                return Err(e);
-            }
-        };
+        // Show which device we're using and initialize input
+        let input = self.initialize_linux_input()?;
 
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;
@@ -155,6 +135,51 @@ impl RunCommand {
         self.output.success("Engine started. Press Ctrl+C to stop.");
         info!("Engine running with Linux input driver");
 
+        // Set up graceful shutdown with signal handlers
+        let running = self.setup_signal_handlers()?;
+
+        // Run event loop until interrupted
+        while running.load(Ordering::SeqCst) && engine.is_running() {
+            engine.run_loop().await?;
+            // Small delay to prevent busy-waiting when no events
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        }
+
+        self.output.success("Signal received, stopping...");
+        engine.stop().await?;
+        self.output.success("Engine stopped.");
+        Ok(())
+    }
+
+    /// Initialize the Linux input driver with the configured device path.
+    #[cfg(target_os = "linux")]
+    fn initialize_linux_input(&self) -> Result<LinuxInput> {
+        if let Some(ref device) = self.device_path {
+            self.output
+                .success(&format!("Using device: {}", device.display()));
+        } else {
+            self.output.success("Auto-detecting keyboard device...");
+        }
+
+        match LinuxInput::new(self.device_path.clone()) {
+            Ok(input) => {
+                self.output.success(&format!(
+                    "Opened keyboard: {}",
+                    input.device_path().display()
+                ));
+                Ok(input)
+            }
+            Err(e) => {
+                self.output
+                    .error(&format!("Failed to initialize driver: {e:#}"));
+                Err(e)
+            }
+        }
+    }
+
+    /// Set up signal handlers for graceful shutdown on SIGINT and SIGTERM.
+    #[cfg(target_os = "linux")]
+    fn setup_signal_handlers(&self) -> Result<Arc<AtomicBool>> {
         // Set up graceful shutdown using signal-hook for SIGINT and SIGTERM
         // This ensures clean keyboard release even when killed by systemd/init
         let running = Arc::new(AtomicBool::new(true));
@@ -168,17 +193,7 @@ impl RunCommand {
 
         debug!("Signal handlers registered for SIGINT and SIGTERM");
 
-        // Run event loop until interrupted
-        while running.load(Ordering::SeqCst) && engine.is_running() {
-            engine.run_loop().await?;
-            // Small delay to prevent busy-waiting when no events
-            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        }
-
-        self.output.success("Signal received, stopping...");
-        engine.stop().await?;
-        self.output.success("Engine stopped.");
-        Ok(())
+        Ok(running)
     }
 
     #[cfg(target_os = "windows")]

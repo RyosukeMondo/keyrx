@@ -23,7 +23,7 @@ KeyRx is an advanced input remapping engine that empowers users to fully control
 
 1. **Rhai Scripting Engine**: Full programmable logic instead of static configuration files. Define behaviors, conditions, and reactions in a sandboxed scripting language.
 
-2. **Blank Slate Data Model**: Start from nothing and define only what you need. No fighting against OS defaults or existing layouts.
+2. **True Blank Canvas**: The keyboard is treated as a pure grid of buttons with physical positions, not OS-defined key names. Through device discovery, each physical key is mapped by its position (row, column), eliminating assumptions about what a key "should" be. Modifiers are just buttons. Layouts don't exist until you create them.
 
 3. **255 Custom Modifiers**: Create unlimited virtual modifiers (Mod_Thumb, Mod_Gaming, Mod_Photoshop) that exist only in the engine.
 
@@ -85,6 +85,58 @@ Ctrl + Alt + Shift + Escape = Instantly disable all remapping
 - On crash/panic, keyboard automatically returns to normal
 
 **Why foundational**: Trust is the foundation. Users must never fear losing control.
+
+### True Blank Canvas (Hardware-Level Abstraction)
+
+**Problem**: Traditional remappers inherit OS assumptions about keys. "A" is always "A", "Shift" is always a modifier. This limits what's possible and ties configurations to specific keyboard layouts (ANSI, ISO, JIS).
+
+**Solution**: Treat the keyboard as a pure grid of physical buttons:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TRADITIONAL VIEW (OS-centric)                               │
+│                                                             │
+│  [Esc] [F1] [F2] ...  ← Keys have predefined "meaning"     │
+│  [Caps] [A ] [S ] ...  ← "Modifier" keys are special       │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ KEYRX VIEW (Hardware-centric)                               │
+│                                                             │
+│  [0,0] [0,1] [0,2] ...  ← Just buttons with positions      │
+│  [3,0] [3,1] [3,2] ...  ← No "special" keys exist          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Device Discovery Flow**:
+1. On first connection, detect keyboard by (vendor_id, product_id)
+2. If no profile exists, prompt user to discover physical layout
+3. User presses keys in order: top-left → right, then next row
+4. Each key is registered by physical position: `KEY_0_0`, `KEY_0_1`, etc.
+5. Profile is saved per-device for future sessions
+
+**Per-Keyboard Profiles**:
+```
+~/.config/keyrx/devices/
+├── 046d_c52b.json    # Logitech K270 - discovered layout
+├── 1234_5678.json    # Custom ortholinear
+└── default.json      # Fallback to OS key names
+```
+
+**Modifier Keys as Pure Buttons**:
+- At hardware level, Shift/Ctrl/Alt send key down/up like any other key
+- OS adds "modifier" behavior on top
+- KeyRx intercepts BEFORE OS modifier processing
+- Result: Shift is just `KEY_4_0`, a button like any other
+
+**Benefits**:
+- Works with ANY keyboard layout (ANSI, ISO, JIS, ortholinear, custom)
+- No assumptions about key meanings
+- Truly layout-agnostic configurations
+- Multiple keyboards can have different profiles
+- Share configs by position, not by key name
+
+**Why foundational**: This is what makes KeyRx a "blank canvas" rather than a "remap layer on top of OS".
 
 ### Progressive Complexity
 
