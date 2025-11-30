@@ -50,7 +50,10 @@ impl RunCommand {
         // Load script if provided
         if let Some(path) = &self.script_path {
             self.output.success(&format!("Loading script: {}", path.display()));
-            runtime.load_file(path.to_str().unwrap_or_default())?;
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
+            runtime.load_file(path_str)?;
 
             // Run top-level statements (e.g., remap/block/pass calls)
             debug!("Running script top-level statements");

@@ -117,7 +117,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/src/cli/commands/check.rs to remove std::process::exit(2). Replace with returning anyhow::Error or KeyRxError::ScriptCompileError. The run() method should return Result<()> and propagate errors | Restrictions: Exit codes should be handled in main.rs only | Success: CheckCommand::run() returns Err on invalid scripts, no process::exit calls. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 6.2 Fix path handling in run command
+- [x] 6.2 Fix path handling in run command
   - File: `core/src/cli/commands/run.rs`
   - Replace path.to_str().unwrap_or_default() with proper error
   - Return KeyRxError::InvalidPath for non-UTF8 paths
