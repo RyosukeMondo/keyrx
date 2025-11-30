@@ -1,5 +1,6 @@
 //! Linux input driver using evdev/uinput.
 
+use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::traits::InputSource;
 use anyhow::{bail, Context, Result};
@@ -257,6 +258,80 @@ fn evdev_to_keycode(code: u16) -> KeyCode {
         166 => KeyCode::MediaStop,
         _ => KeyCode::Unknown(code),
     }
+}
+
+/// List all keyboard devices available on the system.
+///
+/// Scans `/dev/input/event*` devices and returns information about those
+/// that have keyboard capability (EV_KEY with standard keyboard keys).
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The `/dev/input` directory cannot be read
+/// - Device enumeration fails due to permission issues
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
+    let mut keyboards = Vec::new();
+    let input_dir = Path::new("/dev/input");
+
+    if !input_dir.exists() {
+        bail!(
+            "/dev/input directory not found\n\n\
+             Remediation:\n  \
+             1. Ensure you are running on a Linux system with evdev support\n  \
+             2. Check if the input subsystem is loaded"
+        );
+    }
+
+    let entries = std::fs::read_dir(input_dir).context("Failed to read /dev/input directory")?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // Only look at event* devices
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if !file_name.starts_with("event") {
+            continue;
+        }
+
+        // Try to open and check if it's a keyboard
+        match evdev::Device::open(&path) {
+            Ok(device) => {
+                // Check if device has KEY capability with common keyboard keys
+                let has_keyboard_keys = device
+                    .supported_keys()
+                    .map(|keys| {
+                        // Check for common keyboard keys (A, Enter, Space)
+                        keys.contains(evdev::Key::KEY_A)
+                            && keys.contains(evdev::Key::KEY_ENTER)
+                            && keys.contains(evdev::Key::KEY_SPACE)
+                    })
+                    .unwrap_or(false);
+
+                if has_keyboard_keys {
+                    let name = device.name().unwrap_or("Unknown Device").to_string();
+                    let input_id = device.input_id();
+
+                    keyboards.push(DeviceInfo::new(
+                        path,
+                        name,
+                        input_id.vendor(),
+                        input_id.product(),
+                        true,
+                    ));
+                }
+            }
+            Err(e) => {
+                // Log but don't fail - device might be busy or lack permissions
+                debug!("Could not open {}: {}", path.display(), e);
+            }
+        }
+    }
+
+    // Sort by path for consistent ordering
+    keyboards.sort_by(|a, b| a.path.cmp(&b.path));
+
+    Ok(keyboards)
 }
 
 #[cfg(test)]

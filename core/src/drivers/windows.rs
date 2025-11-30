@@ -1,9 +1,11 @@
 //! Windows input driver using WH_KEYBOARD_LL.
 
+use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
+use std::path::PathBuf;
 use tracing::{debug, warn};
 
 /// Windows input source using low-level keyboard hook.
@@ -364,6 +366,28 @@ fn keycode_to_vk(key: KeyCode) -> u16 {
         // Unknown - return 0
         KeyCode::Unknown(vk) => vk,
     }
+}
+
+/// List all keyboard devices available on the system.
+///
+/// On Windows, this returns a single entry representing the system keyboard.
+/// Windows uses a global low-level keyboard hook (WH_KEYBOARD_LL) which
+/// intercepts all keyboard input regardless of which physical device generated it.
+///
+/// # Errors
+///
+/// This function currently always succeeds on Windows.
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
+    // Windows uses a global keyboard hook that captures all keyboard input.
+    // We return a single "virtual" device representing the system keyboard.
+    // Full HID device enumeration could be added later for device-specific handling.
+    Ok(vec![DeviceInfo::new(
+        PathBuf::from("\\\\?\\HID#System#Keyboard"),
+        "System Keyboard (Global Hook)".to_string(),
+        0, // Vendor ID not available via global hook
+        0, // Product ID not available via global hook
+        true,
+    )])
 }
 
 #[cfg(test)]
