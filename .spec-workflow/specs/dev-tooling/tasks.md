@@ -155,7 +155,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/src/mocks/mock_runtime.rs to add call tracking. Add MockRuntimeCall enum. Record all calls. Add with_remap(from: KeyCode, to: KeyCode) -> Self builder that configures lookup_remap to return Remap(to) for from. Add with_block(key: KeyCode) builder. Add call_history() method | Restrictions: Maintain ScriptRuntime trait compliance | Success: Tests can configure mock responses and verify calls. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 7.3 Add history tracking to MockState
+- [x] 7.3 Add history tracking to MockState
   - File: `core/src/mocks/mock_state.rs`
   - Track all state mutations with timestamps
   - Add state_history() -> &[StateChange] method
