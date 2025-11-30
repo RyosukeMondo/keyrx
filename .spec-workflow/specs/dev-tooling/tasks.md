@@ -136,7 +136,7 @@
 
 ## Task 7: Enhanced Mock Infrastructure
 
-- [ ] 7.1 Add call tracking to MockInput
+- [-] 7.1 Add call tracking to MockInput
   - File: `core/src/mocks/mock_input.rs`
   - Add CallTracker field with Vec<MockCall>
   - Record all method calls (start, stop, poll_events, send_output)
