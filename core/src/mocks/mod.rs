@@ -6,4 +6,4 @@ mod mock_state;
 
 pub use mock_input::{MockCall, MockInput};
 pub use mock_runtime::{MockRuntime, MockRuntimeCall};
-pub use mock_state::MockState;
+pub use mock_state::{MockState, StateChange};
