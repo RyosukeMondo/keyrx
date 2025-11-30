@@ -240,7 +240,7 @@
   - _Requirements: REQ-8 (non-functional)_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Engineer | Task: Run benchmarks on all new code paths, document results | Restrictions: Fail if any operation > 100 microseconds | Success: All benchmarks pass, documented in implementation log | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 22. Create example scripts demonstrating features
+- [x] 22. Create example scripts demonstrating features
   - File: `scripts/examples/tap_hold.rhai` (new)
   - File: `scripts/examples/combos.rhai` (new)
   - File: `scripts/examples/layers.rhai` (new)
