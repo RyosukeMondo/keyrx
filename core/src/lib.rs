@@ -8,6 +8,7 @@
 //! - FFI exports for Flutter integration
 
 pub mod cli;
+pub mod discovery;
 pub mod drivers;
 pub mod engine;
 pub mod error;
@@ -22,3 +23,7 @@ pub use error::KeyRxError;
 pub use mocks::{MockInput, MockRuntime, MockState};
 pub use scripting::RhaiRuntime;
 pub use traits::{InputSource, ScriptRuntime, StateStore};
+pub use discovery::{
+    device_profiles_dir, default_schema_version, DeviceId, DeviceProfile, PhysicalKey,
+    ProfileSource, SCHEMA_VERSION,
+};
