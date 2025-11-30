@@ -10,7 +10,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust DevOps Engineer | Task: Create rustfmt.toml at repository root with max_width=100, edition="2021", imports_granularity="Crate", format_code_in_doc_comments=true, format_strings=true, group_imports="StdExternalCrate" | Restrictions: Use only stable rustfmt options, no nightly-only features | Success: cargo fmt --check passes without changes needed. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 1.2 Create clippy.toml
+- [x] 1.2 Create clippy.toml
   - File: `clippy.toml` (repository root)
   - Configure: cognitive-complexity-threshold=25, too-many-arguments-threshold=7
   - Purpose: Consistent lint levels
