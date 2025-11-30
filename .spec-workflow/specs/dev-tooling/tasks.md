@@ -98,7 +98,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Rhai experience | Task: Update remap/block/pass function registrations in core/src/scripting/runtime.rs to return errors to the script. Use engine.register_result_fn instead of register_fn. Return Err(Box::new(EvalAltResult::ErrorRuntime(...))) for unknown keys. Keep tracing::warn for logging but ALSO return the error | Restrictions: Errors must be catchable in Rhai scripts with try/catch, maintain backwards compatibility for valid key names | Success: Invalid key names cause script errors that can be caught. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 5.3 Fix RhaiRuntime Default impl
+- [x] 5.3 Fix RhaiRuntime Default impl
   - File: `core/src/scripting/runtime.rs`
   - Remove expect() from Default impl
   - Either: remove Default impl, or return a "null" runtime that errors on use
