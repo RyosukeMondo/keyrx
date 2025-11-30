@@ -122,7 +122,7 @@
 
 ## Phase 4: Scripting & Types Cleanup
 
-- [ ] 11. Update RhaiRuntime to use parse_key_or_error()
+- [x] 11. Update RhaiRuntime to use parse_key_or_error()
   - File: `core/src/scripting/runtime.rs`
   - Replace inline key parsing in `remap()`, `block()`, `pass()` closures
   - Use `parse_key_or_error()` from helpers.rs
