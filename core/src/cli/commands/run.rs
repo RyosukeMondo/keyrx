@@ -5,11 +5,12 @@ use crate::engine::Engine;
 use crate::mocks::{MockInput, MockState};
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tracing::{debug, info};
+use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
 
 #[cfg(target_os = "linux")]
 use crate::drivers::LinuxInput;
@@ -48,11 +49,12 @@ impl RunCommand {
     pub async fn run(&self) -> Result<()> {
         // Initialize tracing if debug mode
         if self.debug {
-            tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
-                .with_target(false)
-                .init();
-            debug!("Debug mode enabled");
+            self.init_debug_logging()?;
+            debug!(
+                event = "debug_mode_enabled",
+                context = "cli_run",
+                format = "json"
+            );
         }
 
         self.output.success("Starting KeyRx engine...");
@@ -92,6 +94,28 @@ impl RunCommand {
         }
 
         Ok(runtime)
+    }
+
+    fn init_debug_logging(&self) -> Result<()> {
+        let env_filter =
+            EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("debug"))?;
+
+        let fmt_layer = fmt::layer()
+            .json()
+            .flatten_event(true)
+            .with_target(true)
+            .with_level(true)
+            .with_timer(fmt::time::SystemTime)
+            .with_current_span(true)
+            .with_span_list(true);
+
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(fmt_layer)
+            .try_init()
+            .map_err(|e| anyhow!("failed to initialize tracing subscriber: {e}"))?;
+
+        Ok(())
     }
 
     async fn run_with_mock(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {

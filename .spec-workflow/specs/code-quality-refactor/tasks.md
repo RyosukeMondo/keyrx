@@ -312,7 +312,7 @@
 
 ## Phase 9: Structured Logging Implementation
 
-- [ ] 29. Implement JSON structured logging with tracing-subscriber
+ - [x] 29. Implement JSON structured logging with tracing-subscriber
   - File: `core/Cargo.toml`
   - Add dependency: `tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }`
   - File: `core/src/cli/commands/run.rs`
