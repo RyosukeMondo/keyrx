@@ -1,12 +1,13 @@
 //! KeyRx CLI entry point.
 
-use anyhow::Result;
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{BenchCommand, CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand},
     OutputFormat,
 };
+use keyrx_core::KeyRxError;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 #[derive(Parser)]
 #[command(name = "keyrx")]
@@ -96,11 +97,24 @@ fn parse_format(s: &str) -> OutputFormat {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> ExitCode {
     let cli = Cli::parse();
     let format = parse_format(&cli.format);
 
-    match cli.command {
+    let result = run_command(cli.command, format).await;
+
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            let exit_code = determine_exit_code(&err);
+            eprintln!("Error: {err:#}");
+            exit_code
+        }
+    }
+}
+
+async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<()> {
+    match command {
         Commands::Check { script } => {
             CheckCommand::new(script, format).run()?;
         }
@@ -123,6 +137,31 @@ async fn main() -> Result<()> {
             SimulateCommand::new(input, script, format).run().await?;
         }
     }
-
     Ok(())
+}
+
+/// Determine the exit code based on the error type.
+///
+/// - Exit code 1: General runtime errors
+/// - Exit code 2: Validation/compilation errors (script syntax issues)
+fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
+    // Check if the root cause is a KeyRxError
+    if let Some(keyrx_err) = err.downcast_ref::<KeyRxError>() {
+        return match keyrx_err {
+            KeyRxError::ScriptCompileError { .. } => ExitCode::from(2),
+            _ => ExitCode::from(1),
+        };
+    }
+
+    // Walk the error chain for wrapped errors
+    for cause in err.chain() {
+        if let Some(keyrx_err) = cause.downcast_ref::<KeyRxError>() {
+            return match keyrx_err {
+                KeyRxError::ScriptCompileError { .. } => ExitCode::from(2),
+                _ => ExitCode::from(1),
+            };
+        }
+    }
+
+    ExitCode::from(1)
 }

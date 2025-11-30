@@ -125,7 +125,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/src/cli/commands/run.rs to fix path handling. Replace to_str().unwrap_or_default() with: path.to_str().ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))? | Restrictions: Provide clear error message including the problematic path | Success: Non-UTF8 paths produce clear error message. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 6.3 Update main.rs error handling
+- [-] 6.3 Update main.rs error handling
   - File: `core/src/bin/keyrx.rs`
   - Centralize exit code logic in main
   - Exit 1 for general errors, 2 for validation errors
