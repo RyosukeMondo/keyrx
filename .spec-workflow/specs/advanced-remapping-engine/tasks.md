@@ -82,7 +82,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create ComboRegistry in core/src/engine/decision/combos.rs with order-independent key set matching | Restrictions: Use SmallVec for keys to avoid allocation | Success: 2-key and 3-key combos work regardless of press order | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 8. Create decision module with re-exports
+- [x] 8. Create decision module with re-exports
   - File: `core/src/engine/decision/mod.rs` (new)
   - Re-export TimingConfig, DecisionQueue, ComboRegistry
   - Update `core/src/engine/mod.rs` to include decision module
