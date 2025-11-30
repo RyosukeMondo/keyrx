@@ -187,7 +187,7 @@
 
 ## Task 9: Update Trait Documentation
 
-- [ ] 9.1 Document InputSource trait
+- [x] 9.1 Document InputSource trait
   - File: `core/src/traits/input_source.rs`
   - Add module-level //! documentation
   - Document thread safety requirements (Send bound)
