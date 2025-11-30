@@ -6,12 +6,20 @@ import 'package:provider/provider.dart';
 import 'pages/editor.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
+import 'pages/training_screen.dart';
+import 'services/service_registry.dart';
 import 'state/app_state.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(),
+    MultiProvider(
+      providers: [
+        Provider<ServiceRegistry>(
+          create: (_) => ServiceRegistry.real(),
+          dispose: (_, registry) => registry.dispose(),
+        ),
+        ChangeNotifierProvider(create: (_) => AppState()),
+      ],
       child: const KeyrxApp(),
     ),
   );
@@ -49,12 +57,18 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
+    TrainingScreen(),
     EditorPage(),
     DebuggerPage(),
     ConsolePage(),
   ];
 
   final List<NavigationDestination> _destinations = const [
+    NavigationDestination(
+      icon: Icon(Icons.graphic_eq_outlined),
+      selectedIcon: Icon(Icons.graphic_eq),
+      label: 'Training',
+    ),
     NavigationDestination(
       icon: Icon(Icons.keyboard),
       selectedIcon: Icon(Icons.keyboard),
@@ -113,17 +127,17 @@ class _HomePageState extends State<HomePage> {
               child: Icon(Icons.keyboard_alt, size: 32),
             ),
             destinations: _destinations
-                .map((d) => NavigationRailDestination(
-                      icon: d.icon,
-                      selectedIcon: d.selectedIcon,
-                      label: Text(d.label),
-                    ))
+                .map(
+                  (d) => NavigationRailDestination(
+                    icon: d.icon,
+                    selectedIcon: d.selectedIcon,
+                    label: Text(d.label),
+                  ),
+                )
                 .toList(),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: _pages[_selectedIndex],
-          ),
+          Expanded(child: _pages[_selectedIndex]),
         ],
       ),
       bottomNavigationBar: _buildStatusBar(),

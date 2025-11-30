@@ -30,7 +30,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Build reusable error dialog, loading overlay, and surface style helper per requirement 2 | Restrictions: Stateless where possible; theming consistent; no business logic | _Requirements: 2 | Success: Widgets reusable across screens; compile without screen dependencies.
 
-- [ ] 5. Wire services into screens
+- [x] 5. Wire services into screens
   - File: ui/lib/pages/training_screen.dart (and related screens if present)
   - Replace direct FFI calls with service layer; use shared widgets for errors/loading.
   - Purpose: Enforce new architecture and UX consistency.
