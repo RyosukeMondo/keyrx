@@ -30,7 +30,7 @@
   - _Requirements: REQ-8_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create core/src/drivers/common.rs with DeviceInfo struct: path: PathBuf, name: String, vendor_id: u16, product_id: u16, is_keyboard: bool. Derive Debug, Clone, Serialize. Add Display impl showing "name (vendor:product) at path" | Restrictions: Keep platform-agnostic | Success: DeviceInfo can be serialized to JSON. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 2.2 Update drivers/mod.rs
+- [x] 2.2 Update drivers/mod.rs
   - File: `core/src/drivers/mod.rs`
   - Add `mod common;`
   - Conditionally export LinuxInput or WindowsInput based on platform
