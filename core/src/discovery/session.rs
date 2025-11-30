@@ -12,6 +12,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExpectedPosition {
@@ -63,6 +64,30 @@ pub enum SessionUpdate {
     Progress(DiscoveryProgress),
     Duplicate(DuplicateWarning),
     Finished(DiscoverySummary),
+}
+
+type SessionUpdateSink = dyn Fn(&SessionUpdate) + Send + Sync + 'static;
+
+fn update_sink_slot() -> &'static Mutex<Option<Arc<SessionUpdateSink>>> {
+    static SINK: OnceLock<Mutex<Option<Arc<SessionUpdateSink>>>> = OnceLock::new();
+    SINK.get_or_init(|| Mutex::new(None))
+}
+
+pub(crate) fn set_session_update_sink(sink: Option<Arc<SessionUpdateSink>>) {
+    if let Ok(mut guard) = update_sink_slot().lock() {
+        *guard = sink;
+    }
+}
+
+pub(crate) fn publish_session_update(update: &SessionUpdate) {
+    let sink = update_sink_slot()
+        .lock()
+        .ok()
+        .and_then(|guard| (*guard).clone());
+
+    if let Some(callback) = sink {
+        callback(update);
+    }
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -163,12 +188,16 @@ impl DiscoverySession {
 
     pub fn handle_event(&mut self, event: &InputEvent) -> SessionUpdate {
         if self.status != SessionStatus::InProgress {
-            return SessionUpdate::Finished(self.summary());
+            let update = SessionUpdate::Finished(self.summary());
+            publish_session_update(&update);
+            return update;
         }
 
         if let Some(target) = &self.target_device_id {
             if event.device_id.as_ref() != Some(target) {
-                return SessionUpdate::Ignored;
+                let update = SessionUpdate::Ignored;
+                publish_session_update(&update);
+                return update;
             }
         }
 
@@ -176,17 +205,23 @@ impl DiscoverySession {
             if detector(event) {
                 self.status = SessionStatus::Bypassed;
                 self.message = Some("emergency-exit triggered".to_string());
-                return SessionUpdate::Finished(self.summary());
+                let update = SessionUpdate::Finished(self.summary());
+                publish_session_update(&update);
+                return update;
             }
         }
 
         if !event.pressed {
-            return SessionUpdate::Ignored;
+            let update = SessionUpdate::Ignored;
+            publish_session_update(&update);
+            return update;
         }
 
         if self.cursor >= self.expected_positions.len() {
             self.status = SessionStatus::Completed;
-            return SessionUpdate::Finished(self.summary());
+            let update = SessionUpdate::Finished(self.summary());
+            publish_session_update(&update);
+            return update;
         }
 
         let position = self.expected_positions[self.cursor];
@@ -201,7 +236,9 @@ impl DiscoverySession {
                 attempted: position,
             };
             self.duplicates.push(duplicate.clone());
-            return SessionUpdate::Duplicate(duplicate);
+            let update = SessionUpdate::Duplicate(duplicate);
+            publish_session_update(&update);
+            return update;
         }
 
         let alias = format!("r{}_c{}", position.row, position.col);
@@ -212,12 +249,15 @@ impl DiscoverySession {
         self.aliases.insert(alias, event.scan_code);
         self.cursor += 1;
 
-        if self.cursor == self.expected_positions.len() {
+        let update = if self.cursor == self.expected_positions.len() {
             self.status = SessionStatus::Completed;
             SessionUpdate::Finished(self.summary())
         } else {
             SessionUpdate::Progress(self.progress())
-        }
+        };
+
+        publish_session_update(&update);
+        update
     }
 
     pub fn cancel(&mut self, reason: impl Into<String>) -> DiscoverySummary {
@@ -271,6 +311,8 @@ impl DiscoverySession {
 mod tests {
     use super::*;
     use crate::engine::KeyCode;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     fn event_for(
         scan_code: u16,
@@ -412,5 +454,32 @@ mod tests {
         } else {
             panic!("expected bypass summary");
         }
+    }
+
+    #[test]
+    fn publishes_updates_through_sink() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let completed = Arc::new(Mutex::new(Vec::new()));
+        let counter_clone = counter.clone();
+        let completed_clone = completed.clone();
+
+        set_session_update_sink(Some(Arc::new(move |update| {
+            counter_clone.fetch_add(1, Ordering::Relaxed);
+            if let SessionUpdate::Finished(summary) = update {
+                completed_clone.lock().unwrap().push(summary.status.clone());
+            }
+        })));
+
+        let mut session = DiscoverySession::new(DeviceId::new(0xAA, 0xBB), 1, vec![2]).unwrap();
+        session.handle_event(&event_for(42, None, true, 1));
+        session.handle_event(&event_for(43, None, true, 2));
+
+        assert!(counter.load(Ordering::Relaxed) >= 2);
+        let statuses = completed.lock().unwrap();
+        assert!(statuses
+            .iter()
+            .any(|status| status == &SessionStatus::Completed));
+
+        set_session_update_sink(None);
     }
 }

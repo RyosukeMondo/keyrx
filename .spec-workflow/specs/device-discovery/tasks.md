@@ -40,7 +40,7 @@
   - _Requirements: 1,2,3,4,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI-focused Rust developer | Task: Create `keyrx discover` command to prompt unknown devices, drive discovery session, show progress, and save profiles with confirmation | Restrictions: Keep non-blocking behavior for other devices, support --device/--force/--json/--yes flags, preserve exit codes 0/2/3 | _Leverage: CLI scaffolding, discovery session, registry/storage | _Requirements: 1,2,3,4,5 | Success: CLI command covered by integration tests (happy path, skip, cancel, corrupt profile), outputs JSON when requested, leaves default active on failure; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 6. Emit discovery progress to FFI for GUI hook
+- [x] 6. Emit discovery progress to FFI for GUI hook
   - File: core/src/ffi/exports.rs; core/src/discovery/session.rs (event publisher)
   - Add optional FFI callbacks/events for discovery progress, duplicate warnings, summary, and completion, reusing session outputs.
   - Purpose: Enable Flutter UI to visualize discovery without duplicating logic.
