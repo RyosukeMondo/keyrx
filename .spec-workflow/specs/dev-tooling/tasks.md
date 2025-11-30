@@ -108,7 +108,7 @@
 
 ## Task 6: Refactor CLI Error Handling
 
-- [ ] 6.1 Remove process::exit from check command
+- [x] 6.1 Remove process::exit from check command
   - File: `core/src/cli/commands/check.rs`
   - Replace std::process::exit(2) with return Err(...)
   - Use anyhow::bail! or return KeyRxError
