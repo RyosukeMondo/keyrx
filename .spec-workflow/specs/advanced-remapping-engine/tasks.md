@@ -137,7 +137,7 @@
   - _Requirements: REQ-6, REQ-9_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add combo() Rhai function that accepts array of keys and action | Restrictions: Validate key array has 2-4 keys | Success: Scripts can define combos, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 13. Add layer control Rhai functions
+- [x] 13. Add layer control Rhai functions
   - File: `core/src/scripting/runtime.rs` (extend)
   - Register `layer_define(name, transparent)` function
   - Register `layer_map(layer_name, key, action)` function

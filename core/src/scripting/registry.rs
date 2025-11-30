@@ -1,6 +1,8 @@
 //! Registry for storing key remappings defined by scripts.
 
-use crate::engine::{ComboRegistry, HoldAction, KeyCode, LayerAction, RemapAction};
+use crate::engine::{
+    ComboRegistry, HoldAction, KeyCode, LayerAction, LayerId, LayerStack, RemapAction,
+};
 use std::collections::HashMap;
 
 /// Central storage for script-defined key behaviors.
@@ -12,6 +14,7 @@ pub struct RemapRegistry {
     mappings: HashMap<KeyCode, RemapAction>,
     tap_holds: HashMap<KeyCode, TapHoldBinding>,
     combos: ComboRegistry,
+    layers: LayerStack,
 }
 
 /// A tap-hold binding configured via script.
@@ -28,6 +31,7 @@ impl RemapRegistry {
             mappings: HashMap::new(),
             tap_holds: HashMap::new(),
             combos: ComboRegistry::new(),
+            layers: LayerStack::new(),
         }
     }
 
@@ -87,11 +91,80 @@ impl RemapRegistry {
         self.tap_holds.iter()
     }
 
+    /// Define or update a layer by name, returning its ID.
+    pub fn define_layer(&mut self, name: &str, transparent: bool) -> Result<LayerId, String> {
+        let normalized = Self::normalize_layer_name(name)?;
+        Ok(self.layers.define_or_update_named(&normalized, transparent))
+    }
+
+    /// Map a key to an action within a named layer.
+    pub fn map_layer(
+        &mut self,
+        layer_name: &str,
+        key: KeyCode,
+        action: LayerAction,
+    ) -> Result<(), String> {
+        let normalized = Self::normalize_layer_name(layer_name)?;
+        let layer_id = self
+            .layers
+            .layer_id_by_name(&normalized)
+            .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
+
+        if !self.layers.set_mapping_for_layer(layer_id, key, action) {
+            return Err(format!("failed to set mapping for layer '{}'", normalized));
+        }
+
+        Ok(())
+    }
+
+    /// Push a named layer onto the active stack.
+    pub fn push_layer(&mut self, name: &str) -> Result<bool, String> {
+        let normalized = Self::normalize_layer_name(name)?;
+        let layer_id = self
+            .layers
+            .layer_id_by_name(&normalized)
+            .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
+        Ok(self.layers.push(layer_id))
+    }
+
+    /// Toggle a named layer on/off.
+    pub fn toggle_layer(&mut self, name: &str) -> Result<bool, String> {
+        let normalized = Self::normalize_layer_name(name)?;
+        let layer_id = self
+            .layers
+            .layer_id_by_name(&normalized)
+            .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
+        Ok(self.layers.toggle(layer_id))
+    }
+
+    /// Pop the top-most non-base layer.
+    pub fn pop_layer(&mut self) -> Option<LayerId> {
+        self.layers.pop()
+    }
+
+    /// Check if a layer is active by name.
+    pub fn is_layer_active(&self, name: &str) -> Result<bool, String> {
+        let normalized = Self::normalize_layer_name(name)?;
+        Ok(self.layers.is_active_by_name(&normalized))
+    }
+
+    /// Get the layer stack.
+    pub fn layers(&self) -> &LayerStack {
+        &self.layers
+    }
+
+    /// Look up a layer ID by name.
+    pub fn layer_id(&self, name: &str) -> Option<LayerId> {
+        let normalized = Self::normalize_layer_name(name).ok()?;
+        self.layers.layer_id_by_name(&normalized)
+    }
+
     /// Clear all mappings.
     pub fn clear(&mut self) {
         self.mappings.clear();
         self.tap_holds.clear();
         self.combos = ComboRegistry::new();
+        self.layers = LayerStack::new();
     }
 
     /// Get the number of active mappings.
@@ -101,7 +174,21 @@ impl RemapRegistry {
 
     /// Check if the registry is empty.
     pub fn is_empty(&self) -> bool {
-        self.mappings.is_empty() && self.tap_holds.is_empty() && self.combos.is_empty()
+        self.mappings.is_empty()
+            && self.tap_holds.is_empty()
+            && self.combos.is_empty()
+            && self.layers.is_empty()
+    }
+
+    fn normalize_layer_name(name: &str) -> Result<String, String> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("layer name cannot be empty".into());
+        }
+        if trimmed.contains(':') {
+            return Err("layer name cannot contain ':'".into());
+        }
+        Ok(trimmed.to_string())
     }
 }
 
@@ -245,5 +332,33 @@ mod tests {
             LayerAction::Block
         ));
         assert!(registry.combos().is_empty());
+    }
+
+    #[test]
+    fn layer_define_and_mapping_are_stored() {
+        let mut registry = RemapRegistry::new();
+        registry.define_layer("nav", true).unwrap();
+        registry
+            .map_layer("nav", KeyCode::A, LayerAction::Remap(KeyCode::Escape))
+            .unwrap();
+        assert!(registry.push_layer("nav").unwrap());
+
+        let action = registry.layers().lookup(KeyCode::A);
+        assert_eq!(action, Some(&LayerAction::Remap(KeyCode::Escape)));
+        assert!(registry.is_layer_active("NAV").unwrap());
+    }
+
+    #[test]
+    fn layer_operations_require_defined_layer() {
+        let mut registry = RemapRegistry::new();
+        assert!(registry.push_layer("nav").is_err());
+        assert!(registry.toggle_layer("nav").is_err());
+        assert!(registry
+            .map_layer("nav", KeyCode::A, LayerAction::Block)
+            .is_err());
+
+        registry.define_layer("nav", false).unwrap();
+        assert!(registry.push_layer("nav").unwrap());
+        assert!(registry.toggle_layer("nav").unwrap());
     }
 }

@@ -214,6 +214,75 @@ impl LayerStack {
         self.stack.contains(&layer_id)
     }
 
+    /// Number of defined layers (including base).
+    pub fn len(&self) -> usize {
+        self.layers.len()
+    }
+
+    /// True when only the base layer is present.
+    pub fn is_empty(&self) -> bool {
+        self.layers.len() <= 1
+    }
+
+    /// Find a layer ID by name (case-insensitive).
+    pub fn layer_id_by_name(&self, name: &str) -> Option<LayerId> {
+        let needle = name.to_ascii_lowercase();
+        self.layers
+            .iter()
+            .find_map(|(&id, layer)| (layer.name.to_ascii_lowercase() == needle).then_some(id))
+    }
+
+    /// Define or update a layer by name, returning its stable ID.
+    ///
+    /// If the layer already exists, the name/transparency are updated while
+    /// preserving mappings and activation state.
+    pub fn define_or_update_named(&mut self, name: &str, transparent: bool) -> LayerId {
+        if let Some(id) = self.layer_id_by_name(name) {
+            if let Some(layer) = self.layers.get_mut(&id) {
+                layer.name = name.to_string();
+                layer.transparent = transparent;
+            }
+            return id;
+        }
+
+        let id = self.next_layer_id();
+        let mut layer = Layer::with_id(id, name.to_string());
+        layer.transparent = transparent;
+        self.define_layer(layer);
+        id
+    }
+
+    /// Set a mapping on a specific layer by ID.
+    pub fn set_mapping_for_layer(
+        &mut self,
+        layer_id: LayerId,
+        key: KeyCode,
+        action: LayerAction,
+    ) -> bool {
+        if let Some(layer) = self.layers.get_mut(&layer_id) {
+            layer.set_mapping(key, action);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check if a layer is active by name (case-insensitive).
+    pub fn is_active_by_name(&self, name: &str) -> bool {
+        self.layer_id_by_name(name)
+            .map(|id| self.is_active(id))
+            .unwrap_or(false)
+    }
+
+    fn next_layer_id(&self) -> LayerId {
+        self.layers
+            .keys()
+            .copied()
+            .max()
+            .map(|max| max.saturating_add(1))
+            .unwrap_or(0)
+    }
+
     /// Look up action for a key, checking layers top to bottom.
     pub fn lookup(&self, key: KeyCode) -> Option<&LayerAction> {
         for id in self.stack.iter().rev() {
