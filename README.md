@@ -97,6 +97,7 @@ keyrx run --script my-config.rhai
 | `check`    | Validate and lint a Rhai script                |
 | `run`      | Run the engine with optional script            |
 | `simulate` | Simulate key events without real keyboard      |
+| `devices`  | List available keyboard devices                |
 | `doctor`   | Run self-diagnostics                           |
 | `bench`    | Run latency benchmark                          |
 | `state`    | Inspect current engine state                   |
@@ -116,10 +117,105 @@ Use `--format json` for machine-readable output.
 
 See `scripts/std/example.rhai` for a complete key reference.
 
-## Platform Support
+## Platform Setup
 
-- **Linux**: Uses evdev/uinput (requires `input` group membership)
-- **Windows**: Uses low-level keyboard hooks
+### Linux
+
+KeyRx uses **evdev** for reading keyboard events and **uinput** for injecting remapped keys.
+
+#### 1. Add your user to the `input` group
+
+```bash
+sudo usermod -aG input $USER
+```
+
+**Important**: Log out and back in for group changes to take effect.
+
+#### 2. Load the uinput kernel module
+
+```bash
+sudo modprobe uinput
+```
+
+To make this persistent across reboots:
+
+```bash
+echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf
+```
+
+#### 3. Set up udev rules (recommended)
+
+Create `/etc/udev/rules.d/99-keyrx.rules`:
+
+```
+# Allow input group to access input devices
+KERNEL=="event*", SUBSYSTEM=="input", MODE="0660", GROUP="input"
+
+# Allow input group to create uinput devices
+KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input"
+```
+
+Reload udev rules:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+#### 4. List available keyboards
+
+```bash
+keyrx devices
+```
+
+#### 5. Run with a specific device (optional)
+
+```bash
+keyrx run --script my-config.rhai --device /dev/input/event3
+```
+
+### Windows
+
+KeyRx uses **low-level keyboard hooks** for capturing events and **SendInput** for key injection.
+
+#### Requirements
+
+- No administrator privileges required for basic operation
+- Antivirus software may flag keyboard hooks - add an exception if needed
+
+#### Running
+
+```bash
+keyrx.exe run --script my-config.rhai
+```
+
+**Note**: Some enterprise security software may block low-level keyboard hooks. Contact your IT department if you encounter issues.
+
+## Troubleshooting
+
+### Linux
+
+| Issue | Solution |
+|-------|----------|
+| "Permission denied" accessing `/dev/input/event*` | Add user to `input` group and re-login |
+| "Failed to create uinput device" | Run `sudo modprobe uinput` and check udev rules |
+| "Device not found" | Run `keyrx devices` to list available keyboards |
+| Keyboard stays grabbed after crash | Run `sudo killall keyrx` or unplug/replug keyboard |
+
+### Windows
+
+| Issue | Solution |
+|-------|----------|
+| "Failed to install keyboard hook" | Check for conflicting keyboard software |
+| Antivirus blocking KeyRx | Add KeyRx to antivirus exclusions |
+| Keys not being remapped | Ensure KeyRx is running in foreground |
+| Keyboard unresponsive | Press Ctrl+C to stop KeyRx cleanly |
+
+### General
+
+- Use `keyrx doctor` to run diagnostics
+- Use `--mock` flag to test scripts without capturing real keyboard
+- Press **Ctrl+C** to stop KeyRx and release the keyboard
 
 ## License
 
