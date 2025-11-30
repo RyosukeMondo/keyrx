@@ -187,7 +187,7 @@
 
 ## Task 11: Implement Graceful Shutdown
 
-- [ ] 11.1 Add signal handlers
+- [-] 11.1 Add signal handlers
   - File: `core/src/drivers/linux.rs`, `core/src/drivers/windows.rs`
   - Linux: Handle SIGINT, SIGTERM
   - Windows: Handle Ctrl+C via SetConsoleCtrlHandler

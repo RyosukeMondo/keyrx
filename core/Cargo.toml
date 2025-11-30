@@ -44,6 +44,7 @@ windows = { version = "0.52", features = [
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = { version = "0.12", features = ["tokio"] }
 nix = { version = "0.27", features = ["ioctl"] }
+signal-hook = "0.3"
 
 [profile.dev]
 opt-level = 0

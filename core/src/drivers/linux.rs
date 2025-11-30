@@ -884,6 +884,31 @@ impl InputSource for LinuxInput {
     }
 }
 
+impl Drop for LinuxInput {
+    fn drop(&mut self) {
+        // Ensure the driver is stopped and keyboard is released on drop.
+        // This is critical for graceful cleanup even on panics or unexpected termination.
+        if self.running.load(Ordering::Relaxed) {
+            debug!("LinuxInput::drop - stopping driver...");
+            self.running.store(false, Ordering::Relaxed);
+
+            // Wait for the reader thread to finish
+            if let Some(handle) = self.reader_handle.take() {
+                debug!("LinuxInput::drop - waiting for reader thread...");
+                match handle.join() {
+                    Ok(()) => debug!("LinuxInput::drop - reader thread finished cleanly"),
+                    Err(e) => warn!("LinuxInput::drop - reader thread panicked: {:?}", e),
+                }
+            }
+
+            // Drain any remaining events
+            while self.rx.try_recv().is_ok() {}
+
+            debug!("LinuxInput::drop - cleanup complete");
+        }
+    }
+}
+
 /// Convert evdev key code to KeyRx KeyCode.
 /// This is a stub mapping - full implementation post-MVP.
 #[allow(dead_code)]

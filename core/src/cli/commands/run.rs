@@ -14,6 +14,11 @@ use tracing::{debug, info};
 #[cfg(target_os = "linux")]
 use crate::drivers::LinuxInput;
 
+#[cfg(target_os = "linux")]
+use signal_hook::consts::{SIGINT, SIGTERM};
+#[cfg(target_os = "linux")]
+use signal_hook::flag;
+
 /// Run the engine in headless mode.
 pub struct RunCommand {
     pub script_path: Option<PathBuf>,
@@ -150,13 +155,18 @@ impl RunCommand {
         self.output.success("Engine started. Press Ctrl+C to stop.");
         info!("Engine running with Linux input driver");
 
-        // Set up graceful shutdown
+        // Set up graceful shutdown using signal-hook for SIGINT and SIGTERM
+        // This ensures clean keyboard release even when killed by systemd/init
         let running = Arc::new(AtomicBool::new(true));
-        let r = running.clone();
-        tokio::spawn(async move {
-            tokio::signal::ctrl_c().await.ok();
-            r.store(false, Ordering::SeqCst);
-        });
+
+        // Register signal handlers for both SIGINT (Ctrl+C) and SIGTERM (kill/systemd)
+        // signal-hook uses a single Arc<AtomicBool> and sets it to false on signal
+        flag::register(SIGINT, running.clone())
+            .map_err(|e| anyhow::anyhow!("Failed to register SIGINT handler: {e}"))?;
+        flag::register(SIGTERM, running.clone())
+            .map_err(|e| anyhow::anyhow!("Failed to register SIGTERM handler: {e}"))?;
+
+        debug!("Signal handlers registered for SIGINT and SIGTERM");
 
         // Run event loop until interrupted
         while running.load(Ordering::SeqCst) && engine.is_running() {
@@ -165,6 +175,7 @@ impl RunCommand {
             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         }
 
+        self.output.success("Signal received, stopping...");
         engine.stop().await?;
         self.output.success("Engine stopped.");
         Ok(())

@@ -501,6 +501,42 @@ impl Default for WindowsInput {
     }
 }
 
+impl Drop for WindowsInput {
+    fn drop(&mut self) {
+        // Ensure the driver is stopped and hook is released on drop.
+        // This is critical for graceful cleanup even on panics or unexpected termination.
+        if self.running.load(Ordering::Relaxed) {
+            debug!("WindowsInput::drop - stopping driver...");
+            self.running.store(false, Ordering::Relaxed);
+
+            // Post WM_QUIT to the hook thread to break out of the message loop
+            let thread_id = HOOK_THREAD_ID.load(Ordering::SeqCst);
+            if thread_id != 0 {
+                // SAFETY: PostThreadMessageW is safe to call with a valid thread ID
+                let result =
+                    unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
+                if result.is_err() {
+                    warn!("WindowsInput::drop - Failed to post WM_QUIT to hook thread");
+                }
+            }
+
+            // Wait for the hook thread to finish
+            if let Some(handle) = self.hook_thread.take() {
+                debug!("WindowsInput::drop - waiting for hook thread...");
+                match handle.join() {
+                    Ok(()) => debug!("WindowsInput::drop - hook thread finished cleanly"),
+                    Err(e) => warn!("WindowsInput::drop - hook thread panicked: {:?}", e),
+                }
+            }
+
+            // Drain any remaining events
+            while self.rx.try_recv().is_ok() {}
+
+            debug!("WindowsInput::drop - cleanup complete");
+        }
+    }
+}
+
 #[async_trait]
 impl InputSource for WindowsInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
