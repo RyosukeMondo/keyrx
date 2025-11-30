@@ -74,7 +74,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Implement KeyInjector trait for UinputWriter, add LinuxInput::new_with_injector() constructor, write tests using MockKeyInjector | Restrictions: Preserve existing new() behavior as default | Success: Tests pass with mock injector, no hardware needed for unit tests | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 7. Update Linux keymap to use keycodes.rs
+- [x] 7. Update Linux keymap to use keycodes.rs
   - File: `core/src/drivers/linux/keymap.rs`
   - Remove manual `evdev_to_keycode()` / `keycode_to_evdev()` implementations
   - Re-export from `keycodes.rs`
