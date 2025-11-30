@@ -1,143 +1,23 @@
 //! Windows input driver using low-level keyboard hooks and SendInput.
 //!
-//! This module implements keyboard capture and injection on Windows using:
-//! - **WH_KEYBOARD_LL** (low-level keyboard hook) for capturing all keyboard input
-//! - **SendInput API** for injecting remapped keys back into the system
-//!
-//! # Platform Requirements
-//!
-//! - Windows 7 or later (tested on Windows 10/11)
-//! - The `windows` crate for Win32 API bindings
-//! - No administrator privileges required (in most cases)
-//!
-//! # Permission Requirements
-//!
-//! Unlike Linux, Windows keyboard hooks generally work without special permissions:
-//!
-//! 1. **Normal user**: Low-level keyboard hooks can be installed by any user-mode
-//!    application. No administrator privileges are required.
-//!
-//! 2. **Antivirus software**: Some security software may block keyboard hooks.
-//!    If installation fails:
-//!    - Add an exception for `keyrx.exe` in your antivirus settings
-//!    - Check Windows Security / Virus & threat protection settings
-//!
-//! 3. **UAC prompts**: Hooks cannot capture input during UAC dialogs (by design).
-//!    Keys pressed during UAC prompts will be missed.
-//!
-//! 4. **Elevated applications**: Hooks from a non-elevated process cannot capture
-//!    input to elevated (admin) applications. If you need to remap keys in admin
-//!    apps, run KeyRx as administrator.
-//!
-//! # Thread Model
-//!
-//! The driver uses a dedicated thread for the hook and message pump:
-//!
-//! ```text
-//! ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-//! │  Physical KB    │────▶│  Hook Thread     │────▶│  Engine         │
-//! │  (WH_KEYBOARD_LL)     │  (message pump)  │     │  (async)        │
-//! └─────────────────┘     └──────────────────┘     └─────────────────┘
-//!                                                          │
-//!                                                          ▼
-//! ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-//! │  Applications   │◀────│  SendInput       │◀────│  Remap Logic    │
-//! │                 │     │                  │     │                 │
-//! └─────────────────┘     └──────────────────┘     └─────────────────┘
-//! ```
-//!
-//! - **Hook thread**: A dedicated `std::thread` that installs the hook and runs
-//!   the Windows message pump. Required because hooks dispatch via the message queue.
-//! - **Message pump**: Uses `PeekMessageW` in a loop with 1ms sleep to avoid busy-waiting.
-//! - **Event channel**: Events flow via `crossbeam_channel` to the async engine.
-//! - **Running flag**: `Arc<AtomicBool>` shared between threads for shutdown signaling.
-//!
-//! # Error Handling
-//!
-//! The driver provides detailed error messages:
-//!
-//! - [`WindowsDriverError::HookInstallFailed`]: SetWindowsHookExW failed
-//!   (check antivirus, or another hook may be blocking)
-//! - [`WindowsDriverError::SendInputFailed`]: Cannot inject keys
-//!   (target app may be elevated, or input is blocked)
-//! - [`WindowsDriverError::MessagePumpPanic`]: Hook thread crashed unexpectedly
-//!
-//! # Cleanup and Recovery
-//!
-//! The driver implements robust cleanup to prevent keyboard issues:
-//!
-//! 1. **Normal shutdown**: Calling `stop()` posts `WM_QUIT` to the hook thread,
-//!    which uninstalls the hook and exits the message loop.
-//!
-//! 2. **Drop cleanup**: The `Drop` implementation ensures cleanup even on early
-//!    returns or unexpected exits.
-//!
-//! 3. **Panic recovery**: The hook thread wraps its main loop in `catch_unwind`.
-//!    On panic:
-//!    - The `panic_error` flag is set to `true`
-//!    - The keyboard hook is uninstalled via `UnhookWindowsHookEx`
-//!    - The error is logged
-//!    - `poll_events()` returns an error on the next call
-//!
-//! 4. **Ctrl+C handling**: Uses `SetConsoleCtrlHandler` to catch Ctrl+C and
-//!    trigger graceful shutdown.
-//!
-//! # Hook Callback Performance
-//!
-//! The hook callback (`low_level_keyboard_proc`) must complete quickly:
-//!
-//! - Windows requires hooks to process within ~100ms
-//! - Slow processing causes visible keyboard lag
-//! - The callback only extracts event data and sends via channel (non-blocking)
-//! - Heavy processing happens in the engine thread, not the callback
-//!
-//! # Extended Keys
-//!
-//! Some keys require the `KEYEVENTF_EXTENDEDKEY` flag for proper injection:
-//!
-//! - Arrow keys (Up, Down, Left, Right)
-//! - Navigation cluster (Home, End, Insert, Delete, Page Up/Down)
-//! - Right-side modifiers (Right Ctrl, Right Alt)
-//! - Numpad Enter and Numpad Divide
-//! - Windows keys, Print Screen, Pause, Num Lock
-//!
-//! # Example
-//!
-//! ```ignore
-//! use keyrx::drivers::WindowsInput;
-//!
-//! // Create Windows input source
-//! let mut input = WindowsInput::new()?;
-//!
-//! // Start capturing events (installs hook)
-//! input.start().await?;
-//!
-//! // Poll for events (non-blocking)
-//! let events = input.poll_events().await?;
-//!
-//! // Inject remapped keys
-//! input.send_output(OutputAction::KeyDown(KeyCode::Escape)).await?;
-//!
-//! // Stop and uninstall hook
-//! input.stop().await?;
-//! ```
-//!
-//! [`WindowsDriverError::HookInstallFailed`]: crate::error::WindowsDriverError::HookInstallFailed
-//! [`WindowsDriverError::SendInputFailed`]: crate::error::WindowsDriverError::SendInputFailed
-//! [`WindowsDriverError::MessagePumpPanic`]: crate::error::WindowsDriverError::MessagePumpPanic
+//! Implements keyboard capture via WH_KEYBOARD_LL hook and injection via SendInput API.
+//! Requires Windows 7+, no admin privileges needed (except for capturing elevated apps).
+//! Uses a dedicated hook thread with Windows message pump for event handling.
 
+mod device;
 mod hook;
 mod injector;
 mod keymap;
 
-use crate::drivers::{DeviceInfo, KeyInjector};
+pub use device::list_keyboards;
+
+use crate::drivers::KeyInjector;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
 use crossbeam_channel::{Receiver, Sender};
 use std::panic::{self, AssertUnwindSafe};
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -150,43 +30,9 @@ pub use injector::SendInputInjector;
 
 /// Windows input source using low-level keyboard hook.
 ///
-/// `WindowsInput` coordinates keyboard event capture via a low-level keyboard hook
-/// and key injection via `SendInput`. It implements the `InputSource` trait for
-/// integration with the KeyRx remapping engine.
-///
-/// # Architecture
-///
-/// ```text
-/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-/// │  Physical KB    │────▶│  Hook Thread     │────▶│  Engine         │
-/// │  (WH_KEYBOARD_LL)     │  (message pump)  │     │  (async)        │
-/// └─────────────────┘     └──────────────────┘     └─────────────────┘
-///                                                          │
-///                                                          ▼
-/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-/// │  Applications   │◀────│  SendInput       │◀────│  Remap Logic    │
-/// │                 │     │                  │     │                 │
-/// └─────────────────┘     └──────────────────┘     └─────────────────┘
-/// ```
-///
-/// # Thread Model
-///
-/// - The hook and message pump run in a dedicated thread (required by Windows)
-/// - Events are sent via a crossbeam channel to the async engine
-/// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
-/// - WM_QUIT is posted to the hook thread to stop the message pump
-///
-/// # Panic Recovery
-///
-/// The hook thread is wrapped in `catch_unwind` to handle panics gracefully.
-/// If a panic occurs, the `panic_error` flag is set and the keyboard hook is
-/// uninstalled. The `poll_events` method checks this flag and returns an error
-/// if a panic was detected.
-///
-/// # Type Parameter
-///
-/// * `I` - The key injector implementation. Defaults to `SendInputInjector` for
-///   production use. For testing, use `MockKeyInjector` via `new_with_injector()`.
+/// Captures keyboard events via WH_KEYBOARD_LL hook in dedicated thread,
+/// sends events via channel, injects keys via SendInput. Supports panic
+/// recovery and dependency injection for testing.
 pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     /// Handle to the hook thread (set after start() is called).
     hook_thread: Option<JoinHandle<()>>,
@@ -204,13 +50,6 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
 
 impl WindowsInput {
     /// Create a new Windows input source with the default SendInput injector.
-    ///
-    /// This initializes the input source but does not start the hook.
-    /// Call [`start()`](Self::start) to begin capturing keyboard events.
-    ///
-    /// # Returns
-    ///
-    /// Returns a new `WindowsInput` instance ready to be started.
     pub fn new() -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
@@ -231,23 +70,7 @@ impl WindowsInput {
 }
 
 impl<I: KeyInjector> WindowsInput<I> {
-    /// Create a new Windows input source with a custom key injector.
-    ///
-    /// This constructor allows dependency injection of the key injector,
-    /// enabling unit testing without hardware access.
-    ///
-    /// # Arguments
-    ///
-    /// * `injector` - The key injector implementation to use
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// use keyrx_core::drivers::{WindowsInput, MockKeyInjector};
-    ///
-    /// let mock = MockKeyInjector::new();
-    /// let input = WindowsInput::new_with_injector(mock)?;
-    /// ```
+    /// Create a new Windows input source with a custom key injector (for testing).
     pub fn new_with_injector(injector: I) -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
@@ -574,28 +397,6 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
     }
 }
 
-/// List all keyboard devices available on the system.
-///
-/// On Windows, this returns a single entry representing the system keyboard.
-/// Windows uses a global low-level keyboard hook (WH_KEYBOARD_LL) which
-/// intercepts all keyboard input regardless of which physical device generated it.
-///
-/// # Errors
-///
-/// This function currently always succeeds on Windows.
-pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
-    // Windows uses a global keyboard hook that captures all keyboard input.
-    // We return a single "virtual" device representing the system keyboard.
-    // Full HID device enumeration could be added later for device-specific handling.
-    Ok(vec![DeviceInfo::new(
-        PathBuf::from("\\\\?\\HID#System#Keyboard"),
-        "System Keyboard (Global Hook)".to_string(),
-        0, // Vendor ID not available via global hook
-        0, // Product ID not available via global hook
-        true,
-    )])
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -618,14 +419,6 @@ mod tests {
         let input = WindowsInput::new().unwrap();
         // Verify we can access the receiver (channel is empty initially)
         assert!(input.receiver().try_recv().is_err());
-    }
-
-    #[test]
-    fn list_keyboards_returns_system_keyboard() {
-        let keyboards = list_keyboards().unwrap();
-        assert_eq!(keyboards.len(), 1);
-        assert!(keyboards[0].is_keyboard());
-        assert!(keyboards[0].name().contains("System Keyboard"));
     }
 
     #[test]

@@ -181,3 +181,168 @@
   - Purpose: Clean up legacy code
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Delete old linux.rs and windows.rs files, run final build and test to confirm nothing is broken | Restrictions: Only delete after all tests pass | Success: Old files removed, cargo build and cargo test pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 6: File Size Compliance (Remaining Violations)
+
+- [ ] 17. Split windows/mod.rs (786 lines → <500)
+  - File: `core/src/drivers/windows/mod.rs` (currently 786 lines)
+  - Extract `DeviceInfo` and `try_get_keyboard_info()` to `windows/device_info.rs` (~100 lines)
+  - Extract thread-local storage helpers to `windows/tls.rs` (~80 lines)
+  - Keep `WindowsInput` struct and `InputSource` impl in `mod.rs`
+  - Update re-exports in `windows/mod.rs`
+  - Purpose: File size compliance (<500 lines)
+  - _Requirements: REQ-2, REQ-6_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split windows/mod.rs (786 lines) by extracting device_info logic and TLS helpers to separate modules | Restrictions: Preserve thread-local storage semantics, maintain all public API | Success: windows/mod.rs <500 lines, all Windows tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 18. Split linux/mod.rs (723 lines → <500)
+  - File: `core/src/drivers/linux/mod.rs` (currently 723 lines)
+  - Extract `DeviceInfo` and `try_get_keyboard_info()` to `linux/device_info.rs` (~100 lines)
+  - Extract evdev device discovery to `linux/discovery.rs` (~120 lines)
+  - Keep `LinuxInput` struct and `InputSource` impl in `mod.rs`
+  - Update re-exports in `linux/mod.rs`
+  - Purpose: File size compliance (<500 lines)
+  - _Requirements: REQ-2, REQ-6_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split linux/mod.rs (723 lines) by extracting device_info and discovery logic to separate modules | Restrictions: Preserve all device detection behavior | Success: linux/mod.rs <500 lines, all Linux tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 19. Split tests/driver_integration_test.rs (662 lines → <500)
+  - File: `core/tests/driver_integration_test.rs` (currently 662 lines)
+  - Extract channel tests to `tests/integration/channel_tests.rs` (~150 lines)
+  - Extract state tests to `tests/integration/state_tests.rs` (~150 lines)
+  - Keep core integration tests in `driver_integration_test.rs`
+  - Create `tests/integration/mod.rs` for common test utilities
+  - Purpose: File size compliance (<500 lines)
+  - _Requirements: REQ-2_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Split driver_integration_test.rs by organizing tests into submodules | Restrictions: All tests must continue to run with cargo test | Success: All test files <500 lines, no test failures | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 20. Split drivers/keycodes.rs (524 lines → <500)
+  - File: `core/src/drivers/keycodes.rs` (currently 524 lines)
+  - Extract macro definition to `keycodes/macro.rs` (~100 lines)
+  - Extract keycode data table to `keycodes/definitions.rs` (~250 lines)
+  - Keep macro invocation and re-exports in `keycodes.rs` (~100 lines)
+  - Alternative: Condense keycode definitions table (remove spacing/comments)
+  - Purpose: File size compliance (<500 lines)
+  - _Requirements: REQ-1, REQ-2_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Macro Developer | Task: Reorganize keycodes.rs to meet <500 line limit while preserving SSOT | Restrictions: Must maintain compile-time generation, zero runtime overhead | Success: keycodes.rs <500 lines, all keycode conversions work | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 7: Function Size Compliance (Remaining Violations)
+
+- [ ] 21. Refactor windows/keymap.rs large functions (137, 115 lines → <50)
+  - File: `core/src/drivers/windows/keymap.rs:122` (137 lines)
+  - Extract VK mapping groups into separate functions per category (letters, numbers, function keys, etc.)
+  - File: `core/src/drivers/windows/keymap.rs` (115 lines function)
+  - Apply same categorical extraction pattern
+  - Purpose: Function size compliance (<50 lines), SLAP
+  - _Requirements: REQ-3, REQ-5_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor large VK mapping functions by extracting categorical helpers | Restrictions: Identical conversion behavior | Success: All functions <50 lines, keymap tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 22. Refactor linux/keymap.rs large functions (115, 61 lines → <50)
+  - File: `core/src/drivers/linux/keymap.rs:16` (115 lines)
+  - File: `core/src/drivers/linux/keymap.rs:133` (115 lines)
+  - File: `core/src/drivers/linux/keymap.rs:307` (61 lines)
+  - Extract evdev mapping groups into categorical functions
+  - Purpose: Function size compliance (<50 lines), SLAP
+  - _Requirements: REQ-3, REQ-5_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor large evdev mapping functions by extracting categorical helpers | Restrictions: Identical conversion behavior | Success: All functions <50 lines, keymap tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 23. Refactor cli/commands large functions (77, 57, 54 lines → <50)
+  - File: `core/src/cli/commands/simulate.rs:84` (77 lines)
+  - Extract output formatting to helper function
+  - File: `core/src/cli/commands/run.rs:126` (57 lines)
+  - Extract signal handling setup to separate function
+  - File: `core/src/drivers/windows/injector.rs:58` (54 lines)
+  - Extract INPUT struct construction to helper
+  - Purpose: Function size compliance (<50 lines), SLAP
+  - _Requirements: REQ-3_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor CLI and injector functions by extracting single-purpose helpers | Restrictions: Preserve exact behavior | Success: All functions <50 lines, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 24. Refactor scripting/runtime.rs new() function (72 lines → <50)
+  - File: `core/src/scripting/runtime.rs:40` (72 lines)
+  - Extract closure registrations to `register_remap_functions()` helper (~30 lines)
+  - Extract hook setup to `initialize_hooks()` helper (~20 lines)
+  - Keep engine and registry initialization in `new()`
+  - Purpose: Function size compliance (<50 lines), SLAP
+  - _Requirements: REQ-3_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor RhaiRuntime::new() by extracting function registration and hook setup | Restrictions: Identical Rhai behavior | Success: new() <50 lines, all script tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 8: Test Coverage Improvement (66.67% → 80%+)
+
+- [ ] 25. Add tests for cli/commands/run.rs (0% → 90%)
+  - File: `core/src/cli/commands/run.rs` (currently 0% coverage, CRITICAL PATH)
+  - Write unit tests for `RunCommand::new()`
+  - Write integration test with `MockInput` + `MockState`
+  - Test debug mode initialization
+  - Test signal handling setup (Linux)
+  - Mock script loading and execution
+  - Purpose: Critical path coverage (90% target)
+  - _Requirements: REQ-4 (testability via mocks)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write comprehensive tests for run.rs using existing MockInput/MockState | Restrictions: No hardware dependencies | Success: run.rs coverage >90%, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 26. Add tests for cli/commands (check, state, devices) (0% → 80%)
+  - File: `core/src/cli/commands/check.rs` (0% coverage)
+  - File: `core/src/cli/commands/state.rs` (0% coverage)
+  - File: `core/src/cli/commands/devices.rs` (29.82% coverage)
+  - Write unit tests for command constructors and formatters
+  - Test JSON and text output modes
+  - Test error handling for invalid paths
+  - Purpose: CLI coverage improvement
+  - _Requirements: REQ-4_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write tests for CLI commands focusing on output formatting and error cases | Restrictions: No external dependencies | Success: Each file >80% coverage | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 27. Add tests for drivers/linux (reader, writer, mod) (0-40% → 80%)
+  - File: `core/src/drivers/linux/reader.rs` (0% coverage)
+  - File: `core/src/drivers/linux/writer.rs` (0% coverage)
+  - File: `core/src/drivers/linux/mod.rs` (28.29% → 80%, CRITICAL)
+  - Write unit tests using `MockKeyInjector` (from task 6)
+  - Test evdev event parsing without real devices
+  - Test uinput key injection mocking
+  - Test error handling for device not found
+  - Purpose: Linux driver coverage improvement
+  - _Requirements: REQ-4 (DI enables testing)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write Linux driver tests using mock injectors, no hardware required | Restrictions: Tests must run in CI without /dev/input | Success: linux/ coverage >80% | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 28. Add tests for cli/output.rs and ffi/exports.rs (14%, 0% → 80%)
+  - File: `core/src/cli/output.rs` (14.63% coverage)
+  - File: `core/src/ffi/exports.rs` (0% coverage)
+  - Test OutputWriter JSON and text formatting
+  - Test FFI exports with mock engine
+  - Test error message formatting
+  - Purpose: Reach 80% overall coverage threshold
+  - _Requirements: REQ-4_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write tests for output formatting and FFI exports | Restrictions: No external dependencies | Success: Both files >80% coverage, overall coverage >80% | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 9: Structured Logging Implementation
+
+- [ ] 29. Implement JSON structured logging with tracing-subscriber
+  - File: `core/Cargo.toml`
+  - Add dependency: `tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }`
+  - File: `core/src/cli/commands/run.rs`
+  - Replace `tracing_subscriber::fmt()` with JSON formatter
+  - Configure fields: timestamp, level, target, message, context
+  - Add environment-based filtering (RUST_LOG)
+  - Purpose: Structured logging compliance
+  - _Requirements: CLAUDE.md logging requirements_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Observability Engineer | Task: Implement JSON structured logging using tracing-subscriber with proper field formatting | Restrictions: Debug mode only, no PII/secrets in logs | Success: Logs output valid JSON with timestamp/level/service/event/context | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [ ] 30. Add structured context fields to all log statements
+  - Files: All files using `tracing::{debug, info, warn, error}`
+  - Add context fields to log statements (event, context, metadata)
+  - Example: `debug!(event = "script_loaded", path = %path, "Loading script")`
+  - Ensure no secrets/PII logged (keys, device IDs, user input)
+  - Add service name field ("keyrx")
+  - Purpose: Searchable structured logs
+  - _Requirements: CLAUDE.md logging requirements_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add structured fields to all tracing log calls following JSON logging best practices | Restrictions: No secrets/PII, consistent field naming | Success: All logs have event/context fields, JSON parseable | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 10: Final Verification
+
+- [ ] 31. Run comprehensive code quality verification
+  - Run `cargo llvm-cov --all-features --workspace` and verify >80% coverage
+  - Run line count verification on all files (max 500 lines)
+  - Run function length verification (max 50 lines)
+  - Run `cargo clippy -- -D warnings`
+  - Run `cargo fmt --check`
+  - Run full test suite `cargo test --all-features`
+  - Document final metrics in implementation log
+  - Purpose: Confirm all KPIs met
+  - _Requirements: REQ-2, REQ-3, CLAUDE.md compliance_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Run all code quality checks and document final compliance metrics | Restrictions: Must meet ALL requirements | Success: Coverage >80%, all files <500 lines, all functions <50 lines, pre-commit hooks pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
