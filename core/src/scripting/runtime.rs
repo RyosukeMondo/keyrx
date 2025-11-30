@@ -1,7 +1,7 @@
 //! Rhai runtime implementation.
 
 use super::helpers::parse_key_or_error;
-use crate::engine::KeyCode;
+use crate::engine::{HoldAction, KeyCode, VirtualModifiers};
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
@@ -17,9 +17,21 @@ type PendingOps = Arc<Mutex<Vec<PendingOp>>>;
 /// A pending operation to be applied to the registry after script execution.
 #[derive(Debug, Clone)]
 enum PendingOp {
-    Remap { from: KeyCode, to: KeyCode },
-    Block { key: KeyCode },
-    Pass { key: KeyCode },
+    Remap {
+        from: KeyCode,
+        to: KeyCode,
+    },
+    Block {
+        key: KeyCode,
+    },
+    Pass {
+        key: KeyCode,
+    },
+    TapHold {
+        key: KeyCode,
+        tap: KeyCode,
+        hold: HoldAction,
+    },
 }
 
 /// Production Rhai script runtime.
@@ -65,6 +77,8 @@ impl RhaiRuntime {
         Self::register_remap(engine, pending_ops);
         Self::register_block(engine, pending_ops);
         Self::register_pass(engine, pending_ops);
+        Self::register_tap_hold(engine, pending_ops);
+        Self::register_tap_hold_mod(engine, pending_ops);
     }
 
     fn register_debug(engine: &mut Engine) {
@@ -147,6 +161,65 @@ impl RhaiRuntime {
         );
     }
 
+    fn register_tap_hold(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "tap_hold",
+            move |key: &str,
+                  tap: &str,
+                  hold: &str|
+                  -> std::result::Result<(), Box<EvalAltResult>> {
+                let key_code = parse_key_or_error(key, "tap_hold")?;
+                let tap_code = parse_key_or_error(tap, "tap_hold")?;
+                let hold_code = parse_key_or_error(hold, "tap_hold")?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::TapHold {
+                        key: key_code,
+                        tap: tap_code,
+                        hold: HoldAction::Key(hold_code),
+                    });
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_tap_hold_mod(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "tap_hold_mod",
+            move |key: &str,
+                  tap: &str,
+                  modifier_id: i64|
+                  -> std::result::Result<(), Box<EvalAltResult>> {
+                let key_code = parse_key_or_error(key, "tap_hold_mod")?;
+                let tap_code = parse_key_or_error(tap, "tap_hold_mod")?;
+
+                let modifier = u8::try_from(modifier_id).map_err(|_| {
+                    Box::new(EvalAltResult::ErrorRuntime(
+                        format!(
+                            "tap_hold_mod: modifier id '{}' is out of range (0-{})",
+                            modifier_id,
+                            VirtualModifiers::MAX_ID
+                        )
+                        .into(),
+                        rhai::Position::NONE,
+                    ))
+                })?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::TapHold {
+                        key: key_code,
+                        tap: tap_code,
+                        hold: HoldAction::Modifier(modifier),
+                    });
+                }
+                Ok(())
+            },
+        );
+    }
+
     /// Check if a function is defined in the loaded script.
     fn scan_for_hooks(&mut self) {
         self.defined_hooks.clear();
@@ -170,6 +243,9 @@ impl RhaiRuntime {
                     }
                     PendingOp::Pass { key } => {
                         self.registry.pass(key);
+                    }
+                    PendingOp::TapHold { key, tap, hold } => {
+                        self.registry.register_tap_hold(key, tap, hold);
                     }
                 }
             }
@@ -243,7 +319,7 @@ impl ScriptRuntime for RhaiRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::RemapAction;
+    use crate::engine::{HoldAction, RemapAction};
 
     #[test]
     fn new_runtime_has_empty_registry() {
@@ -345,5 +421,37 @@ mod tests {
             RemapAction::Remap(KeyCode::D)
         );
         assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Block);
+    }
+
+    #[test]
+    fn execute_tap_hold_registers_binding() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(r#"tap_hold("CapsLock", "Escape", "LeftCtrl");"#)
+            .unwrap();
+
+        let binding = runtime.registry().tap_hold(KeyCode::CapsLock).unwrap();
+        assert_eq!(binding.tap, KeyCode::Escape);
+        assert_eq!(binding.hold, HoldAction::Key(KeyCode::LeftCtrl));
+    }
+
+    #[test]
+    fn execute_tap_hold_mod_registers_modifier_binding() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(r#"tap_hold_mod("CapsLock", "Escape", 2);"#)
+            .unwrap();
+
+        let binding = runtime.registry().tap_hold(KeyCode::CapsLock).unwrap();
+        assert_eq!(binding.tap, KeyCode::Escape);
+        assert_eq!(binding.hold, HoldAction::Modifier(2));
+    }
+
+    #[test]
+    fn tap_hold_mod_rejects_out_of_range_modifier() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        let result = runtime.execute(r#"tap_hold_mod("CapsLock", "Escape", 999);"#);
+        assert!(result.is_err());
+        assert!(runtime.registry().tap_hold(KeyCode::CapsLock).is_none());
     }
 }

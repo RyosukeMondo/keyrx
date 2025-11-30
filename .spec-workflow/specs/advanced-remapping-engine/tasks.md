@@ -115,7 +115,7 @@
 
 ## Phase 4: Rhai Script Integration
 
-- [ ] 11. Add tap_hold() Rhai function
+- [x] 11. Add tap_hold() Rhai function
   - File: `core/src/scripting/runtime.rs` (extend)
   - Register `tap_hold(key, tap_key, hold_key)` function
   - Register `tap_hold_mod(key, tap_key, hold_modifier)` variant

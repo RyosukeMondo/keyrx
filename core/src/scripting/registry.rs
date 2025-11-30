@@ -1,15 +1,23 @@
 //! Registry for storing key remappings defined by scripts.
 
-use crate::engine::{KeyCode, RemapAction};
+use crate::engine::{HoldAction, KeyCode, RemapAction};
 use std::collections::HashMap;
 
 /// Central storage for script-defined key behaviors.
 ///
-/// The registry maps physical keys to actions (remap, block, or pass).
-/// Unmapped keys default to Pass (unchanged passthrough).
+/// The registry maps physical keys to actions (remap, block, pass) and tap-hold
+/// bindings. Unmapped keys default to Pass (unchanged passthrough).
 #[derive(Debug, Clone)]
 pub struct RemapRegistry {
     mappings: HashMap<KeyCode, RemapAction>,
+    tap_holds: HashMap<KeyCode, TapHoldBinding>,
+}
+
+/// A tap-hold binding configured via script.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TapHoldBinding {
+    pub tap: KeyCode,
+    pub hold: HoldAction,
 }
 
 impl RemapRegistry {
@@ -17,6 +25,7 @@ impl RemapRegistry {
     pub fn new() -> Self {
         Self {
             mappings: HashMap::new(),
+            tap_holds: HashMap::new(),
         }
     }
 
@@ -39,6 +48,11 @@ impl RemapRegistry {
         self.mappings.insert(key, RemapAction::Pass);
     }
 
+    /// Register a tap-hold behavior for a key.
+    pub fn register_tap_hold(&mut self, key: KeyCode, tap: KeyCode, hold: HoldAction) {
+        self.tap_holds.insert(key, TapHoldBinding { tap, hold });
+    }
+
     /// Look up the action for a key.
     ///
     /// Returns the mapped action, or `RemapAction::Pass` for unmapped keys.
@@ -49,9 +63,20 @@ impl RemapRegistry {
             .unwrap_or(RemapAction::Pass)
     }
 
+    /// Look up a tap-hold binding for a key, if configured.
+    pub fn tap_hold(&self, key: KeyCode) -> Option<&TapHoldBinding> {
+        self.tap_holds.get(&key)
+    }
+
+    /// Iterate over all tap-hold bindings.
+    pub fn tap_holds(&self) -> impl Iterator<Item = (&KeyCode, &TapHoldBinding)> {
+        self.tap_holds.iter()
+    }
+
     /// Clear all mappings.
     pub fn clear(&mut self) {
         self.mappings.clear();
+        self.tap_holds.clear();
     }
 
     /// Get the number of active mappings.
@@ -61,7 +86,7 @@ impl RemapRegistry {
 
     /// Check if the registry is empty.
     pub fn is_empty(&self) -> bool {
-        self.mappings.is_empty()
+        self.mappings.is_empty() && self.tap_holds.is_empty()
     }
 }
 
@@ -80,6 +105,7 @@ mod tests {
         let registry = RemapRegistry::new();
         assert!(registry.is_empty());
         assert_eq!(registry.len(), 0);
+        assert!(registry.tap_holds().next().is_none());
     }
 
     #[test]
@@ -121,11 +147,14 @@ mod tests {
         let mut registry = RemapRegistry::new();
         registry.remap(KeyCode::A, KeyCode::B);
         registry.block(KeyCode::CapsLock);
+        registry.register_tap_hold(KeyCode::CapsLock, KeyCode::Escape, HoldAction::Modifier(1));
         assert_eq!(registry.len(), 2);
+        assert_eq!(registry.tap_holds().count(), 1);
 
         registry.clear();
         assert!(registry.is_empty());
         assert_eq!(registry.lookup(KeyCode::A), RemapAction::Pass);
+        assert!(registry.tap_holds().next().is_none());
     }
 
     #[test]
@@ -142,5 +171,35 @@ mod tests {
     fn default_is_empty() {
         let registry = RemapRegistry::default();
         assert!(registry.is_empty());
+    }
+
+    #[test]
+    fn tap_hold_binding_is_registered_and_retrievable() {
+        let mut registry = RemapRegistry::new();
+        registry.register_tap_hold(
+            KeyCode::CapsLock,
+            KeyCode::Escape,
+            HoldAction::Key(KeyCode::LeftCtrl),
+        );
+
+        let binding = registry.tap_hold(KeyCode::CapsLock).unwrap();
+        assert_eq!(binding.tap, KeyCode::Escape);
+        assert_eq!(binding.hold, HoldAction::Key(KeyCode::LeftCtrl));
+    }
+
+    #[test]
+    fn tap_hold_overwrites_previous_binding() {
+        let mut registry = RemapRegistry::new();
+        registry.register_tap_hold(
+            KeyCode::CapsLock,
+            KeyCode::Escape,
+            HoldAction::Key(KeyCode::LeftCtrl),
+        );
+        registry.register_tap_hold(KeyCode::CapsLock, KeyCode::A, HoldAction::Modifier(2));
+
+        let binding = registry.tap_hold(KeyCode::CapsLock).unwrap();
+        assert_eq!(binding.tap, KeyCode::A);
+        assert_eq!(binding.hold, HoldAction::Modifier(2));
+        assert_eq!(registry.tap_holds().count(), 1);
     }
 }
