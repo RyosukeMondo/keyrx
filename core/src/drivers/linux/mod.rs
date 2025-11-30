@@ -254,11 +254,22 @@ impl LinuxInput {
         // Determine device path: use provided or auto-detect
         let device_path = match device_path {
             Some(path) => {
-                debug!("Using specified device: {}", path.display());
+                debug!(
+                    service = "keyrx",
+                    event = "linux_device_provided",
+                    component = "linux_input",
+                    path = %path.display(),
+                    "Using specified device"
+                );
                 path
             }
             None => {
-                debug!("Auto-detecting keyboard device...");
+                debug!(
+                    service = "keyrx",
+                    event = "linux_device_autodetect",
+                    component = "linux_input",
+                    "Auto-detecting keyboard device"
+                );
                 Self::find_first_keyboard()?
             }
         };
@@ -269,7 +280,13 @@ impl LinuxInput {
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
 
-        debug!("LinuxInput created for device: {}", device_path.display());
+        debug!(
+            service = "keyrx",
+            event = "linux_input_created",
+            component = "linux_input",
+            path = %device_path.display(),
+            "LinuxInput created for device"
+        );
 
         Ok(Self {
             reader_handle: None,
@@ -302,9 +319,12 @@ impl LinuxInput {
 
         let device = &keyboards[0];
         debug!(
-            "Auto-detected keyboard: {} at {}",
-            device.name,
-            device.path.display()
+            service = "keyrx",
+            event = "linux_device_detected",
+            component = "linux_input",
+            device_name = device.name,
+            path = %device.path.display(),
+            "Auto-detected keyboard device"
         );
 
         Ok(device.path.clone())
@@ -357,7 +377,13 @@ impl LinuxInput {
             .open(path)
         {
             Ok(_) => {
-                debug!("Successfully accessed {UINPUT_PATH}");
+                debug!(
+                    service = "keyrx",
+                    event = "uinput_accessible",
+                    component = "linux_input",
+                    path = UINPUT_PATH,
+                    "Successfully accessed uinput device"
+                );
                 Ok(())
             }
             Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
@@ -392,13 +418,23 @@ impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
         // Check if the reader thread panicked
         if self.panic_error.load(Ordering::SeqCst) {
-            error!("poll_events called after reader thread panic");
+            error!(
+                service = "keyrx",
+                event = "linux_reader_panic_detected",
+                component = "linux_input",
+                "poll_events called after reader thread panic"
+            );
             self.running.store(false, Ordering::Relaxed);
             bail!("Input reader thread panicked - keyboard has been ungrabbed for safety");
         }
 
         if !self.running.load(Ordering::Relaxed) {
-            trace!("poll_events called while not running");
+            trace!(
+                service = "keyrx",
+                event = "linux_poll_events_inactive",
+                component = "linux_input",
+                "poll_events called while not running"
+            );
             return Ok(vec![]);
         }
 
@@ -409,9 +445,12 @@ impl InputSource for LinuxInput {
             match self.rx.try_recv() {
                 Ok(event) => {
                     trace!(
-                        "Received event: {:?} {}",
-                        event.key,
-                        if event.pressed { "down" } else { "up" }
+                        service = "keyrx",
+                        event = "linux_input_event_received",
+                        component = "linux_input",
+                        key = ?event.key,
+                        pressed = event.pressed,
+                        "Received input event"
                     );
                     events.push(event);
                 }
@@ -423,13 +462,25 @@ impl InputSource for LinuxInput {
                     // Channel closed - reader thread has stopped
                     // Check if it was due to a panic
                     if self.panic_error.load(Ordering::SeqCst) {
-                        error!("Event channel disconnected due to reader thread panic");
+                        error!(
+                            service = "keyrx",
+                            event = "linux_channel_disconnected",
+                            component = "linux_input",
+                            reason = "reader_panic",
+                            "Event channel disconnected due to reader thread panic"
+                        );
                         self.running.store(false, Ordering::Relaxed);
                         bail!(
                             "Input reader thread panicked - keyboard has been ungrabbed for safety"
                         );
                     }
-                    error!("Event channel disconnected - reader thread may have crashed");
+                    error!(
+                        service = "keyrx",
+                        event = "linux_channel_disconnected",
+                        component = "linux_input",
+                        reason = "unexpected_disconnect",
+                        "Event channel disconnected - reader thread may have crashed"
+                    );
                     self.running.store(false, Ordering::Relaxed);
                     bail!("Input reader disconnected unexpectedly");
                 }
@@ -437,7 +488,13 @@ impl InputSource for LinuxInput {
         }
 
         if !events.is_empty() {
-            debug!("poll_events returning {} events", events.len());
+            debug!(
+                service = "keyrx",
+                event = "linux_poll_events",
+                component = "linux_input",
+                count = events.len(),
+                "Returning polled events"
+            );
         }
 
         Ok(events)
@@ -445,34 +502,67 @@ impl InputSource for LinuxInput {
 
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            trace!("send_output called while not running");
+            trace!(
+                service = "keyrx",
+                event = "linux_send_output_inactive",
+                component = "linux_input",
+                "send_output called while not running"
+            );
             return Ok(());
         }
 
         match action {
             OutputAction::KeyDown(key) => {
-                debug!("Sending key down: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "linux_key_down",
+                    component = "linux_input",
+                    key = ?key,
+                    "Sending key down"
+                );
                 self.injector.inject(key, true)?;
             }
             OutputAction::KeyUp(key) => {
-                debug!("Sending key up: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "linux_key_up",
+                    component = "linux_input",
+                    key = ?key,
+                    "Sending key up"
+                );
                 self.injector.inject(key, false)?;
             }
             OutputAction::KeyTap(key) => {
-                debug!("Sending key tap: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "linux_key_tap",
+                    component = "linux_input",
+                    key = ?key,
+                    "Sending key tap"
+                );
                 self.injector.inject(key, true)?;
                 self.injector.inject(key, false)?;
             }
             OutputAction::Block => {
                 // Block does nothing - the original event is already grabbed
                 // and won't be passed through unless we explicitly emit it
-                trace!("Blocking key (no action needed)");
+                trace!(
+                    service = "keyrx",
+                    event = "linux_block_action",
+                    component = "linux_input",
+                    "Blocking key (no action needed)"
+                );
             }
             OutputAction::PassThrough => {
                 // PassThrough is handled by the engine - it re-emits the original key
                 // For the driver, this is a no-op since the engine will call
                 // KeyDown/KeyUp for the original key if needed
-                trace!("PassThrough (no action needed)");
+                trace!(
+                    service = "keyrx",
+                    event = "linux_passthrough_action",
+                    component = "linux_input",
+                    "PassThrough (no action needed)"
+                );
             }
         }
 
@@ -481,7 +571,13 @@ impl InputSource for LinuxInput {
 
     async fn start(&mut self) -> Result<()> {
         if self.running.load(Ordering::Relaxed) {
-            warn!("LinuxInput already running");
+            warn!(
+                service = "keyrx",
+                event = "linux_start_skipped",
+                component = "linux_input",
+                reason = "already_running",
+                "LinuxInput already running"
+            );
             return Ok(());
         }
 
@@ -511,8 +607,11 @@ impl InputSource for LinuxInput {
         self.reader_handle = Some(handle);
 
         debug!(
-            "LinuxInput started successfully for device: {}",
-            self.device_path.display()
+            service = "keyrx",
+            event = "linux_started",
+            component = "linux_input",
+            path = %self.device_path.display(),
+            "LinuxInput started successfully"
         );
 
         Ok(())
@@ -520,24 +619,52 @@ impl InputSource for LinuxInput {
 
     async fn stop(&mut self) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            debug!("LinuxInput already stopped");
+            debug!(
+                service = "keyrx",
+                event = "linux_stop_skipped",
+                component = "linux_input",
+                reason = "already_stopped",
+                "LinuxInput already stopped"
+            );
             return Ok(());
         }
 
-        debug!("Stopping LinuxInput...");
+        debug!(
+            service = "keyrx",
+            event = "linux_stopping",
+            component = "linux_input",
+            "Stopping LinuxInput"
+        );
 
         // Signal the reader thread to stop
         self.running.store(false, Ordering::Relaxed);
 
         // Wait for the reader thread to finish
         if let Some(handle) = self.reader_handle.take() {
-            debug!("Waiting for reader thread to finish...");
+            debug!(
+                service = "keyrx",
+                event = "linux_join_reader",
+                component = "linux_input",
+                "Waiting for reader thread to finish"
+            );
             match handle.join() {
                 Ok(()) => {
-                    debug!("Reader thread finished cleanly");
+                    debug!(
+                        service = "keyrx",
+                        event = "linux_reader_stopped",
+                        component = "linux_input",
+                        status = "clean",
+                        "Reader thread finished cleanly"
+                    );
                 }
                 Err(e) => {
-                    error!("Reader thread panicked: {:?}", e);
+                    error!(
+                        service = "keyrx",
+                        event = "linux_reader_panic",
+                        component = "linux_input",
+                        error = ?e,
+                        "Reader thread panicked"
+                    );
                     // Continue with cleanup even if thread panicked
                 }
             }
@@ -548,7 +675,12 @@ impl InputSource for LinuxInput {
             // Discard remaining events
         }
 
-        debug!("LinuxInput stopped successfully");
+        debug!(
+            service = "keyrx",
+            event = "linux_stopped",
+            component = "linux_input",
+            "LinuxInput stopped successfully"
+        );
         Ok(())
     }
 }
@@ -558,22 +690,49 @@ impl Drop for LinuxInput {
         // Ensure the driver is stopped and keyboard is released on drop.
         // This is critical for graceful cleanup even on panics or unexpected termination.
         if self.running.load(Ordering::Relaxed) {
-            debug!("LinuxInput::drop - stopping driver...");
+            debug!(
+                service = "keyrx",
+                event = "linux_drop_stopping",
+                component = "linux_input",
+                "LinuxInput::drop - stopping driver"
+            );
             self.running.store(false, Ordering::Relaxed);
 
             // Wait for the reader thread to finish
             if let Some(handle) = self.reader_handle.take() {
-                debug!("LinuxInput::drop - waiting for reader thread...");
+                debug!(
+                    service = "keyrx",
+                    event = "linux_drop_join_reader",
+                    component = "linux_input",
+                    "LinuxInput::drop - waiting for reader thread"
+                );
                 match handle.join() {
-                    Ok(()) => debug!("LinuxInput::drop - reader thread finished cleanly"),
-                    Err(e) => warn!("LinuxInput::drop - reader thread panicked: {:?}", e),
+                    Ok(()) => debug!(
+                        service = "keyrx",
+                        event = "linux_drop_reader_stopped",
+                        component = "linux_input",
+                        status = "clean",
+                        "LinuxInput::drop - reader thread finished cleanly"
+                    ),
+                    Err(e) => warn!(
+                        service = "keyrx",
+                        event = "linux_drop_reader_panic",
+                        component = "linux_input",
+                        error = ?e,
+                        "LinuxInput::drop - reader thread panicked"
+                    ),
                 }
             }
 
             // Drain any remaining events
             while self.rx.try_recv().is_ok() {}
 
-            debug!("LinuxInput::drop - cleanup complete");
+            debug!(
+                service = "keyrx",
+                event = "linux_drop_complete",
+                component = "linux_input",
+                "LinuxInput::drop - cleanup complete"
+            );
         }
     }
 }

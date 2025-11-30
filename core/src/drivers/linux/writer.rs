@@ -59,7 +59,13 @@ impl UinputWriter {
             .build()
             .map_err(|e| LinuxDriverError::uinput_failed(std::io::Error::other(e.to_string())))?;
 
-        debug!("Created uinput virtual keyboard: {}", UINPUT_DEVICE_NAME);
+        debug!(
+            service = "keyrx",
+            event = "uinput_created",
+            component = "linux_writer",
+            device_name = UINPUT_DEVICE_NAME,
+            "Created uinput virtual keyboard"
+        );
 
         Ok(Self { device })
     }

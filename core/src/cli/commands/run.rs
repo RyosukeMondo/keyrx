@@ -51,9 +51,11 @@ impl RunCommand {
         if self.debug {
             self.init_debug_logging()?;
             debug!(
+                service = "keyrx",
                 event = "debug_mode_enabled",
-                context = "cli_run",
-                format = "json"
+                component = "cli_run",
+                format = "json",
+                "Debug logging enabled"
             );
         }
 
@@ -83,11 +85,23 @@ impl RunCommand {
                 .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
             runtime.load_file(path_str)?;
 
-            debug!("Running script top-level statements");
+            debug!(
+                service = "keyrx",
+                event = "run_script_start",
+                component = "cli_run",
+                script = %path.display(),
+                "Running script top-level statements"
+            );
             runtime.run_script()?;
 
             if runtime.has_hook("on_init") {
-                debug!("Calling on_init() hook");
+                debug!(
+                    service = "keyrx",
+                    event = "script_on_init",
+                    component = "cli_run",
+                    script = %path.display(),
+                    "Calling on_init() hook"
+                );
                 runtime.call_hook("on_init")?;
                 self.output.success("Script initialized (on_init called)");
             }
@@ -127,7 +141,13 @@ impl RunCommand {
         engine.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
-        info!("Engine running with mock input");
+        info!(
+            service = "keyrx",
+            event = "engine_started",
+            component = "cli_run",
+            driver = "mock",
+            "Engine running with mock input"
+        );
 
         // Set up Ctrl+C handler
         let running = Arc::new(AtomicBool::new(true));
@@ -159,7 +179,13 @@ impl RunCommand {
         engine.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
-        info!("Engine running with Linux input driver");
+        info!(
+            service = "keyrx",
+            event = "engine_started",
+            component = "cli_run",
+            driver = "linux",
+            "Engine running with Linux input driver"
+        );
 
         // Set up graceful shutdown with signal handlers
         let running = self.setup_signal_handlers()?;
@@ -217,7 +243,13 @@ impl RunCommand {
         flag::register(SIGTERM, running.clone())
             .map_err(|e| anyhow::anyhow!("Failed to register SIGTERM handler: {e}"))?;
 
-        debug!("Signal handlers registered for SIGINT and SIGTERM");
+        debug!(
+            service = "keyrx",
+            event = "signal_handlers_registered",
+            component = "cli_run",
+            signals = "SIGINT,SIGTERM",
+            "Signal handlers registered"
+        );
 
         Ok(running)
     }
@@ -252,7 +284,13 @@ impl RunCommand {
         engine.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
-        info!("Engine running with Windows input driver");
+        info!(
+            service = "keyrx",
+            event = "engine_started",
+            component = "cli_run",
+            driver = "windows",
+            "Engine running with Windows input driver"
+        );
 
         // Set up graceful shutdown
         let running = Arc::new(AtomicBool::new(true));

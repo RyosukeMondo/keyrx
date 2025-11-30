@@ -56,7 +56,13 @@ impl WindowsInput {
         let panic_error = Arc::new(AtomicBool::new(false));
         let injector = SendInputInjector::new();
 
-        debug!("WindowsInput created");
+        debug!(
+            service = "keyrx",
+            event = "windows_input_created",
+            component = "windows_input",
+            injector = "sendinput",
+            "WindowsInput created"
+        );
 
         Ok(Self {
             hook_thread: None,
@@ -76,7 +82,13 @@ impl<I: KeyInjector> WindowsInput<I> {
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
 
-        debug!("WindowsInput created with custom injector");
+        debug!(
+            service = "keyrx",
+            event = "windows_input_created",
+            component = "windows_input",
+            injector = "custom",
+            "WindowsInput created with custom injector"
+        );
 
         Ok(Self {
             hook_thread: None,
@@ -132,7 +144,12 @@ impl<I: KeyInjector> Drop for WindowsInput<I> {
         // Ensure the driver is stopped and hook is released on drop.
         // This is critical for graceful cleanup even on panics or unexpected termination.
         if self.running.load(Ordering::Relaxed) {
-            debug!("WindowsInput::drop - stopping driver...");
+            debug!(
+                service = "keyrx",
+                event = "windows_drop_stopping",
+                component = "windows_input",
+                "WindowsInput::drop - stopping driver"
+            );
             self.running.store(false, Ordering::Relaxed);
 
             // Post WM_QUIT to the hook thread to break out of the message loop
@@ -142,23 +159,51 @@ impl<I: KeyInjector> Drop for WindowsInput<I> {
                 let result =
                     unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
                 if result.is_err() {
-                    warn!("WindowsInput::drop - Failed to post WM_QUIT to hook thread");
+                    warn!(
+                        service = "keyrx",
+                        event = "windows_drop_post_quit_failed",
+                        component = "windows_input",
+                        thread_id = thread_id,
+                        "WindowsInput::drop - Failed to post WM_QUIT to hook thread"
+                    );
                 }
             }
 
             // Wait for the hook thread to finish
             if let Some(handle) = self.hook_thread.take() {
-                debug!("WindowsInput::drop - waiting for hook thread...");
+                debug!(
+                    service = "keyrx",
+                    event = "windows_drop_join_hook",
+                    component = "windows_input",
+                    "WindowsInput::drop - waiting for hook thread"
+                );
                 match handle.join() {
-                    Ok(()) => debug!("WindowsInput::drop - hook thread finished cleanly"),
-                    Err(e) => warn!("WindowsInput::drop - hook thread panicked: {:?}", e),
+                    Ok(()) => debug!(
+                        service = "keyrx",
+                        event = "windows_drop_hook_stopped",
+                        component = "windows_input",
+                        status = "clean",
+                        "WindowsInput::drop - hook thread finished cleanly"
+                    ),
+                    Err(e) => warn!(
+                        service = "keyrx",
+                        event = "windows_drop_hook_panic",
+                        component = "windows_input",
+                        error = ?e,
+                        "WindowsInput::drop - hook thread panicked"
+                    ),
                 }
             }
 
             // Drain any remaining events
             while self.rx.try_recv().is_ok() {}
 
-            debug!("WindowsInput::drop - cleanup complete");
+            debug!(
+                service = "keyrx",
+                event = "windows_drop_complete",
+                component = "windows_input",
+                "WindowsInput::drop - cleanup complete"
+            );
         }
     }
 }
@@ -168,13 +213,23 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
         // Check if the hook thread panicked
         if self.panic_error.load(Ordering::SeqCst) {
-            error!("poll_events called after hook thread panic");
+            error!(
+                service = "keyrx",
+                event = "windows_hook_panic_detected",
+                component = "windows_input",
+                "poll_events called after hook thread panic"
+            );
             self.running.store(false, Ordering::Relaxed);
             anyhow::bail!("Hook thread panicked - keyboard hook has been uninstalled for safety");
         }
 
         if !self.running.load(Ordering::Relaxed) {
-            trace!("poll_events called while not running");
+            trace!(
+                service = "keyrx",
+                event = "windows_poll_events_inactive",
+                component = "windows_input",
+                "poll_events called while not running"
+            );
             return Ok(vec![]);
         }
 
@@ -185,9 +240,12 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             match self.rx.try_recv() {
                 Ok(event) => {
                     trace!(
-                        "Received event: {:?} {}",
-                        event.key,
-                        if event.pressed { "down" } else { "up" }
+                        service = "keyrx",
+                        event = "windows_input_event_received",
+                        component = "windows_input",
+                        key = ?event.key,
+                        pressed = event.pressed,
+                        "Received input event"
                     );
                     events.push(event);
                 }
@@ -199,13 +257,25 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
                     // Channel closed - hook thread has stopped
                     // Check if it was due to a panic
                     if self.panic_error.load(Ordering::SeqCst) {
-                        error!("Event channel disconnected due to hook thread panic");
+                        error!(
+                            service = "keyrx",
+                            event = "windows_channel_disconnected",
+                            component = "windows_input",
+                            reason = "hook_panic",
+                            "Event channel disconnected due to hook thread panic"
+                        );
                         self.running.store(false, Ordering::Relaxed);
                         anyhow::bail!(
                             "Hook thread panicked - keyboard hook has been uninstalled for safety"
                         );
                     }
-                    error!("Event channel disconnected - hook thread may have crashed");
+                    error!(
+                        service = "keyrx",
+                        event = "windows_channel_disconnected",
+                        component = "windows_input",
+                        reason = "unexpected_disconnect",
+                        "Event channel disconnected - hook thread may have crashed"
+                    );
                     self.running.store(false, Ordering::Relaxed);
                     anyhow::bail!("Input hook disconnected unexpectedly");
                 }
@@ -213,7 +283,13 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         }
 
         if !events.is_empty() {
-            debug!("poll_events returning {} events", events.len());
+            debug!(
+                service = "keyrx",
+                event = "windows_poll_events",
+                component = "windows_input",
+                count = events.len(),
+                "Returning polled events"
+            );
         }
 
         Ok(events)
@@ -221,34 +297,67 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
 
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            trace!("send_output called while not running");
+            trace!(
+                service = "keyrx",
+                event = "windows_send_output_inactive",
+                component = "windows_input",
+                "send_output called while not running"
+            );
             return Ok(());
         }
 
         match action {
             OutputAction::KeyDown(key) => {
-                debug!("Sending key down: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "windows_key_down",
+                    component = "windows_input",
+                    key = ?key,
+                    "Sending key down"
+                );
                 self.inject_key(key, true)?;
             }
             OutputAction::KeyUp(key) => {
-                debug!("Sending key up: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "windows_key_up",
+                    component = "windows_input",
+                    key = ?key,
+                    "Sending key up"
+                );
                 self.inject_key(key, false)?;
             }
             OutputAction::KeyTap(key) => {
-                debug!("Sending key tap: {:?}", key);
+                debug!(
+                    service = "keyrx",
+                    event = "windows_key_tap",
+                    component = "windows_input",
+                    key = ?key,
+                    "Sending key tap"
+                );
                 self.inject_key(key, true)?;
                 self.inject_key(key, false)?;
             }
             OutputAction::Block => {
                 // Block does nothing - the original event is already captured
                 // and won't be passed through unless we explicitly emit it
-                trace!("Blocking key (no action needed)");
+                trace!(
+                    service = "keyrx",
+                    event = "windows_block_action",
+                    component = "windows_input",
+                    "Blocking key (no action needed)"
+                );
             }
             OutputAction::PassThrough => {
                 // PassThrough is handled by the engine - it re-emits the original key
                 // For the driver, this is a no-op since the engine will call
                 // KeyDown/KeyUp for the original key if needed
-                trace!("PassThrough (no action needed)");
+                trace!(
+                    service = "keyrx",
+                    event = "windows_passthrough_action",
+                    component = "windows_input",
+                    "PassThrough (no action needed)"
+                );
             }
         }
 
@@ -257,11 +366,22 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
 
     async fn start(&mut self) -> Result<()> {
         if self.running.load(Ordering::Relaxed) {
-            warn!("WindowsInput already running");
+            warn!(
+                service = "keyrx",
+                event = "windows_start_skipped",
+                component = "windows_input",
+                reason = "already_running",
+                "WindowsInput already running"
+            );
             return Ok(());
         }
 
-        debug!("Starting WindowsInput...");
+        debug!(
+            service = "keyrx",
+            event = "windows_starting",
+            component = "windows_input",
+            "Starting WindowsInput"
+        );
 
         // Reset panic error flag for fresh start
         self.panic_error.store(false, Ordering::SeqCst);
@@ -276,7 +396,12 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
 
         // Spawn the hook thread
         let handle = thread::spawn(move || {
-            debug!("Hook thread started");
+            debug!(
+                service = "keyrx",
+                event = "windows_hook_thread_started",
+                component = "windows_input",
+                "Hook thread started"
+            );
 
             // Create the hook manager
             let mut hook_manager = HookManager::new(running.clone());
@@ -284,10 +409,21 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             // Install the hook
             match hook_manager.install(tx) {
                 Ok(()) => {
-                    debug!("Keyboard hook installed successfully");
+                    debug!(
+                        service = "keyrx",
+                        event = "windows_keyboard_hook_installed",
+                        component = "windows_input",
+                        "Keyboard hook installed successfully"
+                    );
                 }
                 Err(e) => {
-                    error!("Failed to install keyboard hook: {:?}", e);
+                    error!(
+                        service = "keyrx",
+                        event = "windows_keyboard_hook_install_failed",
+                        component = "windows_input",
+                        error = ?e,
+                        "Failed to install keyboard hook"
+                    );
                     running.store(false, Ordering::Relaxed);
                     return;
                 }
@@ -313,21 +449,42 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
                 } else {
                     "Unknown panic".to_string()
                 };
-                error!("Hook thread panicked: {}", panic_msg);
+                error!(
+                    service = "keyrx",
+                    event = "windows_hook_thread_panic",
+                    component = "windows_input",
+                    error = panic_msg,
+                    "Hook thread panicked"
+                );
 
                 // CRITICAL: Uninstall the hook even on panic
                 // This is the primary goal of panic recovery
                 hook_manager.uninstall();
-                debug!("Hook uninstalled after panic");
+                debug!(
+                    service = "keyrx",
+                    event = "windows_hook_uninstalled_after_panic",
+                    component = "windows_input",
+                    "Hook uninstalled after panic"
+                );
 
-                debug!("Hook thread exiting after panic");
+                debug!(
+                    service = "keyrx",
+                    event = "windows_hook_thread_exit_after_panic",
+                    component = "windows_input",
+                    "Hook thread exiting after panic"
+                );
                 return;
             }
 
             // Normal shutdown: uninstall the hook (also done in Drop, but explicit is clearer)
             hook_manager.uninstall();
 
-            debug!("Hook thread finished");
+            debug!(
+                service = "keyrx",
+                event = "windows_hook_thread_finished",
+                component = "windows_input",
+                "Hook thread finished"
+            );
         });
 
         self.hook_thread = Some(handle);
@@ -346,17 +503,33 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             anyhow::bail!("Failed to start keyboard hook");
         }
 
-        debug!("WindowsInput started successfully");
+        debug!(
+            service = "keyrx",
+            event = "windows_started",
+            component = "windows_input",
+            "WindowsInput started successfully"
+        );
         Ok(())
     }
 
     async fn stop(&mut self) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            debug!("WindowsInput already stopped");
+            debug!(
+                service = "keyrx",
+                event = "windows_stop_skipped",
+                component = "windows_input",
+                reason = "already_stopped",
+                "WindowsInput already stopped"
+            );
             return Ok(());
         }
 
-        debug!("Stopping WindowsInput...");
+        debug!(
+            service = "keyrx",
+            event = "windows_stopping",
+            component = "windows_input",
+            "Stopping WindowsInput"
+        );
 
         // Signal the hook thread to stop
         self.running.store(false, Ordering::Relaxed);
@@ -367,21 +540,50 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             // SAFETY: PostThreadMessageW is safe to call with a valid thread ID
             let result = unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
             if result.is_err() {
-                warn!("Failed to post WM_QUIT to hook thread");
+                warn!(
+                    service = "keyrx",
+                    event = "windows_post_quit_failed",
+                    component = "windows_input",
+                    thread_id = thread_id,
+                    "Failed to post WM_QUIT to hook thread"
+                );
             } else {
-                debug!("Posted WM_QUIT to hook thread {}", thread_id);
+                debug!(
+                    service = "keyrx",
+                    event = "windows_post_quit_sent",
+                    component = "windows_input",
+                    thread_id = thread_id,
+                    "Posted WM_QUIT to hook thread"
+                );
             }
         }
 
         // Wait for the hook thread to finish
         if let Some(handle) = self.hook_thread.take() {
-            debug!("Waiting for hook thread to finish...");
+            debug!(
+                service = "keyrx",
+                event = "windows_join_hook",
+                component = "windows_input",
+                "Waiting for hook thread to finish"
+            );
             match handle.join() {
                 Ok(()) => {
-                    debug!("Hook thread finished cleanly");
+                    debug!(
+                        service = "keyrx",
+                        event = "windows_hook_thread_stopped",
+                        component = "windows_input",
+                        status = "clean",
+                        "Hook thread finished cleanly"
+                    );
                 }
                 Err(e) => {
-                    error!("Hook thread panicked: {:?}", e);
+                    error!(
+                        service = "keyrx",
+                        event = "windows_hook_thread_panic",
+                        component = "windows_input",
+                        error = ?e,
+                        "Hook thread panicked"
+                    );
                     // Continue with cleanup even if thread panicked
                 }
             }
@@ -392,7 +594,12 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             // Discard remaining events
         }
 
-        debug!("WindowsInput stopped successfully");
+        debug!(
+            service = "keyrx",
+            event = "windows_stopped",
+            component = "windows_input",
+            "WindowsInput stopped successfully"
+        );
         Ok(())
     }
 }

@@ -63,7 +63,13 @@ impl RhaiRuntime {
     fn register_remap_functions(engine: &mut Engine, pending_ops: &PendingOps) {
         // Register core functions
         engine.register_fn("print_debug", |msg: &str| {
-            tracing::debug!("{}", msg);
+            tracing::debug!(
+                service = "keyrx",
+                event = "script_debug",
+                component = "scripting_runtime",
+                script_message = msg,
+                "Script debug output"
+            );
         });
 
         // Register remap function: remap(from, to)
@@ -73,7 +79,14 @@ impl RhaiRuntime {
             move |from: &str, to: &str| -> std::result::Result<(), Box<EvalAltResult>> {
                 let from_key = parse_key_or_error(from, "remap")?;
                 let to_key = parse_key_or_error(to, "remap")?;
-                tracing::debug!("Registered remap: {} -> {}", from, to);
+                tracing::debug!(
+                    service = "keyrx",
+                    event = "remap_registered",
+                    component = "scripting_runtime",
+                    from = from,
+                    to = to,
+                    "Registered remap"
+                );
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Remap {
                         from: from_key,
@@ -90,7 +103,13 @@ impl RhaiRuntime {
             "block",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
                 let key_code = parse_key_or_error(key, "block")?;
-                tracing::debug!("Registered block: {}", key);
+                tracing::debug!(
+                    service = "keyrx",
+                    event = "block_registered",
+                    component = "scripting_runtime",
+                    key = key,
+                    "Registered block"
+                );
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Block { key: key_code });
                 }
@@ -104,7 +123,13 @@ impl RhaiRuntime {
             "pass",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
                 let key_code = parse_key_or_error(key, "pass")?;
-                tracing::debug!("Registered pass: {}", key);
+                tracing::debug!(
+                    service = "keyrx",
+                    event = "pass_registered",
+                    component = "scripting_runtime",
+                    key = key,
+                    "Registered pass"
+                );
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Pass { key: key_code });
                 }

@@ -80,9 +80,12 @@ impl EvdevReader {
         })?;
 
         debug!(
-            "Opened evdev device: {} at {}",
-            device.name().unwrap_or("Unknown"),
-            device_path.display()
+            service = "keyrx",
+            event = "evdev_opened",
+            component = "linux_reader",
+            device = device.name().unwrap_or("Unknown"),
+            path = %device_path.display(),
+            "Opened evdev device"
         );
 
         // Create device_id from path for event metadata
@@ -112,7 +115,13 @@ impl EvdevReader {
         self.device
             .grab()
             .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
-        debug!("Grabbed keyboard device: {}", self.device_path.display());
+        debug!(
+            service = "keyrx",
+            event = "evdev_grabbed",
+            component = "linux_reader",
+            path = %self.device_path.display(),
+            "Grabbed keyboard device"
+        );
         Ok(())
     }
 
@@ -129,7 +138,13 @@ impl EvdevReader {
         self.device
             .ungrab()
             .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
-        debug!("Released keyboard device: {}", self.device_path.display());
+        debug!(
+            service = "keyrx",
+            event = "evdev_released",
+            component = "linux_reader",
+            path = %self.device_path.display(),
+            "Released keyboard device"
+        );
         Ok(())
     }
 
@@ -199,7 +214,13 @@ impl EvdevReader {
         let running = self.running.clone();
 
         thread::spawn(move || {
-            debug!("EvdevReader thread started for {}", device_path.display());
+            debug!(
+                service = "keyrx",
+                event = "evdev_reader_started",
+                component = "linux_reader",
+                path = %device_path.display(),
+                "EvdevReader thread started"
+            );
 
             // Wrap the main loop in catch_unwind for panic recovery
             let result = panic::catch_unwind(AssertUnwindSafe(|| {
@@ -298,28 +319,40 @@ impl EvdevReader {
         // Log the panic
         let panic_msg = extract_panic_message(panic_info);
         error!(
-            "EvdevReader thread panicked for {}: {}",
-            device_path.display(),
-            panic_msg
+            service = "keyrx",
+            event = "evdev_reader_panic",
+            component = "linux_reader",
+            path = %device_path.display(),
+            error = %panic_msg,
+            "EvdevReader thread panicked"
         );
 
         // CRITICAL: Ungrab the keyboard even on panic
         if let Err(e) = self.ungrab() {
             error!(
-                "Failed to ungrab device {} after panic: {}",
-                device_path.display(),
-                e
+                service = "keyrx",
+                event = "evdev_ungrab_failed",
+                component = "linux_reader",
+                path = %device_path.display(),
+                error = %e,
+                "Failed to ungrab device after panic"
             );
         } else {
             debug!(
-                "Successfully ungrabbed device {} after panic",
-                device_path.display()
+                service = "keyrx",
+                event = "evdev_ungrab_success",
+                component = "linux_reader",
+                path = %device_path.display(),
+                "Successfully ungrabbed device after panic"
             );
         }
 
         debug!(
-            "EvdevReader thread exiting after panic for {}",
-            device_path.display()
+            service = "keyrx",
+            event = "evdev_reader_exit_after_panic",
+            component = "linux_reader",
+            path = %device_path.display(),
+            "EvdevReader thread exiting after panic"
         );
     }
 
@@ -327,12 +360,21 @@ impl EvdevReader {
     fn handle_normal_shutdown(&mut self, device_path: &Path) {
         if let Err(e) = self.ungrab() {
             tracing::warn!(
-                "Failed to ungrab device {} on shutdown: {}",
-                device_path.display(),
-                e
+                service = "keyrx",
+                event = "evdev_ungrab_failed",
+                component = "linux_reader",
+                path = %device_path.display(),
+                error = %e,
+                "Failed to ungrab device on shutdown"
             );
         }
-        debug!("EvdevReader thread stopped for {}", device_path.display());
+        debug!(
+            service = "keyrx",
+            event = "evdev_reader_stopped",
+            component = "linux_reader",
+            path = %device_path.display(),
+            "EvdevReader thread stopped"
+        );
     }
 }
 
@@ -370,17 +412,25 @@ where
     for event in events {
         let input_event = convert(event);
         trace!(
-            "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
-            input_event.key,
-            if input_event.pressed { "down" } else { "up" },
-            input_event.scan_code,
-            input_event.is_repeat,
-            input_event.timestamp_us,
-            input_event.device_id.as_deref().unwrap_or("unknown-device")
+            service = "keyrx",
+            event = "evdev_input_read",
+            component = "linux_reader",
+            key = ?input_event.key,
+            pressed = input_event.pressed,
+            scan_code = input_event.scan_code,
+            repeat = input_event.is_repeat,
+            timestamp_us = input_event.timestamp_us,
+            device_id = input_event.device_id.as_deref().unwrap_or("unknown-device"),
+            "Read input event"
         );
 
         if tx.send(input_event).is_err() {
-            debug!("Event channel closed, stopping reader");
+            debug!(
+                service = "keyrx",
+                event = "evdev_channel_closed",
+                component = "linux_reader",
+                "Event channel closed, stopping reader"
+            );
             return false;
         }
     }
@@ -396,7 +446,14 @@ fn handle_read_error_internal(
         return false;
     }
 
-    error!("Error reading events from {}: {}", device_path.display(), e);
+    error!(
+        service = "keyrx",
+        event = "evdev_read_error",
+        component = "linux_reader",
+        path = %device_path.display(),
+        error = %e,
+        "Error reading events from device"
+    );
 
     // Small sleep to avoid busy loop on persistent errors
     thread::sleep(std::time::Duration::from_millis(10));

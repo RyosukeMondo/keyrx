@@ -312,7 +312,7 @@
 
 ## Phase 9: Structured Logging Implementation
 
- - [x] 29. Implement JSON structured logging with tracing-subscriber
+- [x] 29. Implement JSON structured logging with tracing-subscriber
   - File: `core/Cargo.toml`
   - Add dependency: `tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }`
   - File: `core/src/cli/commands/run.rs`
@@ -323,7 +323,7 @@
   - _Requirements: CLAUDE.md logging requirements_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Observability Engineer | Task: Implement JSON structured logging using tracing-subscriber with proper field formatting | Restrictions: Debug mode only, no PII/secrets in logs | Success: Logs output valid JSON with timestamp/level/service/event/context | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 30. Add structured context fields to all log statements
+- [x] 30. Add structured context fields to all log statements
   - Files: All files using `tracing::{debug, info, warn, error}`
   - Add context fields to log statements (event, context, metadata)
   - Example: `debug!(event = "script_loaded", path = %path, "Loading script")`

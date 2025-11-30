@@ -67,17 +67,28 @@ impl SendInputInjector {
         if result == 0 {
             // SendInput failed, get the error code from the last Win32 error
             let win_error = WinError::from_win32();
-            error!("SendInput failed with error: {:?}", win_error);
+            error!(
+                service = "keyrx",
+                event = "sendinput_failed",
+                component = "windows_injector",
+                key = ?key,
+                pressed = pressed,
+                error = ?win_error,
+                "SendInput failed"
+            );
             Err(WindowsDriverError::send_input_failed(
                 win_error.code().0 as u32,
             ))
         } else {
             debug!(
-                "Injected key {:?} {} (vk={:#x}, extended={})",
-                key,
-                if pressed { "down" } else { "up" },
-                vk_code,
-                is_extended_key(key)
+                service = "keyrx",
+                event = "key_injected",
+                component = "windows_injector",
+                key = ?key,
+                pressed = pressed,
+                vk_code = vk_code,
+                extended = is_extended_key(key),
+                "Injected key event"
             );
             Ok(())
         }

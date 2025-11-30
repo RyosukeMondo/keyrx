@@ -97,12 +97,23 @@ impl HookManager {
 
         match hook {
             Ok(handle) => {
-                debug!("Keyboard hook installed successfully");
+                debug!(
+                    service = "keyrx",
+                    event = "keyboard_hook_installed",
+                    component = "windows_hook",
+                    "Keyboard hook installed successfully"
+                );
                 self.hook_handle = Some(handle);
                 Ok(())
             }
             Err(e) => {
-                error!("Failed to install keyboard hook: {}", e);
+                error!(
+                    service = "keyrx",
+                    event = "keyboard_hook_install_failed",
+                    component = "windows_hook",
+                    error = %e,
+                    "Failed to install keyboard hook"
+                );
                 // Clear the sender since we failed
                 HOOK_SENDER.with(|s| {
                     *s.borrow_mut() = None;
@@ -120,9 +131,19 @@ impl HookManager {
             // SAFETY: We're passing a valid hook handle that we received from SetWindowsHookExW
             let result = unsafe { UnhookWindowsHookEx(handle) };
             if result.is_err() {
-                warn!("Failed to unhook keyboard hook");
+                warn!(
+                    service = "keyrx",
+                    event = "keyboard_hook_uninstall_failed",
+                    component = "windows_hook",
+                    "Failed to unhook keyboard hook"
+                );
             } else {
-                debug!("Keyboard hook uninstalled");
+                debug!(
+                    service = "keyrx",
+                    event = "keyboard_hook_uninstalled",
+                    component = "windows_hook",
+                    "Keyboard hook uninstalled"
+                );
             }
         }
 
@@ -165,7 +186,13 @@ impl HookManager {
         // SAFETY: GetCurrentThreadId is safe to call and returns the current thread's ID
         let thread_id = unsafe { GetCurrentThreadId() };
         HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
-        debug!("Starting Windows message loop on thread {}", thread_id);
+        debug!(
+            service = "keyrx",
+            event = "windows_message_loop_start",
+            component = "windows_hook",
+            thread_id = thread_id,
+            "Starting Windows message loop"
+        );
         let mut msg = MSG::default();
 
         while self.running.load(Ordering::SeqCst) {
@@ -176,7 +203,13 @@ impl HookManager {
             if has_message {
                 // Check for WM_QUIT to allow graceful shutdown
                 if msg.message == WM_QUIT {
-                    debug!("Received WM_QUIT, exiting message loop");
+                    debug!(
+                        service = "keyrx",
+                        event = "windows_message_loop_quit",
+                        component = "windows_hook",
+                        thread_id = thread_id,
+                        "Received WM_QUIT, exiting message loop"
+                    );
                     break;
                 }
 
@@ -195,7 +228,13 @@ impl HookManager {
 
         // Clear the thread ID on exit
         HOOK_THREAD_ID.store(0, Ordering::SeqCst);
-        debug!("Windows message loop stopped");
+        debug!(
+            service = "keyrx",
+            event = "windows_message_loop_stop",
+            component = "windows_hook",
+            thread_id = thread_id,
+            "Windows message loop stopped"
+        );
     }
 }
 

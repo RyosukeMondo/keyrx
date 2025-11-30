@@ -28,7 +28,14 @@ pub fn parse_key_or_error(key: &str, fn_name: &str) -> Result<KeyCode, Box<EvalA
     match KeyCode::from_name(key) {
         Some(k) => Ok(k),
         None => {
-            tracing::warn!("Unknown key in {}(): '{}'", fn_name, key);
+            tracing::warn!(
+                service = "keyrx",
+                event = "rhai_unknown_key",
+                component = "scripting_helpers",
+                function = fn_name,
+                key = key,
+                "Unknown key in Rhai function"
+            );
             Err(Box::new(EvalAltResult::ErrorRuntime(
                 format!(
                     "Unknown key '{}'. See docs/KEYS.md for valid key names.",

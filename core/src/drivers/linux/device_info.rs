@@ -32,7 +32,14 @@ pub fn try_get_keyboard_info(path: &Path) -> Option<DeviceInfo> {
     let device = match evdev::Device::open(path) {
         Ok(d) => d,
         Err(e) => {
-            debug!("Could not open {}: {}", path.display(), e);
+            debug!(
+                service = "keyrx",
+                event = "device_open_failed",
+                component = "linux_device_info",
+                path = %path.display(),
+                error = %e,
+                "Could not open device for detection"
+            );
             return None;
         }
     };

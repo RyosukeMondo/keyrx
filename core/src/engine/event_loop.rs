@@ -89,8 +89,12 @@ where
         // keys we injected ourselves. These events should pass through unchanged.
         if event.is_synthetic {
             debug!(
-                "Skipping synthetic event: {:?} (pressed={})",
-                event.key, event.pressed
+                service = "keyrx",
+                event = "skip_synthetic_event",
+                component = "engine_event_loop",
+                key = ?event.key,
+                pressed = event.pressed,
+                "Skipping synthetic input event"
             );
             return OutputAction::PassThrough;
         }
@@ -100,8 +104,13 @@ where
         match action {
             RemapAction::Remap(target_key) => {
                 debug!(
-                    "Remapping {:?} -> {:?} (pressed={})",
-                    event.key, target_key, event.pressed
+                    service = "keyrx",
+                    event = "remap_action",
+                    component = "engine_event_loop",
+                    from = ?event.key,
+                    to = ?target_key,
+                    pressed = event.pressed,
+                    "Remapping key"
                 );
                 if event.pressed {
                     OutputAction::KeyDown(target_key)
@@ -110,11 +119,25 @@ where
                 }
             }
             RemapAction::Block => {
-                debug!("Blocking {:?} (pressed={})", event.key, event.pressed);
+                debug!(
+                    service = "keyrx",
+                    event = "block_action",
+                    component = "engine_event_loop",
+                    key = ?event.key,
+                    pressed = event.pressed,
+                    "Blocking key"
+                );
                 OutputAction::Block
             }
             RemapAction::Pass => {
-                debug!("Passing {:?} (pressed={})", event.key, event.pressed);
+                debug!(
+                    service = "keyrx",
+                    event = "pass_action",
+                    component = "engine_event_loop",
+                    key = ?event.key,
+                    pressed = event.pressed,
+                    "Passing key through"
+                );
                 OutputAction::PassThrough
             }
         }
@@ -126,7 +149,12 @@ where
     /// and sends the resulting output actions back to the OS. Runs until
     /// `stop()` is called or an error occurs.
     pub async fn run_loop(&mut self) -> Result<()> {
-        debug!("Starting event loop");
+        debug!(
+            service = "keyrx",
+            event = "event_loop_start",
+            component = "engine_event_loop",
+            "Starting event loop"
+        );
 
         while self.running {
             let events = self.input.poll_events().await?;
@@ -137,7 +165,12 @@ where
             }
         }
 
-        debug!("Event loop stopped");
+        debug!(
+            service = "keyrx",
+            event = "event_loop_stop",
+            component = "engine_event_loop",
+            "Event loop stopped"
+        );
         Ok(())
     }
 }

@@ -5,6 +5,7 @@
 #![allow(unsafe_code)]
 
 use std::ffi::{c_char, CStr, CString};
+use std::path::Path;
 
 /// Initialize the KeyRx engine.
 ///
@@ -13,7 +14,13 @@ use std::ffi::{c_char, CStr, CString};
 #[no_mangle]
 pub extern "C" fn keyrx_init() -> i32 {
     let _ = tracing_subscriber::fmt::try_init();
-    tracing::info!("KeyRx Core initialized");
+    tracing::info!(
+        service = "keyrx",
+        event = "ffi_init",
+        component = "ffi_exports",
+        status = "ok",
+        "KeyRx Core initialized"
+    );
     0 // Success
 }
 
@@ -42,7 +49,18 @@ pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
         Err(_) => return -2,
     };
 
-    tracing::info!("Loading script: {}", path_str);
+    let script_name = Path::new(path_str)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("<unknown>");
+
+    tracing::info!(
+        service = "keyrx",
+        event = "ffi_load_script",
+        component = "ffi_exports",
+        script = script_name,
+        "Loading script"
+    );
     // TODO: Actually load the script
     0
 }
