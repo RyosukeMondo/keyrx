@@ -72,7 +72,7 @@
   - _Requirements: REQ-2, REQ-5, REQ-10_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create DecisionQueue in core/src/engine/decision/pending.rs with tap-hold resolution (tap on early release, hold on timeout), permissive_hold, eager_tap support | Restrictions: O(n) check is acceptable for small queue, cap at 32 pending | Success: Tap/hold/interrupt scenarios all tested and working | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 7. Create ComboRegistry
+- [x] 7. Create ComboRegistry
   - File: `core/src/engine/decision/combos.rs` (new)
   - Define `ComboDef` struct with keys and action
   - Implement `ComboRegistry` with register and find methods
