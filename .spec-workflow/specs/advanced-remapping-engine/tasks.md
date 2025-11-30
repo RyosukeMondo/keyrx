@@ -210,7 +210,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Create comprehensive tap-hold integration tests covering all scenarios | Restrictions: Use mock clock for deterministic timing | Success: All 5 scenarios tested and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 19. Create integration tests for combos
+- [x] 19. Create integration tests for combos
   - File: `core/tests/combo_test.rs` (new)
   - Test 2-key combo (simultaneous)
   - Test 3-key combo
