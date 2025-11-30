@@ -1,15 +1,17 @@
 //! Layer and modifier state management.
 
 mod key_state;
+mod layers;
 mod modifiers;
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 pub use key_state::KeyStateTracker;
+pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
     Modifier, ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
 };
-use std::collections::HashSet;
 
 /// A set of active modifiers (both physical and virtual).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -47,37 +49,5 @@ impl ModifierSet {
     /// Clear all modifiers.
     pub fn clear(&mut self) {
         self.active.clear();
-    }
-}
-
-/// A keyboard layer with its own key mappings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Layer {
-    /// Layer name.
-    pub name: String,
-    /// Whether this layer is currently active.
-    pub active: bool,
-    /// Priority (higher = checked first).
-    pub priority: i32,
-}
-
-impl Layer {
-    /// Create a new layer.
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            active: false,
-            priority: 0,
-        }
-    }
-
-    /// Activate this layer.
-    pub fn activate(&mut self) {
-        self.active = true;
-    }
-
-    /// Deactivate this layer.
-    pub fn deactivate(&mut self) {
-        self.active = false;
     }
 }

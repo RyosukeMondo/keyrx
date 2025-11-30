@@ -26,7 +26,7 @@
   - _Requirements: REQ-3, REQ-7_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in bit manipulation | Task: Create ModifierState in core/src/engine/state/modifiers.rs with 256-bit virtual modifier bitmap and one-shot state machine | Restrictions: Use bitwise ops for speed, no heap allocation | Success: Supports 255 virtual modifiers, one-shot cycle works, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 3. Create LayerStack system
+- [x] 3. Create LayerStack system
   - File: `core/src/engine/state/layers.rs` (new)
   - Define `Layer` struct with name, mappings, transparent flag
   - Define `LayerAction` enum (Remap, Block, TapHold, LayerPush, etc.)
