@@ -184,12 +184,6 @@ impl RhaiRuntime {
     }
 }
 
-impl Default for RhaiRuntime {
-    fn default() -> Self {
-        Self::new().expect("Failed to create RhaiRuntime")
-    }
-}
-
 impl ScriptRuntime for RhaiRuntime {
     fn execute(&mut self, script: &str) -> Result<()> {
         self.engine
