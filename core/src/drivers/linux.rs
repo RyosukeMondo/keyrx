@@ -116,6 +116,7 @@
 //! [`LinuxDriverError::GrabFailed`]: crate::error::LinuxDriverError::GrabFailed
 //! [`LinuxDriverError::UinputFailed`]: crate::error::LinuxDriverError::UinputFailed
 
+use crate::drivers::common::extract_panic_message;
 use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::error::LinuxDriverError;
@@ -407,13 +408,7 @@ impl EvdevReader {
                 running.store(false, Ordering::Relaxed);
 
                 // Log the panic
-                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
-                    s.to_string()
-                } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                    s.clone()
-                } else {
-                    "Unknown panic".to_string()
-                };
+                let panic_msg = extract_panic_message(&*panic_info);
                 error!(
                     "EvdevReader thread panicked for {}: {}",
                     device_path.display(),

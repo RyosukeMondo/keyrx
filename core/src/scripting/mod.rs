@@ -1,5 +1,6 @@
 //! Rhai scripting integration.
 
+pub mod helpers;
 mod registry;
 mod runtime;
 

@@ -1,8 +1,33 @@
 //! Common types shared across platform-specific drivers.
 
 use serde::Serialize;
+use std::any::Any;
 use std::fmt;
 use std::path::PathBuf;
+
+/// Extract a human-readable message from a panic payload.
+///
+/// This function handles the common case of extracting a message from
+/// `std::panic::catch_unwind` results or panic hooks. It supports both
+/// `&str` and `String` panic payloads, returning "Unknown panic" for
+/// other types.
+///
+/// # Arguments
+///
+/// * `panic_info` - The panic payload from `catch_unwind` or a panic hook.
+///
+/// # Returns
+///
+/// A `String` containing the panic message.
+pub fn extract_panic_message(panic_info: &(dyn Any + Send)) -> String {
+    if let Some(s) = panic_info.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = panic_info.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "Unknown panic".to_string()
+    }
+}
 
 /// Information about an input device.
 ///
@@ -187,5 +212,29 @@ mod tests {
         let debug = format!("{:?}", info);
         assert!(debug.contains("DeviceInfo"));
         assert!(debug.contains("Test"));
+    }
+
+    #[test]
+    fn extract_panic_message_str() {
+        let payload: Box<dyn std::any::Any + Send> = Box::new("test panic message");
+        assert_eq!(extract_panic_message(&*payload), "test panic message");
+    }
+
+    #[test]
+    fn extract_panic_message_string() {
+        let payload: Box<dyn std::any::Any + Send> = Box::new(String::from("owned panic"));
+        assert_eq!(extract_panic_message(&*payload), "owned panic");
+    }
+
+    #[test]
+    fn extract_panic_message_unknown() {
+        let payload: Box<dyn std::any::Any + Send> = Box::new(42i32);
+        assert_eq!(extract_panic_message(&*payload), "Unknown panic");
+    }
+
+    #[test]
+    fn extract_panic_message_empty_str() {
+        let payload: Box<dyn std::any::Any + Send> = Box::new("");
+        assert_eq!(extract_panic_message(&*payload), "");
     }
 }
