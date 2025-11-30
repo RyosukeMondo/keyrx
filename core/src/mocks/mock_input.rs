@@ -1,10 +1,11 @@
 //! Mock input source for testing.
 
-use crate::engine::{InputEvent, OutputAction};
+use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
 use std::collections::VecDeque;
+use std::time::Instant;
 
 /// Represents a recorded method call on MockInput.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,6 +32,10 @@ pub struct MockInput {
     call_history: Vec<MockCall>,
     /// Optional error to return from start().
     start_error: Option<String>,
+    /// Start time for computing monotonic timestamps.
+    start_time: Instant,
+    /// Monotonic counter for generating unique timestamps when Instant is not suitable.
+    event_counter: u64,
 }
 
 impl MockInput {
@@ -42,6 +47,8 @@ impl MockInput {
             running: false,
             call_history: Vec::new(),
             start_error: None,
+            start_time: Instant::now(),
+            event_counter: 0,
         }
     }
 
@@ -58,7 +65,81 @@ impl MockInput {
     }
 
     /// Queue an input event for the next poll.
+    ///
+    /// The event's metadata will be preserved as-is. Use `queue_key_event()`
+    /// for automatic metadata population.
     pub fn queue_event(&mut self, event: InputEvent) {
+        self.input_queue.push_back(event);
+    }
+
+    /// Queue a key event with automatically populated metadata.
+    ///
+    /// This is the preferred method for queueing events in tests, as it
+    /// automatically sets mock-appropriate metadata:
+    /// - `timestamp_us`: Monotonic counter (microseconds since MockInput creation)
+    /// - `device_id`: Some("mock")
+    /// - `is_repeat`: false
+    /// - `is_synthetic`: false
+    /// - `scan_code`: 0
+    pub fn queue_key_event(&mut self, key: KeyCode, pressed: bool) {
+        self.event_counter += 1;
+        let timestamp_us = self.start_time.elapsed().as_micros() as u64;
+
+        let event = InputEvent::with_metadata(
+            key,
+            pressed,
+            timestamp_us,
+            Some("mock".to_string()),
+            false, // is_repeat
+            false, // is_synthetic
+            0,     // scan_code
+        );
+        self.input_queue.push_back(event);
+    }
+
+    /// Queue a key down event with automatically populated metadata.
+    pub fn queue_key_down(&mut self, key: KeyCode) {
+        self.queue_key_event(key, true);
+    }
+
+    /// Queue a key up event with automatically populated metadata.
+    pub fn queue_key_up(&mut self, key: KeyCode) {
+        self.queue_key_event(key, false);
+    }
+
+    /// Queue a repeat event (key held down causing auto-repeat).
+    pub fn queue_key_repeat(&mut self, key: KeyCode) {
+        self.event_counter += 1;
+        let timestamp_us = self.start_time.elapsed().as_micros() as u64;
+
+        let event = InputEvent::with_metadata(
+            key,
+            true, // pressed
+            timestamp_us,
+            Some("mock".to_string()),
+            true,  // is_repeat
+            false, // is_synthetic
+            0,     // scan_code
+        );
+        self.input_queue.push_back(event);
+    }
+
+    /// Queue a synthetic event (simulating software-injected input).
+    ///
+    /// Useful for testing synthetic event filtering.
+    pub fn queue_synthetic_event(&mut self, key: KeyCode, pressed: bool) {
+        self.event_counter += 1;
+        let timestamp_us = self.start_time.elapsed().as_micros() as u64;
+
+        let event = InputEvent::with_metadata(
+            key,
+            pressed,
+            timestamp_us,
+            Some("mock".to_string()),
+            false, // is_repeat
+            true,  // is_synthetic
+            0,     // scan_code
+        );
         self.input_queue.push_back(event);
     }
 
