@@ -148,8 +148,9 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, GetLastError, PeekMessageW, PostThreadMessageW,
-    SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, MSG,
-    PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT,
+    KBDLLHOOKSTRUCT_FLAGS, LLKHF_INJECTED, MSG, PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP,
+    WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
 /// Thread-local storage for the event sender used by the hook callback.
@@ -159,6 +160,14 @@ use windows::Win32::UI::WindowsAndMessaging::{
 /// and access it from within the callback.
 thread_local! {
     static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
+}
+
+/// Thread-local storage for tracking key press states (for is_repeat detection).
+///
+/// Maps virtual key codes to their current pressed state. When we receive a key down
+/// event for a key that's already marked as pressed, it's a repeat event.
+thread_local! {
+    static KEY_STATES: RefCell<std::collections::HashSet<u16>> = RefCell::new(std::collections::HashSet::new());
 }
 
 /// Global storage for the hook thread's thread ID.
@@ -252,6 +261,11 @@ impl HookManager {
         // Clear the thread-local sender
         HOOK_SENDER.with(|s| {
             *s.borrow_mut() = None;
+        });
+
+        // Clear key states for clean restart
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
         });
     }
 
@@ -493,7 +507,6 @@ unsafe extern "system" fn low_level_keyboard_proc(
 
     // Determine if this is a key press or release
     let pressed = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
-    let _is_keyup = matches!(wparam.0 as u32, WM_KEYUP | WM_SYSKEYUP);
 
     // Convert virtual key code to KeyCode
     let vk_code = kb_struct.vkCode as u16;
@@ -502,17 +515,40 @@ unsafe extern "system" fn low_level_keyboard_proc(
     // Get timestamp (Windows provides milliseconds, convert to microseconds)
     let timestamp_us = (kb_struct.time as u64) * 1000;
 
-    // Note: Full metadata capture (is_repeat, is_synthetic, scan_code)
-    // is implemented in task 15.5. For now, use defaults.
-    // Create the input event
+    // Get scan code from KBDLLHOOKSTRUCT
+    let scan_code = kb_struct.scanCode as u16;
+
+    // Detect synthetic (injected) events via LLKHF_INJECTED flag
+    // This is critical for preventing infinite loops when our injected keys are recaptured
+    let is_synthetic = kb_struct.flags.contains(LLKHF_INJECTED);
+
+    // Track key state for is_repeat detection
+    // A key down event while the key is already tracked as pressed is a repeat
+    let is_repeat = KEY_STATES.with(|states| {
+        let mut states = states.borrow_mut();
+        if pressed {
+            // If key was already in the set, this is a repeat
+            let was_pressed = states.contains(&vk_code);
+            if !was_pressed {
+                states.insert(vk_code);
+            }
+            was_pressed
+        } else {
+            // Key up - remove from tracked state
+            states.remove(&vk_code);
+            false // Key up events are never repeats
+        }
+    });
+
+    // Create the input event with full metadata
     let event = InputEvent {
         key,
         pressed,
         timestamp_us,
-        device_id: None,     // Windows hooks don't identify source device
-        is_repeat: false,    // TODO: Track key state in task 15.5
-        is_synthetic: false, // TODO: Check LLKHF_INJECTED flag in task 15.5
-        scan_code: 0,        // TODO: Populate from kb_struct.scanCode in task 15.5
+        device_id: None, // Windows hooks don't identify source device
+        is_repeat,
+        is_synthetic,
+        scan_code,
     };
 
     // Send the event via the thread-local sender
@@ -1587,5 +1623,118 @@ mod tests {
         // ScrollLock and CapsLock are NOT extended
         assert!(!is_extended_key(KeyCode::ScrollLock));
         assert!(!is_extended_key(KeyCode::CapsLock));
+    }
+
+    #[test]
+    fn key_states_tracking_basic() {
+        // Clear any existing state
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
+        });
+
+        // Test: First key down should NOT be a repeat
+        let is_repeat = KEY_STATES.with(|states| {
+            let mut states = states.borrow_mut();
+            let was_pressed = states.contains(&0x41); // 'A' key
+            if !was_pressed {
+                states.insert(0x41);
+            }
+            was_pressed
+        });
+        assert!(!is_repeat, "First key down should not be a repeat");
+
+        // Test: Second key down (while still pressed) SHOULD be a repeat
+        let is_repeat = KEY_STATES.with(|states| {
+            let states = states.borrow();
+            states.contains(&0x41)
+        });
+        assert!(is_repeat, "Second key down should be a repeat");
+
+        // Test: Key up should remove the state
+        KEY_STATES.with(|states| {
+            states.borrow_mut().remove(&0x41);
+        });
+        let is_pressed = KEY_STATES.with(|states| states.borrow().contains(&0x41));
+        assert!(!is_pressed, "Key should be removed after key up");
+
+        // Clean up
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
+        });
+    }
+
+    #[test]
+    fn key_states_tracking_multiple_keys() {
+        // Clear any existing state
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
+        });
+
+        // Press multiple keys
+        KEY_STATES.with(|states| {
+            let mut states = states.borrow_mut();
+            states.insert(0x41); // A
+            states.insert(0x42); // B
+            states.insert(0x43); // C
+        });
+
+        // Verify all are tracked
+        let count = KEY_STATES.with(|states| states.borrow().len());
+        assert_eq!(count, 3, "Should have 3 keys tracked");
+
+        // Release one key
+        KEY_STATES.with(|states| {
+            states.borrow_mut().remove(&0x42); // Release B
+        });
+
+        let count = KEY_STATES.with(|states| states.borrow().len());
+        assert_eq!(count, 2, "Should have 2 keys tracked after release");
+
+        // Verify A and C are still tracked, B is not
+        KEY_STATES.with(|states| {
+            let states = states.borrow();
+            assert!(states.contains(&0x41), "A should still be tracked");
+            assert!(!states.contains(&0x42), "B should not be tracked");
+            assert!(states.contains(&0x43), "C should still be tracked");
+        });
+
+        // Clean up
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
+        });
+    }
+
+    #[test]
+    fn key_states_clear_on_uninstall() {
+        // Simulate some pressed keys
+        KEY_STATES.with(|states| {
+            let mut states = states.borrow_mut();
+            states.insert(0x41);
+            states.insert(0x42);
+        });
+
+        // Verify keys are tracked
+        let count = KEY_STATES.with(|states| states.borrow().len());
+        assert!(count > 0, "Should have keys tracked before clear");
+
+        // Clear (as done in uninstall)
+        KEY_STATES.with(|states| {
+            states.borrow_mut().clear();
+        });
+
+        // Verify cleared
+        let count = KEY_STATES.with(|states| states.borrow().len());
+        assert_eq!(count, 0, "Should have no keys tracked after clear");
+    }
+
+    #[test]
+    fn llkhf_injected_flag_exists() {
+        // Verify the LLKHF_INJECTED flag can be used
+        // This is a compile-time check that the import works
+        let flags = KBDLLHOOKSTRUCT_FLAGS(0x10); // LLKHF_INJECTED = 0x10
+        assert!(flags.contains(LLKHF_INJECTED));
+
+        let flags_without = KBDLLHOOKSTRUCT_FLAGS(0x00);
+        assert!(!flags_without.contains(LLKHF_INJECTED));
     }
 }
