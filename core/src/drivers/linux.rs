@@ -532,20 +532,159 @@ impl UinputWriter {
 }
 
 /// Linux input source using evdev for capture and uinput for injection.
-#[derive(Default)]
+///
+/// `LinuxInput` coordinates an `EvdevReader` for keyboard event capture and
+/// a `UinputWriter` for key injection. It implements the `InputSource` trait
+/// for integration with the KeyRx remapping engine.
+///
+/// # Architecture
+///
+/// ```text
+/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+/// │  Physical KB    │────▶│  EvdevReader     │────▶│  Engine         │
+/// │  (evdev device) │     │  (blocking read) │     │  (async)        │
+/// └─────────────────┘     └──────────────────┘     └─────────────────┘
+///                                                          │
+///                                                          ▼
+/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+/// │  Applications   │◀────│  UinputWriter    │◀────│  Remap Logic    │
+/// │                 │     │  (virtual KB)    │     │                 │
+/// └─────────────────┘     └──────────────────┘     └─────────────────┘
+/// ```
+///
+/// # Thread Model
+///
+/// - The `EvdevReader` runs in a dedicated blocking thread
+/// - Events are sent via a crossbeam channel to the async engine
+/// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
+// TODO: Remove allow(dead_code) once InputSource trait is fully implemented (task 5.2)
+#[allow(dead_code)]
 pub struct LinuxInput {
-    running: bool,
-    /// Placeholder for evdev device handle (full integration is post-MVP).
-    _evdev_device: Option<()>,
+    /// Handle to the reader thread (set after start() is called).
+    reader_handle: Option<JoinHandle<()>>,
+    /// Uinput writer for key injection.
+    writer: UinputWriter,
+    /// Receiver for events from the reader thread.
+    rx: crossbeam_channel::Receiver<InputEvent>,
+    /// Sender for events (held to create the reader).
+    tx: Sender<InputEvent>,
+    /// Shared flag to signal shutdown.
+    running: Arc<AtomicBool>,
+    /// Path to the evdev device being read.
+    device_path: PathBuf,
 }
 
 impl LinuxInput {
     /// Create a new Linux input source.
-    pub fn new() -> Result<Self> {
+    ///
+    /// If `device_path` is `None`, automatically detects the first available
+    /// keyboard device by scanning `/dev/input/event*`.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_path` - Optional explicit path to an evdev device. If `None`,
+    ///   the first detected keyboard will be used.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - No keyboard device is found (when `device_path` is `None`)
+    /// - The uinput device cannot be created (permission denied)
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Auto-detect keyboard
+    /// let input = LinuxInput::new(None)?;
+    ///
+    /// // Use specific device
+    /// let input = LinuxInput::new(Some(PathBuf::from("/dev/input/event3")))?;
+    /// ```
+    pub fn new(device_path: Option<PathBuf>) -> Result<Self> {
+        // Determine device path: use provided or auto-detect
+        let device_path = match device_path {
+            Some(path) => {
+                debug!("Using specified device: {}", path.display());
+                path
+            }
+            None => {
+                debug!("Auto-detecting keyboard device...");
+                Self::find_first_keyboard()?
+            }
+        };
+
+        // Create the event channel
+        let (tx, rx) = crossbeam_channel::unbounded();
+
+        // Create the uinput writer
+        let writer = UinputWriter::new().context("Failed to create uinput writer")?;
+
+        let running = Arc::new(AtomicBool::new(false));
+
+        debug!("LinuxInput created for device: {}", device_path.display());
+
         Ok(Self {
-            running: false,
-            _evdev_device: None,
+            reader_handle: None,
+            writer,
+            rx,
+            tx,
+            running,
+            device_path,
         })
+    }
+
+    /// Find the first available keyboard device.
+    ///
+    /// Scans `/dev/input/event*` and returns the path to the first device
+    /// that has keyboard capability.
+    fn find_first_keyboard() -> Result<PathBuf> {
+        let keyboards = list_keyboards()?;
+
+        if keyboards.is_empty() {
+            bail!(
+                "No keyboard devices found\n\n\
+                 Remediation:\n  \
+                 1. Ensure a keyboard is connected\n  \
+                 2. Check permissions: ls -la /dev/input/event*\n  \
+                 3. Add user to input group: sudo usermod -aG input $USER\n  \
+                 4. Log out and back in for group changes to take effect"
+            );
+        }
+
+        let device = &keyboards[0];
+        debug!(
+            "Auto-detected keyboard: {} at {}",
+            device.name,
+            device.path.display()
+        );
+
+        Ok(device.path.clone())
+    }
+
+    /// List all keyboard devices.
+    ///
+    /// This is a convenience method that delegates to the module-level
+    /// `list_keyboards()` function.
+    pub fn list_devices() -> Result<Vec<DeviceInfo>> {
+        list_keyboards()
+    }
+
+    /// Get the device path.
+    pub fn device_path(&self) -> &Path {
+        &self.device_path
+    }
+
+    /// Get the event receiver.
+    ///
+    /// This can be used for direct access to the event channel, though
+    /// typically events should be accessed via `poll_events()`.
+    pub fn receiver(&self) -> &crossbeam_channel::Receiver<InputEvent> {
+        &self.rx
+    }
+
+    /// Check if the driver is currently running.
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
     }
 
     /// Check if uinput device is accessible.
@@ -602,29 +741,30 @@ impl LinuxInput {
 #[async_trait]
 impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
-        if !self.running {
+        if !self.running.load(Ordering::Relaxed) {
             warn!("poll_events called while not running");
             return Ok(vec![]);
         }
 
-        // Stub: Return empty vec. Full evdev integration is post-MVP.
-        // In the future, this would read events from the evdev device.
+        // Stub: Return empty vec. Full implementation in task 5.2.
+        // This will use try_recv from the rx channel.
         Ok(vec![])
     }
 
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
-        if !self.running {
+        if !self.running.load(Ordering::Relaxed) {
             warn!("send_output called while not running");
             return Ok(());
         }
 
-        // Stub: Log the action. Full uinput integration is post-MVP.
+        // Stub: Log the action. Full implementation in task 5.2.
+        // This will call writer.emit() based on the action.
         debug!("Would send output: {:?}", action);
         Ok(())
     }
 
     async fn start(&mut self) -> Result<()> {
-        if self.running {
+        if self.running.load(Ordering::Relaxed) {
             warn!("LinuxInput already running");
             return Ok(());
         }
@@ -632,32 +772,26 @@ impl InputSource for LinuxInput {
         // Verify uinput is accessible before starting
         Self::check_uinput_accessible().context("Failed to start Linux input source")?;
 
-        self.running = true;
+        self.running.store(true, Ordering::Relaxed);
         debug!("LinuxInput started successfully");
 
-        // Stub: Full evdev device opening is post-MVP.
-        // In the future, this would:
-        // 1. Open evdev device for keyboard input
-        // 2. Create uinput virtual device for output injection
-        // 3. Grab the keyboard to intercept all events
+        // Stub: Full EvdevReader spawning in task 5.2.
+        // This will create EvdevReader, call spawn(), and store the handle.
 
         Ok(())
     }
 
     async fn stop(&mut self) -> Result<()> {
-        if !self.running {
+        if !self.running.load(Ordering::Relaxed) {
             debug!("LinuxInput already stopped");
             return Ok(());
         }
 
-        self.running = false;
+        self.running.store(false, Ordering::Relaxed);
         debug!("LinuxInput stopped");
 
-        // Stub: Full cleanup is post-MVP.
-        // In the future, this would:
-        // 1. Release the keyboard grab
-        // 2. Close the evdev device
-        // 3. Destroy the uinput virtual device
+        // Stub: Full cleanup in task 5.2.
+        // This will join the reader thread and drop resources.
 
         Ok(())
     }
@@ -985,17 +1119,9 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn linux_input_default() {
-        let input = LinuxInput::default();
-        assert!(!input.running);
-    }
-
-    #[test]
-    fn linux_input_new() {
-        let input = LinuxInput::new().unwrap();
-        assert!(!input.running);
-    }
+    // Note: LinuxInput::new() tests require actual hardware access
+    // and are moved to integration tests (task 12.2).
+    // Unit tests focus on the keycode conversion logic.
 
     #[test]
     fn evdev_keycode_mapping() {

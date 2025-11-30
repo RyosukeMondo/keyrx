@@ -83,7 +83,7 @@
 
 ## Task 5: Complete LinuxInput Implementation
 
-- [ ] 5.1 Rewrite LinuxInput struct
+- [x] 5.1 Rewrite LinuxInput struct
   - File: `core/src/drivers/linux.rs`
   - Fields: reader_handle, writer, rx (Receiver), running, device_path
   - Implement new() that finds keyboard device

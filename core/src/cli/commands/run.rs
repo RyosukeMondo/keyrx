@@ -118,7 +118,7 @@ impl RunCommand {
     async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
         self.output.success("Using Linux input driver");
 
-        let input = LinuxInput::new()?;
+        let input = LinuxInput::new(None)?;
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;
 
