@@ -14,7 +14,7 @@
   - _Requirements: 1, 3_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer with FFI experience | Task: Implement concrete AudioService/PermissionService/ErrorTranslator with telemetry hooks; start/stop/set BPM, stream subscription, permission requests; map engine errors to user-friendly messages | Restrictions: No UI imports; log trace events for start/stop/permission/stream; handle dispose; no globals | _Leverage: ffi bridge, permission_handler | _Requirements: 1,3 | Success: Services usable via interfaces, logs emitted, errors translated, stream cancel safe.
 
-- [ ] 3. Add service registry/provider
+- [x] 3. Add service registry/provider
   - File: ui/lib/services/service_registry.dart
   - Provide factory for real vs. mock services; simple DI entry point.
   - Purpose: Allow injection/testing without globals.
