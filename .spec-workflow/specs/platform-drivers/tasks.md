@@ -71,7 +71,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create UinputWriter struct in linux.rs. In new(), create evdev::VirtualDeviceBuilder with name "KeyRx Virtual Keyboard". Register KEY events for all keys in KeyCode enum. Call build() to create UInputDevice | Restrictions: Handle uinput permission errors with remediation message | Success: Virtual keyboard device created at /dev/input/eventX. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 4.2 Implement key emission
+- [-] 4.2 Implement key emission
   - File: `core/src/drivers/linux.rs`
   - Add emit(key, pressed) method
   - Convert KeyCode to evdev key code (reverse of evdev_to_keycode)
