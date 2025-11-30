@@ -10,6 +10,7 @@ use crossbeam_channel::Sender;
 use evdev::{
     uinput::VirtualDeviceBuilder, AttributeSet, EventType, InputEvent as EvdevInputEvent, Key,
 };
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -29,6 +30,12 @@ const UINPUT_DEVICE_NAME: &str = "KeyRx Virtual Keyboard";
 ///
 /// The `running` flag is shared across threads using `Arc<AtomicBool>` to allow
 /// clean shutdown from the main thread.
+///
+/// # Panic Recovery
+///
+/// The reader thread is wrapped in `catch_unwind` to handle panics gracefully.
+/// If a panic occurs, the `panic_error` flag is set and the keyboard device is
+/// ungrabbed to prevent leaving the keyboard in a stuck state.
 pub struct EvdevReader {
     /// The evdev device handle for reading keyboard events.
     device: evdev::Device,
@@ -38,6 +45,8 @@ pub struct EvdevReader {
     running: Arc<AtomicBool>,
     /// Path to the device (for error messages and logging).
     device_path: PathBuf,
+    /// Shared flag to indicate if the reader thread panicked.
+    panic_error: Arc<AtomicBool>,
 }
 
 impl EvdevReader {
@@ -48,6 +57,7 @@ impl EvdevReader {
     /// * `device_path` - Path to the evdev device (e.g., `/dev/input/event0`)
     /// * `tx` - Channel sender for forwarding input events
     /// * `running` - Shared flag for controlling the read loop
+    /// * `panic_error` - Shared flag set to true if the reader thread panics
     ///
     /// # Errors
     ///
@@ -59,6 +69,7 @@ impl EvdevReader {
         device_path: PathBuf,
         tx: Sender<InputEvent>,
         running: Arc<AtomicBool>,
+        panic_error: Arc<AtomicBool>,
     ) -> Result<Self> {
         let device = evdev::Device::open(&device_path).map_err(|e| {
             if e.kind() == std::io::ErrorKind::NotFound {
@@ -81,6 +92,7 @@ impl EvdevReader {
             tx,
             running,
             device_path,
+            panic_error,
         })
     }
 
@@ -162,6 +174,7 @@ impl EvdevReader {
     /// - The `running` flag is set to `false`
     /// - A critical error occurs (e.g., device disconnected)
     /// - The channel receiver is dropped
+    /// - A panic occurs (the keyboard will be ungrabbed before the thread exits)
     ///
     /// # Event Processing
     ///
@@ -169,77 +182,133 @@ impl EvdevReader {
     /// - 0: Key released
     /// - 1: Key pressed
     /// - 2: Key repeat (ignored, we synthesize repeats differently)
+    ///
+    /// # Panic Recovery
+    ///
+    /// The thread code is wrapped in `catch_unwind` to handle panics gracefully.
+    /// If a panic occurs:
+    /// - The `panic_error` flag is set to `true`
+    /// - The keyboard device is ungrabbed
+    /// - The error is logged
+    /// - The thread exits cleanly
     pub fn spawn(mut self) -> JoinHandle<()> {
         let device_path = self.device_path.clone();
+        let panic_error = self.panic_error.clone();
+        let running = self.running.clone();
 
         thread::spawn(move || {
             debug!("EvdevReader thread started for {}", device_path.display());
 
-            while self.running.load(Ordering::Relaxed) {
-                // fetch_events blocks until events are available
-                match self.device.fetch_events() {
-                    Ok(events) => {
-                        for event in events {
-                            // Only process EV_KEY events
-                            if event.event_type() != evdev::EventType::KEY {
-                                continue;
-                            }
+            // Wrap the main loop in catch_unwind for panic recovery
+            let result = panic::catch_unwind(AssertUnwindSafe(|| {
+                while self.running.load(Ordering::Relaxed) {
+                    // fetch_events blocks until events are available
+                    match self.device.fetch_events() {
+                        Ok(events) => {
+                            for event in events {
+                                // Only process EV_KEY events
+                                if event.event_type() != evdev::EventType::KEY {
+                                    continue;
+                                }
 
-                            // value: 0 = release, 1 = press, 2 = repeat
-                            let value = event.value();
-                            if value == 2 {
-                                // Skip repeat events - we handle repeats differently
-                                trace!("Skipping repeat event for key {}", event.code());
-                                continue;
-                            }
+                                // value: 0 = release, 1 = press, 2 = repeat
+                                let value = event.value();
+                                if value == 2 {
+                                    // Skip repeat events - we handle repeats differently
+                                    trace!("Skipping repeat event for key {}", event.code());
+                                    continue;
+                                }
 
-                            let pressed = value == 1;
-                            let key_code = evdev_to_keycode(event.code());
+                                let pressed = value == 1;
+                                let key_code = evdev_to_keycode(event.code());
 
-                            // Extract timestamp from event as microseconds since UNIX epoch
-                            let timestamp = event
-                                .timestamp()
-                                .duration_since(std::time::UNIX_EPOCH)
-                                .map(|d| d.as_micros() as u64)
-                                .unwrap_or(0);
+                                // Extract timestamp from event as microseconds since UNIX epoch
+                                let timestamp = event
+                                    .timestamp()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .map(|d| d.as_micros() as u64)
+                                    .unwrap_or(0);
 
-                            let input_event = InputEvent {
-                                key: key_code,
-                                pressed,
-                                timestamp,
-                            };
+                                let input_event = InputEvent {
+                                    key: key_code,
+                                    pressed,
+                                    timestamp,
+                                };
 
-                            trace!(
-                                "Read event: {:?} {} at {}",
-                                key_code,
-                                if pressed { "down" } else { "up" },
-                                timestamp
-                            );
+                                trace!(
+                                    "Read event: {:?} {} at {}",
+                                    key_code,
+                                    if pressed { "down" } else { "up" },
+                                    timestamp
+                                );
 
-                            // Send event to channel
-                            if let Err(e) = self.tx.send(input_event) {
-                                // Channel closed, receiver dropped - exit thread
-                                debug!("Event channel closed, stopping reader: {}", e);
-                                break;
+                                // Send event to channel
+                                if let Err(e) = self.tx.send(input_event) {
+                                    // Channel closed, receiver dropped - exit thread
+                                    debug!("Event channel closed, stopping reader: {}", e);
+                                    return;
+                                }
                             }
                         }
-                    }
-                    Err(e) => {
-                        // Check if we should continue
-                        if !self.running.load(Ordering::Relaxed) {
-                            break;
+                        Err(e) => {
+                            // Check if we should continue
+                            if !self.running.load(Ordering::Relaxed) {
+                                return;
+                            }
+
+                            // Log error but continue - might be temporary
+                            error!("Error reading events from {}: {}", device_path.display(), e);
+
+                            // Small sleep to avoid busy loop on persistent errors
+                            thread::sleep(std::time::Duration::from_millis(10));
                         }
-
-                        // Log error but continue - might be temporary
-                        error!("Error reading events from {}: {}", device_path.display(), e);
-
-                        // Small sleep to avoid busy loop on persistent errors
-                        thread::sleep(std::time::Duration::from_millis(10));
                     }
                 }
+            }));
+
+            // Handle panic recovery
+            if let Err(panic_info) = result {
+                // Set the panic error flag so main thread can detect it
+                panic_error.store(true, Ordering::SeqCst);
+                running.store(false, Ordering::Relaxed);
+
+                // Log the panic
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic".to_string()
+                };
+                error!(
+                    "EvdevReader thread panicked for {}: {}",
+                    device_path.display(),
+                    panic_msg
+                );
+
+                // CRITICAL: Ungrab the keyboard even on panic
+                // This is the primary goal of panic recovery - never leave the keyboard stuck
+                if let Err(e) = self.ungrab() {
+                    error!(
+                        "Failed to ungrab device {} after panic: {}",
+                        device_path.display(),
+                        e
+                    );
+                } else {
+                    debug!(
+                        "Successfully ungrabbed device {} after panic",
+                        device_path.display()
+                    );
+                }
+
+                debug!(
+                    "EvdevReader thread exiting after panic for {}",
+                    device_path.display()
+                );
+                return;
             }
 
-            // Clean up: ungrab the device
+            // Normal shutdown: ungrab the device
             if let Err(e) = self.ungrab() {
                 warn!(
                     "Failed to ungrab device {} on shutdown: {}",
@@ -558,6 +627,13 @@ impl UinputWriter {
 /// - The `EvdevReader` runs in a dedicated blocking thread
 /// - Events are sent via a crossbeam channel to the async engine
 /// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
+///
+/// # Panic Recovery
+///
+/// The reader thread is wrapped in `catch_unwind` to handle panics gracefully.
+/// If a panic occurs, the `panic_error` flag is set and the keyboard device is
+/// ungrabbed. The `poll_events` method checks this flag and returns an error
+/// if a panic was detected.
 pub struct LinuxInput {
     /// Handle to the reader thread (set after start() is called).
     reader_handle: Option<JoinHandle<()>>,
@@ -571,6 +647,8 @@ pub struct LinuxInput {
     running: Arc<AtomicBool>,
     /// Path to the evdev device being read.
     device_path: PathBuf,
+    /// Shared flag indicating if the reader thread panicked.
+    panic_error: Arc<AtomicBool>,
 }
 
 impl LinuxInput {
@@ -619,6 +697,7 @@ impl LinuxInput {
         let writer = UinputWriter::new().context("Failed to create uinput writer")?;
 
         let running = Arc::new(AtomicBool::new(false));
+        let panic_error = Arc::new(AtomicBool::new(false));
 
         debug!("LinuxInput created for device: {}", device_path.display());
 
@@ -629,6 +708,7 @@ impl LinuxInput {
             tx,
             running,
             device_path,
+            panic_error,
         })
     }
 
@@ -740,6 +820,13 @@ impl LinuxInput {
 #[async_trait]
 impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+        // Check if the reader thread panicked
+        if self.panic_error.load(Ordering::SeqCst) {
+            error!("poll_events called after reader thread panic");
+            self.running.store(false, Ordering::Relaxed);
+            bail!("Input reader thread panicked - keyboard has been ungrabbed for safety");
+        }
+
         if !self.running.load(Ordering::Relaxed) {
             trace!("poll_events called while not running");
             return Ok(vec![]);
@@ -764,6 +851,14 @@ impl InputSource for LinuxInput {
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
                     // Channel closed - reader thread has stopped
+                    // Check if it was due to a panic
+                    if self.panic_error.load(Ordering::SeqCst) {
+                        error!("Event channel disconnected due to reader thread panic");
+                        self.running.store(false, Ordering::Relaxed);
+                        bail!(
+                            "Input reader thread panicked - keyboard has been ungrabbed for safety"
+                        );
+                    }
                     error!("Event channel disconnected - reader thread may have crashed");
                     self.running.store(false, Ordering::Relaxed);
                     bail!("Input reader disconnected unexpectedly");
@@ -823,6 +918,9 @@ impl InputSource for LinuxInput {
         // Verify uinput is accessible before starting
         Self::check_uinput_accessible().context("Failed to start Linux input source")?;
 
+        // Reset panic error flag for fresh start
+        self.panic_error.store(false, Ordering::SeqCst);
+
         // Set running flag before spawning thread
         self.running.store(true, Ordering::Relaxed);
 
@@ -831,6 +929,7 @@ impl InputSource for LinuxInput {
             self.device_path.clone(),
             self.tx.clone(),
             self.running.clone(),
+            self.panic_error.clone(),
         )
         .context("Failed to create evdev reader")?;
 

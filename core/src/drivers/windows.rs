@@ -26,6 +26,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use crossbeam_channel::{Receiver, Sender};
 use std::cell::RefCell;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
@@ -443,6 +444,13 @@ unsafe extern "system" fn low_level_keyboard_proc(
 /// - Events are sent via a crossbeam channel to the async engine
 /// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
 /// - WM_QUIT is posted to the hook thread to stop the message pump
+///
+/// # Panic Recovery
+///
+/// The hook thread is wrapped in `catch_unwind` to handle panics gracefully.
+/// If a panic occurs, the `panic_error` flag is set and the keyboard hook is
+/// uninstalled. The `poll_events` method checks this flag and returns an error
+/// if a panic was detected.
 pub struct WindowsInput {
     /// Handle to the hook thread (set after start() is called).
     hook_thread: Option<JoinHandle<()>>,
@@ -454,6 +462,8 @@ pub struct WindowsInput {
     running: Arc<AtomicBool>,
     /// Key injector for sending output.
     injector: SendInputInjector,
+    /// Shared flag indicating if the hook thread panicked.
+    panic_error: Arc<AtomicBool>,
 }
 
 impl WindowsInput {
@@ -468,6 +478,7 @@ impl WindowsInput {
     pub fn new() -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
+        let panic_error = Arc::new(AtomicBool::new(false));
         let injector = SendInputInjector::new();
 
         debug!("WindowsInput created");
@@ -478,6 +489,7 @@ impl WindowsInput {
             tx,
             running,
             injector,
+            panic_error,
         })
     }
 
@@ -540,6 +552,13 @@ impl Drop for WindowsInput {
 #[async_trait]
 impl InputSource for WindowsInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+        // Check if the hook thread panicked
+        if self.panic_error.load(Ordering::SeqCst) {
+            error!("poll_events called after hook thread panic");
+            self.running.store(false, Ordering::Relaxed);
+            anyhow::bail!("Hook thread panicked - keyboard hook has been uninstalled for safety");
+        }
+
         if !self.running.load(Ordering::Relaxed) {
             trace!("poll_events called while not running");
             return Ok(vec![]);
@@ -564,6 +583,14 @@ impl InputSource for WindowsInput {
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
                     // Channel closed - hook thread has stopped
+                    // Check if it was due to a panic
+                    if self.panic_error.load(Ordering::SeqCst) {
+                        error!("Event channel disconnected due to hook thread panic");
+                        self.running.store(false, Ordering::Relaxed);
+                        anyhow::bail!(
+                            "Hook thread panicked - keyboard hook has been uninstalled for safety"
+                        );
+                    }
                     error!("Event channel disconnected - hook thread may have crashed");
                     self.running.store(false, Ordering::Relaxed);
                     anyhow::bail!("Input hook disconnected unexpectedly");
@@ -622,11 +649,15 @@ impl InputSource for WindowsInput {
 
         debug!("Starting WindowsInput...");
 
+        // Reset panic error flag for fresh start
+        self.panic_error.store(false, Ordering::SeqCst);
+
         // Set running flag before spawning thread
         self.running.store(true, Ordering::Relaxed);
 
         // Clone what we need for the thread
         let running = self.running.clone();
+        let panic_error = self.panic_error.clone();
         let tx = self.tx.clone();
 
         // Spawn the hook thread
@@ -648,10 +679,38 @@ impl InputSource for WindowsInput {
                 }
             }
 
-            // Run the message loop (blocks until WM_QUIT or running=false)
-            hook_manager.run_message_loop();
+            // Wrap the message loop in catch_unwind for panic recovery
+            let result = panic::catch_unwind(AssertUnwindSafe(|| {
+                // Run the message loop (blocks until WM_QUIT or running=false)
+                hook_manager.run_message_loop();
+            }));
 
-            // Uninstall the hook (also done in Drop, but explicit is clearer)
+            // Handle panic recovery
+            if let Err(panic_info) = result {
+                // Set the panic error flag so main thread can detect it
+                panic_error.store(true, Ordering::SeqCst);
+                running.store(false, Ordering::Relaxed);
+
+                // Log the panic
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic".to_string()
+                };
+                error!("Hook thread panicked: {}", panic_msg);
+
+                // CRITICAL: Uninstall the hook even on panic
+                // This is the primary goal of panic recovery
+                hook_manager.uninstall();
+                debug!("Hook uninstalled after panic");
+
+                debug!("Hook thread exiting after panic");
+                return;
+            }
+
+            // Normal shutdown: uninstall the hook (also done in Drop, but explicit is clearer)
             hook_manager.uninstall();
 
             debug!("Hook thread finished");
