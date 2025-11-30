@@ -37,7 +37,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer | Task: Create scripts/install-hooks.sh that: 1) Creates .git/hooks if missing, 2) Copies all files from .githooks/ to .git/hooks/, 3) Makes them executable with chmod +x, 4) Prints "Hooks installed: pre-commit". Use bash shebang, handle errors gracefully | Restrictions: No external dependencies beyond bash, support Linux/macOS | Success: Running ./scripts/install-hooks.sh installs hooks successfully. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 2.2 Create pre-commit hook
+- [x] 2.2 Create pre-commit hook
   - File: `.githooks/pre-commit`
   - Run: cargo fmt --check (fail fast)
   - Run: cargo clippy -- -D warnings (deny warnings)
