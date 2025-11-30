@@ -2,7 +2,8 @@
 
 use super::helpers::parse_key_or_error;
 use crate::engine::{
-    HoldAction, KeyCode, LayerAction, LayerStack, Modifier, ModifierState, VirtualModifiers,
+    HoldAction, KeyCode, LayerAction, LayerStack, Modifier, ModifierState, TimingConfig,
+    VirtualModifiers,
 };
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
@@ -145,6 +146,7 @@ enum PendingOp {
         name: String,
         id: u8,
     },
+    SetTiming(TimingUpdate),
 }
 
 #[derive(Debug, Clone)]
@@ -156,6 +158,16 @@ enum LayerMapAction {
     LayerPush(String),
     LayerToggle(String),
     LayerPop,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum TimingUpdate {
+    TapTimeout(u32),
+    ComboTimeout(u32),
+    HoldDelay(u32),
+    EagerTap(bool),
+    PermissiveHold(bool),
+    RetroTap(bool),
 }
 
 /// Production Rhai script runtime.
@@ -217,6 +229,7 @@ impl RhaiRuntime {
         Self::register_combo(engine, pending_ops);
         Self::register_layer_functions(engine, pending_ops, layer_view);
         Self::register_modifier_functions(engine, pending_ops, modifier_view);
+        Self::register_timing_functions(engine, pending_ops);
     }
 
     fn register_debug(engine: &mut Engine) {
@@ -574,6 +587,96 @@ impl RhaiRuntime {
         Self::register_is_modifier_active(engine, modifier_view);
     }
 
+    fn register_timing_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+        Self::register_set_tap_timeout(engine, pending_ops);
+        Self::register_set_combo_timeout(engine, pending_ops);
+        Self::register_set_hold_delay(engine, pending_ops);
+        Self::register_set_eager_tap(engine, pending_ops);
+        Self::register_set_permissive_hold(engine, pending_ops);
+        Self::register_set_retro_tap(engine, pending_ops);
+    }
+
+    fn register_set_tap_timeout(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_tap_timeout",
+            move |ms: i64| -> std::result::Result<(), Box<EvalAltResult>> {
+                let value = Self::validate_timeout(ms, "set_tap_timeout", false)?;
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::TapTimeout(value)));
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_set_combo_timeout(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_combo_timeout",
+            move |ms: i64| -> std::result::Result<(), Box<EvalAltResult>> {
+                let value = Self::validate_timeout(ms, "set_combo_timeout", false)?;
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::ComboTimeout(value)));
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_set_hold_delay(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_hold_delay",
+            move |ms: i64| -> std::result::Result<(), Box<EvalAltResult>> {
+                let value = Self::validate_timeout(ms, "set_hold_delay", true)?;
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::HoldDelay(value)));
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_set_eager_tap(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_eager_tap",
+            move |enabled: bool| -> std::result::Result<(), Box<EvalAltResult>> {
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::EagerTap(enabled)));
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_set_permissive_hold(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_permissive_hold",
+            move |enabled: bool| -> std::result::Result<(), Box<EvalAltResult>> {
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::PermissiveHold(enabled)));
+                }
+                Ok(())
+            },
+        );
+    }
+
+    fn register_set_retro_tap(engine: &mut Engine, pending_ops: &PendingOps) {
+        let ops = Arc::clone(pending_ops);
+        engine.register_fn(
+            "set_retro_tap",
+            move |enabled: bool| -> std::result::Result<(), Box<EvalAltResult>> {
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::SetTiming(TimingUpdate::RetroTap(enabled)));
+                }
+                Ok(())
+            },
+        );
+    }
+
     fn register_define_modifier(
         engine: &mut Engine,
         pending_ops: &PendingOps,
@@ -699,6 +802,33 @@ impl RhaiRuntime {
                 Ok(active)
             },
         );
+    }
+
+    fn validate_timeout(
+        ms: i64,
+        fn_name: &str,
+        allow_zero: bool,
+    ) -> Result<u32, Box<EvalAltResult>> {
+        const MAX_TIMEOUT_MS: i64 = 5000;
+        let min = if allow_zero { 0 } else { 1 };
+        if !(min..=MAX_TIMEOUT_MS).contains(&ms) {
+            return Err(Self::timing_error(
+                fn_name,
+                format!(
+                    "{} expects {}..={} ms, got {}",
+                    fn_name, min, MAX_TIMEOUT_MS, ms
+                ),
+            ));
+        }
+
+        Ok(ms as u32)
+    }
+
+    fn timing_error(fn_name: &str, message: impl Into<String>) -> Box<EvalAltResult> {
+        Box::new(EvalAltResult::ErrorRuntime(
+            format!("{}: {}", fn_name, message.into()).into(),
+            Position::NONE,
+        ))
     }
 
     fn layer_error(fn_name: &str, message: impl Into<String>) -> Box<EvalAltResult> {
@@ -1053,6 +1183,20 @@ impl RhaiRuntime {
                             self.registry.one_shot_modifier(id);
                         }
                     }
+                    PendingOp::SetTiming(update) => {
+                        let mut timing: TimingConfig = self.registry.timing_config().clone();
+                        match update {
+                            TimingUpdate::TapTimeout(ms) => timing.tap_timeout_ms = ms,
+                            TimingUpdate::ComboTimeout(ms) => timing.combo_timeout_ms = ms,
+                            TimingUpdate::HoldDelay(ms) => timing.hold_delay_ms = ms,
+                            TimingUpdate::EagerTap(enabled) => timing.eager_tap = enabled,
+                            TimingUpdate::PermissiveHold(enabled) => {
+                                timing.permissive_hold = enabled
+                            }
+                            TimingUpdate::RetroTap(enabled) => timing.retro_tap = enabled,
+                        }
+                        self.registry.set_timing_config(timing);
+                    }
                 }
             }
         }
@@ -1158,7 +1302,7 @@ impl ScriptRuntime for RhaiRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{HoldAction, LayerAction, Modifier, RemapAction};
+    use crate::engine::{HoldAction, LayerAction, Modifier, RemapAction, TimingConfig};
 
     #[test]
     fn new_runtime_has_empty_registry() {
@@ -1317,6 +1461,42 @@ mod tests {
         let mut runtime = RhaiRuntime::new().unwrap();
         let err = runtime.execute(r#"combo([1, "B"], "Escape");"#);
         assert!(err.is_err());
+    }
+
+    #[test]
+    fn timing_functions_update_config() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(
+                r#"
+                set_tap_timeout(350);
+                set_combo_timeout(75);
+                set_hold_delay(10);
+                set_eager_tap(true);
+                set_permissive_hold(false);
+                set_retro_tap(true);
+            "#,
+            )
+            .unwrap();
+
+        let timing = runtime.registry().timing_config();
+        assert_eq!(timing.tap_timeout_ms, 350);
+        assert_eq!(timing.combo_timeout_ms, 75);
+        assert_eq!(timing.hold_delay_ms, 10);
+        assert!(timing.eager_tap);
+        assert!(!timing.permissive_hold);
+        assert!(timing.retro_tap);
+    }
+
+    #[test]
+    fn timing_functions_validate_ranges() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        assert!(runtime.execute(r#"set_tap_timeout(0);"#).is_err());
+        assert!(runtime.execute(r#"set_combo_timeout(6000);"#).is_err());
+        assert!(runtime.execute(r#"set_hold_delay(-1);"#).is_err());
+
+        let timing = runtime.registry().timing_config();
+        assert_eq!(*timing, TimingConfig::default());
     }
 
     #[test]

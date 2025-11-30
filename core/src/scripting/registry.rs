@@ -2,7 +2,7 @@
 
 use crate::engine::{
     ComboRegistry, HoldAction, KeyCode, LayerAction, LayerId, LayerStack, Modifier, ModifierState,
-    RemapAction, VirtualModifiers,
+    RemapAction, TimingConfig, VirtualModifiers,
 };
 use std::collections::HashMap;
 
@@ -19,6 +19,7 @@ pub struct RemapRegistry {
     modifier_names: HashMap<String, u8>,
     modifiers: ModifierState,
     next_modifier_id: u16,
+    timing: TimingConfig,
 }
 
 /// A tap-hold binding configured via script.
@@ -39,6 +40,7 @@ impl RemapRegistry {
             modifier_names: HashMap::new(),
             modifiers: ModifierState::new(),
             next_modifier_id: 0,
+            timing: TimingConfig::default(),
         }
     }
 
@@ -153,6 +155,16 @@ impl RemapRegistry {
         self.modifiers
     }
 
+    /// Get the current timing configuration.
+    pub fn timing_config(&self) -> &TimingConfig {
+        &self.timing
+    }
+
+    /// Replace the timing configuration.
+    pub fn set_timing_config(&mut self, timing: TimingConfig) {
+        self.timing = timing;
+    }
+
     /// Get modifier names (for syncing preview state).
     pub fn modifier_names(&self) -> &HashMap<String, u8> {
         &self.modifier_names
@@ -260,6 +272,7 @@ impl RemapRegistry {
         self.modifier_names.clear();
         self.modifiers = ModifierState::new();
         self.next_modifier_id = 0;
+        self.timing = TimingConfig::default();
     }
 
     /// Get the number of active mappings.
@@ -275,6 +288,7 @@ impl RemapRegistry {
             && self.layers.is_empty()
             && self.modifier_names.is_empty()
             && self.modifiers == ModifierState::new()
+            && self.timing == TimingConfig::default()
     }
 
     fn normalize_layer_name(name: &str) -> Result<String, String> {

@@ -161,7 +161,7 @@
   - _Requirements: REQ-3, REQ-7, REQ-9_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add define_modifier(), modifier_on(), modifier_off(), one_shot(), is_modifier_active() Rhai functions | Restrictions: Max 255 modifiers, validate names | Success: Scripts can define and control virtual modifiers, one-shot works, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 15. Add timing config Rhai functions
+- [x] 15. Add timing config Rhai functions
   - File: `core/src/scripting/runtime.rs` (extend)
   - Register `set_tap_timeout(ms)` function
   - Register `set_combo_timeout(ms)` function
