@@ -146,7 +146,7 @@
 
 ## Task 8: Complete WindowsInput Implementation
 
-- [-] 8.1 Rewrite WindowsInput struct
+- [x] 8.1 Rewrite WindowsInput struct
   - File: `core/src/drivers/windows.rs`
   - Fields: hook_thread (JoinHandle), rx (Receiver), running
   - Spawn message pump thread in start()
