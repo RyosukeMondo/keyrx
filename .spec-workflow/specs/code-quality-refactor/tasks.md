@@ -27,7 +27,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in trait design and DI | Task: Create KeyInjector trait in core/src/drivers/injector.rs following InputSource pattern, with MockKeyInjector for testing | Restrictions: Trait must be Send, must not require async, keep interface minimal | Success: MockKeyInjector captures all injections, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 3. Extract shared utilities
+- [x] 3. Extract shared utilities
   - File: `core/src/drivers/common.rs` (extend)
   - Add `extract_panic_message()` function
   - File: `core/src/scripting/helpers.rs` (new)
