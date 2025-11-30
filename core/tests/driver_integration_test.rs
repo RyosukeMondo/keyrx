@@ -20,6 +20,8 @@
 //! cargo test --package keyrx-core --test driver_integration_test -- --ignored
 //! ```
 
+mod integration;
+
 use keyrx_core::drivers::DeviceInfo;
 use keyrx_core::engine::{InputEvent, KeyCode, OutputAction};
 use keyrx_core::mocks::MockInput;
@@ -548,115 +550,4 @@ mod windows_tests {
 
         input.stop().await.expect("stop failed");
     }
-}
-
-// ============================================================================
-// Cross-Platform Channel Communication Tests
-// ============================================================================
-
-#[tokio::test]
-async fn channel_communication_basic_flow() {
-    // This test verifies the basic event flow pattern used by drivers
-    use crossbeam_channel::{unbounded, TryRecvError};
-
-    let (tx, rx) = unbounded::<InputEvent>();
-
-    // Simulate driver sending events
-    tx.send(InputEvent::key_down(KeyCode::CapsLock, 0)).unwrap();
-    tx.send(InputEvent::key_up(KeyCode::CapsLock, 100)).unwrap();
-
-    // Simulate engine receiving events
-    let mut events = Vec::new();
-    loop {
-        match rx.try_recv() {
-            Ok(event) => events.push(event),
-            Err(TryRecvError::Empty) => break,
-            Err(TryRecvError::Disconnected) => panic!("Channel disconnected"),
-        }
-    }
-
-    assert_eq!(events.len(), 2);
-    assert_eq!(events[0].key, KeyCode::CapsLock);
-    assert!(events[0].pressed);
-    assert_eq!(events[1].key, KeyCode::CapsLock);
-    assert!(!events[1].pressed);
-}
-
-#[tokio::test]
-async fn channel_communication_bounded_backpressure() {
-    // Verify bounded channel behavior for potential backpressure scenarios
-    use crossbeam_channel::bounded;
-
-    let (tx, rx) = bounded::<InputEvent>(2);
-
-    // Fill the channel
-    tx.send(InputEvent::key_down(KeyCode::A, 0)).unwrap();
-    tx.send(InputEvent::key_down(KeyCode::B, 0)).unwrap();
-
-    // Channel is now full, try_send should fail
-    let result = tx.try_send(InputEvent::key_down(KeyCode::C, 0));
-    assert!(result.is_err());
-
-    // Drain one event
-    let _ = rx.recv().unwrap();
-
-    // Now we should be able to send again
-    tx.send(InputEvent::key_down(KeyCode::C, 0)).unwrap();
-}
-
-#[test]
-fn channel_disconnect_detection() {
-    use crossbeam_channel::{unbounded, TryRecvError};
-
-    let (tx, rx) = unbounded::<InputEvent>();
-
-    // Drop the sender
-    drop(tx);
-
-    // Receiver should detect disconnect
-    match rx.try_recv() {
-        Err(TryRecvError::Disconnected) => {
-            // Expected
-        }
-        other => panic!("Expected Disconnected, got {:?}", other),
-    }
-}
-
-// ============================================================================
-// Graceful Shutdown Tests
-// ============================================================================
-
-#[tokio::test]
-async fn graceful_shutdown_with_pending_events() {
-    let mut input = MockInput::new();
-
-    input.queue_event(InputEvent::key_down(KeyCode::A, 0));
-    input.queue_event(InputEvent::key_down(KeyCode::B, 0));
-
-    input.start().await.expect("start failed");
-
-    // Stop without polling events - should not hang or panic
-    input.stop().await.expect("stop failed");
-
-    // Call history should show start and stop
-    use keyrx_core::mocks::MockCall;
-    let history = input.call_history();
-    assert!(matches!(history[0], MockCall::Start));
-    assert!(matches!(history[1], MockCall::Stop));
-}
-
-#[tokio::test]
-async fn graceful_shutdown_concurrent_operations() {
-    let mut input = MockInput::new();
-
-    input.start().await.expect("start failed");
-
-    // Queue event while running
-    input.queue_event(InputEvent::key_down(KeyCode::Space, 0));
-
-    // Poll and stop in sequence
-    let events = input.poll_events().await.expect("poll_events failed");
-    assert_eq!(events.len(), 1);
-
-    input.stop().await.expect("stop failed");
 }
