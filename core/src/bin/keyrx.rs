@@ -3,7 +3,8 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        BenchCommand, CheckCommand, DoctorCommand, RunCommand, SimulateCommand, StateCommand,
+        BenchCommand, CheckCommand, DevicesCommand, DoctorCommand, RunCommand, SimulateCommand,
+        StateCommand,
     },
     OutputFormat,
 };
@@ -31,6 +32,9 @@ enum Commands {
         /// Path to the script file
         script: PathBuf,
     },
+
+    /// List available keyboard devices
+    Devices,
 
     /// Run the engine in headless mode
     Run {
@@ -119,6 +123,9 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
     match command {
         Commands::Check { script } => {
             CheckCommand::new(script, format).run()?;
+        }
+        Commands::Devices => {
+            DevicesCommand::new(format).run()?;
         }
         Commands::Run {
             script,

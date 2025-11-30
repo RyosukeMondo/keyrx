@@ -166,7 +166,7 @@
   - _Requirements: REQ-8_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create DevicesCommand in core/src/cli/commands/devices.rs. Call drivers::list_keyboards(). Output via OutputWriter - human format: "name (vendor:product) - path", JSON format: array of DeviceInfo. Handle empty list case | Restrictions: Work on both Linux and Windows | Success: keyrx devices lists keyboards. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 9.2 Wire devices command into CLI
+- [x] 9.2 Wire devices command into CLI
   - File: `core/src/bin/keyrx.rs`, `core/src/cli/commands/mod.rs`
   - Add Devices subcommand
   - Export DevicesCommand
