@@ -1,4 +1,120 @@
-//! Linux input driver using evdev/uinput.
+//! Linux input driver using evdev for capture and uinput for injection.
+//!
+//! This module implements keyboard capture and injection on Linux using:
+//! - **evdev** for reading keyboard events from `/dev/input/event*` devices
+//! - **uinput** for injecting remapped keys via a virtual keyboard device
+//!
+//! # Platform Requirements
+//!
+//! - Linux kernel with evdev support (virtually all modern distributions)
+//! - The `uinput` kernel module loaded (`modprobe uinput`)
+//! - Read access to `/dev/input/event*` devices
+//! - Write access to `/dev/uinput`
+//!
+//! # Permission Requirements
+//!
+//! KeyRx requires specific permissions to function:
+//!
+//! 1. **Input device access**: User must be in the `input` group or have explicit
+//!    permissions on `/dev/input/event*` devices:
+//!    ```bash
+//!    sudo usermod -aG input $USER
+//!    # Log out and back in for changes to take effect
+//!    ```
+//!
+//! 2. **Uinput device access**: Write permission to `/dev/uinput` is required:
+//!    ```bash
+//!    # Create udev rule for persistent access
+//!    echo 'KERNEL=="uinput", MODE="0660", GROUP="input"' | \
+//!        sudo tee /etc/udev/rules.d/99-uinput.rules
+//!    sudo udevadm control --reload-rules && sudo udevadm trigger
+//!    ```
+//!
+//! 3. **Uinput module**: Ensure the kernel module is loaded:
+//!    ```bash
+//!    sudo modprobe uinput
+//!    # To load on boot:
+//!    echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf
+//!    ```
+//!
+//! # Thread Model
+//!
+//! The driver uses a dedicated blocking thread for event capture:
+//!
+//! ```text
+//! ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+//! │  Physical KB    │────▶│  EvdevReader     │────▶│  Engine         │
+//! │  (evdev device) │     │  (blocking read) │     │  (async)        │
+//! └─────────────────┘     └──────────────────┘     └─────────────────┘
+//!                                                          │
+//!                                                          ▼
+//! ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+//! │  Applications   │◀────│  UinputWriter    │◀────│  Remap Logic    │
+//! │                 │     │  (virtual KB)    │     │                 │
+//! └─────────────────┘     └──────────────────┘     └─────────────────┘
+//! ```
+//!
+//! - **EvdevReader thread**: Runs a blocking `fetch_events()` loop in a dedicated
+//!   `std::thread`. Events are sent via a `crossbeam_channel` to the async engine.
+//! - **Running flag**: An `Arc<AtomicBool>` is shared between threads to signal shutdown.
+//! - **UinputWriter**: Runs on the main/engine thread for key injection.
+//!
+//! # Error Handling
+//!
+//! The driver provides detailed error messages with remediation steps:
+//!
+//! - [`LinuxDriverError::DeviceNotFound`]: Device path does not exist
+//! - [`LinuxDriverError::PermissionDenied`]: Insufficient permissions on device
+//! - [`LinuxDriverError::GrabFailed`]: Another process has grabbed the device
+//! - [`LinuxDriverError::UinputFailed`]: Cannot create virtual keyboard
+//!
+//! All errors include actionable remediation hints.
+//!
+//! # Cleanup and Recovery
+//!
+//! The driver implements robust cleanup to prevent leaving the keyboard stuck:
+//!
+//! 1. **Normal shutdown**: Calling `stop()` signals the reader thread, waits for
+//!    it to finish, and ungrab the keyboard device.
+//!
+//! 2. **Drop cleanup**: The `Drop` implementation ensures cleanup even on early
+//!    returns or unexpected exits.
+//!
+//! 3. **Panic recovery**: The reader thread wraps its main loop in `catch_unwind`.
+//!    On panic:
+//!    - The `panic_error` flag is set to `true`
+//!    - The keyboard device is ungrabbed
+//!    - The error is logged
+//!    - `poll_events()` returns an error on the next call
+//!
+//! 4. **Signal handling**: SIGINT/SIGTERM trigger graceful shutdown via the
+//!    running flag, ensuring the keyboard is released even on Ctrl+C.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use keyrx::drivers::LinuxInput;
+//!
+//! // Auto-detect keyboard
+//! let mut input = LinuxInput::new(None)?;
+//!
+//! // Start capturing events (grabs keyboard)
+//! input.start().await?;
+//!
+//! // Poll for events (non-blocking)
+//! let events = input.poll_events().await?;
+//!
+//! // Inject remapped keys
+//! input.send_output(OutputAction::KeyDown(KeyCode::Escape)).await?;
+//!
+//! // Stop and release keyboard
+//! input.stop().await?;
+//! ```
+//!
+//! [`LinuxDriverError::DeviceNotFound`]: crate::error::LinuxDriverError::DeviceNotFound
+//! [`LinuxDriverError::PermissionDenied`]: crate::error::LinuxDriverError::PermissionDenied
+//! [`LinuxDriverError::GrabFailed`]: crate::error::LinuxDriverError::GrabFailed
+//! [`LinuxDriverError::UinputFailed`]: crate::error::LinuxDriverError::UinputFailed
 
 use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};

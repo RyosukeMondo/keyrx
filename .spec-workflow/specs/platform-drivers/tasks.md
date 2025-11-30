@@ -227,7 +227,7 @@
 
 ## Task 13: Documentation
 
-- [ ] 13.1 Add driver module documentation
+- [x] 13.1 Add driver module documentation
   - File: `core/src/drivers/linux.rs`, `core/src/drivers/windows.rs`
   - Add //! module documentation
   - Document platform-specific requirements
