@@ -286,3 +286,117 @@ fn process_event_remap_function_keys() {
 
     assert_eq!(output, OutputAction::KeyDown(KeyCode::F2));
 }
+
+/// Test that synthetic events are passed through without processing.
+///
+/// This prevents infinite loops when our injected keys are recaptured
+/// by the input hook.
+#[test]
+fn process_event_synthetic_event_passes_through() {
+    let input = MockInput::new();
+    let mut runtime = MockRuntime::new();
+    let state = MockState::new();
+
+    // Configure A -> B remap (should be bypassed for synthetic events)
+    runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
+
+    let engine = Engine::new(input, runtime, state);
+
+    // Create a synthetic event (simulating an injected key)
+    let event = InputEvent::with_metadata(
+        KeyCode::A,
+        true,  // pressed
+        0,     // timestamp
+        None,  // device_id
+        false, // is_repeat
+        true,  // is_synthetic - this is the key flag
+        0,     // scan_code
+    );
+    let output = engine.process_event(&event);
+
+    // Synthetic events should pass through unchanged, not be remapped
+    assert_eq!(output, OutputAction::PassThrough);
+}
+
+/// Test that synthetic key-up events also pass through.
+#[test]
+fn process_event_synthetic_key_up_passes_through() {
+    let input = MockInput::new();
+    let mut runtime = MockRuntime::new();
+    let state = MockState::new();
+
+    // Configure A -> B remap
+    runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
+
+    let engine = Engine::new(input, runtime, state);
+
+    // Create a synthetic key-up event
+    let event = InputEvent::with_metadata(
+        KeyCode::A,
+        false, // pressed (key up)
+        100,   // timestamp
+        None,
+        false,
+        true, // is_synthetic
+        0,
+    );
+    let output = engine.process_event(&event);
+
+    assert_eq!(output, OutputAction::PassThrough);
+}
+
+/// Test that synthetic events bypass blocking rules.
+#[test]
+fn process_event_synthetic_bypasses_block() {
+    let input = MockInput::new();
+    let mut runtime = MockRuntime::new();
+    let state = MockState::new();
+
+    // Configure CapsLock to be blocked
+    runtime.registry_mut().block(KeyCode::CapsLock);
+
+    let engine = Engine::new(input, runtime, state);
+
+    // Create a synthetic CapsLock event
+    let event = InputEvent::with_metadata(
+        KeyCode::CapsLock,
+        true,
+        0,
+        None,
+        false,
+        true, // is_synthetic
+        0,
+    );
+    let output = engine.process_event(&event);
+
+    // Should pass through even though CapsLock is configured to be blocked
+    assert_eq!(output, OutputAction::PassThrough);
+}
+
+/// Test that non-synthetic events are still processed normally.
+#[test]
+fn process_event_non_synthetic_still_remapped() {
+    let input = MockInput::new();
+    let mut runtime = MockRuntime::new();
+    let state = MockState::new();
+
+    // Configure A -> B remap
+    runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
+
+    let engine = Engine::new(input, runtime, state);
+
+    // Create a non-synthetic event (is_synthetic = false)
+    let event = InputEvent::with_metadata(
+        KeyCode::A,
+        true,
+        0,
+        Some("device".to_string()),
+        false,
+        false, // is_synthetic = false
+        30,
+    );
+    let output = engine.process_event(&event);
+
+    // Non-synthetic events should still be remapped
+    assert_eq!(output, OutputAction::KeyDown(KeyCode::B));
+}

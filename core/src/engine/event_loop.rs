@@ -80,7 +80,21 @@ where
     ///
     /// Queries the script runtime's registry for remapping decisions and
     /// translates them to output actions. Handles both key-down and key-up events.
+    ///
+    /// **Synthetic event filtering**: Events with `is_synthetic = true` are
+    /// automatically passed through without processing. This prevents infinite
+    /// loops when our injected keys are recaptured by the input hook.
     pub fn process_event(&self, event: &InputEvent) -> OutputAction {
+        // Skip synthetic events to prevent infinite loops from re-processing
+        // keys we injected ourselves. These events should pass through unchanged.
+        if event.is_synthetic {
+            debug!(
+                "Skipping synthetic event: {:?} (pressed={})",
+                event.key, event.pressed
+            );
+            return OutputAction::PassThrough;
+        }
+
         let action = self.script.lookup_remap(event.key);
 
         match action {
