@@ -235,7 +235,7 @@
   - _Requirements: REQ-3, REQ-5_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor large VK mapping functions by extracting categorical helpers | Restrictions: Identical conversion behavior | Success: All functions <50 lines, keymap tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 22. Refactor linux/keymap.rs large functions (115, 61 lines → <50)
+- [x] 22. Refactor linux/keymap.rs large functions (115, 61 lines → <50)
   - File: `core/src/drivers/linux/keymap.rs:16` (115 lines)
   - File: `core/src/drivers/linux/keymap.rs:133` (115 lines)
   - File: `core/src/drivers/linux/keymap.rs:307` (61 lines)
