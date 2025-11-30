@@ -70,7 +70,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create core/src/error.rs with KeyRxError enum using thiserror::Error derive. Variants: UnknownKey { key: String }, ScriptCompileError { message: String, line: Option<usize>, column: Option<usize> }, ScriptRuntimeError { message: String }, InvalidPath { path: String, reason: String }, Io(#[from] std::io::Error), PlatformError { message: String }. Add impl From<Box<rhai::EvalAltResult>> for KeyRxError | Restrictions: All variants must have actionable error messages, use #[error("...")] attribute | Success: Error types compile, can be converted from common error sources. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 4.2 Export error module from lib.rs
+- [x] 4.2 Export error module from lib.rs
   - File: `core/src/lib.rs`
   - Add `pub mod error;`
   - Add `pub use error::KeyRxError;`
