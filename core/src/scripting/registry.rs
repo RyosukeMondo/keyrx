@@ -1,7 +1,8 @@
 //! Registry for storing key remappings defined by scripts.
 
 use crate::engine::{
-    ComboRegistry, HoldAction, KeyCode, LayerAction, LayerId, LayerStack, RemapAction,
+    ComboRegistry, HoldAction, KeyCode, LayerAction, LayerId, LayerStack, Modifier, ModifierState,
+    RemapAction, VirtualModifiers,
 };
 use std::collections::HashMap;
 
@@ -15,6 +16,9 @@ pub struct RemapRegistry {
     tap_holds: HashMap<KeyCode, TapHoldBinding>,
     combos: ComboRegistry,
     layers: LayerStack,
+    modifier_names: HashMap<String, u8>,
+    modifiers: ModifierState,
+    next_modifier_id: u16,
 }
 
 /// A tap-hold binding configured via script.
@@ -32,6 +36,9 @@ impl RemapRegistry {
             tap_holds: HashMap::new(),
             combos: ComboRegistry::new(),
             layers: LayerStack::new(),
+            modifier_names: HashMap::new(),
+            modifiers: ModifierState::new(),
+            next_modifier_id: 0,
         }
     }
 
@@ -69,6 +76,91 @@ impl RemapRegistry {
     /// Iterate over all combo definitions.
     pub fn combos(&self) -> &ComboRegistry {
         &self.combos
+    }
+
+    /// Define a named virtual modifier, returning its ID.
+    pub fn define_modifier(&mut self, name: &str) -> Result<u8, String> {
+        self.define_modifier_with_id(name, None)
+    }
+
+    /// Define a named virtual modifier with an explicit ID (used by scripting runtime for determinism).
+    pub fn define_modifier_with_id(
+        &mut self,
+        name: &str,
+        explicit_id: Option<u8>,
+    ) -> Result<u8, String> {
+        let normalized = Self::normalize_modifier_name(name)?;
+        if let Some(&existing) = self.modifier_names.get(&normalized) {
+            return Ok(existing);
+        }
+
+        let id = if let Some(id) = explicit_id {
+            if id as u16 > VirtualModifiers::MAX_ID as u16 {
+                return Err(format!(
+                    "modifier id {} exceeds maximum {}",
+                    id,
+                    VirtualModifiers::MAX_ID
+                ));
+            }
+            id
+        } else {
+            if self.next_modifier_id > VirtualModifiers::MAX_ID as u16 {
+                return Err(format!(
+                    "maximum virtual modifiers reached (0-{})",
+                    VirtualModifiers::MAX_ID
+                ));
+            }
+            let id = self.next_modifier_id as u8;
+            self.next_modifier_id = self.next_modifier_id.saturating_add(1);
+            id
+        };
+
+        self.modifier_names.insert(normalized, id);
+        if self.next_modifier_id <= id as u16 {
+            self.next_modifier_id = id as u16 + 1;
+        }
+        Ok(id)
+    }
+
+    /// Look up a modifier ID by name.
+    pub fn modifier_id(&self, name: &str) -> Option<u8> {
+        let normalized = Self::normalize_modifier_name(name).ok()?;
+        self.modifier_names.get(&normalized).copied()
+    }
+
+    /// Activate a virtual modifier by ID.
+    pub fn activate_modifier(&mut self, id: u8) {
+        self.modifiers.activate(Modifier::Virtual(id));
+    }
+
+    /// Deactivate a virtual modifier by ID.
+    pub fn deactivate_modifier(&mut self, id: u8) {
+        self.modifiers.deactivate(Modifier::Virtual(id));
+    }
+
+    /// Arm a one-shot virtual modifier by ID.
+    pub fn one_shot_modifier(&mut self, id: u8) {
+        self.modifiers.arm_one_shot(Modifier::Virtual(id));
+    }
+
+    /// Check if a virtual modifier is active (including one-shot).
+    pub fn is_modifier_active(&self, id: u8) -> bool {
+        self.modifiers.is_active(Modifier::Virtual(id))
+    }
+
+    /// Get the modifier state snapshot.
+    pub fn modifier_state(&self) -> ModifierState {
+        self.modifiers
+    }
+
+    /// Get modifier names (for syncing preview state).
+    pub fn modifier_names(&self) -> &HashMap<String, u8> {
+        &self.modifier_names
+    }
+
+    /// Next modifier ID to assign (for syncing preview state).
+    pub fn next_modifier_id(&self) -> u16 {
+        self.next_modifier_id
     }
 
     /// Look up the action for a key.
@@ -165,6 +257,9 @@ impl RemapRegistry {
         self.tap_holds.clear();
         self.combos = ComboRegistry::new();
         self.layers = LayerStack::new();
+        self.modifier_names.clear();
+        self.modifiers = ModifierState::new();
+        self.next_modifier_id = 0;
     }
 
     /// Get the number of active mappings.
@@ -178,6 +273,8 @@ impl RemapRegistry {
             && self.tap_holds.is_empty()
             && self.combos.is_empty()
             && self.layers.is_empty()
+            && self.modifier_names.is_empty()
+            && self.modifiers == ModifierState::new()
     }
 
     fn normalize_layer_name(name: &str) -> Result<String, String> {
@@ -187,6 +284,17 @@ impl RemapRegistry {
         }
         if trimmed.contains(':') {
             return Err("layer name cannot contain ':'".into());
+        }
+        Ok(trimmed.to_string())
+    }
+
+    fn normalize_modifier_name(name: &str) -> Result<String, String> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("modifier name cannot be empty".into());
+        }
+        if trimmed.contains(':') {
+            return Err("modifier name cannot contain ':'".into());
         }
         Ok(trimmed.to_string())
     }
@@ -254,15 +362,21 @@ mod tests {
             &[KeyCode::A, KeyCode::B],
             LayerAction::Remap(KeyCode::Escape),
         );
+        registry.define_modifier("hyper").unwrap();
+        registry.activate_modifier(0);
         assert_eq!(registry.len(), 2);
         assert_eq!(registry.tap_holds().count(), 1);
         assert_eq!(registry.combos().len(), 1);
+        assert!(registry.is_modifier_active(0));
+        assert_eq!(registry.modifier_id("hyper"), Some(0));
 
         registry.clear();
         assert!(registry.is_empty());
         assert_eq!(registry.lookup(KeyCode::A), RemapAction::Pass);
         assert!(registry.tap_holds().next().is_none());
         assert_eq!(registry.combos().len(), 0);
+        assert!(registry.modifier_id("hyper").is_none());
+        assert!(!registry.is_modifier_active(0));
     }
 
     #[test]
@@ -360,5 +474,37 @@ mod tests {
         registry.define_layer("nav", false).unwrap();
         assert!(registry.push_layer("nav").unwrap());
         assert!(registry.toggle_layer("nav").unwrap());
+    }
+
+    #[test]
+    fn define_modifier_assigns_stable_ids() {
+        let mut registry = RemapRegistry::new();
+        let first = registry.define_modifier("hyper").unwrap();
+        let second = registry.define_modifier("meh").unwrap();
+        let repeat = registry.define_modifier("hyper").unwrap();
+
+        assert_eq!(first, 0);
+        assert_eq!(second, 1);
+        assert_eq!(repeat, first);
+        assert_eq!(registry.modifier_id("hyper"), Some(0));
+        assert_eq!(registry.modifier_id("meh"), Some(1));
+    }
+
+    #[test]
+    fn modifier_activation_and_one_shot_state() {
+        let mut registry = RemapRegistry::new();
+        let id = registry.define_modifier("hyper").unwrap();
+
+        registry.activate_modifier(id);
+        assert!(registry.modifier_state().is_active(Modifier::Virtual(id)));
+
+        registry.deactivate_modifier(id);
+        assert!(!registry.modifier_state().is_active(Modifier::Virtual(id)));
+
+        registry.one_shot_modifier(id);
+        let mut snapshot = registry.modifier_state();
+        assert!(snapshot.is_active(Modifier::Virtual(id)));
+        assert!(snapshot.consume_one_shot(Modifier::Virtual(id)));
+        assert!(!snapshot.is_active(Modifier::Virtual(id)));
     }
 }

@@ -1,12 +1,14 @@
 //! Rhai runtime implementation.
 
 use super::helpers::parse_key_or_error;
-use crate::engine::{HoldAction, KeyCode, LayerAction, LayerStack, VirtualModifiers};
+use crate::engine::{
+    HoldAction, KeyCode, LayerAction, LayerStack, Modifier, ModifierState, VirtualModifiers,
+};
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
 use rhai::{Array, Engine, EvalAltResult, Position, Scope, AST};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 /// Thread-safe pending operations storage.
@@ -14,6 +16,80 @@ use std::sync::{Arc, Mutex};
 /// and to allow the closure to own a reference.
 type PendingOps = Arc<Mutex<Vec<PendingOp>>>;
 type LayerView = Arc<Mutex<LayerStack>>;
+type ModifierView = Arc<Mutex<ModifierPreview>>;
+
+#[derive(Debug, Clone)]
+struct ModifierPreview {
+    names: HashMap<String, u8>,
+    next_id: u16,
+    state: ModifierState,
+}
+
+impl ModifierPreview {
+    fn new() -> Self {
+        Self {
+            names: HashMap::new(),
+            next_id: 0,
+            state: ModifierState::new(),
+        }
+    }
+
+    fn define(&mut self, name: &str) -> Result<u8, Box<EvalAltResult>> {
+        if let Some(&id) = self.names.get(name) {
+            return Ok(id);
+        }
+
+        if self.next_id > VirtualModifiers::MAX_ID as u16 {
+            return Err(Self::modifier_error(
+                "define_modifier",
+                format!(
+                    "maximum virtual modifiers reached (0-{})",
+                    VirtualModifiers::MAX_ID
+                ),
+            ));
+        }
+
+        let id = self.next_id as u8;
+        self.next_id = self.next_id.saturating_add(1);
+        self.names.insert(name.to_string(), id);
+        Ok(id)
+    }
+
+    fn id_for(&self, name: &str, fn_name: &str) -> Result<u8, Box<EvalAltResult>> {
+        self.names.get(name).copied().ok_or_else(|| {
+            Self::modifier_error(fn_name, format!("modifier '{}' is not defined", name))
+        })
+    }
+
+    fn activate(&mut self, id: u8) {
+        self.state.activate(Modifier::Virtual(id));
+    }
+
+    fn deactivate(&mut self, id: u8) {
+        self.state.deactivate(Modifier::Virtual(id));
+    }
+
+    fn one_shot(&mut self, id: u8) {
+        self.state.arm_one_shot(Modifier::Virtual(id));
+    }
+
+    fn is_active(&self, id: u8) -> bool {
+        self.state.is_active(Modifier::Virtual(id))
+    }
+
+    fn sync_from_registry(&mut self, registry: &RemapRegistry) {
+        self.names = registry.modifier_names().clone();
+        self.next_id = registry.next_modifier_id();
+        self.state = registry.modifier_state();
+    }
+
+    fn modifier_error(fn_name: &str, message: impl Into<String>) -> Box<EvalAltResult> {
+        Box::new(EvalAltResult::ErrorRuntime(
+            format!("{}: {}", fn_name, message.into()).into(),
+            Position::NONE,
+        ))
+    }
+}
 
 /// A pending operation to be applied to the registry after script execution.
 #[derive(Debug, Clone)]
@@ -53,6 +129,22 @@ enum PendingOp {
         name: String,
     },
     LayerPop,
+    DefineModifier {
+        name: String,
+        id: u8,
+    },
+    ModifierActivate {
+        name: String,
+        id: u8,
+    },
+    ModifierDeactivate {
+        name: String,
+        id: u8,
+    },
+    ModifierOneShot {
+        name: String,
+        id: u8,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -78,6 +170,7 @@ pub struct RhaiRuntime {
     registry: RemapRegistry,
     pending_ops: PendingOps,
     layer_view: LayerView,
+    modifier_view: ModifierView,
 }
 
 impl RhaiRuntime {
@@ -92,9 +185,10 @@ impl RhaiRuntime {
         // Shared pending operations storage
         let pending_ops: PendingOps = Arc::new(Mutex::new(Vec::new()));
         let layer_view: LayerView = Arc::new(Mutex::new(LayerStack::new()));
+        let modifier_view: ModifierView = Arc::new(Mutex::new(ModifierPreview::new()));
 
         // Register script functions
-        Self::register_remap_functions(&mut engine, &pending_ops, &layer_view);
+        Self::register_remap_functions(&mut engine, &pending_ops, &layer_view, &modifier_view);
 
         Ok(Self {
             engine,
@@ -103,6 +197,7 @@ impl RhaiRuntime {
             registry: RemapRegistry::new(),
             pending_ops,
             layer_view,
+            modifier_view,
         })
     }
 
@@ -111,6 +206,7 @@ impl RhaiRuntime {
         engine: &mut Engine,
         pending_ops: &PendingOps,
         layer_view: &LayerView,
+        modifier_view: &ModifierView,
     ) {
         Self::register_debug(engine);
         Self::register_remap(engine, pending_ops);
@@ -120,6 +216,7 @@ impl RhaiRuntime {
         Self::register_tap_hold_mod(engine, pending_ops);
         Self::register_combo(engine, pending_ops);
         Self::register_layer_functions(engine, pending_ops, layer_view);
+        Self::register_modifier_functions(engine, pending_ops, modifier_view);
     }
 
     fn register_debug(engine: &mut Engine) {
@@ -465,6 +562,145 @@ impl RhaiRuntime {
         );
     }
 
+    fn register_modifier_functions(
+        engine: &mut Engine,
+        pending_ops: &PendingOps,
+        modifier_view: &ModifierView,
+    ) {
+        Self::register_define_modifier(engine, pending_ops, modifier_view);
+        Self::register_modifier_on(engine, pending_ops, modifier_view);
+        Self::register_modifier_off(engine, pending_ops, modifier_view);
+        Self::register_modifier_one_shot(engine, pending_ops, modifier_view);
+        Self::register_is_modifier_active(engine, modifier_view);
+    }
+
+    fn register_define_modifier(
+        engine: &mut Engine,
+        pending_ops: &PendingOps,
+        modifier_view: &ModifierView,
+    ) {
+        let ops = Arc::clone(pending_ops);
+        let view = Arc::clone(modifier_view);
+        engine.register_fn(
+            "define_modifier",
+            move |name: &str| -> std::result::Result<i64, Box<EvalAltResult>> {
+                let normalized = Self::normalize_modifier_name(name, "define_modifier")?;
+                let id = Self::with_modifier_view(&view, |preview| preview.define(&normalized))?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::DefineModifier {
+                        name: normalized.clone(),
+                        id,
+                    });
+                }
+
+                Ok(i64::from(id))
+            },
+        );
+    }
+
+    fn register_modifier_on(
+        engine: &mut Engine,
+        pending_ops: &PendingOps,
+        modifier_view: &ModifierView,
+    ) {
+        let ops = Arc::clone(pending_ops);
+        let view = Arc::clone(modifier_view);
+        engine.register_fn(
+            "modifier_on",
+            move |name: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let normalized = Self::normalize_modifier_name(name, "modifier_on")?;
+                let id = Self::with_modifier_view(&view, |preview| {
+                    let id = preview.id_for(&normalized, "modifier_on")?;
+                    preview.activate(id);
+                    Ok(id)
+                })?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::ModifierActivate {
+                        name: normalized,
+                        id,
+                    });
+                }
+
+                Ok(())
+            },
+        );
+    }
+
+    fn register_modifier_off(
+        engine: &mut Engine,
+        pending_ops: &PendingOps,
+        modifier_view: &ModifierView,
+    ) {
+        let ops = Arc::clone(pending_ops);
+        let view = Arc::clone(modifier_view);
+        engine.register_fn(
+            "modifier_off",
+            move |name: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let normalized = Self::normalize_modifier_name(name, "modifier_off")?;
+                let id = Self::with_modifier_view(&view, |preview| {
+                    let id = preview.id_for(&normalized, "modifier_off")?;
+                    preview.deactivate(id);
+                    Ok(id)
+                })?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::ModifierDeactivate {
+                        name: normalized,
+                        id,
+                    });
+                }
+
+                Ok(())
+            },
+        );
+    }
+
+    fn register_modifier_one_shot(
+        engine: &mut Engine,
+        pending_ops: &PendingOps,
+        modifier_view: &ModifierView,
+    ) {
+        let ops = Arc::clone(pending_ops);
+        let view = Arc::clone(modifier_view);
+        engine.register_fn(
+            "one_shot",
+            move |name: &str| -> std::result::Result<(), Box<EvalAltResult>> {
+                let normalized = Self::normalize_modifier_name(name, "one_shot")?;
+                let id = Self::with_modifier_view(&view, |preview| {
+                    let id = preview.id_for(&normalized, "one_shot")?;
+                    preview.one_shot(id);
+                    Ok(id)
+                })?;
+
+                if let Ok(mut ops) = ops.lock() {
+                    ops.push(PendingOp::ModifierOneShot {
+                        name: normalized,
+                        id,
+                    });
+                }
+
+                Ok(())
+            },
+        );
+    }
+
+    fn register_is_modifier_active(engine: &mut Engine, modifier_view: &ModifierView) {
+        let view = Arc::clone(modifier_view);
+        engine.register_fn(
+            "is_modifier_active",
+            move |name: &str| -> std::result::Result<bool, Box<EvalAltResult>> {
+                let normalized = Self::normalize_modifier_name(name, "is_modifier_active")?;
+                let active = Self::with_modifier_view(&view, |preview| {
+                    let id = preview.id_for(&normalized, "is_modifier_active")?;
+                    Ok(preview.is_active(id))
+                })?;
+                Ok(active)
+            },
+        );
+    }
+
     fn layer_error(fn_name: &str, message: impl Into<String>) -> Box<EvalAltResult> {
         Box::new(EvalAltResult::ErrorRuntime(
             format!("{}: {}", fn_name, message.into()).into(),
@@ -491,6 +727,40 @@ impl RhaiRuntime {
             .lock()
             .map_err(|_| Self::layer_error("layer_view", "failed to lock layer view"))?;
         f(&mut guard)
+    }
+
+    fn with_modifier_view<R, F>(view: &ModifierView, f: F) -> Result<R, Box<EvalAltResult>>
+    where
+        F: FnOnce(&mut ModifierPreview) -> Result<R, Box<EvalAltResult>>,
+    {
+        let mut guard = view
+            .lock()
+            .map_err(|_| Self::modifier_error("modifier_view", "failed to lock modifier view"))?;
+        f(&mut guard)
+    }
+
+    fn modifier_error(fn_name: &str, message: impl Into<String>) -> Box<EvalAltResult> {
+        Box::new(EvalAltResult::ErrorRuntime(
+            format!("{}: {}", fn_name, message.into()).into(),
+            Position::NONE,
+        ))
+    }
+
+    fn normalize_modifier_name(name: &str, fn_name: &str) -> Result<String, Box<EvalAltResult>> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(Self::modifier_error(
+                fn_name,
+                "modifier name cannot be empty",
+            ));
+        }
+        if trimmed.contains(':') {
+            return Err(Self::modifier_error(
+                fn_name,
+                "modifier name cannot contain ':'",
+            ));
+        }
+        Ok(trimmed.to_string())
     }
 
     fn ensure_layer_exists(
@@ -732,12 +1002,67 @@ impl RhaiRuntime {
                     PendingOp::LayerPop => {
                         let _ = self.registry.pop_layer();
                     }
+                    PendingOp::DefineModifier { name, id } => {
+                        if let Err(err) = self.registry.define_modifier_with_id(&name, Some(id)) {
+                            tracing::warn!(
+                                service = "keyrx",
+                                event = "rhai_define_modifier_failed",
+                                component = "scripting_runtime",
+                                modifier = name,
+                                error = %err,
+                                "Modifier definition failed"
+                            );
+                        }
+                    }
+                    PendingOp::ModifierActivate { name, id } => {
+                        if self.registry.modifier_id(&name).is_none() {
+                            tracing::warn!(
+                                service = "keyrx",
+                                event = "rhai_modifier_activate_undefined",
+                                component = "scripting_runtime",
+                                modifier = name,
+                                "Modifier activation ignored (undefined)"
+                            );
+                        } else {
+                            self.registry.activate_modifier(id);
+                        }
+                    }
+                    PendingOp::ModifierDeactivate { name, id } => {
+                        if self.registry.modifier_id(&name).is_none() {
+                            tracing::warn!(
+                                service = "keyrx",
+                                event = "rhai_modifier_deactivate_undefined",
+                                component = "scripting_runtime",
+                                modifier = name,
+                                "Modifier deactivation ignored (undefined)"
+                            );
+                        } else {
+                            self.registry.deactivate_modifier(id);
+                        }
+                    }
+                    PendingOp::ModifierOneShot { name, id } => {
+                        if self.registry.modifier_id(&name).is_none() {
+                            tracing::warn!(
+                                service = "keyrx",
+                                event = "rhai_modifier_one_shot_undefined",
+                                component = "scripting_runtime",
+                                modifier = name,
+                                "Modifier one-shot ignored (undefined)"
+                            );
+                        } else {
+                            self.registry.one_shot_modifier(id);
+                        }
+                    }
                 }
             }
         }
 
         if let Ok(mut view) = self.layer_view.lock() {
             *view = self.registry.layers().clone();
+        }
+
+        if let Ok(mut view) = self.modifier_view.lock() {
+            view.sync_from_registry(&self.registry);
         }
     }
 
@@ -833,7 +1158,7 @@ impl ScriptRuntime for RhaiRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{HoldAction, LayerAction, RemapAction};
+    use crate::engine::{HoldAction, LayerAction, Modifier, RemapAction};
 
     #[test]
     fn new_runtime_has_empty_registry() {
@@ -1039,5 +1364,53 @@ mod tests {
         );
         assert_eq!(nav_id, 1);
         assert_eq!(fn_id, 2);
+    }
+
+    #[test]
+    fn define_modifier_and_activate_it() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(
+                r#"
+                let id = define_modifier("hyper");
+                if id != 0 { throw "unexpected modifier id"; }
+                modifier_on("hyper");
+            "#,
+            )
+            .unwrap();
+
+        let registry = runtime.registry();
+        let id = registry.modifier_id("hyper").unwrap();
+        assert_eq!(id, 0);
+        assert!(registry.modifier_state().is_active(Modifier::Virtual(id)));
+    }
+
+    #[test]
+    fn one_shot_marks_modifier_as_active_once() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(
+                r#"
+                define_modifier("hyper");
+                one_shot("hyper");
+            "#,
+            )
+            .unwrap();
+
+        let registry = runtime.registry();
+        let id = registry.modifier_id("hyper").unwrap();
+        let mut snapshot = registry.modifier_state();
+        assert!(snapshot.is_active(Modifier::Virtual(id)));
+        assert!(snapshot.consume_one_shot(Modifier::Virtual(id)));
+        assert!(!snapshot.is_active(Modifier::Virtual(id)));
+    }
+
+    #[test]
+    fn modifier_functions_require_definition() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        assert!(runtime.execute(r#"modifier_on("hyper");"#).is_err());
+        assert!(runtime.execute(r#"modifier_off("hyper");"#).is_err());
+        assert!(runtime.execute(r#"one_shot("hyper");"#).is_err());
+        assert!(runtime.execute(r#"is_modifier_active("hyper");"#).is_err());
     }
 }

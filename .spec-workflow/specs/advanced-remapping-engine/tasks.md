@@ -149,7 +149,7 @@
   - _Requirements: REQ-4, REQ-9_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add layer_define(), layer_map(), layer_push(), layer_pop(), layer_toggle(), is_layer_active() Rhai functions | Restrictions: Layer names must be validated | Success: Scripts can define and control layers, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 14. Add modifier control Rhai functions
+- [x] 14. Add modifier control Rhai functions
   - File: `core/src/scripting/runtime.rs` (extend)
   - Register `define_modifier(name)` function (returns modifier ID)
   - Register `modifier_on(name)`, `modifier_off(name)` functions
