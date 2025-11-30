@@ -1,10 +1,11 @@
 //! Rhai runtime implementation.
 
+use super::helpers::parse_key_or_error;
 use crate::engine::KeyCode;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
-use rhai::{Engine, EvalAltResult, Position, Scope, AST};
+use rhai::{Engine, EvalAltResult, Scope, AST};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -57,34 +58,8 @@ impl RhaiRuntime {
         engine.register_fn(
             "remap",
             move |from: &str, to: &str| -> std::result::Result<(), Box<EvalAltResult>> {
-                let from_key = match KeyCode::from_name(from) {
-                    Some(k) => k,
-                    None => {
-                        tracing::warn!("Unknown key in remap(): '{}'", from);
-                        return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!(
-                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
-                                from
-                            )
-                            .into(),
-                            Position::NONE,
-                        )));
-                    }
-                };
-                let to_key = match KeyCode::from_name(to) {
-                    Some(k) => k,
-                    None => {
-                        tracing::warn!("Unknown key in remap(): '{}'", to);
-                        return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!(
-                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
-                                to
-                            )
-                            .into(),
-                            Position::NONE,
-                        )));
-                    }
-                };
+                let from_key = parse_key_or_error(from, "remap")?;
+                let to_key = parse_key_or_error(to, "remap")?;
                 tracing::debug!("Registered remap: {} -> {}", from, to);
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Remap {
@@ -102,20 +77,7 @@ impl RhaiRuntime {
         engine.register_fn(
             "block",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
-                let key_code = match KeyCode::from_name(key) {
-                    Some(k) => k,
-                    None => {
-                        tracing::warn!("Unknown key in block(): '{}'", key);
-                        return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!(
-                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
-                                key
-                            )
-                            .into(),
-                            Position::NONE,
-                        )));
-                    }
-                };
+                let key_code = parse_key_or_error(key, "block")?;
                 tracing::debug!("Registered block: {}", key);
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Block { key: key_code });
@@ -130,20 +92,7 @@ impl RhaiRuntime {
         engine.register_fn(
             "pass",
             move |key: &str| -> std::result::Result<(), Box<EvalAltResult>> {
-                let key_code = match KeyCode::from_name(key) {
-                    Some(k) => k,
-                    None => {
-                        tracing::warn!("Unknown key in pass(): '{}'", key);
-                        return Err(Box::new(EvalAltResult::ErrorRuntime(
-                            format!(
-                                "Unknown key '{}'. See docs/KEYS.md for valid key names.",
-                                key
-                            )
-                            .into(),
-                            Position::NONE,
-                        )));
-                    }
-                };
+                let key_code = parse_key_or_error(key, "pass")?;
                 tracing::debug!("Registered pass: {}", key);
                 if let Ok(mut ops) = ops.lock() {
                     ops.push(PendingOp::Pass { key: key_code });
