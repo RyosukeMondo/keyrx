@@ -10,7 +10,8 @@ use crossbeam_channel::Sender;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tracing::{debug, warn};
+use std::thread::{self, JoinHandle};
+use tracing::{debug, error, trace, warn};
 
 const UINPUT_PATH: &str = "/dev/uinput";
 
@@ -24,7 +25,8 @@ const UINPUT_PATH: &str = "/dev/uinput";
 ///
 /// The `running` flag is shared across threads using `Arc<AtomicBool>` to allow
 /// clean shutdown from the main thread.
-#[allow(dead_code)] // Will be used in task 3.2 (spawn read loop)
+// TODO: Remove allow(dead_code) once LinuxInput uses EvdevReader (task 5.2)
+#[allow(dead_code)]
 pub struct EvdevReader {
     /// The evdev device handle for reading keyboard events.
     device: evdev::Device,
@@ -36,7 +38,7 @@ pub struct EvdevReader {
     device_path: PathBuf,
 }
 
-#[allow(dead_code)] // Will be used in task 3.2 (spawn read loop)
+#[allow(dead_code)]
 impl EvdevReader {
     /// Create a new EvdevReader for the given device path.
     ///
@@ -139,6 +141,109 @@ impl EvdevReader {
     /// Get the device path.
     pub fn device_path(&self) -> &Path {
         &self.device_path
+    }
+
+    /// Spawn a blocking read thread that captures keyboard events.
+    ///
+    /// This method consumes the `EvdevReader` and moves it into a dedicated thread
+    /// that continuously reads events from the evdev device. Events are converted
+    /// to `InputEvent` and sent through the channel.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `JoinHandle` that can be used to wait for the thread to complete.
+    /// The thread will exit when:
+    /// - The `running` flag is set to `false`
+    /// - A critical error occurs (e.g., device disconnected)
+    /// - The channel receiver is dropped
+    ///
+    /// # Event Processing
+    ///
+    /// Only `EV_KEY` events are processed. Event values:
+    /// - 0: Key released
+    /// - 1: Key pressed
+    /// - 2: Key repeat (ignored, we synthesize repeats differently)
+    pub fn spawn(mut self) -> JoinHandle<()> {
+        let device_path = self.device_path.clone();
+
+        thread::spawn(move || {
+            debug!("EvdevReader thread started for {}", device_path.display());
+
+            while self.running.load(Ordering::Relaxed) {
+                // fetch_events blocks until events are available
+                match self.device.fetch_events() {
+                    Ok(events) => {
+                        for event in events {
+                            // Only process EV_KEY events
+                            if event.event_type() != evdev::EventType::KEY {
+                                continue;
+                            }
+
+                            // value: 0 = release, 1 = press, 2 = repeat
+                            let value = event.value();
+                            if value == 2 {
+                                // Skip repeat events - we handle repeats differently
+                                trace!("Skipping repeat event for key {}", event.code());
+                                continue;
+                            }
+
+                            let pressed = value == 1;
+                            let key_code = evdev_to_keycode(event.code());
+
+                            // Extract timestamp from event as microseconds since UNIX epoch
+                            let timestamp = event
+                                .timestamp()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .map(|d| d.as_micros() as u64)
+                                .unwrap_or(0);
+
+                            let input_event = InputEvent {
+                                key: key_code,
+                                pressed,
+                                timestamp,
+                            };
+
+                            trace!(
+                                "Read event: {:?} {} at {}",
+                                key_code,
+                                if pressed { "down" } else { "up" },
+                                timestamp
+                            );
+
+                            // Send event to channel
+                            if let Err(e) = self.tx.send(input_event) {
+                                // Channel closed, receiver dropped - exit thread
+                                debug!("Event channel closed, stopping reader: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        // Check if we should continue
+                        if !self.running.load(Ordering::Relaxed) {
+                            break;
+                        }
+
+                        // Log error but continue - might be temporary
+                        error!("Error reading events from {}: {}", device_path.display(), e);
+
+                        // Small sleep to avoid busy loop on persistent errors
+                        thread::sleep(std::time::Duration::from_millis(10));
+                    }
+                }
+            }
+
+            // Clean up: ungrab the device
+            if let Err(e) = self.ungrab() {
+                warn!(
+                    "Failed to ungrab device {} on shutdown: {}",
+                    device_path.display(),
+                    e
+                );
+            }
+
+            debug!("EvdevReader thread stopped for {}", device_path.display());
+        })
     }
 }
 
