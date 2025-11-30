@@ -277,7 +277,7 @@
   - _Requirements: REQ-4 (testability via mocks)_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write comprehensive tests for run.rs using existing MockInput/MockState | Restrictions: No hardware dependencies | Success: run.rs coverage >90%, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 26. Add tests for cli/commands (check, state, devices) (0% → 80%)
+- [x] 26. Add tests for cli/commands (check, state, devices) (0% → 80%)
   - File: `core/src/cli/commands/check.rs` (0% coverage)
   - File: `core/src/cli/commands/state.rs` (0% coverage)
   - File: `core/src/cli/commands/devices.rs` (29.82% coverage)
