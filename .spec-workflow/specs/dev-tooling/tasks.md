@@ -221,7 +221,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Run cargo clippy -- -D warnings in core/ and fix all warnings. Common fixes: add #[derive(Default)] where suggested, use clippy::derive_partial_eq_without_eq if needed, fix any other suggestions | Restrictions: Don't suppress warnings, fix them | Success: cargo clippy -- -D warnings exits 0. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 10.3 Run all tests and verify
+- [x] 10.3 Run all tests and verify
   - Run: `cargo test`
   - Verify: All 59+ tests pass
   - Run: `cargo test --release`
