@@ -166,6 +166,11 @@ where
         &self.modifiers
     }
 
+    /// Mutable modifier state (used for configuration).
+    pub fn modifiers_mut(&mut self) -> &mut ModifierState {
+        &mut self.modifiers
+    }
+
     /// Inspect layer stack.
     pub fn layers(&self) -> &LayerStack {
         &self.layers

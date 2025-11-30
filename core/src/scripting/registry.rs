@@ -63,6 +63,11 @@ impl RemapRegistry {
         self.mappings.insert(key, RemapAction::Pass);
     }
 
+    /// Iterate over all explicit key mappings (remap/block/pass).
+    pub fn mappings(&self) -> impl Iterator<Item = (KeyCode, RemapAction)> + '_ {
+        self.mappings.iter().map(|(key, action)| (*key, *action))
+    }
+
     /// Register a tap-hold behavior for a key.
     pub fn register_tap_hold(&mut self, key: KeyCode, tap: KeyCode, hold: HoldAction) {
         self.tap_holds.insert(key, TapHoldBinding { tap, hold });

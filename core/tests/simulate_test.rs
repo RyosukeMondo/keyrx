@@ -157,6 +157,7 @@ async fn simulate_without_script_passes_through() {
     assert_eq!(output.passed, 4);
     assert_eq!(output.remapped, 0);
     assert_eq!(output.blocked, 0);
+    assert!(output.active_layers.contains(&"base".to_string()));
 }
 
 /// Test simulate with remap script.
@@ -237,6 +238,58 @@ async fn simulate_with_on_init_hook() {
     // on_init should have set up remap
     assert_eq!(output.remapped, 2);
     assert_eq!(output.results[0].output, "Z");
+}
+
+/// Test inline hold duration triggers hold path for tap-hold.
+#[tokio::test]
+async fn simulate_respects_inline_hold_duration() {
+    let mut script_file = NamedTempFile::new().unwrap();
+    writeln!(
+        script_file,
+        r#"tap_hold("CapsLock", "Escape", "LeftCtrl");"#
+    )
+    .unwrap();
+
+    let cmd = SimulateCommand::new(
+        "CapsLock:hold:300".to_string(),
+        Some(script_file.path().to_path_buf()),
+        OutputFormat::Human,
+    );
+    let output = cmd.execute().await.unwrap();
+
+    assert!(
+        output
+            .results
+            .iter()
+            .any(|r| r.outputs.iter().any(|o| o.contains("LeftCtrl"))),
+        "expected hold path to emit LeftCtrl: {:?}",
+        output.results
+    );
+}
+
+/// Test combo flag simulates simultaneous keys.
+#[tokio::test]
+async fn simulate_combo_flag_triggers_combo_action() {
+    let mut script_file = NamedTempFile::new().unwrap();
+    writeln!(script_file, r#"combo(["A", "B"], "Escape");"#).unwrap();
+
+    let cmd = SimulateCommand::new(
+        "A,B".to_string(),
+        Some(script_file.path().to_path_buf()),
+        OutputFormat::Human,
+    )
+    .with_combo(true);
+
+    let output = cmd.execute().await.unwrap();
+
+    assert!(
+        output
+            .results
+            .iter()
+            .any(|r| r.outputs.iter().any(|o| o.contains("Escape"))),
+        "expected combo action output: {:?}",
+        output.results
+    );
 }
 
 /// Test simulate empty input returns error.

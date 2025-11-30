@@ -96,6 +96,14 @@ enum Commands {
         /// Path to the script file
         #[arg(short, long)]
         script: Option<PathBuf>,
+
+        /// Hold duration in milliseconds for each key (overrides default)
+        #[arg(long)]
+        hold_ms: Option<u64>,
+
+        /// Treat input keys as a simultaneous combo
+        #[arg(long)]
+        combo: bool,
     },
 
     /// Discover a keyboard layout and write a device profile
@@ -168,8 +176,17 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
         Commands::Bench { iterations, script } => {
             BenchCommand::new(iterations, script, format).run().await?;
         }
-        Commands::Simulate { input, script } => {
-            SimulateCommand::new(input, script, format).run().await?;
+        Commands::Simulate {
+            input,
+            script,
+            hold_ms,
+            combo,
+        } => {
+            SimulateCommand::new(input, script, format)
+                .with_hold_ms(hold_ms)
+                .with_combo(combo)
+                .run()
+                .await?;
         }
         Commands::Discover { device, force, yes } => {
             DiscoverCommand::new(device, force, yes, format)

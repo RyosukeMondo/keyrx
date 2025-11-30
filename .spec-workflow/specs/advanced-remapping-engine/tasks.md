@@ -175,7 +175,7 @@
 
 ## Phase 5: CLI Integration
 
-- [ ] 16. Update simulate command for advanced features
+- [x] 16. Update simulate command for advanced features
   - File: `core/src/cli/commands/simulate.rs` (extend)
   - Support `--hold-ms` flag for simulating key holds
   - Support `--combo` flag for simultaneous keys
