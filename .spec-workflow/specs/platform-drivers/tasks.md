@@ -92,7 +92,7 @@
   - _Requirements: REQ-1, REQ-8_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Rewrite LinuxInput struct with: reader_handle: Option<JoinHandle<()>>, writer: UinputWriter, rx: Receiver<InputEvent>, running: Arc<AtomicBool>, device_path: PathBuf. In new(path: Option<PathBuf>), if path is None, find first keyboard in /dev/input/. Create channel, store rx. Create UinputWriter. Add list_devices() that iterates /dev/input/event*, opens each, checks for KEY capability | Restrictions: Don't start reader in new(), wait for start() | Success: LinuxInput can be created with or without explicit device. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 5.2 Implement InputSource trait for LinuxInput
+- [x] 5.2 Implement InputSource trait for LinuxInput
   - File: `core/src/drivers/linux.rs`
   - start(): Spawn EvdevReader, grab keyboard
   - stop(): Set running=false, join thread, ungrab
