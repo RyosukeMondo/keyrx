@@ -17,7 +17,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust DevOps Engineer | Task: Create clippy.toml with cognitive-complexity-threshold=25, too-many-arguments-threshold=7, type-complexity-threshold=250 | Restrictions: Only use stable clippy configuration options | Success: cargo clippy uses the configuration. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 1.3 Update Cargo.toml with dev profile
+- [x] 1.3 Update Cargo.toml with dev profile
   - File: `core/Cargo.toml`
   - Add [profile.dev] with opt-level=0, debug=true
   - Add [profile.dev.package."*"] with opt-level=2 for faster deps
