@@ -295,7 +295,7 @@
   - _Requirements: REQ-9_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: In Engine::process_event, add early return if event.is_synthetic is true. Log at debug level: "Skipping synthetic event: {:?}". This prevents infinite loops when our injected keys are recaptured by the hook | Restrictions: Consider making filtering optional via config for special cases | Success: Synthetic events are skipped by default. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 15.4 Capture Linux metadata in evdev reader
+- [x] 15.4 Capture Linux metadata in evdev reader
   - File: `core/src/drivers/linux.rs`
   - In read loop: extract timestamp from event.time (convert to μs)
   - Set scan_code from event.code

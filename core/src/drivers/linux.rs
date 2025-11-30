@@ -163,6 +163,8 @@ pub struct EvdevReader {
     device_path: PathBuf,
     /// Shared flag to indicate if the reader thread panicked.
     panic_error: Arc<AtomicBool>,
+    /// Device ID string for event metadata (derived from device_path).
+    device_id: String,
 }
 
 impl EvdevReader {
@@ -203,12 +205,16 @@ impl EvdevReader {
             device_path.display()
         );
 
+        // Create device_id from path for event metadata
+        let device_id = device_path.to_string_lossy().to_string();
+
         Ok(Self {
             device,
             tx,
             running,
             device_path,
             panic_error,
+            device_id,
         })
     }
 
@@ -329,39 +335,45 @@ impl EvdevReader {
 
                                 // value: 0 = release, 1 = press, 2 = repeat
                                 let value = event.value();
-                                if value == 2 {
-                                    // Skip repeat events - we handle repeats differently
-                                    trace!("Skipping repeat event for key {}", event.code());
-                                    continue;
-                                }
-
-                                let pressed = value == 1;
+                                let is_repeat = value == 2;
+                                // pressed is true for both initial press (1) and repeat (2)
+                                let pressed = value == 1 || is_repeat;
                                 let key_code = evdev_to_keycode(event.code());
 
-                                // Extract timestamp from event as microseconds since UNIX epoch
+                                // Extract timestamp from event as microseconds
+                                // evdev provides timestamp as SystemTime
                                 let timestamp_us = event
                                     .timestamp()
                                     .duration_since(std::time::UNIX_EPOCH)
                                     .map(|d| d.as_micros() as u64)
                                     .unwrap_or(0);
 
-                                // Note: Full metadata capture (is_repeat, is_synthetic, scan_code)
-                                // is implemented in task 15.4. For now, use defaults.
+                                // Extract scan_code from the raw evdev event code
+                                let scan_code = event.code();
+
+                                // Create event with full metadata
+                                // is_synthetic is false for physical keyboard events.
+                                // Since we grab the physical keyboard exclusively, all events
+                                // we receive are genuine physical keypresses - not from our
+                                // uinput virtual device.
                                 let input_event = InputEvent {
                                     key: key_code,
                                     pressed,
                                     timestamp_us,
-                                    device_id: None,  // TODO: Populate in task 15.4
-                                    is_repeat: false, // TODO: Detect value==2 in task 15.4
-                                    is_synthetic: false, // TODO: Compare to uinput fd in task 15.4
-                                    scan_code: 0,     // TODO: Populate in task 15.4
+                                    device_id: Some(self.device_id.clone()),
+                                    is_repeat,
+                                    is_synthetic: false,
+                                    scan_code,
                                 };
 
                                 trace!(
-                                    "Read event: {:?} {} at {}",
+                                    "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
                                     key_code,
                                     if pressed { "down" } else { "up" },
-                                    timestamp_us
+                                    scan_code,
+                                    is_repeat,
+                                    timestamp_us,
+                                    self.device_id
                                 );
 
                                 // Send event to channel
