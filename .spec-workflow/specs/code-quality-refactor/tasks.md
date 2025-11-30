@@ -244,7 +244,7 @@
   - _Requirements: REQ-3, REQ-5_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor large evdev mapping functions by extracting categorical helpers | Restrictions: Identical conversion behavior | Success: All functions <50 lines, keymap tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [-] 23. Refactor cli/commands large functions (77, 57, 54 lines → <50)
+- [x] 23. Refactor cli/commands large functions (77, 57, 54 lines → <50)
   - File: `core/src/cli/commands/simulate.rs:84` (77 lines)
   - Extract output formatting to helper function
   - File: `core/src/cli/commands/run.rs:126` (57 lines)
