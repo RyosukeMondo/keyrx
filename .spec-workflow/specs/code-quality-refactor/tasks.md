@@ -194,7 +194,7 @@
   - _Requirements: REQ-2, REQ-6_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split windows/mod.rs (786 lines) by extracting device_info logic and TLS helpers to separate modules | Restrictions: Preserve thread-local storage semantics, maintain all public API | Success: windows/mod.rs <500 lines, all Windows tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [-] 18. Split linux/mod.rs (723 lines → <500)
+- [x] 18. Split linux/mod.rs (723 lines → <500)
   - File: `core/src/drivers/linux/mod.rs` (currently 723 lines)
   - Extract `DeviceInfo` and `try_get_keyboard_info()` to `linux/device_info.rs` (~100 lines)
   - Extract evdev device discovery to `linux/discovery.rs` (~120 lines)
