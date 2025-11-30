@@ -12,7 +12,7 @@ use std::ffi::{c_char, CStr, CString};
 /// This function is safe to call from any thread.
 #[no_mangle]
 pub extern "C" fn keyrx_init() -> i32 {
-    tracing_subscriber::fmt::init();
+    let _ = tracing_subscriber::fmt::try_init();
     tracing::info!("KeyRx Core initialized");
     0 // Success
 }
@@ -55,5 +55,53 @@ pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
 pub unsafe extern "C" fn keyrx_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
         drop(CString::from_raw(ptr));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ptr;
+
+    #[test]
+    fn init_is_idempotent() {
+        assert_eq!(keyrx_init(), 0);
+        assert_eq!(keyrx_init(), 0);
+    }
+
+    #[test]
+    fn version_matches_package_version() {
+        let version = unsafe { CStr::from_ptr(keyrx_version()) }
+            .to_str()
+            .expect("version string should be valid UTF-8");
+
+        assert_eq!(version, env!("CARGO_PKG_VERSION"));
+    }
+
+    #[test]
+    fn load_script_rejects_null_pointer() {
+        let result = unsafe { keyrx_load_script(ptr::null()) };
+        assert_eq!(result, -1);
+    }
+
+    #[test]
+    fn load_script_rejects_invalid_utf8() {
+        static INVALID_UTF8: [u8; 2] = [0xFF, 0x00];
+        let result = unsafe { keyrx_load_script(INVALID_UTF8.as_ptr() as *const c_char) };
+        assert_eq!(result, -2);
+    }
+
+    #[test]
+    fn load_script_accepts_valid_path() {
+        let path = CString::new("script.rhai").expect("CString should not contain nulls");
+        let result = unsafe { keyrx_load_script(path.as_ptr()) };
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn free_string_handles_null_pointer() {
+        unsafe {
+            keyrx_free_string(ptr::null_mut());
+        }
     }
 }

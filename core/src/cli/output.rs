@@ -31,48 +31,114 @@ impl OutputWriter {
 
     /// Write a success message.
     pub fn success(&self, message: &str) {
-        match self.format {
-            OutputFormat::Human => println!("[OK] {}", message),
-            OutputFormat::Json => {
-                println!(r#"{{"status":"success","message":"{}"}}"#, message);
-            }
-        }
+        let line = self.format_success(message);
+        println!("{line}");
+        let _ = io::stdout().flush();
     }
 
     /// Write an error message.
     pub fn error(&self, message: &str) {
-        match self.format {
-            OutputFormat::Human => eprintln!("[ERROR] {}", message),
-            OutputFormat::Json => {
-                eprintln!(r#"{{"status":"error","message":"{}"}}"#, message);
-            }
-        }
+        let line = self.format_error(message);
+        eprintln!("{line}");
+        let _ = io::stderr().flush();
     }
 
     /// Write a warning message.
     pub fn warning(&self, message: &str) {
-        match self.format {
-            OutputFormat::Human => println!("[WARN] {}", message),
-            OutputFormat::Json => {
-                println!(r#"{{"status":"warning","message":"{}"}}"#, message);
-            }
-        }
+        let line = self.format_warning(message);
+        println!("{line}");
+        let _ = io::stdout().flush();
     }
 
     /// Write structured data.
     pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
-        match self.format {
-            OutputFormat::Human => {
-                // Pretty print for humans
-                let json = serde_json::to_string_pretty(data)?;
-                println!("{}", json);
-            }
-            OutputFormat::Json => {
-                // Compact JSON for machines
-                let json = serde_json::to_string(data)?;
-                println!("{}", json);
-            }
-        }
+        let json = self.format_data(data)?;
+        println!("{json}");
         io::stdout().flush()
+    }
+
+    fn format_success(&self, message: &str) -> String {
+        match self.format {
+            OutputFormat::Human => format!("[OK] {}", message),
+            OutputFormat::Json => format!(r#"{{"status":"success","message":"{}"}}"#, message),
+        }
+    }
+
+    fn format_error(&self, message: &str) -> String {
+        match self.format {
+            OutputFormat::Human => format!("[ERROR] {}", message),
+            OutputFormat::Json => format!(r#"{{"status":"error","message":"{}"}}"#, message),
+        }
+    }
+
+    fn format_warning(&self, message: &str) -> String {
+        match self.format {
+            OutputFormat::Human => format!("[WARN] {}", message),
+            OutputFormat::Json => format!(r#"{{"status":"warning","message":"{}"}}"#, message),
+        }
+    }
+
+    fn format_data<T: Serialize + ?Sized>(&self, data: &T) -> serde_json::Result<String> {
+        match self.format {
+            OutputFormat::Human => serde_json::to_string_pretty(data),
+            OutputFormat::Json => serde_json::to_string(data),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::Serialize;
+
+    #[test]
+    fn formats_human_readable_messages() {
+        let writer = OutputWriter::new(OutputFormat::Human);
+
+        assert_eq!(writer.format_success("done"), "[OK] done");
+        assert_eq!(writer.format_warning("check"), "[WARN] check");
+        assert_eq!(writer.format_error("fail"), "[ERROR] fail");
+    }
+
+    #[test]
+    fn formats_json_messages() {
+        let writer = OutputWriter::new(OutputFormat::Json);
+
+        assert_eq!(
+            writer.format_success("ok"),
+            r#"{"status":"success","message":"ok"}"#
+        );
+        assert_eq!(
+            writer.format_warning("watch"),
+            r#"{"status":"warning","message":"watch"}"#
+        );
+        assert_eq!(
+            writer.format_error("fail"),
+            r#"{"status":"error","message":"fail"}"#
+        );
+    }
+
+    #[derive(Serialize)]
+    struct SampleData<'a> {
+        name: &'a str,
+        count: u8,
+    }
+
+    #[test]
+    fn formats_data_for_each_mode() {
+        let sample = SampleData {
+            name: "alpha",
+            count: 3,
+        };
+
+        let human = OutputWriter::new(OutputFormat::Human)
+            .format_data(&sample)
+            .expect("human data write should succeed");
+        assert_eq!(human, "{\n  \"name\": \"alpha\",\n  \"count\": 3\n}");
+
+        let compact = OutputWriter::new(OutputFormat::Json)
+            .format_data(&sample)
+            .expect("json data write should succeed");
+        assert_eq!(compact, "{\"name\":\"alpha\",\"count\":3}");
     }
 }

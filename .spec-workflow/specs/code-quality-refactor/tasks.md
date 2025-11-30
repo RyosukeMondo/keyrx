@@ -300,7 +300,7 @@
   - _Requirements: REQ-4 (DI enables testing)_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Write Linux driver tests using mock injectors, no hardware required | Restrictions: Tests must run in CI without /dev/input | Success: linux/ coverage >80% | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 28. Add tests for cli/output.rs and ffi/exports.rs (14%, 0% → 80%)
+- [x] 28. Add tests for cli/output.rs and ffi/exports.rs (14%, 0% → 80%)
   - File: `core/src/cli/output.rs` (14.63% coverage)
   - File: `core/src/ffi/exports.rs` (0% coverage)
   - Test OutputWriter JSON and text formatting
