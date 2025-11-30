@@ -5,6 +5,7 @@
 //! appropriate driver for the current operating system.
 
 mod common;
+pub mod keycodes;
 
 #[cfg(target_os = "windows")]
 mod windows;
