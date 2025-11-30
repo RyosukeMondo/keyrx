@@ -266,3 +266,52 @@
   - Purpose: Confirm Windows driver works
   - _Requirements: REQ-3, REQ-4, REQ-6, REQ-7_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: On Windows system: 1) Run keyrx.exe devices, 2) Run keyrx.exe run --script scripts/std/example.rhai, 3) Press CapsLock, verify Escape, 4) Press Insert, verify blocked, 5) Ctrl+C for clean shutdown. Document any antivirus warnings | Restrictions: Requires physical access to Windows system | Success: All tests pass, keyboard works normally after. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
+
+## Task 15: Event Metadata Infrastructure (REQ-9)
+
+- [ ] 15.1 Extend InputEvent struct with metadata fields
+  - File: `core/src/engine/types.rs`
+  - Add fields: timestamp_us (u64), device_id (Option<String>), is_repeat (bool), is_synthetic (bool), scan_code (u16)
+  - Update Default impl with sensible defaults
+  - Add doc comments explaining each field's purpose and platform sources
+  - Purpose: Enable advanced remapping features (tap-hold, custom modifiers, device-specific configs)
+  - _Requirements: REQ-9_
+  - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update InputEvent in core/src/engine/types.rs to add: timestamp_us: u64 (μs since driver start), device_id: Option<String> (source keyboard), is_repeat: bool (auto-repeat vs initial), is_synthetic: bool (software-injected), scan_code: u16 (raw hardware code). Update Default impl. Add doc comments | Restrictions: Maintain backward compat with existing tests | Success: cargo build succeeds, existing tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
+
+- [ ] 15.2 Update MockInput to populate metadata
+  - File: `core/src/mocks/mock_input.rs`
+  - Generate timestamp_us as monotonic counter
+  - Set is_synthetic=false, is_repeat=false by default
+  - Set scan_code=0, device_id=Some("mock")
+  - Purpose: Enable testing of metadata-dependent logic
+  - _Requirements: REQ-9_
+  - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update MockInput to populate InputEvent metadata. Add start_time field, compute timestamp_us from elapsed. Set device_id=Some("mock".to_string()), is_synthetic=false, is_repeat=false, scan_code=0 | Restrictions: Keep existing MockInput API working | Success: Mock events have valid metadata. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
+
+- [ ] 15.3 Add synthetic event filtering in Engine
+  - File: `core/src/engine/event_loop.rs`
+  - Check is_synthetic flag before processing
+  - Skip processing and log at debug level
+  - Purpose: Prevent infinite loops from re-processing injected events
+  - _Requirements: REQ-9_
+  - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: In Engine::process_event, add early return if event.is_synthetic is true. Log at debug level: "Skipping synthetic event: {:?}". This prevents infinite loops when our injected keys are recaptured by the hook | Restrictions: Consider making filtering optional via config for special cases | Success: Synthetic events are skipped by default. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
+
+- [ ] 15.4 Capture Linux metadata in evdev reader
+  - File: `core/src/drivers/linux.rs`
+  - In read loop: extract timestamp from event.time (convert to μs)
+  - Set scan_code from event.code
+  - Set is_repeat from event.value == 2
+  - Set device_id from device path
+  - Detect is_synthetic by comparing to uinput device fd
+  - Purpose: Full metadata capture on Linux
+  - _Requirements: REQ-1, REQ-9_
+  - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: In EvdevReader read loop, populate InputEvent metadata: timestamp_us from event.time (sec*1000000 + usec), scan_code from event.code, is_repeat from value==2, device_id from stored device path, is_synthetic by comparing event source fd to uinput fd | Restrictions: Handle missing metadata gracefully with defaults | Success: Linux events have complete metadata. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
+
+- [ ] 15.5 Capture Windows metadata in hook callback
+  - File: `core/src/drivers/windows.rs`
+  - Extract timestamp from KBDLLHOOKSTRUCT.time (convert ms→μs)
+  - Set scan_code from KBDLLHOOKSTRUCT.scanCode
+  - Detect is_synthetic from LLKHF_INJECTED flag
+  - Track key state for is_repeat detection
+  - Purpose: Full metadata capture on Windows
+  - _Requirements: REQ-3, REQ-9_
+  - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: In hook callback, populate InputEvent metadata: timestamp_us from time field (multiply by 1000 for μs), scan_code from scanCode field, is_synthetic from (flags & LLKHF_INJECTED) != 0. Track HashMap<u16, bool> for key states to detect is_repeat (key down when already down) | Restrictions: Keep callback fast (<100ms requirement) | Success: Windows events have complete metadata. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._

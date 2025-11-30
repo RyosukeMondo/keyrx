@@ -126,6 +126,31 @@ From tech.md:
 5. IF specified device is not found THEN clear error with device list SHALL be shown
 6. WHEN device is hot-plugged THEN it SHALL be detectable via `keyrx devices`
 
+### REQ-9: Event Metadata Capture
+
+**User Story:** As a script developer, I want access to comprehensive keyboard event metadata, so that I can implement advanced features like tap-hold, custom modifiers, and device-specific configs.
+
+#### Acceptance Criteria
+
+1. WHEN an event is captured THEN timestamp_us SHALL be included (microseconds since driver start)
+2. WHEN an event is captured THEN device_id SHALL identify the source keyboard
+3. WHEN an event is captured THEN is_repeat SHALL distinguish auto-repeat from initial press
+4. WHEN an event is captured THEN is_synthetic SHALL be true for software-injected events
+5. WHEN an event is captured THEN scan_code SHALL contain the raw hardware scan code
+6. WHEN processing events THEN is_synthetic=true events SHALL be skippable to prevent infinite loops
+7. WHEN metadata is unavailable on a platform THEN sensible defaults SHALL be used
+8. ALL metadata fields SHALL be consistent in meaning between Linux and Windows
+
+#### Platform Mapping
+
+| Field | Linux Source | Windows Source |
+|-------|-------------|----------------|
+| timestamp_us | `evdev::InputEvent.time` | `KBDLLHOOKSTRUCT.time` |
+| device_id | `/dev/input/eventX` path | Device instance ID |
+| is_repeat | `evdev::InputEvent.value == 2` | Track previous state |
+| is_synthetic | Compare to uinput device | `LLKHF_INJECTED` flag |
+| scan_code | `evdev::InputEvent.code` | `KBDLLHOOKSTRUCT.scanCode` |
+
 ## Non-Functional Requirements
 
 ### Performance

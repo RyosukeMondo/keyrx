@@ -214,6 +214,61 @@ Windows:
 
 ## Data Models
 
+### InputEvent (Updated for REQ-9)
+```rust
+/// Keyboard event with comprehensive metadata for advanced remapping features.
+/// All fields are captured at driver level; scripts can ignore fields they don't need.
+#[derive(Debug, Clone, Serialize)]
+pub struct InputEvent {
+    /// The logical key that was pressed/released
+    pub key: KeyCode,
+    /// true = key down, false = key up
+    pub pressed: bool,
+    /// Microseconds since driver started (for timing-based features like tap-hold)
+    pub timestamp_us: u64,
+    /// Source device identifier (for multi-keyboard configs)
+    /// Linux: "/dev/input/event3", Windows: device instance ID
+    pub device_id: Option<String>,
+    /// true if this is an auto-repeat event (not initial press)
+    pub is_repeat: bool,
+    /// true if this event was injected by software (including our own uinput/SendInput)
+    /// CRITICAL: Used to prevent infinite loops - skip processing synthetic events
+    pub is_synthetic: bool,
+    /// Raw hardware scan code (for physical key position regardless of layout)
+    pub scan_code: u16,
+}
+```
+
+### Metadata Capture by Platform
+
+```
+Linux (evdev):
+┌─────────────────────────────────────────────────────────────────┐
+│ evdev::InputEvent                                               │
+│ ├── time: timeval          → timestamp_us (convert to μs)       │
+│ ├── type: EV_KEY                                                │
+│ ├── code: KEY_A            → scan_code, key (via evdev_to_keycode)│
+│ └── value: 0/1/2           → pressed (1), is_repeat (2)         │
+│                                                                 │
+│ device path                → device_id                          │
+│ compare to uinput fd       → is_synthetic                       │
+└─────────────────────────────────────────────────────────────────┘
+
+Windows (WH_KEYBOARD_LL):
+┌─────────────────────────────────────────────────────────────────┐
+│ KBDLLHOOKSTRUCT                                                 │
+│ ├── vkCode                 → key (via vk_to_keycode)            │
+│ ├── scanCode               → scan_code                          │
+│ ├── flags                                                       │
+│ │   ├── LLKHF_INJECTED     → is_synthetic                       │
+│ │   └── LLKHF_EXTENDED     → (used for keycode mapping)         │
+│ └── time                   → timestamp_us (ms * 1000)           │
+│                                                                 │
+│ wParam (WM_KEYDOWN/UP)     → pressed                            │
+│ track previous key state   → is_repeat                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### DeviceInfo
 ```rust
 #[derive(Debug, Clone, Serialize)]
