@@ -13,6 +13,7 @@ use crate::traits::InputSource;
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use crossbeam_channel::Sender;
+use device_info::try_get_keyboard_info;
 pub use discovery::list_keyboards;
 use reader::EvdevReader;
 use std::path::{Path, PathBuf};
@@ -48,6 +49,7 @@ pub struct LinuxInput {
     tx: Sender<InputEvent>,
     running: Arc<AtomicBool>,
     device_path: PathBuf,
+    device_info: DeviceInfo,
     panic_error: Arc<AtomicBool>,
 }
 impl LinuxInput {
@@ -60,7 +62,7 @@ impl LinuxInput {
         injector: Box<dyn KeyInjector>,
     ) -> Result<Self> {
         // Determine device path: use provided or auto-detect
-        let device_path = match device_path {
+        let (device_path, device_info) = match device_path {
             Some(path) => {
                 debug!(
                     service = "keyrx",
@@ -69,7 +71,10 @@ impl LinuxInput {
                     path = %path.display(),
                     "Using specified device"
                 );
-                path
+                let info = try_get_keyboard_info(&path).unwrap_or_else(|| {
+                    DeviceInfo::new(path.clone(), path.display().to_string(), 0, 0, true)
+                });
+                (path, info)
             }
             None => {
                 debug!(
@@ -78,7 +83,8 @@ impl LinuxInput {
                     component = "linux_input",
                     "Auto-detecting keyboard device"
                 );
-                Self::find_first_keyboard()?
+                let info = Self::find_first_keyboard()?;
+                (info.path.clone(), info)
             }
         };
         // Create the event channel
@@ -99,10 +105,11 @@ impl LinuxInput {
             tx,
             running,
             device_path,
+            device_info,
             panic_error,
         })
     }
-    fn find_first_keyboard() -> Result<PathBuf> {
+    fn find_first_keyboard() -> Result<DeviceInfo> {
         let keyboards = list_keyboards()?;
         if keyboards.is_empty() {
             bail!(
@@ -123,13 +130,16 @@ impl LinuxInput {
             path = %device.path.display(),
             "Auto-detected keyboard device"
         );
-        Ok(device.path.clone())
+        Ok(device.clone())
     }
     pub fn list_devices() -> Result<Vec<DeviceInfo>> {
         list_keyboards()
     }
     pub fn device_path(&self) -> &Path {
         &self.device_path
+    }
+    pub fn device_info(&self) -> &DeviceInfo {
+        &self.device_info
     }
     pub fn receiver(&self) -> &crossbeam_channel::Receiver<InputEvent> {
         &self.rx

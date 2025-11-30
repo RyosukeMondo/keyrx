@@ -19,9 +19,10 @@ pub mod traits;
 
 // Re-export commonly used types
 pub use discovery::{
-    default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, DiscoveryProgress,
-    DiscoverySession, DiscoverySummary, DuplicateWarning, ExpectedPosition, PhysicalKey,
-    ProfileSource, SessionError, SessionStatus, SessionUpdate, SCHEMA_VERSION,
+    default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, DeviceRegistry,
+    DiscoveryProgress, DiscoveryReason, DiscoverySession, DiscoverySummary, DuplicateWarning,
+    ExpectedPosition, PhysicalKey, ProfileSource, RegistryEntry, RegistryStatus, SessionError,
+    SessionStatus, SessionUpdate, SCHEMA_VERSION,
 };
 pub use engine::{Engine, InputEvent, KeyCode, Layer, ModifierSet, OutputAction};
 pub use error::KeyRxError;

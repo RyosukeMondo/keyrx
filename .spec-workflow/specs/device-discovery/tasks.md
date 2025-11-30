@@ -24,7 +24,7 @@
   - _Requirements: 2,4,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust engineer focused on state machines | Task: Implement discovery session to guide key presses, detect duplicates, emit progress/summary, and support cancel/retry | Restrictions: Keep pure/side-effect-free aside from event intake, expose JSON-serializable progress structs, ensure emergency-exit bypass hook is honored | _Leverage: driver traits for device_id filtering, tracing, discovery types | _Requirements: 2,4,5 | Success: Unit tests cover happy path, duplicate handling, cancel, and completion; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 4. Integrate registry and engine load path
+- [x] 4. Integrate registry and engine load path
   - File: core/src/discovery/registry.rs; core/src/engine/mod.rs (or equivalent init path)
   - Wire registry lookup into engine initialization to load per-device profiles, fall back to default on errors, and expose `discover_needed` signal for unknown devices.
   - Purpose: Ensure runtime uses correct profile per device and prompts when unknown.

@@ -125,18 +125,13 @@ pub fn write_profile(profile: &DeviceProfile) -> Result<PathBuf, StorageError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::discovery::test_utils::config_env_lock;
     use std::fs;
-    use std::sync::{Mutex, OnceLock};
     use std::time::Duration;
     use tempfile::tempdir;
 
-    fn env_lock() -> &'static Mutex<()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(()))
-    }
-
     fn with_temp_config<F: FnOnce()>(f: F) {
-        let _guard = env_lock().lock().unwrap();
+        let _guard = config_env_lock().lock().unwrap();
         let temp = tempdir().unwrap();
         let prev_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         let prev_home = std::env::var("HOME").ok();

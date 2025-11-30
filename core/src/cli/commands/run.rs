@@ -1,6 +1,8 @@
 //! Engine run command.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
+use crate::drivers::DeviceInfo;
 use crate::engine::Engine;
 use crate::mocks::{MockInput, MockState};
 use crate::scripting::RhaiRuntime;
@@ -10,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
 
 #[cfg(target_os = "linux")]
@@ -142,6 +144,53 @@ impl RunCommand {
         Ok(())
     }
 
+    fn load_device_profile(&self, device_info: &DeviceInfo) -> RegistryEntry {
+        let mut registry = DeviceRegistry::new();
+        registry.load_or_default(DeviceId::new(device_info.vendor_id, device_info.product_id))
+    }
+
+    fn report_profile_status(&self, device_info: &DeviceInfo, entry: &RegistryEntry) {
+        match &entry.status {
+            RegistryStatus::Ready => {
+                self.output.success(&format!(
+                    "Loaded device profile for {:04x}:{:04x} from {}",
+                    device_info.vendor_id,
+                    device_info.product_id,
+                    entry.path.display()
+                ));
+            }
+            RegistryStatus::NeedsDiscovery(reason) => {
+                let reason_text = self.describe_reason(reason);
+                self.output.warning(&format!(
+                    "Using default profile for {:04x}:{:04x} ({}). Discovery recommended: {}",
+                    device_info.vendor_id, device_info.product_id, device_info.name, reason_text
+                ));
+                warn!(
+                    service = "keyrx",
+                    event = "discovery_prompt",
+                    component = "cli_run",
+                    vendor_id = device_info.vendor_id,
+                    product_id = device_info.product_id,
+                    path = %entry.path.display(),
+                    reason = ?reason,
+                    "Profile missing or invalid, discovery needed"
+                );
+            }
+        }
+    }
+
+    fn describe_reason(&self, reason: &DiscoveryReason) -> String {
+        match reason {
+            DiscoveryReason::MissingProfile => "no profile found on disk".to_string(),
+            DiscoveryReason::ParseError => "stored profile is corrupt".to_string(),
+            DiscoveryReason::SchemaMismatch { expected, found } => format!(
+                "profile schema mismatch (expected {}, found {})",
+                expected, found
+            ),
+            DiscoveryReason::IoError(msg) => format!("I/O error loading profile: {msg}"),
+        }
+    }
+
     async fn run_with_mock(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
         self.output
             .success("Using mock input (no real keyboard interception)");
@@ -191,6 +240,9 @@ impl RunCommand {
 
         // Show which device we're using and initialize input
         let input = self.initialize_linux_input()?;
+        let device_info = input.device_info().clone();
+        let profile_entry = self.load_device_profile(&device_info);
+        self.report_profile_status(&device_info, &profile_entry);
 
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;

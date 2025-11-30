@@ -4,10 +4,12 @@
 //! persistence, and registry lookup. Wiring into the engine/CLI/FFI is
 //! implemented in downstream tasks.
 
+pub mod registry;
 pub mod session;
 pub mod storage;
 pub mod types;
 
+pub use registry::{DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 pub use session::{
     DiscoveryProgress, DiscoverySession, DiscoverySummary, DuplicateWarning, ExpectedPosition,
     SessionError, SessionStatus, SessionUpdate,
@@ -19,3 +21,13 @@ pub use types::{
     default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, PhysicalKey,
     ProfileSource, SCHEMA_VERSION,
 };
+
+#[cfg(test)]
+pub(crate) mod test_utils {
+    use std::sync::{Mutex, OnceLock};
+
+    pub(crate) fn config_env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+}
