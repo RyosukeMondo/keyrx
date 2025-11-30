@@ -59,7 +59,7 @@
   - _Requirements: REQ-8_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create TimingConfig in core/src/engine/decision/timing.rs with tap_timeout_ms, combo_timeout_ms, hold_delay_ms, eager_tap, permissive_hold, retro_tap | Restrictions: All fields must have sensible defaults | Success: Default matches tech.md, serialization works | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 6. Create PendingDecision and DecisionQueue
+- [x] 6. Create PendingDecision and DecisionQueue
   - File: `core/src/engine/decision/pending.rs` (new)
   - Define `PendingDecision` enum (TapHold, Combo variants)
   - Define `DecisionResolution` enum for outcomes

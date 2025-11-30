@@ -1,9 +1,11 @@
 //! Core engine module for event processing.
 
+mod decision;
 mod event_loop;
 mod state;
 mod types;
 
+pub use decision::{DecisionQueue, DecisionResolution, PendingDecision, TimingConfig};
 pub use event_loop::Engine;
 pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,

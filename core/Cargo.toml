@@ -23,6 +23,7 @@ crossbeam-channel = "0.5"
 clap = { version = "4", features = ["derive"] }
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde", "clock"] }
+smallvec = "1"
 
 [dev-dependencies]
 proptest = "1"

@@ -43,6 +43,12 @@ pub struct TimingConfigBuilder {
     config: TimingConfig,
 }
 
+impl Default for TimingConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimingConfigBuilder {
     pub fn new() -> Self {
         Self {
