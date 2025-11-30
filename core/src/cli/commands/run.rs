@@ -256,30 +256,7 @@ impl RunCommand {
 
     #[cfg(target_os = "windows")]
     async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
-        use crate::drivers::WindowsInput;
-
-        self.output.success("Using Windows input driver");
-
-        // Note: Windows uses a global keyboard hook, so --device is ignored
-        if self.device_path.is_some() {
-            self.output.warning(
-                "Note: --device is ignored on Windows (uses global keyboard hook for all keyboards)",
-            );
-        }
-
-        let input = match WindowsInput::new() {
-            Ok(input) => {
-                self.output
-                    .success("Initialized Windows low-level keyboard hook");
-                input
-            }
-            Err(e) => {
-                self.output
-                    .error(&format!("Failed to initialize driver: {e:#}"));
-                return Err(e);
-            }
-        };
-
+        let input = self.init_windows_input()?;
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;
 
@@ -294,11 +271,7 @@ impl RunCommand {
 
         // Set up graceful shutdown
         let running = Arc::new(AtomicBool::new(true));
-        let r = running.clone();
-        tokio::spawn(async move {
-            tokio::signal::ctrl_c().await.ok();
-            r.store(false, Ordering::SeqCst);
-        });
+        Self::spawn_ctrl_c_flag(running.clone());
 
         // Run event loop until interrupted
         while running.load(Ordering::SeqCst) && engine.is_running() {
@@ -317,6 +290,39 @@ impl RunCommand {
         self.output
             .warning("No platform driver available for this OS, falling back to mock input");
         self.run_with_mock(runtime, state).await
+    }
+
+    #[cfg(target_os = "windows")]
+    fn init_windows_input(&self) -> Result<crate::drivers::WindowsInput> {
+        use crate::drivers::WindowsInput;
+
+        self.output.success("Using Windows input driver");
+        if self.device_path.is_some() {
+            self.output.warning(
+                "Note: --device is ignored on Windows (uses global keyboard hook for all keyboards)",
+            );
+        }
+
+        match WindowsInput::new() {
+            Ok(input) => {
+                self.output
+                    .success("Initialized Windows low-level keyboard hook");
+                Ok(input)
+            }
+            Err(e) => {
+                self.output
+                    .error(&format!("Failed to initialize driver: {e:#}"));
+                Err(e)
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn spawn_ctrl_c_flag(running: Arc<AtomicBool>) {
+        tokio::spawn(async move {
+            tokio::signal::ctrl_c().await.ok();
+            running.store(false, Ordering::SeqCst);
+        });
     }
 }
 

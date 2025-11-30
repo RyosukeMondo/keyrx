@@ -2,6 +2,7 @@
 
 use crate::engine::{InputEvent, OutputAction, RemapAction};
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
+use crate::KeyCode;
 use anyhow::Result;
 use tracing::debug;
 
@@ -85,62 +86,68 @@ where
     /// automatically passed through without processing. This prevents infinite
     /// loops when our injected keys are recaptured by the input hook.
     pub fn process_event(&self, event: &InputEvent) -> OutputAction {
-        // Skip synthetic events to prevent infinite loops from re-processing
-        // keys we injected ourselves. These events should pass through unchanged.
         if event.is_synthetic {
-            debug!(
-                service = "keyrx",
-                event = "skip_synthetic_event",
-                component = "engine_event_loop",
-                key = ?event.key,
-                pressed = event.pressed,
-                "Skipping synthetic input event"
-            );
-            return OutputAction::PassThrough;
+            return Self::handle_synthetic(event);
         }
 
-        let action = self.script.lookup_remap(event.key);
-
-        match action {
-            RemapAction::Remap(target_key) => {
-                debug!(
-                    service = "keyrx",
-                    event = "remap_action",
-                    component = "engine_event_loop",
-                    from = ?event.key,
-                    to = ?target_key,
-                    pressed = event.pressed,
-                    "Remapping key"
-                );
-                if event.pressed {
-                    OutputAction::KeyDown(target_key)
-                } else {
-                    OutputAction::KeyUp(target_key)
-                }
-            }
-            RemapAction::Block => {
-                debug!(
-                    service = "keyrx",
-                    event = "block_action",
-                    component = "engine_event_loop",
-                    key = ?event.key,
-                    pressed = event.pressed,
-                    "Blocking key"
-                );
-                OutputAction::Block
-            }
-            RemapAction::Pass => {
-                debug!(
-                    service = "keyrx",
-                    event = "pass_action",
-                    component = "engine_event_loop",
-                    key = ?event.key,
-                    pressed = event.pressed,
-                    "Passing key through"
-                );
-                OutputAction::PassThrough
-            }
+        match self.script.lookup_remap(event.key) {
+            RemapAction::Remap(target_key) => Self::handle_remap(event, target_key),
+            RemapAction::Block => Self::handle_block(event),
+            RemapAction::Pass => Self::handle_pass(event),
         }
+    }
+
+    fn handle_synthetic(event: &InputEvent) -> OutputAction {
+        debug!(
+            service = "keyrx",
+            event = "skip_synthetic_event",
+            component = "engine_event_loop",
+            key = ?event.key,
+            pressed = event.pressed,
+            "Skipping synthetic input event"
+        );
+        OutputAction::PassThrough
+    }
+
+    fn handle_remap(event: &InputEvent, target_key: KeyCode) -> OutputAction {
+        debug!(
+            service = "keyrx",
+            event = "remap_action",
+            component = "engine_event_loop",
+            from = ?event.key,
+            to = ?target_key,
+            pressed = event.pressed,
+            "Remapping key"
+        );
+        if event.pressed {
+            OutputAction::KeyDown(target_key)
+        } else {
+            OutputAction::KeyUp(target_key)
+        }
+    }
+
+    fn handle_block(event: &InputEvent) -> OutputAction {
+        debug!(
+            service = "keyrx",
+            event = "block_action",
+            component = "engine_event_loop",
+            key = ?event.key,
+            pressed = event.pressed,
+            "Blocking key"
+        );
+        OutputAction::Block
+    }
+
+    fn handle_pass(event: &InputEvent) -> OutputAction {
+        debug!(
+            service = "keyrx",
+            event = "pass_action",
+            component = "engine_event_loop",
+            key = ?event.key,
+            pressed = event.pressed,
+            "Passing key through"
+        );
+        OutputAction::PassThrough
     }
 
     /// Run the main event loop.

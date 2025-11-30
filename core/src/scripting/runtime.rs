@@ -61,7 +61,13 @@ impl RhaiRuntime {
 
     /// Register remap-related functions for the Rhai engine.
     fn register_remap_functions(engine: &mut Engine, pending_ops: &PendingOps) {
-        // Register core functions
+        Self::register_debug(engine);
+        Self::register_remap(engine, pending_ops);
+        Self::register_block(engine, pending_ops);
+        Self::register_pass(engine, pending_ops);
+    }
+
+    fn register_debug(engine: &mut Engine) {
         engine.register_fn("print_debug", |msg: &str| {
             tracing::debug!(
                 service = "keyrx",
@@ -71,8 +77,9 @@ impl RhaiRuntime {
                 "Script debug output"
             );
         });
+    }
 
-        // Register remap function: remap(from, to)
+    fn register_remap(engine: &mut Engine, pending_ops: &PendingOps) {
         let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "remap",
@@ -96,8 +103,9 @@ impl RhaiRuntime {
                 Ok(())
             },
         );
+    }
 
-        // Register block function: block(key)
+    fn register_block(engine: &mut Engine, pending_ops: &PendingOps) {
         let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "block",
@@ -116,8 +124,9 @@ impl RhaiRuntime {
                 Ok(())
             },
         );
+    }
 
-        // Register pass function: pass(key)
+    fn register_pass(engine: &mut Engine, pending_ops: &PendingOps) {
         let ops = Arc::clone(pending_ops);
         engine.register_fn(
             "pass",

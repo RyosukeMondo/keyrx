@@ -19,6 +19,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
 };
 
+mod hook_thread;
+pub(crate) use hook_thread::spawn_hook_thread;
+
 use super::keymap::vk_to_keycode;
 
 /// Thread-local storage for the event sender used by the hook callback.
@@ -182,8 +185,19 @@ impl HookManager {
     /// The message loop will sleep for 1ms between iterations when no messages
     /// are pending to avoid busy-waiting.
     pub fn run_message_loop(&self) {
-        // Store the thread ID so we can post WM_QUIT from another thread
-        // SAFETY: GetCurrentThreadId is safe to call and returns the current thread's ID
+        let thread_id = self.register_thread();
+        let mut msg = MSG::default();
+
+        while self.running.load(Ordering::SeqCst) {
+            if self.handle_message(&mut msg, thread_id) {
+                break;
+            }
+        }
+
+        self.clear_thread_id(thread_id);
+    }
+
+    fn register_thread(&self) -> u32 {
         let thread_id = unsafe { GetCurrentThreadId() };
         HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
         debug!(
@@ -193,40 +207,33 @@ impl HookManager {
             thread_id = thread_id,
             "Starting Windows message loop"
         );
-        let mut msg = MSG::default();
+        thread_id
+    }
 
-        while self.running.load(Ordering::SeqCst) {
-            // Use PeekMessageW with PM_REMOVE to check for messages without blocking
-            // SAFETY: We pass valid pointers and use the correct flags
-            let has_message = unsafe { PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE) }.as_bool();
-
-            if has_message {
-                // Check for WM_QUIT to allow graceful shutdown
-                if msg.message == WM_QUIT {
-                    debug!(
-                        service = "keyrx",
-                        event = "windows_message_loop_quit",
-                        component = "windows_hook",
-                        thread_id = thread_id,
-                        "Received WM_QUIT, exiting message loop"
-                    );
-                    break;
-                }
-
-                // Translate and dispatch the message
-                // SAFETY: msg is a valid MSG structure filled by PeekMessageW
-                unsafe {
-                    let _ = TranslateMessage(&msg);
-                    DispatchMessageW(&msg);
-                }
-            } else {
-                // No messages pending, sleep briefly to avoid busy-waiting
-                // This keeps CPU usage low while still being responsive
-                std::thread::sleep(std::time::Duration::from_millis(1));
+    fn handle_message(&self, msg: &mut MSG, thread_id: u32) -> bool {
+        let has_message = unsafe { PeekMessageW(msg, None, 0, 0, PM_REMOVE) }.as_bool();
+        if has_message {
+            if msg.message == WM_QUIT {
+                debug!(
+                    service = "keyrx",
+                    event = "windows_message_loop_quit",
+                    component = "windows_hook",
+                    thread_id = thread_id,
+                    "Received WM_QUIT, exiting message loop"
+                );
+                return true;
             }
+            unsafe {
+                let _ = TranslateMessage(msg);
+                DispatchMessageW(msg);
+            }
+        } else {
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
+        false
+    }
 
-        // Clear the thread ID on exit
+    fn clear_thread_id(&self, thread_id: u32) {
         HOOK_THREAD_ID.store(0, Ordering::SeqCst);
         debug!(
             service = "keyrx",
@@ -258,75 +265,52 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    // If ncode < 0, we must call CallNextHookEx and return its result
     if ncode < 0 {
         return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
     }
 
-    // Extract keyboard info from lparam
-    // SAFETY: When ncode >= 0, lparam is guaranteed to be a valid KBDLLHOOKSTRUCT pointer
     let kb_struct = &*(lparam.0 as *const KBDLLHOOKSTRUCT);
-
-    // Determine if this is a key press or release
     let pressed = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
+    let event = build_input_event(kb_struct, pressed);
+    send_event(event);
+    CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
+}
 
-    // Convert virtual key code to KeyCode
+fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
     let vk_code = kb_struct.vkCode as u16;
-    let key = vk_to_keycode(vk_code);
+    InputEvent {
+        key: vk_to_keycode(vk_code),
+        pressed,
+        timestamp_us: (kb_struct.time as u64) * 1000,
+        device_id: None,
+        is_repeat: track_repeat_state(pressed, vk_code),
+        is_synthetic: kb_struct.flags.contains(LLKHF_INJECTED),
+        scan_code: kb_struct.scanCode as u16,
+    }
+}
 
-    // Get timestamp (Windows provides milliseconds, convert to microseconds)
-    let timestamp_us = (kb_struct.time as u64) * 1000;
-
-    // Get scan code from KBDLLHOOKSTRUCT
-    let scan_code = kb_struct.scanCode as u16;
-
-    // Detect synthetic (injected) events via LLKHF_INJECTED flag
-    // This is critical for preventing infinite loops when our injected keys are recaptured
-    let is_synthetic = kb_struct.flags.contains(LLKHF_INJECTED);
-
-    // Track key state for is_repeat detection
-    // A key down event while the key is already tracked as pressed is a repeat
-    let is_repeat = KEY_STATES.with(|states| {
+fn track_repeat_state(pressed: bool, vk_code: u16) -> bool {
+    KEY_STATES.with(|states| {
         let mut states = states.borrow_mut();
         if pressed {
-            // If key was already in the set, this is a repeat
             let was_pressed = states.contains(&vk_code);
             if !was_pressed {
                 states.insert(vk_code);
             }
             was_pressed
         } else {
-            // Key up - remove from tracked state
             states.remove(&vk_code);
-            false // Key up events are never repeats
+            false
         }
-    });
+    })
+}
 
-    // Create the input event with full metadata
-    let event = InputEvent {
-        key,
-        pressed,
-        timestamp_us,
-        device_id: None, // Windows hooks don't identify source device
-        is_repeat,
-        is_synthetic,
-        scan_code,
-    };
-
-    // Send the event via the thread-local sender
+fn send_event(event: InputEvent) {
     HOOK_SENDER.with(|s| {
         if let Some(sender) = s.borrow().as_ref() {
-            // Non-blocking send - if the channel is full, we drop the event
-            // rather than blocking the hook callback
-            if sender.try_send(event).is_err() {
-                // Channel full or disconnected, event dropped
-            }
+            let _ = sender.try_send(event);
         }
     });
-
-    // Pass the event to the next hook in the chain
-    // TODO: In future, we'll return 1 to block events based on script decisions
-    CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
 }
 
 #[cfg(test)]

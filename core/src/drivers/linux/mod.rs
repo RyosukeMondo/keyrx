@@ -3,6 +3,7 @@
 //! Architecture: blocking evdev reader thread feeds the async engine via `crossbeam_channel`, while the uinput writer injects remapped output.
 mod device_info;
 mod discovery;
+mod helpers;
 mod keymap;
 mod reader;
 mod writer;
@@ -18,9 +19,28 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, warn};
 pub use writer::UinputWriter;
 const UINPUT_PATH: &str = "/dev/uinput";
+const UINPUT_NOT_FOUND_HELP: &str = "uinput device not found at /dev/uinput\n\n\
+ Remediation:\n  \
+ 1. Load the uinput kernel module: sudo modprobe uinput\n  \
+ 2. If that fails, check if uinput is built into your kernel\n  \
+ 3. Ensure your kernel supports CONFIG_INPUT_UINPUT";
+const UINPUT_PERMISSION_DENIED_HELP: &str = "Permission denied accessing /dev/uinput\n\n\
+ Remediation:\n  \
+ 1. Add your user to the 'input' group: sudo usermod -aG input $USER\n  \
+ 2. Create a udev rule for uinput access:\n     \
+    echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"input\"' | \
+    sudo tee /etc/udev/rules.d/99-uinput.rules\n  \
+ 3. Reload udev rules: sudo udevadm control --reload-rules && \
+    sudo udevadm trigger\n  \
+ 4. Log out and log back in for group changes to take effect\n  \
+ 5. Alternatively, run with sudo (not recommended for regular use)";
+const UINPUT_ACCESS_FAILED_HELP: &str = "Remediation:\n  \
+ 1. Check device permissions: ls -la /dev/uinput\n  \
+ 2. Check if you have read/write access to the device\n  \
+ 3. Ensure the uinput module is loaded: lsmod | grep uinput";
 pub struct LinuxInput {
     reader_handle: Option<JoinHandle<()>>,
     injector: Box<dyn KeyInjector>,
@@ -120,13 +140,7 @@ impl LinuxInput {
     fn check_uinput_accessible() -> Result<()> {
         let path = Path::new(UINPUT_PATH);
         if !path.exists() {
-            bail!(
-                "uinput device not found at {UINPUT_PATH}\n\n\
-                 Remediation:\n  \
-                 1. Load the uinput kernel module: sudo modprobe uinput\n  \
-                 2. If that fails, check if uinput is built into your kernel\n  \
-                 3. Ensure your kernel supports CONFIG_INPUT_UINPUT"
-            );
+            bail!(UINPUT_NOT_FOUND_HELP);
         }
         // Check if readable/writable by attempting to open for read
         match std::fs::OpenOptions::new()
@@ -145,280 +159,72 @@ impl LinuxInput {
                 Ok(())
             }
             Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-                bail!(
-                    "Permission denied accessing {UINPUT_PATH}\n\n\
-                     Remediation:\n  \
-                     1. Add your user to the 'input' group: sudo usermod -aG input $USER\n  \
-                     2. Create a udev rule for uinput access:\n     \
-                        echo 'KERNEL==\"uinput\", MODE=\"0660\", GROUP=\"input\"' | \
-                        sudo tee /etc/udev/rules.d/99-uinput.rules\n  \
-                     3. Reload udev rules: sudo udevadm control --reload-rules && \
-                        sudo udevadm trigger\n  \
-                     4. Log out and log back in for group changes to take effect\n  \
-                     5. Alternatively, run with sudo (not recommended for regular use)"
-                );
+                bail!(UINPUT_PERMISSION_DENIED_HELP)
             }
-            Err(e) => {
-                bail!(
-                    "Failed to access {UINPUT_PATH}: {e}\n\n\
-                     Remediation:\n  \
-                     1. Check device permissions: ls -la {UINPUT_PATH}\n  \
-                     2. Check if you have read/write access to the device\n  \
-                     3. Ensure the uinput module is loaded: lsmod | grep uinput"
-                );
-            }
+            Err(e) => bail!("Failed to access {UINPUT_PATH}: {e}\n\n{UINPUT_ACCESS_FAILED_HELP}"),
         }
     }
 }
 #[async_trait]
 impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
-        // Check if the reader thread panicked
-        if self.panic_error.load(Ordering::SeqCst) {
-            error!(
-                service = "keyrx",
-                event = "linux_reader_panic_detected",
-                component = "linux_input",
-                "poll_events called after reader thread panic"
-            );
-            self.running.store(false, Ordering::Relaxed);
-            bail!("Input reader thread panicked - keyboard has been ungrabbed for safety");
-        }
-        if !self.running.load(Ordering::Relaxed) {
-            trace!(
-                service = "keyrx",
-                event = "linux_poll_events_inactive",
-                component = "linux_input",
-                "poll_events called while not running"
-            );
+        self.fail_if_reader_panicked()?;
+        if self.is_inactive() {
+            self.log_poll_when_inactive();
             return Ok(vec![]);
         }
-        // Non-blocking receive from the channel
-        // Collect all available events without blocking
+
         let mut events = Vec::new();
-        loop {
-            match self.rx.try_recv() {
-                Ok(event) => {
-                    trace!(
-                        service = "keyrx",
-                        event = "linux_input_event_received",
-                        component = "linux_input",
-                        key = ?event.key,
-                        pressed = event.pressed,
-                        "Received input event"
-                    );
-                    events.push(event);
-                }
-                Err(crossbeam_channel::TryRecvError::Empty) => {
-                    // No more events available
-                    break;
-                }
-                Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    // Channel closed - reader thread has stopped
-                    // Check if it was due to a panic
-                    if self.panic_error.load(Ordering::SeqCst) {
-                        error!(
-                            service = "keyrx",
-                            event = "linux_channel_disconnected",
-                            component = "linux_input",
-                            reason = "reader_panic",
-                            "Event channel disconnected due to reader thread panic"
-                        );
-                        self.running.store(false, Ordering::Relaxed);
-                        bail!(
-                            "Input reader thread panicked - keyboard has been ungrabbed for safety"
-                        );
-                    }
-                    error!(
-                        service = "keyrx",
-                        event = "linux_channel_disconnected",
-                        component = "linux_input",
-                        reason = "unexpected_disconnect",
-                        "Event channel disconnected - reader thread may have crashed"
-                    );
-                    self.running.store(false, Ordering::Relaxed);
-                    bail!("Input reader disconnected unexpectedly");
-                }
-            }
+        while let Some(event) = self.next_event()? {
+            events.push(event);
         }
-        if !events.is_empty() {
-            debug!(
-                service = "keyrx",
-                event = "linux_poll_events",
-                component = "linux_input",
-                count = events.len(),
-                "Returning polled events"
-            );
-        }
+
+        self.log_polled_events(events.len());
         Ok(events)
     }
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            trace!(
-                service = "keyrx",
-                event = "linux_send_output_inactive",
-                component = "linux_input",
-                "send_output called while not running"
-            );
+            self.log_inactive_send();
             return Ok(());
         }
+
         match action {
-            OutputAction::KeyDown(key) => {
-                debug!(
-                    service = "keyrx",
-                    event = "linux_key_down",
-                    component = "linux_input",
-                    key = ?key,
-                    "Sending key down"
-                );
-                self.injector.inject(key, true)?;
-            }
-            OutputAction::KeyUp(key) => {
-                debug!(
-                    service = "keyrx",
-                    event = "linux_key_up",
-                    component = "linux_input",
-                    key = ?key,
-                    "Sending key up"
-                );
-                self.injector.inject(key, false)?;
-            }
-            OutputAction::KeyTap(key) => {
-                debug!(
-                    service = "keyrx",
-                    event = "linux_key_tap",
-                    component = "linux_input",
-                    key = ?key,
-                    "Sending key tap"
-                );
-                self.injector.inject(key, true)?;
-                self.injector.inject(key, false)?;
-            }
-            OutputAction::Block => {
-                // Block does nothing - the original event is already grabbed
-                // and won't be passed through unless we explicitly emit it
-                trace!(
-                    service = "keyrx",
-                    event = "linux_block_action",
-                    component = "linux_input",
-                    "Blocking key (no action needed)"
-                );
-            }
-            OutputAction::PassThrough => {
-                // PassThrough is handled by the engine - it re-emits the original key
-                // For the driver, this is a no-op since the engine will call
-                // KeyDown/KeyUp for the original key if needed
-                trace!(
-                    service = "keyrx",
-                    event = "linux_passthrough_action",
-                    component = "linux_input",
-                    "PassThrough (no action needed)"
-                );
-            }
+            OutputAction::KeyDown(key) => self.inject_key_action(key, true, "linux_key_down")?,
+            OutputAction::KeyUp(key) => self.inject_key_action(key, false, "linux_key_up")?,
+            OutputAction::KeyTap(key) => self.tap_key(key)?,
+            OutputAction::Block => self.log_block_action(),
+            OutputAction::PassThrough => self.log_passthrough_action(),
         }
         Ok(())
     }
     async fn start(&mut self) -> Result<()> {
         if self.running.load(Ordering::Relaxed) {
-            warn!(
-                service = "keyrx",
-                event = "linux_start_skipped",
-                component = "linux_input",
-                reason = "already_running",
-                "LinuxInput already running"
-            );
+            self.log_start_skipped();
             return Ok(());
         }
-        // Verify uinput is accessible before starting
-        Self::check_uinput_accessible().context("Failed to start Linux input source")?;
-        // Reset panic error flag for fresh start
-        self.panic_error.store(false, Ordering::SeqCst);
-        // Set running flag before spawning thread
-        self.running.store(true, Ordering::Relaxed);
-        // Create the evdev reader
-        let mut reader = EvdevReader::new(
-            self.device_path.clone(),
-            self.tx.clone(),
-            self.running.clone(),
-            self.panic_error.clone(),
-        )
-        .context("Failed to create evdev reader")?;
-        // Grab exclusive access to the keyboard
+
+        self.prepare_start()
+            .context("Failed to start Linux input source")?;
+        let mut reader = self.build_reader()?;
         reader.grab().context("Failed to grab keyboard device")?;
-        // Spawn the reader thread
-        let handle = reader.spawn();
-        self.reader_handle = Some(handle);
-        debug!(
-            service = "keyrx",
-            event = "linux_started",
-            component = "linux_input",
-            path = %self.device_path.display(),
-            "LinuxInput started successfully"
-        );
+        self.spawn_reader(reader);
+        self.log_started();
         Ok(())
     }
     async fn stop(&mut self) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            debug!(
-                service = "keyrx",
-                event = "linux_stop_skipped",
-                component = "linux_input",
-                reason = "already_stopped",
-                "LinuxInput already stopped"
-            );
+            self.log_stop_skipped();
             return Ok(());
         }
-        debug!(
-            service = "keyrx",
-            event = "linux_stopping",
-            component = "linux_input",
-            "Stopping LinuxInput"
-        );
-        // Signal the reader thread to stop
+
         self.running.store(false, Ordering::Relaxed);
-        // Wait for the reader thread to finish
-        if let Some(handle) = self.reader_handle.take() {
-            debug!(
-                service = "keyrx",
-                event = "linux_join_reader",
-                component = "linux_input",
-                "Waiting for reader thread to finish"
-            );
-            match handle.join() {
-                Ok(()) => {
-                    debug!(
-                        service = "keyrx",
-                        event = "linux_reader_stopped",
-                        component = "linux_input",
-                        status = "clean",
-                        "Reader thread finished cleanly"
-                    );
-                }
-                Err(e) => {
-                    error!(
-                        service = "keyrx",
-                        event = "linux_reader_panic",
-                        component = "linux_input",
-                        error = ?e,
-                        "Reader thread panicked"
-                    );
-                    // Continue with cleanup even if thread panicked
-                }
-            }
-        }
-        // Drain any remaining events from the channel
-        while self.rx.try_recv().is_ok() {
-            // Discard remaining events
-        }
-        debug!(
-            service = "keyrx",
-            event = "linux_stopped",
-            component = "linux_input",
-            "LinuxInput stopped successfully"
-        );
+        self.join_reader_thread();
+        self.drain_events();
+        self.log_stopped();
         Ok(())
     }
 }
+
 impl Drop for LinuxInput {
     fn drop(&mut self) {
         // Ensure the driver is stopped and keyboard is released on drop.

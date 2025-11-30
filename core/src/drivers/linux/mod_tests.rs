@@ -194,3 +194,16 @@ async fn stop_resets_running_and_drains_events() {
     assert!(!input.is_running());
     assert!(input.rx.try_recv().is_err());
 }
+
+#[test]
+fn log_helpers_do_not_panic() {
+    let input = LinuxInput::new_with_injector(
+        Some(PathBuf::from("/dev/input/event-test")),
+        Box::new(MockKeyInjector::new()),
+    )
+    .unwrap();
+
+    input.log_block_action();
+    input.log_passthrough_action();
+    input.log_poll_when_inactive();
+}
