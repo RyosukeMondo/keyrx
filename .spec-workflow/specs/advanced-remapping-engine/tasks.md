@@ -38,7 +38,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create LayerStack in core/src/engine/state/layers.rs with Layer struct, LayerAction enum, and priority-based lookup with transparency | Restrictions: Lookup must be O(layers * 1), no deep cloning | Success: Push/pop/toggle work, transparent fallthrough works, tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 4. Create state module with re-exports
+- [x] 4. Create state module with re-exports
   - File: `core/src/engine/state/mod.rs` (new)
   - Re-export KeyStateTracker, ModifierState, LayerStack
   - Update `core/src/engine/mod.rs` to include state module
