@@ -40,7 +40,7 @@
 
 ## Phase 2: Linux Driver Refactor
 
-- [ ] 4. Split Linux driver into submodules
+- [x] 4. Split Linux driver into submodules
   - Create directory: `core/src/drivers/linux/`
   - File: `linux/mod.rs` - LinuxInput struct, InputSource impl
   - File: `linux/reader.rs` - EvdevReader
