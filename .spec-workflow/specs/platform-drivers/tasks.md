@@ -21,7 +21,7 @@
 
 ## Task 2: Create Shared Driver Infrastructure
 
-- [ ] 2.1 Create common.rs with DeviceInfo
+- [x] 2.1 Create common.rs with DeviceInfo
   - File: `core/src/drivers/common.rs`
   - Define DeviceInfo struct (path, name, vendor_id, product_id, is_keyboard)
   - Implement Serialize for JSON output
