@@ -3,7 +3,7 @@ use crate::drivers::common::extract_panic_message;
 use crate::engine::InputEvent;
 use crossbeam_channel::Sender;
 use std::panic::{self, AssertUnwindSafe};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use std::thread;
 use tracing::{debug, error};
@@ -11,19 +11,25 @@ use tracing::{debug, error};
 pub(crate) fn spawn_hook_thread(
     running: Arc<AtomicBool>,
     panic_error: Arc<AtomicBool>,
+    thread_id_store: Arc<AtomicU32>,
     tx: Sender<InputEvent>,
 ) -> thread::JoinHandle<()> {
-    thread::spawn(move || run_hook_thread(running, panic_error, tx))
+    thread::spawn(move || run_hook_thread(running, panic_error, thread_id_store, tx))
 }
 
-fn run_hook_thread(running: Arc<AtomicBool>, panic_error: Arc<AtomicBool>, tx: Sender<InputEvent>) {
+fn run_hook_thread(
+    running: Arc<AtomicBool>,
+    panic_error: Arc<AtomicBool>,
+    thread_id_store: Arc<AtomicU32>,
+    tx: Sender<InputEvent>,
+) {
     debug!(
         service = "keyrx",
         event = "windows_hook_thread_started",
         component = "windows_input",
         "Hook thread started"
     );
-    let mut hook_manager = HookManager::new(running.clone());
+    let mut hook_manager = HookManager::new(running.clone(), thread_id_store);
     if let Err(e) = hook_manager.install(tx) {
         error!(
             service = "keyrx",

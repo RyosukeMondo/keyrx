@@ -1,4 +1,4 @@
-use super::hook::{spawn_hook_thread, HOOK_THREAD_ID};
+use super::hook_thread::spawn_hook_thread;
 use super::injector::SendInputInjector;
 use crate::{
     drivers::KeyInjector,
@@ -7,7 +7,7 @@ use crate::{
 use anyhow::{bail, Result};
 use crossbeam_channel::{Receiver, Sender};
 use std::{
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
     sync::Arc,
     thread::JoinHandle,
 };
@@ -18,15 +18,17 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     hook_thread: Option<JoinHandle<()>>,
     rx: Receiver<InputEvent>,
     tx: Sender<InputEvent>,
-    running: Arc<AtomicBool>,
+    pub(crate) running: Arc<AtomicBool>,
     injector: I,
     panic_error: Arc<AtomicBool>,
+    thread_id_store: Arc<AtomicU32>,
 }
 impl WindowsInput {
     pub fn new() -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
+        let thread_id_store = Arc::new(AtomicU32::new(0));
         let injector = SendInputInjector::new();
         debug!(
             service = "keyrx",
@@ -42,6 +44,7 @@ impl WindowsInput {
             running,
             injector,
             panic_error,
+            thread_id_store,
         })
     }
 }
@@ -50,6 +53,7 @@ impl<I: KeyInjector> WindowsInput<I> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
+        let thread_id_store = Arc::new(AtomicU32::new(0));
         debug!(
             service = "keyrx",
             event = "windows_input_created",
@@ -64,6 +68,7 @@ impl<I: KeyInjector> WindowsInput<I> {
             running,
             injector,
             panic_error,
+            thread_id_store,
         })
     }
     pub fn is_running(&self) -> bool {
@@ -78,7 +83,7 @@ impl<I: KeyInjector> WindowsInput<I> {
     pub fn injector_mut(&mut self) -> &mut I {
         &mut self.injector
     }
-    fn inject_key(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+    pub(crate) fn inject_key(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
         self.injector.inject(key, pressed)
     }
 
@@ -92,7 +97,7 @@ impl<I: KeyInjector> WindowsInput<I> {
     }
 
     fn post_quit_for_drop(&self) {
-        let thread_id = HOOK_THREAD_ID.load(Ordering::SeqCst);
+        let thread_id = self.thread_id_store.load(Ordering::SeqCst);
         if thread_id == 0 {
             return;
         }
@@ -341,8 +346,9 @@ impl<I: KeyInjector> WindowsInput<I> {
     pub(crate) fn spawn_hook_thread(&mut self) {
         let running = self.running.clone();
         let panic_error = self.panic_error.clone();
+        let thread_id_store = self.thread_id_store.clone();
         let tx = self.tx.clone();
-        self.hook_thread = Some(spawn_hook_thread(running, panic_error, tx));
+        self.hook_thread = Some(spawn_hook_thread(running, panic_error, thread_id_store, tx));
     }
 
     pub(crate) fn wait_for_hook_start(&mut self) -> Result<()> {
@@ -357,7 +363,7 @@ impl<I: KeyInjector> WindowsInput<I> {
     }
 
     pub(crate) fn post_quit_for_stop(&self) {
-        let thread_id = HOOK_THREAD_ID.load(Ordering::SeqCst);
+        let thread_id = self.thread_id_store.load(Ordering::SeqCst);
         if thread_id == 0 {
             return;
         }

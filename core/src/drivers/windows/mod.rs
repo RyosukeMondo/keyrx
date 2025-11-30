@@ -1,5 +1,6 @@
 mod device;
 mod hook;
+mod hook_thread;
 mod injector;
 mod input;
 mod input_source;

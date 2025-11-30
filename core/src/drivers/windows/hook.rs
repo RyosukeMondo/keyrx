@@ -19,8 +19,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WH_KEYBOARD_LL, WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
 };
 
-mod hook_thread;
-pub(crate) use hook_thread::spawn_hook_thread;
+use super::hook_thread::spawn_hook_thread;
 
 use super::keymap::vk_to_keycode;
 
@@ -45,7 +44,7 @@ thread_local! {
 ///
 /// This is used to post WM_QUIT to the hook thread when shutting down.
 /// We use an atomic because it needs to be accessed from multiple threads.
-pub static HOOK_THREAD_ID: AtomicU32 = AtomicU32::new(0);
+// pub static HOOK_THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 /// Low-level keyboard hook manager.
 ///
@@ -56,16 +55,19 @@ pub struct HookManager {
     hook_handle: Option<HHOOK>,
     /// Flag to signal the message pump to stop.
     running: Arc<AtomicBool>,
+    /// Storage for the thread ID of the message loop
+    thread_id_store: Arc<AtomicU32>,
 }
 
 impl HookManager {
     /// Create a new HookManager.
     ///
     /// The hook is not installed until `install()` is called.
-    pub fn new(running: Arc<AtomicBool>) -> Self {
+    pub fn new(running: Arc<AtomicBool>, thread_id_store: Arc<AtomicU32>) -> Self {
         Self {
             hook_handle: None,
             running,
+            thread_id_store,
         }
     }
 
@@ -199,7 +201,7 @@ impl HookManager {
 
     fn register_thread(&self) -> u32 {
         let thread_id = unsafe { GetCurrentThreadId() };
-        HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
+        self.thread_id_store.store(thread_id, Ordering::SeqCst);
         debug!(
             service = "keyrx",
             event = "windows_message_loop_start",
@@ -234,7 +236,7 @@ impl HookManager {
     }
 
     fn clear_thread_id(&self, thread_id: u32) {
-        HOOK_THREAD_ID.store(0, Ordering::SeqCst);
+        self.thread_id_store.store(0, Ordering::SeqCst);
         debug!(
             service = "keyrx",
             event = "windows_message_loop_stop",
@@ -330,7 +332,8 @@ mod tests {
     #[test]
     fn hook_manager_new() {
         let running = Arc::new(AtomicBool::new(true));
-        let manager = HookManager::new(running.clone());
+        let thread_id_store = Arc::new(AtomicU32::new(0));
+        let manager = HookManager::new(running.clone(), thread_id_store);
         assert!(!manager.is_installed());
         assert!(manager.running().load(Ordering::SeqCst));
     }
@@ -338,7 +341,8 @@ mod tests {
     #[test]
     fn hook_manager_running_flag() {
         let running = Arc::new(AtomicBool::new(true));
-        let manager = HookManager::new(running.clone());
+        let thread_id_store = Arc::new(AtomicU32::new(0));
+        let manager = HookManager::new(running.clone(), thread_id_store);
 
         // Check initial state
         assert!(manager.running().load(Ordering::SeqCst));
@@ -351,7 +355,8 @@ mod tests {
     #[test]
     fn hook_manager_uninstall_when_not_installed() {
         let running = Arc::new(AtomicBool::new(true));
-        let mut manager = HookManager::new(running);
+        let thread_id_store = Arc::new(AtomicU32::new(0));
+        let mut manager = HookManager::new(running, thread_id_store);
         // Should not panic when uninstalling a hook that was never installed
         manager.uninstall();
         assert!(!manager.is_installed());

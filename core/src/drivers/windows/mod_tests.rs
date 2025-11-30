@@ -1,7 +1,9 @@
 #![cfg(test)]
 
 use super::*;
-use crate::drivers::{InjectedKey, MockKeyInjector};
+use crate::drivers::{InjectedKey, KeyInjector, MockKeyInjector};
+use crate::engine::{KeyCode, OutputAction};
+use crate::traits::InputSource;
 
 #[test]
 fn windows_input_default() {
@@ -121,7 +123,7 @@ async fn windows_input_send_output_with_mock() {
     let mut input = WindowsInput::new_with_injector(mock).unwrap();
 
     // Simulate running state for send_output to work
-    input.running.store(true, Ordering::Relaxed);
+    input.prepare_start();
 
     // Test KeyDown
     input
@@ -153,7 +155,7 @@ async fn windows_input_send_output_with_mock() {
 async fn windows_input_send_output_block_passthrough() {
     let mock = MockKeyInjector::new();
     let mut input = WindowsInput::new_with_injector(mock).unwrap();
-    input.running.store(true, Ordering::Relaxed);
+    input.prepare_start();
 
     // Block and PassThrough should not inject any keys
     input.send_output(OutputAction::Block).await.unwrap();
