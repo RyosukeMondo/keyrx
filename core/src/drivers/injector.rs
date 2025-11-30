@@ -115,6 +115,14 @@ pub trait KeyInjector: Send {
     /// This method is provided for cases where manual sync control is needed,
     /// such as batching multiple events before flushing.
     fn sync(&mut self) -> Result<()>;
+
+    /// Whether this injector requires uinput device access (Linux-only concern).
+    ///
+    /// Defaults to true for hardware-backed injectors. Mock or test injectors
+    /// should override to return false to skip uinput permission checks.
+    fn needs_uinput(&self) -> bool {
+        true
+    }
 }
 
 /// A recorded key injection event for testing.
@@ -308,6 +316,10 @@ impl KeyInjector for MockKeyInjector {
             .lock()
             .expect("mock sync_count lock poisoned") += 1;
         Ok(())
+    }
+
+    fn needs_uinput(&self) -> bool {
+        false
     }
 }
 

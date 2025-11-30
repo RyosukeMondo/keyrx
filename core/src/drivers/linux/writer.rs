@@ -180,6 +180,10 @@ impl KeyInjector for UinputWriter {
     fn sync(&mut self) -> Result<()> {
         self.sync_internal()
     }
+
+    fn needs_uinput(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

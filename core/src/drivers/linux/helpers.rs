@@ -143,7 +143,9 @@ impl LinuxInput {
     }
 
     pub(super) fn prepare_start(&mut self) -> Result<()> {
-        LinuxInput::check_uinput_accessible()?;
+        if self.injector.needs_uinput() {
+            LinuxInput::check_uinput_accessible()?;
+        }
         self.panic_error.store(false, Ordering::SeqCst);
         self.running.store(true, Ordering::Relaxed);
         Ok(())

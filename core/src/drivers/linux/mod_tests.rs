@@ -4,6 +4,7 @@
 use super::*;
 use crate::drivers::{InjectedKey, MockKeyInjector};
 use crate::engine::KeyCode;
+use anyhow::Result;
 
 /// Test that LinuxInput can be created with a mock injector.
 /// This test requires a keyboard device to be available, but doesn't
@@ -15,6 +16,32 @@ fn linux_input_with_mock_injector_compiles() {
         let mock = MockKeyInjector::new();
         LinuxInput::new_with_injector(Some(_path), Box::new(mock))
     }
+}
+
+#[test]
+fn prepare_start_skips_uinput_for_mock_injector() {
+    struct NoUinputInjector;
+    impl KeyInjector for NoUinputInjector {
+        fn inject(&mut self, _key: KeyCode, _pressed: bool) -> Result<()> {
+            Ok(())
+        }
+        fn sync(&mut self) -> Result<()> {
+            Ok(())
+        }
+        fn needs_uinput(&self) -> bool {
+            false
+        }
+    }
+
+    let mut input = LinuxInput::new_with_injector(
+        Some(PathBuf::from("/dev/input/event-test")),
+        Box::new(NoUinputInjector),
+    )
+    .unwrap();
+
+    // Should not try to access /dev/uinput and should mark running true
+    input.prepare_start().unwrap();
+    assert!(input.running.load(Ordering::Relaxed));
 }
 
 /// Test that UinputWriter implements KeyInjector.
