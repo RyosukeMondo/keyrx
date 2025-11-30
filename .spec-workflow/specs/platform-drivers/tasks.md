@@ -135,7 +135,7 @@
 
 ## Task 7: Implement Windows Key Injection
 
-- [ ] 7.1 Create SendInputInjector
+- [x] 7.1 Create SendInputInjector
   - File: `core/src/drivers/windows.rs`
   - Implement inject_key(key, pressed) using SendInput
   - Build KEYBDINPUT structure correctly
