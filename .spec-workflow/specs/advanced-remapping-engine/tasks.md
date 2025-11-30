@@ -230,7 +230,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Create comprehensive layer integration tests | Restrictions: Test interaction with tap-hold | Success: All layer scenarios tested and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 21. Run benchmarks and verify latency
+- [x] 21. Run benchmarks and verify latency
   - Run `cargo bench` on all new code paths
   - Benchmark `process_event()` with pending decisions
   - Benchmark layer lookup with 5+ layers
