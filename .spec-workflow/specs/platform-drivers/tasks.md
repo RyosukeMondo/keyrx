@@ -62,7 +62,7 @@
 
 ## Task 4: Implement Linux uinput Writer
 
-- [ ] 4.1 Create UinputWriter struct
+- [x] 4.1 Create UinputWriter struct
   - File: `core/src/drivers/linux.rs`
   - Create virtual keyboard via evdev::UInputDevice
   - Register all KEY_* codes we support
