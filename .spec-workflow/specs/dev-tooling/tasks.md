@@ -49,7 +49,7 @@
 
 ## Task 3: GitHub Actions CI
 
-- [ ] 3.1 Create CI workflow
+- [x] 3.1 Create CI workflow
   - File: `.github/workflows/ci.yml`
   - Trigger on: push to main, pull_request
   - Jobs: check (fmt, clippy), test, build-linux, build-windows
