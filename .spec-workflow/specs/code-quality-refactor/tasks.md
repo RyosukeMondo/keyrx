@@ -346,3 +346,37 @@
   - Purpose: Confirm all KPIs met
   - _Requirements: REQ-2, REQ-3, CLAUDE.md compliance_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Run all code quality checks and document final compliance metrics | Restrictions: Must meet ALL requirements | Success: Coverage >80%, all files <500 lines, all functions <50 lines, pre-commit hooks pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+## Phase 11: Post-Refactor Regression Fixes
+
+- [x] 32. Differentiate NumpadEnter on Windows hook
+  - File: `core/src/drivers/windows/hook.rs`
+  - Use KBDLLHOOKSTRUCT flags/scan_code to map VK 0x0D with extended flag to `KeyCode::NumpadEnter`
+  - Ensure round-trip with `is_extended_key()` and `keycode_to_vk()` remains correct
+  - Purpose: Preserve keypad-specific remaps and SSOT behavior
+  - _Requirements: REQ-1 (SSOT), REQ-6 (platform parity)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Windows Input Developer | Task: Update Windows hook event construction to treat extended Enter (numpad) as KeyCode::NumpadEnter using scan code/extended flag; keep standard Enter unchanged and maintain round-trip tests | Restrictions: No behavior changes for other keys; keep logging consistent | Success: NumpadEnter surfaces distinctly in InputEvent and round-trips in tests; Windows hook tests updated and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [x] 33. Align Linux keymap with keycodes SSOT
+  - File: `core/src/drivers/linux/keymap.rs`
+  - Remove duplicate mapping tables; re-export `evdev_to_keycode`, `keycode_to_evdev`, and `all_evdev_codes` from keycodes module
+  - Add/adjust tests to ensure conversions still round-trip
+  - Purpose: Single source of truth and reduced drift risk
+  - _Requirements: REQ-1 (SSOT), REQ-5 (DRY)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Replace bespoke Linux keymap logic with re-exports/wrappers around keycodes.rs conversions; keep public API unchanged and tests validating evdev round-trips | Restrictions: No behavior changes to codes/aliases; maintain existing test coverage expectations | Success: linux/keymap.rs delegates to keycodes.rs, tests updated and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [x] 34. Respect DI when checking uinput availability
+  - File: `core/src/drivers/linux/helpers.rs`
+  - Gate `check_uinput_accessible()` so mock/custom injectors can start without /dev/uinput
+  - Add a flag or detection to skip uinput checks when injector does not require it
+  - Purpose: Testability without hardware permissions
+  - _Requirements: REQ-4 (testability)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Make LinuxInput startup skip uinput access check when using non-uinput injectors (e.g., MockKeyInjector) while preserving checks for UinputWriter; add tests to cover both paths | Restrictions: Default behavior with UinputWriter unchanged; no permission regressions | Success: LinuxInput::new_with_injector works in CI without /dev/uinput; tests updated and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
+
+- [x] 35. Strengthen RunCommand integration tests
+  - File: `core/tests/run_integration_test.rs`
+  - Add execution-path tests that exercise Engine startup/shutdown in mock mode without hanging
+  - Introduce bounded run helper or config to stop loop deterministically
+  - Purpose: Real coverage of run path and regression prevention
+  - _Requirements: REQ-4 (testability)_
+  - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Create deterministic integration tests for RunCommand using mock input/state that start and stop the engine; add helper to bound runtime in tests; verify output messages | Restrictions: No reliance on real devices or signals; tests must complete quickly in CI | Success: New integration tests cover run path without flakiness; run_integration_test.rs >80% meaningful coverage; all tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
