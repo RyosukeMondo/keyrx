@@ -63,7 +63,7 @@
   - _Requirements: REQ-3, REQ-5_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor EvdevReader::spawn() (currently 140 lines) into spawn() + run_loop() + process_events() + handle_thread_exit(), each <50 lines, using extract_panic_message() | Restrictions: Identical behavior, no new features | Success: spawn() is <50 lines, all tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 6. Implement KeyInjector for UinputWriter
+- [x] 6. Implement KeyInjector for UinputWriter
   - File: `core/src/drivers/linux/writer.rs`
   - Implement `KeyInjector` trait for `UinputWriter`
   - Update `LinuxInput` to use generic `KeyInjector`
