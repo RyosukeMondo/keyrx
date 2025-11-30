@@ -226,7 +226,7 @@
 
 ## Phase 7: Function Size Compliance (Remaining Violations)
 
-- [ ] 21. Refactor windows/keymap.rs large functions (137, 115 lines → <50)
+- [x] 21. Refactor windows/keymap.rs large functions (137, 115 lines → <50)
   - File: `core/src/drivers/windows/keymap.rs:122` (137 lines)
   - Extract VK mapping groups into separate functions per category (letters, numbers, function keys, etc.)
   - File: `core/src/drivers/windows/keymap.rs` (115 lines function)
