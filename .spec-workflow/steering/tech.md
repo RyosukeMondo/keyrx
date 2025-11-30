@@ -111,6 +111,151 @@ let engine = Engine::new(
 );
 ```
 
+## Advanced Remapping Engine Architecture
+
+The engine implements a layered architecture for advanced keyboard customization. All timing parameters are configurable, enabling users to tune behavior for their typing style.
+
+### Engine Layer Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 5: CONFIG PATTERNS (Rhai scripts - user presets)         │
+│   Home Row Mods, Caps Word, Auto Shift, Application-Aware      │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 4: COMPOSED BEHAVIORS                                    │
+│   ┌──────────────────────┐  ┌──────────────────────┐           │
+│   │ Engine (perf critical)│  │ Script (flexibility) │           │
+│   │ • Tap-Hold           │  │ • Tap-Dance          │           │
+│   │ • One-Shot           │  │ • Leader Key         │           │
+│   │ • Combos             │  │ • Layer modes        │           │
+│   └──────────────────────┘  └──────────────────────┘           │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 3: ACTION PRIMITIVES (Engine - What to output)           │
+│   emit_key, block, modifier_on/off, layer_push/pop, macro      │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 2: DECISION PRIMITIVES (Engine - When to act)            │
+│   tap_or_hold, simultaneous, sequence, interrupt               │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 1: STATE MANAGEMENT (Engine - What we track)             │
+│   key_states, timers, modifier_states, layer_stack             │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 0: EVENT METADATA (Driver - from REQ-9)                  │
+│   timestamp_us, is_repeat, is_synthetic, scan_code, device_id  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configurable Timing Parameters
+
+All timing decisions are parameterized, not hardcoded:
+
+```rust
+pub struct TimingConfig {
+    /// Duration (ms) to distinguish tap from hold. Default: 200
+    pub tap_timeout_ms: u32,
+
+    /// Window (ms) for detecting simultaneous keypresses. Default: 50
+    pub combo_timeout_ms: u32,
+
+    /// Delay (ms) before considering a hold, to prevent misfires. Default: 0
+    pub hold_delay_ms: u32,
+
+    /// If true, emit tap immediately and correct if becomes hold. Default: false
+    pub eager_tap: bool,
+
+    /// If true, consider as hold if another key pressed during hold. Default: true
+    pub permissive_hold: bool,
+
+    /// If true, release tap even if interrupted (retro tap). Default: false
+    pub retro_tap: bool,
+}
+```
+
+### Virtual Modifiers
+
+Up to 255 user-defined virtual modifiers exist only in the engine:
+
+```rust
+pub struct ModifierState {
+    /// Bitmap for 255 custom modifiers (Mod1-Mod255)
+    custom: [u64; 4],  // 256 bits
+
+    /// Standard modifiers (Ctrl, Shift, Alt, Win)
+    standard: StandardModifiers,
+}
+
+// In Rhai scripts:
+// define_modifier("Mod_Thumb");
+// on_key("Space", hold: activate_modifier("Mod_Thumb"));
+// on_key("J", when: modifier_active("Mod_Thumb"), emit: "Left");
+```
+
+### Layer System
+
+Layers are stacked with configurable priority:
+
+```rust
+pub struct LayerStack {
+    /// Active layers in priority order (highest first)
+    stack: Vec<LayerId>,
+
+    /// Layer definitions with transparency support
+    layers: HashMap<LayerId, Layer>,
+}
+
+pub struct Layer {
+    pub name: String,
+    pub mappings: HashMap<KeyCode, LayerAction>,
+    pub transparent: bool,  // Fall through to layer below
+}
+```
+
+### Decision State Machine
+
+The engine tracks pending decisions for timing-based behaviors:
+
+```rust
+pub enum PendingDecision {
+    TapOrHold {
+        key: KeyCode,
+        pressed_at: Instant,
+        tap_action: Action,
+        hold_action: Action,
+    },
+    Combo {
+        keys: Vec<KeyCode>,
+        started_at: Instant,
+        combo_action: Action,
+    },
+    Sequence {
+        keys_so_far: Vec<KeyCode>,
+        started_at: Instant,
+    },
+}
+```
+
+### GUI Visualization Contract
+
+The engine exposes state for GUI visualization:
+
+```rust
+pub struct EngineState {
+    /// Current pending decisions (for timing visualization)
+    pub pending: Vec<PendingDecision>,
+
+    /// Active layers (for layer inspector)
+    pub active_layers: Vec<LayerId>,
+
+    /// Held modifiers (for modifier display)
+    pub modifiers: ModifierState,
+
+    /// Recent events with timing (for event log)
+    pub event_history: VecDeque<TimedEvent>,
+
+    /// Current config (for trade-off visualizer)
+    pub timing_config: TimingConfig,
+}
+```
+
 ## CLI-First Development
 
 Every feature must be CLI-exercisable before GUI implementation:

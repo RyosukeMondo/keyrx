@@ -105,8 +105,56 @@ Rust binary that accepts input, runs Rhai scripts, and outputs results.
 ### Phase 2: The Nervous System (Drivers)
 Platform-specific drivers for Windows (WH_KEYBOARD_LL) and Linux (uinput/evdev).
 
+### Phase 2.5: The Brain (Advanced Remapping Engine)
+Engine-level primitives for advanced keyboard customization. All timing and behavior parameters are configurable, with the GUI visualizing trade-offs.
+
+**State Management (Layer 1):**
+- Key state tracking (which physical keys are currently held)
+- Timer system (for timing-based decisions)
+- Virtual modifier state (255 user-defined modifiers like Mod_Thumb, Mod_Gaming)
+- Layer stack (multiple layouts with priority)
+
+**Decision Primitives (Layer 2):**
+- Tap vs Hold detection (configurable timing threshold)
+- Simultaneous key detection (for chords/combos)
+- Sequence detection (for leader key patterns)
+- Interrupt detection (key pressed while another held)
+
+**Action Primitives (Layer 3):**
+- Emit key (output press/release)
+- Block (suppress key)
+- Modifier control (activate/deactivate virtual modifier)
+- Layer control (push/pop/toggle layers)
+- Macro (emit key sequence with timing)
+
+**Composed Behaviors (Layer 4 - Engine optimized):**
+- **Tap-Hold**: Different action for tap vs hold (e.g., CapsLock = Esc tap, Ctrl hold)
+- **One-Shot (Sticky)**: Modifier active for next key only
+- **Combos**: Simultaneous keys produce different output (A+S → Ctrl)
+
+**Scriptable Behaviors (Layer 4 - Rhai):**
+- **Tap-Dance**: Different actions for 1/2/3 taps
+- **Leader Key**: Sequence triggers action (Leader→W→S → save)
+- **Layer Toggle/Hold/Lock**: Various layer activation modes
+
+**Configuration Philosophy:**
+Unlike existing tools with fixed behaviors, KeyRx exposes all timing parameters:
+- `tap_timeout_ms`: How long until tap becomes hold (default: 200)
+- `combo_timeout_ms`: Window for simultaneous detection (default: 50)
+- `hold_delay_ms`: Prevent accidental holds during fast typing (default: 0)
+- `eager_tap`: Output tap immediately, correct if becomes hold (default: false)
+- `permissive_hold`: Consider hold if interrupted by other key (default: true)
+
+The Flutter GUI visualizes these trade-offs in real-time, showing timing diagrams and prediction of behavior changes.
+
 ### Phase 3: The Face (Flutter)
 Beautiful GUI with FFI bindings, Visual Layer Editor, and REPL console.
+
+**Key Features:**
+- **Config Trade-off Visualizer**: Interactive timing diagrams showing tap/hold thresholds
+- **Real-time State Inspector**: See active layers, held modifiers, pending decisions
+- **Behavior Simulator**: Test configurations without real keyboard
+- **Visual Layer Editor**: Drag-and-drop keymap design
 
 ### Phase 4: The Ecosystem
 Community sharing via standard library (`std/layouts`, `std/modifiers`), enabling users to build on each other's work.
