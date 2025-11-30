@@ -176,7 +176,7 @@
 
 ## Task 10: Update Run Command
 
-- [ ] 10.1 Use real driver in run command
+- [x] 10.1 Use real driver in run command
   - File: `core/src/cli/commands/run.rs`
   - Use PlatformInput instead of MockInput (unless --mock flag)
   - Add --device flag to select keyboard
