@@ -49,7 +49,7 @@
 
 ## Phase 2: Decision System (Layer 2)
 
-- [ ] 5. Create TimingConfig
+- [x] 5. Create TimingConfig
   - File: `core/src/engine/decision/timing.rs` (new)
   - Implement `TimingConfig` struct with all timing parameters
   - Implement `Default` with values from tech.md spec
