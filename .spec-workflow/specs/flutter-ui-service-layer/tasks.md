@@ -22,7 +22,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Software architect | Task: Add ServiceRegistry that wires real PermissionService/AudioService/ErrorTranslator and allows overriding with mocks for tests | Restrictions: No singletons with implicit globals; pass registry down; keep constructors cheap | _Requirements: 1 | Success: Screens can obtain services from registry; tests can supply mocks easily.
 
-- [ ] 4. Shared UI widgets and styles
+- [x] 4. Shared UI widgets and styles
   - File: ui/lib/ui/widgets/app_error_dialog.dart, ui/lib/ui/widgets/loading_overlay.dart, ui/lib/ui/styles/surfaces.dart
   - Implement standardized error dialog, loading overlay, and surface container helper.
   - Purpose: DRY/KISS for presentation, consistent UX.
