@@ -61,10 +61,13 @@ pub enum DecisionResolution {
     Tap { key: KeyCode, was_eager: bool },
     /// Decision resolved as hold.
     Hold {
+        key: KeyCode,
         action: HoldAction,
         /// True if an eager tap was emitted earlier.
         from_eager: bool,
     },
+    /// Decision resolved but event should be blocked without output.
+    Consume(KeyCode),
     /// Combo matched and triggered.
     ComboTriggered(LayerAction),
     /// Combo timed out, original keys should pass through.
@@ -187,8 +190,10 @@ impl DecisionQueue {
                                     was_eager: false,
                                 });
                             }
+                            resolutions.push(DecisionResolution::Consume(tap_hold.key));
                         } else if interrupted || timed_out {
                             resolutions.push(DecisionResolution::Hold {
+                                key: tap_hold.key,
                                 action: tap_hold.hold_action.clone(),
                                 from_eager: tap_hold.eager_tap,
                             });
@@ -245,6 +250,7 @@ impl DecisionQueue {
 
                     if now_us >= tap_hold.deadline {
                         resolutions.push(DecisionResolution::Hold {
+                            key: tap_hold.key,
                             action: tap_hold.hold_action.clone(),
                             from_eager: tap_hold.eager_tap,
                         });
@@ -365,6 +371,7 @@ mod tests {
         assert_eq!(
             resolutions,
             vec![DecisionResolution::Hold {
+                key: KeyCode::A,
                 action: hold_action,
                 from_eager: false
             }]
@@ -386,6 +393,7 @@ mod tests {
         assert_eq!(
             resolutions,
             vec![DecisionResolution::Hold {
+                key: KeyCode::A,
                 action: hold_action,
                 from_eager: false
             }]
@@ -414,6 +422,7 @@ mod tests {
         assert_eq!(
             resolutions,
             vec![DecisionResolution::Hold {
+                key: KeyCode::A,
                 action: hold_action,
                 from_eager: true
             }]
@@ -436,6 +445,7 @@ mod tests {
         assert_eq!(
             hold_resolution,
             vec![DecisionResolution::Hold {
+                key: KeyCode::A,
                 action: hold_action,
                 from_eager: false
             }]
@@ -445,10 +455,13 @@ mod tests {
         let tap_resolution = queue.check_event(&InputEvent::key_up(KeyCode::A, 300_000));
         assert_eq!(
             tap_resolution,
-            vec![DecisionResolution::Tap {
-                key: KeyCode::B,
-                was_eager: false
-            }]
+            vec![
+                DecisionResolution::Tap {
+                    key: KeyCode::B,
+                    was_eager: false
+                },
+                DecisionResolution::Consume(KeyCode::A)
+            ]
         );
         assert!(queue.pending().is_empty());
     }

@@ -34,14 +34,17 @@ pub struct DiscoverInput {
     pub input: Box<dyn InputSource>,
 }
 
+type DeviceLister = dyn Fn() -> Result<Vec<DeviceInfo>> + Send + Sync;
+type InputBuilder = dyn Fn(&DeviceInfo) -> Result<DiscoverInput> + Send + Sync;
+
 /// CLI command for `keyrx discover`.
 pub struct DiscoverCommand {
     pub device: Option<String>,
     pub force: bool,
     pub assume_yes: bool,
     pub output: OutputWriter,
-    list_devices: Box<dyn Fn() -> Result<Vec<DeviceInfo>> + Send + Sync>,
-    build_input: Box<dyn Fn(&DeviceInfo) -> Result<DiscoverInput> + Send + Sync>,
+    list_devices: Box<DeviceLister>,
+    build_input: Box<InputBuilder>,
 }
 
 impl DiscoverCommand {
@@ -56,7 +59,7 @@ impl DiscoverCommand {
             force,
             assume_yes,
             output: OutputWriter::new(format),
-            list_devices: Box::new(|| drivers::list_keyboards()),
+            list_devices: Box::new(drivers::list_keyboards),
             build_input: Box::new(default_input_builder),
         }
     }
@@ -373,9 +376,9 @@ fn default_input_builder(device: &DeviceInfo) -> Result<DiscoverInput> {
     {
         use crate::drivers::LinuxInput;
         let input = LinuxInput::new(Some(device.path.clone()))?;
-        return Ok(DiscoverInput {
+        Ok(DiscoverInput {
             input: Box::new(input),
-        });
+        })
     }
 
     #[cfg(not(target_os = "linux"))]
@@ -462,7 +465,7 @@ fn prompt_for_layout() -> Result<(u8, Vec<u8>), DiscoverExit> {
             .collect::<Result<Vec<_>, _>>()?
     };
 
-    if cols_per_row.len() != rows as usize || rows == 0 || cols_per_row.iter().any(|c| *c == 0) {
+    if cols_per_row.len() != rows as usize || rows == 0 || cols_per_row.contains(&0) {
         return Err(DiscoverExit::Validation(
             "Rows must match columns length and all rows must be non-zero".to_string(),
         ));

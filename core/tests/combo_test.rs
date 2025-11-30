@@ -108,13 +108,7 @@ fn partial_combo_times_out_and_passes_through_keys() {
     assert_eq!(first, vec![OutputAction::Block]);
 
     let timeout = engine.tick(60_000);
-    assert_eq!(
-        timeout,
-        vec![
-            OutputAction::KeyDown(KeyCode::A),
-            OutputAction::KeyUp(KeyCode::A)
-        ]
-    );
+    assert_eq!(timeout, vec![OutputAction::KeyDown(KeyCode::A)]);
     assert!(engine.pending().is_empty());
 
     let release = engine.process_event(key_up(KeyCode::A, 70_000));

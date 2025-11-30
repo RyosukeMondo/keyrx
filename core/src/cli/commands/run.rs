@@ -3,10 +3,10 @@
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
-use crate::engine::Engine;
-use crate::mocks::{MockInput, MockState};
-use crate::scripting::RhaiRuntime;
-use crate::traits::ScriptRuntime;
+use crate::engine::{AdvancedEngine, InputEvent, LayerAction, RemapAction};
+use crate::mocks::MockInput;
+use crate::scripting::{RemapRegistry, RhaiRuntime};
+use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -75,14 +75,11 @@ impl RunCommand {
 
         let runtime = self.prepare_runtime()?;
 
-        // Create state store
-        let state = MockState::new();
-
         // Run with appropriate input source
         if self.use_mock {
-            self.run_with_mock(runtime, state).await
+            self.run_with_mock(runtime).await
         } else {
-            self.run_with_platform_driver(runtime, state).await
+            self.run_with_platform_driver(runtime).await
         }
     }
 
@@ -191,13 +188,14 @@ impl RunCommand {
         }
     }
 
-    async fn run_with_mock(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
+    async fn run_with_mock(&self, runtime: RhaiRuntime) -> Result<()> {
         self.output
             .success("Using mock input (no real keyboard interception)");
 
-        let input = MockInput::new();
-        let mut engine = Engine::new(input, runtime, state);
-        engine.start().await?;
+        let mut input = MockInput::new();
+        let registry = runtime.registry().clone();
+        let mut engine = self.build_engine(runtime, registry);
+        input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
         info!(
@@ -217,7 +215,7 @@ impl RunCommand {
         });
 
         let start = Instant::now();
-        // Run event loop until interrupted
+        let mut last_timestamp = 0u64;
         while running.load(Ordering::SeqCst) {
             if let Some(limit) = self.mock_run_limit {
                 if start.elapsed() >= limit {
@@ -225,27 +223,31 @@ impl RunCommand {
                     break;
                 }
             }
-            // With mock input, just sleep since there are no events
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+            let events = input.poll_events().await?;
+            self.process_events_with_engine(&mut engine, &mut input, events, &mut last_timestamp)
+                .await?;
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         }
 
-        engine.stop().await?;
+        input.stop().await?;
         self.output.success("Engine stopped.");
         Ok(())
     }
 
     #[cfg(target_os = "linux")]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
+    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
         self.output.success("Using Linux input driver");
 
         // Show which device we're using and initialize input
-        let input = self.initialize_linux_input()?;
+        let mut input = self.initialize_linux_input()?;
         let device_info = input.device_info().clone();
         let profile_entry = self.load_device_profile(&device_info);
         self.report_profile_status(&device_info, &profile_entry);
 
-        let mut engine = Engine::new(input, runtime, state);
-        engine.start().await?;
+        let registry = runtime.registry().clone();
+        let mut engine = self.build_engine(runtime, registry);
+        input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
         info!(
@@ -260,14 +262,24 @@ impl RunCommand {
         let running = self.setup_signal_handlers()?;
 
         // Run event loop until interrupted
-        while running.load(Ordering::SeqCst) && engine.is_running() {
-            engine.run_loop().await?;
-            // Small delay to prevent busy-waiting when no events
-            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        let mut last_timestamp = 0u64;
+        while running.load(Ordering::SeqCst) {
+            let events = input.poll_events().await?;
+            if !events.is_empty() {
+                self.process_events_with_engine(
+                    &mut engine,
+                    &mut input,
+                    events,
+                    &mut last_timestamp,
+                )
+                .await?;
+            } else {
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            }
         }
 
         self.output.success("Signal received, stopping...");
-        engine.stop().await?;
+        input.stop().await?;
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -324,10 +336,12 @@ impl RunCommand {
     }
 
     #[cfg(target_os = "windows")]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
+    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
         let input = self.init_windows_input()?;
-        let mut engine = Engine::new(input, runtime, state);
-        engine.start().await?;
+        let mut input = input;
+        let registry = runtime.registry().clone();
+        let mut engine = self.build_engine(runtime, registry);
+        input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
         info!(
@@ -343,22 +357,32 @@ impl RunCommand {
         Self::spawn_ctrl_c_flag(running.clone());
 
         // Run event loop until interrupted
-        while running.load(Ordering::SeqCst) && engine.is_running() {
-            engine.run_loop().await?;
-            // Small delay to prevent busy-waiting when no events
-            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        let mut last_timestamp = 0u64;
+        while running.load(Ordering::SeqCst) {
+            let events = input.poll_events().await?;
+            if !events.is_empty() {
+                self.process_events_with_engine(
+                    &mut engine,
+                    &mut input,
+                    events,
+                    &mut last_timestamp,
+                )
+                .await?;
+            } else {
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            }
         }
 
-        engine.stop().await?;
+        input.stop().await?;
         self.output.success("Engine stopped.");
         Ok(())
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
+    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
         self.output
             .warning("No platform driver available for this OS, falling back to mock input");
-        self.run_with_mock(runtime, state).await
+        self.run_with_mock(runtime).await
     }
 
     #[cfg(target_os = "windows")]
@@ -392,6 +416,80 @@ impl RunCommand {
             tokio::signal::ctrl_c().await.ok();
             running.store(false, Ordering::SeqCst);
         });
+    }
+
+    fn build_engine(
+        &self,
+        runtime: RhaiRuntime,
+        registry: RemapRegistry,
+    ) -> AdvancedEngine<MockInput, RhaiRuntime> {
+        let mut engine =
+            AdvancedEngine::new(MockInput::new(), runtime, registry.timing_config().clone());
+
+        // Seed layer mappings and tap-holds into the base layer.
+        let mut layers = registry.layers().clone();
+        if let Some(base_id) = layers.layer_id_by_name("base") {
+            for (key, action) in registry.mappings() {
+                if let Some(layer_action) = Self::to_layer_action(action) {
+                    layers.set_mapping_for_layer(base_id, key, layer_action);
+                }
+            }
+
+            for (key, binding) in registry.tap_holds() {
+                layers.set_mapping_for_layer(
+                    base_id,
+                    *key,
+                    LayerAction::TapHold {
+                        tap: binding.tap,
+                        hold: binding.hold.clone(),
+                    },
+                );
+            }
+        }
+        *engine.layers_mut() = layers;
+
+        // Seed combos and modifiers.
+        for combo in registry.combos().all() {
+            engine
+                .combos_mut()
+                .register(&combo.keys, combo.action.clone());
+        }
+        engine
+            .modifiers_mut()
+            .clone_from(&registry.modifier_state());
+
+        engine
+    }
+
+    async fn process_events_with_engine<I: InputSource>(
+        &self,
+        engine: &mut AdvancedEngine<MockInput, RhaiRuntime>,
+        input: &mut I,
+        events: Vec<InputEvent>,
+        last_timestamp: &mut u64,
+    ) -> Result<()> {
+        for event in events {
+            if event.timestamp_us > *last_timestamp {
+                for action in engine.tick(event.timestamp_us) {
+                    input.send_output(action).await?;
+                }
+                *last_timestamp = event.timestamp_us;
+            }
+
+            let outputs = engine.process_event(event);
+            for action in outputs {
+                input.send_output(action).await?;
+            }
+        }
+        Ok(())
+    }
+
+    fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
+        match action {
+            RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
+            RemapAction::Block => Some(LayerAction::Block),
+            RemapAction::Pass => None,
+        }
     }
 }
 

@@ -8,6 +8,7 @@ use crate::engine::{
 };
 use crate::traits::{InputSource, ScriptRuntime};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// Single pressed key with timestamp for snapshots.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +45,7 @@ where
     // Decisions
     pending: DecisionQueue,
     combos: ComboRegistry,
+    blocked_releases: HashSet<KeyCode>,
 
     // Config
     timing: TimingConfig,
@@ -66,6 +68,7 @@ where
             layers: LayerStack::new(),
             pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
+            blocked_releases: HashSet::new(),
             timing,
             safe_mode: false,
             _running: false,
@@ -127,20 +130,31 @@ where
         }
 
         let resolutions = self.pending.check_event(&event);
-        let (resolved_outputs, resolved_consumed) = self.handle_resolutions(resolutions);
+        let (resolved_outputs, resolved_consumed, skip_layer_actions) =
+            self.handle_resolutions(resolutions, Some(&event));
         outputs.extend(resolved_outputs);
         consumed |= resolved_consumed;
 
         // Step 7-9: Layer lookup and action execution.
-        if let Some(action) = self.layers.lookup(event.key).cloned() {
-            let (handled_outputs, handled) = self.handle_layer_action(&event, action);
-            outputs.extend(handled_outputs);
-            consumed |= handled;
+        if !skip_layer_actions {
+            if let Some(action) = self.layers.lookup(event.key).cloned() {
+                let (handled_outputs, handled) = self.handle_layer_action(&event, action);
+                outputs.extend(handled_outputs);
+                consumed |= handled;
+            }
         }
 
         if blocked_for_combo {
             outputs.push(OutputAction::Block);
             consumed = true;
+        }
+
+        if !event.pressed {
+            let was_blocked = self.blocked_releases.remove(&event.key);
+            if was_blocked && !consumed {
+                outputs.push(OutputAction::Block);
+                consumed = true;
+            }
         }
 
         if !consumed {
@@ -157,7 +171,7 @@ where
         }
 
         let resolutions = self.pending.check_timeouts(now_us);
-        let (outputs, _) = self.handle_resolutions(resolutions);
+        let (outputs, _, _) = self.handle_resolutions(resolutions, None);
         outputs
     }
 
@@ -234,18 +248,19 @@ where
         let mut outputs = Vec::new();
 
         for ComboDef { keys, action } in self.combos.all() {
-            if keys.contains(&event.key) {
-                blocked = true;
-                let _ = self
+            if keys.contains(&event.key)
+                && self
                     .pending
-                    .add_combo(&keys, event.timestamp_us, action.clone());
+                    .add_combo(&keys, event.timestamp_us, action.clone())
+            {
+                blocked = true;
             }
         }
 
         // If current pressed keys already match a combo, trigger immediately.
         if let Some(action) = self.combos.find(&pressed_keys) {
-            let immediate = self.execute_layer_action(action.clone());
             self.pending.clear();
+            let immediate = self.execute_layer_action_with_event(action.clone(), Some(event));
             if !immediate.is_empty() {
                 blocked = true;
                 outputs.extend(immediate);
@@ -258,9 +273,11 @@ where
     fn handle_resolutions(
         &mut self,
         resolutions: Vec<DecisionResolution>,
-    ) -> (Vec<OutputAction>, bool) {
+        event: Option<&InputEvent>,
+    ) -> (Vec<OutputAction>, bool, bool) {
         let mut outputs = Vec::new();
         let mut consumed = false;
+        let mut skip_layer_actions = false;
 
         for resolution in resolutions {
             match resolution {
@@ -269,26 +286,34 @@ where
                     outputs.push(OutputAction::KeyUp(key));
                     consumed = true;
                 }
-                DecisionResolution::Hold { action, .. } => {
+                DecisionResolution::Hold { key, action, .. } => {
                     let hold_outputs = self.activate_hold_action(action);
+                    self.blocked_releases.insert(key);
                     outputs.extend(hold_outputs);
                     consumed = true;
                 }
+                DecisionResolution::Consume(key) => {
+                    self.blocked_releases.remove(&key);
+                    outputs.push(OutputAction::Block);
+                    consumed = true;
+                    skip_layer_actions = true;
+                }
                 DecisionResolution::ComboTriggered(action) => {
-                    outputs.extend(self.execute_layer_action(action));
+                    outputs.extend(self.execute_layer_action_with_event(action, event));
                     consumed = true;
                 }
                 DecisionResolution::ComboTimeout(keys) => {
                     for key in keys {
-                        outputs.push(OutputAction::KeyDown(key));
-                        outputs.push(OutputAction::KeyUp(key));
+                        if self.key_state.is_pressed(key) {
+                            outputs.push(OutputAction::KeyDown(key));
+                            consumed = true;
+                        }
                     }
-                    consumed = true;
                 }
             }
         }
 
-        (outputs, consumed)
+        (outputs, consumed, skip_layer_actions)
     }
 
     fn handle_layer_action(
@@ -314,7 +339,8 @@ where
                         self.pending
                             .add_tap_hold(event.key, event.timestamp_us, tap, hold.clone());
                     if let Some(resolution) = eager {
-                        let (eager_outputs, _) = self.handle_resolutions(vec![resolution]);
+                        let (eager_outputs, _, _) =
+                            self.handle_resolutions(vec![resolution], Some(event));
                         outputs.extend(eager_outputs);
                     }
                     outputs.push(OutputAction::Block);
@@ -369,17 +395,27 @@ where
         }
     }
 
-    fn execute_layer_action(&mut self, action: LayerAction) -> Vec<OutputAction> {
+    fn execute_layer_action_with_event(
+        &mut self,
+        action: LayerAction,
+        event: Option<&InputEvent>,
+    ) -> Vec<OutputAction> {
         match action {
             LayerAction::Remap(target) => {
                 vec![OutputAction::KeyDown(target), OutputAction::KeyUp(target)]
             }
             LayerAction::Block => vec![OutputAction::Block],
             LayerAction::TapHold { tap, hold } => {
-                let (_, eager) = self.pending.add_tap_hold(KeyCode::Unknown(0), 0, tap, hold);
-                eager
-                    .map(|res| self.handle_resolutions(vec![res]).0)
-                    .unwrap_or_default()
+                if let Some(evt) = event {
+                    let (_, eager) =
+                        self.pending
+                            .add_tap_hold(evt.key, evt.timestamp_us, tap, hold);
+                    eager
+                        .map(|res| self.handle_resolutions(vec![res], Some(evt)).0)
+                        .unwrap_or_default()
+                } else {
+                    Vec::new()
+                }
             }
             LayerAction::LayerPush(id) => {
                 self.layers.push(id);
@@ -550,5 +586,81 @@ mod tests {
         assert_eq!(snapshot.pending.len(), 1);
 
         serde_json::to_string(&snapshot).expect("engine state serializes");
+    }
+
+    #[test]
+    fn combo_timeout_emits_single_release_path() {
+        let mut engine = test_engine();
+        engine.combos_mut().register(
+            &[KeyCode::A, KeyCode::B],
+            LayerAction::Remap(KeyCode::Escape),
+        );
+
+        let first = engine.process_event(key_down(KeyCode::A, 0));
+        assert_eq!(first, vec![OutputAction::Block]);
+
+        // Timeout should synthesize only a KeyDown for the still-pressed key.
+        let timeout = engine.tick(60_000);
+        assert_eq!(timeout, vec![OutputAction::KeyDown(KeyCode::A)]);
+
+        // The real release should produce a single KeyUp, not a double release.
+        let release = engine.process_event(key_up(KeyCode::A, 70_000));
+        assert_eq!(release, vec![OutputAction::KeyUp(KeyCode::A)]);
+    }
+
+    #[test]
+    fn combo_queue_saturation_does_not_block_events() {
+        let mut engine = test_engine();
+        engine.combos_mut().register(
+            &[KeyCode::A, KeyCode::B],
+            LayerAction::Remap(KeyCode::Escape),
+        );
+
+        for _ in 0..DecisionQueue::MAX_PENDING {
+            let _ = engine
+                .pending
+                .add_combo(&[KeyCode::A, KeyCode::B], 0, LayerAction::Block);
+        }
+
+        // With a full queue, new combo-related keys should pass through instead of being blocked.
+        let output = engine.process_event(key_down(KeyCode::A, 0));
+        assert_eq!(output, vec![OutputAction::KeyDown(KeyCode::A)]);
+    }
+
+    #[test]
+    fn combo_tap_hold_uses_event_timestamp() {
+        let mut engine = test_engine();
+        engine.combos_mut().register(
+            &[KeyCode::A, KeyCode::B],
+            LayerAction::TapHold {
+                tap: KeyCode::Escape,
+                hold: HoldAction::Key(KeyCode::LeftCtrl),
+            },
+        );
+
+        let first = engine.process_event(key_down(KeyCode::A, 0));
+        assert_eq!(first, vec![OutputAction::Block]);
+
+        // Second key should enqueue tap-hold with the event's timestamp.
+        let second = engine.process_event(key_down(KeyCode::B, 10_000));
+        assert_eq!(second, vec![OutputAction::Block]);
+
+        let pending = engine.pending.snapshot();
+        match pending.first() {
+            Some(PendingDecisionState::TapHold {
+                key, pressed_at, ..
+            }) => {
+                assert_eq!(*key, KeyCode::B);
+                assert_eq!(*pressed_at, 10_000);
+            }
+            other => panic!("expected tap-hold pending, got {:?}", other),
+        }
+
+        // Resolve as hold via timeout to ensure the pending entry completes.
+        let timeout = engine.tick(260_000);
+        assert_eq!(timeout, vec![OutputAction::KeyDown(KeyCode::LeftCtrl)]);
+
+        let release = engine.process_event(key_up(KeyCode::B, 300_000));
+        assert_eq!(release, vec![OutputAction::Block]);
     }
 }

@@ -263,30 +263,43 @@ impl SimulateCommand {
         passed: &mut usize,
     ) {
         let mut output_strings = Vec::new();
+        let mut saw_block = false;
+        let mut saw_remap = false;
+        let mut saw_pass = false;
 
         for action in outputs {
             match action {
                 OutputAction::KeyDown(k) | OutputAction::KeyUp(k) => {
                     if k == event.key {
-                        *passed += 1;
+                        saw_pass = true;
                     } else {
-                        *remapped += 1;
+                        saw_remap = true;
                     }
                     output_strings.push(k.name());
                 }
                 OutputAction::KeyTap(k) => {
-                    *remapped += 1;
+                    saw_remap = true;
                     output_strings.push(format!("Tap({})", k.name()));
                 }
                 OutputAction::Block => {
-                    *blocked += 1;
+                    saw_block = true;
                     output_strings.push("BLOCKED".to_string());
                 }
                 OutputAction::PassThrough => {
-                    *passed += 1;
+                    saw_pass = true;
                     output_strings.push(event.key.name());
                 }
             }
+        }
+
+        if output_strings.is_empty() {
+            *passed += 1;
+        } else if saw_block {
+            *blocked += 1;
+        } else if saw_remap {
+            *remapped += 1;
+        } else if saw_pass {
+            *passed += 1;
         }
 
         let primary = output_strings
