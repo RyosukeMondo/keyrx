@@ -107,6 +107,11 @@ where
             return vec![OutputAction::PassThrough];
         }
 
+        // Mark other tap-hold decisions as interrupted when another key is pressed.
+        if event.pressed {
+            self.pending.mark_interrupted(event.key);
+        }
+
         let mut outputs = Vec::new();
         let mut consumed = false;
 

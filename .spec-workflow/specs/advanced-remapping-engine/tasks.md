@@ -199,7 +199,7 @@
 
 ## Phase 6: Testing & Verification
 
-- [ ] 18. Create integration tests for tap-hold
+- [x] 18. Create integration tests for tap-hold
   - File: `core/tests/tap_hold_test.rs` (new)
   - Test tap scenario (quick release)
   - Test hold scenario (timeout expires)
