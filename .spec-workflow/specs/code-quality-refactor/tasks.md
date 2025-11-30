@@ -110,7 +110,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Implement KeyInjector trait for SendInputInjector, add WindowsInput::new_with_injector() constructor, write tests using MockKeyInjector | Restrictions: Preserve existing new() behavior | Success: Tests pass with mock injector | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 10. Update Windows keymap to use keycodes.rs
+- [x] 10. Update Windows keymap to use keycodes.rs
   - File: `core/src/drivers/windows/keymap.rs`
   - Remove manual `vk_to_keycode()` / `keycode_to_vk()` implementations
   - Re-export from `keycodes.rs`
