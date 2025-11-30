@@ -10,6 +10,7 @@
 pub mod cli;
 pub mod drivers;
 pub mod engine;
+pub mod error;
 pub mod ffi;
 pub mod mocks;
 pub mod scripting;

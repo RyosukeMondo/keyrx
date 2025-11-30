@@ -61,7 +61,7 @@
 
 ## Task 4: Custom Error Types
 
-- [ ] 4.1 Create error module
+- [x] 4.1 Create error module
   - File: `core/src/error.rs`
   - Define KeyRxError enum with thiserror derive
   - Variants: UnknownKey, ScriptCompileError, ScriptRuntimeError, InvalidPath, Io, PlatformError
