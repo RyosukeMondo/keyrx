@@ -220,7 +220,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec advanced-remapping-engine, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer | Task: Create comprehensive combo integration tests | Restrictions: Test order-independence | Success: All combo scenarios tested and passing | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 20. Create integration tests for layers
+- [x] 20. Create integration tests for layers
   - File: `core/tests/layer_test.rs` (new)
   - Test layer push/pop
   - Test layer toggle
