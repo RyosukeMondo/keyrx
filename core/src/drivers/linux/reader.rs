@@ -334,81 +334,122 @@ impl EvdevReader {
     }
 
     /// Main event reading loop.
+    ///
+    /// Continuously reads events from the evdev device and processes them.
+    /// Exits when `running` is set to false or the channel is closed.
     fn run_loop(&mut self) {
         while self.running.load(Ordering::Relaxed) {
-            // fetch_events blocks until events are available
-            match self.device.fetch_events() {
+            match self.fetch_key_events() {
                 Ok(events) => {
-                    for event in events {
-                        // Only process EV_KEY events
-                        if event.event_type() != evdev::EventType::KEY {
-                            continue;
-                        }
-
-                        // value: 0 = release, 1 = press, 2 = repeat
-                        let value = event.value();
-                        let is_repeat = value == 2;
-                        // pressed is true for both initial press (1) and repeat (2)
-                        let pressed = value == 1 || is_repeat;
-                        let key_code = evdev_to_keycode(event.code());
-
-                        // Extract timestamp from event as microseconds
-                        let timestamp_us = event
-                            .timestamp()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .map(|d| d.as_micros() as u64)
-                            .unwrap_or(0);
-
-                        // Extract scan_code from the raw evdev event code
-                        let scan_code = event.code();
-
-                        // Create event with full metadata
-                        let input_event = InputEvent {
-                            key: key_code,
-                            pressed,
-                            timestamp_us,
-                            device_id: Some(self.device_id.clone()),
-                            is_repeat,
-                            is_synthetic: false,
-                            scan_code,
-                        };
-
-                        trace!(
-                            "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
-                            key_code,
-                            if pressed { "down" } else { "up" },
-                            scan_code,
-                            is_repeat,
-                            timestamp_us,
-                            self.device_id
-                        );
-
-                        // Send event to channel
-                        if self.tx.send(input_event).is_err() {
-                            // Channel closed, receiver dropped - exit thread
-                            debug!("Event channel closed, stopping reader");
-                            return;
-                        }
-                    }
-                }
-                Err(e) => {
-                    // Check if we should continue
-                    if !self.running.load(Ordering::Relaxed) {
+                    if !self.process_events(&events) {
                         return;
                     }
-
-                    // Log error but continue - might be temporary
-                    error!(
-                        "Error reading events from {}: {}",
-                        self.device_path.display(),
-                        e
-                    );
-
-                    // Small sleep to avoid busy loop on persistent errors
-                    thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(Some(e)) => {
+                    if !self.handle_read_error(&e) {
+                        return;
+                    }
+                }
+                Err(None) => {
+                    // Shutdown requested during fetch
+                    return;
                 }
             }
         }
+    }
+
+    /// Fetch key events from the device, filtering to only EV_KEY events.
+    ///
+    /// Returns `Ok(events)` on success, `Err(Some(e))` on read error,
+    /// or `Err(None)` if shutdown was requested.
+    fn fetch_key_events(&mut self) -> Result<Vec<evdev::InputEvent>, Option<std::io::Error>> {
+        match self.device.fetch_events() {
+            Ok(events) => {
+                let key_events: Vec<_> = events
+                    .filter(|e| e.event_type() == evdev::EventType::KEY)
+                    .collect();
+                Ok(key_events)
+            }
+            Err(e) => {
+                if !self.running.load(Ordering::Relaxed) {
+                    Err(None)
+                } else {
+                    Err(Some(e))
+                }
+            }
+        }
+    }
+
+    /// Process a batch of evdev key events.
+    ///
+    /// Returns `false` if the reader should stop (channel closed), `true` otherwise.
+    fn process_events(&self, events: &[evdev::InputEvent]) -> bool {
+        for event in events {
+            let input_event = self.convert_event(event);
+            self.log_event(&input_event);
+
+            if self.tx.send(input_event).is_err() {
+                debug!("Event channel closed, stopping reader");
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Convert an evdev event to an InputEvent.
+    fn convert_event(&self, event: &evdev::InputEvent) -> InputEvent {
+        let value = event.value();
+        let is_repeat = value == 2;
+        let pressed = value == 1 || is_repeat;
+        let key_code = evdev_to_keycode(event.code());
+        let timestamp_us = event
+            .timestamp()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0);
+        let scan_code = event.code();
+
+        InputEvent {
+            key: key_code,
+            pressed,
+            timestamp_us,
+            device_id: Some(self.device_id.clone()),
+            is_repeat,
+            is_synthetic: false,
+            scan_code,
+        }
+    }
+
+    /// Log an input event at trace level.
+    fn log_event(&self, event: &InputEvent) {
+        trace!(
+            "Read event: {:?} {} (scan_code={}, repeat={}) at {} from {}",
+            event.key,
+            if event.pressed { "down" } else { "up" },
+            event.scan_code,
+            event.is_repeat,
+            event.timestamp_us,
+            self.device_id
+        );
+    }
+
+    /// Handle a read error from the evdev device.
+    ///
+    /// Returns `false` if the reader should stop, `true` to continue.
+    fn handle_read_error(&self, e: &std::io::Error) -> bool {
+        if !self.running.load(Ordering::Relaxed) {
+            return false;
+        }
+
+        error!(
+            "Error reading events from {}: {}",
+            self.device_path.display(),
+            e
+        );
+
+        // Small sleep to avoid busy loop on persistent errors
+        thread::sleep(std::time::Duration::from_millis(10));
+        true
     }
 
     /// Handle panic recovery - ungrab keyboard and set error flags.
