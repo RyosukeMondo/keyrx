@@ -50,7 +50,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Linux experience | Task: In core/src/drivers/linux.rs, create EvdevReader struct with evdev::Device, crossbeam Sender<InputEvent>, Arc<AtomicBool> for running flag. Implement grab() that calls device.grab() to get exclusive access. Implement ungrab() for cleanup. Use evdev crate's built-in grab method | Restrictions: Handle grab failure gracefully with clear error | Success: EvdevReader can grab and ungrab keyboard. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 3.2 Implement evdev read loop
+- [x] 3.2 Implement evdev read loop
   - File: `core/src/drivers/linux.rs`
   - Create spawn() that starts blocking read thread
   - Read events via device.fetch_events()
