@@ -176,7 +176,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Create docs/SCRIPTING.md with: 1) Overview of Rhai scripting in KeyRx, 2) Function reference for remap(from, to), block(key), pass(key) with parameters, return values, errors, 3) Hook lifecycle explaining on_init(), 4) Error handling with try/catch examples, 5) Complete example scripts. Use markdown with code blocks | Restrictions: Keep examples runnable, document all error conditions | Success: AI agent can write valid scripts from documentation alone. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 8.2 Create KEYS.md
+- [x] 8.2 Create KEYS.md
   - File: `docs/KEYS.md`
   - List all valid key names organized by category
   - Include all aliases (e.g., Esc = Escape)
