@@ -1,6 +1,7 @@
 //! Script validation command.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::error::KeyRxError;
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -32,8 +33,19 @@ impl CheckCommand {
                 Ok(())
             }
             Err(e) => {
-                self.output.error(&format!("Parse error: {}", e));
-                std::process::exit(2);
+                let position = e.position();
+                let (line, column) = if position.is_none() {
+                    (None, None)
+                } else {
+                    (position.line(), position.position())
+                };
+
+                Err(KeyRxError::ScriptCompileError {
+                    message: e.to_string(),
+                    line,
+                    column,
+                }
+                .into())
             }
         }
     }
