@@ -125,7 +125,12 @@ macro_rules! define_keycodes {
         /// Convert Windows virtual key code to KeyCode.
         ///
         /// Maps Windows VK_* constants to the internal KeyCode representation.
-        #[cfg(target_os = "windows")]
+        /// Available on all platforms for cross-platform testing.
+        ///
+        /// Note: NumpadEnter and Enter share VK code 0x0D on Windows.
+        /// They are distinguished by the extended key flag (KEYEVENTF_EXTENDEDKEY),
+        /// not by the VK code itself. This function returns Enter for 0x0D.
+        #[allow(unreachable_patterns)]
         pub fn vk_to_keycode(vk: u16) -> KeyCode {
             match vk {
                 $(
@@ -138,7 +143,7 @@ macro_rules! define_keycodes {
         /// Convert KeyCode to Windows virtual key code.
         ///
         /// Maps internal KeyCode to Windows VK_* constants for key injection.
-        #[cfg(target_os = "windows")]
+        /// Available on all platforms for cross-platform testing.
         pub fn keycode_to_vk(key: KeyCode) -> u16 {
             match key {
                 $(
@@ -481,15 +486,19 @@ mod tests {
         }
     }
 
-    #[cfg(target_os = "windows")]
     mod windows_tests {
         use super::*;
 
         #[test]
         fn vk_roundtrip() {
             // Test that vk_to_keycode and keycode_to_vk are inverses
-            // Note: Some VK codes may map to the same keycode (e.g., VK_SHIFT vs VK_LSHIFT)
+            // Note: NumpadEnter shares VK code 0x0D with Enter - distinguished by extended flag
             for keycode in all_keycodes() {
+                // Skip NumpadEnter - it shares VK 0x0D with Enter
+                // On Windows, these are distinguished by the extended key flag, not VK code
+                if matches!(keycode, KeyCode::NumpadEnter) {
+                    continue;
+                }
                 let vk = keycode_to_vk(keycode);
                 let back = vk_to_keycode(vk);
                 assert_eq!(keycode, back, "Roundtrip failed for {:?}", keycode);
