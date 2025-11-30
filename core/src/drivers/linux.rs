@@ -29,8 +29,6 @@ const UINPUT_DEVICE_NAME: &str = "KeyRx Virtual Keyboard";
 ///
 /// The `running` flag is shared across threads using `Arc<AtomicBool>` to allow
 /// clean shutdown from the main thread.
-// TODO: Remove allow(dead_code) once LinuxInput uses EvdevReader (task 5.2)
-#[allow(dead_code)]
 pub struct EvdevReader {
     /// The evdev device handle for reading keyboard events.
     device: evdev::Device,
@@ -42,7 +40,6 @@ pub struct EvdevReader {
     device_path: PathBuf,
 }
 
-#[allow(dead_code)]
 impl EvdevReader {
     /// Create a new EvdevReader for the given device path.
     ///
@@ -123,26 +120,31 @@ impl EvdevReader {
     }
 
     /// Check if the reader should continue running.
+    #[allow(dead_code)]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
 
     /// Get a reference to the underlying evdev device.
+    #[allow(dead_code)]
     pub fn device(&self) -> &evdev::Device {
         &self.device
     }
 
     /// Get a mutable reference to the underlying evdev device.
+    #[allow(dead_code)]
     pub fn device_mut(&mut self) -> &mut evdev::Device {
         &mut self.device
     }
 
     /// Get the channel sender for forwarding events.
+    #[allow(dead_code)]
     pub fn sender(&self) -> &Sender<InputEvent> {
         &self.tx
     }
 
     /// Get the device path.
+    #[allow(dead_code)]
     pub fn device_path(&self) -> &Path {
         &self.device_path
     }
@@ -266,14 +268,11 @@ impl EvdevReader {
 ///
 /// Creating a uinput device requires write access to `/dev/uinput`.
 /// See `LinuxInput::check_uinput_accessible()` for permission requirements.
-// TODO: Remove allow(dead_code) once LinuxInput uses UinputWriter (task 5.2)
-#[allow(dead_code)]
 pub struct UinputWriter {
     /// The virtual uinput device for key injection.
     device: evdev::uinput::VirtualDevice,
 }
 
-#[allow(dead_code)]
 impl UinputWriter {
     /// Create a new UinputWriter with a virtual keyboard device.
     ///
@@ -447,11 +446,13 @@ impl UinputWriter {
     }
 
     /// Get a reference to the underlying virtual device.
+    #[allow(dead_code)]
     pub fn device(&self) -> &evdev::uinput::VirtualDevice {
         &self.device
     }
 
     /// Get a mutable reference to the underlying virtual device.
+    #[allow(dead_code)]
     pub fn device_mut(&mut self) -> &mut evdev::uinput::VirtualDevice {
         &mut self.device
     }
@@ -557,8 +558,6 @@ impl UinputWriter {
 /// - The `EvdevReader` runs in a dedicated blocking thread
 /// - Events are sent via a crossbeam channel to the async engine
 /// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
-// TODO: Remove allow(dead_code) once InputSource trait is fully implemented (task 5.2)
-#[allow(dead_code)]
 pub struct LinuxInput {
     /// Handle to the reader thread (set after start() is called).
     reader_handle: Option<JoinHandle<()>>,
@@ -742,24 +741,76 @@ impl LinuxInput {
 impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
         if !self.running.load(Ordering::Relaxed) {
-            warn!("poll_events called while not running");
+            trace!("poll_events called while not running");
             return Ok(vec![]);
         }
 
-        // Stub: Return empty vec. Full implementation in task 5.2.
-        // This will use try_recv from the rx channel.
-        Ok(vec![])
+        // Non-blocking receive from the channel
+        // Collect all available events without blocking
+        let mut events = Vec::new();
+        loop {
+            match self.rx.try_recv() {
+                Ok(event) => {
+                    trace!(
+                        "Received event: {:?} {}",
+                        event.key,
+                        if event.pressed { "down" } else { "up" }
+                    );
+                    events.push(event);
+                }
+                Err(crossbeam_channel::TryRecvError::Empty) => {
+                    // No more events available
+                    break;
+                }
+                Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                    // Channel closed - reader thread has stopped
+                    error!("Event channel disconnected - reader thread may have crashed");
+                    self.running.store(false, Ordering::Relaxed);
+                    bail!("Input reader disconnected unexpectedly");
+                }
+            }
+        }
+
+        if !events.is_empty() {
+            debug!("poll_events returning {} events", events.len());
+        }
+
+        Ok(events)
     }
 
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
         if !self.running.load(Ordering::Relaxed) {
-            warn!("send_output called while not running");
+            trace!("send_output called while not running");
             return Ok(());
         }
 
-        // Stub: Log the action. Full implementation in task 5.2.
-        // This will call writer.emit() based on the action.
-        debug!("Would send output: {:?}", action);
+        match action {
+            OutputAction::KeyDown(key) => {
+                debug!("Sending key down: {:?}", key);
+                self.writer.emit(key, true)?;
+            }
+            OutputAction::KeyUp(key) => {
+                debug!("Sending key up: {:?}", key);
+                self.writer.emit(key, false)?;
+            }
+            OutputAction::KeyTap(key) => {
+                debug!("Sending key tap: {:?}", key);
+                self.writer.emit(key, true)?;
+                self.writer.emit(key, false)?;
+            }
+            OutputAction::Block => {
+                // Block does nothing - the original event is already grabbed
+                // and won't be passed through unless we explicitly emit it
+                trace!("Blocking key (no action needed)");
+            }
+            OutputAction::PassThrough => {
+                // PassThrough is handled by the engine - it re-emits the original key
+                // For the driver, this is a no-op since the engine will call
+                // KeyDown/KeyUp for the original key if needed
+                trace!("PassThrough (no action needed)");
+            }
+        }
+
         Ok(())
     }
 
@@ -772,11 +823,28 @@ impl InputSource for LinuxInput {
         // Verify uinput is accessible before starting
         Self::check_uinput_accessible().context("Failed to start Linux input source")?;
 
+        // Set running flag before spawning thread
         self.running.store(true, Ordering::Relaxed);
-        debug!("LinuxInput started successfully");
 
-        // Stub: Full EvdevReader spawning in task 5.2.
-        // This will create EvdevReader, call spawn(), and store the handle.
+        // Create the evdev reader
+        let mut reader = EvdevReader::new(
+            self.device_path.clone(),
+            self.tx.clone(),
+            self.running.clone(),
+        )
+        .context("Failed to create evdev reader")?;
+
+        // Grab exclusive access to the keyboard
+        reader.grab().context("Failed to grab keyboard device")?;
+
+        // Spawn the reader thread
+        let handle = reader.spawn();
+        self.reader_handle = Some(handle);
+
+        debug!(
+            "LinuxInput started successfully for device: {}",
+            self.device_path.display()
+        );
 
         Ok(())
     }
@@ -787,12 +855,31 @@ impl InputSource for LinuxInput {
             return Ok(());
         }
 
+        debug!("Stopping LinuxInput...");
+
+        // Signal the reader thread to stop
         self.running.store(false, Ordering::Relaxed);
-        debug!("LinuxInput stopped");
 
-        // Stub: Full cleanup in task 5.2.
-        // This will join the reader thread and drop resources.
+        // Wait for the reader thread to finish
+        if let Some(handle) = self.reader_handle.take() {
+            debug!("Waiting for reader thread to finish...");
+            match handle.join() {
+                Ok(()) => {
+                    debug!("Reader thread finished cleanly");
+                }
+                Err(e) => {
+                    error!("Reader thread panicked: {:?}", e);
+                    // Continue with cleanup even if thread panicked
+                }
+            }
+        }
 
+        // Drain any remaining events from the channel
+        while self.rx.try_recv().is_ok() {
+            // Discard remaining events
+        }
+
+        debug!("LinuxInput stopped successfully");
         Ok(())
     }
 }
