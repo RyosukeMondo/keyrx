@@ -52,7 +52,7 @@
   - _Requirements: REQ-2, REQ-6_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in module organization | Task: Split core/src/drivers/linux.rs (1600 lines) into linux/mod.rs, linux/reader.rs, linux/writer.rs, linux/keymap.rs with each file <500 lines | Restrictions: Preserve all public API, no behavioral changes, maintain backward compatibility of imports | Success: cargo build succeeds, all linux driver tests pass, each file <500 lines | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 5. Refactor EvdevReader::spawn() for SLAP compliance
+- [x] 5. Refactor EvdevReader::spawn() for SLAP compliance
   - File: `core/src/drivers/linux/reader.rs`
   - Extract `run_loop()` method (~30 lines)
   - Extract `process_events()` method (~20 lines)
