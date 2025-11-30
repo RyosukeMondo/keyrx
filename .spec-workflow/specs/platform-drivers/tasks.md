@@ -2,7 +2,7 @@
 
 ## Task 1: Update Dependencies and Error Types
 
-- [ ] 1.1 Update Cargo.toml for evdev uinput feature
+- [x] 1.1 Update Cargo.toml for evdev uinput feature
   - File: `core/Cargo.toml`
   - Change evdev to: `evdev = { version = "0.12", features = ["tokio"] }`
   - Add: `nix = { version = "0.27", features = ["ioctl"] }` for EVIOCGRAB
