@@ -10,7 +10,7 @@
   - _Requirements: REQ-1, REQ-2_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/Cargo.toml to modify evdev dependency to include tokio feature. Add nix crate with ioctl feature for EVIOCGRAB support. Keep existing dependencies unchanged | Restrictions: Use compatible versions, don't break existing code | Success: cargo build succeeds with new dependencies. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 1.2 Add driver error types
+- [x] 1.2 Add driver error types
   - File: `core/src/error.rs`
   - Add LinuxDriverError enum with DeviceNotFound, PermissionDenied, GrabFailed, UinputFailed
   - Add WindowsDriverError enum with HookInstallFailed, SendInputFailed, MessagePumpPanic
