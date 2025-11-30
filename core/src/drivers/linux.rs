@@ -7,6 +7,7 @@ use crate::traits::InputSource;
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use crossbeam_channel::Sender;
+use evdev::{uinput::VirtualDeviceBuilder, AttributeSet, Key};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use std::thread::{self, JoinHandle};
 use tracing::{debug, error, trace, warn};
 
 const UINPUT_PATH: &str = "/dev/uinput";
+const UINPUT_DEVICE_NAME: &str = "KeyRx Virtual Keyboard";
 
 /// Reader for keyboard events from an evdev device.
 ///
@@ -244,6 +246,212 @@ impl EvdevReader {
 
             debug!("EvdevReader thread stopped for {}", device_path.display());
         })
+    }
+}
+
+/// Writer for injecting keyboard events via uinput.
+///
+/// `UinputWriter` creates a virtual keyboard device that can emit key events
+/// to the system. This is used to inject remapped keys back into the input
+/// stream after processing.
+///
+/// # Device Registration
+///
+/// The virtual device is registered with all keys supported by the `KeyCode`
+/// enum to ensure any remapped key can be emitted.
+///
+/// # Permissions
+///
+/// Creating a uinput device requires write access to `/dev/uinput`.
+/// See `LinuxInput::check_uinput_accessible()` for permission requirements.
+// TODO: Remove allow(dead_code) once LinuxInput uses UinputWriter (task 5.2)
+#[allow(dead_code)]
+pub struct UinputWriter {
+    /// The virtual uinput device for key injection.
+    device: evdev::uinput::VirtualDevice,
+}
+
+#[allow(dead_code)]
+impl UinputWriter {
+    /// Create a new UinputWriter with a virtual keyboard device.
+    ///
+    /// The virtual device is named "KeyRx Virtual Keyboard" and supports
+    /// all keys defined in the `KeyCode` enum.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The uinput device cannot be accessed (permission denied)
+    /// - The virtual device creation fails
+    pub fn new() -> Result<Self> {
+        // Build the set of keys to register
+        let keys = Self::build_key_set();
+
+        let device = VirtualDeviceBuilder::new()
+            .context("Failed to create VirtualDeviceBuilder")?
+            .name(UINPUT_DEVICE_NAME)
+            .with_keys(&keys)
+            .map_err(|e| LinuxDriverError::uinput_failed(std::io::Error::other(e.to_string())))?
+            .build()
+            .map_err(|e| LinuxDriverError::uinput_failed(std::io::Error::other(e.to_string())))?;
+
+        debug!("Created uinput virtual keyboard: {}", UINPUT_DEVICE_NAME);
+
+        Ok(Self { device })
+    }
+
+    /// Build the set of evdev keys to register with the virtual device.
+    ///
+    /// This includes all keys that correspond to `KeyCode` variants,
+    /// ensuring we can emit any key that might be remapped.
+    fn build_key_set() -> AttributeSet<Key> {
+        let mut keys = AttributeSet::<Key>::new();
+
+        // Letters A-Z
+        keys.insert(Key::KEY_A);
+        keys.insert(Key::KEY_B);
+        keys.insert(Key::KEY_C);
+        keys.insert(Key::KEY_D);
+        keys.insert(Key::KEY_E);
+        keys.insert(Key::KEY_F);
+        keys.insert(Key::KEY_G);
+        keys.insert(Key::KEY_H);
+        keys.insert(Key::KEY_I);
+        keys.insert(Key::KEY_J);
+        keys.insert(Key::KEY_K);
+        keys.insert(Key::KEY_L);
+        keys.insert(Key::KEY_M);
+        keys.insert(Key::KEY_N);
+        keys.insert(Key::KEY_O);
+        keys.insert(Key::KEY_P);
+        keys.insert(Key::KEY_Q);
+        keys.insert(Key::KEY_R);
+        keys.insert(Key::KEY_S);
+        keys.insert(Key::KEY_T);
+        keys.insert(Key::KEY_U);
+        keys.insert(Key::KEY_V);
+        keys.insert(Key::KEY_W);
+        keys.insert(Key::KEY_X);
+        keys.insert(Key::KEY_Y);
+        keys.insert(Key::KEY_Z);
+
+        // Numbers 0-9 (top row)
+        keys.insert(Key::KEY_0);
+        keys.insert(Key::KEY_1);
+        keys.insert(Key::KEY_2);
+        keys.insert(Key::KEY_3);
+        keys.insert(Key::KEY_4);
+        keys.insert(Key::KEY_5);
+        keys.insert(Key::KEY_6);
+        keys.insert(Key::KEY_7);
+        keys.insert(Key::KEY_8);
+        keys.insert(Key::KEY_9);
+
+        // Function keys F1-F12
+        keys.insert(Key::KEY_F1);
+        keys.insert(Key::KEY_F2);
+        keys.insert(Key::KEY_F3);
+        keys.insert(Key::KEY_F4);
+        keys.insert(Key::KEY_F5);
+        keys.insert(Key::KEY_F6);
+        keys.insert(Key::KEY_F7);
+        keys.insert(Key::KEY_F8);
+        keys.insert(Key::KEY_F9);
+        keys.insert(Key::KEY_F10);
+        keys.insert(Key::KEY_F11);
+        keys.insert(Key::KEY_F12);
+
+        // Modifier keys
+        keys.insert(Key::KEY_LEFTSHIFT);
+        keys.insert(Key::KEY_RIGHTSHIFT);
+        keys.insert(Key::KEY_LEFTCTRL);
+        keys.insert(Key::KEY_RIGHTCTRL);
+        keys.insert(Key::KEY_LEFTALT);
+        keys.insert(Key::KEY_RIGHTALT);
+        keys.insert(Key::KEY_LEFTMETA);
+        keys.insert(Key::KEY_RIGHTMETA);
+
+        // Navigation keys
+        keys.insert(Key::KEY_UP);
+        keys.insert(Key::KEY_DOWN);
+        keys.insert(Key::KEY_LEFT);
+        keys.insert(Key::KEY_RIGHT);
+        keys.insert(Key::KEY_HOME);
+        keys.insert(Key::KEY_END);
+        keys.insert(Key::KEY_PAGEUP);
+        keys.insert(Key::KEY_PAGEDOWN);
+
+        // Editing keys
+        keys.insert(Key::KEY_INSERT);
+        keys.insert(Key::KEY_DELETE);
+        keys.insert(Key::KEY_BACKSPACE);
+
+        // Whitespace keys
+        keys.insert(Key::KEY_SPACE);
+        keys.insert(Key::KEY_TAB);
+        keys.insert(Key::KEY_ENTER);
+
+        // Lock keys
+        keys.insert(Key::KEY_CAPSLOCK);
+        keys.insert(Key::KEY_NUMLOCK);
+        keys.insert(Key::KEY_SCROLLLOCK);
+
+        // Escape and Print Screen area
+        keys.insert(Key::KEY_ESC);
+        keys.insert(Key::KEY_SYSRQ); // Print Screen
+        keys.insert(Key::KEY_PAUSE);
+
+        // Punctuation and symbols
+        keys.insert(Key::KEY_GRAVE);
+        keys.insert(Key::KEY_MINUS);
+        keys.insert(Key::KEY_EQUAL);
+        keys.insert(Key::KEY_LEFTBRACE);
+        keys.insert(Key::KEY_RIGHTBRACE);
+        keys.insert(Key::KEY_BACKSLASH);
+        keys.insert(Key::KEY_SEMICOLON);
+        keys.insert(Key::KEY_APOSTROPHE);
+        keys.insert(Key::KEY_COMMA);
+        keys.insert(Key::KEY_DOT);
+        keys.insert(Key::KEY_SLASH);
+
+        // Numpad keys
+        keys.insert(Key::KEY_KP0);
+        keys.insert(Key::KEY_KP1);
+        keys.insert(Key::KEY_KP2);
+        keys.insert(Key::KEY_KP3);
+        keys.insert(Key::KEY_KP4);
+        keys.insert(Key::KEY_KP5);
+        keys.insert(Key::KEY_KP6);
+        keys.insert(Key::KEY_KP7);
+        keys.insert(Key::KEY_KP8);
+        keys.insert(Key::KEY_KP9);
+        keys.insert(Key::KEY_KPPLUS);
+        keys.insert(Key::KEY_KPMINUS);
+        keys.insert(Key::KEY_KPASTERISK);
+        keys.insert(Key::KEY_KPSLASH);
+        keys.insert(Key::KEY_KPENTER);
+        keys.insert(Key::KEY_KPDOT);
+
+        // Media keys
+        keys.insert(Key::KEY_VOLUMEUP);
+        keys.insert(Key::KEY_VOLUMEDOWN);
+        keys.insert(Key::KEY_MUTE);
+        keys.insert(Key::KEY_PLAYPAUSE);
+        keys.insert(Key::KEY_STOPCD);
+        keys.insert(Key::KEY_NEXTSONG);
+        keys.insert(Key::KEY_PREVIOUSSONG);
+
+        keys
+    }
+
+    /// Get a reference to the underlying virtual device.
+    pub fn device(&self) -> &evdev::uinput::VirtualDevice {
+        &self.device
+    }
+
+    /// Get a mutable reference to the underlying virtual device.
+    pub fn device_mut(&mut self) -> &mut evdev::uinput::VirtualDevice {
+        &mut self.device
     }
 }
 
