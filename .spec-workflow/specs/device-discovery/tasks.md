@@ -16,7 +16,7 @@
   - _Requirements: 3,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust engineer specializing in persistence | Task: Build profile storage layer (read/write/migrate) with atomic writes, schema_version checks, and fallback handling for device discovery | Restrictions: Do not panic on IO/parse errors, return actionable errors, keep default profile accessible | _Leverage: core/src/discovery/types.rs, serde_json, fs utilities | _Requirements: 3,5 | Success: Storage functions unit-tested (corrupt file, version mismatch, write failure), atomic writes verified, default fallback preserved; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 3. Build discovery session state machine
+- [x] 3. Build discovery session state machine
   - File: core/src/discovery/session.rs
   - Implement state machine that sequences expected positions, records scan_code→position, handles duplicates/ambiguities, and emits progress/summary structs.
   - Purpose: Capture physical layout deterministically for each device.
