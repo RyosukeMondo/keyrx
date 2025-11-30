@@ -236,7 +236,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Add comprehensive //! module docs to both driver files. Document: platform requirements, permission requirements, thread model, error handling, cleanup behavior. Add doc comments to all public types and methods | Restrictions: Keep accurate to implementation | Success: cargo doc generates useful documentation. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 13.2 Update README with driver info
+- [x] 13.2 Update README with driver info
   - File: `README.md`
   - Add "Platform Setup" section
   - Document Linux: udev rules, input group
