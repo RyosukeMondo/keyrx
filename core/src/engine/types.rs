@@ -434,14 +434,47 @@ pub enum RemapAction {
 }
 
 /// Input event from keyboard.
+///
+/// Contains the core key information plus metadata about the event source,
+/// timing, and nature. Metadata fields enable advanced remapping features
+/// like tap-hold detection, device-specific configurations, and synthetic
+/// event filtering.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputEvent {
     /// Key that was pressed/released.
     pub key: KeyCode,
     /// True if key down, false if key up.
     pub pressed: bool,
-    /// Timestamp in microseconds.
-    pub timestamp: u64,
+    /// Timestamp in microseconds since driver start.
+    ///
+    /// **Linux**: Derived from `struct timeval` in evdev events (sec * 1_000_000 + usec).
+    /// **Windows**: Derived from `KBDLLHOOKSTRUCT.time` (ms * 1_000).
+    pub timestamp_us: u64,
+    /// Identifier of the source keyboard device.
+    ///
+    /// **Linux**: Device path (e.g., "/dev/input/event3").
+    /// **Windows**: Not available (None), as hooks don't identify source device.
+    /// **Mock**: Set to "mock" for test events.
+    pub device_id: Option<String>,
+    /// Whether this is an auto-repeat event (key held down).
+    ///
+    /// **Linux**: Detected via evdev `value == 2`.
+    /// **Windows**: Detected by tracking key state (key down while already down).
+    /// Useful for tap-hold detection to distinguish initial press from repeat.
+    pub is_repeat: bool,
+    /// Whether this event was injected by software (including KeyRx itself).
+    ///
+    /// **Linux**: Detected by comparing event source to uinput device.
+    /// **Windows**: Detected via `LLKHF_INJECTED` flag in hook callback.
+    /// Critical for preventing infinite loops when our injected keys are recaptured.
+    pub is_synthetic: bool,
+    /// Raw hardware scan code from the input device.
+    ///
+    /// **Linux**: The evdev event code (e.g., KEY_A = 30).
+    /// **Windows**: The `scanCode` field from `KBDLLHOOKSTRUCT`.
+    /// Useful for handling keys that may have the same virtual key code but
+    /// different physical locations (e.g., numpad Enter vs main Enter).
+    pub scan_code: u16,
 }
 
 /// Output action to send to OS.
@@ -459,23 +492,72 @@ pub enum OutputAction {
     PassThrough,
 }
 
+impl Default for InputEvent {
+    fn default() -> Self {
+        Self {
+            key: KeyCode::Unknown(0),
+            pressed: false,
+            timestamp_us: 0,
+            device_id: None,
+            is_repeat: false,
+            is_synthetic: false,
+            scan_code: 0,
+        }
+    }
+}
+
 impl InputEvent {
-    /// Create a new key down event.
-    pub fn key_down(key: KeyCode, timestamp: u64) -> Self {
+    /// Create a new key down event with default metadata.
+    ///
+    /// For production use, prefer `with_metadata()` or populate fields directly.
+    pub fn key_down(key: KeyCode, timestamp_us: u64) -> Self {
         Self {
             key,
             pressed: true,
-            timestamp,
+            timestamp_us,
+            ..Default::default()
         }
     }
 
-    /// Create a new key up event.
-    pub fn key_up(key: KeyCode, timestamp: u64) -> Self {
+    /// Create a new key up event with default metadata.
+    ///
+    /// For production use, prefer `with_metadata()` or populate fields directly.
+    pub fn key_up(key: KeyCode, timestamp_us: u64) -> Self {
         Self {
             key,
             pressed: false,
-            timestamp,
+            timestamp_us,
+            ..Default::default()
         }
+    }
+
+    /// Create a new event with full metadata.
+    pub fn with_metadata(
+        key: KeyCode,
+        pressed: bool,
+        timestamp_us: u64,
+        device_id: Option<String>,
+        is_repeat: bool,
+        is_synthetic: bool,
+        scan_code: u16,
+    ) -> Self {
+        Self {
+            key,
+            pressed,
+            timestamp_us,
+            device_id,
+            is_repeat,
+            is_synthetic,
+            scan_code,
+        }
+    }
+
+    /// Returns the legacy timestamp field (alias for timestamp_us).
+    ///
+    /// Provided for backward compatibility with code expecting `timestamp`.
+    #[inline]
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp_us
     }
 }
 

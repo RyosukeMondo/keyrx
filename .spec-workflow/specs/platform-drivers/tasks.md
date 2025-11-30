@@ -269,7 +269,7 @@
 
 ## Task 15: Event Metadata Infrastructure (REQ-9)
 
-- [ ] 15.1 Extend InputEvent struct with metadata fields
+- [x] 15.1 Extend InputEvent struct with metadata fields
   - File: `core/src/engine/types.rs`
   - Add fields: timestamp_us (u64), device_id (Option<String>), is_repeat (bool), is_synthetic (bool), scan_code (u16)
   - Update Default impl with sensible defaults

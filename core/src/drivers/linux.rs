@@ -339,23 +339,29 @@ impl EvdevReader {
                                 let key_code = evdev_to_keycode(event.code());
 
                                 // Extract timestamp from event as microseconds since UNIX epoch
-                                let timestamp = event
+                                let timestamp_us = event
                                     .timestamp()
                                     .duration_since(std::time::UNIX_EPOCH)
                                     .map(|d| d.as_micros() as u64)
                                     .unwrap_or(0);
 
+                                // Note: Full metadata capture (is_repeat, is_synthetic, scan_code)
+                                // is implemented in task 15.4. For now, use defaults.
                                 let input_event = InputEvent {
                                     key: key_code,
                                     pressed,
-                                    timestamp,
+                                    timestamp_us,
+                                    device_id: None,  // TODO: Populate in task 15.4
+                                    is_repeat: false, // TODO: Detect value==2 in task 15.4
+                                    is_synthetic: false, // TODO: Compare to uinput fd in task 15.4
+                                    scan_code: 0,     // TODO: Populate in task 15.4
                                 };
 
                                 trace!(
                                     "Read event: {:?} {} at {}",
                                     key_code,
                                     if pressed { "down" } else { "up" },
-                                    timestamp
+                                    timestamp_us
                                 );
 
                                 // Send event to channel

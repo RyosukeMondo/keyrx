@@ -140,10 +140,10 @@ fn parse_timestamps_increment() {
     let events = cmd.parse_input().unwrap();
 
     // Timestamps should increment by 1000 (1ms) between events
-    assert_eq!(events[0].timestamp, 0);
-    assert_eq!(events[1].timestamp, 1000);
-    assert_eq!(events[2].timestamp, 2000);
-    assert_eq!(events[3].timestamp, 3000);
+    assert_eq!(events[0].timestamp_us, 0);
+    assert_eq!(events[1].timestamp_us, 1000);
+    assert_eq!(events[2].timestamp_us, 2000);
+    assert_eq!(events[3].timestamp_us, 3000);
 }
 
 /// Test simulate without script passes all keys through.

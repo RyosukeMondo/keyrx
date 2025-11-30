@@ -499,14 +499,20 @@ unsafe extern "system" fn low_level_keyboard_proc(
     let vk_code = kb_struct.vkCode as u16;
     let key = vk_to_keycode(vk_code);
 
-    // Get timestamp (Windows provides milliseconds, we store as-is for now)
-    let timestamp = kb_struct.time as u64;
+    // Get timestamp (Windows provides milliseconds, convert to microseconds)
+    let timestamp_us = (kb_struct.time as u64) * 1000;
 
+    // Note: Full metadata capture (is_repeat, is_synthetic, scan_code)
+    // is implemented in task 15.5. For now, use defaults.
     // Create the input event
     let event = InputEvent {
         key,
         pressed,
-        timestamp,
+        timestamp_us,
+        device_id: None,     // Windows hooks don't identify source device
+        is_repeat: false,    // TODO: Track key state in task 15.5
+        is_synthetic: false, // TODO: Check LLKHF_INJECTED flag in task 15.5
+        scan_code: 0,        // TODO: Populate from kb_struct.scanCode in task 15.5
     };
 
     // Send the event via the thread-local sender

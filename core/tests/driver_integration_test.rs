@@ -246,7 +246,12 @@ fn input_event_key_down_constructor() {
     let event = InputEvent::key_down(KeyCode::Space, 12345);
     assert_eq!(event.key, KeyCode::Space);
     assert!(event.pressed);
-    assert_eq!(event.timestamp, 12345);
+    assert_eq!(event.timestamp_us, 12345);
+    // Verify default metadata fields
+    assert_eq!(event.device_id, None);
+    assert!(!event.is_repeat);
+    assert!(!event.is_synthetic);
+    assert_eq!(event.scan_code, 0);
 }
 
 #[test]
@@ -254,7 +259,44 @@ fn input_event_key_up_constructor() {
     let event = InputEvent::key_up(KeyCode::Enter, 67890);
     assert_eq!(event.key, KeyCode::Enter);
     assert!(!event.pressed);
-    assert_eq!(event.timestamp, 67890);
+    assert_eq!(event.timestamp_us, 67890);
+    // Verify default metadata fields
+    assert_eq!(event.device_id, None);
+    assert!(!event.is_repeat);
+    assert!(!event.is_synthetic);
+    assert_eq!(event.scan_code, 0);
+}
+
+#[test]
+fn input_event_with_metadata_constructor() {
+    let event = InputEvent::with_metadata(
+        KeyCode::A,
+        true,
+        99999,
+        Some("test-device".to_string()),
+        true,
+        true,
+        42,
+    );
+    assert_eq!(event.key, KeyCode::A);
+    assert!(event.pressed);
+    assert_eq!(event.timestamp_us, 99999);
+    assert_eq!(event.device_id, Some("test-device".to_string()));
+    assert!(event.is_repeat);
+    assert!(event.is_synthetic);
+    assert_eq!(event.scan_code, 42);
+}
+
+#[test]
+fn input_event_default_impl() {
+    let event = InputEvent::default();
+    assert_eq!(event.key, KeyCode::Unknown(0));
+    assert!(!event.pressed);
+    assert_eq!(event.timestamp_us, 0);
+    assert_eq!(event.device_id, None);
+    assert!(!event.is_repeat);
+    assert!(!event.is_synthetic);
+    assert_eq!(event.scan_code, 0);
 }
 
 // ============================================================================
