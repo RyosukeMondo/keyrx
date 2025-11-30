@@ -24,21 +24,23 @@ use crate::error::WindowsDriverError;
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
-use crossbeam_channel::Sender;
+use crossbeam_channel::{Receiver, Sender};
 use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
-use tracing::{debug, error, warn};
+use std::thread::{self, JoinHandle};
+use tracing::{debug, error, trace, warn};
 use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
+use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
     KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageW, GetLastError, PeekMessageW, SetWindowsHookExW,
-    TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, MSG, PM_REMOVE, WH_KEYBOARD_LL,
-    WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    CallNextHookEx, DispatchMessageW, GetLastError, PeekMessageW, PostThreadMessageW,
+    SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, MSG,
+    PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
 /// Thread-local storage for the event sender used by the hook callback.
@@ -49,6 +51,12 @@ use windows::Win32::UI::WindowsAndMessaging::{
 thread_local! {
     static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
 }
+
+/// Global storage for the hook thread's thread ID.
+///
+/// This is used to post WM_QUIT to the hook thread when shutting down.
+/// We use an atomic because it needs to be accessed from multiple threads.
+static HOOK_THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 /// Low-level keyboard hook manager.
 ///
@@ -162,7 +170,11 @@ impl HookManager {
     /// The message loop will sleep for 1ms between iterations when no messages
     /// are pending to avoid busy-waiting.
     pub fn run_message_loop(&self) {
-        debug!("Starting Windows message loop");
+        // Store the thread ID so we can post WM_QUIT from another thread
+        // SAFETY: GetCurrentThreadId is safe to call and returns the current thread's ID
+        let thread_id = unsafe { GetCurrentThreadId() };
+        HOOK_THREAD_ID.store(thread_id, Ordering::SeqCst);
+        debug!("Starting Windows message loop on thread {}", thread_id);
         let mut msg = MSG::default();
 
         while self.running.load(Ordering::SeqCst) {
@@ -190,6 +202,8 @@ impl HookManager {
             }
         }
 
+        // Clear the thread ID on exit
+        HOOK_THREAD_ID.store(0, Ordering::SeqCst);
         debug!("Windows message loop stopped");
     }
 }
@@ -403,93 +417,273 @@ unsafe extern "system" fn low_level_keyboard_proc(
 }
 
 /// Windows input source using low-level keyboard hook.
+///
+/// `WindowsInput` coordinates keyboard event capture via a low-level keyboard hook
+/// and key injection via `SendInput`. It implements the `InputSource` trait for
+/// integration with the KeyRx remapping engine.
+///
+/// # Architecture
+///
+/// ```text
+/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+/// │  Physical KB    │────▶│  Hook Thread     │────▶│  Engine         │
+/// │  (WH_KEYBOARD_LL)     │  (message pump)  │     │  (async)        │
+/// └─────────────────┘     └──────────────────┘     └─────────────────┘
+///                                                          │
+///                                                          ▼
+/// ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+/// │  Applications   │◀────│  SendInput       │◀────│  Remap Logic    │
+/// │                 │     │                  │     │                 │
+/// └─────────────────┘     └──────────────────┘     └─────────────────┘
+/// ```
+///
+/// # Thread Model
+///
+/// - The hook and message pump run in a dedicated thread (required by Windows)
+/// - Events are sent via a crossbeam channel to the async engine
+/// - The `running` flag is shared via `Arc<AtomicBool>` for clean shutdown
+/// - WM_QUIT is posted to the hook thread to stop the message pump
 pub struct WindowsInput {
-    running: bool,
-    /// Placeholder for hook handle (full integration is post-MVP).
-    _hook_handle: Option<()>,
+    /// Handle to the hook thread (set after start() is called).
+    hook_thread: Option<JoinHandle<()>>,
+    /// Receiver for events from the hook callback.
+    rx: Receiver<InputEvent>,
+    /// Sender for events (held to pass to the hook thread).
+    tx: Sender<InputEvent>,
+    /// Shared flag to signal shutdown.
+    running: Arc<AtomicBool>,
+    /// Key injector for sending output.
+    injector: SendInputInjector,
 }
 
 impl WindowsInput {
     /// Create a new Windows input source.
+    ///
+    /// This initializes the input source but does not start the hook.
+    /// Call [`start()`](Self::start) to begin capturing keyboard events.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `WindowsInput` instance ready to be started.
     pub fn new() -> Result<Self> {
+        let (tx, rx) = crossbeam_channel::unbounded();
+        let running = Arc::new(AtomicBool::new(false));
+        let injector = SendInputInjector::new();
+
+        debug!("WindowsInput created");
+
         Ok(Self {
-            running: false,
-            _hook_handle: None,
+            hook_thread: None,
+            rx,
+            tx,
+            running,
+            injector,
         })
+    }
+
+    /// Check if the driver is currently running.
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
+    }
+
+    /// Get the event receiver.
+    ///
+    /// This can be used for direct access to the event channel, though
+    /// typically events should be accessed via `poll_events()`.
+    pub fn receiver(&self) -> &Receiver<InputEvent> {
+        &self.rx
     }
 }
 
 impl Default for WindowsInput {
     fn default() -> Self {
-        Self {
-            running: false,
-            _hook_handle: None,
-        }
+        Self::new().expect("WindowsInput::new should not fail")
     }
 }
 
 #[async_trait]
 impl InputSource for WindowsInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
-        if !self.running {
-            warn!("poll_events called while not running");
+        if !self.running.load(Ordering::Relaxed) {
+            trace!("poll_events called while not running");
             return Ok(vec![]);
         }
 
-        // Stub: Return empty vec. Full WH_KEYBOARD_LL integration is post-MVP.
-        // In the future, this would read events from the message queue.
-        Ok(vec![])
+        // Non-blocking receive from the channel
+        // Collect all available events without blocking
+        let mut events = Vec::new();
+        loop {
+            match self.rx.try_recv() {
+                Ok(event) => {
+                    trace!(
+                        "Received event: {:?} {}",
+                        event.key,
+                        if event.pressed { "down" } else { "up" }
+                    );
+                    events.push(event);
+                }
+                Err(crossbeam_channel::TryRecvError::Empty) => {
+                    // No more events available
+                    break;
+                }
+                Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                    // Channel closed - hook thread has stopped
+                    error!("Event channel disconnected - hook thread may have crashed");
+                    self.running.store(false, Ordering::Relaxed);
+                    anyhow::bail!("Input hook disconnected unexpectedly");
+                }
+            }
+        }
+
+        if !events.is_empty() {
+            debug!("poll_events returning {} events", events.len());
+        }
+
+        Ok(events)
     }
 
     async fn send_output(&mut self, action: OutputAction) -> Result<()> {
-        if !self.running {
-            warn!("send_output called while not running");
+        if !self.running.load(Ordering::Relaxed) {
+            trace!("send_output called while not running");
             return Ok(());
         }
 
-        // Stub: Log the action. Full SendInput integration is post-MVP.
-        debug!("Would send output: {:?}", action);
+        match action {
+            OutputAction::KeyDown(key) => {
+                debug!("Sending key down: {:?}", key);
+                self.injector.inject_key(key, true)?;
+            }
+            OutputAction::KeyUp(key) => {
+                debug!("Sending key up: {:?}", key);
+                self.injector.inject_key(key, false)?;
+            }
+            OutputAction::KeyTap(key) => {
+                debug!("Sending key tap: {:?}", key);
+                self.injector.inject_key(key, true)?;
+                self.injector.inject_key(key, false)?;
+            }
+            OutputAction::Block => {
+                // Block does nothing - the original event is already captured
+                // and won't be passed through unless we explicitly emit it
+                trace!("Blocking key (no action needed)");
+            }
+            OutputAction::PassThrough => {
+                // PassThrough is handled by the engine - it re-emits the original key
+                // For the driver, this is a no-op since the engine will call
+                // KeyDown/KeyUp for the original key if needed
+                trace!("PassThrough (no action needed)");
+            }
+        }
+
         Ok(())
     }
 
     async fn start(&mut self) -> Result<()> {
-        if self.running {
+        if self.running.load(Ordering::Relaxed) {
             warn!("WindowsInput already running");
             return Ok(());
         }
 
-        // Stub: Log hook registration attempt (always succeed for stub).
-        // Full SetWindowsHookExW integration is post-MVP.
-        debug!("Attempting to register WH_KEYBOARD_LL hook (stub: succeeding)");
+        debug!("Starting WindowsInput...");
 
-        self.running = true;
+        // Set running flag before spawning thread
+        self.running.store(true, Ordering::Relaxed);
+
+        // Clone what we need for the thread
+        let running = self.running.clone();
+        let tx = self.tx.clone();
+
+        // Spawn the hook thread
+        let handle = thread::spawn(move || {
+            debug!("Hook thread started");
+
+            // Create the hook manager
+            let mut hook_manager = HookManager::new(running.clone());
+
+            // Install the hook
+            match hook_manager.install(tx) {
+                Ok(()) => {
+                    debug!("Keyboard hook installed successfully");
+                }
+                Err(e) => {
+                    error!("Failed to install keyboard hook: {:?}", e);
+                    running.store(false, Ordering::Relaxed);
+                    return;
+                }
+            }
+
+            // Run the message loop (blocks until WM_QUIT or running=false)
+            hook_manager.run_message_loop();
+
+            // Uninstall the hook (also done in Drop, but explicit is clearer)
+            hook_manager.uninstall();
+
+            debug!("Hook thread finished");
+        });
+
+        self.hook_thread = Some(handle);
+
+        // Give the hook thread a moment to start and install the hook
+        // This is a simple approach; a more robust solution would use a channel
+        // to signal that the hook was successfully installed
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        // Check if the thread is still running (hook installation succeeded)
+        if !self.running.load(Ordering::Relaxed) {
+            // Hook installation failed, wait for thread to finish
+            if let Some(handle) = self.hook_thread.take() {
+                let _ = handle.join();
+            }
+            anyhow::bail!("Failed to start keyboard hook");
+        }
+
         debug!("WindowsInput started successfully");
-
-        // Stub: Full keyboard hook setup is post-MVP.
-        // In the future, this would:
-        // 1. Call SetWindowsHookExW with WH_KEYBOARD_LL
-        // 2. Store the hook handle for later unhooking
-        // 3. Start message pump thread for hook callbacks
-
         Ok(())
     }
 
     async fn stop(&mut self) -> Result<()> {
-        if !self.running {
+        if !self.running.load(Ordering::Relaxed) {
             debug!("WindowsInput already stopped");
             return Ok(());
         }
 
-        debug!("Unhooking WH_KEYBOARD_LL (stub)");
-        self.running = false;
-        debug!("WindowsInput stopped");
+        debug!("Stopping WindowsInput...");
 
-        // Stub: Full cleanup is post-MVP.
-        // In the future, this would:
-        // 1. Call UnhookWindowsHookEx with stored handle
-        // 2. Stop the message pump thread
-        // 3. Clean up any pending events
+        // Signal the hook thread to stop
+        self.running.store(false, Ordering::Relaxed);
 
+        // Post WM_QUIT to the hook thread to break out of the message loop
+        let thread_id = HOOK_THREAD_ID.load(Ordering::SeqCst);
+        if thread_id != 0 {
+            // SAFETY: PostThreadMessageW is safe to call with a valid thread ID
+            let result = unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
+            if result.is_err() {
+                warn!("Failed to post WM_QUIT to hook thread");
+            } else {
+                debug!("Posted WM_QUIT to hook thread {}", thread_id);
+            }
+        }
+
+        // Wait for the hook thread to finish
+        if let Some(handle) = self.hook_thread.take() {
+            debug!("Waiting for hook thread to finish...");
+            match handle.join() {
+                Ok(()) => {
+                    debug!("Hook thread finished cleanly");
+                }
+                Err(e) => {
+                    error!("Hook thread panicked: {:?}", e);
+                    // Continue with cleanup even if thread panicked
+                }
+            }
+        }
+
+        // Drain any remaining events from the channel
+        while self.rx.try_recv().is_ok() {
+            // Discard remaining events
+        }
+
+        debug!("WindowsInput stopped successfully");
         Ok(())
     }
 }

@@ -359,6 +359,145 @@ keyrx repl
 
 6. **Trait-based OS Abstraction**: Core logic never imports OS headers directly. Drivers are plugins implementing `InputSource` trait, enabling mock testing.
 
+## Observability & Debuggability Architecture
+
+Industry-standard observability infrastructure serving both AI coding agents and human developers.
+
+### Design Goals
+
+| Audience | Primary Needs |
+|----------|---------------|
+| **AI Agents** | Machine-parseable output, deterministic replay, self-verification, rapid iteration |
+| **Humans** | Visual timing diagrams, state flow animation, real-time overlay, historical playback |
+
+### Build Mode Behavior
+
+| Feature | Debug Build | Release Build |
+|---------|-------------|---------------|
+| Session Recording | All sessions (auto) | Opt-in (`--record`) |
+| Debug Overlay | Available | Hidden |
+| Trace Level | TRACE | INFO |
+| Assertions | Enabled | Disabled |
+| Performance Checks | Enabled | Disabled |
+
+### Event Log Infrastructure
+
+```rust
+/// Complete event record for replay and analysis
+#[derive(Serialize, Deserialize)]
+pub struct EventRecord {
+    /// Monotonic sequence number
+    pub seq: u64,
+    /// Microseconds since session start
+    pub timestamp_us: u64,
+    /// The input event with all metadata
+    pub input: InputEvent,
+    /// Processing span ID (for tracing correlation)
+    pub span_id: String,
+    /// Decision made (if any)
+    pub decision: Option<Decision>,
+    /// Output actions produced
+    pub outputs: Vec<OutputAction>,
+    /// State snapshot (optional, for keyframes)
+    pub state_snapshot: Option<EngineState>,
+}
+```
+
+**Storage Configuration:**
+- Retention: Configurable by hours (default: 24h debug, 1h release)
+- Rolling update: Oldest sessions pruned automatically
+- Format: JSON for interchange, CBOR/MessagePack for high-frequency timing data
+
+### Tracing & OpenTelemetry
+
+```rust
+// Span hierarchy for each event
+#[tracing::instrument(skip(self), fields(key = %event.key, seq = %event.seq))]
+fn process_event(&mut self, event: InputEvent) -> Vec<OutputAction> {
+    let _decision_span = tracing::info_span!("decision").entered();
+    // Decision logic...
+
+    let _output_span = tracing::info_span!("output").entered();
+    // Output generation...
+}
+```
+
+**Integration:**
+- `tracing` crate for structured spans
+- `tracing-opentelemetry` for OTLP export
+- Compatible with Jaeger, Grafana, Datadog
+
+### For AI Agents: Self-Verification
+
+```bash
+# Structured JSON output for parsing
+keyrx simulate --input "CapsLock:tap" --json
+
+# Deterministic replay with assertions
+keyrx replay session.krx --assert-output expected.json
+
+# Watch mode for rapid iteration
+keyrx watch --script config.rhai --on-change "keyrx test"
+
+# Semantic exit codes
+# 0=success, 1=error, 2=assertion fail, 3=timeout
+```
+
+**Invariant Checks (debug build):**
+- State consistency after each event
+- Modifier state matches key state
+- Layer stack integrity
+- No orphaned pending decisions
+
+### For Humans: Visual Feedback (Flutter GUI)
+
+**Timing Diagram:**
+```
+Time (ms)  0    50   100  150  200  250
+Key A      ████████████████░░░░░░░░░░░  (held)
+Decision   │ pending... │ → HOLD      │
+Threshold  │──── tap ───│─── hold ────│
+                     200ms
+```
+
+**State Flow Visualization:**
+- Event → Decision → Output trace
+- Layer stack with transparency
+- Active modifiers (custom + standard)
+- Animated state transitions
+
+**Real-time Debug Overlay (developer only):**
+- Floating always-on-top panel
+- Key heatmap, pending queue, latency display
+
+### Performance Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `keyrx.event.latency_us` | Per-event processing time |
+| `keyrx.decision.pending_count` | Undecided tap-holds |
+| `keyrx.layer.active_count` | Active layer count |
+| `keyrx.event.throughput` | Events per second |
+
+### CLI Commands
+
+```bash
+# Record session (debug: auto, release: explicit)
+keyrx run --record session.krx --script config.rhai
+
+# Replay for debugging
+keyrx replay session.krx --step-through
+
+# Export to OTLP endpoint
+keyrx run --otlp-endpoint http://localhost:4317
+
+# Generate timing diagram
+keyrx analyze session.krx --timing-diagram --output diagram.svg
+
+# State inspection
+keyrx state --json --include-pending --include-history
+```
+
 ## Known Limitations
 
 - **macOS Support**: Not currently targeted (different input architecture)
