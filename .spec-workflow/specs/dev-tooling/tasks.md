@@ -196,7 +196,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec dev-tooling, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Update core/src/traits/input_source.rs with comprehensive documentation. Add //! module doc explaining purpose. For each method, document: what it does, when to call it, error conditions, thread safety. Explain why Send bound is required. Add example implementation sketch in doc comments | Restrictions: Keep docs accurate to actual behavior | Success: Trait is self-documenting for implementors. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 9.2 Document ScriptRuntime trait
+- [x] 9.2 Document ScriptRuntime trait
   - File: `core/src/traits/script_runtime.rs`
   - Document method call order requirements
   - Document error handling expectations
