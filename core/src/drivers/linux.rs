@@ -2,13 +2,145 @@
 
 use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
+use crate::error::LinuxDriverError;
 use crate::traits::InputSource;
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
-use std::path::Path;
+use crossbeam_channel::Sender;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tracing::{debug, warn};
 
 const UINPUT_PATH: &str = "/dev/uinput";
+
+/// Reader for keyboard events from an evdev device.
+///
+/// `EvdevReader` provides exclusive access to a keyboard device through the evdev
+/// subsystem. It uses the EVIOCGRAB ioctl to grab the device, preventing other
+/// applications from receiving keyboard events while KeyRx is active.
+///
+/// # Thread Safety
+///
+/// The `running` flag is shared across threads using `Arc<AtomicBool>` to allow
+/// clean shutdown from the main thread.
+#[allow(dead_code)] // Will be used in task 3.2 (spawn read loop)
+pub struct EvdevReader {
+    /// The evdev device handle for reading keyboard events.
+    device: evdev::Device,
+    /// Channel sender for forwarding events to the async engine.
+    tx: Sender<InputEvent>,
+    /// Shared flag to signal when the reader should stop.
+    running: Arc<AtomicBool>,
+    /// Path to the device (for error messages and logging).
+    device_path: PathBuf,
+}
+
+#[allow(dead_code)] // Will be used in task 3.2 (spawn read loop)
+impl EvdevReader {
+    /// Create a new EvdevReader for the given device path.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_path` - Path to the evdev device (e.g., `/dev/input/event0`)
+    /// * `tx` - Channel sender for forwarding input events
+    /// * `running` - Shared flag for controlling the read loop
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The device path does not exist
+    /// - Permission is denied when opening the device
+    /// - The device cannot be opened for other reasons
+    pub fn new(
+        device_path: PathBuf,
+        tx: Sender<InputEvent>,
+        running: Arc<AtomicBool>,
+    ) -> Result<Self> {
+        let device = evdev::Device::open(&device_path).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                LinuxDriverError::device_not_found(&device_path)
+            } else if e.kind() == std::io::ErrorKind::PermissionDenied {
+                LinuxDriverError::permission_denied(&device_path)
+            } else {
+                LinuxDriverError::GrabFailed(e)
+            }
+        })?;
+
+        debug!(
+            "Opened evdev device: {} at {}",
+            device.name().unwrap_or("Unknown"),
+            device_path.display()
+        );
+
+        Ok(Self {
+            device,
+            tx,
+            running,
+            device_path,
+        })
+    }
+
+    /// Grab exclusive access to the keyboard device.
+    ///
+    /// While grabbed, the keyboard events are only sent to KeyRx and not to
+    /// other applications. This is essential for key remapping to work properly.
+    ///
+    /// # Errors
+    ///
+    /// Returns `LinuxDriverError::GrabFailed` if:
+    /// - Another process has already grabbed the device
+    /// - The user lacks sufficient permissions
+    pub fn grab(&mut self) -> Result<()> {
+        self.device
+            .grab()
+            .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
+        debug!("Grabbed keyboard device: {}", self.device_path.display());
+        Ok(())
+    }
+
+    /// Release the keyboard grab.
+    ///
+    /// This restores normal keyboard operation, allowing other applications
+    /// to receive keyboard events again. Called automatically during shutdown.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the ungrab operation fails. This is rare and usually
+    /// indicates a system-level issue.
+    pub fn ungrab(&mut self) -> Result<()> {
+        self.device
+            .ungrab()
+            .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
+        debug!("Released keyboard device: {}", self.device_path.display());
+        Ok(())
+    }
+
+    /// Check if the reader should continue running.
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
+    }
+
+    /// Get a reference to the underlying evdev device.
+    pub fn device(&self) -> &evdev::Device {
+        &self.device
+    }
+
+    /// Get a mutable reference to the underlying evdev device.
+    pub fn device_mut(&mut self) -> &mut evdev::Device {
+        &mut self.device
+    }
+
+    /// Get the channel sender for forwarding events.
+    pub fn sender(&self) -> &Sender<InputEvent> {
+        &self.tx
+    }
+
+    /// Get the device path.
+    pub fn device_path(&self) -> &Path {
+        &self.device_path
+    }
+}
 
 /// Linux input source using evdev for capture and uinput for injection.
 #[derive(Default)]

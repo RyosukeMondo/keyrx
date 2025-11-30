@@ -41,7 +41,7 @@
 
 ## Task 3: Implement Linux evdev Reader
 
-- [ ] 3.1 Create EvdevReader struct
+- [x] 3.1 Create EvdevReader struct
   - File: `core/src/drivers/linux.rs`
   - Struct with: device (evdev::Device), tx (Sender), running (Arc<AtomicBool>)
   - Implement grab() using EVIOCGRAB ioctl
