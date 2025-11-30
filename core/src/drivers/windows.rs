@@ -985,13 +985,20 @@ mod tests {
     #[test]
     fn windows_input_default() {
         let input = WindowsInput::default();
-        assert!(!input.running);
+        assert!(!input.is_running());
     }
 
     #[test]
     fn windows_input_new() {
         let input = WindowsInput::new().unwrap();
-        assert!(!input.running);
+        assert!(!input.is_running());
+    }
+
+    #[test]
+    fn windows_input_has_receiver() {
+        let input = WindowsInput::new().unwrap();
+        // Verify we can access the receiver (channel is empty initially)
+        assert!(input.receiver().try_recv().is_err());
     }
 
     #[test]
