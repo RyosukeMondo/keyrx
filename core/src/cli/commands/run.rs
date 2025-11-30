@@ -9,6 +9,7 @@ use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
 
@@ -27,6 +28,8 @@ pub struct RunCommand {
     pub use_mock: bool,
     pub device_path: Option<PathBuf>,
     pub output: OutputWriter,
+    /// Optional limit for mock run duration (used for tests to avoid hanging).
+    pub mock_run_limit: Option<Duration>,
 }
 
 impl RunCommand {
@@ -43,7 +46,14 @@ impl RunCommand {
             use_mock,
             device_path,
             output: OutputWriter::new(format),
+            mock_run_limit: None,
         }
+    }
+
+    /// Set an optional maximum runtime for mock runs (primarily for tests).
+    pub fn with_mock_run_limit(mut self, duration: Duration) -> Self {
+        self.mock_run_limit = Some(duration);
+        self
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -157,8 +167,15 @@ impl RunCommand {
             r.store(false, Ordering::SeqCst);
         });
 
+        let start = Instant::now();
         // Run event loop until interrupted
         while running.load(Ordering::SeqCst) {
+            if let Some(limit) = self.mock_run_limit {
+                if start.elapsed() >= limit {
+                    running.store(false, Ordering::SeqCst);
+                    break;
+                }
+            }
             // With mock input, just sleep since there are no events
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
