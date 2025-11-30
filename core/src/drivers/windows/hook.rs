@@ -15,8 +15,8 @@ use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
-    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_INJECTED, MSG, PM_REMOVE, WH_KEYBOARD_LL,
-    WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
+    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_INJECTED, MSG, PM_REMOVE,
+    WH_KEYBOARD_LL, WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
 };
 
 mod hook_thread;
@@ -278,8 +278,9 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
 
 fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
     let vk_code = kb_struct.vkCode as u16;
+    let is_extended = kb_struct.flags.contains(LLKHF_EXTENDED);
     InputEvent {
-        key: vk_to_keycode(vk_code),
+        key: map_vk_to_keycode(vk_code, is_extended),
         pressed,
         timestamp_us: (kb_struct.time as u64) * 1000,
         device_id: None,
@@ -287,6 +288,15 @@ fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
         is_synthetic: kb_struct.flags.contains(LLKHF_INJECTED),
         scan_code: kb_struct.scanCode as u16,
     }
+}
+
+fn map_vk_to_keycode(vk_code: u16, is_extended: bool) -> KeyCode {
+    // Distinguish numpad Enter (VK_RETURN with extended flag) from main Enter.
+    if vk_code == 0x0D && is_extended {
+        return KeyCode::NumpadEnter;
+    }
+
+    vk_to_keycode(vk_code)
 }
 
 fn track_repeat_state(pressed: bool, vk_code: u16) -> bool {
@@ -460,5 +470,32 @@ mod tests {
 
         let flags_without = KBDLLHOOKSTRUCT_FLAGS(0x00);
         assert!(!flags_without.contains(LLKHF_INJECTED));
+    }
+
+    #[test]
+    fn map_vk_to_keycode_distinguishes_numpad_enter() {
+        let key = map_vk_to_keycode(0x0D, true);
+        assert_eq!(key, KeyCode::NumpadEnter);
+
+        let key = map_vk_to_keycode(0x0D, false);
+        assert_eq!(key, KeyCode::Enter);
+    }
+
+    #[test]
+    fn build_input_event_handles_extended_enter() {
+        let kb_struct = KBDLLHOOKSTRUCT {
+            vkCode: 0x0D,
+            scanCode: 0x1C,
+            flags: LLKHF_EXTENDED,
+            time: 123,
+            dwExtraInfo: 0,
+        };
+
+        let event = build_input_event(&kb_struct, true);
+        assert_eq!(event.key, KeyCode::NumpadEnter);
+        assert!(event.pressed);
+        assert_eq!(event.timestamp_us, 123_000);
+        assert!(!event.is_synthetic);
+        assert!(!event.is_repeat);
     }
 }
