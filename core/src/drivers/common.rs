@@ -39,6 +39,31 @@ impl DeviceInfo {
             is_keyboard,
         }
     }
+
+    /// Get the device name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Get the device path.
+    pub fn path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    /// Get the vendor ID.
+    pub fn vendor_id(&self) -> u16 {
+        self.vendor_id
+    }
+
+    /// Get the product ID.
+    pub fn product_id(&self) -> u16 {
+        self.product_id
+    }
+
+    /// Check if this device is a keyboard.
+    pub fn is_keyboard(&self) -> bool {
+        self.is_keyboard
+    }
 }
 
 impl fmt::Display for DeviceInfo {
@@ -119,5 +144,48 @@ mod tests {
         assert_eq!(cloned.vendor_id, info.vendor_id);
         assert_eq!(cloned.product_id, info.product_id);
         assert_eq!(cloned.is_keyboard, info.is_keyboard);
+    }
+
+    #[test]
+    fn device_info_accessors() {
+        let info = DeviceInfo::new(
+            PathBuf::from("/dev/input/event5"),
+            "My Keyboard".to_string(),
+            0xABCD,
+            0x1234,
+            true,
+        );
+        assert_eq!(info.name(), "My Keyboard");
+        assert_eq!(info.path(), &PathBuf::from("/dev/input/event5"));
+        assert_eq!(info.vendor_id(), 0xABCD);
+        assert_eq!(info.product_id(), 0x1234);
+        assert!(info.is_keyboard());
+    }
+
+    #[test]
+    fn device_info_accessors_non_keyboard() {
+        let info = DeviceInfo::new(
+            PathBuf::from("/dev/input/event10"),
+            "Mouse".to_string(),
+            0x0001,
+            0x0002,
+            false,
+        );
+        assert_eq!(info.name(), "Mouse");
+        assert!(!info.is_keyboard());
+    }
+
+    #[test]
+    fn device_info_debug_output() {
+        let info = DeviceInfo::new(
+            PathBuf::from("/dev/input/event0"),
+            "Test".to_string(),
+            0,
+            0,
+            true,
+        );
+        let debug = format!("{:?}", info);
+        assert!(debug.contains("DeviceInfo"));
+        assert!(debug.contains("Test"));
     }
 }
