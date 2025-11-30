@@ -99,7 +99,7 @@
   - _Requirements: REQ-2, REQ-6_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in Windows API | Task: Split core/src/drivers/windows.rs (1743 lines) into windows/mod.rs, windows/hook.rs, windows/injector.rs, windows/keymap.rs with each file <500 lines | Restrictions: Preserve thread-local storage patterns, maintain all public API | Success: cargo build succeeds on Windows target, each file <500 lines | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [-] 9. Implement KeyInjector for SendInputInjector
+- [x] 9. Implement KeyInjector for SendInputInjector
   - File: `core/src/drivers/windows/injector.rs`
   - Implement `KeyInjector` trait for `SendInputInjector`
   - Update `WindowsInput` to use generic `KeyInjector`
