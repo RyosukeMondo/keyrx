@@ -2,7 +2,7 @@
 
 ## Phase 1: State Management (Layer 1)
 
-- [ ] 1. Create KeyStateTracker
+- [x] 1. Create KeyStateTracker
   - File: `core/src/engine/state/key_state.rs` (new)
   - Implement `KeyStateTracker` struct with HashMap<KeyCode, u64>
   - Methods: `key_down()`, `key_up()`, `is_pressed()`, `press_time()`, `pressed_keys()`

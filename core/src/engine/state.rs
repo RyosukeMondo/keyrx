@@ -1,6 +1,10 @@
 //! Layer and modifier state management.
 
+mod key_state;
+
 use serde::{Deserialize, Serialize};
+
+pub use key_state::KeyStateTracker;
 use std::collections::HashSet;
 
 /// A set of active modifiers (both physical and virtual).
