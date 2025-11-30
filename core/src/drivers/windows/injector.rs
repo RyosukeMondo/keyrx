@@ -4,8 +4,10 @@
 //! Injected events are marked with the LLKHF_INJECTED flag, allowing them to be
 //! distinguished from real physical input.
 
+use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
 use crate::error::WindowsDriverError;
+use anyhow::Result;
 use tracing::{debug, error};
 use windows::core::Error as WinError;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
@@ -123,6 +125,20 @@ impl Default for SendInputInjector {
     }
 }
 
+impl KeyInjector for SendInputInjector {
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+        self.inject_key(key, pressed).map_err(Into::into)
+    }
+
+    fn sync(&mut self) -> Result<()> {
+        // Windows SendInput processes events immediately, no sync needed
+        Ok(())
+    }
+}
+
+// SAFETY: SendInputInjector is stateless and safe to send between threads
+unsafe impl Send for SendInputInjector {}
+
 /// Check if a key is an extended key that requires KEYEVENTF_EXTENDEDKEY.
 ///
 /// Extended keys are those on the enhanced keyboard that were not on the
@@ -165,6 +181,7 @@ pub fn is_extended_key(key: KeyCode) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::drivers::KeyInjector;
 
     #[test]
     fn send_input_injector_creation() {
@@ -174,6 +191,27 @@ mod tests {
 
         // Also test Default impl
         let _injector: SendInputInjector = Default::default();
+    }
+
+    #[test]
+    fn send_input_injector_is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<SendInputInjector>();
+    }
+
+    #[test]
+    fn send_input_injector_implements_key_injector() {
+        // Verify that SendInputInjector implements KeyInjector
+        fn assert_key_injector<T: KeyInjector>() {}
+        assert_key_injector::<SendInputInjector>();
+    }
+
+    #[test]
+    fn send_input_injector_sync_is_noop() {
+        let mut injector = SendInputInjector::new();
+        // Sync should succeed (it's a no-op on Windows)
+        let result = injector.sync();
+        assert!(result.is_ok());
     }
 
     #[test]

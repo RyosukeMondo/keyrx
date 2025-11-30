@@ -130,8 +130,8 @@ mod hook;
 mod injector;
 mod keymap;
 
-use crate::drivers::DeviceInfo;
-use crate::engine::{InputEvent, OutputAction};
+use crate::drivers::{DeviceInfo, KeyInjector};
+use crate::engine::{InputEvent, KeyCode, OutputAction};
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -146,7 +146,7 @@ use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{PostThreadMessageW, WM_QUIT};
 
 use hook::{HookManager, HOOK_THREAD_ID};
-use injector::SendInputInjector;
+pub use injector::SendInputInjector;
 
 /// Windows input source using low-level keyboard hook.
 ///
@@ -182,7 +182,12 @@ use injector::SendInputInjector;
 /// If a panic occurs, the `panic_error` flag is set and the keyboard hook is
 /// uninstalled. The `poll_events` method checks this flag and returns an error
 /// if a panic was detected.
-pub struct WindowsInput {
+///
+/// # Type Parameter
+///
+/// * `I` - The key injector implementation. Defaults to `SendInputInjector` for
+///   production use. For testing, use `MockKeyInjector` via `new_with_injector()`.
+pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     /// Handle to the hook thread (set after start() is called).
     hook_thread: Option<JoinHandle<()>>,
     /// Receiver for events from the hook callback.
@@ -192,13 +197,13 @@ pub struct WindowsInput {
     /// Shared flag to signal shutdown.
     running: Arc<AtomicBool>,
     /// Key injector for sending output.
-    injector: SendInputInjector,
+    injector: I,
     /// Shared flag indicating if the hook thread panicked.
     panic_error: Arc<AtomicBool>,
 }
 
 impl WindowsInput {
-    /// Create a new Windows input source.
+    /// Create a new Windows input source with the default SendInput injector.
     ///
     /// This initializes the input source but does not start the hook.
     /// Call [`start()`](Self::start) to begin capturing keyboard events.
@@ -223,6 +228,42 @@ impl WindowsInput {
             panic_error,
         })
     }
+}
+
+impl<I: KeyInjector> WindowsInput<I> {
+    /// Create a new Windows input source with a custom key injector.
+    ///
+    /// This constructor allows dependency injection of the key injector,
+    /// enabling unit testing without hardware access.
+    ///
+    /// # Arguments
+    ///
+    /// * `injector` - The key injector implementation to use
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use keyrx_core::drivers::{WindowsInput, MockKeyInjector};
+    ///
+    /// let mock = MockKeyInjector::new();
+    /// let input = WindowsInput::new_with_injector(mock)?;
+    /// ```
+    pub fn new_with_injector(injector: I) -> Result<Self> {
+        let (tx, rx) = crossbeam_channel::unbounded();
+        let running = Arc::new(AtomicBool::new(false));
+        let panic_error = Arc::new(AtomicBool::new(false));
+
+        debug!("WindowsInput created with custom injector");
+
+        Ok(Self {
+            hook_thread: None,
+            rx,
+            tx,
+            running,
+            injector,
+            panic_error,
+        })
+    }
 
     /// Check if the driver is currently running.
     pub fn is_running(&self) -> bool {
@@ -236,6 +277,25 @@ impl WindowsInput {
     pub fn receiver(&self) -> &Receiver<InputEvent> {
         &self.rx
     }
+
+    /// Get a reference to the key injector.
+    ///
+    /// This can be used for testing to inspect the injector state.
+    pub fn injector(&self) -> &I {
+        &self.injector
+    }
+
+    /// Get a mutable reference to the key injector.
+    ///
+    /// This can be used for testing to inspect or modify the injector state.
+    pub fn injector_mut(&mut self) -> &mut I {
+        &mut self.injector
+    }
+
+    /// Helper method to inject a key using the injector.
+    fn inject_key(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+        self.injector.inject(key, pressed)
+    }
 }
 
 impl Default for WindowsInput {
@@ -244,7 +304,7 @@ impl Default for WindowsInput {
     }
 }
 
-impl Drop for WindowsInput {
+impl<I: KeyInjector> Drop for WindowsInput<I> {
     fn drop(&mut self) {
         // Ensure the driver is stopped and hook is released on drop.
         // This is critical for graceful cleanup even on panics or unexpected termination.
@@ -281,7 +341,7 @@ impl Drop for WindowsInput {
 }
 
 #[async_trait]
-impl InputSource for WindowsInput {
+impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
         // Check if the hook thread panicked
         if self.panic_error.load(Ordering::SeqCst) {
@@ -345,16 +405,16 @@ impl InputSource for WindowsInput {
         match action {
             OutputAction::KeyDown(key) => {
                 debug!("Sending key down: {:?}", key);
-                self.injector.inject_key(key, true)?;
+                self.inject_key(key, true)?;
             }
             OutputAction::KeyUp(key) => {
                 debug!("Sending key up: {:?}", key);
-                self.injector.inject_key(key, false)?;
+                self.inject_key(key, false)?;
             }
             OutputAction::KeyTap(key) => {
                 debug!("Sending key tap: {:?}", key);
-                self.injector.inject_key(key, true)?;
-                self.injector.inject_key(key, false)?;
+                self.inject_key(key, true)?;
+                self.inject_key(key, false)?;
             }
             OutputAction::Block => {
                 // Block does nothing - the original event is already captured
@@ -539,6 +599,7 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::drivers::{InjectedKey, MockKeyInjector};
 
     #[test]
     fn windows_input_default() {
@@ -565,5 +626,161 @@ mod tests {
         assert_eq!(keyboards.len(), 1);
         assert!(keyboards[0].is_keyboard());
         assert!(keyboards[0].name().contains("System Keyboard"));
+    }
+
+    #[test]
+    fn windows_input_with_mock_injector() {
+        let mock = MockKeyInjector::new();
+        let input = WindowsInput::new_with_injector(mock).unwrap();
+        assert!(!input.is_running());
+    }
+
+    #[test]
+    fn windows_input_mock_injector_captures_keys() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Directly test the inject_key helper
+        input.inject_key(KeyCode::A, true).unwrap();
+        input.inject_key(KeyCode::A, false).unwrap();
+        input.inject_key(KeyCode::Escape, true).unwrap();
+
+        // Verify injections were captured
+        let injected = input.injector().injected_keys();
+        assert_eq!(injected.len(), 3);
+        assert_eq!(injected[0], InjectedKey::press(KeyCode::A));
+        assert_eq!(injected[1], InjectedKey::release(KeyCode::A));
+        assert_eq!(injected[2], InjectedKey::press(KeyCode::Escape));
+    }
+
+    #[test]
+    fn windows_input_mock_injector_sync() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Sync is a no-op for mock, but verify it doesn't panic
+        input.injector_mut().sync().unwrap();
+        assert_eq!(input.injector().sync_count(), 1);
+    }
+
+    #[test]
+    fn windows_input_mock_injector_was_pressed() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        assert!(!input.injector().was_pressed(KeyCode::B));
+
+        input.inject_key(KeyCode::B, true).unwrap();
+        assert!(input.injector().was_pressed(KeyCode::B));
+        assert!(!input.injector().was_pressed(KeyCode::C));
+    }
+
+    #[test]
+    fn windows_input_mock_injector_was_tapped() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Press and release = tap
+        input.inject_key(KeyCode::Space, true).unwrap();
+        assert!(!input.injector().was_tapped(KeyCode::Space)); // Not yet
+        input.inject_key(KeyCode::Space, false).unwrap();
+        assert!(input.injector().was_tapped(KeyCode::Space)); // Now it's a tap
+    }
+
+    #[test]
+    fn windows_input_mock_injector_fail_next() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Set up failure
+        input.injector_mut().fail_next_injection();
+
+        // This should fail
+        let result = input.inject_key(KeyCode::A, true);
+        assert!(result.is_err());
+
+        // Next one should succeed
+        let result = input.inject_key(KeyCode::A, true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn windows_input_mock_injector_clear() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        input.inject_key(KeyCode::A, true).unwrap();
+        input.injector_mut().sync().unwrap();
+
+        assert_eq!(input.injector().injected_keys().len(), 1);
+        assert_eq!(input.injector().sync_count(), 1);
+
+        input.injector_mut().clear();
+
+        assert!(input.injector().injected_keys().is_empty());
+        assert_eq!(input.injector().sync_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn windows_input_send_output_with_mock() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Simulate running state for send_output to work
+        input.running.store(true, Ordering::Relaxed);
+
+        // Test KeyDown
+        input
+            .send_output(OutputAction::KeyDown(KeyCode::A))
+            .await
+            .unwrap();
+        assert!(input.injector().was_pressed(KeyCode::A));
+
+        // Test KeyUp
+        input
+            .send_output(OutputAction::KeyUp(KeyCode::B))
+            .await
+            .unwrap();
+        assert!(input.injector().was_released(KeyCode::B));
+
+        // Test KeyTap
+        input
+            .send_output(OutputAction::KeyTap(KeyCode::C))
+            .await
+            .unwrap();
+        assert!(input.injector().was_tapped(KeyCode::C));
+
+        // Verify total injections
+        let injected = input.injector().injected_keys();
+        assert_eq!(injected.len(), 4); // A down, B up, C down, C up
+    }
+
+    #[tokio::test]
+    async fn windows_input_send_output_block_passthrough() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+        input.running.store(true, Ordering::Relaxed);
+
+        // Block and PassThrough should not inject any keys
+        input.send_output(OutputAction::Block).await.unwrap();
+        input.send_output(OutputAction::PassThrough).await.unwrap();
+
+        assert!(input.injector().injected_keys().is_empty());
+    }
+
+    #[tokio::test]
+    async fn windows_input_send_output_not_running() {
+        let mock = MockKeyInjector::new();
+        let mut input = WindowsInput::new_with_injector(mock).unwrap();
+
+        // Not running - send_output should be a no-op
+        assert!(!input.is_running());
+        input
+            .send_output(OutputAction::KeyDown(KeyCode::A))
+            .await
+            .unwrap();
+
+        // Nothing should be injected
+        assert!(input.injector().injected_keys().is_empty());
     }
 }
