@@ -3,13 +3,16 @@
 //! This module provides evdev-specific keycode conversion functions.
 //! These functions use the engine's KeyCode type directly.
 //!
-//! Note: After Task 12 unifies KeyCode types, these will be replaced
-//! with re-exports from the centralized `keycodes` module.
+//! The `all_evdev_codes()` function is re-exported from the centralized
+//! `keycodes` module for SSOT compliance on key registration.
 
 use crate::engine::KeyCode;
 
+// Re-export all_evdev_codes from the centralized keycodes module
+// for uinput device registration (SSOT)
+pub use crate::drivers::keycodes::all_evdev_codes;
+
 /// Convert evdev key code to KeyCode.
-#[allow(dead_code)] // Will be used after Task 12 unifies KeyCode types
 pub fn evdev_to_keycode(code: u16) -> KeyCode {
     match code {
         1 => KeyCode::Escape,
@@ -100,6 +103,7 @@ pub fn evdev_to_keycode(code: u16) -> KeyCode {
         96 => KeyCode::NumpadEnter,
         97 => KeyCode::RightCtrl,
         98 => KeyCode::NumpadDivide,
+        99 => KeyCode::PrintScreen,
         100 => KeyCode::RightAlt,
         102 => KeyCode::Home,
         103 => KeyCode::Up,
@@ -114,6 +118,7 @@ pub fn evdev_to_keycode(code: u16) -> KeyCode {
         113 => KeyCode::VolumeMute,
         114 => KeyCode::VolumeDown,
         115 => KeyCode::VolumeUp,
+        119 => KeyCode::Pause,
         125 => KeyCode::LeftMeta,
         126 => KeyCode::RightMeta,
         163 => KeyCode::MediaNext,
@@ -125,7 +130,6 @@ pub fn evdev_to_keycode(code: u16) -> KeyCode {
 }
 
 /// Convert KeyCode to evdev key code.
-#[allow(dead_code)] // Will be used after Task 12 unifies KeyCode types
 pub fn keycode_to_evdev(key: KeyCode) -> u16 {
     match key {
         KeyCode::Escape => 1,
@@ -373,5 +377,15 @@ mod tests {
         let unknown_code = 9999u16;
         let keycode = evdev_to_keycode(unknown_code);
         assert_eq!(keycode, KeyCode::Unknown(9999));
+    }
+
+    #[test]
+    fn all_evdev_codes_returns_all_codes() {
+        let codes = all_evdev_codes();
+        // Verify we have expected evdev codes
+        assert!(codes.contains(&1)); // Escape
+        assert!(codes.contains(&30)); // A
+        assert!(codes.contains(&58)); // CapsLock
+        assert!(codes.contains(&164)); // MediaPlayPause
     }
 }
