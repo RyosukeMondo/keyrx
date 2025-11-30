@@ -1,8 +1,10 @@
 //! Uinput writer for keyboard event injection.
 //!
 //! This module provides `UinputWriter` for injecting keyboard events
-//! via the Linux uinput subsystem.
+//! via the Linux uinput subsystem. It implements the [`KeyInjector`] trait
+//! for integration with the KeyRx remapping engine.
 
+use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
 use crate::error::LinuxDriverError;
 use anyhow::{Context, Result};
@@ -399,7 +401,7 @@ impl UinputWriter {
     /// # Errors
     ///
     /// Returns an error if the sync event cannot be written.
-    pub fn sync(&mut self) -> Result<()> {
+    fn sync_internal(&mut self) -> Result<()> {
         // EV_SYN = 0, SYN_REPORT = 0, value = 0
         let sync_event = EvdevInputEvent::new(EventType::SYNCHRONIZATION, 0, 0);
 
@@ -408,5 +410,15 @@ impl UinputWriter {
             .map_err(|e| LinuxDriverError::uinput_failed(std::io::Error::other(e.to_string())))?;
 
         Ok(())
+    }
+}
+
+impl KeyInjector for UinputWriter {
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+        self.emit(key, pressed)
+    }
+
+    fn sync(&mut self) -> Result<()> {
+        self.sync_internal()
     }
 }

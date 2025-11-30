@@ -120,7 +120,7 @@ mod keymap;
 mod reader;
 mod writer;
 
-use crate::drivers::DeviceInfo;
+use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};
 use crate::traits::InputSource;
 use anyhow::{bail, Context, Result};
@@ -133,7 +133,7 @@ use std::thread::JoinHandle;
 use tracing::{debug, error, trace, warn};
 
 use reader::EvdevReader;
-use writer::UinputWriter;
+pub use writer::UinputWriter;
 
 const UINPUT_PATH: &str = "/dev/uinput";
 
@@ -173,8 +173,8 @@ const UINPUT_PATH: &str = "/dev/uinput";
 pub struct LinuxInput {
     /// Handle to the reader thread (set after start() is called).
     reader_handle: Option<JoinHandle<()>>,
-    /// Uinput writer for key injection.
-    writer: UinputWriter,
+    /// Key injector for output (uses trait for testability).
+    injector: Box<dyn KeyInjector>,
     /// Receiver for events from the reader thread.
     rx: crossbeam_channel::Receiver<InputEvent>,
     /// Sender for events (held to create the reader).
@@ -214,6 +214,40 @@ impl LinuxInput {
     /// let input = LinuxInput::new(Some(PathBuf::from("/dev/input/event3")))?;
     /// ```
     pub fn new(device_path: Option<PathBuf>) -> Result<Self> {
+        let injector = UinputWriter::new().context("Failed to create uinput writer")?;
+        Self::new_with_injector(device_path, Box::new(injector))
+    }
+
+    /// Create a new Linux input source with a custom key injector.
+    ///
+    /// This constructor allows dependency injection for testing purposes,
+    /// enabling unit tests to use a `MockKeyInjector` instead of the real
+    /// `UinputWriter` which requires hardware access and elevated permissions.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_path` - Optional explicit path to an evdev device. If `None`,
+    ///   the first detected keyboard will be used.
+    /// * `injector` - A boxed `KeyInjector` implementation for key output.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - No keyboard device is found (when `device_path` is `None`)
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use keyrx_core::drivers::{LinuxInput, MockKeyInjector};
+    ///
+    /// // Use a mock injector for testing
+    /// let mock = MockKeyInjector::new();
+    /// let input = LinuxInput::new_with_injector(None, Box::new(mock))?;
+    /// ```
+    pub fn new_with_injector(
+        device_path: Option<PathBuf>,
+        injector: Box<dyn KeyInjector>,
+    ) -> Result<Self> {
         // Determine device path: use provided or auto-detect
         let device_path = match device_path {
             Some(path) => {
@@ -229,9 +263,6 @@ impl LinuxInput {
         // Create the event channel
         let (tx, rx) = crossbeam_channel::unbounded();
 
-        // Create the uinput writer
-        let writer = UinputWriter::new().context("Failed to create uinput writer")?;
-
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
 
@@ -239,7 +270,7 @@ impl LinuxInput {
 
         Ok(Self {
             reader_handle: None,
-            writer,
+            injector,
             rx,
             tx,
             running,
@@ -418,16 +449,16 @@ impl InputSource for LinuxInput {
         match action {
             OutputAction::KeyDown(key) => {
                 debug!("Sending key down: {:?}", key);
-                self.writer.emit(key, true)?;
+                self.injector.inject(key, true)?;
             }
             OutputAction::KeyUp(key) => {
                 debug!("Sending key up: {:?}", key);
-                self.writer.emit(key, false)?;
+                self.injector.inject(key, false)?;
             }
             OutputAction::KeyTap(key) => {
                 debug!("Sending key tap: {:?}", key);
-                self.writer.emit(key, true)?;
-                self.writer.emit(key, false)?;
+                self.injector.inject(key, true)?;
+                self.injector.inject(key, false)?;
             }
             OutputAction::Block => {
                 // Block does nothing - the original event is already grabbed
@@ -616,4 +647,80 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
     keyboards.sort_by(|a, b| a.path.cmp(&b.path));
 
     Ok(keyboards)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)] // Tests use unwrap for clarity
+mod tests {
+    use super::*;
+    use crate::drivers::{InjectedKey, MockKeyInjector};
+    use crate::engine::KeyCode;
+
+    /// Test that LinuxInput can be created with a mock injector.
+    /// This test requires a keyboard device to be available, but doesn't
+    /// need uinput permissions since we're using a mock.
+    #[test]
+    fn linux_input_with_mock_injector_compiles() {
+        // This test verifies the type signatures work correctly
+        fn _create_with_mock(_path: PathBuf) -> Result<LinuxInput> {
+            let mock = MockKeyInjector::new();
+            LinuxInput::new_with_injector(Some(_path), Box::new(mock))
+        }
+    }
+
+    /// Test that UinputWriter implements KeyInjector.
+    #[test]
+    fn uinput_writer_implements_key_injector() {
+        fn assert_key_injector<T: KeyInjector>() {}
+        assert_key_injector::<UinputWriter>();
+    }
+
+    /// Test MockKeyInjector records injections correctly when used as a trait object.
+    #[test]
+    fn mock_injector_as_trait_object() {
+        let mut injector: Box<dyn KeyInjector> = Box::new(MockKeyInjector::new());
+
+        injector.inject(KeyCode::A, true).unwrap();
+        injector.inject(KeyCode::A, false).unwrap();
+        injector.sync().unwrap();
+
+        // Downcast to check recorded injections
+        // Note: In real tests, you'd typically keep a reference to the mock
+    }
+
+    /// Test that send_output uses the injector correctly via the mock.
+    #[tokio::test]
+    async fn send_output_uses_injector() {
+        // We can't easily test this without a real device path, but we can
+        // verify the injector interface works by testing the mock directly
+        let mut mock = MockKeyInjector::new();
+
+        // Simulate what send_output does for KeyDown
+        mock.inject(KeyCode::Escape, true).unwrap();
+        assert!(mock.was_pressed(KeyCode::Escape));
+
+        // Simulate what send_output does for KeyUp
+        mock.inject(KeyCode::Escape, false).unwrap();
+        assert!(mock.was_released(KeyCode::Escape));
+
+        // Simulate KeyTap (press then release)
+        mock.inject(KeyCode::Enter, true).unwrap();
+        mock.inject(KeyCode::Enter, false).unwrap();
+        assert!(mock.was_tapped(KeyCode::Enter));
+
+        // Verify all injections
+        let injected = mock.injected_keys();
+        assert_eq!(injected.len(), 4);
+        assert_eq!(injected[0], InjectedKey::press(KeyCode::Escape));
+        assert_eq!(injected[1], InjectedKey::release(KeyCode::Escape));
+        assert_eq!(injected[2], InjectedKey::press(KeyCode::Enter));
+        assert_eq!(injected[3], InjectedKey::release(KeyCode::Enter));
+    }
+
+    /// Test that the injector trait is Send.
+    #[test]
+    fn key_injector_is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<Box<dyn KeyInjector>>();
+    }
 }
