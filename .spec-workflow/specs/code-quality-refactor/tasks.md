@@ -214,7 +214,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Engineer | Task: Split driver_integration_test.rs by organizing tests into submodules | Restrictions: All tests must continue to run with cargo test | Success: All test files <500 lines, no test failures | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 20. Split drivers/keycodes.rs (524 lines → <500)
+- [-] 20. Split drivers/keycodes.rs (524 lines → <500)
   - File: `core/src/drivers/keycodes.rs` (currently 524 lines)
   - Extract macro definition to `keycodes/macro.rs` (~100 lines)
   - Extract keycode data table to `keycodes/definitions.rs` (~250 lines)
