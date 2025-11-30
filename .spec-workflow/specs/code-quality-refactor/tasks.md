@@ -204,7 +204,7 @@
   - _Requirements: REQ-2, REQ-6_
   - _Prompt: Implement the task for spec code-quality-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split linux/mod.rs (723 lines) by extracting device_info and discovery logic to separate modules | Restrictions: Preserve all device detection behavior | Success: linux/mod.rs <500 lines, all Linux tests pass | Instructions: Mark task [-] in tasks.md before starting, use log-implementation tool after completion with artifacts, mark [x] when done_
 
-- [ ] 19. Split tests/driver_integration_test.rs (662 lines → <500)
+- [x] 19. Split tests/driver_integration_test.rs (662 lines → <500)
   - File: `core/tests/driver_integration_test.rs` (currently 662 lines)
   - Extract channel tests to `tests/integration/channel_tests.rs` (~150 lines)
   - Extract state tests to `tests/integration/state_tests.rs` (~150 lines)
