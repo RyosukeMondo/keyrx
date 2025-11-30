@@ -49,6 +49,10 @@ enum Commands {
         /// Use mock input instead of real keyboard driver
         #[arg(short, long)]
         mock: bool,
+
+        /// Path to keyboard device (e.g., /dev/input/event3). Auto-detects if not specified.
+        #[arg(long)]
+        device: Option<PathBuf>,
     },
 
     /// Inspect current engine state
@@ -131,8 +135,11 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             script,
             debug,
             mock,
+            device,
         } => {
-            RunCommand::new(script, debug, mock, format).run().await?;
+            RunCommand::new(script, debug, mock, device, format)
+                .run()
+                .await?;
         }
         Commands::State { layers, modifiers } => {
             StateCommand::new(layers, modifiers, format).run()?;

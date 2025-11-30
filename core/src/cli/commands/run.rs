@@ -19,6 +19,7 @@ pub struct RunCommand {
     pub script_path: Option<PathBuf>,
     pub debug: bool,
     pub use_mock: bool,
+    pub device_path: Option<PathBuf>,
     pub output: OutputWriter,
 }
 
@@ -27,12 +28,14 @@ impl RunCommand {
         script_path: Option<PathBuf>,
         debug: bool,
         use_mock: bool,
+        device_path: Option<PathBuf>,
         format: OutputFormat,
     ) -> Self {
         Self {
             script_path,
             debug,
             use_mock,
+            device_path,
             output: OutputWriter::new(format),
         }
     }
@@ -118,7 +121,29 @@ impl RunCommand {
     async fn run_with_platform_driver(&self, runtime: RhaiRuntime, state: MockState) -> Result<()> {
         self.output.success("Using Linux input driver");
 
-        let input = LinuxInput::new(None)?;
+        // Show which device we're using
+        if let Some(ref device) = self.device_path {
+            self.output
+                .success(&format!("Using device: {}", device.display()));
+        } else {
+            self.output.success("Auto-detecting keyboard device...");
+        }
+
+        let input = match LinuxInput::new(self.device_path.clone()) {
+            Ok(input) => {
+                self.output.success(&format!(
+                    "Opened keyboard: {}",
+                    input.device_path().display()
+                ));
+                input
+            }
+            Err(e) => {
+                self.output
+                    .error(&format!("Failed to initialize driver: {e:#}"));
+                return Err(e);
+            }
+        };
+
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;
 
@@ -151,7 +176,26 @@ impl RunCommand {
 
         self.output.success("Using Windows input driver");
 
-        let input = WindowsInput::new()?;
+        // Note: Windows uses a global keyboard hook, so --device is ignored
+        if self.device_path.is_some() {
+            self.output.warning(
+                "Note: --device is ignored on Windows (uses global keyboard hook for all keyboards)",
+            );
+        }
+
+        let input = match WindowsInput::new() {
+            Ok(input) => {
+                self.output
+                    .success("Initialized Windows low-level keyboard hook");
+                input
+            }
+            Err(e) => {
+                self.output
+                    .error(&format!("Failed to initialize driver: {e:#}"));
+                return Err(e);
+            }
+        };
+
         let mut engine = Engine::new(input, runtime, state);
         engine.start().await?;
 
