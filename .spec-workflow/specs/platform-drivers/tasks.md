@@ -104,7 +104,7 @@
 
 ## Task 6: Implement Windows Hook Manager
 
-- [ ] 6.1 Create HookManager struct
+- [-] 6.1 Create HookManager struct
   - File: `core/src/drivers/windows.rs`
   - Use SetWindowsHookExW for WH_KEYBOARD_LL
   - Store HHOOK handle

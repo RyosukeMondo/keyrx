@@ -1,12 +1,211 @@
 //! Windows input driver using WH_KEYBOARD_LL.
+//!
+//! This module implements keyboard capture and injection on Windows using:
+//! - WH_KEYBOARD_LL (low-level keyboard hook) for capturing input
+//! - SendInput API for injecting remapped keys
+//!
+//! # Thread Model
+//!
+//! The hook must be installed from a thread with a message pump. The `HookManager`
+//! spawns a dedicated thread that:
+//! 1. Installs the keyboard hook via `SetWindowsHookExW`
+//! 2. Runs a message pump via `GetMessageW`/`DispatchMessageW`
+//! 3. Uninstalls the hook on shutdown
+//!
+//! # Permissions
+//!
+//! Low-level keyboard hooks generally don't require administrator privileges,
+//! but some antivirus software may block them. If hook installation fails,
+//! try adding an exception for the KeyRx executable.
 
 use crate::drivers::DeviceInfo;
 use crate::engine::{InputEvent, KeyCode, OutputAction};
+use crate::error::WindowsDriverError;
 use crate::traits::InputSource;
 use anyhow::Result;
 use async_trait::async_trait;
+use crossbeam_channel::Sender;
+use std::cell::RefCell;
 use std::path::PathBuf;
-use tracing::{debug, warn};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tracing::{debug, error, warn};
+use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
+use windows::Win32::UI::WindowsAndMessaging::{
+    CallNextHookEx, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL,
+    WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+};
+
+/// Thread-local storage for the event sender used by the hook callback.
+///
+/// This is necessary because the hook callback is a C-style function pointer
+/// that cannot capture any context. We store the sender in thread-local storage
+/// and access it from within the callback.
+thread_local! {
+    static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
+}
+
+/// Low-level keyboard hook manager.
+///
+/// Manages the lifecycle of a Windows keyboard hook, including installation,
+/// event capture, and cleanup.
+pub struct HookManager {
+    /// The hook handle returned by SetWindowsHookExW.
+    hook_handle: Option<HHOOK>,
+    /// Flag to signal the message pump to stop.
+    running: Arc<AtomicBool>,
+}
+
+impl HookManager {
+    /// Create a new HookManager.
+    ///
+    /// The hook is not installed until `install()` is called.
+    pub fn new(running: Arc<AtomicBool>) -> Self {
+        Self {
+            hook_handle: None,
+            running,
+        }
+    }
+
+    /// Install the low-level keyboard hook.
+    ///
+    /// This must be called from a thread that will run a message pump,
+    /// as hook callbacks are dispatched via the Windows message queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `sender` - Channel sender for keyboard events
+    ///
+    /// # Errors
+    ///
+    /// Returns `WindowsDriverError::HookInstallFailed` if the hook cannot be installed.
+    pub fn install(&mut self, sender: Sender<InputEvent>) -> Result<(), WindowsDriverError> {
+        // Store the sender in thread-local storage for the callback
+        HOOK_SENDER.with(|s| {
+            *s.borrow_mut() = Some(sender);
+        });
+
+        // Install the low-level keyboard hook
+        // SAFETY: We pass null for hmod (current process) and 0 for thread ID (all threads)
+        let hook = unsafe {
+            SetWindowsHookExW(
+                WH_KEYBOARD_LL,
+                Some(low_level_keyboard_proc),
+                HINSTANCE::default(),
+                0,
+            )
+        };
+
+        match hook {
+            Ok(handle) => {
+                debug!("Keyboard hook installed successfully");
+                self.hook_handle = Some(handle);
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to install keyboard hook: {}", e);
+                // Clear the sender since we failed
+                HOOK_SENDER.with(|s| {
+                    *s.borrow_mut() = None;
+                });
+                Err(WindowsDriverError::hook_install_failed(e.code().0 as u32))
+            }
+        }
+    }
+
+    /// Uninstall the keyboard hook.
+    ///
+    /// This should be called before the thread exits to properly clean up.
+    pub fn uninstall(&mut self) {
+        if let Some(handle) = self.hook_handle.take() {
+            // SAFETY: We're passing a valid hook handle that we received from SetWindowsHookExW
+            let result = unsafe { UnhookWindowsHookEx(handle) };
+            if result.is_err() {
+                warn!("Failed to unhook keyboard hook");
+            } else {
+                debug!("Keyboard hook uninstalled");
+            }
+        }
+
+        // Clear the thread-local sender
+        HOOK_SENDER.with(|s| {
+            *s.borrow_mut() = None;
+        });
+    }
+
+    /// Check if the hook is currently installed.
+    pub fn is_installed(&self) -> bool {
+        self.hook_handle.is_some()
+    }
+
+    /// Get the running flag.
+    pub fn running(&self) -> &Arc<AtomicBool> {
+        &self.running
+    }
+}
+
+impl Drop for HookManager {
+    fn drop(&mut self) {
+        self.uninstall();
+    }
+}
+
+/// Low-level keyboard hook callback.
+///
+/// This function is called by Windows for every keyboard event. It must complete
+/// quickly (within ~100ms per Windows requirements) or keyboard input will lag.
+///
+/// # Safety
+///
+/// This is an unsafe extern function called by Windows. The `lparam` must be
+/// a valid pointer to `KBDLLHOOKSTRUCT` when `ncode >= 0`.
+unsafe extern "system" fn low_level_keyboard_proc(
+    ncode: i32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    // If ncode < 0, we must call CallNextHookEx and return its result
+    if ncode < 0 {
+        return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
+    }
+
+    // Extract keyboard info from lparam
+    // SAFETY: When ncode >= 0, lparam is guaranteed to be a valid KBDLLHOOKSTRUCT pointer
+    let kb_struct = &*(lparam.0 as *const KBDLLHOOKSTRUCT);
+
+    // Determine if this is a key press or release
+    let pressed = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
+    let _is_keyup = matches!(wparam.0 as u32, WM_KEYUP | WM_SYSKEYUP);
+
+    // Convert virtual key code to KeyCode
+    let vk_code = kb_struct.vkCode as u16;
+    let key = vk_to_keycode(vk_code);
+
+    // Get timestamp (Windows provides milliseconds, we store as-is for now)
+    let timestamp = kb_struct.time as u64;
+
+    // Create the input event
+    let event = InputEvent {
+        key,
+        pressed,
+        timestamp,
+    };
+
+    // Send the event via the thread-local sender
+    HOOK_SENDER.with(|s| {
+        if let Some(sender) = s.borrow().as_ref() {
+            // Non-blocking send - if the channel is full, we drop the event
+            // rather than blocking the hook callback
+            if sender.try_send(event).is_err() {
+                // Channel full or disconnected, event dropped
+            }
+        }
+    });
+
+    // Pass the event to the next hook in the chain
+    // TODO: In future, we'll return 1 to block events based on script decisions
+    CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
+}
 
 /// Windows input source using low-level keyboard hook.
 pub struct WindowsInput {
@@ -404,6 +603,44 @@ mod tests {
     fn windows_input_new() {
         let input = WindowsInput::new().unwrap();
         assert!(!input.running);
+    }
+
+    #[test]
+    fn hook_manager_new() {
+        let running = Arc::new(AtomicBool::new(true));
+        let manager = HookManager::new(running.clone());
+        assert!(!manager.is_installed());
+        assert!(manager.running().load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn hook_manager_running_flag() {
+        let running = Arc::new(AtomicBool::new(true));
+        let manager = HookManager::new(running.clone());
+
+        // Check initial state
+        assert!(manager.running().load(Ordering::SeqCst));
+
+        // Modify the flag
+        running.store(false, Ordering::SeqCst);
+        assert!(!manager.running().load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn hook_manager_uninstall_when_not_installed() {
+        let running = Arc::new(AtomicBool::new(true));
+        let mut manager = HookManager::new(running);
+        // Should not panic when uninstalling a hook that was never installed
+        manager.uninstall();
+        assert!(!manager.is_installed());
+    }
+
+    #[test]
+    fn list_keyboards_returns_system_keyboard() {
+        let keyboards = list_keyboards().unwrap();
+        assert_eq!(keyboards.len(), 1);
+        assert!(keyboards[0].is_keyboard());
+        assert!(keyboards[0].name().contains("System Keyboard"));
     }
 
     #[test]
