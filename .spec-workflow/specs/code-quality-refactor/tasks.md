@@ -87,7 +87,7 @@
 
 ## Phase 3: Windows Driver Refactor
 
-- [ ] 8. Split Windows driver into submodules
+- [x] 8. Split Windows driver into submodules
   - Create directory: `core/src/drivers/windows/`
   - File: `windows/mod.rs` - WindowsInput struct, InputSource impl
   - File: `windows/hook.rs` - HookManager, low_level_keyboard_proc
