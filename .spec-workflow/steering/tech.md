@@ -59,6 +59,20 @@ Desktop application with a hybrid architecture: native Rust core engine communic
 - **Dependency Injection**: All external dependencies injected for testability
 - **CLI First**: All features exercisable via CLI before GUI implementation
 
+## Scripting Contract (Rhai)
+- **Core functions**: `remap(from, to)`, `block(key)`, `pass(key)`, `print_debug(msg)`; later calls override earlier ones for the same key.
+- **Hooks**: `on_init()` runs once to register remaps/blocks/passes; undefined hooks are ignored. Keep init fast and log via `print_debug`.
+- **Defaults**: Keys pass through unless remapped/blocked; `pass()` clears prior remap/block.
+- **Error handling**: Invalid key names throw; pattern: `try { remap(...) } catch { print_debug("reason") }` or helper-style `safe_remap`.
+- **Sandbox limits**: Max expression depth 64; max operations 100,000 to prevent hangs.
+- **Debugging**: `keyrx run --script <file> --debug` to view hook execution and remap registration.
+
+## Key Naming & Aliases
+- **Canonical source**: `core/src/drivers/keycodes/definitions.rs` defines `KeyCode` variants and aliases; names are case-insensitive.
+- **Guideline**: Prefer canonical names (e.g., `CapsLock`, `LeftCtrl`, `MediaPlayPause`, `NumpadEnter`) in scripts for clarity; aliases (`caps`, `ctrl`, `playpause`, `kpenter`) are accepted.
+- **Coverage**: Letters, numbers, F1–F12, modifiers, navigation, editing, locks, punctuation, numpad, and media keys. Unknown names raise runtime errors that point here.
+- **Physical identity**: Drivers translate scan codes/OS codes into `KeyCode` + `InputEvent` metadata (`device_id`, `scan_code`, `is_synthetic`, `is_repeat`) before the engine. Position-style names like `KEY_0_0` can be layered on top for blank-canvas layouts.
+
 ## Device Discovery & Physical Key Mapping
 
 ### The Key Identity Problem
@@ -86,6 +100,20 @@ Physical Key Press
 │  We receive: scan_code + OS code + metadata                 │
 │  We can: use scan_code for true hardware identity           │
 └──────────────────────────────────────────────────────────────┘
+```
+
+```mermaid
+flowchart LR
+    FW[Keyboard firmware\nscan_code (e.g., 0x1E)] --> OS[OS translation\nLinux: evdev KEY_A (30)\nWindows: VK_A (0x41)]
+    OS --> DRV[KeyRx driver\nread device + metadata]
+    DRV --> EVT[Normalize InputEvent\nKeyCode + scan_code + device_id + flags]
+    EVT --> ENG[Engine\nTokio loop + layer state]
+    ENG --> RHAI[Rhai hooks\nremap/block/pass]
+    RHAI --> OUT[OutputAction\nKeyDown/Up/Tap/Block/PassThrough]
+    OUT --> INJ[Injector\nuinput/SendInput]
+    style EVT fill:#eef9ff,stroke:#5b8def
+    style ENG fill:#eef9ff,stroke:#5b8def
+    style RHAI fill:#eef9ff,stroke:#5b8def
 ```
 
 ### scan_code: The Universal Key Identifier

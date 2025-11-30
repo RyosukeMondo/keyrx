@@ -227,6 +227,16 @@ keyrx test --script config.rhai --json
 - AI agents can self-verify their changes
 - Community scripts can include tests for trust
 
+### Legendary Backlog (Differentiators to Track)
+- Conflict detection with resolution strategies (tap-hold vs swap) before deploy.
+- Importers for Karabiner/AutoHotkey/keyd/kanata for frictionless migration.
+- Progressive tiers (Simple/Advanced/Expert) with “eject to code” visibility.
+- Auto-generated printable cheat sheets (layout + layer legend) from configs.
+- Module system (official/community/local) with override parameters.
+- Typing analytics with ergonomic suggestions; always-on emergency exit combo.
+- Layout awareness: logical-position remaps independent of physical layout selection.
+- Config history with undo/restore and diffs.
+
 ## Monitoring & Visibility
 
 - **Dashboard Type**: Flutter desktop application with integrated debugger

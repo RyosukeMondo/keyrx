@@ -38,7 +38,7 @@ pub fn parse_key_or_error(key: &str, fn_name: &str) -> Result<KeyCode, Box<EvalA
             );
             Err(Box::new(EvalAltResult::ErrorRuntime(
                 format!(
-                    "Unknown key '{}'. See docs/KEYS.md for valid key names.",
+                    "Unknown key '{}'. See .spec-workflow/steering/tech.md (Key Naming & Aliases).",
                     key
                 )
                 .into(),
@@ -87,7 +87,7 @@ mod tests {
         let err = result.unwrap_err();
         let err_str = err.to_string();
         assert!(err_str.contains("InvalidKey123"));
-        assert!(err_str.contains("docs/KEYS.md"));
+        assert!(err_str.contains(".spec-workflow/steering/tech.md (Key Naming & Aliases)."));
     }
 
     #[test]

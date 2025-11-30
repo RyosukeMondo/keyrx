@@ -52,12 +52,8 @@ keyrx/
 │       ├── layers.rhai        # Layer management utilities
 │       └── modifiers.rhai     # Custom modifier helpers
 │
-├── docs/                       # Documentation
-│   ├── ARCHITECTURE.md        # Technical architecture
-│   └── STEERING.md            # Project steering document
-│
 ├── .spec-workflow/            # Spec workflow artifacts
-│   ├── steering/              # Steering documents
+│   ├── steering/              # Steering documents (product/tech/structure)
 │   └── specs/                 # Feature specifications
 │
 └── README.md                  # Project overview

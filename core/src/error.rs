@@ -16,8 +16,8 @@ pub enum KeyRxError {
     /// A key name was not recognized.
     ///
     /// This occurs when a script uses an invalid key name in `remap()`, `block()`,
-    /// or `pass()`. Check `docs/KEYS.md` for valid key names.
-    #[error("Unknown key '{key}'. See docs/KEYS.md for valid key names.")]
+    /// or `pass()`. See `.spec-workflow/steering/tech.md` (Key Naming & Aliases) for valid key names.
+    #[error("Unknown key '{key}'. See .spec-workflow/steering/tech.md (Key Naming & Aliases).")]
     UnknownKey { key: String },
 
     /// A script failed to compile.
@@ -251,7 +251,9 @@ mod tests {
     fn unknown_key_error_message() {
         let err = KeyRxError::unknown_key("BadKey");
         assert!(err.to_string().contains("BadKey"));
-        assert!(err.to_string().contains("KEYS.md"));
+        assert!(err
+            .to_string()
+            .contains(".spec-workflow/steering/tech.md (Key Naming & Aliases)."));
     }
 
     #[test]

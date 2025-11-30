@@ -130,3 +130,43 @@ To ensure user scripts don't break after updates:
 ### Phase 4: The Ecosystem
 *   **Goal:** Community sharing.
 *   **Deliverable:** A standard library of Rhai scripts (`std/layouts`, `std/modifiers`) so users don't have to reinvent the wheel.
+
+---
+
+## 7. Architecture Snapshot (Runtime Layers)
+*   **UI (Flutter):** Visual keymap editor, real-time state visualizer, REPL terminal. Talks to Rust via C-ABI FFI (no HTTP/JSON overhead).
+*   **Bridge (FFI):** Dart FFI <-> C-compatible API for low-latency calls and shared memory ownership.
+*   **Core (Rust):** Tokio event loop + Rhai scripting + layer/state machine. Processes normalized `InputEvent` values (key, pressed, timestamp, device_id, repeat, synthetic, scan_code).
+*   **Drivers (OS):** Windows hook (WH_KEYBOARD_LL) and Linux evdev/uinput. Responsible for discovery, reading, and translating OS-specific codes (`KEY_*`, scan codes, injected flags) into `InputEvent` + `KeyCode`, then writing output back.
+*   **Flow:** Device -> `InputSource` -> Engine -> Rhai hooks -> OutputAction -> Injector. Engine remains device-agnostic; all OS quirks are confined to drivers.
+
+---
+
+## 8. Scripting Contract (Rhai) & Sandbox
+*   **Core functions:** `remap(from, to)`, `block(key)`, `pass(key)`, `print_debug(msg)`; later calls override earlier ones for the same key.
+*   **Hooks:** `on_init()` runs once to register remaps/blocks/passes; undefined hooks are ignored. Keep init fast and log via `print_debug`.
+*   **Defaults:** Keys pass through unless remapped/blocked; `pass()` clears prior remap/block.
+*   **Error handling:** Invalid key names throw; pattern: `try { remap(...) } catch { print_debug("reason") }` or helper `safe_remap`.
+*   **Sandbox limits:** Max expression depth 64; max operations 100,000 to prevent hangs.
+*   **Debugging:** Run `keyrx run --script <file> --debug` to see hook execution and remap registration.
+
+---
+
+## 9. Key Naming & Aliases
+*   **Canonical source:** `core/src/drivers/keycodes/definitions.rs` defines `KeyCode` variants and aliases; names are case-insensitive.
+*   **Guideline:** Prefer canonical names (e.g., `CapsLock`, `LeftCtrl`, `MediaPlayPause`, `NumpadEnter`) in scripts for clarity; aliases (`caps`, `ctrl`, `playpause`, `kpenter`) are accepted.
+*   **Coverage:** Letters A-Z, numbers 0-9, F1-F12, modifiers, navigation, editing, locks, punctuation, numpad, and media keys. Unknown names raise runtime errors.
+*   **Platform note:** Some aliases are platform-flavored (e.g., `AltGr` on RightAlt); translation to `KeyCode` happens before the engine runs.
+
+---
+
+## 10. Legendary Backlog (Differentiators)
+*   **Config tests:** Rhai-based config tests (`simulate_tap`, `assert_output`) to make remaps verifiable.
+*   **Conflict detection:** Pre-flight graph of remap conflicts with resolution choices (tap-hold vs. swap, etc.).
+*   **Importers:** Karabiner, AutoHotkey, keyd, kanata import commands for frictionless migration.
+*   **Progressive modes:** Simple/Advanced/Expert editing surfaces so beginners aren’t overwhelmed.
+*   **Auto docs:** Generate printable cheat sheets (layout + layer legend) from configs.
+*   **Module system:** Official/community/local modules with override parameters.
+*   **Insights & safety:** Typing analytics suggestions; always-on emergency exit (Ctrl+Alt+Shift+Escape) and safe mode toggle.
+*   **Layout awareness:** Logical-position remaps (home row, etc.) independent of physical layout selection.
+*   **History:** Config change log with undo/restore and diff.
