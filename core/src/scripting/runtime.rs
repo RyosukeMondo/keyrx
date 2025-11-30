@@ -4,17 +4,34 @@ use crate::engine::KeyCode;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
-use rhai::{Engine, AST};
-use std::cell::RefCell;
+use rhai::{Engine, Scope, AST};
 use std::collections::HashSet;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+
+/// Thread-safe pending operations storage.
+/// This uses Arc<Mutex> instead of Rc<RefCell> for thread safety
+/// and to allow the closure to own a reference.
+type PendingOps = Arc<Mutex<Vec<PendingOp>>>;
+
+/// A pending operation to be applied to the registry after script execution.
+#[derive(Debug, Clone)]
+enum PendingOp {
+    Remap { from: KeyCode, to: KeyCode },
+    Block { key: KeyCode },
+    Pass { key: KeyCode },
+}
 
 /// Production Rhai script runtime.
+///
+/// Uses a pending operations pattern to avoid `Rc<RefCell>`:
+/// - Script functions push operations to a shared Arc<Mutex<Vec>>
+/// - After script execution, operations are applied to the owned registry
 pub struct RhaiRuntime {
     engine: Engine,
     ast: Option<AST>,
     defined_hooks: HashSet<String>,
-    registry: Rc<RefCell<RemapRegistry>>,
+    registry: RemapRegistry,
+    pending_ops: PendingOps,
 }
 
 impl RhaiRuntime {
@@ -26,8 +43,8 @@ impl RhaiRuntime {
         engine.set_max_expr_depths(64, 64);
         engine.set_max_operations(100_000);
 
-        // Create shared registry for script access
-        let registry = Rc::new(RefCell::new(RemapRegistry::new()));
+        // Shared pending operations storage
+        let pending_ops: PendingOps = Arc::new(Mutex::new(Vec::new()));
 
         // Register core functions
         engine.register_fn("print_debug", |msg: &str| {
@@ -35,7 +52,7 @@ impl RhaiRuntime {
         });
 
         // Register remap function: remap(from, to)
-        let registry_clone = Rc::clone(&registry);
+        let ops = Arc::clone(&pending_ops);
         engine.register_fn("remap", move |from: &str, to: &str| {
             let from_key = match KeyCode::from_name(from) {
                 Some(k) => k,
@@ -51,12 +68,17 @@ impl RhaiRuntime {
                     return;
                 }
             };
-            registry_clone.borrow_mut().remap(from_key, to_key);
             tracing::debug!("Registered remap: {} -> {}", from, to);
+            if let Ok(mut ops) = ops.lock() {
+                ops.push(PendingOp::Remap {
+                    from: from_key,
+                    to: to_key,
+                });
+            }
         });
 
         // Register block function: block(key)
-        let registry_clone = Rc::clone(&registry);
+        let ops = Arc::clone(&pending_ops);
         engine.register_fn("block", move |key: &str| {
             let key_code = match KeyCode::from_name(key) {
                 Some(k) => k,
@@ -65,12 +87,14 @@ impl RhaiRuntime {
                     return;
                 }
             };
-            registry_clone.borrow_mut().block(key_code);
             tracing::debug!("Registered block: {}", key);
+            if let Ok(mut ops) = ops.lock() {
+                ops.push(PendingOp::Block { key: key_code });
+            }
         });
 
         // Register pass function: pass(key)
-        let registry_clone = Rc::clone(&registry);
+        let ops = Arc::clone(&pending_ops);
         engine.register_fn("pass", move |key: &str| {
             let key_code = match KeyCode::from_name(key) {
                 Some(k) => k,
@@ -79,15 +103,18 @@ impl RhaiRuntime {
                     return;
                 }
             };
-            registry_clone.borrow_mut().pass(key_code);
             tracing::debug!("Registered pass: {}", key);
+            if let Ok(mut ops) = ops.lock() {
+                ops.push(PendingOp::Pass { key: key_code });
+            }
         });
 
         Ok(Self {
             engine,
             ast: None,
             defined_hooks: HashSet::new(),
-            registry,
+            registry: RemapRegistry::new(),
+            pending_ops,
         })
     }
 
@@ -101,12 +128,28 @@ impl RhaiRuntime {
         }
     }
 
+    /// Apply pending operations to the registry.
+    fn apply_pending_ops(&mut self) {
+        if let Ok(mut ops) = self.pending_ops.lock() {
+            for op in ops.drain(..) {
+                match op {
+                    PendingOp::Remap { from, to } => {
+                        self.registry.remap(from, to);
+                    }
+                    PendingOp::Block { key } => {
+                        self.registry.block(key);
+                    }
+                    PendingOp::Pass { key } => {
+                        self.registry.pass(key);
+                    }
+                }
+            }
+        }
+    }
+
     /// Get a reference to the remap registry.
-    ///
-    /// Returns a clone of the internal `Rc<RefCell<RemapRegistry>>` so callers
-    /// can access the registry with interior mutability.
-    pub fn registry(&self) -> Rc<RefCell<RemapRegistry>> {
-        Rc::clone(&self.registry)
+    pub fn registry(&self) -> &RemapRegistry {
+        &self.registry
     }
 }
 
@@ -120,15 +163,21 @@ impl ScriptRuntime for RhaiRuntime {
     fn execute(&mut self, script: &str) -> Result<()> {
         self.engine
             .run(script)
-            .map_err(|e| anyhow!("Script execution failed: {}", e))
+            .map_err(|e| anyhow!("Script execution failed: {}", e))?;
+
+        self.apply_pending_ops();
+        Ok(())
     }
 
     fn call_hook(&mut self, hook: &str) -> Result<()> {
         let ast = self.ast.as_ref().ok_or_else(|| anyhow!("No script loaded"))?;
 
         self.engine
-            .call_fn::<()>(&mut rhai::Scope::new(), ast, hook, ())
-            .map_err(|e| anyhow!("Hook '{}' call failed: {}", hook, e))
+            .call_fn::<()>(&mut Scope::new(), ast, hook, ())
+            .map_err(|e| anyhow!("Hook '{}' call failed: {}", hook, e))?;
+
+        self.apply_pending_ops();
+        Ok(())
     }
 
     fn load_file(&mut self, path: &str) -> Result<()> {
@@ -150,7 +199,10 @@ impl ScriptRuntime for RhaiRuntime {
 
         self.engine
             .run_ast(ast)
-            .map_err(|e| anyhow!("Script execution failed: {}", e))
+            .map_err(|e| anyhow!("Script execution failed: {}", e))?;
+
+        self.apply_pending_ops();
+        Ok(())
     }
 
     fn has_hook(&self, hook: &str) -> bool {
@@ -158,6 +210,79 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn lookup_remap(&self, key: KeyCode) -> crate::engine::RemapAction {
-        self.registry.borrow().lookup(key)
+        self.registry.lookup(key)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::RemapAction;
+
+    #[test]
+    fn new_runtime_has_empty_registry() {
+        let runtime = RhaiRuntime::new().unwrap();
+        assert_eq!(runtime.lookup_remap(KeyCode::A), RemapAction::Pass);
+    }
+
+    #[test]
+    fn execute_remap_registers_mapping() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime.execute(r#"remap("A", "B");"#).unwrap();
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
+        );
+    }
+
+    #[test]
+    fn execute_block_registers_block() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime.execute(r#"block("CapsLock");"#).unwrap();
+        assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Block);
+    }
+
+    #[test]
+    fn execute_pass_registers_pass() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime.execute(r#"remap("A", "B"); pass("A");"#).unwrap();
+        assert_eq!(runtime.lookup_remap(KeyCode::A), RemapAction::Pass);
+    }
+
+    #[test]
+    fn unknown_key_logs_warning_but_continues() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        // Should not panic, just log warning
+        runtime.execute(r#"remap("InvalidKey", "B");"#).unwrap();
+        runtime.execute(r#"remap("A", "InvalidKey");"#).unwrap();
+        // Valid mappings should still work
+        runtime.execute(r#"remap("C", "D");"#).unwrap();
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::C),
+            RemapAction::Remap(KeyCode::D)
+        );
+    }
+
+    #[test]
+    fn multiple_remaps_work() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime
+            .execute(
+                r#"
+            remap("A", "B");
+            remap("C", "D");
+            block("CapsLock");
+        "#,
+            )
+            .unwrap();
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
+        );
+        assert_eq!(
+            runtime.lookup_remap(KeyCode::C),
+            RemapAction::Remap(KeyCode::D)
+        );
+        assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Block);
     }
 }

@@ -80,7 +80,7 @@
 
 ## Task 5: Refactor RhaiRuntime Error Handling
 
-- [ ] 5.1 Remove Rc<RefCell> pattern
+- [x] 5.1 Remove Rc<RefCell> pattern
   - File: `core/src/scripting/runtime.rs`
   - Replace `Rc<RefCell<RemapRegistry>>` with owned `RemapRegistry`
   - Store reference in Engine instead of cloning Rc
