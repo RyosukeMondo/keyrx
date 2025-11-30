@@ -32,8 +32,9 @@ use std::sync::Arc;
 use tracing::{debug, error, warn};
 use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL,
-    WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    CallNextHookEx, DispatchMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
+    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, MSG, PM_REMOVE, WH_KEYBOARD_LL, WM_KEYDOWN,
+    WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
 /// Thread-local storage for the event sender used by the hook callback.
@@ -141,6 +142,51 @@ impl HookManager {
     /// Get the running flag.
     pub fn running(&self) -> &Arc<AtomicBool> {
         &self.running
+    }
+
+    /// Run the Windows message loop.
+    ///
+    /// This function processes messages from the Windows message queue, which is
+    /// required for the low-level keyboard hook to receive callbacks. The loop
+    /// continues until:
+    /// - The `running` flag is set to `false`
+    /// - A `WM_QUIT` message is received
+    ///
+    /// # Thread Safety
+    ///
+    /// This must be called from the same thread that called `install()`.
+    /// The message loop will sleep for 1ms between iterations when no messages
+    /// are pending to avoid busy-waiting.
+    pub fn run_message_loop(&self) {
+        debug!("Starting Windows message loop");
+        let mut msg = MSG::default();
+
+        while self.running.load(Ordering::SeqCst) {
+            // Use PeekMessageW with PM_REMOVE to check for messages without blocking
+            // SAFETY: We pass valid pointers and use the correct flags
+            let has_message = unsafe { PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE) }.as_bool();
+
+            if has_message {
+                // Check for WM_QUIT to allow graceful shutdown
+                if msg.message == WM_QUIT {
+                    debug!("Received WM_QUIT, exiting message loop");
+                    break;
+                }
+
+                // Translate and dispatch the message
+                // SAFETY: msg is a valid MSG structure filled by PeekMessageW
+                unsafe {
+                    let _ = TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                }
+            } else {
+                // No messages pending, sleep briefly to avoid busy-waiting
+                // This keeps CPU usage low while still being responsive
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+
+        debug!("Windows message loop stopped");
     }
 }
 

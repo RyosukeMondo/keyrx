@@ -124,7 +124,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec platform-drivers, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create unsafe extern "system" fn low_level_keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT. If code >= 0: cast lparam to *const KBDLLHOOKSTRUCT, extract vkCode and flags. Determine pressed from WM_KEYDOWN/WM_SYSKEYDOWN vs WM_KEYUP. Convert vkCode to KeyCode. Send to channel via thread_local. Return CallNextHookEx result | Restrictions: Callback must complete within 100ms per Windows requirements | Success: Events sent to channel from callback. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool after completion, then mark [x] when complete._
 
-- [ ] 6.3 Implement message pump
+- [-] 6.3 Implement message pump
   - File: `core/src/drivers/windows.rs`
   - Create run_message_loop() function
   - Use GetMessageW, TranslateMessage, DispatchMessageW
