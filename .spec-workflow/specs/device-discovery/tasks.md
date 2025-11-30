@@ -48,7 +48,7 @@
   - _Requirements: 2,5_
   - _Prompt: Implement the task for spec device-discovery, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust/FFI engineer | Task: Expose discovery progress events through FFI callbacks for GUI consumption, reusing session outputs | Restrictions: Keep ABI-stable types, gate behind feature flag if needed, avoid blocking FFI threads | _Leverage: FFI exports, discovery session structs | _Requirements: 2,5 | Success: FFI functions exported and tested with dummy listener, no panic paths, GUI can subscribe to progress; mark task to [-] when starting, log implementation when done, then mark [x]_ 
 
-- [ ] 7. Add automated tests for discovery workflows
+- [x] 7. Add automated tests for discovery workflows
   - File: core/tests/discovery_workflow.rs (or similar integration test location)
   - Implement integration tests simulating device connect → discovery run → profile load, covering duplicate handling, corruption fallback, re-discovery, and emergency-exit bypass.
   - Purpose: Ensure end-to-end reliability and regression coverage.
