@@ -35,7 +35,7 @@
   - _Requirements: 1,3,4_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Enhance debugger to display modifiers/pending/timing (including thresholds), update console styling for ok:/error:, load canonical key list into KeyMappings and show inline invalid indicators | Restrictions: Maintain responsiveness and scrolling to avoid overflow; preserve existing visual language; avoid blocking UI on key fetch (fallback allowed) | _Leverage: existing debugger timeline/widget structure, console output handling, key mapping editor state | _Requirements: 1,3,4 | Success: UI shows new state fields without overflow, console visually distinguishes errors including engine not initialized, editor uses fetched keys and flags invalid inline._
 
-- [ ] 6. Add Rust tests for FFI/state/eval/registry
+- [x] 6. Add Rust tests for FFI/state/eval/registry
   - Files: core/tests/ffi_state_tests.rs (or similar); core/src/ffi/exports.rs (unit modules)
   - Tests for keyrx_eval ok/error, keyrx_list_keys schema/content, keyrx_on_state serialization with timing/latency.
   - _Leverage: existing test harnesses/mocks; serde_json assertions._
