@@ -3,6 +3,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../ffi/bridge.dart';
 import 'audio_service.dart';
 import 'audio_service_impl.dart';
+import 'engine_service.dart';
+import 'engine_service_impl.dart';
 import 'error_translator.dart';
 import 'error_translator_impl.dart';
 import 'permission_service.dart';
@@ -14,6 +16,7 @@ class ServiceRegistry {
     required this.permissionService,
     required this.audioService,
     required this.errorTranslator,
+    required this.engineService,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -29,6 +32,7 @@ class ServiceRegistry {
         permissionService ??
         PermissionServiceImpl(microphonePermission: microphonePermission);
     final effectiveBridge = bridge ?? KeyrxBridge.instance;
+    final engine = EngineServiceImpl(bridge: effectiveBridge);
     final mappedClassificationSource =
         classificationSource ??
         effectiveBridge.classificationStream?.map(
@@ -50,6 +54,7 @@ class ServiceRegistry {
       permissionService: permissions,
       audioService: audio,
       errorTranslator: translator,
+      engineService: engine,
     );
   }
 
@@ -58,33 +63,39 @@ class ServiceRegistry {
     required PermissionService permissionService,
     required AudioService audioService,
     required ErrorTranslator errorTranslator,
+    required EngineService engineService,
   }) {
     return ServiceRegistry(
       permissionService: permissionService,
       audioService: audioService,
       errorTranslator: errorTranslator,
+      engineService: engineService,
     );
   }
 
   final PermissionService permissionService;
   final AudioService audioService;
   final ErrorTranslator errorTranslator;
+  final EngineService engineService;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
     PermissionService? permissionService,
     AudioService? audioService,
     ErrorTranslator? errorTranslator,
+    EngineService? engineService,
   }) {
     return ServiceRegistry(
       permissionService: permissionService ?? this.permissionService,
       audioService: audioService ?? this.audioService,
       errorTranslator: errorTranslator ?? this.errorTranslator,
+      engineService: engineService ?? this.engineService,
     );
   }
 
   /// Dispose any owned resources. Extend as more disposable services appear.
   Future<void> dispose() async {
     await audioService.dispose();
+    await engineService.dispose();
   }
 }

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:keyrx_ui/pages/training_screen.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
+import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
@@ -77,6 +78,27 @@ class _TestTranslator implements ErrorTranslator {
 
   @override
   UserMessage translate(Object error) => message;
+}
+
+class _StubEngineService implements EngineService {
+  const _StubEngineService({this.initialized = true});
+
+  final bool initialized;
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  bool get isInitialized => initialized;
+
+  @override
+  Future<bool> initialize() async => initialized;
+
+  @override
+  Future<bool> loadScript(String path) async => true;
+
+  @override
+  String get version => 'test';
 }
 
 void main() {
@@ -182,6 +204,7 @@ void main() {
       errorTranslator: const _TestTranslator(
         UserMessage(title: 'Translated', body: 'Unused'),
       ),
+      engineService: const _StubEngineService(),
     );
 
     addTearDown(registry.dispose);

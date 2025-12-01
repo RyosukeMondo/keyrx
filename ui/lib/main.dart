@@ -18,7 +18,15 @@ void main() {
           create: (_) => ServiceRegistry.real(),
           dispose: (_, registry) => registry.dispose(),
         ),
-        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final registry = context.read<ServiceRegistry>();
+            return AppState(
+              engineService: registry.engineService,
+              errorTranslator: registry.errorTranslator,
+            );
+          },
+        ),
       ],
       child: const KeyrxApp(),
     ),

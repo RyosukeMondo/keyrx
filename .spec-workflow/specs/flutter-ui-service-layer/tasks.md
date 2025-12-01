@@ -54,7 +54,7 @@
   - _Requirements: 1,3_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer with FFI experience | Task: Implement real FFI calls for audio lifecycle and subscribe to the engine’s classification stream; ensure bridge is injectable (no hard singleton) | Restrictions: Remove TODOs; translate errors; ensure stream cancel safety | _Requirements: 1,3 | Success: start/stop/setBpm call FFI successfully, classificationStream emits from engine, bridge can be injected for tests (no mandatory global).
 
-- [ ] 8. Remove direct bridge usage from UI/AppState and other screens
+- [x] 8. Remove direct bridge usage from UI/AppState and other screens
   - File: ui/lib/state/app_state.dart, ui/lib/pages/*.dart (editor/debugger/console)
   - Route initialization/loading through services or a lightweight engine context; eliminate direct KeyrxBridge references in UI.
   - Purpose: Enforce UI → services → FFI layering and remove global state in UI.
