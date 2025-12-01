@@ -166,6 +166,86 @@ void main() {
       expect(service.state, AudioState.idle);
     });
 
+    test('maps bridge classification events to ClassificationResult', () async {
+      final bridgeStream = StreamController<BridgeClassification>();
+      bridge = _FakeBridge(classificationStream: bridgeStream.stream);
+      when(() => permission.requestMicrophone()).thenAnswer(
+        (_) async => const PermissionResult(state: PermissionState.granted),
+      );
+
+      final service = buildService();
+      final events = <ClassificationResult>[];
+      final sub = service.classificationStream.listen(events.add);
+
+      final event = BridgeClassification(
+        label: 'snare',
+        confidence: 0.87,
+        timestamp: DateTime(2025, 1, 1),
+      );
+
+      bridgeStream.add(event);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events.single.label, 'snare');
+      expect(events.single.confidence, 0.87);
+      expect(events.single.timestamp, DateTime(2025, 1, 1));
+
+      await sub.cancel();
+      await bridgeStream.close();
+    });
+
+    test('surfaces start failures when bridge rejects start', () async {
+      bridge.initializeReturn = true;
+      bridge.startReturn = false;
+      when(() => permission.requestMicrophone()).thenAnswer(
+        (_) async => const PermissionResult(state: PermissionState.granted),
+      );
+
+      final service = buildService();
+      final result = await service.start(bpm: 120);
+
+      expect(result.success, isFalse);
+      expect(result.error, AudioErrorCode.startFailed);
+      expect(service.state, AudioState.idle);
+      expect(bridge.initializeCalls, 1);
+      expect(bridge.startCalls, 1);
+      verify(() => translator.translate(any())).called(1);
+    });
+
+    test('uses bridge setBpm when running', () async {
+      bridge.initializeReturn = true;
+      when(() => permission.requestMicrophone()).thenAnswer(
+        (_) async => const PermissionResult(state: PermissionState.granted),
+      );
+
+      final service = buildService();
+      await service.start(bpm: 120);
+      final result = await service.setBpm(140);
+
+      expect(result.success, isTrue);
+      expect(bridge.setBpmCalls, 1);
+      expect(service.state, AudioState.running);
+    });
+
+    test('surfaces stop errors when bridge rejects stop', () async {
+      bridge.initializeReturn = true;
+      bridge.stopReturn = false;
+      when(() => permission.requestMicrophone()).thenAnswer(
+        (_) async => const PermissionResult(state: PermissionState.granted),
+      );
+
+      final service = buildService();
+      await service.start(bpm: 120);
+      clearInteractions(translator);
+
+      final result = await service.stop();
+
+      expect(result.success, isFalse);
+      expect(result.error, AudioErrorCode.stopFailed);
+      expect(service.state, AudioState.idle);
+      verify(() => translator.translate(any())).called(1);
+    });
+
     test('forwards classification stream events and errors', () async {
       final controller = StreamController<ClassificationResult>();
       final service = buildService(stream: controller.stream);

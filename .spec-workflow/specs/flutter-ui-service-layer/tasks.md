@@ -62,7 +62,7 @@
   - _Requirements: 1,2,3_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter integrator | Task: Refactor AppState and remaining screens to use injected services instead of KeyrxBridge; apply shared widgets for errors/loading where applicable | Restrictions: No raw FFI imports/singletons in UI; ensure dispose/stream cleanup | _Requirements: 1,2,3 | Success: UI files compile without KeyrxBridge imports; services drive engine state; shared widgets used for errors/loading.
 
-- [ ] 9. Extend tests for real service + UI integration
+- [x] 9. Extend tests for real service + UI integration
   - File: ui/test/services/audio_service_test.dart, ui/test/pages/* (add), ui/test/widgets/shared_widgets_test.dart
   - Add tests covering real FFI call paths via injected fake bridge and classification stream; cover refactored screens for error/loading states.
   - Purpose: Validate new wiring and prevent regressions.
