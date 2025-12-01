@@ -28,12 +28,22 @@ class ServiceRegistry {
     final permissions =
         permissionService ??
         PermissionServiceImpl(microphonePermission: microphonePermission);
+    final effectiveBridge = bridge ?? KeyrxBridge.instance;
+    final mappedClassificationSource =
+        classificationSource ??
+        effectiveBridge.classificationStream?.map(
+          (event) => ClassificationResult(
+            label: event.label,
+            confidence: event.confidence,
+            timestamp: event.timestamp,
+          ),
+        );
 
     final audio = AudioServiceImpl(
-      bridge: bridge,
+      bridge: effectiveBridge,
       permissionService: permissions,
       errorTranslator: translator,
-      classificationSource: classificationSource,
+      classificationSource: mappedClassificationSource,
     );
 
     return ServiceRegistry(

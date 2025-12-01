@@ -14,11 +14,24 @@ class _MockPermissionService extends Mock implements PermissionService {}
 class _MockErrorTranslator extends Mock implements ErrorTranslator {}
 
 class _FakeBridge implements KeyrxBridge {
-  _FakeBridge({this.initializeReturn = true});
+  _FakeBridge({
+    this.initializeReturn = true,
+    this.startReturn = true,
+    this.stopReturn = true,
+    this.setBpmReturn = true,
+    Stream<BridgeClassification>? classificationStream,
+  }) : _classificationStream = classificationStream;
 
   bool initializeReturn;
+  bool startReturn;
+  bool stopReturn;
+  bool setBpmReturn;
   int initializeCalls = 0;
+  int startCalls = 0;
+  int stopCalls = 0;
+  int setBpmCalls = 0;
   bool _initialized = false;
+  final Stream<BridgeClassification>? _classificationStream;
 
   @override
   bool initialize() {
@@ -26,6 +39,28 @@ class _FakeBridge implements KeyrxBridge {
     _initialized = initializeReturn;
     return initializeReturn;
   }
+
+  @override
+  Future<bool> startAudio({required int bpm}) async {
+    startCalls += 1;
+    return startReturn;
+  }
+
+  @override
+  Future<bool> stopAudio() async {
+    stopCalls += 1;
+    return stopReturn;
+  }
+
+  @override
+  Future<bool> setBpm(int bpm) async {
+    setBpmCalls += 1;
+    return setBpmReturn;
+  }
+
+  @override
+  Stream<BridgeClassification>? get classificationStream =>
+      _classificationStream;
 
   @override
   bool get isInitialized => _initialized;

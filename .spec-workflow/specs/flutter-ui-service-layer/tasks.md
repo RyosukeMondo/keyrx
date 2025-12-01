@@ -45,3 +45,27 @@
   - _Leverage: mocktail or existing test utils_
   - _Requirements: 1,2,3_
   - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter QA | Task: Write unit tests for services (permission outcomes, start/stop errors, stream) and widget tests for dialogs/overlays/service-wired screen paths | Restrictions: Use mocks for FFI/permissions; no network; ensure dispose coverage | _Requirements: 1,2,3 | Success: Tests pass, cover success/failure paths, no leaks.
+
+- [x] 7. Wire AudioService to real FFI start/stop/BPM + stream
+  - File: ui/lib/services/audio_service_impl.dart, ui/lib/services/service_registry.dart, ui/lib/ffi/bridge.dart
+  - Replace TODO stubs with real bridge calls (init/start/stop/setBpm) and hook classification stream into registry wiring; allow bridge injection to avoid hard singleton reliance.
+  - Purpose: Make the service actually control the engine and emit live classifications.
+  - _Leverage: ffi bridge, ErrorTranslator, PermissionService_
+  - _Requirements: 1,3_
+  - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer with FFI experience | Task: Implement real FFI calls for audio lifecycle and subscribe to the engine’s classification stream; ensure bridge is injectable (no hard singleton) | Restrictions: Remove TODOs; translate errors; ensure stream cancel safety | _Requirements: 1,3 | Success: start/stop/setBpm call FFI successfully, classificationStream emits from engine, bridge can be injected for tests (no mandatory global).
+
+- [ ] 8. Remove direct bridge usage from UI/AppState and other screens
+  - File: ui/lib/state/app_state.dart, ui/lib/pages/*.dart (editor/debugger/console)
+  - Route initialization/loading through services or a lightweight engine context; eliminate direct KeyrxBridge references in UI.
+  - Purpose: Enforce UI → services → FFI layering and remove global state in UI.
+  - _Leverage: ServiceRegistry, AudioService, PermissionService, ErrorTranslator_
+  - _Requirements: 1,2,3_
+  - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter integrator | Task: Refactor AppState and remaining screens to use injected services instead of KeyrxBridge; apply shared widgets for errors/loading where applicable | Restrictions: No raw FFI imports/singletons in UI; ensure dispose/stream cleanup | _Requirements: 1,2,3 | Success: UI files compile without KeyrxBridge imports; services drive engine state; shared widgets used for errors/loading.
+
+- [ ] 9. Extend tests for real service + UI integration
+  - File: ui/test/services/audio_service_test.dart, ui/test/pages/* (add), ui/test/widgets/shared_widgets_test.dart
+  - Add tests covering real FFI call paths via injected fake bridge and classification stream; cover refactored screens for error/loading states.
+  - Purpose: Validate new wiring and prevent regressions.
+  - _Leverage: mocktail/fake bridge, ServiceRegistry overrides, shared widgets_
+  - _Requirements: 1,2,3_
+  - _Prompt: Implement the task for spec flutter-ui-service-layer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter QA | Task: Add tests for AudioServiceImpl with fake bridge (start/stop/BPM success/failure, stream delivery) and widget tests for refactored screens using ServiceRegistry overrides; verify shared widgets behavior | Restrictions: No network; use fakes/mocks; ensure disposal and stream cancel covered | _Requirements: 1,2,3 | Success: Tests pass and cover real call paths and UI flows, including error/loading states.

@@ -3,6 +3,8 @@
 /// Provides a Dart-friendly API over the raw FFI bindings.
 library;
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
@@ -19,6 +21,7 @@ class KeyrxBridge {
   KeyrxBridge._() {
     final lib = _loadLibrary();
     _bindings = KeyrxBindings(lib);
+    _setupClassificationStream();
   }
 
   /// Get the singleton instance.
@@ -54,6 +57,39 @@ class KeyrxBridge {
     return ptr.cast<Utf8>().toDartString();
   }
 
+  /// Subscribe to classification events if the native layer exposes them.
+  Stream<BridgeClassification>? get classificationStream =>
+      _classificationController?.stream;
+
+  /// Start audio capture/processing via the native bridge.
+  ///
+  /// Returns `true` when the bridge reports success.
+  Future<bool> startAudio({required int bpm}) async {
+    final start = _bindings.startAudio;
+    if (start == null) {
+      return false;
+    }
+    return start(bpm) == 0;
+  }
+
+  /// Stop audio capture/processing via the native bridge.
+  Future<bool> stopAudio() async {
+    final stop = _bindings.stopAudio;
+    if (stop == null) {
+      return false;
+    }
+    return stop() == 0;
+  }
+
+  /// Update BPM on the native engine.
+  Future<bool> setBpm(int bpm) async {
+    final setter = _bindings.setBpm;
+    if (setter == null) {
+      return false;
+    }
+    return setter(bpm) == 0;
+  }
+
   /// Load a Rhai script file.
   bool loadScript(String path) {
     final pathPtr = path.toNativeUtf8();
@@ -67,4 +103,63 @@ class KeyrxBridge {
 
   /// Check if the engine is initialized.
   bool get isInitialized => _initialized;
+
+  StreamController<BridgeClassification>? _classificationController;
+
+  void _setupClassificationStream() {
+    if (_bindings.onClassification == null) {
+      return;
+    }
+
+    _classificationController ??=
+        StreamController<BridgeClassification>.broadcast();
+
+    _bindings.onClassification!(
+      Pointer.fromFunction<KeyrxClassificationCallbackNative>(
+        _handleClassification,
+      ),
+    );
+  }
+
+  static void _handleClassification(Pointer<Uint8> ptr, int length) {
+    final instance = _instance;
+    final controller = instance?._classificationController;
+    if (instance == null || controller == null) {
+      return;
+    }
+
+    try {
+      final bytes = ptr.asTypedList(length);
+      final payload = json.decode(utf8.decode(bytes));
+      if (payload is! Map<String, dynamic>) return;
+
+      final label = payload['label'] as String? ?? 'unknown';
+      final confidence = (payload['confidence'] as num?)?.toDouble() ?? 0.0;
+      final timestampMs =
+          (payload['timestamp'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch;
+
+      controller.add(
+        BridgeClassification(
+          label: label,
+          confidence: confidence,
+          timestamp: DateTime.fromMillisecondsSinceEpoch(timestampMs),
+        ),
+      );
+    } catch (_) {
+      // Swallow malformed payloads to avoid crashing listeners.
+    }
+  }
+}
+
+/// Simple payload representing a classification event emitted by the bridge.
+class BridgeClassification {
+  const BridgeClassification({
+    required this.label,
+    required this.confidence,
+    required this.timestamp,
+  });
+
+  final String label;
+  final double confidence;
+  final DateTime timestamp;
 }

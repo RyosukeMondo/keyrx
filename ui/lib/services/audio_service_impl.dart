@@ -21,8 +21,10 @@ class AudioServiceImpl implements AudioService {
       onCancel: _handleStreamCancel,
     );
 
-    if (classificationSource != null) {
-      _attachClassificationSource(classificationSource);
+    final stream =
+        classificationSource ?? _bridge.classificationStream?.map(_mapEvent);
+    if (stream != null) {
+      _attachClassificationSource(stream);
     }
   }
 
@@ -88,7 +90,15 @@ class AudioServiceImpl implements AudioService {
         );
       }
 
-      // TODO: Integrate with real FFI start call when available.
+      final started = await _bridge.startAudio(bpm: bpm);
+      if (!started) {
+        _state = AudioState.idle;
+        return _errorResult(
+          AudioErrorCode.startFailed,
+          StateError('Engine rejected start'),
+        );
+      }
+
       _trace('audio.start', {'bpm': bpm});
       _state = AudioState.running;
       return const AudioOperationResult(success: true);
@@ -116,7 +126,15 @@ class AudioServiceImpl implements AudioService {
 
     try {
       _trace('audio.stop', {});
-      // TODO: Integrate with real FFI stop call when available.
+      final stopped = await _bridge.stopAudio();
+      if (!stopped) {
+        _state = AudioState.idle;
+        return _errorResult(
+          AudioErrorCode.stopFailed,
+          StateError('Engine rejected stop'),
+        );
+      }
+
       _state = AudioState.idle;
       return const AudioOperationResult(success: true);
     } catch (e, st) {
@@ -150,7 +168,13 @@ class AudioServiceImpl implements AudioService {
 
     try {
       _trace('audio.setBpm', {'bpm': bpm});
-      // TODO: Integrate with real FFI set BPM call when available.
+      final updated = await _bridge.setBpm(bpm);
+      if (!updated) {
+        return _errorResult(
+          AudioErrorCode.invalidBpm,
+          StateError('Engine rejected BPM update'),
+        );
+      }
       return const AudioOperationResult(success: true);
     } catch (e, st) {
       log('audio.setBpm failed', error: e, stackTrace: st);
@@ -181,6 +205,14 @@ class AudioServiceImpl implements AudioService {
       },
       onDone: () => _trace('audio.stream.done', {}),
       cancelOnError: false,
+    );
+  }
+
+  ClassificationResult _mapEvent(BridgeClassification event) {
+    return ClassificationResult(
+      label: event.label,
+      confidence: event.confidence,
+      timestamp: event.timestamp,
     );
   }
 
