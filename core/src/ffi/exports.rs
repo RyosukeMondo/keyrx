@@ -7,7 +7,7 @@
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
 use crate::drivers::keycodes::{all_keycodes, KeyCode};
 use crate::engine::TimingConfig;
-use crate::scripting::RhaiRuntime;
+use crate::scripting::with_active_runtime;
 use crate::traits::ScriptRuntime;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
@@ -84,9 +84,10 @@ pub unsafe extern "C" fn keyrx_free_string(ptr: *mut c_char) {
     }
 }
 
-/// Evaluate a console command.
+/// Evaluate a console command against the active runtime.
 ///
-/// Currently returns a simple echo; callers must free the returned pointer with `keyrx_free_string`.
+/// Responses are prefixed with `ok:` or `error:`. Callers must free the returned pointer with
+/// `keyrx_free_string`.
 ///
 /// # Safety
 /// `command` must be a valid, null-terminated UTF-8 string pointer or null.
@@ -105,12 +106,10 @@ pub unsafe extern "C" fn keyrx_eval(command: *const c_char) -> *mut c_char {
         }
     };
 
-    let response = match RhaiRuntime::new() {
-        Ok(mut rt) => match rt.execute(cmd_str) {
-            Ok(_) => "ok".to_string(),
-            Err(err) => format!("error: {err}"),
-        },
-        Err(err) => format!("error: {err}"),
+    let response = match with_active_runtime(|runtime| runtime.execute(cmd_str)) {
+        Some(Ok(_)) => "ok:".to_string(),
+        Some(Err(err)) => format!("error: {err}"),
+        None => "error: engine not initialized".to_string(),
     };
 
     CString::new(response).map_or_else(|_| ptr::null_mut(), CString::into_raw)
@@ -325,9 +324,12 @@ mod tests {
         session::publish_session_update, DeviceId, DiscoveryProgress, DiscoverySummary,
         ExpectedPosition, PhysicalKey, SessionStatus,
     };
+    use crate::engine::RemapAction;
+    use crate::scripting::{clear_active_runtime, set_active_runtime, RhaiRuntime};
     use std::collections::HashMap;
     use std::ptr;
     use std::slice;
+    use std::sync::Mutex;
 
     fn progress_store() -> &'static Mutex<Vec<Vec<u8>>> {
         static STORE: OnceLock<Mutex<Vec<Vec<u8>>>> = OnceLock::new();
@@ -389,6 +391,47 @@ mod tests {
         unsafe {
             keyrx_free_string(ptr::null_mut());
         }
+    }
+
+    #[test]
+    fn eval_returns_error_when_runtime_missing() {
+        clear_active_runtime();
+        let cmd = CString::new(r#"remap("A","B");"#).unwrap();
+        let ptr = unsafe { keyrx_eval(cmd.as_ptr()) };
+        assert!(!ptr.is_null());
+        let response = unsafe { CStr::from_ptr(ptr) }
+            .to_str()
+            .expect("response should be utf8");
+        assert!(
+            response.starts_with("error: engine not initialized"),
+            "unexpected response: {response}"
+        );
+        unsafe { keyrx_free_string(ptr) };
+    }
+
+    #[test]
+    fn eval_executes_against_shared_runtime() {
+        clear_active_runtime();
+        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
+        set_active_runtime(&mut runtime);
+
+        let cmd = CString::new(r#"remap("A","B");"#).unwrap();
+        let ptr = unsafe { keyrx_eval(cmd.as_ptr()) };
+        assert!(!ptr.is_null());
+        let response = unsafe { CStr::from_ptr(ptr) }
+            .to_str()
+            .expect("response should be utf8");
+        assert!(
+            response.starts_with("ok:"),
+            "unexpected response: {response}"
+        );
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(matches!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
+        ));
+        clear_active_runtime();
     }
 
     #[test]

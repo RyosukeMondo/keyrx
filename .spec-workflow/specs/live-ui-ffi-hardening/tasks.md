@@ -7,7 +7,7 @@
   - _Requirements: 1,4_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems engineer focused on low-latency async engines | Task: Add state snapshot construction with latency measurement and timing fields, serialized to JSON and emitted via keyrx_on_state; include initial snapshot and safe no-callback handling | Restrictions: Keep added overhead <1ms total processing, avoid panics across FFI, reuse existing state accessors, do not regress thread safety | _Leverage: StateStore, event loop timing hooks, FFI callback utilities | _Requirements: 1,4 | Success: Snapshot JSON includes required fields, delivers on each event/change, initial snapshot sent, latency measured from ingress to post-decision, skipped cleanly when no callback, tests planned._
 
-- [ ] 2. Implement shared eval against active runtime (Rust)
+- [x] 2. Implement shared eval against active runtime (Rust)
   - Files: core/src/scripting/runtime.rs; core/src/ffi/exports.rs
   - Route keyrx_eval to the live RhaiRuntime via synchronized handle/channel; return ok:/error: strings; guard when engine not initialized.
   - _Leverage: existing RhaiRuntime setup; existing FFI string helpers._

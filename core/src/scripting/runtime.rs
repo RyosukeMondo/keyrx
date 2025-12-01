@@ -9,8 +9,10 @@ use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
 use rhai::{Array, Engine, EvalAltResult, Position, Scope, AST};
+use std::cell::UnsafeCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 /// Thread-safe pending operations storage.
 /// This uses Arc<Mutex> instead of Rc<RefCell> for thread safety
@@ -18,6 +20,62 @@ use std::sync::{Arc, Mutex};
 type PendingOps = Arc<Mutex<Vec<PendingOp>>>;
 type LayerView = Arc<Mutex<LayerStack>>;
 type ModifierView = Arc<Mutex<ModifierPreview>>;
+
+#[allow(unsafe_code)]
+struct RuntimeSlot {
+    lock: Mutex<()>,
+    runtime: UnsafeCell<Option<*mut RhaiRuntime>>,
+    owner: UnsafeCell<Option<thread::ThreadId>>,
+}
+
+// Safe because access is serialized via `lock`.
+#[allow(unsafe_code)]
+unsafe impl Sync for RuntimeSlot {}
+
+static RUNTIME_SLOT: RuntimeSlot = RuntimeSlot {
+    lock: Mutex::new(()),
+    runtime: UnsafeCell::new(None),
+    owner: UnsafeCell::new(None),
+};
+
+/// Register the active Rhai runtime for shared access (e.g., FFI eval).
+#[allow(unsafe_code)]
+pub fn set_active_runtime(runtime: &mut RhaiRuntime) {
+    if let Ok(_guard) = RUNTIME_SLOT.lock.lock() {
+        // Safety: guarded by the mutex above.
+        unsafe {
+            *RUNTIME_SLOT.runtime.get() = Some(runtime as *mut RhaiRuntime);
+            *RUNTIME_SLOT.owner.get() = Some(thread::current().id());
+        }
+    }
+}
+
+/// Clear the active runtime handle (used on shutdown/tests).
+#[allow(unsafe_code)]
+pub fn clear_active_runtime() {
+    if let Ok(_guard) = RUNTIME_SLOT.lock.lock() {
+        unsafe {
+            (*RUNTIME_SLOT.runtime.get()).take();
+            (*RUNTIME_SLOT.owner.get()).take();
+        }
+    }
+}
+
+/// Execute a closure against the active runtime if present.
+///
+/// Returns `None` when no runtime is registered or the lock cannot be acquired.
+#[allow(unsafe_code)]
+pub fn with_active_runtime<F, R>(f: F) -> Option<R>
+where
+    F: FnOnce(&mut RhaiRuntime) -> R,
+{
+    let _guard = RUNTIME_SLOT.lock.lock().ok()?;
+    // Safety: protected by the mutex guard above.
+    let _owner = unsafe { (*RUNTIME_SLOT.owner.get()).filter(|id| *id == thread::current().id()) }?;
+    let runtime_ptr = unsafe { (*RUNTIME_SLOT.runtime.get()).as_mut()? };
+    let runtime_ref = unsafe { runtime_ptr.as_mut()? };
+    Some(f(runtime_ref))
+}
 
 #[derive(Debug, Clone)]
 struct ModifierPreview {
