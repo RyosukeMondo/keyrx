@@ -12,6 +12,14 @@ use std::str::FromStr;
 
 use super::macro_def::define_keycodes;
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct KeyDefinition {
+    pub name: &'static str,
+    pub aliases: &'static [&'static str],
+    pub evdev: u16,
+    pub vk: u16,
+}
+
 define_keycodes! {
     // Letters A-Z (evdev: 30-38, 44-50, 16-25; VK: 0x41-0x5A)
     A => "A", 30, 0x41, ["A"],

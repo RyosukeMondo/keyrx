@@ -453,6 +453,18 @@ macro_rules! define_keycodes {
                 _ => 0,
             }
         }
+        pub fn key_definitions() -> Vec<KeyDefinition> {
+            vec![
+                $(
+                    KeyDefinition {
+                        name: $display,
+                        aliases: &[$($alias),*],
+                        evdev: $evdev,
+                        vk: $vk,
+                    },
+                )*
+            ]
+        }
         pub fn all_keycodes() -> Vec<KeyCode> {
             vec![
                 $(

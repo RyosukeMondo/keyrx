@@ -14,7 +14,7 @@
   - _Requirements: 2,4_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust/Rhai runtime engineer | Task: Expose thread-safe eval on the running runtime, serializing access and returning ok:<value> or error:<message>; handle engine-not-initialized gracefully | Restrictions: No unsynchronized mutable access, no panics across FFI, respect Rhai sandbox limits, keep API compatible with existing FFI string ownership | _Leverage: runtime handle/channel patterns, FFI string alloc/free helpers | _Requirements: 2,4 | Success: keyrx_eval executes on live runtime, concurrent calls serialized, engine-missing returns error:, responses prefixed correctly._
 
-- [ ] 3. Export canonical key registry via FFI (Rust)
+- [x] 3. Export canonical key registry via FFI (Rust)
   - Files: core/src/ffi/exports.rs; core/src/drivers/keycodes/definitions.rs (or registry source)
   - Extend keyrx_list_keys to return JSON objects {name, aliases, evdev, vk}; ensure aliases/metadata mirror engine registry.
   - _Leverage: existing key definitions and alias tables; existing JSON serialization._

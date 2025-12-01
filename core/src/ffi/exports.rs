@@ -5,7 +5,7 @@
 #![allow(unsafe_code)]
 
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
-use crate::drivers::keycodes::{all_keycodes, KeyCode};
+use crate::drivers::keycodes::key_definitions;
 use crate::engine::TimingConfig;
 use crate::scripting::with_active_runtime;
 use crate::traits::ScriptRuntime;
@@ -199,22 +199,16 @@ pub extern "C" fn keyrx_on_state(callback: Option<StateEventCallback>) {
     });
 }
 
-/// Return canonical key names as a JSON array.
+/// Return canonical key registry as `ok:<json>` (or `error:<message>`).
 ///
 /// Caller must free with `keyrx_free_string`.
 #[no_mangle]
 pub extern "C" fn keyrx_list_keys() -> *mut c_char {
-    let names: Vec<String> = all_keycodes()
-        .into_iter()
-        .filter(|k| !matches!(k, KeyCode::Unknown(_)))
-        .map(|k| k.name().to_string())
-        .collect();
+    let payload = serde_json::to_string(&key_definitions())
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
 
-    match serde_json::to_string(&names) {
-        Ok(json) => CString::new(json),
-        Err(err) => CString::new(format!("[] /* error: {err} */")),
-    }
-    .map_or_else(|_| ptr::null_mut(), CString::into_raw)
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
 }
 
 fn refresh_discovery_sink() {
@@ -324,6 +318,7 @@ mod tests {
         session::publish_session_update, DeviceId, DiscoveryProgress, DiscoverySummary,
         ExpectedPosition, PhysicalKey, SessionStatus,
     };
+    use crate::drivers::keycodes::KeyCode;
     use crate::engine::RemapAction;
     use crate::scripting::{clear_active_runtime, set_active_runtime, RhaiRuntime};
     use std::collections::HashMap;
@@ -349,6 +344,31 @@ mod tests {
     unsafe extern "C" fn record_summary(ptr: *const u8, len: usize) {
         let slice = slice::from_raw_parts(ptr, len);
         summary_store().lock().unwrap().push(slice.to_vec());
+    }
+
+    #[test]
+    fn list_keys_returns_registry_objects() {
+        let ptr = keyrx_list_keys();
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let payload = &raw["ok:".len()..];
+        let keys: Vec<serde_json::Value> = serde_json::from_str(payload).expect("valid key list");
+        assert!(!keys.is_empty());
+
+        let alpha = keys
+            .iter()
+            .find(|entry| entry.get("name") == Some(&serde_json::Value::String("A".into())))
+            .expect("contains A entry");
+        let aliases = alpha
+            .get("aliases")
+            .and_then(|v| v.as_array())
+            .expect("aliases array");
+
+        assert!(aliases.iter().any(|a| a == "A"));
+        assert!(alpha.get("evdev").and_then(|v| v.as_u64()).is_some());
+        assert!(alpha.get("vk").and_then(|v| v.as_u64()).is_some());
     }
 
     #[test]
