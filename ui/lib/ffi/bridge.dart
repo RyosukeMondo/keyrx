@@ -14,7 +14,7 @@ import 'bindings.dart';
 
 /// Bridge to the KeyRx Core library.
 class KeyrxBridge {
-  static KeyrxBridge? _instance;
+  static KeyrxBridge? _currentInstance;
   late final KeyrxBindings _bindings;
   bool _initialized = false;
 
@@ -22,13 +22,11 @@ class KeyrxBridge {
     final lib = _loadLibrary();
     _bindings = KeyrxBindings(lib);
     _setupClassificationStream();
+    _currentInstance = this;
   }
 
-  /// Get the singleton instance.
-  static KeyrxBridge get instance {
-    _instance ??= KeyrxBridge._();
-    return _instance!;
-  }
+  /// Create a new bridge instance.
+  factory KeyrxBridge.open() => KeyrxBridge._();
 
   /// Load the native library based on platform.
   static DynamicLibrary _loadLibrary() {
@@ -122,7 +120,7 @@ class KeyrxBridge {
   }
 
   static void _handleClassification(Pointer<Uint8> ptr, int length) {
-    final instance = _instance;
+    final instance = _currentInstance;
     final controller = instance?._classificationController;
     if (instance == null || controller == null) {
       return;

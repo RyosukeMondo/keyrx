@@ -31,7 +31,7 @@ class ServiceRegistry {
     final permissions =
         permissionService ??
         PermissionServiceImpl(microphonePermission: microphonePermission);
-    final effectiveBridge = bridge ?? KeyrxBridge.instance;
+    final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final mappedClassificationSource =
         classificationSource ??

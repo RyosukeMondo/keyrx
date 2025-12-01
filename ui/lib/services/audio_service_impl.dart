@@ -9,11 +9,11 @@ import 'permission_service.dart';
 /// Real AudioService implementation that wraps the FFI bridge.
 class AudioServiceImpl implements AudioService {
   AudioServiceImpl({
-    KeyrxBridge? bridge,
+    required KeyrxBridge bridge,
     required PermissionService permissionService,
     required ErrorTranslator errorTranslator,
     Stream<ClassificationResult>? classificationSource,
-  }) : _bridge = bridge ?? KeyrxBridge.instance,
+  }) : _bridge = bridge,
        _permissionService = permissionService,
        _errorTranslator = errorTranslator {
     _controller = StreamController<ClassificationResult>.broadcast(

@@ -3,8 +3,7 @@ import 'engine_service.dart';
 
 /// Real EngineService that wraps the KeyrxBridge.
 class EngineServiceImpl implements EngineService {
-  EngineServiceImpl({KeyrxBridge? bridge})
-      : _bridge = bridge ?? KeyrxBridge.instance;
+  EngineServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
 
