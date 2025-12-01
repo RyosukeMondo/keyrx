@@ -28,9 +28,13 @@ class _FakeEngineService implements EngineService {
   @override
   Future<bool> loadScript(String path) async => true;
 
+  Future<ConsoleEvalResult> Function(String command)? onEval;
+
   @override
   Future<ConsoleEvalResult> eval(String command) async =>
-      ConsoleEvalResult(success: true, output: 'ok: $command');
+      onEval != null
+          ? await onEval!(command)
+          : ConsoleEvalResult(success: true, output: 'ok: $command');
 
   @override
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
@@ -108,5 +112,35 @@ void main() {
 
     expect(find.textContaining('print("hi")'), findsWidgets);
     expect(find.text('OK'), findsWidgets);
+  });
+
+  testWidgets('Console renders error styling for error-prefixed output', (tester) async {
+    final fakeEngine = _FakeEngineService()
+      ..onEval = (_) async => const ConsoleEvalResult(
+            success: false,
+            output: 'error: engine unavailable',
+          );
+    final registry = ServiceRegistry.withOverrides(
+      permissionService: _FakePermissionService(),
+      audioService: _FakeAudioService(),
+      errorTranslator: _FakeErrorTranslator(),
+      engineService: fakeEngine,
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [Provider<ServiceRegistry>.value(value: registry)],
+        child: const MaterialApp(home: ConsolePage()),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'status');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(find.textContaining('status'), findsWidgets);
+    expect(find.text('ERROR'), findsWidgets);
+    expect(find.textContaining('engine unavailable'), findsWidgets);
   });
 }

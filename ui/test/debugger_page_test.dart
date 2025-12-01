@@ -134,4 +134,49 @@ void main() {
     expect(find.textContaining('Latency'), findsWidgets);
     expect(find.textContaining('120µs'), findsWidgets);
   });
+
+  testWidgets('Debugger shows timing and pending decisions with latency timeline', (tester) async {
+    final fakeEngine = _FakeEngineService();
+    final registry = ServiceRegistry.withOverrides(
+      permissionService: _FakePermissionService(),
+      audioService: _FakeAudioService(),
+      errorTranslator: _FakeErrorTranslator(),
+      engineService: fakeEngine,
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [Provider<ServiceRegistry>.value(value: registry)],
+        child: const MaterialApp(home: DebuggerPage()),
+      ),
+    );
+
+    fakeEngine.emit(
+      EngineSnapshot(
+        timestamp: DateTime.now(),
+        activeLayers: const ['base'],
+        activeModifiers: const ['Shift'],
+        heldKeys: const ['K'],
+        pendingDecisions: const ['combo A+B'],
+        lastEvent: 'combo triggered',
+        latencyUs: 25000,
+        timing: const EngineTiming(
+          tapTimeoutMs: 150,
+          comboTimeoutMs: 250,
+          holdDelayMs: 40,
+          eagerTap: true,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('combo A+B'), findsWidgets);
+    expect(find.text('Timing'), findsOneWidget);
+    expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
+    expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
+    expect(find.textContaining('Eager tap: true'), findsOneWidget);
+    expect(find.textContaining('Latency Timeline'), findsOneWidget);
+    expect(find.textContaining('Avg:'), findsOneWidget);
+  });
 }

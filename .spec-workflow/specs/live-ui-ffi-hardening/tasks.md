@@ -42,7 +42,7 @@
   - _Requirements: 1,2,3,5_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust test engineer | Task: Write unit/integration tests covering eval success/error paths, key registry JSON schema/fields, and state snapshot serialization with timing/latency | Restrictions: Keep tests deterministic; avoid long-running async; no reliance on real hardware | _Leverage: current ffi tests/mocks, serde_json, engine state builders | _Requirements: 1,2,3,5 | Success: Tests fail on schema/timing regressions, cover ok/error prefixes, run in CI quickly._
 
-- [ ] 7. Add Flutter tests for debugger/console/editor
+- [x] 7. Add Flutter tests for debugger/console/editor
   - Files: ui/test/debugger_test.dart; ui/test/console_test.dart; ui/test/editor_key_validation_test.dart (or equivalents)
   - Widget tests for rendering modifiers/pending/timing; console error display; editor key validation using fetched key list; integration smoke with mocked stateStream including timing.
   - _Leverage: existing test utils/mocks; fake stateStream fixtures._
