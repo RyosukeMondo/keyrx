@@ -21,7 +21,7 @@
   - _Requirements: 3,4_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Build canonical key registry payload with names/aliases/evdev/vk codes and expose via keyrx_list_keys JSON; standardize ok:/error: | Restrictions: Do not change canonical names; keep allocation patterns FFI-safe; avoid large regressions in startup or list time | _Leverage: key definitions/aliases tables, serde JSON, FFI string helpers | _Requirements: 3,4 | Success: keyrx_list_keys returns correct JSON array with metadata, errors return error:, compatible with keyrx_free_string._
 
-- [ ] 4. Extend Dart bridge for state/eval/key registry
+- [x] 4. Extend Dart bridge for state/eval/key registry
   - Files: ui/lib/ffi/bridge.dart; ui/lib/ffi/bindings.dart (if needed); ui/lib/state/engine_snapshot.dart (or equivalent)
   - Parse modifiers/pending/timing in BridgeState/EngineSnapshot; normalize ok:/error: for eval; add listKeys fetch with fallback behavior.
   - _Leverage: existing bridge decoding and state stream handling._

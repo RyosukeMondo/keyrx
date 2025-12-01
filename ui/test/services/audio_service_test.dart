@@ -70,6 +70,21 @@ class _FakeBridge implements KeyrxBridge {
 
   @override
   String get version => 'test';
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<String?> eval(String command) async => 'ok';
+
+  @override
+  Object? get loadFailure => null;
+
+  @override
+  Stream<BridgeState>? get stateStream => null;
+
+  @override
+  KeyRegistryResult listKeys() => const KeyRegistryResult(entries: []);
 }
 
 void main() {

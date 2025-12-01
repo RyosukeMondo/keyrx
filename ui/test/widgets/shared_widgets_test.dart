@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/training_screen.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/ui/widgets/app_error_dialog.dart';
 import 'package:keyrx_ui/ui/widgets/loading_overlay.dart';
 
@@ -99,6 +101,18 @@ class _StubEngineService implements EngineService {
 
   @override
   String get version => 'test';
+
+  @override
+  Future<ConsoleEvalResult> eval(String command) async =>
+      const ConsoleEvalResult(success: true, output: 'ok');
+
+  @override
+  Stream<EngineSnapshot> get stateStream =>
+      const Stream<EngineSnapshot>.empty();
+
+  @override
+  Future<KeyRegistryResult> fetchKeyRegistry() async =>
+      const KeyRegistryResult(entries: []);
 }
 
 void main() {
@@ -210,8 +224,18 @@ void main() {
     addTearDown(registry.dispose);
 
     await tester.pumpWidget(
-      Provider<ServiceRegistry>.value(
-        value: registry,
+      MultiProvider(
+        providers: [
+          Provider<ServiceRegistry>.value(value: registry),
+          ChangeNotifierProvider<AppState>(
+            create: (_) => AppState(
+              engineService: const _StubEngineService(),
+              errorTranslator: const _TestTranslator(
+                UserMessage(title: 'Translated', body: 'Unused'),
+              ),
+            ),
+          ),
+        ],
         child: const MaterialApp(home: TrainingScreen()),
       ),
     );
