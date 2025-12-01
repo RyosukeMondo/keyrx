@@ -50,4 +50,11 @@ impl ModifierSet {
     pub fn clear(&mut self) {
         self.active.clear();
     }
+
+    /// Return active modifier IDs in deterministic order for telemetry/FFI.
+    pub fn active_ids(&self) -> Vec<u8> {
+        let mut ids: Vec<u8> = self.active.iter().copied().collect();
+        ids.sort_unstable();
+        ids
+    }
 }

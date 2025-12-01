@@ -1,9 +1,12 @@
 //! Main engine event loop.
 
-use crate::engine::{InputEvent, OutputAction, RemapAction};
+use crate::engine::{InputEvent, OutputAction, RemapAction, TimingConfig};
+use crate::ffi::publish_state_snapshot;
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use crate::KeyCode;
 use anyhow::Result;
+use std::collections::HashSet;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
 /// The main KeyRx engine.
@@ -20,6 +23,7 @@ where
     script: S,
     state: St,
     running: bool,
+    held_keys: HashSet<KeyCode>,
 }
 
 impl<I, S, St> Engine<I, S, St>
@@ -35,6 +39,7 @@ where
             script,
             state,
             running: false,
+            held_keys: HashSet::new(),
         }
     }
 
@@ -162,11 +167,33 @@ where
             component = "engine_event_loop",
             "Starting event loop"
         );
+        self.publish_state(None, Some(0));
 
         while self.running {
             let events = self.input.poll_events().await?;
 
             for event in events {
+                // Track held keys for UI/state streaming.
+                if event.pressed {
+                    self.held_keys.insert(event.key);
+                } else {
+                    self.held_keys.remove(&event.key);
+                }
+
+                let now_us = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_micros() as u64)
+                    .unwrap_or(0);
+                let latency = now_us.saturating_sub(event.timestamp_us);
+                self.publish_state(
+                    Some(format!(
+                        "{:?} {}",
+                        event.key,
+                        if event.pressed { "down" } else { "up" }
+                    )),
+                    Some(latency),
+                );
+
                 let output = self.process_event(&event);
                 self.input.send_output(output).await?;
             }
@@ -179,5 +206,32 @@ where
             "Event loop stopped"
         );
         Ok(())
+    }
+
+    fn publish_state(&self, event: Option<String>, latency_us: Option<u64>) {
+        let layers = self
+            .state
+            .active_layers()
+            .into_iter()
+            .map(String::from)
+            .collect();
+        let modifiers = self
+            .state
+            .active_modifiers()
+            .active_ids()
+            .into_iter()
+            .map(|id| id.to_string())
+            .collect();
+        let held: Vec<String> = self.held_keys.iter().map(|k| format!("{k:?}")).collect();
+
+        publish_state_snapshot(
+            layers,
+            modifiers,
+            held,
+            Vec::new(), // Pending decisions are not yet tracked in the basic engine loop.
+            event,
+            latency_us,
+            TimingConfig::default(),
+        );
     }
 }

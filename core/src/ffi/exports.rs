@@ -5,9 +5,14 @@
 #![allow(unsafe_code)]
 
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
+use crate::drivers::keycodes::{all_keycodes, KeyCode};
+use crate::engine::TimingConfig;
+use crate::scripting::RhaiRuntime;
+use crate::traits::ScriptRuntime;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
+use std::ptr;
 use std::sync::{Arc, Mutex, OnceLock};
 
 /// Initialize the KeyRx engine.
@@ -79,7 +84,40 @@ pub unsafe extern "C" fn keyrx_free_string(ptr: *mut c_char) {
     }
 }
 
+/// Evaluate a console command.
+///
+/// Currently returns a simple echo; callers must free the returned pointer with `keyrx_free_string`.
+///
+/// # Safety
+/// `command` must be a valid, null-terminated UTF-8 string pointer or null.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_eval(command: *const c_char) -> *mut c_char {
+    if command.is_null() {
+        return CString::new("error: null command")
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let cmd_str = match CStr::from_ptr(command).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return CString::new("error: invalid utf8")
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let response = match RhaiRuntime::new() {
+        Ok(mut rt) => match rt.execute(cmd_str) {
+            Ok(_) => "ok".to_string(),
+            Err(err) => format!("error: {err}"),
+        },
+        Err(err) => format!("error: {err}"),
+    };
+
+    CString::new(response).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
 type DiscoveryEventCallback = unsafe extern "C" fn(*const u8, usize);
+type StateEventCallback = unsafe extern "C" fn(*const u8, usize);
 
 fn progress_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
     static SLOT: OnceLock<Mutex<Option<DiscoveryEventCallback>>> = OnceLock::new();
@@ -93,6 +131,11 @@ fn duplicate_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
 
 fn summary_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
     static SLOT: OnceLock<Mutex<Option<DiscoveryEventCallback>>> = OnceLock::new();
+    SLOT.get_or_init(|| Mutex::new(None))
+}
+
+fn state_callback() -> &'static Mutex<Option<StateEventCallback>> {
+    static SLOT: OnceLock<Mutex<Option<StateEventCallback>>> = OnceLock::new();
     SLOT.get_or_init(|| Mutex::new(None))
 }
 
@@ -137,12 +180,102 @@ pub extern "C" fn keyrx_on_discovery_summary(callback: Option<DiscoveryEventCall
     register_callback(summary_callback(), callback);
 }
 
+/// Register a callback for engine state snapshots.
+///
+/// The payload is a JSON blob with fields: layers, modifiers, held, pending, event, latency_us, timing.
+#[no_mangle]
+pub extern "C" fn keyrx_on_state(callback: Option<StateEventCallback>) {
+    if let Ok(mut guard) = state_callback().lock() {
+        *guard = callback;
+    }
+
+    emit_state_snapshot(FfiState {
+        layers: vec!["base".into()],
+        modifiers: Vec::new(),
+        held: Vec::new(),
+        pending: Vec::new(),
+        event: Some("engine_ready".into()),
+        latency_us: Some(0),
+        timing: TimingConfig::default(),
+    });
+}
+
+/// Return canonical key names as a JSON array.
+///
+/// Caller must free with `keyrx_free_string`.
+#[no_mangle]
+pub extern "C" fn keyrx_list_keys() -> *mut c_char {
+    let names: Vec<String> = all_keycodes()
+        .into_iter()
+        .filter(|k| !matches!(k, KeyCode::Unknown(_)))
+        .map(|k| k.name().to_string())
+        .collect();
+
+    match serde_json::to_string(&names) {
+        Ok(json) => CString::new(json),
+        Err(err) => CString::new(format!("[] /* error: {err} */")),
+    }
+    .map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
 fn refresh_discovery_sink() {
     if any_callback_registered() {
         set_session_update_sink(Some(discovery_sink()));
     } else {
         set_session_update_sink(None);
     }
+}
+
+#[derive(Serialize)]
+struct FfiState {
+    layers: Vec<String>,
+    modifiers: Vec<String>,
+    held: Vec<String>,
+    pending: Vec<String>,
+    event: Option<String>,
+    latency_us: Option<u64>,
+    timing: TimingConfig,
+}
+
+fn emit_state_snapshot(state: FfiState) {
+    let callback = state_callback().lock().ok().and_then(|guard| *guard);
+
+    let Some(cb) = callback else { return };
+
+    match serde_json::to_vec(&state) {
+        Ok(bytes) => unsafe {
+            cb(bytes.as_ptr(), bytes.len());
+        },
+        Err(err) => tracing::warn!(
+            service = "keyrx",
+            component = "ffi_exports",
+            event = "state",
+            error = %err,
+            "Failed to serialize state payload for FFI"
+        ),
+    }
+}
+
+/// Expose a safe-ish API for internal callers to emit state snapshots to the FFI listeners.
+/// Engine subsystems can call this when state changes.
+pub fn publish_state_snapshot(
+    layers: Vec<String>,
+    modifiers: Vec<String>,
+    held: Vec<String>,
+    pending: Vec<String>,
+    event: Option<String>,
+    latency_us: Option<u64>,
+    timing: TimingConfig,
+) {
+    emit_state_snapshot(FfiState {
+        layers,
+        modifiers,
+        held,
+        pending,
+        event,
+        latency_us,
+        timing,
+    });
 }
 
 fn discovery_sink() -> Arc<dyn Fn(&SessionUpdate) + Send + Sync + 'static> {
