@@ -28,7 +28,7 @@
   - _Requirements: 1,2,3,4_
   - _Prompt: Implement the task for spec live-ui-ffi-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Dart FFI bridge engineer | Task: Update bridge models to include modifiers/pending/timing, standardize ok:/error: eval handling, add listKeys bridge method with fallback on failure | Restrictions: Do not break existing stream wiring; keep models immutable-friendly; handle null/absent timing gracefully | _Leverage: current bridge.dart stream mapping, existing EngineSnapshot models | _Requirements: 1,2,3,4 | Success: New fields parsed and exposed to UI, eval errors surfaced with error:, key list fetched on init with graceful fallback._
 
-- [ ] 5. Update Flutter UI (debugger, console, editor)
+- [x] 5. Update Flutter UI (debugger, console, editor)
   - Files: ui/lib/pages/debugger.dart; ui/lib/pages/console.dart; ui/lib/pages/editor.dart (or keymapping widgets)
   - Render modifiers/pending/timing in debugger with scrollable layout and thresholds; style console responses by ok:/error:; fetch canonical keys on init and show inline invalid key badges.
   - _Leverage: existing debugger timeline components; console widgets; key mappings manager._

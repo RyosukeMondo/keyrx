@@ -5,6 +5,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../services/engine_service.dart';
+import '../services/service_registry.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
@@ -20,6 +24,15 @@ class _ConsolePageState extends State<ConsolePage> {
   final List<ConsoleEntry> _history = [];
   final List<String> _commandHistory = [];
   int _historyIndex = -1;
+  EngineService? _engine;
+  bool _isBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final registry = Provider.of<ServiceRegistry>(context, listen: false);
+    _engine = registry.engineService;
+  }
 
   @override
   void dispose() {
@@ -89,6 +102,7 @@ class _ConsolePageState extends State<ConsolePage> {
                         hintStyle: TextStyle(color: Colors.grey),
                       ),
                       onSubmitted: _executeCommand,
+                      enabled: !_isBusy,
                     ),
                   ),
                 ),
@@ -101,17 +115,48 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   Widget _buildEntry(ConsoleEntry entry) {
-    final color = entry.isError ? Colors.red : Colors.white;
-    final prefix = entry.isInput ? '> ' : '  ';
+    final lower = entry.text.toLowerCase();
+    final isError = entry.isError || lower.startsWith('error:');
+    final isOk = lower.startsWith('ok:');
+    final badgeColor = entry.isInput
+        ? Colors.blueAccent
+        : isError
+        ? Colors.redAccent
+        : Colors.green;
+    final label = entry.isInput
+        ? 'CMD'
+        : isError
+        ? 'ERROR'
+        : isOk
+        ? 'OK'
+        : 'OUT';
+    final displayText = entry.isInput ? entry.text : _stripPrefix(entry.text);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text(
-        '$prefix${entry.text}',
-        style: TextStyle(
-          color: entry.isInput ? Colors.green : color,
-          fontFamily: 'monospace',
-          fontSize: 14,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: badgeColor.withOpacity(0.35)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildBadge(label, badgeColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                displayText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -145,32 +190,35 @@ class _ConsolePageState extends State<ConsolePage> {
     });
   }
 
-  void _executeCommand(String command) {
-    if (command.trim().isEmpty) return;
+  Future<void> _executeCommand(String command) async {
+    if (command.trim().isEmpty || _isBusy) return;
 
     setState(() {
       _history.add(ConsoleEntry(command, isInput: true));
       _commandHistory.insert(0, command);
       _historyIndex = -1;
+      _isBusy = true;
     });
 
-    // TODO: Execute command via FFI bridge
-    final result = _mockExecute(command);
+    final engine = _engine;
+    ConsoleEvalResult result;
+
+    if (engine == null) {
+      result = const ConsoleEvalResult(
+        success: false,
+        output: 'Engine unavailable.',
+      );
+    } else {
+      result = await engine.eval(command);
+    }
 
     setState(() {
-      _history.add(ConsoleEntry(result.text, isError: result.isError));
+      _history.add(ConsoleEntry(result.output, isError: result.isError));
+      _isBusy = false;
     });
 
     _inputController.clear();
     _scrollToBottom();
-  }
-
-  ConsoleEntry _mockExecute(String command) {
-    // Mock execution for now
-    if (command.startsWith('print')) {
-      return ConsoleEntry('()', isError: false);
-    }
-    return ConsoleEntry('Command executed', isError: false);
   }
 
   void _scrollToBottom() {
@@ -187,6 +235,35 @@ class _ConsolePageState extends State<ConsolePage> {
     setState(() {
       _history.clear();
     });
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  String _stripPrefix(String text) {
+    final lower = text.toLowerCase();
+    if (lower.startsWith('ok:') || lower.startsWith('error:')) {
+      final idx = text.indexOf(':');
+      return idx > -1 ? text.substring(idx + 1).trimLeft() : text;
+    }
+    return text;
   }
 }
 
