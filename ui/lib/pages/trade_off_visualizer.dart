@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../services/engine_service.dart';
 import '../services/service_registry.dart';
+import 'trade_off_widgets.dart';
 
 /// Trade-off visualizer page for timing configuration.
 class TradeOffVisualizerPage extends StatefulWidget {
@@ -32,6 +33,17 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
 
   // Current slider value
   double _currentTimeout = 200.0;
+
+  // User typing profile from simulation
+  bool _hasUserProfile = false;
+  double? _userTypingMean;
+  double? _userTypingStdDev;
+  double? _recommendedTimeout;
+
+  // Sample text for typing simulation
+  static const String _sampleText =
+      'The quick brown fox jumps over the lazy dog. '
+      'Pack my box with five dozen liquor jugs.';
 
   // Preset regions
   static const List<_PresetRegion> _presets = [
@@ -67,6 +79,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
     _engine = registry.engineService;
     _loadCurrentTiming();
   }
+
 
   void _loadCurrentTiming() {
     // Try to load current timing from engine state
@@ -250,6 +263,37 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
         ],
         extraLinesData: ExtraLinesData(
           verticalLines: [
+            // User typing profile band (if available)
+            if (_hasUserProfile && _userTypingMean != null) ...[
+              VerticalLine(
+                x: (_userTypingMean! - (_userTypingStdDev ?? 50)).clamp(_minTimeout, _maxTimeout),
+                color: Colors.purple.withValues(alpha: 0.5),
+                strokeWidth: 1,
+                dashArray: [3, 3],
+              ),
+              VerticalLine(
+                x: _userTypingMean!.clamp(_minTimeout, _maxTimeout),
+                color: Colors.purple,
+                strokeWidth: 2,
+                label: VerticalLineLabel(
+                  show: true,
+                  alignment: Alignment.topLeft,
+                  style: const TextStyle(
+                    color: Colors.purple,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                  labelResolver: (_) => 'Your typing\n${_userTypingMean!.toInt()}ms',
+                ),
+              ),
+              VerticalLine(
+                x: (_userTypingMean! + (_userTypingStdDev ?? 50)).clamp(_minTimeout, _maxTimeout),
+                color: Colors.purple.withValues(alpha: 0.5),
+                strokeWidth: 1,
+                dashArray: [3, 3],
+              ),
+            ],
+            // Current threshold line
             VerticalLine(
               x: _currentTimeout,
               color: theme.colorScheme.secondary,
@@ -609,10 +653,15 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                   'Typing Model Parameters',
                   style: theme.textTheme.titleMedium,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: _showModelEditDialog,
-                  tooltip: 'Edit parameters',
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: _showModelEditDialog,
+                      tooltip: 'Edit parameters',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -638,16 +687,76 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            // Simulate button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _startSimulation,
+                icon: const Icon(Icons.speed),
+                label: const Text('Simulate My Typing Speed'),
+              ),
+            ),
+            if (_hasUserProfile && _recommendedTimeout != null) ...[
+              const SizedBox(height: 12),
+              _buildRecommendationBanner(theme),
+            ],
             const SizedBox(height: 12),
             Text(
-              'These parameters model your typical key press durations. '
-              'Use "Simulate" in the next version to measure your actual typing.',
+              _hasUserProfile
+                  ? 'Profile based on your measured typing speed. '
+                    'The purple band on the chart shows your typing range.'
+                  : 'Measure your actual typing speed to get personalized '
+                    'recommendations and see your profile on the chart.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationBanner(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.recommend, color: Colors.purple),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recommended: ${_recommendedTimeout!.toInt()} ms',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: Colors.purple,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Based on your typing profile (mean: ${_userTypingMean!.toInt()}ms)',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _currentTimeout = _recommendedTimeout!;
+              });
+            },
+            child: const Text('Apply'),
+          ),
+        ],
       ),
     );
   }
@@ -740,6 +849,28 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
     );
   }
 
+  void _startSimulation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => TypingSimulationDialog(
+        sampleText: _sampleText,
+        onComplete: (mean, stdDev) {
+          setState(() {
+            _userTypingMean = mean;
+            _userTypingStdDev = stdDev;
+            _typingMean = mean;
+            _typingStdDev = stdDev;
+            _hasUserProfile = true;
+            // Recommend threshold at mean + 1 stddev for ~84% accuracy
+            _recommendedTimeout = (mean + stdDev).clamp(_minTimeout, _maxTimeout);
+          });
+        },
+        onCancel: () {},
+      ),
+    );
+  }
+
   void _showHelpDialog() {
     showDialog(
       context: context,
@@ -815,3 +946,4 @@ class _PresetRegion {
   final Color color;
   final String description;
 }
+
