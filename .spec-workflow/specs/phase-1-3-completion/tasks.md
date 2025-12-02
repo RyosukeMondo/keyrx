@@ -234,7 +234,7 @@
   - _Requirements: 3.2, NFR Test Coverage_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter test engineer | Task: Create training_screen_test.dart; tests: lesson_displays_current_step, exercise_validates_correct_input, exercise_shows_error_on_wrong_input, completion_shows_certificate, progress_persisted; mock SharedPreferences | Restrictions: ≤200 lines; deterministic; isolated tests | _Leverage: flutter_test, shared_preferences mock | _Requirements: 3.2, NFR Test Coverage | Success: Training tests pass, ≥75% coverage._
 
-- [ ] 29. Add widget tests for trade-off visualizer and console
+- [x] 29. Add widget tests for trade-off visualizer and console
   - Files: ui/test/trade_off_test.dart (new), ui/test/console_styling_test.dart (new)
   - Test chart rendering, slider interaction, console ok/error styling
   - _Leverage: flutter_test_
