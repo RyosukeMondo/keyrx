@@ -61,7 +61,7 @@
 
 ### Session Recording & Replay
 
-- [ ] 7. Implement EventRecord and SessionFile data structures
+- [x] 7. Implement EventRecord and SessionFile data structures
   - Files: core/src/engine/event_recording.rs (new)
   - Define EventRecord, SessionFile structs with serde Serialize/Deserialize; implement to_json/from_json
   - _Leverage: core/src/engine/types.rs (InputEvent, OutputAction), core/src/engine/state.rs (EngineSnapshot)_
