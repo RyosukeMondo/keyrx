@@ -282,7 +282,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI/Flutter engineer | Task: Add keyrx_is_bypass_active() -> bool and keyrx_set_bypass(active: bool) to exports.rs; create bypass_indicator.dart with BypassIndicator widget that shows red "REMAPPING DISABLED" banner when bypass active, with "Re-enable" button | Restrictions: ≤50 lines Rust FFI, ≤100 lines Dart; poll bypass status every 500ms or use callback | _Leverage: existing FFI export patterns, emergency_exit module | _Requirements: 4.1 | Success: Flutter shows bypass status, user can re-enable remapping._
 
-- [ ] 35. Add emergency exit unit and integration tests
+- [x] 35. Add emergency exit unit and integration tests
   - Files: core/src/drivers/emergency_exit.rs (add tests), core/tests/emergency_exit_test.rs (new)
   - Test combo detection, bypass mode activation/deactivation, thread safety
   - _Leverage: existing test patterns_
