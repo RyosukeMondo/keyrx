@@ -162,7 +162,7 @@
 
 ### Debugger Enhancement
 
-- [ ] 20. Enhance debugger page with live state subscription
+- [x] 20. Enhance debugger page with live state subscription
   - Files: ui/lib/pages/debugger.dart (modify)
   - Subscribe to EngineStateStream; update UI on each snapshot; display layers, held keys, modifiers, latency
   - _Leverage: ui/lib/ffi/bridge.dart (stateStream), existing debugger layout_
