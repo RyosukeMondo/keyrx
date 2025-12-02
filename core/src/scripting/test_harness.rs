@@ -627,4 +627,176 @@ mod tests {
             assert_eq!(context.failed_count(), 1);
         });
     }
+
+    #[test]
+    fn assert_blocked_fails_when_no_block() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        let result = engine.run(r#"assert_blocked("A");"#);
+        assert!(result.is_err());
+
+        let ctx = get_test_context();
+        assert_eq!(ctx.assertions.len(), 1);
+        assert!(!ctx.assertions[0].passed);
+    }
+
+    #[test]
+    fn assert_blocked_succeeds_when_block_present() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        // Add a block output to the collector
+        let collector = harness.output_collector();
+        {
+            let mut guard = collector.lock().unwrap();
+            guard.push(OutputAction::Block);
+        }
+
+        let result = engine.run(r#"assert_blocked("A");"#);
+        assert!(result.is_ok());
+
+        let ctx = get_test_context();
+        assert_eq!(ctx.assertions.len(), 1);
+        assert!(ctx.assertions[0].passed);
+    }
+
+    #[test]
+    fn get_pending_inputs_returns_inputs() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        engine.run(r#"simulate_tap("A");"#).unwrap();
+
+        let inputs = get_pending_inputs();
+        assert_eq!(inputs.len(), 2);
+        assert_eq!(inputs[0].key, KeyCode::A);
+        assert!(inputs[0].pressed);
+        assert_eq!(inputs[1].key, KeyCode::A);
+        assert!(!inputs[1].pressed);
+    }
+
+    #[test]
+    fn sync_outputs_copies_from_collector_to_context() {
+        reset_test_context();
+        let harness = TestHarness::new();
+
+        // Add outputs to collector
+        let collector = harness.output_collector();
+        {
+            let mut guard = collector.lock().unwrap();
+            guard.push(OutputAction::KeyDown(KeyCode::B));
+            guard.push(OutputAction::KeyUp(KeyCode::B));
+        }
+
+        // Before sync, context outputs are empty
+        let ctx_before = get_test_context();
+        assert!(ctx_before.outputs.is_empty());
+
+        // Sync outputs
+        harness.sync_outputs();
+
+        // After sync, context has the outputs
+        let ctx_after = get_test_context();
+        assert_eq!(ctx_after.outputs.len(), 2);
+    }
+
+    #[test]
+    fn simulate_tap_with_invalid_key_returns_error() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        let result = engine.run(r#"simulate_tap("InvalidKeyName");"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn simulate_hold_with_invalid_key_returns_error() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        let result = engine.run(r#"simulate_hold("InvalidKeyName", 100);"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_output_count_returns_context_output_length() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        // Add some outputs to context
+        record_output(OutputAction::KeyDown(KeyCode::A));
+        record_output(OutputAction::KeyUp(KeyCode::A));
+
+        let result: i64 = engine.eval("get_output_count()").unwrap();
+        assert_eq!(result, 2);
+    }
+
+    #[test]
+    fn test_context_default_is_empty() {
+        let ctx = TestContext::default();
+        assert!(ctx.inputs.is_empty());
+        assert!(ctx.outputs.is_empty());
+        assert!(ctx.assertions.is_empty());
+        assert_eq!(ctx.current_time_us, 0);
+    }
+
+    #[test]
+    fn assert_mapping_records_assertion() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        // First simulate a tap to add input
+        engine.run(r#"simulate_tap("A");"#).unwrap();
+
+        // Add output to context
+        record_output(OutputAction::KeyDown(KeyCode::B));
+
+        // This should fail because we're checking mapping from A to B
+        // but the assertion logic checks both input and output
+        let result = engine.run(r#"assert_mapping("A", "B");"#);
+
+        // The assertion was recorded
+        let ctx = get_test_context();
+        let mapping_assertion = ctx
+            .assertions
+            .iter()
+            .find(|a| a.name.contains("assert_mapping"));
+        assert!(mapping_assertion.is_some());
+    }
+
+    #[test]
+    fn multiple_simulate_taps_advance_time() {
+        reset_test_context();
+        let mut engine = Engine::new();
+        let harness = TestHarness::new();
+        harness.register_functions(&mut engine);
+
+        engine.run(r#"simulate_tap("A");"#).unwrap();
+        let time_after_first = get_test_context().current_time_us;
+
+        engine.run(r#"simulate_tap("B");"#).unwrap();
+        let time_after_second = get_test_context().current_time_us;
+
+        // Time should have advanced
+        assert!(time_after_second > time_after_first);
+
+        // Should have 4 inputs total (2 taps = 4 events)
+        let ctx = get_test_context();
+        assert_eq!(ctx.inputs.len(), 4);
+    }
 }

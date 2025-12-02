@@ -547,4 +547,195 @@ mod tests {
         let runner = TestRunner::default();
         assert!(runner.harness().context_snapshot().inputs.is_empty());
     }
+
+    #[test]
+    fn test_summary_all_passed_true() {
+        let results = vec![
+            TestResult::pass("a".to_string(), 100, None),
+            TestResult::pass("b".to_string(), 200, None),
+            TestResult::pass("c".to_string(), 150, None),
+        ];
+        let summary = TestSummary::from_results(&results);
+
+        assert_eq!(summary.total, 3);
+        assert_eq!(summary.passed, 3);
+        assert_eq!(summary.failed, 0);
+        assert!(summary.all_passed());
+    }
+
+    #[test]
+    fn test_summary_empty_results() {
+        let results: Vec<TestResult> = vec![];
+        let summary = TestSummary::from_results(&results);
+
+        assert_eq!(summary.total, 0);
+        assert_eq!(summary.passed, 0);
+        assert_eq!(summary.failed, 0);
+        assert!(summary.all_passed()); // Empty means no failures
+    }
+
+    #[test]
+    fn test_summary_default() {
+        let summary = TestSummary::default();
+        assert_eq!(summary.total, 0);
+        assert_eq!(summary.passed, 0);
+        assert_eq!(summary.failed, 0);
+        assert_eq!(summary.duration_us, 0);
+    }
+
+    #[test]
+    fn discovered_test_struct_clone() {
+        let test = DiscoveredTest {
+            name: "test_clone".to_string(),
+            line_number: Some(42),
+        };
+        let cloned = test.clone();
+        assert_eq!(cloned.name, "test_clone");
+        assert_eq!(cloned.line_number, Some(42));
+    }
+
+    #[test]
+    fn discover_tests_sorted_by_name() {
+        let script = r#"
+            fn test_zebra() { }
+            fn test_alpha() { }
+            fn test_middle() { }
+        "#;
+        let ast = rhai::Engine::new().compile(script).expect("compilation");
+        let tests = discover_tests(&ast);
+
+        assert_eq!(tests.len(), 3);
+        // Should be sorted alphabetically
+        assert_eq!(tests[0].name, "test_alpha");
+        assert_eq!(tests[1].name, "test_middle");
+        assert_eq!(tests[2].name, "test_zebra");
+    }
+
+    #[test]
+    fn run_tests_multiple_tests_all_pass() {
+        let mut runtime = RhaiRuntime::new().expect("runtime creation");
+        let runner = TestRunner::new();
+
+        let script = r#"
+            fn test_one() {
+                let x = 1;
+            }
+            fn test_two() {
+                let y = 2;
+            }
+        "#;
+
+        let temp_path = std::env::temp_dir().join("test_multiple_pass.rhai");
+        std::fs::write(&temp_path, script).expect("write temp file");
+        runtime
+            .load_file(temp_path.to_str().unwrap())
+            .expect("load file");
+
+        let ast = rhai::Engine::new().compile(script).expect("compilation");
+        let tests = discover_tests(&ast);
+
+        let results = runner.run_tests(&mut runtime, &tests);
+
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().all(|r| r.passed));
+
+        // Cleanup
+        let _ = std::fs::remove_file(&temp_path);
+    }
+
+    #[test]
+    fn run_tests_mixed_pass_fail() {
+        let mut runtime = RhaiRuntime::new().expect("runtime creation");
+        let runner = TestRunner::new();
+
+        let script = r#"
+            fn test_pass() {
+                let x = 1;
+            }
+            fn test_fail() {
+                throw "failure";
+            }
+        "#;
+
+        let temp_path = std::env::temp_dir().join("test_mixed.rhai");
+        std::fs::write(&temp_path, script).expect("write temp file");
+        runtime
+            .load_file(temp_path.to_str().unwrap())
+            .expect("load file");
+
+        let ast = rhai::Engine::new().compile(script).expect("compilation");
+        let tests = discover_tests(&ast);
+
+        let results = runner.run_tests(&mut runtime, &tests);
+
+        assert_eq!(results.len(), 2);
+        let passed = results.iter().filter(|r| r.passed).count();
+        let failed = results.iter().filter(|r| !r.passed).count();
+        assert_eq!(passed, 1);
+        assert_eq!(failed, 1);
+
+        // Cleanup
+        let _ = std::fs::remove_file(&temp_path);
+    }
+
+    #[test]
+    fn run_filtered_with_no_matches() {
+        let tests = vec![
+            DiscoveredTest {
+                name: "test_foo".to_string(),
+                line_number: None,
+            },
+            DiscoveredTest {
+                name: "test_bar".to_string(),
+                line_number: None,
+            },
+        ];
+
+        let filtered: Vec<_> = tests
+            .iter()
+            .filter(|t| matches_filter(&t.name, "test_nonexistent*"))
+            .collect();
+
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn matches_filter_complex_pattern() {
+        // Multiple wildcards (simplified handling)
+        assert!(matches_filter("test_foo_bar_baz", "*foo*baz*"));
+        assert!(matches_filter("test_foo_bar_baz", "*bar*"));
+    }
+
+    #[test]
+    fn test_result_debug_output() {
+        let result = TestResult::pass("test_debug".to_string(), 500, Some(10));
+        let debug_str = format!("{:?}", result);
+        assert!(debug_str.contains("test_debug"));
+        assert!(debug_str.contains("500"));
+    }
+
+    #[test]
+    fn test_result_clone() {
+        let result = TestResult::fail(
+            "test_clone".to_string(),
+            "cloned failure".to_string(),
+            100,
+            None,
+        );
+        let cloned = result.clone();
+        assert_eq!(cloned.name, "test_clone");
+        assert_eq!(cloned.message, "cloned failure");
+        assert!(!cloned.passed);
+    }
+
+    #[test]
+    fn test_harness_access_via_runner() {
+        let runner = TestRunner::new();
+        let harness = runner.harness();
+
+        // Verify we can access the harness and its methods
+        harness.reset_context();
+        let ctx = harness.context_snapshot();
+        assert!(ctx.inputs.is_empty());
+    }
 }
