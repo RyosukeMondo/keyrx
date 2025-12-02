@@ -82,7 +82,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust CLI integration engineer | Task: Modify run.rs to add --record Option<PathBuf> argument; if present, create EventRecorder before engine loop; after each process_event, call recorder.record_event(); on SIGINT/shutdown, call recorder.finish() with final state | Restrictions: ≤50 lines added; maintain existing run behavior when --record not specified; handle recorder errors without crashing engine | _Leverage: existing RunCommand structure, EventRecorder API | _Requirements: 1.3 | Success: `keyrx run --record session.krx` creates valid .krx file on exit._
 
-- [ ] 10. Implement session replay as InputSource
+- [x] 10. Implement session replay as InputSource
   - Files: core/src/engine/replay.rs (new)
   - Create ReplaySession struct implementing InputSource trait; read .krx file, inject events with timing
   - _Leverage: core/src/traits/input_source.rs (InputSource trait), core/src/engine/event_recording.rs (SessionFile)_

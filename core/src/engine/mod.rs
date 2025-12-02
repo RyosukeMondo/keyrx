@@ -4,6 +4,7 @@ mod advanced;
 mod decision;
 mod event_loop;
 mod event_recording;
+pub mod replay;
 mod state;
 mod types;
 
@@ -17,6 +18,7 @@ pub use event_recording::{
     infer_decision_type, DecisionType, EventRecord, EventRecordBuilder, EventRecorder,
     RecordingError, SessionFile, SESSION_FILE_VERSION,
 };
+pub use replay::{ReplayError, ReplaySession, ReplayState};
 pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,
     ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
