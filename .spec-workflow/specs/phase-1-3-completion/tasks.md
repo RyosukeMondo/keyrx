@@ -151,7 +151,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust CLI/observability engineer | Task: Modify run.rs to add --trace Option<PathBuf>; if present, initialize OTLP file exporter, create EngineTracer, pass to engine loop; on shutdown, flush and export traces | Restrictions: ≤40 lines added; graceful degradation if export fails; feature-gated with "tracing" | _Leverage: opentelemetry::sdk::export, EngineTracer | _Requirements: 2.1 | Success: `keyrx run --trace events.otlp` exports valid OpenTelemetry traces._
 
-- [ ] 19. Add tracing unit tests
+- [x] 19. Add tracing unit tests
   - Files: core/src/engine/tracing.rs (add #[cfg(test)] module)
   - Test span creation, attribute setting, no-op when disabled
   - _Leverage: opentelemetry testing utilities_

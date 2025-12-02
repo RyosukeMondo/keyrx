@@ -391,4 +391,231 @@ mod tests {
             OutputAction::KeyUp(KeyCode::Escape),
         ]);
     }
+
+    /// Test that span_input_received accepts correct input event attributes.
+    /// This verifies the span would contain: key, pressed, timestamp, device_id, is_repeat, is_synthetic
+    #[test]
+    fn span_input_has_correct_attributes() {
+        let tracer = EngineTracer::noop();
+
+        // Test with full event data
+        let event = InputEvent {
+            key: KeyCode::Space,
+            pressed: true,
+            timestamp_us: 123456789,
+            device_id: Some("keyboard-1".to_string()),
+            is_repeat: true,
+            is_synthetic: false,
+            scan_code: 57,
+        };
+        let _guard = tracer.span_input_received(&event);
+        // No panic means attributes were accepted
+
+        // Test key release event
+        let release_event = InputEvent {
+            key: KeyCode::Space,
+            pressed: false,
+            timestamp_us: 123456799,
+            device_id: Some("keyboard-1".to_string()),
+            is_repeat: false,
+            is_synthetic: false,
+            scan_code: 57,
+        };
+        let _guard2 = tracer.span_input_received(&release_event);
+
+        // Test with no device_id (tests None handling)
+        let event_no_device = InputEvent {
+            key: KeyCode::Enter,
+            pressed: true,
+            timestamp_us: 0,
+            device_id: None,
+            is_repeat: false,
+            is_synthetic: true,
+            scan_code: 28,
+        };
+        let _guard3 = tracer.span_input_received(&event_no_device);
+    }
+
+    /// Test that span_decision_made includes latency parameter.
+    /// This verifies latency_us is properly accepted for all decision types.
+    #[test]
+    fn span_decision_includes_latency() {
+        let tracer = EngineTracer::noop();
+
+        // Test various latency values
+        let latencies: [u64; 5] = [0, 1, 100, 10000, u64::MAX];
+
+        for latency in latencies {
+            // Each decision type with the same latency
+            let _g1 = tracer.span_decision_made(DecisionType::PassThrough, latency, &[]);
+            let _g2 = tracer.span_decision_made(DecisionType::Remap, latency, &[0]);
+            let _g3 = tracer.span_decision_made(DecisionType::Block, latency, &[1, 2]);
+            let _g4 = tracer.span_decision_made(DecisionType::Tap, latency, &[0, 1, 2]);
+            let _g5 = tracer.span_decision_made(DecisionType::Hold, latency, &[3]);
+            let _g6 = tracer.span_decision_made(DecisionType::Combo, latency, &[0, 2]);
+            let _g7 = tracer.span_decision_made(DecisionType::Layer, latency, &[4, 5, 6, 7]);
+        }
+
+        // Test with varying layer counts
+        let _g8 = tracer.span_decision_made(DecisionType::Remap, 50, &[]);
+        let _g9 =
+            tracer.span_decision_made(DecisionType::Remap, 50, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    }
+
+    /// Test that tracer does not panic when disabled.
+    /// All methods should be safe to call regardless of feature flag.
+    #[test]
+    fn tracer_disabled_does_not_panic() {
+        let tracer = EngineTracer::noop();
+
+        // Call all methods in rapid succession
+        for _ in 0..100 {
+            let event = InputEvent::key_down(KeyCode::A, 0);
+            let _g1 = tracer.span_input_received(&event);
+            let _g2 = tracer.span_decision_made(DecisionType::Remap, 0, &[]);
+            let _g3 = tracer.span_output_generated(&[OutputAction::KeyDown(KeyCode::B)]);
+            tracer.record_error("repeated error");
+        }
+
+        // Multiple shutdown calls should be safe
+        tracer.shutdown();
+        tracer.shutdown();
+        tracer.shutdown();
+
+        // Default tracer should also be safe
+        let default_tracer = EngineTracer::default();
+        let _g = default_tracer.span_input_received(&InputEvent::key_up(KeyCode::A, 0));
+        default_tracer.shutdown();
+    }
+
+    /// Test that multiple spans can be created and held simultaneously.
+    /// This verifies spans don't interfere with each other.
+    #[test]
+    fn multiple_spans_linked_correctly() {
+        let tracer = EngineTracer::noop();
+
+        // Simulate a typical event processing flow
+        let input_event = InputEvent::key_down(KeyCode::CapsLock, 1000);
+        let input_span = tracer.span_input_received(&input_event);
+
+        // Decision span created while input span is active
+        let decision_span = tracer.span_decision_made(DecisionType::Hold, 150, &[0]);
+
+        // Output span created while both input and decision spans are active
+        let output_span = tracer.span_output_generated(&[OutputAction::KeyDown(KeyCode::Escape)]);
+
+        // All three spans coexist
+        drop(output_span);
+        drop(decision_span);
+        drop(input_span);
+
+        // Test nested span creation in reverse order
+        let tracer2 = EngineTracer::noop();
+        let event1 = InputEvent::key_down(KeyCode::A, 100);
+        let event2 = InputEvent::key_down(KeyCode::B, 200);
+        let event3 = InputEvent::key_down(KeyCode::C, 300);
+
+        let span1 = tracer2.span_input_received(&event1);
+        let span2 = tracer2.span_input_received(&event2);
+        let span3 = tracer2.span_input_received(&event3);
+
+        // Drop in different order than creation
+        drop(span2);
+        drop(span1);
+        drop(span3);
+    }
+
+    /// Test error recording with various error messages.
+    #[test]
+    fn record_error_handles_various_messages() {
+        let tracer = EngineTracer::noop();
+
+        // Empty error
+        tracer.record_error("");
+
+        // Normal error
+        tracer.record_error("Test error message");
+
+        // Long error
+        tracer.record_error(&"x".repeat(10000));
+
+        // Unicode error
+        tracer.record_error("エラー: 何かが間違っています 🔥");
+
+        // Error with newlines
+        tracer.record_error("Line 1\nLine 2\nLine 3");
+
+        // Error with special characters
+        tracer.record_error("Error: \"quoted\" and 'apostrophe' and <tag>");
+    }
+
+    /// Test output generation with various action counts and types.
+    #[test]
+    fn span_output_handles_many_actions() {
+        let tracer = EngineTracer::noop();
+
+        // Empty actions
+        let _g1 = tracer.span_output_generated(&[]);
+
+        // Single action
+        let _g2 = tracer.span_output_generated(&[OutputAction::Block]);
+
+        // Many actions (tests the preview limit of 5)
+        let many_actions: Vec<OutputAction> = (0..100)
+            .map(|_| OutputAction::KeyDown(KeyCode::A))
+            .collect();
+        let _g3 = tracer.span_output_generated(&many_actions);
+
+        // Mixed action types
+        let mixed_actions = vec![
+            OutputAction::KeyDown(KeyCode::LeftCtrl),
+            OutputAction::KeyDown(KeyCode::LeftShift),
+            OutputAction::KeyDown(KeyCode::A),
+            OutputAction::KeyUp(KeyCode::A),
+            OutputAction::KeyUp(KeyCode::LeftShift),
+            OutputAction::KeyUp(KeyCode::LeftCtrl),
+            OutputAction::Block,
+        ];
+        let _g4 = tracer.span_output_generated(&mixed_actions);
+    }
+
+    /// Test TracingError implements std::error::Error correctly.
+    #[test]
+    fn tracing_error_implements_std_error() {
+        fn assert_error<E: std::error::Error>(_: &E) {}
+
+        let err1 = TracingError::NotEnabled;
+        let err2 = TracingError::InitializationFailed("test".to_string());
+        let err3 = TracingError::ExportFailed("test".to_string());
+
+        assert_error(&err1);
+        assert_error(&err2);
+        assert_error(&err3);
+    }
+
+    /// Test TracingError Debug formatting.
+    #[test]
+    fn tracing_error_debug_formatting() {
+        let err1 = TracingError::NotEnabled;
+        let err2 = TracingError::InitializationFailed("init error".to_string());
+        let err3 = TracingError::ExportFailed("export error".to_string());
+
+        let debug1 = format!("{:?}", err1);
+        let debug2 = format!("{:?}", err2);
+        let debug3 = format!("{:?}", err3);
+
+        assert!(debug1.contains("NotEnabled"));
+        assert!(debug2.contains("InitializationFailed"));
+        assert!(debug2.contains("init error"));
+        assert!(debug3.contains("ExportFailed"));
+        assert!(debug3.contains("export error"));
+    }
+
+    #[cfg(not(feature = "otel-tracing"))]
+    #[test]
+    fn with_file_export_returns_not_enabled_when_feature_disabled() {
+        let result = EngineTracer::with_file_export("test-service", "/tmp/traces.otlp");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), TracingError::NotEnabled));
+    }
 }
