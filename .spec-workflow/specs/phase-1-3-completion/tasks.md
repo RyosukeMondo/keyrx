@@ -220,7 +220,7 @@
 
 ### Flutter Tests
 
-- [ ] 27. Add widget tests for debugger enhancements
+- [x] 27. Add widget tests for debugger enhancements
   - Files: ui/test/debugger_test.dart (new/extend)
   - Test state stream subscription, latency display, pending visualization
   - _Leverage: flutter_test, mockito for bridge mocking_
