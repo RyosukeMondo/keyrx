@@ -55,7 +55,7 @@ class AppState extends ChangeNotifier {
         ];
       } else {
         _error =
-            _errorTranslator.translate(const StateError('Engine not ready')).body;
+            _errorTranslator.translate(StateError('Engine not ready')).body;
       }
 
       notifyListeners();
@@ -71,7 +71,7 @@ class AppState extends ChangeNotifier {
   Future<bool> loadScript(String path) async {
     if (!initialized) {
       _error =
-          _errorTranslator.translate(const StateError('Engine not ready')).body;
+          _errorTranslator.translate(StateError('Engine not ready')).body;
       notifyListeners();
       return false;
     }

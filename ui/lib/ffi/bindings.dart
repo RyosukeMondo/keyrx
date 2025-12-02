@@ -29,6 +29,28 @@ typedef KeyrxStopAudio = int Function();
 typedef KeyrxSetBpmNative = Int32 Function(Int32 bpm);
 typedef KeyrxSetBpm = int Function(int bpm);
 
+typedef KeyrxEvalNative = Pointer<Char> Function(Pointer<Utf8> command);
+typedef KeyrxEval = Pointer<Char> Function(Pointer<Utf8> command);
+
+typedef KeyrxListKeysNative = Pointer<Char> Function();
+typedef KeyrxListKeys = Pointer<Char> Function();
+
+typedef KeyrxStateCallbackNative = Void Function(
+  Pointer<Uint8> bytes,
+  IntPtr length,
+);
+typedef KeyrxStateCallback = void Function(
+  Pointer<Uint8> bytes,
+  int length,
+);
+
+typedef KeyrxOnStateNative = Void Function(
+  Pointer<NativeFunction<KeyrxStateCallbackNative>> callback,
+);
+typedef KeyrxOnState = void Function(
+  Pointer<NativeFunction<KeyrxStateCallbackNative>> callback,
+);
+
 typedef KeyrxClassificationCallbackNative = Void Function(
   Pointer<Uint8> bytes,
   IntPtr length,
@@ -57,6 +79,9 @@ class KeyrxBindings {
   late final KeyrxStopAudio? stopAudio;
   late final KeyrxSetBpm? setBpm;
   late final KeyrxOnClassification? onClassification;
+  late final KeyrxEval? eval;
+  late final KeyrxOnState? onState;
+  late final KeyrxListKeys? listKeys;
 
   KeyrxBindings(this._lib) {
     init = _lib.lookupFunction<KeyrxInitNative, KeyrxInit>('keyrx_init');
@@ -70,6 +95,9 @@ class KeyrxBindings {
     stopAudio = _tryLookupStopAudio();
     setBpm = _tryLookupSetBpm();
     onClassification = _tryLookupOnClassification();
+    eval = _tryLookupEval();
+    onState = _tryLookupOnState();
+    listKeys = _tryLookupListKeys();
   }
 
   KeyrxStartAudio? _tryLookupStartAudio() {
@@ -106,6 +134,34 @@ class KeyrxBindings {
     try {
       return _lib.lookupFunction<KeyrxOnClassificationNative,
           KeyrxOnClassification>('keyrx_on_classification');
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxEval? _tryLookupEval() {
+    try {
+      return _lib.lookupFunction<KeyrxEvalNative, KeyrxEval>('keyrx_eval');
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxOnState? _tryLookupOnState() {
+    try {
+      return _lib.lookupFunction<KeyrxOnStateNative, KeyrxOnState>(
+        'keyrx_on_state',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxListKeys? _tryLookupListKeys() {
+    try {
+      return _lib.lookupFunction<KeyrxListKeysNative, KeyrxListKeys>(
+        'keyrx_list_keys',
+      );
     } on ArgumentError {
       return null;
     }

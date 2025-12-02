@@ -45,6 +45,11 @@ class AudioServiceImpl implements AudioService {
 
   Future<bool> _ensureInitialized() async {
     if (_initialized) return true;
+    final loadError = _bridge.loadFailure;
+    if (loadError != null) {
+      _trace('audio.init.failed', {'error': loadError.toString()});
+      return false;
+    }
     _initialized = _bridge.initialize();
     if (!_initialized) {
       _trace('audio.init.failed', {});

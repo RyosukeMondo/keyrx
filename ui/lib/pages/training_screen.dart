@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../services/audio_service.dart';
 import '../services/error_translator.dart';
 import '../services/service_registry.dart';
+import '../state/app_state.dart';
 import '../ui/styles/surfaces.dart';
 import '../ui/widgets/app_error_dialog.dart';
 import '../ui/widgets/loading_overlay.dart';
@@ -67,6 +68,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
     final isRunning = _state == AudioState.running;
     final isBusy = _isLoading || _state == AudioState.starting;
 
@@ -91,6 +93,26 @@ class _TrainingScreenState extends State<TrainingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (!appState.initialized || appState.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            appState.initialized ? Icons.error_outline : Icons.info_outline,
+                            color: Colors.amber,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              appState.error ??
+                                  'Engine not initialized yet. Some actions may fail.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   _buildStatusRow(),
                   const SizedBox(height: 16),
                   _buildBpmField(),
