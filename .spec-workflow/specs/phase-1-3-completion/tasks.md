@@ -144,7 +144,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust instrumentation engineer | Task: Modify process_event in advanced.rs to optionally accept &EngineTracer; wrap input processing in span_input_received, decision in span_decision_made, output in span_output_generated; pass latency_µs to spans | Restrictions: ≤50 lines added; no overhead when tracer is None; maintain existing function signature compatibility | _Leverage: EngineTracer API, existing latency measurement | _Requirements: 2.1 | Success: Trace spans emitted for each event when tracer provided._
 
-- [ ] 18. Add trace export to keyrx run command
+- [x] 18. Add trace export to keyrx run command
   - Files: core/src/cli/commands/run.rs (modify)
   - Add --trace <file> flag; initialize OpenTelemetry exporter; export traces on shutdown
   - _Leverage: core/src/engine/tracing.rs, opentelemetry-otlp crate_

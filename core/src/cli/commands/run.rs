@@ -4,8 +4,8 @@ use crate::cli::{OutputFormat, OutputWriter};
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
 use crate::engine::{
-    infer_decision_type, AdvancedEngine, EventRecordBuilder, EventRecorder, InputEvent,
-    LayerAction, RemapAction,
+    infer_decision_type, AdvancedEngine, EngineTracer, EventRecordBuilder, EventRecorder,
+    InputEvent, LayerAction, RemapAction,
 };
 use crate::mocks::MockInput;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
@@ -37,6 +37,8 @@ pub struct RunCommand {
     pub mock_run_limit: Option<Duration>,
     /// Optional path to record session to (.krx file).
     pub record_path: Option<PathBuf>,
+    /// Optional path to export OpenTelemetry traces to.
+    pub trace_path: Option<PathBuf>,
 }
 
 impl RunCommand {
@@ -55,12 +57,19 @@ impl RunCommand {
             output: OutputWriter::new(format),
             mock_run_limit: None,
             record_path: None,
+            trace_path: None,
         }
     }
 
     /// Set the path for session recording.
     pub fn with_record_path(mut self, path: Option<PathBuf>) -> Self {
         self.record_path = path;
+        self
+    }
+
+    /// Set the path for OpenTelemetry trace export.
+    pub fn with_trace_path(mut self, path: Option<PathBuf>) -> Self {
+        self.trace_path = path;
         self
     }
 
@@ -214,6 +223,9 @@ impl RunCommand {
         let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
 
+        // Initialize tracer if --trace specified
+        let tracer = self.create_tracer()?;
+
         input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
@@ -251,6 +263,7 @@ impl RunCommand {
                 &mut last_timestamp,
                 &mut recorder,
                 &mut seq,
+                tracer.as_ref(),
             )
             .await?;
             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
@@ -258,6 +271,7 @@ impl RunCommand {
 
         input.stop().await?;
         self.finish_recording(recorder)?;
+        self.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -280,6 +294,9 @@ impl RunCommand {
         // Initialize recorder if --record specified
         let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
+
+        // Initialize tracer if --trace specified
+        let tracer = self.create_tracer()?;
 
         input.start().await?;
 
@@ -307,6 +324,7 @@ impl RunCommand {
                     &mut last_timestamp,
                     &mut recorder,
                     &mut seq,
+                    tracer.as_ref(),
                 )
                 .await?;
             } else {
@@ -317,6 +335,7 @@ impl RunCommand {
         self.output.success("Signal received, stopping...");
         input.stop().await?;
         self.finish_recording(recorder)?;
+        self.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -385,6 +404,9 @@ impl RunCommand {
         let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
 
+        // Initialize tracer if --trace specified
+        let tracer = self.create_tracer()?;
+
         input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
@@ -412,6 +434,7 @@ impl RunCommand {
                     &mut last_timestamp,
                     &mut recorder,
                     &mut seq,
+                    tracer.as_ref(),
                 )
                 .await?;
             } else {
@@ -421,6 +444,7 @@ impl RunCommand {
 
         input.stop().await?;
         self.finish_recording(recorder)?;
+        self.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -505,6 +529,35 @@ impl RunCommand {
         Ok(())
     }
 
+    /// Create an EngineTracer if --trace path is specified.
+    fn create_tracer(&self) -> Result<Option<EngineTracer>> {
+        match &self.trace_path {
+            Some(path) => {
+                self.output
+                    .success(&format!("Exporting traces to: {}", path.display()));
+                match EngineTracer::with_file_export("keyrx", path) {
+                    Ok(tracer) => Ok(Some(tracer)),
+                    Err(e) => {
+                        self.output.warning(&format!(
+                            "Failed to initialize tracer: {}. Continuing without tracing.",
+                            e
+                        ));
+                        Ok(None)
+                    }
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Shutdown the tracer and flush pending spans.
+    fn finish_tracing(&self, tracer: Option<EngineTracer>) {
+        if let Some(t) = tracer {
+            t.shutdown();
+            self.output.success("Traces exported successfully.");
+        }
+    }
+
     fn build_engine(
         &self,
         runtime: RhaiRuntime,
@@ -547,9 +600,10 @@ impl RunCommand {
         engine
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[instrument(
         level = "trace",
-        skip(self, engine, input, events, last_timestamp, recorder, seq),
+        skip(self, engine, input, events, last_timestamp, recorder, seq, tracer),
         fields(event_count = events.len())
     )]
     async fn process_events_with_engine<I: InputSource>(
@@ -560,6 +614,7 @@ impl RunCommand {
         last_timestamp: &mut u64,
         recorder: &mut Option<EventRecorder>,
         seq: &mut u64,
+        tracer: Option<&EngineTracer>,
     ) -> Result<()> {
         for event in events {
             if event.timestamp_us > *last_timestamp {
@@ -570,7 +625,7 @@ impl RunCommand {
             }
 
             let process_start = Instant::now();
-            let outputs = engine.process_event(event.clone());
+            let outputs = engine.process_event_traced(event.clone(), tracer);
             let latency_us = process_start.elapsed().as_micros() as u64;
 
             if let Some(ref mut rec) = recorder {

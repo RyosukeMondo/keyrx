@@ -62,6 +62,10 @@ enum Commands {
         /// Record session to a .krx file for replay/analysis
         #[arg(long)]
         record: Option<PathBuf>,
+
+        /// Export OpenTelemetry traces to file (requires otel-tracing feature)
+        #[arg(long)]
+        trace: Option<PathBuf>,
     },
 
     /// Inspect current engine state
@@ -220,9 +224,11 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             mock,
             device,
             record,
+            trace,
         } => {
             RunCommand::new(script, debug, mock, device, format)
                 .with_record_path(record)
+                .with_trace_path(trace)
                 .run()
                 .await?;
         }

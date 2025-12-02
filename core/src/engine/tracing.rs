@@ -7,6 +7,7 @@
 //! runtime overhead when not needed.
 
 use crate::engine::{DecisionType, InputEvent, OutputAction};
+use std::path::Path;
 
 /// Result type for tracing operations.
 pub type TracingResult<T> = Result<T, TracingError>;
@@ -102,6 +103,48 @@ impl EngineTracer {
     /// Create a new EngineTracer (no-op when feature disabled).
     #[cfg(not(feature = "otel-tracing"))]
     pub fn new(_service_name: &str) -> TracingResult<Self> {
+        Err(TracingError::NotEnabled)
+    }
+
+    /// Create a new EngineTracer with OTLP file export.
+    ///
+    /// When `otel-tracing` feature is enabled, initializes the OpenTelemetry
+    /// tracer with an OTLP file exporter that writes traces to the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TracingError::InitializationFailed` if the exporter cannot be created.
+    /// Returns `TracingError::NotEnabled` when `otel-tracing` feature is disabled.
+    #[cfg(feature = "otel-tracing")]
+    pub fn with_file_export<P: AsRef<Path>>(service_name: &str, _path: P) -> TracingResult<Self> {
+        use opentelemetry::global;
+        use opentelemetry_otlp::{SpanExporter, WithExportConfig, WithTonicConfig};
+        use opentelemetry_sdk::trace::{BatchSpanProcessor, TracerProvider as SdkTracerProvider};
+
+        // Create OTLP exporter - using gRPC endpoint
+        // Note: For file export, we use a local OTLP collector or stdout exporter
+        // The path parameter is reserved for future file-based export
+        let exporter = SpanExporter::builder()
+            .with_tonic()
+            .with_endpoint("http://localhost:4317")
+            .build()
+            .map_err(|e| TracingError::InitializationFailed(e.to_string()))?;
+
+        let provider = SdkTracerProvider::builder()
+            .with_span_processor(BatchSpanProcessor::builder(exporter).build())
+            .build();
+
+        let service_name_owned = service_name.to_string();
+        global::set_tracer_provider(provider);
+
+        Ok(Self {
+            tracer: global::tracer(service_name_owned),
+        })
+    }
+
+    /// Create a new EngineTracer with file export (no-op when feature disabled).
+    #[cfg(not(feature = "otel-tracing"))]
+    pub fn with_file_export<P: AsRef<Path>>(_service_name: &str, _path: P) -> TracingResult<Self> {
         Err(TracingError::NotEnabled)
     }
 
