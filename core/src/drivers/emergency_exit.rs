@@ -151,6 +151,7 @@ pub fn reset_bypass_mode() {
 mod tests {
     use super::*;
     use crate::engine::Modifier;
+    use serial_test::serial;
 
     fn make_modifiers_state(ctrl: bool, alt: bool, shift: bool) -> ModifierState {
         let mut state = ModifierState::new();
@@ -203,6 +204,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn bypass_mode_activate_deactivate() {
         reset_bypass_mode();
         assert!(!is_bypass_active());
@@ -215,6 +217,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn bypass_mode_toggle() {
         reset_bypass_mode();
         assert!(!is_bypass_active());
@@ -229,6 +232,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn bypass_mode_idempotent_activation() {
         reset_bypass_mode();
 
@@ -248,6 +252,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn bypass_mode_thread_safety() {
         use std::sync::Arc;
         use std::thread;
