@@ -21,7 +21,8 @@ class KeyrxTrainingScreen extends StatefulWidget {
   State<KeyrxTrainingScreen> createState() => _KeyrxTrainingScreenState();
 }
 
-class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
+class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
+    with SingleTickerProviderStateMixin {
   static const String _progressKey = 'keyrx_training_progress';
 
   EngineService? _engine;
@@ -36,6 +37,12 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
   bool _progressLoaded = false;
   late final List<TrainingLesson> _lessons;
 
+  // Exercise feedback state
+  ExerciseResult? _lastExerciseResult;
+  late AnimationController _feedbackAnimController;
+  late Animation<double> _feedbackScaleAnim;
+  bool _certificateShown = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +51,14 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
     final registry = Provider.of<ServiceRegistry>(context, listen: false);
     _engine = registry.engineService;
     _subscribeToStateStream();
+    _feedbackAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _feedbackScaleAnim = CurvedAnimation(
+      parent: _feedbackAnimController,
+      curve: Curves.elasticOut,
+    );
   }
 
   Future<void> _loadProgress() async {
@@ -88,8 +103,28 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
     _stateSubscription = _engine?.stateStream.listen((snapshot) {
       if (!mounted) return;
       setState(() => _latestSnapshot = snapshot);
+      _validateExercise(snapshot);
       _checkStepCompletion(snapshot);
     });
+  }
+
+  void _validateExercise(EngineSnapshot snapshot) {
+    if (_currentLessonIndex >= _lessons.length) return;
+    final lesson = _lessons[_currentLessonIndex];
+    if (_currentStepIndex >= lesson.steps.length) return;
+
+    final step = lesson.steps[_currentStepIndex];
+    if (step.exercise == null) return;
+
+    final result = step.exercise!.validator(snapshot);
+    final previousSuccess = _lastExerciseResult?.success ?? false;
+
+    setState(() => _lastExerciseResult = result);
+
+    // Animate on state change
+    if (result.success != previousSuccess) {
+      _feedbackAnimController.forward(from: 0);
+    }
   }
 
   void _checkStepCompletion(EngineSnapshot snapshot) {
@@ -103,6 +138,7 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
     final lesson = _lessons[_currentLessonIndex];
     setState(() {
       _showHint = false;
+      _lastExerciseResult = null;
       if (_currentStepIndex < lesson.steps.length - 1) {
         _currentStepIndex++;
       } else {
@@ -111,8 +147,32 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
         if (_currentLessonIndex < _lessons.length - 1) {
           _currentLessonIndex++;
           _currentStepIndex = 0;
+        } else {
+          // All lessons complete - show certificate
+          _showCertificateDialog();
         }
       }
+    });
+  }
+
+  void _showCertificateDialog() {
+    if (_certificateShown) return;
+    final allComplete = _lessons.every(
+      (l) => (_completedSteps[l.id] ?? 0) >= l.steps.length,
+    );
+    if (!allComplete) return;
+
+    _certificateShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => CertificateDialog(
+          lessonCount: _lessons.length,
+          onDismiss: () => Navigator.pop(ctx),
+        ),
+      );
     });
   }
 
@@ -123,12 +183,14 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
       final completed = _completedSteps[lesson.id] ?? 0;
       _currentStepIndex = completed < lesson.steps.length ? completed : 0;
       _showHint = false;
+      _lastExerciseResult = null;
     });
   }
 
   @override
   void dispose() {
     _stateSubscription?.cancel();
+    _feedbackAnimController.dispose();
     super.dispose();
   }
 
@@ -276,6 +338,8 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          if (step.exercise != null) _buildExerciseFeedback(step.exercise!),
           const Spacer(),
           if (step.hint != null) _buildHintSection(step.hint!),
         ],
@@ -283,30 +347,62 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
     );
   }
 
-  Widget _buildHintSection(String hint) {
-    if (_showHint) {
-      return Card(
-        color: Colors.amber.withValues(alpha: 0.1),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.lightbulb, color: Colors.amber),
-              const SizedBox(width: 12),
-              Expanded(child: Text(hint, style: Theme.of(context).textTheme.bodyMedium)),
-            ],
-          ),
+  Widget _buildExerciseFeedback(TrainingExercise exercise) {
+    final result = _lastExerciseResult;
+    final ok = result?.success ?? false;
+    final color = result == null ? Colors.grey : ok ? Colors.green : Colors.red;
+    final icon = result == null ? Icons.play_circle_outline : ok ? Icons.check_circle : Icons.cancel;
+    final msg = ok ? exercise.successMessage : result?.message ?? exercise.failureMessage ?? 'Try again';
+
+    return Semantics(
+      label: ok ? 'Passed: ${exercise.successMessage}' : 'Exercise: ${exercise.prompt}',
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
         ),
-      );
-    }
-    return Center(
-      child: TextButton.icon(
-        icon: const Icon(Icons.lightbulb_outline),
-        label: const Text('Show Hint'),
-        onPressed: () => setState(() => _showHint = true),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            ScaleTransition(
+              scale: _feedbackScaleAnim,
+              child: Icon(icon, color: color, size: 28, semanticLabel: ok ? 'Success' : 'Pending'),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(exercise.prompt, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
+          ]),
+          if (result != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                Icon(ok ? Icons.thumb_up : Icons.info_outline, size: 16, color: color),
+                const SizedBox(width: 8),
+                Expanded(child: Text(msg, style: TextStyle(color: ok ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w500))),
+              ]),
+            ),
+          ],
+        ]),
       ),
     );
   }
+
+  Widget _buildHintSection(String hint) => _showHint
+      ? Card(
+          color: Colors.amber.withValues(alpha: 0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              const Icon(Icons.lightbulb, color: Colors.amber),
+              const SizedBox(width: 12),
+              Expanded(child: Text(hint, style: Theme.of(context).textTheme.bodyMedium)),
+            ]),
+          ),
+        )
+      : Center(child: TextButton.icon(icon: const Icon(Icons.lightbulb_outline), label: const Text('Show Hint'), onPressed: () => setState(() => _showHint = true)));
 
   Widget _buildLessonCompleteContent(TrainingLesson lesson) {
     final allComplete = _lessons.every((l) => (_completedSteps[l.id] ?? 0) >= l.steps.length);
@@ -391,6 +487,13 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen> {
 
   Future<void> _resetProgress() async {
     (await SharedPreferences.getInstance()).remove(_progressKey);
-    setState(() { _completedSteps = {}; _currentLessonIndex = 0; _currentStepIndex = 0; _showHint = false; });
+    setState(() {
+      _completedSteps = {};
+      _currentLessonIndex = 0;
+      _currentStepIndex = 0;
+      _showHint = false;
+      _lastExerciseResult = null;
+      _certificateShown = false;
+    });
   }
 }
