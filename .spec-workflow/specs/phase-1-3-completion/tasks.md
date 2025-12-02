@@ -358,7 +358,7 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter interaction engineer | Task: Extend VisualKeyboard to wrap each key in Draggable; add DragTarget to accept drops; create mapping_overlay.dart with MappingOverlay CustomPainter that draws arrows from source to target keys; maintain List<RemapConfig> state; show "X" button on mapping to delete | Restrictions: ≤200 lines added to visual_keyboard, ≤150 lines mapping_overlay; smooth drag feedback | _Leverage: Draggable, DragTarget, CustomPaint | _Requirements: 4.2 | Success: Drag key A to B creates mapping with arrow, deletable._
 
-- [ ] 45. Implement Rhai code generator service
+- [x] 45. Implement Rhai code generator service
   - Files: ui/lib/services/rhai_generator.dart (new)
   - Generate Rhai script from visual config; parse simple scripts back to visual config (best-effort)
   - _Leverage: Rhai syntax knowledge, existing script examples_
