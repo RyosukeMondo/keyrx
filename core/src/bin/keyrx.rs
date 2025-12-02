@@ -57,6 +57,10 @@ enum Commands {
         /// Path to keyboard device (e.g., /dev/input/event3). Auto-detects if not specified.
         #[arg(long)]
         device: Option<PathBuf>,
+
+        /// Record session to a .krx file for replay/analysis
+        #[arg(long)]
+        record: Option<PathBuf>,
     },
 
     /// Inspect current engine state
@@ -190,8 +194,10 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             debug,
             mock,
             device,
+            record,
         } => {
             RunCommand::new(script, debug, mock, device, format)
+                .with_record_path(record)
                 .run()
                 .await?;
         }

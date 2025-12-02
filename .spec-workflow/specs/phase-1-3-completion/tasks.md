@@ -75,7 +75,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust I/O engineer | Task: Add EventRecorder { file, session_start, event_count } to event_recording.rs; implement new(path) -> Result, record_event(EventRecord) -> Result (append to buffer), finish(final_state) -> Result (write SessionFile JSON to .krx file) | Restrictions: ≤200 lines combined with task 7; buffer events in memory, flush on finish; handle I/O errors gracefully | _Leverage: std::fs, serde_json::to_writer_pretty | _Requirements: 1.3 | Success: Recording session creates valid .krx JSON file with all events._
 
-- [ ] 9. Integrate recording into keyrx run command
+- [x] 9. Integrate recording into keyrx run command
   - Files: core/src/cli/commands/run.rs (modify)
   - Add --record <path.krx> flag; wrap engine loop with EventRecorder; call finish on shutdown
   - _Leverage: core/src/engine/event_recording.rs (EventRecorder), existing run.rs structure_

@@ -307,6 +307,11 @@ impl LayerStack {
             .map(|layer| layer.name.as_str())
             .collect()
     }
+
+    /// Get active layer IDs in priority order (last = highest).
+    pub fn active_layer_ids(&self) -> Vec<u32> {
+        self.stack.iter().map(|&id| id as u32).collect()
+    }
 }
 
 #[cfg(test)]

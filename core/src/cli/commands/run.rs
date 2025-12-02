@@ -3,7 +3,10 @@
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
-use crate::engine::{AdvancedEngine, InputEvent, LayerAction, RemapAction};
+use crate::engine::{
+    infer_decision_type, AdvancedEngine, EventRecordBuilder, EventRecorder, InputEvent,
+    LayerAction, RemapAction,
+};
 use crate::mocks::MockInput;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::{InputSource, ScriptRuntime};
@@ -32,6 +35,8 @@ pub struct RunCommand {
     pub output: OutputWriter,
     /// Optional limit for mock run duration (used for tests to avoid hanging).
     pub mock_run_limit: Option<Duration>,
+    /// Optional path to record session to (.krx file).
+    pub record_path: Option<PathBuf>,
 }
 
 impl RunCommand {
@@ -49,7 +54,14 @@ impl RunCommand {
             device_path,
             output: OutputWriter::new(format),
             mock_run_limit: None,
+            record_path: None,
         }
+    }
+
+    /// Set the path for session recording.
+    pub fn with_record_path(mut self, path: Option<PathBuf>) -> Self {
+        self.record_path = path;
+        self
     }
 
     /// Set an optional maximum runtime for mock runs (primarily for tests).
@@ -194,7 +206,14 @@ impl RunCommand {
 
         let mut input = MockInput::new();
         let registry = runtime.registry().clone();
+        let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
+        let timing_config = registry.timing_config().clone();
         let mut engine = self.build_engine(runtime, registry);
+
+        // Initialize recorder if --record specified
+        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let mut seq = 0u64;
+
         input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
@@ -225,12 +244,20 @@ impl RunCommand {
             }
 
             let events = input.poll_events().await?;
-            self.process_events_with_engine(&mut engine, &mut input, events, &mut last_timestamp)
-                .await?;
+            self.process_events_with_engine(
+                &mut engine,
+                &mut input,
+                events,
+                &mut last_timestamp,
+                &mut recorder,
+                &mut seq,
+            )
+            .await?;
             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         }
 
         input.stop().await?;
+        self.finish_recording(recorder)?;
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -246,7 +273,14 @@ impl RunCommand {
         self.report_profile_status(&device_info, &profile_entry);
 
         let registry = runtime.registry().clone();
+        let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
+        let timing_config = registry.timing_config().clone();
         let mut engine = self.build_engine(runtime, registry);
+
+        // Initialize recorder if --record specified
+        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let mut seq = 0u64;
+
         input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
@@ -271,6 +305,8 @@ impl RunCommand {
                     &mut input,
                     events,
                     &mut last_timestamp,
+                    &mut recorder,
+                    &mut seq,
                 )
                 .await?;
             } else {
@@ -280,6 +316,7 @@ impl RunCommand {
 
         self.output.success("Signal received, stopping...");
         input.stop().await?;
+        self.finish_recording(recorder)?;
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -340,7 +377,14 @@ impl RunCommand {
         let input = self.init_windows_input()?;
         let mut input = input;
         let registry = runtime.registry().clone();
+        let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
+        let timing_config = registry.timing_config().clone();
         let mut engine = self.build_engine(runtime, registry);
+
+        // Initialize recorder if --record specified
+        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let mut seq = 0u64;
+
         input.start().await?;
 
         self.output.success("Engine started. Press Ctrl+C to stop.");
@@ -366,6 +410,8 @@ impl RunCommand {
                     &mut input,
                     events,
                     &mut last_timestamp,
+                    &mut recorder,
+                    &mut seq,
                 )
                 .await?;
             } else {
@@ -374,6 +420,7 @@ impl RunCommand {
         }
 
         input.stop().await?;
+        self.finish_recording(recorder)?;
         self.output.success("Engine stopped.");
         Ok(())
     }
@@ -416,6 +463,46 @@ impl RunCommand {
             tokio::signal::ctrl_c().await.ok();
             running.store(false, Ordering::SeqCst);
         });
+    }
+
+    /// Create an EventRecorder if --record path is specified.
+    fn create_recorder(
+        &self,
+        engine: &AdvancedEngine<RhaiRuntime>,
+        script_path: Option<String>,
+        timing_config: crate::engine::TimingConfig,
+    ) -> Result<Option<EventRecorder>> {
+        match &self.record_path {
+            Some(path) => {
+                self.output
+                    .success(&format!("Recording session to: {}", path.display()));
+                let initial_state = engine.snapshot();
+                EventRecorder::new(path, script_path, timing_config, initial_state)
+                    .map(Some)
+                    .map_err(|e| anyhow!("Failed to create recorder: {}", e))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Finish recording and save to file.
+    fn finish_recording(&self, recorder: Option<EventRecorder>) -> Result<()> {
+        if let Some(rec) = recorder {
+            let count = rec.event_count();
+            match rec.finish() {
+                Ok(session) => {
+                    self.output.success(&format!(
+                        "Session saved: {} events, avg latency {}µs",
+                        count,
+                        session.avg_latency_us()
+                    ));
+                }
+                Err(e) => {
+                    self.output.error(&format!("Failed to save session: {}", e));
+                }
+            }
+        }
+        Ok(())
     }
 
     fn build_engine(
@@ -462,7 +549,7 @@ impl RunCommand {
 
     #[instrument(
         level = "trace",
-        skip(self, engine, input, events, last_timestamp),
+        skip(self, engine, input, events, last_timestamp, recorder, seq),
         fields(event_count = events.len())
     )]
     async fn process_events_with_engine<I: InputSource>(
@@ -471,6 +558,8 @@ impl RunCommand {
         input: &mut I,
         events: Vec<InputEvent>,
         last_timestamp: &mut u64,
+        recorder: &mut Option<EventRecorder>,
+        seq: &mut u64,
     ) -> Result<()> {
         for event in events {
             if event.timestamp_us > *last_timestamp {
@@ -480,7 +569,28 @@ impl RunCommand {
                 *last_timestamp = event.timestamp_us;
             }
 
-            let outputs = engine.process_event(event);
+            let process_start = Instant::now();
+            let outputs = engine.process_event(event.clone());
+            let latency_us = process_start.elapsed().as_micros() as u64;
+
+            if let Some(ref mut rec) = recorder {
+                let snapshot = engine.snapshot();
+                let active_layers: Vec<u32> = snapshot.layers.active_layer_ids();
+                rec.record_event(
+                    EventRecordBuilder::new()
+                        .seq(*seq)
+                        .timestamp_us(event.timestamp_us)
+                        .input(event.clone())
+                        .output(outputs.clone())
+                        .decision_type(infer_decision_type(&event, &outputs))
+                        .active_layers(active_layers)
+                        .modifiers_state(snapshot.modifiers)
+                        .latency_us(latency_us)
+                        .build(),
+                );
+                *seq += 1;
+            }
+
             for action in outputs {
                 input.send_output(action).await?;
             }
