@@ -68,7 +68,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust data modeling engineer | Task: Create event_recording.rs with EventRecord { seq, timestamp_µs, input, output, decision_type, active_layers, modifiers_state, latency_µs } and SessionFile { version, created_at, script_used, timing_config, initial_state, events }; derive Serialize/Deserialize; implement from_json/to_json | Restrictions: ≤200 lines; use serde_json; compact serialization for events array | _Leverage: existing InputEvent, OutputAction, EngineSnapshot types | _Requirements: 1.3 | Success: Structures serialize/deserialize correctly, version field for schema evolution._
 
-- [ ] 8. Implement EventRecorder middleware
+- [x] 8. Implement EventRecorder middleware
   - Files: core/src/engine/event_recording.rs (extend)
   - Create EventRecorder struct; implement record_event(), finish() methods; write to .krx file
   - _Leverage: core/src/engine/event_loop.rs (intercept point), std::fs::File_
