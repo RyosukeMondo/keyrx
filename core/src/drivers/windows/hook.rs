@@ -13,6 +13,7 @@ use tracing::{debug, error, warn};
 use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::GetCurrentThreadId;
+use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
     UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_INJECTED, MSG, PM_REMOVE,
@@ -20,8 +21,14 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::hook_thread::spawn_hook_thread;
-
 use super::keymap::vk_to_keycode;
+use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
+
+/// Virtual key code constants for emergency exit detection.
+const VK_ESCAPE: i32 = 0x1B;
+const VK_CONTROL: i32 = 0x11;
+const VK_SHIFT: i32 = 0x10;
+const VK_MENU: i32 = 0x12; // Alt key
 
 /// Thread-local storage for the event sender used by the hook callback.
 ///
@@ -271,11 +278,45 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
         return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
     }
 
+    // EMERGENCY EXIT CHECK - must be FIRST before any other processing
+    // Check for Ctrl+Alt+Shift+Escape to toggle bypass mode
     let kb_struct = &*(lparam.0 as *const KBDLLHOOKSTRUCT);
     let pressed = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
+
+    if pressed && check_emergency_exit_combo(kb_struct.vkCode as i32) {
+        toggle_bypass_mode();
+        // Pass through the Escape key so it doesn't get stuck
+        return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
+    }
+
+    // If bypass mode is active, pass through all keys without processing
+    if is_bypass_active() {
+        return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
+    }
+
     let event = build_input_event(kb_struct, pressed);
     send_event(event);
     CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
+}
+
+/// Check if the emergency exit key combination is active.
+///
+/// Returns true if Escape is pressed while Ctrl+Alt+Shift are all held down.
+#[inline]
+fn check_emergency_exit_combo(vk_code: i32) -> bool {
+    if vk_code != VK_ESCAPE {
+        return false;
+    }
+
+    // Use GetAsyncKeyState to check modifier state
+    // The high bit (0x8000) is set if the key is currently down
+    unsafe {
+        let ctrl_down = (GetAsyncKeyState(VK_CONTROL) as u16 & 0x8000) != 0;
+        let alt_down = (GetAsyncKeyState(VK_MENU) as u16 & 0x8000) != 0;
+        let shift_down = (GetAsyncKeyState(VK_SHIFT) as u16 & 0x8000) != 0;
+
+        ctrl_down && alt_down && shift_down
+    }
 }
 
 fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
@@ -502,5 +543,24 @@ mod tests {
         assert_eq!(event.timestamp_us, 123_000);
         assert!(!event.is_synthetic);
         assert!(!event.is_repeat);
+    }
+
+    #[test]
+    fn vk_constants_correct() {
+        // Verify VK constants match Windows API values
+        assert_eq!(VK_ESCAPE, 0x1B);
+        assert_eq!(VK_CONTROL, 0x11);
+        assert_eq!(VK_SHIFT, 0x10);
+        assert_eq!(VK_MENU, 0x12);
+    }
+
+    #[test]
+    fn check_emergency_exit_combo_wrong_key() {
+        // When not pressing Escape, should return false regardless of modifiers
+        // This test only checks the key code part, not GetAsyncKeyState behavior
+        assert!(!check_emergency_exit_combo(0x41)); // 'A' key
+        assert!(!check_emergency_exit_combo(VK_CONTROL)); // Ctrl key itself
+        assert!(!check_emergency_exit_combo(VK_SHIFT)); // Shift key itself
+        assert!(!check_emergency_exit_combo(VK_MENU)); // Alt key itself
     }
 }

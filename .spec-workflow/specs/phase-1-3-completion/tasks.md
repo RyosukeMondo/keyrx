@@ -261,7 +261,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems safety engineer | Task: Create emergency_exit.rs with static BYPASS_MODE: AtomicBool; implement check_emergency_exit(key, mods) -> bool that returns true when Ctrl+Alt+Shift+Escape pressed; implement activate_bypass_mode() that sets flag and logs warning; implement deactivate_bypass_mode() and is_bypass_active() | Restrictions: ≤150 lines; thread-safe with SeqCst ordering; no panics; include callback hook for UI notification | _Leverage: std::sync::atomic, tracing crate | _Requirements: 4.1 | Success: Emergency exit detection works, bypass mode toggles correctly, thread-safe._
 
-- [ ] 32. Integrate emergency exit into Windows driver
+- [x] 32. Integrate emergency exit into Windows driver
   - Files: core/src/drivers/windows/hook.rs (modify)
   - Add emergency exit check at start of keyboard_proc, before any processing; if triggered, activate bypass and return pass-through
   - _Leverage: core/src/drivers/emergency_exit.rs, existing Windows hook structure_
