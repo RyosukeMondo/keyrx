@@ -118,18 +118,24 @@ class _ConsolePageState extends State<ConsolePage> {
     final lower = entry.text.toLowerCase();
     final isError = entry.isError || lower.startsWith('error:');
     final isOk = lower.startsWith('ok:');
+    final showInitButton = isError && lower.contains('not initialized');
     final badgeColor = entry.isInput
         ? Colors.blueAccent
         : isError
-        ? Colors.redAccent
-        : Colors.green;
+            ? Colors.redAccent
+            : Colors.green;
     final label = entry.isInput
         ? 'CMD'
         : isError
-        ? 'ERROR'
-        : isOk
-        ? 'OK'
-        : 'OUT';
+            ? 'ERROR'
+            : isOk
+                ? 'OK'
+                : 'OUT';
+    final icon = entry.isInput
+        ? Icons.chevron_right
+        : isError
+            ? Icons.warning_amber_rounded
+            : Icons.check_circle_outline;
     final displayText = entry.isInput ? entry.text : _stripPrefix(entry.text);
 
     return Padding(
@@ -141,21 +147,43 @@ class _ConsolePageState extends State<ConsolePage> {
           border: Border.all(color: badgeColor.withOpacity(0.35)),
         ),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBadge(label, badgeColor),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                displayText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'monospace',
-                  fontSize: 14,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBadge(label, badgeColor),
+                const SizedBox(width: 6),
+                Icon(icon, color: badgeColor, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: SelectableText(
+                    displayText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (showInitButton) ...[
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: _initializeEngine,
+                icon: const Icon(Icons.power_settings_new, size: 16),
+                label: const Text('Initialize Engine'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  textStyle: const TextStyle(fontSize: 12),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -235,6 +263,22 @@ class _ConsolePageState extends State<ConsolePage> {
     setState(() {
       _history.clear();
     });
+  }
+
+  Future<void> _initializeEngine() async {
+    final engine = _engine;
+    if (engine == null) return;
+
+    setState(() => _isBusy = true);
+    final success = await engine.initialize();
+    setState(() {
+      _history.add(ConsoleEntry(
+        success ? 'ok: Engine initialized.' : 'error: Initialization failed.',
+        isError: !success,
+      ));
+      _isBusy = false;
+    });
+    _scrollToBottom();
   }
 
   Widget _buildBadge(String text, Color color) {
