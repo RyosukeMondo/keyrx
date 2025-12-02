@@ -169,7 +169,7 @@
   - _Requirements: 3.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter state management engineer | Task: Modify debugger.dart to subscribe to bridge.stateStream; on each EngineSnapshot, update: activeLayers list, heldKeys chips, modifiers toggle display, latencyMicroseconds meter; animate value changes with AnimatedContainer | Restrictions: ≤100 lines added; maintain existing layout; dispose stream subscription properly | _Leverage: existing bridge.stateStream, StreamBuilder widget | _Requirements: 3.1 | Success: Debugger updates within 50ms of key press, shows all state fields._
 
-- [ ] 21. Add pending decision visualization to debugger
+- [x] 21. Add pending decision visualization to debugger
   - Files: ui/lib/pages/debugger.dart (extend)
   - Display pending tap-hold countdown timer; highlight combo keys in progress
   - _Leverage: EngineSnapshot.pending field, existing debugger widgets_
