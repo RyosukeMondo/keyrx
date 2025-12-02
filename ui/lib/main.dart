@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pages/editor.dart';
+import 'pages/editor_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/training_screen.dart';
