@@ -2,7 +2,8 @@
 
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::error::KeyRxError;
-use crate::scripting::test_runner::{discover_tests, TestResult, TestRunner, TestSummary};
+use crate::scripting::test_discovery::discover_tests;
+use crate::scripting::test_runner::{TestResult, TestRunner, TestSummary};
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
 use anyhow::{Context, Result};

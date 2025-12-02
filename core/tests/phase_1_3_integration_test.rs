@@ -11,7 +11,8 @@ use keyrx_core::engine::{
     DecisionType, EngineState, EventRecordBuilder, EventRecorder, InputEvent, KeyCode, LayerStack,
     ModifierState, OutputAction, ReplaySession, SessionFile, TimingConfig,
 };
-use keyrx_core::scripting::test_runner::{discover_tests, TestRunner, TestSummary};
+use keyrx_core::scripting::test_discovery::discover_tests;
+use keyrx_core::scripting::test_runner::{TestRunner, TestSummary};
 use keyrx_core::scripting::RhaiRuntime;
 use keyrx_core::traits::{InputSource, ScriptRuntime};
 use std::fs;
