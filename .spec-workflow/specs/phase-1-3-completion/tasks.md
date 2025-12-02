@@ -351,7 +351,7 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create keyboard_layout.dart with KeyboardLayout, KeyDefinition classes for ANSI 104-key layout; create visual_keyboard.dart with VisualKeyboard StatefulWidget rendering keys as tappable Container widgets with proper row/column positioning and width (1.0u = standard key, 1.5u = Tab, 2.0u = Shift, etc.) | Restrictions: ≤300 lines each; responsive sizing; highlight on tap | _Leverage: existing key names from scripts/std/layouts/ansi.rhai | _Requirements: 4.2 | Success: ANSI keyboard renders correctly, keys are tappable._
 
-- [ ] 44. Implement drag-and-drop key mapping interaction
+- [x] 44. Implement drag-and-drop key mapping interaction
   - Files: ui/lib/widgets/visual_keyboard.dart (extend), ui/lib/widgets/mapping_overlay.dart (new)
   - Add Draggable/DragTarget to keys; draw mapping arrows between connected keys
   - _Leverage: Flutter Draggable widget, CustomPaint for arrows_
