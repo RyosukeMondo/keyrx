@@ -35,7 +35,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust/Rhai integration engineer | Task: Create test_harness.rs with TestHarness struct; implement register_test_functions(runtime: &mut RhaiRuntime) adding simulate_tap(key), simulate_hold(key, ms), assert_output(key), assert_mapping(from, to) functions; store test outputs in thread-local Vec for assertions | Restrictions: ≤500 lines; no panics across FFI; use existing event injection patterns; thread-safe | _Leverage: RhaiRuntime function registration, InputEvent::key_down/key_up | _Requirements: 1.1 | Success: Rhai scripts can call simulate_tap("KeyA") and assert_output("KeyB"), assertions report pass/fail with message._
 
-- [ ] 4. Implement test discovery and runner
+- [x] 4. Implement test discovery and runner
   - Files: core/src/scripting/test_runner.rs (new)
   - Parse Rhai AST for functions with `test_` prefix (Rhai doesn't support attributes); execute each in isolated context; collect TestResult structs
   - _Leverage: core/src/scripting/runtime.rs, core/src/scripting/test_harness.rs_
