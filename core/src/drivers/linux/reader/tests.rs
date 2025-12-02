@@ -66,3 +66,91 @@ fn handle_read_error_internal_respects_running_flag() {
     running.store(true, Ordering::Relaxed);
     assert!(handle_read_error_internal(&running, &path, &err));
 }
+
+#[test]
+fn evdev_key_constants_correct() {
+    // Verify evdev key constants match expected values
+    assert_eq!(KEY_ESC, 1);
+    assert_eq!(KEY_LEFTCTRL, 29);
+    assert_eq!(KEY_RIGHTCTRL, 97);
+    assert_eq!(KEY_LEFTSHIFT, 42);
+    assert_eq!(KEY_RIGHTSHIFT, 54);
+    assert_eq!(KEY_LEFTALT, 56);
+    assert_eq!(KEY_RIGHTALT, 100);
+}
+
+#[test]
+fn modifier_state_tracker_tracks_left_modifiers() {
+    let mut tracker = ModifierStateTracker::default();
+
+    // Initially no modifiers down
+    assert!(!tracker.all_modifiers_down());
+
+    // Press left ctrl
+    tracker.update(KEY_LEFTCTRL, true);
+    assert!(!tracker.all_modifiers_down());
+
+    // Press left shift
+    tracker.update(KEY_LEFTSHIFT, true);
+    assert!(!tracker.all_modifiers_down());
+
+    // Press left alt - now all are down
+    tracker.update(KEY_LEFTALT, true);
+    assert!(tracker.all_modifiers_down());
+
+    // Release ctrl - no longer all down
+    tracker.update(KEY_LEFTCTRL, false);
+    assert!(!tracker.all_modifiers_down());
+}
+
+#[test]
+fn modifier_state_tracker_tracks_right_modifiers() {
+    let mut tracker = ModifierStateTracker::default();
+
+    // Press right ctrl
+    tracker.update(KEY_RIGHTCTRL, true);
+    // Press right shift
+    tracker.update(KEY_RIGHTSHIFT, true);
+    // Press right alt
+    tracker.update(KEY_RIGHTALT, true);
+
+    // All modifiers down via right keys
+    assert!(tracker.all_modifiers_down());
+}
+
+#[test]
+fn modifier_state_tracker_mixed_left_right() {
+    let mut tracker = ModifierStateTracker::default();
+
+    // Mix of left and right modifiers
+    tracker.update(KEY_LEFTCTRL, true);
+    tracker.update(KEY_RIGHTSHIFT, true);
+    tracker.update(KEY_LEFTALT, true);
+
+    assert!(tracker.all_modifiers_down());
+
+    // Note: Our tracker uses a single flag per modifier type (ctrl/shift/alt),
+    // not separate flags for left/right. This is intentional for simplicity -
+    // releasing ANY ctrl key clears the ctrl flag.
+    tracker.update(KEY_RIGHTCTRL, false); // Releases the ctrl flag
+    assert!(!tracker.all_modifiers_down());
+
+    // Re-enable ctrl
+    tracker.update(KEY_LEFTCTRL, true);
+    assert!(tracker.all_modifiers_down());
+
+    tracker.update(KEY_LEFTCTRL, false); // Left ctrl release
+    assert!(!tracker.all_modifiers_down());
+}
+
+#[test]
+fn modifier_state_tracker_ignores_other_keys() {
+    let mut tracker = ModifierStateTracker::default();
+
+    // Other keys don't affect modifier state
+    tracker.update(KEY_ESC, true);
+    tracker.update(30, true); // Key A
+    tracker.update(57, true); // Space
+
+    assert!(!tracker.all_modifiers_down());
+}

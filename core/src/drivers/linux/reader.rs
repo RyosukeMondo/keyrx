@@ -5,6 +5,7 @@
 
 use super::keymap::evdev_to_keycode;
 use crate::drivers::common::extract_panic_message;
+use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
 use crate::error::LinuxDriverError;
 use anyhow::Result;
@@ -14,7 +15,16 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, warn};
+
+/// Evdev key codes for modifier keys (used for emergency exit detection).
+const KEY_LEFTCTRL: u16 = 29;
+const KEY_RIGHTCTRL: u16 = 97;
+const KEY_LEFTSHIFT: u16 = 42;
+const KEY_RIGHTSHIFT: u16 = 54;
+const KEY_LEFTALT: u16 = 56;
+const KEY_RIGHTALT: u16 = 100;
+const KEY_ESC: u16 = 1;
 
 /// Reader for keyboard events from an evdev device.
 ///
@@ -45,6 +55,33 @@ pub struct EvdevReader {
     panic_error: Arc<AtomicBool>,
     /// Device ID string for event metadata (derived from device_path).
     device_id: String,
+    /// Modifier state tracking for emergency exit detection.
+    modifier_state: ModifierStateTracker,
+}
+
+/// Tracks modifier key state for emergency exit combo detection.
+#[derive(Default)]
+struct ModifierStateTracker {
+    ctrl_down: bool,
+    shift_down: bool,
+    alt_down: bool,
+}
+
+impl ModifierStateTracker {
+    /// Update modifier state based on key event.
+    fn update(&mut self, code: u16, pressed: bool) {
+        match code {
+            KEY_LEFTCTRL | KEY_RIGHTCTRL => self.ctrl_down = pressed,
+            KEY_LEFTSHIFT | KEY_RIGHTSHIFT => self.shift_down = pressed,
+            KEY_LEFTALT | KEY_RIGHTALT => self.alt_down = pressed,
+            _ => {}
+        }
+    }
+
+    /// Check if all modifiers for emergency exit are pressed.
+    fn all_modifiers_down(&self) -> bool {
+        self.ctrl_down && self.shift_down && self.alt_down
+    }
 }
 
 impl EvdevReader {
@@ -98,6 +135,7 @@ impl EvdevReader {
             device_path,
             panic_error,
             device_id,
+            modifier_state: ModifierStateTracker::default(),
         })
     }
 
@@ -287,8 +325,52 @@ impl EvdevReader {
 
     /// Process a batch of evdev key events.
     ///
-    /// Returns `false` if the reader should stop (channel closed), `true` otherwise.
-    fn process_events(&self, events: &[evdev::InputEvent]) -> bool {
+    /// Returns `false` if the reader should stop (channel closed or emergency exit triggered),
+    /// `true` otherwise.
+    fn process_events(&mut self, events: &[evdev::InputEvent]) -> bool {
+        // EMERGENCY EXIT CHECK - must be FIRST before any other processing
+        // Check for Ctrl+Alt+Shift+Escape to toggle bypass mode
+        for event in events {
+            let code = event.code();
+            let value = event.value();
+            let pressed = value == 1; // 1 = press, 0 = release, 2 = repeat
+
+            // Update modifier state for all events (including releases)
+            self.modifier_state.update(code, pressed);
+
+            // Check for emergency exit combo: Escape pressed with all modifiers down
+            if pressed && code == KEY_ESC && self.modifier_state.all_modifiers_down() {
+                let new_state = toggle_bypass_mode();
+                if new_state {
+                    // Bypass mode activated - ungrab device so keys flow to OS
+                    warn!(
+                        service = "keyrx",
+                        event = "emergency_exit_triggered",
+                        component = "linux_reader",
+                        path = %self.device_path.display(),
+                        "Emergency exit triggered - ungrabbing device"
+                    );
+                    if let Err(e) = self.ungrab() {
+                        error!(
+                            service = "keyrx",
+                            event = "emergency_exit_ungrab_failed",
+                            component = "linux_reader",
+                            error = %e,
+                            "Failed to ungrab device on emergency exit"
+                        );
+                    }
+                    // Signal to stop processing (reader will exit)
+                    self.running.store(false, Ordering::Relaxed);
+                    return false;
+                }
+            }
+        }
+
+        // If bypass mode is active, don't process events normally
+        if is_bypass_active() {
+            return true;
+        }
+
         process_events_internal(&self.tx, |event| self.convert_event(event), events)
     }
 

@@ -268,7 +268,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Windows driver engineer | Task: Modify keyboard_proc in hook.rs to check emergency_exit::check_emergency_exit() FIRST before any other processing; if true, call activate_bypass_mode() and return CallNextHookEx immediately; if bypass_mode active, always pass through | Restrictions: ≤30 lines added; must be FIRST check in callback; no performance regression | _Leverage: emergency_exit module, existing hook structure | _Requirements: 4.1 | Success: Ctrl+Alt+Shift+Escape disables remapping on Windows, all keys pass through._
 
-- [ ] 33. Integrate emergency exit into Linux driver
+- [x] 33. Integrate emergency exit into Linux driver
   - Files: core/src/drivers/linux/evdev.rs (modify)
   - Add emergency exit check at start of event processing; if triggered, ungrab device and activate bypass mode
   - _Leverage: core/src/drivers/emergency_exit.rs, existing evdev handler_
