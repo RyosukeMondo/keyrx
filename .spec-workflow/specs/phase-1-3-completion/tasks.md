@@ -344,7 +344,7 @@
 
 ### Visual Editor Tier 1 (No-Code Experience)
 
-- [ ] 43. Implement visual keyboard layout widget
+- [x] 43. Implement visual keyboard layout widget
   - Files: ui/lib/widgets/visual_keyboard.dart (new), ui/lib/models/keyboard_layout.dart (new)
   - Create interactive keyboard widget with ANSI layout; render keys with proper sizing and positioning
   - _Leverage: existing key registry, Flutter CustomPaint or Stack layout_
