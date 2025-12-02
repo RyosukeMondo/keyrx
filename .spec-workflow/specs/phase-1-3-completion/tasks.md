@@ -227,7 +227,7 @@
   - _Requirements: 3.1, NFR Test Coverage_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter test engineer | Task: Create/extend debugger_test.dart; tests: debugger_subscribes_to_state_stream, latency_meter_updates_on_snapshot, pending_tap_hold_shows_countdown, combo_keys_highlighted; use mock stateStream | Restrictions: ≤200 lines; deterministic; no real FFI calls | _Leverage: flutter_test, StreamController for mock stream | _Requirements: 3.1, NFR Test Coverage | Success: Widget tests pass, ≥75% coverage on debugger._
 
-- [ ] 28. Add widget tests for training screen
+- [x] 28. Add widget tests for training screen
   - Files: ui/test/training_screen_test.dart (new)
   - Test lesson progression, exercise validation, completion tracking
   - _Leverage: flutter_test, SharedPreferences mock_
