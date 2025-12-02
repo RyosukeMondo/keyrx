@@ -3,8 +3,9 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        test_exit_codes, BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit,
-        DoctorCommand, ReplCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
+        replay_exit_codes, test_exit_codes, BenchCommand, CheckCommand, DevicesCommand,
+        DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand, ReplayCommand, RunCommand,
+        SimulateCommand, StateCommand, TestCommand,
     },
     OutputFormat,
 };
@@ -151,6 +152,20 @@ enum Commands {
         #[arg(short, long)]
         watch: bool,
     },
+
+    /// Replay a recorded session from a .krx file
+    Replay {
+        /// Path to the .krx session file
+        session: PathBuf,
+
+        /// Verify that outputs match the recorded outputs
+        #[arg(long)]
+        verify: bool,
+
+        /// Replay speed multiplier (0 = instant, 1 = realtime, 2 = 2x speed)
+        #[arg(long, default_value = "0")]
+        speed: f64,
+    },
 }
 
 fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
@@ -250,6 +265,25 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 return Err(anyhow::anyhow!("Tests failed with exit code {}", exit_code));
             }
         }
+        Commands::Replay {
+            session,
+            verify,
+            speed,
+        } => {
+            let result = ReplayCommand::new(session, format)
+                .with_verify(verify)
+                .with_speed(speed)
+                .run()
+                .await?;
+
+            // Return early with specific exit code for verification failures
+            if verify && !result.all_matched() {
+                return Err(anyhow::anyhow!(
+                    "Replay verification failed with exit code {}",
+                    replay_exit_codes::VERIFICATION_FAILED
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -258,7 +292,7 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
 ///
 /// - Exit code 0: Success (pass)
 /// - Exit code 1: General runtime errors
-/// - Exit code 2: Validation/compilation errors (script syntax issues), test assertion failures
+/// - Exit code 2: Validation/compilation errors (script syntax issues), test assertion failures, replay verification failures
 /// - Exit code 3: Discovery cancelled by user/emergency-exit, test timeout
 fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
     // Check for test command exit codes in the error message
@@ -271,6 +305,11 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
             return ExitCode::from(test_exit_codes::TIMEOUT as u8);
         }
         return ExitCode::from(test_exit_codes::ERROR as u8);
+    }
+
+    // Check for replay verification failures
+    if err_str.contains("Replay verification failed with exit code") {
+        return ExitCode::from(replay_exit_codes::VERIFICATION_FAILED);
     }
 
     // Check if the root cause is a KeyRxError
