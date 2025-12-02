@@ -2,6 +2,7 @@
 
 mod advanced;
 mod decision;
+pub mod decision_engine;
 mod event_loop;
 mod event_recorder;
 mod event_recording;

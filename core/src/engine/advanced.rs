@@ -1,10 +1,14 @@
 //! Advanced remapping engine that orchestrates state, layer logic, and
 //! timing-based decisions (tap-hold, combos).
 
+use crate::engine::decision_engine::{
+    self, activate_hold_action, check_safe_mode_toggle, decision_type_from_action,
+    handle_layer_action, pass_through_event, process_resolutions,
+};
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
-    HoldAction, InputEvent, KeyCode, KeyStateTracker, LayerAction, LayerStack, Modifier,
-    ModifierState, OutputAction, PendingDecision, PendingDecisionState, TimingConfig,
+    InputEvent, KeyCode, KeyStateTracker, LayerAction, LayerStack, ModifierState, OutputAction,
+    PendingDecision, PendingDecisionState, TimingConfig,
 };
 use crate::traits::ScriptRuntime;
 use serde::{Deserialize, Serialize};
@@ -114,7 +118,7 @@ where
         }
 
         // Step 3: Safe mode toggle (Ctrl+Alt+Shift+Escape).
-        if self.check_safe_mode_toggle(&event) {
+        if check_safe_mode_toggle(&event, &self.key_state) {
             self.pending.clear();
             self.safe_mode = !self.safe_mode;
             return vec![OutputAction::PassThrough];
@@ -158,7 +162,7 @@ where
                 outputs.extend(handled_outputs);
                 if handled {
                     consumed = true;
-                    decision_type = Self::decision_type_from_action(&action);
+                    decision_type = decision_type_from_action(&action);
                 }
             }
         }
@@ -177,7 +181,7 @@ where
         }
 
         if !consumed {
-            outputs.push(self.pass_through_event(&event));
+            outputs.push(pass_through_event(&event));
         }
 
         // Emit decision and output spans
@@ -189,22 +193,6 @@ where
         }
 
         outputs
-    }
-
-    /// Determine the decision type from a layer action.
-    fn decision_type_from_action(action: &LayerAction) -> DecisionType {
-        match action {
-            LayerAction::Remap(_) => DecisionType::Remap,
-            LayerAction::Block => DecisionType::Block,
-            LayerAction::TapHold { .. } => DecisionType::Tap, // Will resolve to Tap or Hold later
-            LayerAction::LayerPush(_) | LayerAction::LayerPop | LayerAction::LayerToggle(_) => {
-                DecisionType::Layer
-            }
-            LayerAction::ModifierActivate(_)
-            | LayerAction::ModifierDeactivate(_)
-            | LayerAction::ModifierOneShot(_) => DecisionType::Block, // Modifier actions block input
-            LayerAction::Pass => DecisionType::PassThrough,
-        }
     }
 
     /// Check for timeout-based resolutions (tap-hold and combo windows).
@@ -270,21 +258,6 @@ where
         }
     }
 
-    fn check_safe_mode_toggle(&self, event: &InputEvent) -> bool {
-        if !event.pressed || event.key != KeyCode::Escape {
-            return false;
-        }
-
-        let has_ctrl = self.key_state.is_pressed(KeyCode::LeftCtrl)
-            || self.key_state.is_pressed(KeyCode::RightCtrl);
-        let has_alt = self.key_state.is_pressed(KeyCode::LeftAlt)
-            || self.key_state.is_pressed(KeyCode::RightAlt);
-        let has_shift = self.key_state.is_pressed(KeyCode::LeftShift)
-            || self.key_state.is_pressed(KeyCode::RightShift);
-
-        has_ctrl && has_alt && has_shift
-    }
-
     fn enqueue_combos(&mut self, event: &InputEvent) -> (bool, Vec<OutputAction>) {
         let pressed_keys: Vec<_> = self.key_state.pressed_keys().collect();
         let mut blocked = false;
@@ -318,45 +291,29 @@ where
         resolutions: Vec<DecisionResolution>,
         event: Option<&InputEvent>,
     ) -> (Vec<OutputAction>, bool, bool) {
-        let mut outputs = Vec::new();
-        let mut consumed = false;
-        let mut skip_layer_actions = false;
+        let result = process_resolutions(resolutions, &self.key_state);
+        let mut outputs = result.outputs;
 
-        for resolution in resolutions {
-            match resolution {
-                DecisionResolution::Tap { key, .. } => {
-                    outputs.push(OutputAction::KeyDown(key));
-                    outputs.push(OutputAction::KeyUp(key));
-                    consumed = true;
-                }
-                DecisionResolution::Hold { key, action, .. } => {
-                    let hold_outputs = self.activate_hold_action(action);
-                    self.blocked_releases.insert(key);
-                    outputs.extend(hold_outputs);
-                    consumed = true;
-                }
-                DecisionResolution::Consume(key) => {
-                    self.blocked_releases.remove(&key);
-                    outputs.push(OutputAction::Block);
-                    consumed = true;
-                    skip_layer_actions = true;
-                }
-                DecisionResolution::ComboTriggered(action) => {
-                    outputs.extend(self.execute_layer_action_with_event(action, event));
-                    consumed = true;
-                }
-                DecisionResolution::ComboTimeout(keys) => {
-                    for key in keys {
-                        if self.key_state.is_pressed(key) {
-                            outputs.push(OutputAction::KeyDown(key));
-                            consumed = true;
-                        }
-                    }
-                }
-            }
+        // Apply state changes
+        for key in result.block_releases {
+            self.blocked_releases.insert(key);
+        }
+        for key in result.unblock_releases {
+            self.blocked_releases.remove(&key);
         }
 
-        (outputs, consumed, skip_layer_actions)
+        // Activate hold actions
+        for (_, action) in &result.hold_activations {
+            let hold_outputs = activate_hold_action(action, &mut self.modifiers, &mut self.layers);
+            outputs.extend(hold_outputs);
+        }
+
+        // Execute layer actions (from combo triggers)
+        for action in result.layer_actions {
+            outputs.extend(self.execute_layer_action_with_event(action, event));
+        }
+
+        (outputs, result.consumed, result.skip_layer_actions)
     }
 
     fn handle_layer_action(
@@ -364,78 +321,28 @@ where
         event: &InputEvent,
         action: LayerAction,
     ) -> (Vec<OutputAction>, bool) {
-        let mut outputs = Vec::new();
-        let mut consumed = true;
-
-        match action {
-            LayerAction::Remap(target) => {
-                outputs.push(if event.pressed {
-                    OutputAction::KeyDown(target)
-                } else {
-                    OutputAction::KeyUp(target)
-                });
-            }
-            LayerAction::Block => outputs.push(OutputAction::Block),
-            LayerAction::TapHold { tap, hold } => {
-                if event.pressed {
-                    let (_, eager) =
-                        self.pending
-                            .add_tap_hold(event.key, event.timestamp_us, tap, hold.clone());
-                    if let Some(resolution) = eager {
-                        let (eager_outputs, _, _) =
-                            self.handle_resolutions(vec![resolution], Some(event));
-                        outputs.extend(eager_outputs);
-                    }
-                    outputs.push(OutputAction::Block);
-                } else {
-                    outputs.push(OutputAction::Block);
+        // TapHold requires special handling with DecisionQueue
+        if let LayerAction::TapHold { tap, hold } = &action {
+            if event.pressed {
+                let (_, eager) =
+                    self.pending
+                        .add_tap_hold(event.key, event.timestamp_us, *tap, hold.clone());
+                let mut outputs = Vec::new();
+                if let Some(resolution) = eager {
+                    let (eager_outputs, _, _) =
+                        self.handle_resolutions(vec![resolution], Some(event));
+                    outputs.extend(eager_outputs);
                 }
-            }
-            LayerAction::LayerPush(id) => {
-                self.layers.push(id);
                 outputs.push(OutputAction::Block);
-            }
-            LayerAction::LayerPop => {
-                self.layers.pop();
-                outputs.push(OutputAction::Block);
-            }
-            LayerAction::LayerToggle(id) => {
-                self.layers.toggle(id);
-                outputs.push(OutputAction::Block);
-            }
-            LayerAction::ModifierActivate(id) => {
-                self.modifiers.activate(Modifier::Virtual(id));
-                outputs.push(OutputAction::Block);
-            }
-            LayerAction::ModifierDeactivate(id) => {
-                self.modifiers.deactivate(Modifier::Virtual(id));
-                outputs.push(OutputAction::Block);
-            }
-            LayerAction::ModifierOneShot(id) => {
-                self.modifiers.arm_one_shot(Modifier::Virtual(id));
-                outputs.push(OutputAction::Block);
-            }
-            LayerAction::Pass => {
-                outputs.push(OutputAction::PassThrough);
-                consumed = false;
+                return (outputs, true);
+            } else {
+                return (vec![OutputAction::Block], true);
             }
         }
 
-        (outputs, consumed)
-    }
-
-    fn activate_hold_action(&mut self, action: HoldAction) -> Vec<OutputAction> {
-        match action {
-            HoldAction::Key(key) => vec![OutputAction::KeyDown(key)],
-            HoldAction::Modifier(id) => {
-                self.modifiers.activate(Modifier::Virtual(id));
-                vec![OutputAction::Block]
-            }
-            HoldAction::Layer(layer) => {
-                self.layers.push(layer);
-                vec![OutputAction::Block]
-            }
-        }
+        // Use the decision_engine helper for other actions
+        let result = handle_layer_action(event, &action, &mut self.modifiers, &mut self.layers);
+        (result.outputs, result.consumed)
     }
 
     fn execute_layer_action_with_event(
@@ -443,64 +350,28 @@ where
         action: LayerAction,
         event: Option<&InputEvent>,
     ) -> Vec<OutputAction> {
-        match action {
-            LayerAction::Remap(target) => {
-                vec![OutputAction::KeyDown(target), OutputAction::KeyUp(target)]
+        // TapHold from combo needs special handling with DecisionQueue
+        if let LayerAction::TapHold { tap, hold } = &action {
+            if let Some(evt) = event {
+                let (_, eager) =
+                    self.pending
+                        .add_tap_hold(evt.key, evt.timestamp_us, *tap, hold.clone());
+                return eager
+                    .map(|res| self.handle_resolutions(vec![res], Some(evt)).0)
+                    .unwrap_or_default();
             }
-            LayerAction::Block => vec![OutputAction::Block],
-            LayerAction::TapHold { tap, hold } => {
-                if let Some(evt) = event {
-                    let (_, eager) =
-                        self.pending
-                            .add_tap_hold(evt.key, evt.timestamp_us, tap, hold);
-                    eager
-                        .map(|res| self.handle_resolutions(vec![res], Some(evt)).0)
-                        .unwrap_or_default()
-                } else {
-                    Vec::new()
-                }
-            }
-            LayerAction::LayerPush(id) => {
-                self.layers.push(id);
-                vec![OutputAction::Block]
-            }
-            LayerAction::LayerPop => {
-                self.layers.pop();
-                vec![OutputAction::Block]
-            }
-            LayerAction::LayerToggle(id) => {
-                self.layers.toggle(id);
-                vec![OutputAction::Block]
-            }
-            LayerAction::ModifierActivate(id) => {
-                self.modifiers.activate(Modifier::Virtual(id));
-                vec![OutputAction::Block]
-            }
-            LayerAction::ModifierDeactivate(id) => {
-                self.modifiers.deactivate(Modifier::Virtual(id));
-                vec![OutputAction::Block]
-            }
-            LayerAction::ModifierOneShot(id) => {
-                self.modifiers.arm_one_shot(Modifier::Virtual(id));
-                vec![OutputAction::Block]
-            }
-            LayerAction::Pass => vec![OutputAction::PassThrough],
+            return Vec::new();
         }
-    }
 
-    fn pass_through_event(&self, event: &InputEvent) -> OutputAction {
-        if event.pressed {
-            OutputAction::KeyDown(event.key)
-        } else {
-            OutputAction::KeyUp(event.key)
-        }
+        // Use decision_engine helper for other actions
+        decision_engine::execute_layer_action(&action, &mut self.modifiers, &mut self.layers)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::Layer;
+    use crate::engine::{HoldAction, Layer};
     use crate::mocks::MockRuntime;
 
     fn test_engine() -> AdvancedEngine<MockRuntime> {
