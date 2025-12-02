@@ -185,7 +185,7 @@
   - _Requirements: 3.2_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter instructional design engineer | Task: Create/extend training_screen.dart with TrainingLesson { title, steps } and TrainingStep { instruction, validator, hint }; implement lessonCarousel showing current step, validator checking user action via stateStream, hint button revealing guidance | Restrictions: ≤400 lines; 5 lessons minimum (remap, layer, modifier, tap-hold, combo); persist progress in SharedPreferences | _Leverage: bridge.stateStream for validation, SharedPreferences for progress | _Requirements: 3.2 | Success: User completes 5 lessons with step validation, progress persisted._
 
-- [ ] 23. Add training exercises with feedback
+- [x] 23. Add training exercises with feedback
   - Files: ui/lib/pages/training_screen.dart (extend)
   - Implement interactive exercises; show success/failure feedback; track completion
   - _Leverage: existing training_screen structure, EngineService_
