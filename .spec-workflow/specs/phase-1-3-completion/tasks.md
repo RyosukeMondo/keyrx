@@ -19,7 +19,7 @@
   - _Requirements: NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Dart engineer specializing in widget architecture | Task: Split editor.dart (844 lines) into editor_page.dart (EditorPage stateful widget, state management, ~400 lines) and editor_widgets.dart (KeyMappingRow, LayerSelector, KeyPicker widgets, ~400 lines) | Restrictions: No functionality changes; all existing imports must resolve; each file ≤500 lines | _Leverage: existing widget patterns in debugger.dart, console.dart | _Requirements: NFR Code Architecture | Success: Both files ≤500 lines, flutter test passes, no UI regressions._
 
-- [ ] 2.5. Replace panic!() calls with proper assertions in test code
+- [x] 2.5. Replace panic!() calls with proper assertions in test code
   - Files: core/src/discovery/session.rs, core/src/engine/decision/pending.rs, core/src/engine/advanced.rs, core/src/cli/commands/discover.rs, core/src/mocks/mock_state.rs, core/tests/integration/channel_tests.rs
   - Replace 10 identified panic!() calls with assert!, assert_eq!, or .expect() with descriptive messages
   - _Leverage: existing test patterns in core/src/_
