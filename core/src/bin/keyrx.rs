@@ -3,9 +3,9 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        replay_exit_codes, test_exit_codes, BenchCommand, CheckCommand, DevicesCommand,
-        DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand, ReplayCommand, RunCommand,
-        SimulateCommand, StateCommand, TestCommand,
+        replay_exit_codes, test_exit_codes, AnalyzeCommand, BenchCommand, CheckCommand,
+        DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand, ReplayCommand,
+        RunCommand, SimulateCommand, StateCommand, TestCommand,
     },
     OutputFormat,
 };
@@ -166,6 +166,16 @@ enum Commands {
         #[arg(long, default_value = "0")]
         speed: f64,
     },
+
+    /// Analyze a recorded session and generate timing diagrams
+    Analyze {
+        /// Path to the .krx session file
+        session: PathBuf,
+
+        /// Generate ASCII timing diagram
+        #[arg(long)]
+        diagram: bool,
+    },
 }
 
 fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
@@ -283,6 +293,11 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                     replay_exit_codes::VERIFICATION_FAILED
                 ));
             }
+        }
+        Commands::Analyze { session, diagram } => {
+            AnalyzeCommand::new(session, format)
+                .with_diagram(diagram)
+                .run()?;
         }
     }
     Ok(())

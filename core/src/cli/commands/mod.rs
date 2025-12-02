@@ -1,5 +1,6 @@
 //! CLI command implementations.
 
+mod analyze;
 mod bench;
 mod check;
 mod devices;
@@ -12,6 +13,7 @@ mod simulate;
 mod state;
 mod test;
 
+pub use analyze::{AnalysisResult, AnalyzeCommand};
 pub use bench::BenchCommand;
 pub use check::CheckCommand;
 pub use devices::DevicesCommand;
