@@ -365,14 +365,14 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Rhai engineer | Task: Create rhai_generator.dart with RhaiGenerator class; implement generateScript(VisualConfig) returning valid Rhai code with remap(), tap_hold() calls; implement parseScript(String) that regex-parses simple remap/tap_hold patterns back to VisualConfig; set hasAdvancedFeatures=true if unparseable constructs found | Restrictions: ≤250 lines; handle edge cases (special chars in key names); add header comment with generation timestamp | _Leverage: RegExp for parsing, StringBuffer for generation | _Requirements: 4.2 | Success: Generated scripts are valid Rhai, simple scripts parse back correctly._
 
-- [ ] 46. Implement visual editor page with "Eject to Code" feature
+- [x] 46. Implement visual editor page with "Eject to Code" feature
   - Files: ui/lib/pages/visual_editor_page.dart (new)
   - Create complete visual editor page combining keyboard, mappings, and code view; "Eject to Code" shows generated Rhai
   - _Leverage: VisualKeyboard, RhaiGenerator, existing page patterns_
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter page engineer | Task: Create visual_editor_page.dart with VisualEditorPage; layout: VisualKeyboard (top), MappingList (side), "Show Code" toggle button; when toggled, show generated Rhai in syntax-highlighted CodeEditor; "Save" button writes .rhai file; warn if manually edited code loses visual sync | Restrictions: ≤400 lines; clean layout with proper spacing; include file picker for save location | _Leverage: VisualKeyboard, RhaiGenerator, file_picker package | _Requirements: 4.2 | Success: Full visual editing workflow works, code ejection shows valid Rhai._
 
-- [ ] 47. Add visual editor tests
+- [x] 47. Add visual editor tests
   - Files: ui/test/visual_keyboard_test.dart (new), ui/test/rhai_generator_test.dart (new)
   - Test keyboard rendering, drag-drop interaction, code generation/parsing
   - _Leverage: flutter_test, existing widget test patterns_
