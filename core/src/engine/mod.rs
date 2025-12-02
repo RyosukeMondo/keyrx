@@ -6,6 +6,7 @@ mod event_loop;
 mod event_recording;
 pub mod replay;
 mod state;
+pub mod tracing;
 mod types;
 
 pub use advanced::{AdvancedEngine, EngineState, PressedKeyState};
@@ -23,4 +24,5 @@ pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,
     ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
 };
+pub use tracing::{EngineTracer, SpanGuard, TracingError, TracingResult};
 pub use types::{InputEvent, KeyCode, OutputAction, RemapAction};

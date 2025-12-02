@@ -31,6 +31,15 @@ notify = "6.0"
 # REPL readline support
 rustyline = "14.0"
 
+# OpenTelemetry for tracing (optional)
+opentelemetry = { version = "0.27", optional = true }
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true }
+opentelemetry-otlp = { version = "0.27", features = ["tonic"], optional = true }
+
+[features]
+default = []
+otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
+
 [dev-dependencies]
 proptest = "1"
 criterion = "0.5"
