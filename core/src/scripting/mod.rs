@@ -6,7 +6,8 @@
 //! - `builtins`: Helper types and utility functions
 //! - `registry`: Remap registry for storing key mappings
 //! - `helpers`: Key parsing and validation utilities
-//! - `test_harness`: Test primitives for Rhai script testing
+//! - `test_harness`: Test harness and context for Rhai script testing
+//! - `test_primitives`: Test primitive implementations (simulate_*, assert_*)
 //! - `test_runner`: Test discovery and runner for Rhai scripts
 
 mod bindings;
@@ -15,6 +16,7 @@ pub mod helpers;
 mod registry;
 mod runtime;
 pub mod test_harness;
+mod test_primitives;
 pub mod test_runner;
 
 pub use registry::RemapRegistry;

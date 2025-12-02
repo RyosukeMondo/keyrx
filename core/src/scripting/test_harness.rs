@@ -8,16 +8,22 @@
 //! - `assert_output(key)`: Assert that a specific key was output
 //! - `assert_mapping(from, to)`: Assert that a key maps to another key
 
-use super::helpers::parse_key_or_error;
 use crate::engine::{InputEvent, OutputAction};
-use rhai::{Engine, EvalAltResult, Position};
+use rhai::Engine;
 use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+// Import test primitive registration functions from test_primitives module
+use super::test_primitives::{
+    register_assert_blocked, register_assert_mapping, register_assert_output,
+    register_clear_outputs, register_get_outputs, register_simulate_hold, register_simulate_tap,
+};
+
 // Thread-local storage for test outputs and assertions.
+// This is pub(super) to allow test_primitives to access it.
 thread_local! {
-    static TEST_CONTEXT: RefCell<TestContext> = RefCell::new(TestContext::new());
+    pub(super) static TEST_CONTEXT: RefCell<TestContext> = RefCell::new(TestContext::new());
 }
 
 /// Context for a single test execution, tracking outputs and assertions.
@@ -182,248 +188,6 @@ pub fn register_test_functions(
     register_get_outputs(engine);
 }
 
-fn register_simulate_tap(engine: &mut Engine) {
-    engine.register_fn(
-        "simulate_tap",
-        |key: &str| -> Result<(), Box<EvalAltResult>> {
-            let key_code = parse_key_or_error(key, "simulate_tap")?;
-
-            TEST_CONTEXT.with(|ctx| {
-                let mut context = ctx.borrow_mut();
-                let timestamp = context.current_time();
-
-                // Key down event
-                let down_event = InputEvent::key_down(key_code, timestamp);
-                context.add_input(down_event);
-
-                // Advance time slightly (typical tap duration ~50ms = 50000µs)
-                context.advance_time(50_000);
-
-                // Key up event
-                let up_event = InputEvent::key_up(key_code, context.current_time());
-                context.add_input(up_event);
-
-                // Small gap between events
-                context.advance_time(10_000);
-            });
-
-            tracing::debug!(
-                service = "keyrx",
-                event = "test_simulate_tap",
-                component = "test_harness",
-                key = key,
-                "Simulated key tap"
-            );
-
-            Ok(())
-        },
-    );
-}
-
-fn register_simulate_hold(engine: &mut Engine) {
-    engine.register_fn(
-        "simulate_hold",
-        |key: &str, duration_ms: i64| -> Result<(), Box<EvalAltResult>> {
-            let key_code = parse_key_or_error(key, "simulate_hold")?;
-
-            if duration_ms < 0 {
-                return Err(Box::new(EvalAltResult::ErrorRuntime(
-                    format!(
-                        "simulate_hold: duration must be non-negative, got {}",
-                        duration_ms
-                    )
-                    .into(),
-                    Position::NONE,
-                )));
-            }
-
-            let duration_us = (duration_ms as u64).saturating_mul(1000);
-
-            TEST_CONTEXT.with(|ctx| {
-                let mut context = ctx.borrow_mut();
-                let timestamp = context.current_time();
-
-                // Key down event
-                let down_event = InputEvent::key_down(key_code, timestamp);
-                context.add_input(down_event);
-
-                // Advance time by hold duration
-                context.advance_time(duration_us);
-
-                // Key up event
-                let up_event = InputEvent::key_up(key_code, context.current_time());
-                context.add_input(up_event);
-
-                // Small gap between events
-                context.advance_time(10_000);
-            });
-
-            tracing::debug!(
-                service = "keyrx",
-                event = "test_simulate_hold",
-                component = "test_harness",
-                key = key,
-                duration_ms = duration_ms,
-                "Simulated key hold"
-            );
-
-            Ok(())
-        },
-    );
-}
-
-fn register_assert_output(engine: &mut Engine, collector: Arc<Mutex<Vec<OutputAction>>>) {
-    engine.register_fn(
-        "assert_output",
-        move |key: &str| -> Result<bool, Box<EvalAltResult>> {
-            let key_code = parse_key_or_error(key, "assert_output")?;
-
-            let found = if let Ok(outputs) = collector.lock() {
-                outputs.iter().any(|action| match action {
-                    OutputAction::KeyDown(k) | OutputAction::KeyUp(k) | OutputAction::KeyTap(k) => {
-                        *k == key_code
-                    }
-                    _ => false,
-                })
-            } else {
-                false
-            };
-
-            let message = if found {
-                format!("Key '{}' found in outputs", key)
-            } else {
-                format!("Key '{}' NOT found in outputs", key)
-            };
-
-            TEST_CONTEXT.with(|ctx| {
-                ctx.borrow_mut().add_assertion(
-                    format!("assert_output({})", key),
-                    found,
-                    message.clone(),
-                );
-            });
-
-            if !found {
-                return Err(Box::new(EvalAltResult::ErrorRuntime(
-                    message.into(),
-                    Position::NONE,
-                )));
-            }
-
-            Ok(true)
-        },
-    );
-}
-
-fn register_assert_mapping(engine: &mut Engine) {
-    engine.register_fn(
-        "assert_mapping",
-        |from: &str, to: &str| -> Result<bool, Box<EvalAltResult>> {
-            let from_key = parse_key_or_error(from, "assert_mapping")?;
-            let to_key = parse_key_or_error(to, "assert_mapping")?;
-
-            // Check if the mapping exists by looking at the test context inputs/outputs
-            // This is a declarative assertion that will be validated by the test runner
-            let found = TEST_CONTEXT.with(|ctx| {
-                let context = ctx.borrow();
-                // Look for a pattern: input of `from` key followed by output of `to` key
-                let has_input = context
-                    .inputs
-                    .iter()
-                    .any(|e| e.key == from_key && e.pressed);
-                let has_output = context.outputs.iter().any(|action| match action {
-                    OutputAction::KeyDown(k) | OutputAction::KeyTap(k) => *k == to_key,
-                    _ => false,
-                });
-                has_input && has_output
-            });
-
-            let message = if found {
-                format!("Mapping '{}' -> '{}' verified", from, to)
-            } else {
-                format!(
-                    "Mapping '{}' -> '{}' NOT verified (input not found or output mismatch)",
-                    from, to
-                )
-            };
-
-            TEST_CONTEXT.with(|ctx| {
-                ctx.borrow_mut().add_assertion(
-                    format!("assert_mapping({}, {})", from, to),
-                    found,
-                    message.clone(),
-                );
-            });
-
-            if !found {
-                return Err(Box::new(EvalAltResult::ErrorRuntime(
-                    message.into(),
-                    Position::NONE,
-                )));
-            }
-
-            Ok(true)
-        },
-    );
-}
-
-fn register_assert_blocked(engine: &mut Engine, collector: Arc<Mutex<Vec<OutputAction>>>) {
-    engine.register_fn(
-        "assert_blocked",
-        move |key: &str| -> Result<bool, Box<EvalAltResult>> {
-            let _key_code = parse_key_or_error(key, "assert_blocked")?;
-
-            let has_block = if let Ok(outputs) = collector.lock() {
-                outputs
-                    .iter()
-                    .any(|action| matches!(action, OutputAction::Block))
-            } else {
-                false
-            };
-
-            let message = if has_block {
-                format!("Key '{}' was blocked", key)
-            } else {
-                format!("Key '{}' was NOT blocked", key)
-            };
-
-            TEST_CONTEXT.with(|ctx| {
-                ctx.borrow_mut().add_assertion(
-                    format!("assert_blocked({})", key),
-                    has_block,
-                    message.clone(),
-                );
-            });
-
-            if !has_block {
-                return Err(Box::new(EvalAltResult::ErrorRuntime(
-                    message.into(),
-                    Position::NONE,
-                )));
-            }
-
-            Ok(true)
-        },
-    );
-}
-
-fn register_clear_outputs(engine: &mut Engine, collector: Arc<Mutex<Vec<OutputAction>>>) {
-    engine.register_fn("clear_outputs", move || {
-        if let Ok(mut outputs) = collector.lock() {
-            outputs.clear();
-        }
-        TEST_CONTEXT.with(|ctx| {
-            ctx.borrow_mut().outputs.clear();
-        });
-    });
-}
-
-fn register_get_outputs(engine: &mut Engine) {
-    engine.register_fn("get_output_count", || -> i64 {
-        TEST_CONTEXT.with(|ctx| ctx.borrow().outputs.len() as i64)
-    });
-}
-
 /// Reset the thread-local test context.
 ///
 /// Call this before each test to ensure a clean state.
@@ -500,110 +264,6 @@ mod tests {
     }
 
     #[test]
-    fn simulate_tap_creates_down_up_events() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // Execute simulate_tap
-        engine.run(r#"simulate_tap("A");"#).unwrap();
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.inputs.len(), 2);
-        assert!(ctx.inputs[0].pressed); // Key down
-        assert!(!ctx.inputs[1].pressed); // Key up
-        assert_eq!(ctx.inputs[0].key, KeyCode::A);
-        assert_eq!(ctx.inputs[1].key, KeyCode::A);
-    }
-
-    #[test]
-    fn simulate_hold_respects_duration() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        engine.run(r#"simulate_hold("Space", 200);"#).unwrap();
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.inputs.len(), 2);
-
-        let down_time = ctx.inputs[0].timestamp_us;
-        let up_time = ctx.inputs[1].timestamp_us;
-
-        // Hold duration should be 200ms = 200,000µs
-        assert_eq!(up_time - down_time, 200_000);
-    }
-
-    #[test]
-    fn simulate_hold_rejects_negative_duration() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        let result = engine.run(r#"simulate_hold("A", -100);"#);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn assert_output_fails_when_key_not_found() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        let result = engine.run(r#"assert_output("B");"#);
-        assert!(result.is_err());
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.assertions.len(), 1);
-        assert!(!ctx.assertions[0].passed);
-    }
-
-    #[test]
-    fn assert_output_succeeds_when_key_found() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // Add an output to the collector
-        let collector = harness.output_collector();
-        {
-            let mut guard = collector.lock().unwrap();
-            guard.push(OutputAction::KeyDown(KeyCode::B));
-        }
-
-        let result = engine.run(r#"assert_output("B");"#);
-        assert!(result.is_ok());
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.assertions.len(), 1);
-        assert!(ctx.assertions[0].passed);
-    }
-
-    #[test]
-    fn clear_outputs_clears_collector() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // Add outputs
-        let collector = harness.output_collector();
-        {
-            let mut guard = collector.lock().unwrap();
-            guard.push(OutputAction::KeyDown(KeyCode::A));
-        }
-
-        engine.run("clear_outputs();").unwrap();
-
-        assert!(collector.lock().unwrap().is_empty());
-    }
-
-    #[test]
     fn record_output_adds_to_context() {
         reset_test_context();
         record_output(OutputAction::KeyDown(KeyCode::A));
@@ -629,50 +289,13 @@ mod tests {
     }
 
     #[test]
-    fn assert_blocked_fails_when_no_block() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        let result = engine.run(r#"assert_blocked("A");"#);
-        assert!(result.is_err());
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.assertions.len(), 1);
-        assert!(!ctx.assertions[0].passed);
-    }
-
-    #[test]
-    fn assert_blocked_succeeds_when_block_present() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // Add a block output to the collector
-        let collector = harness.output_collector();
-        {
-            let mut guard = collector.lock().unwrap();
-            guard.push(OutputAction::Block);
-        }
-
-        let result = engine.run(r#"assert_blocked("A");"#);
-        assert!(result.is_ok());
-
-        let ctx = get_test_context();
-        assert_eq!(ctx.assertions.len(), 1);
-        assert!(ctx.assertions[0].passed);
-    }
-
-    #[test]
     fn get_pending_inputs_returns_inputs() {
         reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        engine.run(r#"simulate_tap("A");"#).unwrap();
+        TEST_CONTEXT.with(|ctx| {
+            let mut context = ctx.borrow_mut();
+            context.add_input(InputEvent::key_down(KeyCode::A, 0));
+            context.add_input(InputEvent::key_up(KeyCode::A, 50000));
+        });
 
         let inputs = get_pending_inputs();
         assert_eq!(inputs.len(), 2);
@@ -708,95 +331,11 @@ mod tests {
     }
 
     #[test]
-    fn simulate_tap_with_invalid_key_returns_error() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        let result = engine.run(r#"simulate_tap("InvalidKeyName");"#);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn simulate_hold_with_invalid_key_returns_error() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        let result = engine.run(r#"simulate_hold("InvalidKeyName", 100);"#);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn get_output_count_returns_context_output_length() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // Add some outputs to context
-        record_output(OutputAction::KeyDown(KeyCode::A));
-        record_output(OutputAction::KeyUp(KeyCode::A));
-
-        let result: i64 = engine.eval("get_output_count()").unwrap();
-        assert_eq!(result, 2);
-    }
-
-    #[test]
     fn test_context_default_is_empty() {
         let ctx = TestContext::default();
         assert!(ctx.inputs.is_empty());
         assert!(ctx.outputs.is_empty());
         assert!(ctx.assertions.is_empty());
         assert_eq!(ctx.current_time_us, 0);
-    }
-
-    #[test]
-    fn assert_mapping_records_assertion() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        // First simulate a tap to add input
-        engine.run(r#"simulate_tap("A");"#).unwrap();
-
-        // Add output to context
-        record_output(OutputAction::KeyDown(KeyCode::B));
-
-        // This should fail because we're checking mapping from A to B
-        // but the assertion logic checks both input and output
-        let result = engine.run(r#"assert_mapping("A", "B");"#);
-
-        // The assertion was recorded
-        let ctx = get_test_context();
-        let mapping_assertion = ctx
-            .assertions
-            .iter()
-            .find(|a| a.name.contains("assert_mapping"));
-        assert!(mapping_assertion.is_some());
-    }
-
-    #[test]
-    fn multiple_simulate_taps_advance_time() {
-        reset_test_context();
-        let mut engine = Engine::new();
-        let harness = TestHarness::new();
-        harness.register_functions(&mut engine);
-
-        engine.run(r#"simulate_tap("A");"#).unwrap();
-        let time_after_first = get_test_context().current_time_us;
-
-        engine.run(r#"simulate_tap("B");"#).unwrap();
-        let time_after_second = get_test_context().current_time_us;
-
-        // Time should have advanced
-        assert!(time_after_second > time_after_first);
-
-        // Should have 4 inputs total (2 taps = 4 events)
-        let ctx = get_test_context();
-        assert_eq!(ctx.inputs.len(), 4);
     }
 }
