@@ -5,6 +5,7 @@
 #![allow(unsafe_code)]
 
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
+use crate::drivers::emergency_exit::{is_bypass_active, set_bypass_mode};
 use crate::drivers::keycodes::key_definitions;
 use crate::engine::TimingConfig;
 use crate::scripting::with_active_runtime;
@@ -236,6 +237,31 @@ pub extern "C" fn keyrx_list_keys() -> *mut c_char {
         .unwrap_or_else(|err| format!("error:{err}"));
 
     CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
+/// Check if emergency bypass mode is currently active.
+///
+/// When bypass mode is active, all key remapping is disabled.
+///
+/// # Safety
+/// This function is safe to call from any thread.
+#[no_mangle]
+pub extern "C" fn keyrx_is_bypass_active() -> bool {
+    is_bypass_active()
+}
+
+/// Set the emergency bypass mode state.
+///
+/// # Arguments
+///
+/// * `active` - If true, enable bypass mode (disable remapping).
+///   If false, disable bypass mode (re-enable remapping).
+///
+/// # Safety
+/// This function is safe to call from any thread.
+#[no_mangle]
+pub extern "C" fn keyrx_set_bypass(active: bool) {
+    set_bypass_mode(active);
 }
 
 fn refresh_discovery_sink() {
@@ -530,6 +556,26 @@ mod tests {
             RemapAction::Remap(KeyCode::B)
         ));
         clear_active_runtime();
+    }
+
+    #[test]
+    fn bypass_active_returns_current_state() {
+        use crate::drivers::emergency_exit::reset_bypass_mode;
+
+        // Ensure clean state
+        reset_bypass_mode();
+        assert!(!keyrx_is_bypass_active());
+
+        // Activate bypass
+        keyrx_set_bypass(true);
+        assert!(keyrx_is_bypass_active());
+
+        // Deactivate bypass
+        keyrx_set_bypass(false);
+        assert!(!keyrx_is_bypass_active());
+
+        // Clean up
+        reset_bypass_mode();
     }
 
     #[test]

@@ -122,6 +122,22 @@ pub fn is_bypass_active() -> bool {
     BYPASS_MODE.load(Ordering::SeqCst)
 }
 
+/// Set bypass mode to a specific state.
+///
+/// This is useful for FFI callers that want to directly control bypass state
+/// rather than toggling.
+///
+/// # Arguments
+///
+/// * `active` - Whether bypass mode should be active
+pub fn set_bypass_mode(active: bool) {
+    if active {
+        activate_bypass_mode();
+    } else {
+        deactivate_bypass_mode();
+    }
+}
+
 /// Reset bypass mode to inactive state.
 ///
 /// This is primarily useful for testing to ensure a clean state.
