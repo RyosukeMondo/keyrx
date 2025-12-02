@@ -28,6 +28,9 @@ smallvec = "1"
 # File watching for test --watch mode
 notify = "6.0"
 
+# REPL readline support
+rustyline = "14.0"
+
 [dev-dependencies]
 proptest = "1"
 criterion = "0.5"

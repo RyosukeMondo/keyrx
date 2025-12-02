@@ -51,7 +51,7 @@
 
 ### REPL Console
 
-- [ ] 6. Implement keyrx repl CLI command
+- [x] 6. Implement keyrx repl CLI command
   - Files: core/src/cli/commands/repl.rs (new/replace stub), core/Cargo.toml (add rustyline)
   - Create interactive REPL with prompt; support load_script, simulate, state, layers, eval, help, exit commands
   - Add `rustyline = "14.0"` to Cargo.toml dependencies

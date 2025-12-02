@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
         test_exit_codes, BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit,
-        DoctorCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
+        DoctorCommand, ReplCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
     },
     OutputFormat,
 };
@@ -207,7 +207,7 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             DoctorCommand::new(verbose, format).run()?;
         }
         Commands::Repl => {
-            println!("REPL not yet implemented");
+            ReplCommand::new(format).run()?;
         }
         Commands::Bench { iterations, script } => {
             BenchCommand::new(iterations, script, format).run().await?;
