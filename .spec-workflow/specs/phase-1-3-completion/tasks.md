@@ -211,7 +211,7 @@
 
 ### Console Enhancement
 
-- [ ] 26. Add error styling to console page
+- [x] 26. Add error styling to console page
   - Files: ui/lib/pages/console.dart (modify)
   - Style ok: responses green, error: responses red; add icon indicators; quick action for "Engine not initialized"
   - _Leverage: existing console.dart output handling_
