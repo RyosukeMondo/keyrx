@@ -5,6 +5,7 @@
 //! appropriate driver for the current operating system.
 
 mod common;
+pub mod emergency_exit;
 mod injector;
 pub mod keycodes;
 
