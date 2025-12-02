@@ -321,7 +321,7 @@
   - _Requirements: 4.4, NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split event_recording.rs (732 lines) into event_recording.rs (EventRecord, SessionFile structs, serde impls, to_json/from_json ~350 lines) and event_recorder.rs (EventRecorder struct, record_event, finish ~350 lines) | Restrictions: No API changes; all tests must pass; each file ≤500 lines | _Leverage: existing patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes._
 
-- [ ] 40. Refactor advanced.rs into modular structure
+- [x] 40. Refactor advanced.rs into modular structure
   - Files: core/src/engine/advanced.rs → advanced.rs + decision_engine.rs
   - Split 706-line file: advanced.rs (process_event core ~350 lines), decision_engine.rs (tap-hold, combo algorithms ~350 lines)
   - _Leverage: existing engine module patterns_
