@@ -130,7 +130,10 @@ void main() {
         .where((label) => label.isNotEmpty)
         .toList();
 
-    expect(chipLabels, containsAll(['base', 'nav', 'Ctrl', 'tap_hold A']));
+    // Layers, modifiers, and held keys are still in chips
+    expect(chipLabels, containsAll(['base', 'nav', 'Ctrl']));
+    // Pending tap-hold decisions are now shown in a separate widget with countdown
+    expect(find.textContaining('tap_hold A'), findsWidgets);
     expect(find.textContaining('Latency'), findsWidgets);
     expect(find.textContaining('120µs'), findsWidgets);
   });
@@ -171,7 +174,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('combo A+B'), findsWidgets);
+    // Combo decisions are now shown with individual key chips (A and B extracted from "combo A+B")
+    expect(find.text('A'), findsWidgets);
+    expect(find.text('B'), findsWidgets);
     expect(find.text('Timing'), findsOneWidget);
     expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
     expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
