@@ -187,6 +187,25 @@ class KeyrxBridge {
   /// If the native library failed to load, this captures the underlying error.
   Object? get loadFailure => _loadFailure;
 
+  /// Check if emergency bypass mode is currently active.
+  ///
+  /// When bypass mode is active, all key remapping is disabled.
+  bool isBypassActive() {
+    final fn = _bindings?.isBypassActive;
+    if (fn == null) return false;
+    return fn();
+  }
+
+  /// Set the emergency bypass mode state.
+  ///
+  /// [active] - If true, enable bypass mode (disable remapping).
+  ///            If false, disable bypass mode (re-enable remapping).
+  void setBypass(bool active) {
+    final fn = _bindings?.setBypass;
+    if (fn == null) return;
+    fn(active);
+  }
+
   /// Close any native resources and stop dispatching callbacks.
   Future<void> dispose() async {
     _currentInstance = null;
