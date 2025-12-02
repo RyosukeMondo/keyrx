@@ -8,6 +8,7 @@ mod doctor;
 mod run;
 mod simulate;
 mod state;
+mod test;
 
 pub use bench::BenchCommand;
 pub use check::CheckCommand;
@@ -17,3 +18,4 @@ pub use doctor::DoctorCommand;
 pub use run::RunCommand;
 pub use simulate::{SimulateCommand, SimulationOutput, SimulationResult};
 pub use state::StateCommand;
+pub use test::{exit_codes as test_exit_codes, TestCommand};

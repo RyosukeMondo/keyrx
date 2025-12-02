@@ -3,8 +3,8 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand,
-        RunCommand, SimulateCommand, StateCommand,
+        test_exit_codes, BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit,
+        DoctorCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
     },
     OutputFormat,
 };
@@ -132,6 +132,21 @@ enum Commands {
         #[arg(long, short = 'y')]
         yes: bool,
     },
+
+    /// Run tests in a Rhai script
+    Test {
+        /// Path to the script file containing test functions
+        #[arg(short, long)]
+        script: PathBuf,
+
+        /// Filter tests by name pattern (supports * wildcard, e.g., "test_capslock*")
+        #[arg(short, long)]
+        filter: Option<String>,
+
+        /// Watch the script file and re-run tests on change
+        #[arg(short, long)]
+        watch: bool,
+    },
 }
 
 fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
@@ -214,16 +229,44 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 .run()
                 .await?;
         }
+        Commands::Test {
+            script,
+            filter,
+            watch,
+        } => {
+            let exit_code = TestCommand::new(script, format)
+                .with_filter(filter)
+                .with_watch(watch)
+                .run()?;
+
+            // Return early with specific exit code for test failures
+            if exit_code != test_exit_codes::PASS {
+                return Err(anyhow::anyhow!("Tests failed with exit code {}", exit_code));
+            }
+        }
     }
     Ok(())
 }
 
 /// Determine the exit code based on the error type.
 ///
+/// - Exit code 0: Success (pass)
 /// - Exit code 1: General runtime errors
-/// - Exit code 2: Validation/compilation errors (script syntax issues)
-/// - Exit code 3: Discovery cancelled by user/emergency-exit
+/// - Exit code 2: Validation/compilation errors (script syntax issues), test assertion failures
+/// - Exit code 3: Discovery cancelled by user/emergency-exit, test timeout
 fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
+    // Check for test command exit codes in the error message
+    let err_str = err.to_string();
+    if err_str.contains("Tests failed with exit code") {
+        if err_str.contains(&format!("{}", test_exit_codes::ASSERTION_FAIL)) {
+            return ExitCode::from(test_exit_codes::ASSERTION_FAIL as u8);
+        }
+        if err_str.contains(&format!("{}", test_exit_codes::TIMEOUT)) {
+            return ExitCode::from(test_exit_codes::TIMEOUT as u8);
+        }
+        return ExitCode::from(test_exit_codes::ERROR as u8);
+    }
+
     // Check if the root cause is a KeyRxError
     if let Some(discover) = err.downcast_ref::<DiscoverExit>() {
         return match discover {

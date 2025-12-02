@@ -25,6 +25,9 @@ async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde", "clock"] }
 smallvec = "1"
 
+# File watching for test --watch mode
+notify = "6.0"
+
 [dev-dependencies]
 proptest = "1"
 criterion = "0.5"
