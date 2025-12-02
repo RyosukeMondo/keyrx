@@ -202,7 +202,7 @@
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter data visualization engineer | Task: FIRST add `fl_chart: ^0.68.0` to pubspec.yaml and run `flutter pub get`; create trade_off_visualizer.dart with LineChart showing X=tap_hold_timeout_ms (100-1000), Y=estimated_miss_rate (0-30%); implement miss rate calculation using normal CDF (P(miss) = normalCdf(threshold, mean, stddev)); add Slider to adjust timeout, update chart point; show preset regions (Gaming: <150ms, Typing: 200ms, Relaxed: >300ms) | Restrictions: ≤350 lines; responsive layout; include statistical model for miss rate | _Leverage: fl_chart LineChart, bridge for timing config | _Requirements: 3.3 | Success: Chart renders with statistical curve, slider updates threshold, presets highlighted._
 
-- [ ] 25. Add typing speed simulation to trade-off visualizer
+- [x] 25. Add typing speed simulation to trade-off visualizer
   - Files: ui/lib/pages/trade_off_visualizer.dart (extend)
   - Implement "Simulate my typing speed" button; measure user's inter-key delays; overlay on chart
   - _Leverage: existing trade_off_visualizer, keyboard event handling_
