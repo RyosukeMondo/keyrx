@@ -250,3 +250,141 @@
   - _Requirements: All, NFR Test Coverage_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration test engineer | Task: Create phase_1_3_integration_test.rs with test: write_test_script_run_and_verify, record_replay_deterministic_match, analyze_outputs_timing_diagram; create Flutter integration test: training_to_debugger_flow; verify all commands work end-to-end | Restrictions: ≤300 lines Rust, ≤200 lines Dart; use tempdir for artifacts; cleanup after tests | _Leverage: all Phase 1-3 components, tempfile | _Requirements: All, NFR Test Coverage | Success: Integration tests pass, demonstrates full feature chain._
 
+## Phase 4: Hardening & Compliance
+
+### Emergency Exit Implementation (Critical Safety)
+
+- [ ] 31. Implement emergency exit handler module
+  - Files: core/src/drivers/emergency_exit.rs (new)
+  - Create EmergencyExit module with BYPASS_MODE atomic flag; implement check_emergency_exit(), activate_bypass_mode(), deactivate_bypass_mode(), is_bypass_active()
+  - _Leverage: std::sync::atomic::AtomicBool, existing ModifierState_
+  - _Requirements: 4.1_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems safety engineer | Task: Create emergency_exit.rs with static BYPASS_MODE: AtomicBool; implement check_emergency_exit(key, mods) -> bool that returns true when Ctrl+Alt+Shift+Escape pressed; implement activate_bypass_mode() that sets flag and logs warning; implement deactivate_bypass_mode() and is_bypass_active() | Restrictions: ≤150 lines; thread-safe with SeqCst ordering; no panics; include callback hook for UI notification | _Leverage: std::sync::atomic, tracing crate | _Requirements: 4.1 | Success: Emergency exit detection works, bypass mode toggles correctly, thread-safe._
+
+- [ ] 32. Integrate emergency exit into Windows driver
+  - Files: core/src/drivers/windows/hook.rs (modify)
+  - Add emergency exit check at start of keyboard_proc, before any processing; if triggered, activate bypass and return pass-through
+  - _Leverage: core/src/drivers/emergency_exit.rs, existing Windows hook structure_
+  - _Requirements: 4.1_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Windows driver engineer | Task: Modify keyboard_proc in hook.rs to check emergency_exit::check_emergency_exit() FIRST before any other processing; if true, call activate_bypass_mode() and return CallNextHookEx immediately; if bypass_mode active, always pass through | Restrictions: ≤30 lines added; must be FIRST check in callback; no performance regression | _Leverage: emergency_exit module, existing hook structure | _Requirements: 4.1 | Success: Ctrl+Alt+Shift+Escape disables remapping on Windows, all keys pass through._
+
+- [ ] 33. Integrate emergency exit into Linux driver
+  - Files: core/src/drivers/linux/evdev.rs (modify)
+  - Add emergency exit check at start of event processing; if triggered, ungrab device and activate bypass mode
+  - _Leverage: core/src/drivers/emergency_exit.rs, existing evdev handler_
+  - _Requirements: 4.1_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Linux driver engineer | Task: Modify evdev event loop to check emergency_exit::check_emergency_exit() FIRST; if true, call device.ungrab() to release exclusive access, then activate_bypass_mode(); if bypass active, skip all processing | Restrictions: ≤30 lines added; must ungrab device so keys flow to OS; no panics on ungrab failure | _Leverage: emergency_exit module, evdev::Device::ungrab | _Requirements: 4.1 | Success: Ctrl+Alt+Shift+Escape disables remapping on Linux, device ungrabbed._
+
+- [ ] 34. Add emergency exit FFI exports and Flutter UI indicator
+  - Files: core/src/ffi/exports.rs (modify), ui/lib/widgets/bypass_indicator.dart (new)
+  - Export keyrx_is_bypass_active(), keyrx_set_bypass(); create Flutter widget showing bypass status
+  - _Leverage: existing FFI patterns, Flutter Provider state_
+  - _Requirements: 4.1_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI/Flutter engineer | Task: Add keyrx_is_bypass_active() -> bool and keyrx_set_bypass(active: bool) to exports.rs; create bypass_indicator.dart with BypassIndicator widget that shows red "REMAPPING DISABLED" banner when bypass active, with "Re-enable" button | Restrictions: ≤50 lines Rust FFI, ≤100 lines Dart; poll bypass status every 500ms or use callback | _Leverage: existing FFI export patterns, emergency_exit module | _Requirements: 4.1 | Success: Flutter shows bypass status, user can re-enable remapping._
+
+- [ ] 35. Add emergency exit unit and integration tests
+  - Files: core/src/drivers/emergency_exit.rs (add tests), core/tests/emergency_exit_test.rs (new)
+  - Test combo detection, bypass mode activation/deactivation, thread safety
+  - _Leverage: existing test patterns_
+  - _Requirements: 4.1, NFR Test Coverage_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust test engineer | Task: Add #[cfg(test)] module to emergency_exit.rs with tests: combo_detected_with_all_mods, combo_not_detected_partial_mods, bypass_mode_toggles, thread_safety_concurrent_access; create emergency_exit_test.rs with integration test simulating key sequence | Restrictions: ≤150 lines; deterministic; test thread safety with multiple threads | _Leverage: std::thread, existing test patterns | _Requirements: 4.1, NFR Test Coverage | Success: All tests pass, ≥90% coverage on emergency exit module._
+
+### CI Performance Regression Detection
+
+- [ ] 36. Implement CI benchmark workflow and regression check
+  - Files: .github/workflows/benchmark.yml (new), scripts/check_bench_regression.py (new)
+  - Create GitHub Actions workflow running Criterion benchmarks; Python script to parse output and fail on >100µs regression
+  - _Leverage: Criterion benchmark output format, existing core/benches/_
+  - _Requirements: 4.3_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps/CI engineer | Task: Create benchmark.yml workflow that runs on PRs: checkout, cargo bench --bench latency, compare with main baseline; create check_bench_regression.py that parses Criterion JSON output, compares with baseline, fails if any benchmark >100µs slower; output detailed report | Restrictions: benchmark.yml ≤50 lines; Python script ≤150 lines; cache Cargo for speed | _Leverage: Criterion --save-baseline, --baseline flags, JSON output | _Requirements: 4.3 | Success: CI runs benchmarks on PRs, fails on regression, reports delta._
+
+### Code Quality Refactoring (File Size Compliance)
+
+- [ ] 37. Refactor test_harness.rs into modular structure
+  - Files: core/src/scripting/test_harness.rs → test_harness.rs + test_primitives.rs
+  - Split 802-line file: test_harness.rs (TestHarness, register_test_functions ~400 lines), test_primitives.rs (simulate_*, assert_* implementations ~400 lines)
+  - _Leverage: existing module patterns in scripting/_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split test_harness.rs (802 lines) into test_harness.rs (TestHarness struct, register_test_functions, public API ~400 lines) and test_primitives.rs (simulate_tap, simulate_hold, assert_output, assert_mapping implementations ~400 lines); maintain re-exports in test_harness.rs | Restrictions: No API changes; all tests must pass; each file ≤500 lines | _Leverage: existing module patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes, API unchanged._
+
+- [ ] 38. Refactor test_runner.rs into modular structure
+  - Files: core/src/scripting/test_runner.rs → test_runner.rs + test_discovery.rs
+  - Split 741-line file: test_runner.rs (TestRunner, run_tests ~350 lines), test_discovery.rs (discover_tests, AST parsing ~350 lines)
+  - _Leverage: existing module patterns_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split test_runner.rs (741 lines) into test_runner.rs (TestRunner struct, run_tests, result formatting ~350 lines) and test_discovery.rs (discover_tests, AST iteration, test_ prefix detection ~350 lines); maintain re-exports | Restrictions: No API changes; all tests must pass; each file ≤500 lines | _Leverage: existing patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes._
+
+- [ ] 39. Refactor event_recording.rs into modular structure
+  - Files: core/src/engine/event_recording.rs → event_recording.rs + event_recorder.rs
+  - Split 732-line file: event_recording.rs (EventRecord, SessionFile, serialization ~350 lines), event_recorder.rs (EventRecorder middleware ~350 lines)
+  - _Leverage: existing engine module patterns_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split event_recording.rs (732 lines) into event_recording.rs (EventRecord, SessionFile structs, serde impls, to_json/from_json ~350 lines) and event_recorder.rs (EventRecorder struct, record_event, finish ~350 lines) | Restrictions: No API changes; all tests must pass; each file ≤500 lines | _Leverage: existing patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes._
+
+- [ ] 40. Refactor advanced.rs into modular structure
+  - Files: core/src/engine/advanced.rs → advanced.rs + decision_engine.rs
+  - Split 706-line file: advanced.rs (process_event core ~350 lines), decision_engine.rs (tap-hold, combo algorithms ~350 lines)
+  - _Leverage: existing engine module patterns_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split advanced.rs (706 lines) into advanced.rs (process_event, state management ~350 lines) and decision_engine.rs (tap_hold_decision, combo_decision, timing logic ~350 lines) | Restrictions: No API changes; all tests must pass; each file ≤500 lines; decision_engine should be pure functions where possible | _Leverage: existing patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes._
+
+- [ ] 41. Refactor debugger.dart into modular structure
+  - Files: ui/lib/pages/debugger.dart → debugger_page.dart + debugger_widgets.dart + debugger_meters.dart
+  - Split 969-line file into 3 focused files each ≤400 lines
+  - _Leverage: existing Flutter widget patterns_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter refactoring engineer | Task: Split debugger.dart (969 lines) into debugger_page.dart (DebuggerPage widget, state management ~400 lines), debugger_widgets.dart (TimelineWidget, LayerPanelWidget ~300 lines), debugger_meters.dart (LatencyMeter, PendingDecisionWidget ~270 lines) | Restrictions: No functionality changes; all tests must pass; each file ≤400 lines | _Leverage: existing widget extraction patterns | _Requirements: 4.4 | Success: All files ≤400 lines, flutter test passes._
+
+- [ ] 42. Refactor trade_off_visualizer.dart into modular structure
+  - Files: ui/lib/pages/trade_off_visualizer.dart → trade_off_page.dart + trade_off_chart.dart + typing_simulator.dart
+  - Split 949-line file into 3 focused files each ≤400 lines
+  - _Leverage: existing Flutter widget patterns_
+  - _Requirements: 4.4, NFR Code Architecture_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter refactoring engineer | Task: Split trade_off_visualizer.dart (949 lines) into trade_off_page.dart (main page, state ~400 lines), trade_off_chart.dart (fl_chart config, rendering ~300 lines), typing_simulator.dart (speed measurement, statistics ~250 lines) | Restrictions: No functionality changes; all tests must pass; each file ≤400 lines | _Leverage: existing patterns | _Requirements: 4.4 | Success: All files ≤400 lines, flutter test passes._
+
+### Visual Editor Tier 1 (No-Code Experience)
+
+- [ ] 43. Implement visual keyboard layout widget
+  - Files: ui/lib/widgets/visual_keyboard.dart (new), ui/lib/models/keyboard_layout.dart (new)
+  - Create interactive keyboard widget with ANSI layout; render keys with proper sizing and positioning
+  - _Leverage: existing key registry, Flutter CustomPaint or Stack layout_
+  - _Requirements: 4.2_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create keyboard_layout.dart with KeyboardLayout, KeyDefinition classes for ANSI 104-key layout; create visual_keyboard.dart with VisualKeyboard StatefulWidget rendering keys as tappable Container widgets with proper row/column positioning and width (1.0u = standard key, 1.5u = Tab, 2.0u = Shift, etc.) | Restrictions: ≤300 lines each; responsive sizing; highlight on tap | _Leverage: existing key names from scripts/std/layouts/ansi.rhai | _Requirements: 4.2 | Success: ANSI keyboard renders correctly, keys are tappable._
+
+- [ ] 44. Implement drag-and-drop key mapping interaction
+  - Files: ui/lib/widgets/visual_keyboard.dart (extend), ui/lib/widgets/mapping_overlay.dart (new)
+  - Add Draggable/DragTarget to keys; draw mapping arrows between connected keys
+  - _Leverage: Flutter Draggable widget, CustomPaint for arrows_
+  - _Requirements: 4.2_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter interaction engineer | Task: Extend VisualKeyboard to wrap each key in Draggable; add DragTarget to accept drops; create mapping_overlay.dart with MappingOverlay CustomPainter that draws arrows from source to target keys; maintain List<RemapConfig> state; show "X" button on mapping to delete | Restrictions: ≤200 lines added to visual_keyboard, ≤150 lines mapping_overlay; smooth drag feedback | _Leverage: Draggable, DragTarget, CustomPaint | _Requirements: 4.2 | Success: Drag key A to B creates mapping with arrow, deletable._
+
+- [ ] 45. Implement Rhai code generator service
+  - Files: ui/lib/services/rhai_generator.dart (new)
+  - Generate Rhai script from visual config; parse simple scripts back to visual config (best-effort)
+  - _Leverage: Rhai syntax knowledge, existing script examples_
+  - _Requirements: 4.2_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Rhai engineer | Task: Create rhai_generator.dart with RhaiGenerator class; implement generateScript(VisualConfig) returning valid Rhai code with remap(), tap_hold() calls; implement parseScript(String) that regex-parses simple remap/tap_hold patterns back to VisualConfig; set hasAdvancedFeatures=true if unparseable constructs found | Restrictions: ≤250 lines; handle edge cases (special chars in key names); add header comment with generation timestamp | _Leverage: RegExp for parsing, StringBuffer for generation | _Requirements: 4.2 | Success: Generated scripts are valid Rhai, simple scripts parse back correctly._
+
+- [ ] 46. Implement visual editor page with "Eject to Code" feature
+  - Files: ui/lib/pages/visual_editor_page.dart (new)
+  - Create complete visual editor page combining keyboard, mappings, and code view; "Eject to Code" shows generated Rhai
+  - _Leverage: VisualKeyboard, RhaiGenerator, existing page patterns_
+  - _Requirements: 4.2_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter page engineer | Task: Create visual_editor_page.dart with VisualEditorPage; layout: VisualKeyboard (top), MappingList (side), "Show Code" toggle button; when toggled, show generated Rhai in syntax-highlighted CodeEditor; "Save" button writes .rhai file; warn if manually edited code loses visual sync | Restrictions: ≤400 lines; clean layout with proper spacing; include file picker for save location | _Leverage: VisualKeyboard, RhaiGenerator, file_picker package | _Requirements: 4.2 | Success: Full visual editing workflow works, code ejection shows valid Rhai._
+
+- [ ] 47. Add visual editor tests
+  - Files: ui/test/visual_keyboard_test.dart (new), ui/test/rhai_generator_test.dart (new)
+  - Test keyboard rendering, drag-drop interaction, code generation/parsing
+  - _Leverage: flutter_test, existing widget test patterns_
+  - _Requirements: 4.2, NFR Test Coverage_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter test engineer | Task: Create visual_keyboard_test.dart with tests: keyboard_renders_all_keys, key_tap_triggers_callback, drag_creates_mapping; create rhai_generator_test.dart with tests: generates_valid_remap_syntax, generates_tap_hold, parses_simple_script, detects_advanced_features | Restrictions: ≤150 lines each; deterministic; no real file I/O | _Leverage: flutter_test, find.byKey | _Requirements: 4.2, NFR Test Coverage | Success: All tests pass, ≥80% coverage on visual editor components._
+
+## Phase 4 Final Integration
+
+- [ ] 48. Phase 4 integration test and documentation
+  - Files: core/tests/phase_4_integration_test.rs (new), ui/integration_test/visual_editor_flow_test.dart (new)
+  - End-to-end test: emergency exit flow, visual editor → code generation → load script
+  - _Leverage: all Phase 4 components_
+  - _Requirements: All Phase 4, NFR Test Coverage_
+  - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration test engineer | Task: Create phase_4_integration_test.rs testing: emergency_exit_activates_and_deactivates, bypass_mode_passes_all_keys; create visual_editor_flow_test.dart testing: create_mapping_visually_eject_to_code_load_script; update README with visual editor and emergency exit documentation | Restrictions: ≤200 lines each; use mock input for safety tests | _Leverage: all Phase 4 components | _Requirements: All Phase 4 | Success: Integration tests pass, documentation complete._
+

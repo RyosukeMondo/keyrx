@@ -242,3 +242,82 @@ fn test_ctrl_a_selects_all() {
 - **REPL Isolation**: REPL shall not expose internal Rust APIs or private engine state unintentionally
 - **FFI Boundary**: All FFI string pointers shall be bounds-checked; prevent buffer overflows
 
+## Phase 4: Hardening & Compliance
+
+### Requirement 4.1: Emergency Exit (Critical Safety Feature)
+
+**User Story:** As a user who may have misconfigured their key remapping, I want a guaranteed escape hatch (Ctrl+Alt+Shift+Escape) that instantly disables all remapping, so that I can always recover control of my keyboard.
+
+**Description:** Implement a hardcoded emergency exit hotkey that bypasses all script processing and immediately disables the remapping engine. This is a critical safety feature mentioned in product.md but not yet implemented.
+
+#### Acceptance Criteria
+
+1. WHEN user presses Ctrl+Alt+Shift+Escape simultaneously, THEN all key remapping SHALL be instantly disabled
+2. WHEN emergency exit is triggered, THEN all keys SHALL pass through unmodified to the OS
+3. WHEN emergency exit is triggered, THEN the engine SHALL emit a clear notification (system tray, console log)
+4. WHEN emergency exit is active, THEN a visual indicator (system tray icon change) SHALL show "remapping disabled" state
+5. WHEN user wants to re-enable remapping, THEN they SHALL be able to via CLI (`keyrx enable`) or GUI toggle
+6. WHEN the engine crashes or hangs, THEN the emergency exit SHALL still function (hardcoded at driver level, not script level)
+7. IF the engine is in any state (tap-hold pending, combo in progress, etc.), THEN emergency exit SHALL immediately cancel and disable
+8. WHEN emergency exit is triggered, THEN the system SHALL log the event with timestamp for debugging
+
+**Implementation Note:** The emergency exit check MUST be implemented at the driver level (before any script processing) in both Windows hook and Linux evdev handlers to guarantee it always works regardless of script state.
+
+### Requirement 4.2: Visual Editor Tier 1 (No-Code Experience)
+
+**User Story:** As a non-technical user, I want to configure key remappings using a visual drag-and-drop interface without writing code, so that I can customize my keyboard without learning Rhai scripting.
+
+**Description:** Implement a visual editor that generates Rhai scripts automatically from user interactions, fulfilling the "Tier 1: Simple visual mode" described in product.md's three-tier complexity model.
+
+#### Acceptance Criteria
+
+1. WHEN user opens the visual editor, THEN they SHALL see a graphical keyboard layout with draggable keys
+2. WHEN user drags key A onto key B, THEN a remap(A, B) SHALL be created visually with connecting line/arrow
+3. WHEN user creates mappings visually, THEN the underlying Rhai script SHALL be auto-generated in real-time
+4. WHEN user clicks "Show Code" / "Eject to Code", THEN the generated Rhai script SHALL be displayed and editable
+5. WHEN user modifies the Rhai code manually, THEN they SHALL be warned that visual sync may be lost
+6. WHEN user saves visual configuration, THEN a `.rhai` file SHALL be created with the generated script
+7. WHEN visual editor loads an existing simple script, THEN it SHALL reverse-parse and display visually (best-effort)
+8. IF a script contains advanced features (conditionals, custom functions), THEN visual editor SHALL show "Code-only sections" indicator
+9. WHEN user hovers over a visual mapping, THEN tooltip SHALL show the equivalent Rhai code
+
+### Requirement 4.3: CI Performance Regression Detection
+
+**User Story:** As a maintainer, I want the CI pipeline to automatically detect and fail on performance regressions, so that latency increases are caught before merge.
+
+**Description:** Implement CI workflow that runs latency benchmarks and fails if performance degrades beyond threshold, enforcing the <1ms latency guarantee from product.md.
+
+#### Acceptance Criteria
+
+1. WHEN CI runs on a PR, THEN latency benchmarks SHALL execute automatically
+2. WHEN any benchmark shows >100µs regression from baseline, THEN CI SHALL fail with detailed report
+3. WHEN benchmarks pass, THEN results SHALL be stored as new baseline for future comparisons
+4. WHEN CI fails due to regression, THEN report SHALL show: benchmark name, baseline (µs), current (µs), delta (%)
+5. WHEN a legitimate performance change is expected, THEN maintainer SHALL be able to update baseline via PR comment
+6. WHEN benchmark results are collected, THEN they SHALL be published to a metrics dashboard (optional)
+
+### Requirement 4.4: Code Quality Compliance (File Size Refactoring)
+
+**User Story:** As a maintainer following CLAUDE.md guidelines, I want all source files to comply with the ≤500 lines limit, so that the codebase remains maintainable and navigable.
+
+**Description:** Refactor the 6 files currently exceeding the 500-line guideline into smaller, focused modules.
+
+#### Files Requiring Refactoring
+
+| File | Current Lines | Target |
+|------|---------------|--------|
+| `core/src/scripting/test_harness.rs` | 802 | Split into 2 modules |
+| `core/src/scripting/test_runner.rs` | 741 | Split into 2 modules |
+| `core/src/engine/event_recording.rs` | 732 | Split into 2 modules |
+| `core/src/engine/advanced.rs` | 706 | Split into 2 modules |
+| `ui/lib/pages/debugger.dart` | 969 | Split into 2-3 files |
+| `ui/lib/pages/trade_off_visualizer.dart` | 949 | Split into 2-3 files |
+
+#### Acceptance Criteria
+
+1. WHEN refactoring is complete, THEN all source files SHALL be ≤500 lines (excluding comments/blank lines)
+2. WHEN modules are split, THEN public API SHALL remain unchanged (no breaking changes)
+3. WHEN modules are split, THEN each new module SHALL have clear single responsibility
+4. WHEN refactoring is complete, THEN all existing tests SHALL pass without modification
+5. WHEN new modules are created, THEN re-exports SHALL maintain existing import paths where possible
+
