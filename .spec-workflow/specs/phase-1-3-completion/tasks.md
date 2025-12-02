@@ -137,7 +137,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust observability engineer | Task: Add opentelemetry = "0.21", opentelemetry-otlp = "0.14" to Cargo.toml (optional feature "tracing"); create tracing.rs with EngineTracer { tracer }; implement span_input_received(event), span_decision_made(decision, latency), span_output_generated(action) | Restrictions: ≤200 lines; feature-gated (compile without tracing); no runtime overhead when disabled | _Leverage: opentelemetry docs, tracing crate patterns | _Requirements: 2.1 | Success: EngineTracer compiles, spans emittable when feature enabled._
 
-- [ ] 17. Integrate tracing into engine process_event
+- [x] 17. Integrate tracing into engine process_event
   - Files: core/src/engine/advanced.rs (modify process_event)
   - Wrap process_event with trace spans; emit on input, decision, output
   - _Leverage: core/src/engine/tracing.rs (EngineTracer), existing process_event structure_

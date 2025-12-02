@@ -2,9 +2,9 @@
 //! timing-based decisions (tap-hold, combos).
 
 use crate::engine::{
-    ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, HoldAction, InputEvent, KeyCode,
-    KeyStateTracker, LayerAction, LayerStack, Modifier, ModifierState, OutputAction,
-    PendingDecision, PendingDecisionState, TimingConfig,
+    ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
+    HoldAction, InputEvent, KeyCode, KeyStateTracker, LayerAction, LayerStack, Modifier,
+    ModifierState, OutputAction, PendingDecision, PendingDecisionState, TimingConfig,
 };
 use crate::traits::ScriptRuntime;
 use serde::{Deserialize, Serialize};
@@ -83,6 +83,24 @@ where
 
     /// Process a single event through all layers.
     pub fn process_event(&mut self, event: InputEvent) -> Vec<OutputAction> {
+        self.process_event_traced(event, None)
+    }
+
+    /// Process a single event with optional tracing.
+    ///
+    /// When a tracer is provided, spans are emitted for input reception,
+    /// decision making, and output generation. This enables detailed
+    /// performance analysis and debugging via OpenTelemetry.
+    pub fn process_event_traced(
+        &mut self,
+        event: InputEvent,
+        tracer: Option<&EngineTracer>,
+    ) -> Vec<OutputAction> {
+        let start_time = std::time::Instant::now();
+
+        // Emit input span
+        let _input_span = tracer.map(|t| t.span_input_received(&event));
+
         if event.is_synthetic {
             return vec![OutputAction::PassThrough];
         }
@@ -113,6 +131,7 @@ where
 
         let mut outputs = Vec::new();
         let mut consumed = false;
+        let mut decision_type = DecisionType::PassThrough;
 
         // Step 4/5: Combo tracking + pending resolutions.
         let (blocked_for_combo, combo_outputs) = if event.pressed {
@@ -122,6 +141,7 @@ where
         };
         if !combo_outputs.is_empty() {
             consumed = true;
+            decision_type = DecisionType::Combo;
             outputs.extend(combo_outputs);
         }
 
@@ -134,9 +154,12 @@ where
         // Step 7-9: Layer lookup and action execution.
         if !skip_layer_actions {
             if let Some(action) = self.layers.lookup(event.key).cloned() {
-                let (handled_outputs, handled) = self.handle_layer_action(&event, action);
+                let (handled_outputs, handled) = self.handle_layer_action(&event, action.clone());
                 outputs.extend(handled_outputs);
-                consumed |= handled;
+                if handled {
+                    consumed = true;
+                    decision_type = Self::decision_type_from_action(&action);
+                }
             }
         }
 
@@ -157,7 +180,31 @@ where
             outputs.push(self.pass_through_event(&event));
         }
 
+        // Emit decision and output spans
+        if let Some(t) = tracer {
+            let latency_us = start_time.elapsed().as_micros() as u64;
+            let active_layer_ids = self.layers.active_layer_ids();
+            let _decision_span = t.span_decision_made(decision_type, latency_us, &active_layer_ids);
+            let _output_span = t.span_output_generated(&outputs);
+        }
+
         outputs
+    }
+
+    /// Determine the decision type from a layer action.
+    fn decision_type_from_action(action: &LayerAction) -> DecisionType {
+        match action {
+            LayerAction::Remap(_) => DecisionType::Remap,
+            LayerAction::Block => DecisionType::Block,
+            LayerAction::TapHold { .. } => DecisionType::Tap, // Will resolve to Tap or Hold later
+            LayerAction::LayerPush(_) | LayerAction::LayerPop | LayerAction::LayerToggle(_) => {
+                DecisionType::Layer
+            }
+            LayerAction::ModifierActivate(_)
+            | LayerAction::ModifierDeactivate(_)
+            | LayerAction::ModifierOneShot(_) => DecisionType::Block, // Modifier actions block input
+            LayerAction::Pass => DecisionType::PassThrough,
+        }
     }
 
     /// Check for timeout-based resolutions (tap-hold and combo windows).
