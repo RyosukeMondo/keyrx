@@ -12,7 +12,7 @@
   - _Requirements: NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems engineer specializing in module organization | Task: Split scripting/runtime.rs (1654 lines) into 3 modules: runtime.rs (Engine/AST setup, ~400 lines), bindings.rs (register_* functions for Rhai, ~500 lines), builtins.rs (layer/modifier/timing helpers, ~500 lines) | Restrictions: No API changes; all existing tests must pass; maintain re-exports in runtime.rs mod.rs; each file ≤500 lines | _Leverage: existing module patterns in cli/commands/ | _Requirements: NFR Code Architecture | Success: All 3 files ≤500 lines, cargo test passes, no breaking changes to public API, clippy clean._
 
-- [ ] 2. Refactor editor.dart into modular structure
+- [x] 2. Refactor editor.dart into modular structure
   - Files: ui/lib/pages/editor.dart → ui/lib/pages/editor_page.dart, ui/lib/pages/editor_widgets.dart
   - Split 844-line file into 2 files: editor_page.dart (state/layout, ~400 lines), editor_widgets.dart (reusable widgets, ~400 lines)
   - _Leverage: existing widget patterns in ui/lib/pages/_
