@@ -194,7 +194,7 @@
 
 ### Trade-off Visualizer
 
-- [ ] 24. Implement trade-off visualizer page
+- [x] 24. Implement trade-off visualizer page
   - Files: ui/lib/pages/trade_off_visualizer.dart (new), ui/pubspec.yaml (add fl_chart)
   - Create interactive chart showing tap-hold timeout vs miss rate; slider to adjust thresholds
   - Add `fl_chart: ^0.68.0` to pubspec.yaml dependencies, run `flutter pub get`
