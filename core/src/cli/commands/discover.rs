@@ -622,7 +622,7 @@ mod tests {
             true,
             OutputFormat::Human,
             move || Ok(vec![device.clone()]),
-            |_dev| panic!("input should not be built when skipping"),
+            |_dev| unreachable!("input builder should not be called when profile exists"),
         );
 
         let result = cmd.run().await;

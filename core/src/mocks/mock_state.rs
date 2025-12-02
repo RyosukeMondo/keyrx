@@ -212,13 +212,14 @@ mod tests {
         state.set_active_modifiers(mods);
 
         assert_eq!(state.state_history().len(), 1);
-        match &state.state_history()[0] {
-            StateChange::ModifiersSet(ids) => {
-                assert!(ids.contains(&1));
-                assert!(ids.contains(&5));
+        let ids = match &state.state_history()[0] {
+            StateChange::ModifiersSet(ids) => ids,
+            other => {
+                unreachable!("expected ModifiersSet, got {:?}", other)
             }
-            _ => panic!("Expected ModifiersSet"),
-        }
+        };
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&5));
     }
 
     #[test]

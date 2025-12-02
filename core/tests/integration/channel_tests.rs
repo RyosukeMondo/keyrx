@@ -22,7 +22,9 @@ async fn channel_communication_basic_flow() {
         match rx.try_recv() {
             Ok(event) => events.push(event),
             Err(TryRecvError::Empty) => break,
-            Err(TryRecvError::Disconnected) => panic!("Channel disconnected"),
+            Err(TryRecvError::Disconnected) => {
+                unreachable!("channel should not disconnect while sender is in scope")
+            }
         }
     }
 
@@ -65,10 +67,8 @@ fn channel_disconnect_detection() {
     drop(tx);
 
     // Receiver should detect disconnect
-    match rx.try_recv() {
-        Err(TryRecvError::Disconnected) => {
-            // Expected
-        }
-        other => panic!("Expected Disconnected, got {:?}", other),
-    }
+    assert!(
+        matches!(rx.try_recv(), Err(TryRecvError::Disconnected)),
+        "expected Disconnected error after sender is dropped"
+    );
 }

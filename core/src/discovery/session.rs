@@ -378,15 +378,16 @@ mod tests {
         );
 
         let finished = session.handle_event(&event_for(31, Some("kb0"), true, 3));
-        match finished {
-            SessionUpdate::Finished(summary) => {
-                assert_eq!(summary.status, SessionStatus::Completed);
-                assert_eq!(summary.captured, 2);
-                assert!(summary.unmapped.is_empty());
-                assert_eq!(summary.keymap.len(), 2);
+        let summary = match finished {
+            SessionUpdate::Finished(summary) => summary,
+            other => {
+                unreachable!("expected Finished update, got {:?}", other)
             }
-            other => panic!("unexpected update: {:?}", other),
-        }
+        };
+        assert_eq!(summary.status, SessionStatus::Completed);
+        assert_eq!(summary.captured, 2);
+        assert!(summary.unmapped.is_empty());
+        assert_eq!(summary.keymap.len(), 2);
 
         let profile = session.into_profile(Some("Test".to_string()), Utc::now());
         assert_eq!(profile.vendor_id, device_id.vendor_id);
@@ -404,14 +405,15 @@ mod tests {
         assert!(matches!(first, SessionUpdate::Progress(_)));
 
         let duplicate = session.handle_event(&event_for(10, None, true, 2));
-        match duplicate {
-            SessionUpdate::Duplicate(dup) => {
-                assert_eq!(dup.scan_code, 10);
-                assert_eq!(dup.existing, ExpectedPosition { row: 0, col: 0 });
-                assert_eq!(dup.attempted, ExpectedPosition { row: 0, col: 1 });
+        let dup = match duplicate {
+            SessionUpdate::Duplicate(dup) => dup,
+            other => {
+                unreachable!("expected Duplicate update, got {:?}", other)
             }
-            other => panic!("expected duplicate, got {:?}", other),
-        }
+        };
+        assert_eq!(dup.scan_code, 10);
+        assert_eq!(dup.existing, ExpectedPosition { row: 0, col: 0 });
+        assert_eq!(dup.attempted, ExpectedPosition { row: 0, col: 1 });
 
         let finished = session.handle_event(&event_for(11, None, true, 3));
         assert!(matches!(
@@ -448,12 +450,14 @@ mod tests {
             .with_emergency_exit_detector(|event| event.scan_code == 99);
 
         let bypass = session.handle_event(&event_for(99, None, true, 1));
-        if let SessionUpdate::Finished(summary) = bypass {
-            assert_eq!(summary.status, SessionStatus::Bypassed);
-            assert_eq!(summary.message.as_deref(), Some("emergency-exit triggered"));
-        } else {
-            panic!("expected bypass summary");
-        }
+        let summary = match bypass {
+            SessionUpdate::Finished(summary) => summary,
+            other => {
+                unreachable!("expected Finished (bypass) update, got {:?}", other)
+            }
+        };
+        assert_eq!(summary.status, SessionStatus::Bypassed);
+        assert_eq!(summary.message.as_deref(), Some("emergency-exit triggered"));
     }
 
     #[test]

@@ -638,15 +638,16 @@ mod tests {
         assert_eq!(second, vec![OutputAction::Block]);
 
         let pending = engine.pending.snapshot();
-        match pending.first() {
+        let (key, pressed_at) = match pending.first() {
             Some(PendingDecisionState::TapHold {
                 key, pressed_at, ..
-            }) => {
-                assert_eq!(*key, KeyCode::B);
-                assert_eq!(*pressed_at, 10_000);
+            }) => (*key, *pressed_at),
+            other => {
+                unreachable!("expected TapHold pending, got {:?}", other)
             }
-            other => panic!("expected tap-hold pending, got {:?}", other),
-        }
+        };
+        assert_eq!(key, KeyCode::B);
+        assert_eq!(pressed_at, 10_000);
 
         // Resolve as hold via timeout to ensure the pending entry completes.
         let timeout = engine.tick(260_000);

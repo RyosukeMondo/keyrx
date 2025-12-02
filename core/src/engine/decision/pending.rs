@@ -539,29 +539,39 @@ mod tests {
 
         let snapshot = queue.snapshot();
         assert_eq!(snapshot.len(), 1);
-        match &snapshot[0] {
-            PendingDecisionState::TapHold {
-                key,
-                pressed_at,
-                tap_action,
-                hold_action,
-                interrupted,
-                eager_tap,
-                hold_emitted,
-                ..
-            } => {
-                assert_eq!(*key, KeyCode::CapsLock);
-                assert_eq!(*pressed_at, 10);
-                assert_eq!(*tap_action, KeyCode::Escape);
-                assert_eq!(*hold_action, HoldAction::Modifier(2));
-                assert!(!*interrupted);
-                assert_eq!(*eager_tap, TimingConfig::default().eager_tap);
-                assert!(!*hold_emitted);
-                // Ensure serializable
-                serde_json::to_string(&snapshot[0]).expect("serializes");
-            }
-            _ => panic!("expected tap-hold snapshot"),
-        }
+        let (key, pressed_at, tap_action, hold_action, interrupted, eager_tap, hold_emitted) =
+            match &snapshot[0] {
+                PendingDecisionState::TapHold {
+                    key,
+                    pressed_at,
+                    tap_action,
+                    hold_action,
+                    interrupted,
+                    eager_tap,
+                    hold_emitted,
+                    ..
+                } => (
+                    *key,
+                    *pressed_at,
+                    *tap_action,
+                    hold_action.clone(),
+                    *interrupted,
+                    *eager_tap,
+                    *hold_emitted,
+                ),
+                other => {
+                    unreachable!("expected TapHold snapshot, got {:?}", other)
+                }
+            };
+        assert_eq!(key, KeyCode::CapsLock);
+        assert_eq!(pressed_at, 10);
+        assert_eq!(tap_action, KeyCode::Escape);
+        assert_eq!(hold_action, HoldAction::Modifier(2));
+        assert!(!interrupted);
+        assert_eq!(eager_tap, TimingConfig::default().eager_tap);
+        assert!(!hold_emitted);
+        // Ensure serializable
+        serde_json::to_string(&snapshot[0]).expect("serializes");
     }
 
     #[test]
@@ -572,21 +582,22 @@ mod tests {
 
         let snapshot = queue.snapshot();
         assert_eq!(snapshot.len(), 1);
-        match &snapshot[0] {
+        let (keys, started_at, matched, action) = match &snapshot[0] {
             PendingDecisionState::Combo {
                 keys,
                 started_at,
                 matched,
                 action,
                 ..
-            } => {
-                assert!(keys.contains(&KeyCode::A));
-                assert!(matched.contains(&KeyCode::C));
-                assert_eq!(*started_at, 5);
-                assert_eq!(*action, LayerAction::Block);
-                serde_json::to_string(&snapshot[0]).expect("serializes");
+            } => (keys.clone(), *started_at, matched.clone(), action.clone()),
+            other => {
+                unreachable!("expected Combo snapshot, got {:?}", other)
             }
-            _ => panic!("expected combo snapshot"),
-        }
+        };
+        assert!(keys.contains(&KeyCode::A));
+        assert!(matched.contains(&KeyCode::C));
+        assert_eq!(started_at, 5);
+        assert_eq!(action, LayerAction::Block);
+        serde_json::to_string(&snapshot[0]).expect("serializes");
     }
 }
