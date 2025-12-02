@@ -178,7 +178,7 @@
 
 ### Training Screen
 
-- [ ] 22. Implement TrainingScreen page with lesson framework
+- [x] 22. Implement TrainingScreen page with lesson framework
   - Files: ui/lib/pages/training_screen.dart (new/extend existing)
   - Create lesson data structure; implement step-by-step progression; validate user actions
   - _Leverage: ui/lib/services/engine_service.dart (eval, simulate), ui/lib/ffi/bridge.dart_
