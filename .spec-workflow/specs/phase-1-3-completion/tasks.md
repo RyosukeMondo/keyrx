@@ -28,7 +28,7 @@
 
 ### Script Testing Framework
 
-- [ ] 3. Implement test harness with Rhai test primitives
+- [x] 3. Implement test harness with Rhai test primitives
   - Files: core/src/scripting/test_harness.rs (new)
   - Create TestHarness struct; implement register_test_functions() to add simulate_tap, simulate_hold, assert_output, assert_mapping to Rhai runtime
   - _Leverage: core/src/scripting/runtime.rs (RhaiRuntime), core/src/engine/types.rs (InputEvent)_
