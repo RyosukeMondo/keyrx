@@ -291,7 +291,7 @@
 
 ### CI Performance Regression Detection
 
-- [ ] 36. Implement CI benchmark workflow and regression check
+- [x] 36. Implement CI benchmark workflow and regression check
   - Files: .github/workflows/benchmark.yml (new), scripts/check_bench_regression.py (new)
   - Create GitHub Actions workflow running Criterion benchmarks; Python script to parse output and fail on >100µs regression
   - _Leverage: Criterion benchmark output format, existing core/benches/_
