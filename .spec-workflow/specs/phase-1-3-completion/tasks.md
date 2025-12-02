@@ -42,7 +42,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust test framework engineer | Task: Create test_runner.rs with discover_tests(ast: &rhai::AST) -> Vec<String> to find functions with `test_` prefix (NOT #[test] - Rhai doesn't support attributes); run_tests(runtime, tests) -> Vec<TestResult>; TestResult { name, passed, message, duration_µs, line_number } | Restrictions: ≤400 lines; iterate AST functions checking name.starts_with("test_"); catch panics per-test; report line numbers on failure | _Leverage: rhai::AST::iter_functions() for discovery, test_harness for primitives | _Requirements: 1.1 | Success: Discovers `fn test_*` functions, runs each independently, returns structured results._
 
-- [ ] 5. Implement keyrx test CLI command
+- [x] 5. Implement keyrx test CLI command
   - Files: core/src/cli/commands/test.rs (new), core/src/bin/keyrx.rs (modify to add command)
   - Add `keyrx test --script <path>` command with --filter, --watch, --json flags; load script, discover tests, run, report results with exit code per product.md (0=pass, 1=error, 2=assertion fail, 3=timeout)
   - _Leverage: core/src/cli/commands/check.rs (script loading pattern), core/src/scripting/test_runner.rs, notify crate for watch_
