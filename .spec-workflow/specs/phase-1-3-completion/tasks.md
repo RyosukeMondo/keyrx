@@ -335,7 +335,7 @@
   - _Requirements: 4.4, NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter refactoring engineer | Task: Split debugger.dart (969 lines) into debugger_page.dart (DebuggerPage widget, state management ~400 lines), debugger_widgets.dart (TimelineWidget, LayerPanelWidget ~300 lines), debugger_meters.dart (LatencyMeter, PendingDecisionWidget ~270 lines) | Restrictions: No functionality changes; all tests must pass; each file ≤400 lines | _Leverage: existing widget extraction patterns | _Requirements: 4.4 | Success: All files ≤400 lines, flutter test passes._
 
-- [ ] 42. Refactor trade_off_visualizer.dart into modular structure
+- [x] 42. Refactor trade_off_visualizer.dart into modular structure
   - Files: ui/lib/pages/trade_off_visualizer.dart → trade_off_page.dart + trade_off_chart.dart + typing_simulator.dart
   - Split 949-line file into 3 focused files each ≤400 lines
   - _Leverage: existing Flutter widget patterns_
