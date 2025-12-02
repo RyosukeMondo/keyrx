@@ -307,7 +307,7 @@
   - _Requirements: 4.4, NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split test_harness.rs (802 lines) into test_harness.rs (TestHarness struct, register_test_functions, public API ~400 lines) and test_primitives.rs (simulate_tap, simulate_hold, assert_output, assert_mapping implementations ~400 lines); maintain re-exports in test_harness.rs | Restrictions: No API changes; all tests must pass; each file ≤500 lines | _Leverage: existing module patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes, API unchanged._
 
-- [ ] 38. Refactor test_runner.rs into modular structure
+- [x] 38. Refactor test_runner.rs into modular structure
   - Files: core/src/scripting/test_runner.rs → test_runner.rs + test_discovery.rs
   - Split 741-line file: test_runner.rs (TestRunner, run_tests ~350 lines), test_discovery.rs (discover_tests, AST parsing ~350 lines)
   - _Leverage: existing module patterns_
