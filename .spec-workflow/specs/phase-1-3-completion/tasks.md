@@ -275,7 +275,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Linux driver engineer | Task: Modify evdev event loop to check emergency_exit::check_emergency_exit() FIRST; if true, call device.ungrab() to release exclusive access, then activate_bypass_mode(); if bypass active, skip all processing | Restrictions: ≤30 lines added; must ungrab device so keys flow to OS; no panics on ungrab failure | _Leverage: emergency_exit module, evdev::Device::ungrab | _Requirements: 4.1 | Success: Ctrl+Alt+Shift+Escape disables remapping on Linux, device ungrabbed._
 
-- [ ] 34. Add emergency exit FFI exports and Flutter UI indicator
+- [x] 34. Add emergency exit FFI exports and Flutter UI indicator
   - Files: core/src/ffi/exports.rs (modify), ui/lib/widgets/bypass_indicator.dart (new)
   - Export keyrx_is_bypass_active(), keyrx_set_bypass(); create Flutter widget showing bypass status
   - _Leverage: existing FFI patterns, Flutter Provider state_
