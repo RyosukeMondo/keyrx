@@ -44,6 +44,9 @@ dependencies:
   # Platform permissions
   permission_handler: ^11.3.1
 
+  # Local storage for training progress
+  shared_preferences: ^2.3.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
