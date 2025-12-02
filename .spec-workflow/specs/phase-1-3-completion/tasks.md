@@ -328,7 +328,7 @@
   - _Requirements: 4.4, NFR Code Architecture_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split advanced.rs (706 lines) into advanced.rs (process_event, state management ~350 lines) and decision_engine.rs (tap_hold_decision, combo_decision, timing logic ~350 lines) | Restrictions: No API changes; all tests must pass; each file ≤500 lines; decision_engine should be pure functions where possible | _Leverage: existing patterns | _Requirements: 4.4 | Success: Both files ≤500 lines, cargo test passes._
 
-- [ ] 41. Refactor debugger.dart into modular structure
+- [x] 41. Refactor debugger.dart into modular structure
   - Files: ui/lib/pages/debugger.dart → debugger_page.dart + debugger_widgets.dart + debugger_meters.dart
   - Split 969-line file into 3 focused files each ≤400 lines
   - _Leverage: existing Flutter widget patterns_
