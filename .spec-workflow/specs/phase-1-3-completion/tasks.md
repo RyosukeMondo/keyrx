@@ -300,7 +300,7 @@
 
 ### Code Quality Refactoring (File Size Compliance)
 
-- [ ] 37. Refactor test_harness.rs into modular structure
+- [x] 37. Refactor test_harness.rs into modular structure
   - Files: core/src/scripting/test_harness.rs → test_harness.rs + test_primitives.rs
   - Split 802-line file: test_harness.rs (TestHarness, register_test_functions ~400 lines), test_primitives.rs (simulate_*, assert_* implementations ~400 lines)
   - _Leverage: existing module patterns in scripting/_
