@@ -130,7 +130,7 @@
 
 ## Phase 2: Nervous System - Driver Integration
 
-- [ ] 16. Add OpenTelemetry dependencies and EngineTracer struct
+- [x] 16. Add OpenTelemetry dependencies and EngineTracer struct
   - Files: core/Cargo.toml (add deps), core/src/engine/tracing.rs (new)
   - Add opentelemetry, opentelemetry-otlp crates; create EngineTracer struct with span methods
   - _Leverage: opentelemetry crate documentation_
