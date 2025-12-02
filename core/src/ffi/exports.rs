@@ -69,8 +69,35 @@ pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
         script = script_name,
         "Loading script"
     );
-    // TODO: Actually load the script
-    0
+
+    // Load and run the script using the active runtime
+    match with_active_runtime(|runtime| {
+        runtime.load_file(path_str)?;
+        runtime.run_script()
+    }) {
+        Some(Ok(())) => 0,
+        Some(Err(err)) => {
+            tracing::error!(
+                service = "keyrx",
+                event = "ffi_load_script_error",
+                component = "ffi_exports",
+                script = script_name,
+                error = %err,
+                "Script syntax/execution error"
+            );
+            -3
+        }
+        None => {
+            tracing::error!(
+                service = "keyrx",
+                event = "ffi_load_script_error",
+                component = "ffi_exports",
+                script = script_name,
+                "Engine not initialized"
+            );
+            -4
+        }
+    }
 }
 
 /// Free a string allocated by KeyRx.
@@ -321,6 +348,7 @@ mod tests {
     use crate::drivers::keycodes::KeyCode;
     use crate::engine::RemapAction;
     use crate::scripting::{clear_active_runtime, set_active_runtime, RhaiRuntime};
+    use serial_test::serial;
     use std::collections::HashMap;
     use std::ptr;
     use std::slice;
@@ -400,10 +428,58 @@ mod tests {
     }
 
     #[test]
-    fn load_script_accepts_valid_path() {
+    #[serial]
+    fn load_script_returns_error_without_runtime() {
+        clear_active_runtime();
         let path = CString::new("script.rhai").expect("CString should not contain nulls");
         let result = unsafe { keyrx_load_script(path.as_ptr()) };
-        assert_eq!(result, 0);
+        assert_eq!(result, -4); // Engine not initialized
+    }
+
+    #[test]
+    #[serial]
+    fn load_script_returns_error_for_missing_file() {
+        clear_active_runtime();
+        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
+        set_active_runtime(&mut runtime);
+
+        let path = CString::new("/nonexistent/path/script.rhai")
+            .expect("CString should not contain nulls");
+        let result = unsafe { keyrx_load_script(path.as_ptr()) };
+        assert_eq!(result, -3); // File not found / syntax error
+
+        clear_active_runtime();
+    }
+
+    #[test]
+    #[serial]
+    fn load_script_loads_valid_script() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        clear_active_runtime();
+        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
+        set_active_runtime(&mut runtime);
+
+        // Create a temporary script file
+        let mut temp_file = NamedTempFile::new().expect("temp file should create");
+        writeln!(temp_file, r#"remap("A", "B");"#).expect("write should succeed");
+        let temp_path = temp_file
+            .path()
+            .to_str()
+            .expect("path should be valid UTF-8");
+
+        let path = CString::new(temp_path).expect("CString should not contain nulls");
+        let result = unsafe { keyrx_load_script(path.as_ptr()) };
+        assert_eq!(result, 0); // Success
+
+        // Verify the mapping was registered
+        assert!(matches!(
+            runtime.lookup_remap(KeyCode::A),
+            RemapAction::Remap(KeyCode::B)
+        ));
+
+        clear_active_runtime();
     }
 
     #[test]
@@ -414,6 +490,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn eval_returns_error_when_runtime_missing() {
         clear_active_runtime();
         let cmd = CString::new(r#"remap("A","B");"#).unwrap();
@@ -430,6 +507,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn eval_executes_against_shared_runtime() {
         clear_active_runtime();
         let mut runtime = RhaiRuntime::new().expect("runtime should initialize");

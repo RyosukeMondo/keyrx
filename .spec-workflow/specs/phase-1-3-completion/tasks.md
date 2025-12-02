@@ -89,14 +89,14 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust async/timing engineer | Task: Create replay.rs with ReplaySession { events: VecDeque<EventRecord>, start_time }; impl InputSource for ReplaySession with start() loading events, poll() returning next event when timestamp elapsed, stop() clearing queue | Restrictions: ≤250 lines; use std::time for timing; deterministic replay (same inter-event delays) | _Leverage: InputSource trait, SessionFile::from_json | _Requirements: 1.3 | Success: ReplaySession injects events with correct timing, implements InputSource trait._
 
-- [ ] 11. Implement keyrx replay CLI command
+- [x] 11. Implement keyrx replay CLI command
   - Files: core/src/cli/commands/replay.rs (new), core/src/bin/keyrx.rs (add command)
   - Add `keyrx replay <session.krx>` command; load session, create ReplaySession, run engine, compare outputs
   - _Leverage: core/src/engine/replay.rs (ReplaySession), core/src/cli/commands/run.rs (engine setup pattern)_
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust CLI engineer | Task: Create replay.rs with ReplayCommand; implement execute() to load .krx file, create ReplaySession as InputSource, run engine, collect outputs, optionally verify against original recording | Restrictions: ≤300 lines; add to Commands enum; support --verify flag to compare outputs | _Leverage: ReplaySession, run.rs engine initialization pattern | _Requirements: 1.3 | Success: `keyrx replay session.krx` replays events deterministically, --verify reports match/mismatch._
 
-- [ ] 12. Implement keyrx analyze timing diagram command
+- [x] 12. Implement keyrx analyze timing diagram command
   - Files: core/src/cli/commands/analyze.rs (new), core/src/bin/keyrx.rs (add command)
   - Add `keyrx analyze <session.krx> --diagram` command; parse .krx, generate ASCII timing table
   - _Leverage: core/src/engine/event_recording.rs (SessionFile parsing)_
@@ -105,7 +105,7 @@
 
 ### FFI Script Loading Fix
 
-- [ ] 13. Complete keyrx_load_script FFI function
+- [x] 13. Complete keyrx_load_script FFI function
   - Files: core/src/ffi/exports.rs (modify line ~72)
   - Replace TODO comment with actual script loading; use shared RhaiRuntime; return proper error codes
   - _Leverage: core/src/scripting/runtime.rs (load_file method), existing FFI patterns in exports.rs_
