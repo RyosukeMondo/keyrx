@@ -114,14 +114,14 @@
 
 ### Phase 1 Tests
 
-- [ ] 14. Add unit tests for test harness and runner
+- [x] 14. Add unit tests for test harness and runner
   - Files: core/src/scripting/test_harness.rs (add #[cfg(test)] module), core/src/scripting/test_runner.rs (add tests)
   - Test simulate_tap generates events, assert_output validates correctly, discover_tests finds #[test] functions
   - _Leverage: existing test patterns in core/src/scripting/runtime.rs tests_
   - _Requirements: 1.1, NFR Test Coverage_
   - _Prompt: Implement the task for spec phase-1-3-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust test engineer | Task: Add #[cfg(test)] modules to test_harness.rs and test_runner.rs; test: simulate_tap adds event to output queue, assert_output passes/fails correctly, discover_tests finds #[test] fn, run_tests returns correct results | Restrictions: ≤150 lines per file; deterministic tests; no I/O dependencies | _Leverage: existing test patterns, mock engine state | _Requirements: 1.1, NFR Test Coverage | Success: `cargo test` passes, ≥85% coverage on test harness/runner._
 
-- [ ] 15. Add integration tests for session recording/replay
+- [x] 15. Add integration tests for session recording/replay
   - Files: core/tests/session_recording_test.rs (new)
   - Test record 100 events, replay, verify outputs match; test corrupted file handling
   - _Leverage: core/src/engine/event_recording.rs, core/src/engine/replay.rs_
