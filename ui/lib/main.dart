@@ -7,6 +7,7 @@ import 'pages/editor_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/training_screen.dart';
+import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
 
@@ -69,6 +70,7 @@ class _HomePageState extends State<HomePage> {
     EditorPage(),
     DebuggerPage(),
     ConsolePage(),
+    TradeOffVisualizerPage(),
   ];
 
   final List<NavigationDestination> _destinations = const [
@@ -91,6 +93,11 @@ class _HomePageState extends State<HomePage> {
       icon: Icon(Icons.terminal_outlined),
       selectedIcon: Icon(Icons.terminal),
       label: 'Console',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.tune_outlined),
+      selectedIcon: Icon(Icons.tune),
+      label: 'Timing',
     ),
   ];
 
