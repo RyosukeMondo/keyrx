@@ -1,0 +1,79 @@
+name: Benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'core/**'
+      - '.github/workflows/benchmark.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install gnuplot for Criterion
+        run: sudo apt-get update && sudo apt-get install -y gnuplot
+
+      - name: Checkout main branch for baseline
+        run: |
+          git fetch origin main:main
+          git checkout main
+          cd core && cargo bench --bench latency -- --save-baseline main
+          git checkout -
+
+      - name: Run benchmarks on PR
+        run: |
+          cd core && cargo bench --bench latency -- --baseline main --save-baseline pr
+
+      - name: Export benchmark results
+        run: |
+          cd core
+          cargo bench --bench latency -- --baseline main --export > ../benchmark_results.json 2>&1 || true
+          # Criterion outputs results to target/criterion directory
+          ls -la target/criterion/ || true
+
+      - name: Check for regression
+        run: |
+          python scripts/check_bench_regression.py \
+            --baseline-dir core/target/criterion \
+            --threshold-us 100 \
+            --report benchmark_report.md
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-report
+          path: benchmark_report.md
+
+      - name: Comment PR with benchmark results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('benchmark_report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
