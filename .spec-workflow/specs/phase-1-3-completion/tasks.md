@@ -4,7 +4,7 @@
 
 ### Refactoring (Code Quality Compliance)
 
-- [ ] 1. Refactor scripting/runtime.rs into modular structure
+- [x] 1. Refactor scripting/runtime.rs into modular structure
   - Files: core/src/scripting/runtime.rs → core/src/scripting/runtime.rs, core/src/scripting/bindings.rs, core/src/scripting/builtins.rs
   - Split 1654-line file into 3 modules: runtime.rs (core setup, ~400 lines), bindings.rs (function registration, ~500 lines), builtins.rs (standard functions, ~500 lines)
   - Maintain existing API; internal refactor only
