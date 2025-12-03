@@ -62,7 +62,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: IDE configuration specialist | Task: Create .vscode/settings.json with: rust-analyzer.cargo.features="all", rust-analyzer.check.command="clippy", rust-analyzer.check.extraArgs=["--", "-D", "warnings"], editor.formatOnSave=true, [rust] defaultFormatter rust-analyzer, [dart] defaultFormatter Dart-Code | Restrictions: ≤30 lines; valid JSON; no trailing commas | _Leverage: rust-analyzer settings reference | _Requirements: 7 | Success: Opening project in VS Code shows clippy errors, saves auto-format._
 
-- [ ] 9. Create VS Code extensions and launch configurations
+- [x] 9. Create VS Code extensions and launch configurations
   - Files: .vscode/extensions.json (new), .vscode/launch.json (new)
   - Add recommended extensions and debug configurations
   - _Leverage: VS Code documentation_
