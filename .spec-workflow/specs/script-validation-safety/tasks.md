@@ -28,7 +28,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-3, REQ-5_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust developer specializing in data modeling | Task: Create core/src/validation/types.rs with ValidationResult, ValidationError, ValidationWarning, CoverageReport, ValidationOptions structs as specified in design.md. Add serde Serialize/Deserialize derives | Restrictions: ≤150 lines; use existing patterns from error.rs; include doc comments | Success: All types compile, serde works for JSON. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [-] 4. Implement key name suggestion engine
+- [x] 4. Implement key name suggestion engine
   - Files: `core/src/validation/suggestions.rs` (new)
   - Implement Levenshtein distance-based similar key suggestions
   - Use `KeyCode::all_names()` as dictionary
