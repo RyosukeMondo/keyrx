@@ -128,14 +128,14 @@
 
 ## Phase 4: Dart Config Module
 
-- [ ] 16. Create Dart config module structure
+- [x] 16. Create Dart config module structure
   - File: `ui/lib/config/config.dart`
   - Create barrel export for all config modules
   - Purpose: Establish Dart config module foundation
   - _Requirements: 2.5_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/config.dart` as barrel export that will export timing_config.dart, ui_constants.dart, storage_keys.dart, ffi_constants.dart. Create the directory structure. | Restrictions: Follow existing export patterns in codebase | _Leverage: ui/lib/ffi/bindings.dart for export pattern_ | Success: Config module structure created. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 17. Create Dart timing config
+- [x] 17. Create Dart timing config
   - File: `ui/lib/config/timing_config.dart`
   - Extract animation and debounce timing constants
   - Purpose: Centralize UI timing constants
