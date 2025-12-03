@@ -39,7 +39,7 @@
 
 ## Phase 2: Semantic Validation
 
-- [ ] 5. Implement semantic validator core
+- [x] 5. Implement semantic validator core
   - Files: `core/src/validation/semantic.rs` (new)
   - Validate key names in all PendingOp variants
   - Validate layer references exist when used
@@ -48,7 +48,7 @@
   - _Requirements: REQ-1.1, REQ-1.3, REQ-1.4, REQ-7_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust developer specializing in static analysis | Task: Create core/src/validation/semantic.rs with SemanticValidator struct and validate_operations(ops: &[PendingOp], layers: &HashSet<String>, modifiers: &HashSet<String>, config: &ValidationConfig) -> Vec<ValidationError>. Check all key names are valid, all layer refs exist, all modifier refs exist. Pass config to suggest_similar_keys | Restrictions: ≤200 lines; reuse KeyCode::from_name(); use config for suggestions | Success: Invalid keys and undefined layers/modifiers produce errors with suggestions. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 6. Implement timing validation
+- [x] 6. Implement timing validation
   - Files: `core/src/validation/semantic.rs` (extend)
   - Validate timing parameters using `ValidationConfig.tap_timeout_warn_range` and `ValidationConfig.combo_timeout_warn_range`
   - Warn on values outside configured ranges
