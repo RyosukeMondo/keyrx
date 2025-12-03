@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create ErrorCode type
+- [x] 1. Create ErrorCode type
   - File: `core/src/errors/code.rs`
   - Define ErrorCode with category and number
   - Implement Display as KRX-XXXX

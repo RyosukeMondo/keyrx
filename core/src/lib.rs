@@ -13,6 +13,7 @@ pub mod discovery;
 pub mod drivers;
 pub mod engine;
 pub mod error;
+pub mod errors;
 pub mod ffi;
 pub mod mocks;
 pub mod profiling;
