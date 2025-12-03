@@ -9,8 +9,72 @@ library;
 import 'dart:ffi';
 
 // ────────────────────────────────────────────────────────────────
+// Common Callback Typedefs
+// ────────────────────────────────────────────────────────────────
+
+/// Event callback signature: receives pointer to JSON bytes and length.
+typedef EventCallbackNative = Void Function(Pointer<Uint8>, IntPtr);
+typedef EventCallback = void Function(Pointer<Uint8>, int);
+
+// ────────────────────────────────────────────────────────────────
 // Function Typedefs
 // ────────────────────────────────────────────────────────────────
+
+// keyrx_init
+/// Initialize the KeyRx engine.
+/// 
+/// # Safety
+/// This function is safe to call from any thread.
+typedef InitNative = Int32 Function();
+typedef Init = int Function();
+
+
+// keyrx_version
+/// Get the version string.
+/// 
+/// # Safety
+/// The returned pointer is valid until the next call to this function.
+typedef VersionNative = Pointer<Char> Function();
+typedef Version = Pointer<Char> Function();
+
+
+// keyrx_register_event_callback
+/// Register a unified event callback.
+/// 
+/// This is the new unified API for registering callbacks across all domains.
+/// It replaces domain-specific callback registration functions.
+/// 
+/// # Event Types (by integer code)
+/// - 0: DiscoveryProgress
+/// - 1: DiscoveryDuplicate
+/// - 2: DiscoverySummary
+/// - 3: EngineState
+/// - 4: ValidationProgress
+/// - 5: ValidationResult
+/// - 6: DeviceConnected
+/// - 7: DeviceDisconnected
+/// - 8: TestProgress
+/// - 9: TestResult
+/// - 10: AnalysisProgress
+/// - 11: AnalysisResult
+/// - 12: DiagnosticsLog
+/// - 13: DiagnosticsMetric
+/// - 14: RecordingStarted
+/// - 15: RecordingStopped
+/// 
+/// # Arguments
+/// * `event_type_code` - Integer code for the event type (see list above)
+/// * `callback` - Optional callback function. Pass NULL to unregister.
+/// 
+/// # Returns
+/// - 0: Success
+/// - -1: Invalid event type code
+/// 
+/// # Safety
+/// The callback function must be valid for the lifetime of the registration.
+typedef RegisterEventCallbackNative = Int32 Function(Int32, Pointer<NativeFunction<EventCallbackNative>>);
+typedef RegisterEventCallback = int Function(int, Pointer<NativeFunction<EventCallbackNative>>);
+
 
 // keyrx_validate_script
 /// Validate a script and return JSON result.
@@ -446,6 +510,9 @@ class KeyrxBindingsGenerated {
   Pointer<T> _lookup<T extends NativeType>(String name) => _lib.lookup<T>(name);
 
   // Function bindings
+  late final Init init = _lookup<NativeFunction<InitNative>>('keyrx_init').asFunction();
+  late final Version version = _lookup<NativeFunction<VersionNative>>('keyrx_version').asFunction();
+  late final RegisterEventCallback registerEventCallback = _lookup<NativeFunction<RegisterEventCallbackNative>>('keyrx_register_event_callback').asFunction();
   late final ValidateScript validateScript = _lookup<NativeFunction<ValidateScriptNative>>('keyrx_validate_script').asFunction();
   late final ValidateScriptWithOptions validateScriptWithOptions = _lookup<NativeFunction<ValidateScriptWithOptionsNative>>('keyrx_validate_script_with_options').asFunction();
   late final SuggestKeys suggestKeys = _lookup<NativeFunction<SuggestKeysNative>>('keyrx_suggest_keys').asFunction();

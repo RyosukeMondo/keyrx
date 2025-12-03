@@ -170,7 +170,7 @@
   - _Requirements: 6.4_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Build Engineer with Rust/Flutter expertise | Task: Integrate binding generation into build pipeline with sync verification | Restrictions: Must fail build on mismatch, integrate with existing build, minimal build time impact | _Leverage: Cargo build.rs, Flutter build hooks | Success: Build runs generator automatically, fails on mismatch, CI catches binding drift | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Update KeyrxBridge to use generated bindings
+- [-] 17. Update KeyrxBridge to use generated bindings
   - File: `ui/lib/ffi/bridge.dart`
   - Replace manual FFI function lookups with generated bindings
   - Add unified callback registration via EventRegistry

@@ -54,6 +54,7 @@ class RustTypeMapper:
         'usize': 'Size',
         'isize': 'IntPtr',
         '()': 'Void',
+        'Option<EventCallback>': 'Pointer<NativeFunction<EventCallbackNative>>',
     }
 
     RUST_TO_DART = {
@@ -75,6 +76,7 @@ class RustTypeMapper:
         'usize': 'int',
         'isize': 'int',
         '()': 'void',
+        'Option<EventCallback>': 'Pointer<NativeFunction<EventCallbackNative>>',
     }
 
     @classmethod
@@ -94,11 +96,12 @@ class RustFfiParser:
     """Parses Rust FFI export files."""
 
     # Pattern to match #[no_mangle] pub extern "C" functions
+    # Use DOTALL to allow multiline parameters, but ensure we stop at the return type
     FUNCTION_PATTERN = re.compile(
         r'#\[no_mangle\]\s+'
         r'pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+'
-        r'(\w+)\s*\((.*?)\)\s*->\s*([^{]+)',
-        re.MULTILINE | re.DOTALL
+        r'(\w+)\s*\(([^)]*)\)\s*->\s*([^\{]+)',
+        re.MULTILINE
     )
 
     # Pattern for void return (no -> part)
@@ -231,6 +234,14 @@ library;
 
 import 'dart:ffi';
 
+// ────────────────────────────────────────────────────────────────
+// Common Callback Typedefs
+// ────────────────────────────────────────────────────────────────
+
+/// Event callback signature: receives pointer to JSON bytes and length.
+typedef EventCallbackNative = Void Function(Pointer<Uint8>, IntPtr);
+typedef EventCallback = void Function(Pointer<Uint8>, int);
+
 '''
 
     def __init__(self):
@@ -352,6 +363,11 @@ def find_ffi_files(base_path: Path) -> List[Path]:
 
     # Find all .rs files that start with exports_ or are in domains/
     ffi_files = []
+
+    # Core exports.rs file (contains init, version, free_string, event registration)
+    exports_file = ffi_dir / 'exports.rs'
+    if exports_file.exists():
+        ffi_files.append(exports_file)
 
     # Old-style exports_*.rs files
     for file in ffi_dir.glob('exports_*.rs'):
