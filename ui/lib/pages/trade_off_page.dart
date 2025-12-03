@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/config.dart';
 import '../services/engine_service.dart';
 import '../services/service_registry.dart';
 import 'trade_off_chart.dart';
@@ -85,18 +86,18 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildExplanationCard(theme),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             _buildChartCard(theme),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             _buildSliderCard(theme),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             _buildPresetsCard(theme),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             _buildStatisticsCard(theme),
           ],
         ),
@@ -107,19 +108,19 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   Widget _buildExplanationCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(Icons.info_outline, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
+                const SizedBox(width: UiConstants.smallPadding),
                 Text('Understanding Tap-Hold Timing',
                     style: theme.textTheme.titleMedium),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UiConstants.defaultMargin),
             Text(
               'The tap-hold timeout determines how long you must hold a key '
               'before it triggers the "hold" action instead of "tap". '
@@ -136,12 +137,12 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   Widget _buildChartCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Miss Rate vs. Timeout', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: UiConstants.smallPadding),
             SizedBox(
               height: 300,
               child: TradeOffChart(
@@ -163,7 +164,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,10 +173,11 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
               children: [
                 Text('Adjust Timeout', style: theme.textTheme.titleMedium),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: UiConstants.defaultMargin, vertical: 6),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(UiConstants.smallPadding),
                   ),
                   child: Text(
                     '${_currentTimeout.toInt()} ms',
@@ -187,7 +189,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: currentPreset?.color ?? theme.colorScheme.primary,
@@ -202,7 +204,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 onChanged: (v) => setState(() => _currentTimeout = v),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: UiConstants.smallPadding),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -212,7 +214,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                     style: theme.textTheme.bodySmall),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             Row(
               children: [
                 Expanded(
@@ -224,7 +226,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                         : currentMissRate < 15 ? Colors.orange : Colors.red,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: UiConstants.defaultPadding),
                 Expanded(
                   child: MetricTile(
                     label: 'Category',
@@ -250,12 +252,12 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   Widget _buildPresetsCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Preset Configurations', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: UiConstants.defaultMargin),
             ...PresetRegion.defaults.map((preset) => PresetRow(
                   preset: preset,
                   isSelected: preset.containsTimeout(_currentTimeout),
@@ -270,7 +272,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   Widget _buildStatisticsCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(UiConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -285,7 +287,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UiConstants.defaultMargin),
             Row(
               children: [
                 Expanded(
@@ -295,7 +297,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                     icon: Icons.timer,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: UiConstants.defaultPadding),
                 Expanded(
                   child: StatTile(
                     label: 'Std Deviation',
@@ -305,7 +307,7 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -315,14 +317,14 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
               ),
             ),
             if (_hasUserProfile && _recommendedTimeout != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: UiConstants.defaultMargin),
               RecommendationBanner(
                 recommendedTimeout: _recommendedTimeout!,
                 userTypingMean: _userTypingMean!,
                 onApply: () => setState(() => _currentTimeout = _recommendedTimeout!),
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: UiConstants.defaultMargin),
             Text(
               _hasUserProfile
                   ? 'Profile based on your measured typing speed. '

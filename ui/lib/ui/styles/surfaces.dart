@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../config/config.dart';
+
 /// Centralized surface styling for shared containers.
 class SurfaceStyles {
   const SurfaceStyles._();
 
   /// Default padding applied to surfaces.
-  static const EdgeInsets defaultPadding = EdgeInsets.all(16);
+  static const EdgeInsets defaultPadding =
+      EdgeInsets.all(UiConstants.defaultPadding);
 
   /// Default outer margin for separation between surfaces.
-  static const EdgeInsets defaultMargin = EdgeInsets.all(12);
+  static const EdgeInsets defaultMargin =
+      EdgeInsets.all(UiConstants.defaultMargin);
 
   /// Standard border radius for rounded surfaces.
   static const BorderRadius defaultRadius = BorderRadius.all(
-    Radius.circular(12),
+    Radius.circular(UiConstants.surfaceBorderRadius),
   );
 
   /// Standard elevation for subtle depth.
-  static const double defaultElevation = 6;
+  static const double defaultElevation = UiConstants.defaultElevation;
 
   /// Standard surface color that respects the active theme.
   static Color surfaceColor(BuildContext context) {

@@ -8,6 +8,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/config.dart';
+
 /// Dialog for typing speed simulation.
 class TypingSimulationDialog extends StatefulWidget {
   const TypingSimulationDialog({
@@ -30,7 +32,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
   final List<int> _keyPressTimestamps = [];
   String _typedText = '';
   Timer? _timer;
-  int _secondsRemaining = 30;
+  int _secondsRemaining = TimingConfig.typingTimeLimitSec;
   bool _isComplete = false;
 
   @override
@@ -62,7 +64,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
 
   void _finishSimulation() {
     _timer?.cancel();
-    if (_keyPressTimestamps.length < 10) {
+    if (_keyPressTimestamps.length < ThresholdConstants.minKeystrokes) {
       // Not enough data
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,8 +81,8 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
     for (int i = 1; i < _keyPressTimestamps.length; i++) {
       final delay =
           (_keyPressTimestamps[i] - _keyPressTimestamps[i - 1]).toDouble();
-      // Filter out unreasonable delays (> 2 seconds = likely pause)
-      if (delay > 0 && delay < 2000) {
+      // Filter out unreasonable delays (> pause threshold = likely pause)
+      if (delay > 0 && delay < ThresholdConstants.pauseThresholdMs) {
         delays.add(delay);
       }
     }
@@ -135,13 +137,16 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
       title: Row(
         children: [
           const Icon(Icons.speed, color: Colors.purple),
-          const SizedBox(width: 8),
+          const SizedBox(width: UiConstants.smallPadding),
           const Expanded(child: Text('Typing Speed Simulation')),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: EdgeInsets.symmetric(
+                horizontal: UiConstants.smallPadding,
+                vertical: UiConstants.tinyPadding),
             decoration: BoxDecoration(
               color: _secondsRemaining <= 10 ? Colors.red : Colors.grey,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius:
+                  BorderRadius.circular(UiConstants.defaultBorderRadius),
             ),
             child: Text(
               '${_secondsRemaining}s',
@@ -164,12 +169,13 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
               'Type the following text as naturally as possible:',
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: UiConstants.defaultMargin),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(UiConstants.defaultMargin),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius:
+                    BorderRadius.circular(UiConstants.smallPadding),
               ),
               child: Text(
                 widget.sampleText,
@@ -178,13 +184,13 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: UiConstants.smallPadding),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -198,20 +204,20 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: UiConstants.defaultPadding),
             KeyboardListener(
               focusNode: _focusNode,
               onKeyEvent: _handleKeyPress,
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(UiConstants.defaultMargin),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.purple),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(UiConstants.smallPadding),
                 ),
                 child: Column(
                   children: [
                     const Icon(Icons.keyboard, size: 32, color: Colors.purple),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: UiConstants.smallPadding),
                     Text(
                       'Click here and start typing',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -235,8 +241,9 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed:
-              _keyPressTimestamps.length >= 10 ? _finishSimulation : null,
+          onPressed: _keyPressTimestamps.length >= ThresholdConstants.minKeystrokes
+              ? _finishSimulation
+              : null,
           child: const Text('Finish Early'),
         ),
       ],

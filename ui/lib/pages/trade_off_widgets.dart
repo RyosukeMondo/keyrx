@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/config.dart';
 import 'trade_off_chart.dart';
 
 /// Widget for displaying a metric tile with colored background.
@@ -23,10 +24,10 @@ class MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(UiConstants.defaultMargin),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(UiConstants.smallPadding),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -38,7 +39,7 @@ class MetricTile extends StatelessWidget {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: UiConstants.tinyPadding),
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -69,15 +70,15 @@ class StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(UiConstants.defaultMargin),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(UiConstants.smallPadding),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 24, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
+          Icon(icon, size: UiConstants.defaultIconSize, color: theme.colorScheme.primary),
+          const SizedBox(width: UiConstants.defaultMargin),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -114,33 +115,35 @@ class PresetRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: UiConstants.smallPadding),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(UiConstants.smallPadding),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(UiConstants.defaultMargin),
           decoration: BoxDecoration(
             color: isSelected
                 ? preset.color.withValues(alpha: 0.15)
                 : theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(UiConstants.smallPadding),
             border: Border.all(
               color: isSelected ? preset.color : theme.dividerColor,
-              width: isSelected ? 2 : 1,
+              width: isSelected
+                  ? UiConstants.thickBorderWidth
+                  : UiConstants.defaultBorderWidth,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: UiConstants.defaultMargin,
+                height: UiConstants.defaultMargin,
                 decoration: BoxDecoration(
                   color: preset.color,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: UiConstants.defaultMargin),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +171,7 @@ class PresetRow extends StatelessWidget {
                 ),
               ),
               if (isSelected) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: UiConstants.smallPadding),
                 Icon(Icons.check_circle, color: preset.color, size: 20),
               ],
             ],
@@ -197,16 +200,16 @@ class RecommendationBanner extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(UiConstants.defaultMargin),
       decoration: BoxDecoration(
         color: Colors.purple.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(UiConstants.smallPadding),
         border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           const Icon(Icons.recommend, color: Colors.purple),
-          const SizedBox(width: 12),
+          const SizedBox(width: UiConstants.defaultMargin),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +281,7 @@ class _ModelEditDialogState extends State<ModelEditDialog> {
             divisions: 30,
             onChanged: (v) => setState(() => _tempMean = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: UiConstants.defaultPadding),
           Text('Standard Deviation: ${_tempStdDev.toInt()} ms'),
           Slider(
             value: _tempStdDev,
@@ -323,7 +326,7 @@ class TradeOffHelpDialog extends StatelessWidget {
               'Tap-Hold Timeout',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: UiConstants.smallPadding),
             Text(
               'This is the time threshold that determines whether a key '
               'press is interpreted as a "tap" or a "hold".\n\n'
@@ -332,23 +335,23 @@ class TradeOffHelpDialog extends StatelessWidget {
               '- Longer timeout: Fewer accidental holds, but slower '
               'hold activation',
             ),
-            SizedBox(height: 16),
+            SizedBox(height: UiConstants.defaultPadding),
             Text(
               'Miss Rate',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: UiConstants.smallPadding),
             Text(
               'The estimated percentage of key presses that will be '
               'incorrectly classified. This is calculated using a '
               'statistical model of your typing speed.',
             ),
-            SizedBox(height: 16),
+            SizedBox(height: UiConstants.defaultPadding),
             Text(
               'Presets',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: UiConstants.smallPadding),
             Text(
               '- Gaming: 100-150ms - Optimized for fast reactions\n'
               '- Typing: 175-250ms - Balanced for daily use\n'

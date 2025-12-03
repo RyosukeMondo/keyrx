@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/config.dart';
 import '../services/engine_service.dart';
 import '../services/service_registry.dart';
 import 'training_lessons.dart';
@@ -23,7 +24,6 @@ class KeyrxTrainingScreen extends StatefulWidget {
 
 class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
     with SingleTickerProviderStateMixin {
-  static const String _progressKey = 'keyrx_training_progress';
 
   EngineService? _engine;
   StreamSubscription<EngineSnapshot>? _stateSubscription;
@@ -63,7 +63,7 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
 
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_progressKey) ?? [];
+    final stored = prefs.getStringList(StorageKeys.trainingProgressKey) ?? [];
     final progress = <String, int>{};
     for (final entry in stored) {
       final parts = entry.split(':');
@@ -94,8 +94,9 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
 
   Future<void> _saveProgress() async {
     final prefs = await SharedPreferences.getInstance();
-    final entries = _completedSteps.entries.map((e) => '${e.key}:${e.value}').toList();
-    await prefs.setStringList(_progressKey, entries);
+    final entries =
+        _completedSteps.entries.map((e) => '${e.key}:${e.value}').toList();
+    await prefs.setStringList(StorageKeys.trainingProgressKey, entries);
   }
 
   void _subscribeToStateStream() {
@@ -486,7 +487,7 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
       );
 
   Future<void> _resetProgress() async {
-    (await SharedPreferences.getInstance()).remove(_progressKey);
+    (await SharedPreferences.getInstance()).remove(StorageKeys.trainingProgressKey);
     setState(() {
       _completedSteps = {};
       _currentLessonIndex = 0;
