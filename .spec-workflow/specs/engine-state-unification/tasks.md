@@ -62,7 +62,7 @@
   - _Requirements: 1.2, 3.2_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer refactoring state | Task: Create ModifierState in core/src/engine/state/modifiers.rs | Restrictions: Support 255 modifiers, efficient bitmap, clear API | _Leverage: Existing ModifierState | Success: ModifierState supports all modifiers, efficient | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Refactor PendingState component
+- [x] 7. Refactor PendingState component
   - File: `core/src/engine/state/pending.rs`
   - Extract from PendingDecisionQueue
   - Implement add, resolve, clear, timeout methods

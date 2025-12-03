@@ -7,6 +7,7 @@ mod keys;
 mod layers;
 mod modifiers;
 mod mutation;
+mod pending;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -28,6 +29,8 @@ pub use modifiers::{
 };
 #[allow(unused_imports)] // Will be used when EngineState is implemented
 pub use mutation::Mutation;
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use pending::PendingState;
 
 /// A set of active modifiers (both physical and virtual).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
