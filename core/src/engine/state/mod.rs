@@ -2,6 +2,7 @@
 
 mod change;
 mod error;
+pub mod history;
 mod key_state;
 mod keys;
 mod layers;
@@ -22,6 +23,8 @@ pub use change::{
 };
 #[allow(unused_imports)] // Will be used in tasks 9-11 for apply() and apply_batch()
 pub use error::{StateError, StateResult};
+#[allow(unused_imports)] // Will be used in tasks 14+ for state persistence and debugging
+pub use history::{HistoryConfig, StateHistory};
 pub use key_state::KeyStateTracker;
 pub use keys::KeyState;
 pub use layers::LayerState;
