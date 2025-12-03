@@ -113,8 +113,8 @@ enum Commands {
     /// Simulate key events without real keyboard
     Simulate {
         /// Comma-separated list of keys to simulate (e.g., "A,B,CapsLock")
-        #[arg(short, long)]
-        input: String,
+        #[arg(short, long, required_unless_present = "interactive")]
+        input: Option<String>,
 
         /// Path to the script file
         #[arg(short, long)]
@@ -127,6 +127,10 @@ enum Commands {
         /// Treat input keys as a simultaneous combo
         #[arg(long)]
         combo: bool,
+
+        /// Start interactive REPL-style simulation mode
+        #[arg(long, short = 'I')]
+        interactive: bool,
     },
 
     /// Discover a keyboard layout and write a device profile
@@ -400,12 +404,20 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             script,
             hold_ms,
             combo,
+            interactive,
         } => {
-            SimulateCommand::new(input, script, format)
-                .with_hold_ms(hold_ms)
-                .with_combo(combo)
-                .run()
-                .await?;
+            if interactive {
+                SimulateCommand::run_interactive(script, format)?;
+            } else if let Some(input) = input {
+                SimulateCommand::new(input, script, format)
+                    .with_hold_ms(hold_ms)
+                    .with_combo(combo)
+                    .run()
+                    .await?;
+            } else {
+                // Should not reach here due to clap's required_unless_present
+                anyhow::bail!("--input is required when not using --interactive");
+            }
         }
         Commands::Discover { device, force, yes } => {
             DiscoverCommand::new(device, force, yes, format)

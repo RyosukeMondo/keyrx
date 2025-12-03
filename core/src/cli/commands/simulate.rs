@@ -8,6 +8,8 @@ use crate::engine::{
 use crate::scripting::{RemapRegistry, RhaiRuntime, TapHoldBinding};
 use crate::traits::ScriptRuntime;
 use anyhow::{bail, Context, Result};
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -456,6 +458,269 @@ impl SimulateCommand {
     pub async fn run(&self) -> Result<()> {
         let output = self.execute().await?;
         self.output.data(&output)?;
+        Ok(())
+    }
+
+    /// Run interactive simulation mode (REPL-style).
+    pub fn run_interactive(script_path: Option<PathBuf>, format: OutputFormat) -> Result<()> {
+        let output = OutputWriter::new(format);
+        let mut session = InteractiveSession::new(script_path)?;
+
+        let mut editor = DefaultEditor::new().context("Failed to initialize readline")?;
+
+        println!("KeyRx Interactive Simulation");
+        println!("Type key names to simulate, 'help' for commands, 'quit' to exit.\n");
+
+        if let Some(path) = &session.script_path {
+            println!("Loaded script: {}\n", path.display());
+        }
+
+        loop {
+            match editor.readline("simulate> ") {
+                Ok(line) => {
+                    let line = line.trim();
+                    if line.is_empty() {
+                        continue;
+                    }
+
+                    let _ = editor.add_history_entry(line);
+
+                    match line.to_lowercase().as_str() {
+                        "quit" | "exit" | "q" => break,
+                        "help" | "?" => {
+                            Self::print_interactive_help();
+                        }
+                        "state" => {
+                            session.print_state(&output)?;
+                        }
+                        "reset" => {
+                            session.reset()?;
+                            println!("Engine reset to initial state.");
+                        }
+                        _ => {
+                            session.simulate_and_print(line)?;
+                        }
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("^C (use 'quit' to exit)");
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("Goodbye!");
+                    break;
+                }
+                Err(err) => {
+                    eprintln!("Error: {err}");
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn print_interactive_help() {
+        println!(
+            r#"Interactive Simulation Commands:
+  <key>           Simulate a key press/release (e.g., "A", "CapsLock")
+  <key>:hold:<ms> Simulate a key with specific hold duration (e.g., "A:hold:300")
+  <k1>,<k2>,...   Simulate multiple keys in sequence (e.g., "A,B,C")
+  state           Show current engine state
+  reset           Reset engine to initial state
+  help, ?         Show this help message
+  quit, exit, q   Exit interactive mode
+
+Examples:
+  A               Simulate pressing and releasing A
+  CapsLock:hold:300  Hold CapsLock for 300ms (triggers hold behavior)
+  A,B,C           Simulate A, then B, then C in sequence
+"#
+        );
+    }
+}
+
+/// Holds interactive session state.
+struct InteractiveSession {
+    engine: AdvancedEngine<RhaiRuntime>,
+    tap_hold_info: HashMap<KeyCode, TapHoldInfo>,
+    script_path: Option<PathBuf>,
+}
+
+impl InteractiveSession {
+    fn new(script_path: Option<PathBuf>) -> Result<Self> {
+        let mut runtime = RhaiRuntime::new()?;
+
+        if let Some(path) = &script_path {
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
+            runtime
+                .load_file(path_str)
+                .with_context(|| format!("Failed to compile script '{}'", path.display()))?;
+            runtime.run_script()?;
+
+            if runtime.has_hook("on_init") {
+                runtime.call_hook("on_init")?;
+            }
+        }
+
+        let registry = runtime.registry().clone();
+        let timing = registry.timing_config().clone();
+
+        let tap_hold_info: HashMap<KeyCode, TapHoldInfo> = registry
+            .tap_holds()
+            .map(|(key, binding)| (*key, TapHoldInfo::from_binding(binding, &timing)))
+            .collect();
+
+        let engine = Self::create_engine(&registry, RhaiRuntime::new()?);
+
+        Ok(Self {
+            engine,
+            tap_hold_info,
+            script_path,
+        })
+    }
+
+    fn create_engine(
+        registry: &RemapRegistry,
+        runtime: RhaiRuntime,
+    ) -> AdvancedEngine<RhaiRuntime> {
+        let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
+
+        let mut layers = registry.layers().clone();
+        if let Some(base_id) = layers.layer_id_by_name("base") {
+            for (key, action) in registry.mappings() {
+                if let Some(layer_action) = Self::to_layer_action(action) {
+                    layers.set_mapping_for_layer(base_id, key, layer_action);
+                }
+            }
+
+            for (key, binding) in registry.tap_holds() {
+                layers.set_mapping_for_layer(
+                    base_id,
+                    *key,
+                    LayerAction::TapHold {
+                        tap: binding.tap,
+                        hold: binding.hold.clone(),
+                    },
+                );
+            }
+        }
+        *engine.layers_mut() = layers;
+
+        for combo in registry.combos().all() {
+            engine
+                .combos_mut()
+                .register(&combo.keys, combo.action.clone());
+        }
+
+        engine
+            .modifiers_mut()
+            .clone_from(&registry.modifier_state());
+
+        engine
+    }
+
+    fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
+        match action {
+            RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
+            RemapAction::Block => Some(LayerAction::Block),
+            RemapAction::Pass => None,
+        }
+    }
+
+    fn simulate_and_print(&mut self, keys: &str) -> Result<()> {
+        let events = self.parse_input_keys(keys)?;
+
+        for event in events {
+            let outputs = self.engine.process_event(event.clone());
+            let direction = if event.pressed { "↓" } else { "↑" };
+
+            let output_str = if outputs.is_empty() {
+                "PASS".to_string()
+            } else {
+                outputs
+                    .iter()
+                    .map(Self::format_output)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+
+            // Show tap-hold info for key-down events if applicable
+            if event.pressed {
+                if let Some(th) = self.tap_hold_info.get(&event.key) {
+                    println!(
+                        "  {} {} → {} [tap-hold: tap={}, hold={}, threshold={}ms]",
+                        direction,
+                        event.key.name(),
+                        output_str,
+                        th.tap,
+                        th.hold,
+                        th.threshold_ms
+                    );
+                    continue;
+                }
+            }
+
+            println!("  {} {} → {}", direction, event.key.name(), output_str);
+        }
+        println!();
+
+        Ok(())
+    }
+
+    fn format_output(action: &OutputAction) -> String {
+        match action {
+            OutputAction::KeyDown(k) => format!("{}↓", k.name()),
+            OutputAction::KeyUp(k) => format!("{}↑", k.name()),
+            OutputAction::KeyTap(k) => format!("Tap({})", k.name()),
+            OutputAction::Block => "BLOCKED".to_string(),
+            OutputAction::PassThrough => "PASS".to_string(),
+        }
+    }
+
+    fn parse_input_keys(&self, keys: &str) -> Result<Vec<InputEvent>> {
+        let mut events = Vec::new();
+        let mut timestamp = 0u64;
+
+        for token in keys.split(',') {
+            let token = token.trim();
+            if token.is_empty() {
+                continue;
+            }
+
+            let mut parts = token.split(':');
+            let key_name = parts.next().unwrap_or("");
+            let key = KeyCode::from_name(key_name)
+                .ok_or_else(|| anyhow::anyhow!("Unknown key: '{}'", key_name))?;
+
+            let mut hold_us = DEFAULT_EVENT_GAP_US;
+            if let Some(kind) = parts.next() {
+                if kind.eq_ignore_ascii_case("hold") {
+                    if let Some(ms_str) = parts.next() {
+                        let ms: u64 = ms_str.parse().context("Invalid hold duration")?;
+                        hold_us = ms.saturating_mul(1_000);
+                    }
+                }
+            }
+
+            events.push(InputEvent::key_down(key, timestamp));
+            timestamp = timestamp.saturating_add(hold_us);
+            events.push(InputEvent::key_up(key, timestamp));
+            timestamp = timestamp.saturating_add(DEFAULT_EVENT_GAP_US);
+        }
+
+        Ok(events)
+    }
+
+    fn print_state(&self, output: &OutputWriter) -> Result<()> {
+        let state = self.engine.snapshot();
+        output.data(&state)?;
+        Ok(())
+    }
+
+    fn reset(&mut self) -> Result<()> {
+        let script_path = self.script_path.clone();
+        *self = Self::new(script_path)?;
         Ok(())
     }
 }
