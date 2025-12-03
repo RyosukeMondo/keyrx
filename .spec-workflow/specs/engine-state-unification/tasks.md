@@ -52,7 +52,7 @@
   - _Requirements: 1.2, 3.2_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer refactoring state | Task: Create LayerState in core/src/engine/state/layers.rs from LayerStack | Restrictions: Same functionality, priority handling, efficient operations | _Leverage: Existing LayerStack | Success: LayerState works identically, cleaner API | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Refactor ModifierState component
+- [x] 6. Refactor ModifierState component
   - File: `core/src/engine/state/modifiers.rs`
   - Extract from ModifierState
   - Handle 255 custom modifiers
