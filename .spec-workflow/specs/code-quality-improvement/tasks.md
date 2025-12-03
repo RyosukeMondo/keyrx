@@ -32,7 +32,7 @@
 
 ## Phase 2: Rust Complexity Reduction
 
-- [ ] 5. Split process_event_traced into sub-functions
+- [-] 5. Split process_event_traced into sub-functions
   - Files: core/src/engine/processing.rs (new), core/src/engine/advanced.rs (modify)
   - Extract 5 focused functions from 98-line function
   - _Leverage: existing advanced.rs_

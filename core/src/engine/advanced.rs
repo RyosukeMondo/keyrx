@@ -2,8 +2,10 @@
 //! timing-based decisions (tap-hold, combos).
 
 use crate::engine::decision_engine::{
-    self, activate_hold_action, check_safe_mode_toggle, decision_type_from_action,
-    handle_layer_action, pass_through_event, process_resolutions,
+    self, activate_hold_action, decision_type_from_action, handle_layer_action, process_resolutions,
+};
+use crate::engine::processing::{
+    apply_decision, trace_event, update_key_state, validate_and_check_safe_mode, DecisionResult,
 };
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
@@ -102,97 +104,80 @@ where
     ) -> Vec<OutputAction> {
         let start_time = std::time::Instant::now();
 
-        // Emit input span
-        let _input_span = tracer.map(|t| t.span_input_received(&event));
+        // Step 1: Update key state first (needed for safe mode check).
+        update_key_state(&event, &mut self.key_state);
 
-        if event.is_synthetic {
-            return vec![OutputAction::PassThrough];
-        }
-
-        // Step 2: Update key state.
-        if event.pressed {
-            self.key_state
-                .key_down(event.key, event.timestamp_us, event.is_repeat);
-        } else {
-            self.key_state.key_up(event.key);
-        }
-
-        // Step 3: Safe mode toggle (Ctrl+Alt+Shift+Escape).
-        if check_safe_mode_toggle(&event, &self.key_state) {
+        // Step 2: Validate and check safe mode.
+        let validation = validate_and_check_safe_mode(&event, &self.key_state, self.safe_mode);
+        if validation.safe_mode_toggled {
             self.pending.clear();
             self.safe_mode = !self.safe_mode;
-            return vec![OutputAction::PassThrough];
+        }
+        if validation.early_return {
+            return validation.early_output;
         }
 
-        if self.safe_mode {
-            return vec![OutputAction::PassThrough];
-        }
+        // Step 3: Resolve decisions (combos, pending, layers).
+        let decision = self.resolve_decision(&event);
 
+        // Step 4: Apply decision outcomes.
+        let result = apply_decision(&event, &mut self.blocked_releases, decision);
+
+        // Step 5: Emit tracing spans.
+        trace_event(
+            tracer,
+            &event,
+            result.decision_type,
+            start_time,
+            &self.layers.active_layer_ids(),
+            &result.outputs,
+        );
+
+        result.outputs
+    }
+
+    /// Resolve all decisions for an event (combos, pending, layers).
+    fn resolve_decision(&mut self, event: &InputEvent) -> DecisionResult {
         // Mark other tap-hold decisions as interrupted when another key is pressed.
         if event.pressed {
             self.pending.mark_interrupted(event.key);
         }
 
-        let mut outputs = Vec::new();
-        let mut consumed = false;
-        let mut decision_type = DecisionType::PassThrough;
+        let mut result = DecisionResult::default();
 
-        // Step 4/5: Combo tracking + pending resolutions.
+        // Combo tracking + pending resolutions.
         let (blocked_for_combo, combo_outputs) = if event.pressed {
-            self.enqueue_combos(&event)
+            self.enqueue_combos(event)
         } else {
             (false, Vec::new())
         };
         if !combo_outputs.is_empty() {
-            consumed = true;
-            decision_type = DecisionType::Combo;
-            outputs.extend(combo_outputs);
+            result.consumed = true;
+            result.decision_type = DecisionType::Combo;
+            result.outputs.extend(combo_outputs);
         }
+        result.blocked_for_combo = blocked_for_combo;
 
-        let resolutions = self.pending.check_event(&event);
+        let resolutions = self.pending.check_event(event);
         let (resolved_outputs, resolved_consumed, skip_layer_actions) =
-            self.handle_resolutions(resolutions, Some(&event));
-        outputs.extend(resolved_outputs);
-        consumed |= resolved_consumed;
+            self.handle_resolutions(resolutions, Some(event));
+        result.outputs.extend(resolved_outputs);
+        result.consumed |= resolved_consumed;
+        result.skip_layer_actions = skip_layer_actions;
 
-        // Step 7-9: Layer lookup and action execution.
-        if !skip_layer_actions {
+        // Layer lookup and action execution.
+        if !result.skip_layer_actions {
             if let Some(action) = self.layers.lookup(event.key).cloned() {
-                let (handled_outputs, handled) = self.handle_layer_action(&event, action.clone());
-                outputs.extend(handled_outputs);
+                let (handled_outputs, handled) = self.handle_layer_action(event, action.clone());
+                result.outputs.extend(handled_outputs);
                 if handled {
-                    consumed = true;
-                    decision_type = decision_type_from_action(&action);
+                    result.consumed = true;
+                    result.decision_type = decision_type_from_action(&action);
                 }
             }
         }
 
-        if blocked_for_combo {
-            outputs.push(OutputAction::Block);
-            consumed = true;
-        }
-
-        if !event.pressed {
-            let was_blocked = self.blocked_releases.remove(&event.key);
-            if was_blocked && !consumed {
-                outputs.push(OutputAction::Block);
-                consumed = true;
-            }
-        }
-
-        if !consumed {
-            outputs.push(pass_through_event(&event));
-        }
-
-        // Emit decision and output spans
-        if let Some(t) = tracer {
-            let latency_us = start_time.elapsed().as_micros() as u64;
-            let active_layer_ids = self.layers.active_layer_ids();
-            let _decision_span = t.span_decision_made(decision_type, latency_us, &active_layer_ids);
-            let _output_span = t.span_output_generated(&outputs);
-        }
-
-        outputs
+        result
     }
 
     /// Check for timeout-based resolutions (tap-hold and combo windows).
