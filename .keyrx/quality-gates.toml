@@ -1,0 +1,53 @@
+# KeyRx Quality Gate Configuration
+#
+# This file defines quality gates for UAT testing. Each gate specifies
+# minimum criteria that must be met before a release milestone.
+#
+# Criteria:
+#   pass_rate     - Minimum test pass rate (0.0-1.0)
+#   p0_open       - Maximum allowed P0 (critical) failures
+#   p1_open       - Maximum allowed P1 (high priority) failures
+#   max_latency_us - Maximum latency in microseconds
+#   coverage_min  - Minimum code coverage (0.0-1.0)
+#
+# Usage: keyrx uat --gate <name>
+
+# Default gate for normal development (95% pass, 0 P0, 2 P1, 1ms, 80% coverage)
+[default]
+pass_rate = 0.95
+p0_open = 0
+p1_open = 2
+max_latency_us = 1000
+coverage_min = 0.80
+
+# Alpha gate - relaxed for early development (80% pass, 0 P0, 5 P1, 2ms, 60% coverage)
+[alpha]
+pass_rate = 0.80
+p0_open = 0
+p1_open = 5
+max_latency_us = 2000
+coverage_min = 0.60
+
+# Beta gate - tightened for beta testing (90% pass, 0 P0, 2 P1, 1ms, 75% coverage)
+[beta]
+pass_rate = 0.90
+p0_open = 0
+p1_open = 2
+max_latency_us = 1000
+coverage_min = 0.75
+
+# RC gate - strict for release candidates (98% pass, 0 P0/P1, 500µs, 85% coverage)
+[rc]
+pass_rate = 0.98
+p0_open = 0
+p1_open = 0
+max_latency_us = 500
+coverage_min = 0.85
+
+# GA gate - strictest for general availability (100% pass, 0 P0/P1, 500µs, 90% coverage)
+[ga]
+pass_rate = 1.0
+p0_open = 0
+p1_open = 0
+max_latency_us = 500
+coverage_min = 0.90
