@@ -74,7 +74,7 @@
 
 ## Phase 3: Unified State
 
-- [ ] 8. Create EngineState container
+- [x] 8. Create EngineState container
   - File: `core/src/engine/state/mod.rs`
   - Combine all state components
   - Implement query methods (is_key_pressed, active_layers, etc.)
