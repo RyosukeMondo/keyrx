@@ -101,6 +101,11 @@ pub enum StateError {
     /// Internal state corruption detected.
     #[error("internal state corruption: {message}")]
     Corruption { message: String },
+
+    // === Persistence Errors ===
+    /// State persistence operation failed.
+    #[error("persistence failed: {reason}")]
+    PersistenceFailed { reason: String },
 }
 
 impl StateError {

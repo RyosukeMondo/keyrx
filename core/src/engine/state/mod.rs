@@ -9,6 +9,7 @@ mod layers;
 mod modifiers;
 mod mutation;
 mod pending;
+pub mod persistence;
 pub mod snapshot;
 
 use serde::{Deserialize, Serialize};

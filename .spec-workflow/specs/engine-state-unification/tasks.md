@@ -134,7 +134,7 @@
   - _Requirements: 4.3_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing history | Task: Create StateHistory with ring buffer of changes | Restrictions: Configurable depth, efficient storage, easy iteration | _Leverage: StateChange type | Success: History tracks changes, bounded memory | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Implement state persistence
+- [x] 14. Implement state persistence
   - File: `core/src/engine/state/persistence.rs`
   - Save/load state to disk
   - Handle version migration
