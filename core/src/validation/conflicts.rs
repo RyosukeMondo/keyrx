@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::drivers::keycodes::KeyCode;
 use crate::scripting::PendingOp;
 
+use super::config::ValidationConfig;
 use super::types::{SourceLocation, ValidationWarning, WarningCategory};
 
 /// Index of an operation in the pending ops list (for location tracking).
@@ -305,6 +306,146 @@ fn create_shadowing_warning(shorter: &ComboInfo, longer: &ComboInfo) -> Validati
         ),
     )
     .with_location(SourceLocation::new(longer.index + 1))
+}
+
+/// Information about a remap for cycle detection.
+#[derive(Debug, Clone)]
+struct RemapEdge {
+    /// Index in the original operations list.
+    index: OpIndex,
+    /// Target key of the remap.
+    to: KeyCode,
+}
+
+/// Detect circular remap dependencies (A→B→C→A).
+///
+/// Circular remaps can cause unpredictable behavior where keys effectively
+/// swap or create feedback loops. Uses DFS to find cycles up to config.max_cycle_depth.
+pub fn detect_circular_remaps(
+    ops: &[PendingOp],
+    config: &ValidationConfig,
+) -> Vec<ValidationWarning> {
+    let mut warnings = Vec::new();
+
+    // Build directed graph: from_key -> [(to_key, index)]
+    let mut remap_graph: HashMap<KeyCode, Vec<RemapEdge>> = HashMap::new();
+
+    for (index, op) in ops.iter().enumerate() {
+        if let PendingOp::Remap { from, to } = op {
+            remap_graph
+                .entry(*from)
+                .or_default()
+                .push(RemapEdge { index, to: *to });
+        }
+    }
+
+    // Track cycles we've already reported (by their canonical form)
+    let mut reported_cycles: HashSet<Vec<KeyCode>> = HashSet::new();
+
+    // DFS from each remap source to find cycles
+    for start_key in remap_graph.keys() {
+        let mut path: Vec<(KeyCode, OpIndex)> = vec![(*start_key, 0)];
+        let mut visited: HashSet<KeyCode> = HashSet::new();
+        visited.insert(*start_key);
+
+        find_cycles_dfs(
+            *start_key,
+            &remap_graph,
+            &mut path,
+            &mut visited,
+            config.max_cycle_depth,
+            &mut reported_cycles,
+            &mut warnings,
+        );
+    }
+
+    warnings
+}
+
+/// DFS helper to find cycles in the remap graph.
+fn find_cycles_dfs(
+    current: KeyCode,
+    graph: &HashMap<KeyCode, Vec<RemapEdge>>,
+    path: &mut Vec<(KeyCode, OpIndex)>,
+    visited: &mut HashSet<KeyCode>,
+    max_depth: usize,
+    reported: &mut HashSet<Vec<KeyCode>>,
+    warnings: &mut Vec<ValidationWarning>,
+) {
+    if path.len() > max_depth {
+        return;
+    }
+
+    if let Some(edges) = graph.get(&current) {
+        for edge in edges {
+            let next = edge.to;
+
+            // Check if we found a cycle back to start
+            if next == path[0].0 && path.len() >= 2 {
+                // Extract cycle keys for canonical form
+                let cycle_keys: Vec<KeyCode> = path.iter().map(|(k, _)| *k).collect();
+                let canonical = canonicalize_cycle(&cycle_keys);
+
+                if !reported.contains(&canonical) {
+                    reported.insert(canonical);
+                    warnings.push(create_cycle_warning(path, edge.index));
+                }
+                continue;
+            }
+
+            // Continue DFS if not visited
+            if !visited.contains(&next) {
+                visited.insert(next);
+                path.push((next, edge.index));
+                find_cycles_dfs(next, graph, path, visited, max_depth, reported, warnings);
+                path.pop();
+                visited.remove(&next);
+            }
+        }
+    }
+}
+
+/// Canonicalize a cycle so [A,B,C] and [B,C,A] are treated as the same cycle.
+fn canonicalize_cycle(cycle: &[KeyCode]) -> Vec<KeyCode> {
+    if cycle.is_empty() {
+        return vec![];
+    }
+    // Find minimum element's position by key name and rotate to start there
+    let min_pos = cycle
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, k)| k.name())
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+    let mut canonical: Vec<KeyCode> = cycle[min_pos..].to_vec();
+    canonical.extend_from_slice(&cycle[..min_pos]);
+    canonical
+}
+
+/// Create a warning for a circular remap.
+fn create_cycle_warning(path: &[(KeyCode, OpIndex)], last_index: OpIndex) -> ValidationWarning {
+    let cycle_str: Vec<String> = path.iter().map(|(k, _)| k.name().to_string()).collect();
+    let first_key = &cycle_str[0];
+
+    // Collect all operation indices involved
+    let indices: Vec<String> = path
+        .iter()
+        .skip(1)
+        .map(|(_, idx)| (idx + 1).to_string())
+        .chain(std::iter::once((last_index + 1).to_string()))
+        .collect();
+
+    ValidationWarning::new(
+        "W009",
+        WarningCategory::Conflict,
+        format!(
+            "Circular remap detected: {} → {} (operations {})",
+            cycle_str.join(" → "),
+            first_key,
+            indices.join(", "),
+        ),
+    )
+    .with_location(SourceLocation::new(last_index + 1))
 }
 
 #[cfg(test)]
@@ -697,5 +838,214 @@ mod tests {
         ];
         let warnings = detect_combo_shadowing(&ops);
         assert!(warnings.is_empty());
+    }
+
+    // Circular remap tests
+    fn default_config() -> ValidationConfig {
+        ValidationConfig::default()
+    }
+
+    #[test]
+    fn no_cycles_for_empty_ops() {
+        let warnings = detect_circular_remaps(&[], &default_config());
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn no_cycles_for_linear_chain() {
+        // A→B, B→C, C→D is not a cycle
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::C,
+                to: KeyCode::D,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn detects_simple_two_key_cycle() {
+        // A→B, B→A is a cycle
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W009");
+        assert!(warnings[0].message.contains("Circular remap"));
+    }
+
+    #[test]
+    fn detects_three_key_cycle() {
+        // A→B, B→C, C→A is a cycle
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::C,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert_eq!(warnings.len(), 1);
+        // The cycle involves A, B, and C - exact order depends on which node DFS starts from
+        let msg = &warnings[0].message;
+        assert!(msg.contains("Circular remap"));
+        assert!(msg.contains("A"));
+        assert!(msg.contains("B"));
+        assert!(msg.contains("C"));
+    }
+
+    #[test]
+    fn respects_max_cycle_depth() {
+        // Create a long chain that exceeds depth 3
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::C,
+                to: KeyCode::D,
+            },
+            PendingOp::Remap {
+                from: KeyCode::D,
+                to: KeyCode::E,
+            },
+            PendingOp::Remap {
+                from: KeyCode::E,
+                to: KeyCode::A,
+            },
+        ];
+
+        // With max_cycle_depth=3, this 5-key cycle should not be detected
+        let mut config = ValidationConfig::default();
+        config.max_cycle_depth = 3;
+        let warnings = detect_circular_remaps(&ops, &config);
+        assert!(warnings.is_empty());
+
+        // With max_cycle_depth=10, it should be detected
+        config.max_cycle_depth = 10;
+        let warnings = detect_circular_remaps(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn does_not_report_duplicate_cycles() {
+        // A→B, B→A forms one cycle, should only be reported once
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        // Should only report once, not from A and from B
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn detects_multiple_independent_cycles() {
+        // A→B→A and C→D→C are two separate cycles
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+            PendingOp::Remap {
+                from: KeyCode::C,
+                to: KeyCode::D,
+            },
+            PendingOp::Remap {
+                from: KeyCode::D,
+                to: KeyCode::C,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert_eq!(warnings.len(), 2);
+    }
+
+    #[test]
+    fn ignores_non_remap_ops_for_cycles() {
+        // Block and other ops don't form remap cycles
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Block { key: KeyCode::B },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn cycle_warning_has_correct_location() {
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::X }, // index 0
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            }, // index 1
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            }, // index 2
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert_eq!(warnings.len(), 1);
+        // Location should point to the edge that completes the cycle
+        let loc = warnings[0].location.as_ref().unwrap();
+        assert!(loc.line == 2 || loc.line == 3); // Either index 1 or 2 (1-indexed)
+    }
+
+    #[test]
+    fn cycle_warning_category_is_conflict() {
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert_eq!(warnings[0].category, WarningCategory::Conflict);
     }
 }
