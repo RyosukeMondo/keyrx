@@ -54,7 +54,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with procedural macro experience | Task: Set up keyrx-ffi-macros crate in core/ffi-macros/ with proper workspace configuration | Restrictions: Must be proc-macro crate type, use stable Rust features only, follow workspace conventions | _Leverage: Standard Rust proc-macro crate structure | Success: Crate compiles, is recognized by workspace, can define proc-macro attributes | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Implement #[ffi_export] attribute macro
+- [x] 6. Implement #[ffi_export] attribute macro
   - File: `core/ffi-macros/src/lib.rs`
   - Parse method signatures with syn
   - Generate C-ABI wrapper functions with error handling
