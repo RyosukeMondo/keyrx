@@ -11,7 +11,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer designing state mutations | Task: Create Mutation enum in core/src/engine/state/mutation.rs | Restrictions: Cover all state changes, include timestamps, be serializable | _Leverage: Existing state change patterns in engine | Success: Enum covers all mutations, clear semantics | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create StateChange and Effect types
+- [x] 2. Create StateChange and Effect types
   - File: `core/src/engine/state/change.rs`
   - Define StateChange with version, mutation, effects
   - Define Effect enum for secondary changes

@@ -1,5 +1,6 @@
 //! Layer and modifier state management.
 
+mod change;
 mod key_state;
 mod layers;
 mod modifiers;
@@ -8,6 +9,10 @@ mod mutation;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use change::{
+    AutoReleaseReason, Effect, HoldOutcome, PendingDecisionType, PendingResolution, StateChange,
+};
 pub use key_state::KeyStateTracker;
 pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
