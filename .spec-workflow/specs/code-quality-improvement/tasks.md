@@ -177,14 +177,14 @@
 
 ## Phase 8: Verification
 
-- [ ] 24. Add unit tests for extracted Rust functions
+- [x] 24. Add unit tests for extracted Rust functions
   - Files: core/src/engine/processing.rs (add tests), core/src/engine/layer_actions.rs (add tests)
   - Test each new sub-function
   - _Leverage: existing test patterns_
   - _Requirements: All_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust test engineer | Task: Add #[cfg(test)] module to processing.rs and layer_actions.rs. Write unit tests for each extracted function. Cover happy path and error cases | Restrictions: ≥80% coverage for new code | _Leverage: existing tests | _Requirements: All | Success: All new functions have tests._
 
-- [ ] 25. Add widget tests for refactored Flutter pages
+- [x] 25. Add widget tests for refactored Flutter pages
   - Files: ui/test/pages/editor_page_test.dart (new), ui/test/pages/console_test.dart (new)
   - Test pages with mock services
   - _Leverage: Flutter test patterns_
