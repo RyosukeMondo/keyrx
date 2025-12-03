@@ -32,34 +32,84 @@ CORE_DIR="$REPO_ROOT/core"
 # Change to core directory for cargo commands
 cd "$CORE_DIR"
 
-echo "Running pre-commit checks..."
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║                   Pre-commit Checks                        ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+TOTAL_CHECKS=3
+PASSED_CHECKS=0
 
 # Step 1: Format check
-echo "  Checking formatting..."
+echo "[1/$TOTAL_CHECKS] Checking code formatting..."
 if ! cargo fmt --check 2>/dev/null; then
     echo ""
-    echo "❌ Format check failed. Run 'cargo fmt' to fix formatting."
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: Code formatting check                          ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  Your code has formatting issues.                          ║"
+    echo "║                                                            ║"
+    echo "║  To fix, run:                                              ║"
+    echo "║    cd core && cargo fmt                                    ║"
+    echo "║                                                            ║"
+    echo "║  Or use just:                                              ║"
+    echo "║    just fmt                                                ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
     exit 1
 fi
-echo "  ✓ Formatting OK"
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+echo "    ✓ Formatting OK"
+echo ""
 
 # Step 2: Clippy lint check
-echo "  Running clippy..."
-if ! cargo clippy -- -D warnings 2>&1; then
+echo "[2/$TOTAL_CHECKS] Running clippy lints..."
+if ! cargo clippy --quiet -- -D warnings 2>&1; then
     echo ""
-    echo "❌ Clippy check failed. Fix the warnings above."
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: Clippy lint check                              ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  Clippy found warnings that must be fixed.                 ║"
+    echo "║                                                            ║"
+    echo "║  Review the warnings above and fix them, or use:           ║"
+    echo "║    just clippy                                             ║"
+    echo "║                                                            ║"
+    echo "║  For specific fixes, check clippy documentation:           ║"
+    echo "║    https://rust-lang.github.io/rust-clippy/                ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
     exit 1
 fi
-echo "  ✓ Clippy OK"
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+echo "    ✓ Clippy OK"
+echo ""
 
 # Step 3: Unit tests (lib only for speed)
-echo "  Running unit tests..."
-if ! cargo test --lib 2>&1; then
+echo "[3/$TOTAL_CHECKS] Running unit tests..."
+if ! cargo test --lib --quiet 2>&1; then
     echo ""
-    echo "❌ Tests failed. Fix the failing tests above."
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: Unit tests                                     ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  Some tests are failing.                                   ║"
+    echo "║                                                            ║"
+    echo "║  To run tests with output:                                 ║"
+    echo "║    cd core && cargo test --lib                             ║"
+    echo "║                                                            ║"
+    echo "║  Or use just:                                              ║"
+    echo "║    just test                                               ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
     exit 1
 fi
-echo "  ✓ Tests OK"
-
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+echo "    ✓ Tests OK"
 echo ""
-echo "✅ All pre-commit checks passed!"
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  ✅ All $PASSED_CHECKS/$TOTAL_CHECKS pre-commit checks passed!                       ║"
+echo "║                                                            ║"
+echo "║  Checks completed:                                         ║"
+echo "║    • cargo fmt --check                                     ║"
+echo "║    • cargo clippy -- -D warnings                           ║"
+echo "║    • cargo test --lib                                      ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
