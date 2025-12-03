@@ -142,7 +142,7 @@
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer improving CLI help | Task: Add exit code documentation to --help output | Restrictions: Use clap after_help, reference exit-codes subcommand | _Leverage: clap documentation features | Success: --help shows exit code summary, points to detailed command | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Add exit code integration tests
+- [x] 15. Add exit code integration tests
   - File: `core/tests/cli_exit_codes_test.rs`
   - Test each exit code scenario
   - Verify codes match documentation
@@ -151,7 +151,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create integration tests verifying exit codes for all command scenarios | Restrictions: Test actual CLI invocation, verify all documented exit codes | _Leverage: assert_cmd crate | Success: Tests cover all exit code scenarios, run in CI | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Update CHANGELOG with exit code changes
+- [x] 16. Update CHANGELOG with exit code changes
   - File: `CHANGELOG.md`
   - Document new exit code system
   - List all exit codes and meanings
