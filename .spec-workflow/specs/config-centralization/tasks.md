@@ -209,7 +209,7 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Refactor visual_keyboard.dart to use UiConstants.minKeyboardScale, UiConstants.maxKeyboardScale. Refactor visual_keyboard_keys.dart to use TimingConfig.keyAnimationMs instead of hardcoded 100ms. | Restrictions: Do not change behavior | _Leverage: ui/lib/config/config.dart_ | Success: Scale bounds and animation duration from config. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 26. Refactor editor_page.dart to use config
+- [x] 26. Refactor editor_page.dart to use config
   - File: `ui/lib/pages/editor_page.dart`
   - Import and use path/UI constants
   - Purpose: Use centralized constants
