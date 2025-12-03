@@ -2,7 +2,7 @@
 
 ## Phase 1: Foundation
 
-- [ ] 1. Create FfiError and FfiResult types
+- [x] 1. Create FfiError and FfiResult types
   - File: `core/src/ffi/error.rs`
   - Define `FfiError` struct with code, message, details fields
   - Implement `FfiResult<T>` type alias and serialization
