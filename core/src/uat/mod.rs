@@ -12,6 +12,7 @@ mod coverage;
 mod fuzz;
 mod gates;
 mod golden;
+mod golden_types;
 mod perf;
 mod report;
 mod report_data;
@@ -29,7 +30,7 @@ pub use gates::{
 pub use golden::{
     DifferenceType, ExpectedOutput, GoldenDifference, GoldenEvent, GoldenEventType, GoldenSession,
     GoldenSessionError, GoldenSessionManager, GoldenSessionMetadata, GoldenVerifyResult,
-    RecordResult, GOLDEN_SESSION_VERSION,
+    RecordResult, UpdateResult, GOLDEN_SESSION_VERSION,
 };
 pub use perf::{
     BaselineData, BaselineError, BaselineRegression, BaselineTestData, LatencyPercentiles,
