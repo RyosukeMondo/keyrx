@@ -85,7 +85,7 @@
 
 ## Coverage Mapping
 
-- [ ] 12. Implement requirements coverage mapping
+- [x] 12. Implement requirements coverage mapping
   - Files: core/src/uat/coverage.rs (new)
   - Create CoverageMapper with requirement linking
   - _Leverage: @requirement metadata from tests_
