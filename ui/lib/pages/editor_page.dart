@@ -6,10 +6,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../services/engine_service.dart';
+import '../state/app_state.dart';
 import '../widgets/keyboard.dart';
-import '../widgets/layer_panel.dart';
 import 'editor_widgets.dart';
 
 /// Visual keymap editor page.
@@ -43,9 +44,6 @@ class _EditorPageState extends State<EditorPage> {
   String? _registryError;
   List<String> _canonicalKeys = KeyMappings.allowedKeys;
   static const String _defaultScriptPath = 'scripts/generated.rhai';
-  List<LayerInfo> _layers = const [
-    LayerInfo(name: 'base', active: true, priority: 0),
-  ];
 
   @override
   void initState() {
@@ -107,6 +105,7 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   Widget _buildConfigPanel() {
+    final appState = context.watch<AppState>();
     return Column(
       children: [
         KeyConfigPanel(
@@ -127,7 +126,7 @@ class _EditorPageState extends State<EditorPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: MappingListPanel(
               mappings: _mappings,
-              layers: _layers,
+              layers: appState.layers,
               onRemoveMapping: _removeMapping,
               onAddLayer: _addLayer,
               onToggleLayer: _toggleLayer,
@@ -314,30 +313,13 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _addLayer() {
-    setState(() {
-      final next = 'layer_${_layers.length}';
-      _layers = [
-        ..._layers,
-        LayerInfo(name: next, active: false, priority: _layers.length),
-      ];
-    });
+    final appState = context.read<AppState>();
+    final next = 'layer_${appState.layers.length}';
+    appState.addLayer(next, priority: appState.layers.length);
   }
 
   void _toggleLayer(String name, bool active) {
-    setState(() {
-      final idx = _layers.indexWhere((l) => l.name == name);
-      if (idx >= 0) {
-        _layers = [
-          ..._layers.sublist(0, idx),
-          LayerInfo(
-            name: name,
-            active: active,
-            priority: _layers[idx].priority,
-          ),
-          ..._layers.sublist(idx + 1),
-        ];
-      }
-    });
+    context.read<AppState>().toggleLayer(name, active);
   }
 
   Future<void> _fetchKeyRegistry() async {
