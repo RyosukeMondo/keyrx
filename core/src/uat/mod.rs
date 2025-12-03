@@ -15,6 +15,7 @@ mod golden;
 mod perf;
 mod report;
 mod report_data;
+mod report_markdown;
 mod runner;
 
 pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
