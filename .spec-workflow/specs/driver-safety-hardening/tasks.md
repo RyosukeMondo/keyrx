@@ -113,7 +113,7 @@
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing recovery | Task: Create retry logic in common/recovery.rs | Restrictions: Exponential backoff, configurable, log attempts | _Leverage: DriverError::is_retryable | Success: Temporary errors are retried, recovery works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 12. Ensure emergency exit always works
+- [x] 12. Ensure emergency exit always works
   - Files: Both Windows and Linux drivers
   - Verify Ctrl+Alt+Shift+Esc is never blocked
   - Test in error scenarios
