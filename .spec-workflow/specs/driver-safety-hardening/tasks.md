@@ -73,7 +73,7 @@
   - _Requirements: 1.2, 4.1, 4.3_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Linux input expertise | Task: Create SafeDevice in safety/device.rs | Restrictions: RAII for grab, handle disconnection, document SAFETY | _Leverage: evdev crate | Success: Device operations are safe, disconnection handled | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Create SafeUinput wrapper
+- [x] 8. Create SafeUinput wrapper
   - File: `core/src/drivers/linux/safety/uinput.rs`
   - Wrap uinput device creation
   - Validate events before injection
