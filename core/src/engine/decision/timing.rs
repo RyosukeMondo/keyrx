@@ -1,3 +1,4 @@
+use crate::config::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
 use serde::{Deserialize, Serialize};
 
 /// Timing configuration for decision-making.
@@ -20,9 +21,9 @@ pub struct TimingConfig {
 impl Default for TimingConfig {
     fn default() -> Self {
         Self {
-            tap_timeout_ms: 200,
-            combo_timeout_ms: 50,
-            hold_delay_ms: 0,
+            tap_timeout_ms: DEFAULT_TAP_TIMEOUT_MS,
+            combo_timeout_ms: DEFAULT_COMBO_TIMEOUT_MS,
+            hold_delay_ms: DEFAULT_HOLD_DELAY_MS,
             eager_tap: false,
             permissive_hold: true,
             retro_tap: false,

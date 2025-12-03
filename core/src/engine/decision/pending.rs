@@ -1,8 +1,7 @@
+use crate::config::MICROS_PER_MS;
 use crate::engine::{HoldAction, InputEvent, KeyCode, LayerAction, TimingConfig};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
-
-const MICROS_PER_MS: u64 = 1_000;
 
 /// A pending timing decision waiting for resolution.
 #[derive(Debug, Clone, PartialEq, Eq)]
