@@ -133,7 +133,7 @@
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating CLI command | Task: Create exit-codes subcommand showing all exit codes with descriptions | Restrictions: Support human and JSON output, list all codes with meanings | _Leverage: ExitCode enum, OutputFormat | Success: Command shows all exit codes, supports --json, helpful descriptions | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Update --help with exit code info
+- [x] 14. Update --help with exit code info
   - File: `core/src/bin/keyrx.rs`
   - Add exit code section to main help
   - Reference exit-codes subcommand
