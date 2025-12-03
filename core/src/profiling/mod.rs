@@ -28,10 +28,12 @@
 //! ```
 
 pub mod flamegraph;
+pub mod flamegraph_diff;
 pub mod profiler;
 pub mod sampler;
 
 // Re-export main types
 pub use flamegraph::{ColorScheme, FlameGraphConfig, FlameGraphGenerator};
+pub use flamegraph_diff::{DiffColorScheme, DiffFlameGraphConfig, DiffFlameGraphGenerator};
 pub use profiler::{ProfileResult, Profiler, ProfilerConfig, StackSample};
 pub use sampler::StackSampler;

@@ -25,7 +25,7 @@
   - Purpose: Visualization
   - _Requirements: 1.2, 1.3_
 
-- [ ] 4. Add diff flame graphs
+- [x] 4. Add diff flame graphs
   - File: `core/src/profiling/flamegraph_diff.rs`
   - Baseline comparison
   - Regression highlighting

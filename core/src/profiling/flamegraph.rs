@@ -124,6 +124,40 @@ impl FlameGraphGenerator {
         self.render_svg(&root)
     }
 
+    /// Generate a differential flame graph comparing baseline and current samples
+    ///
+    /// This is a convenience method that creates a DiffFlameGraphGenerator
+    /// with settings derived from this generator's configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `baseline` - The baseline stack samples (e.g., before optimization)
+    /// * `current` - The current stack samples (e.g., after optimization)
+    ///
+    /// # Returns
+    ///
+    /// An SVG string representing the differential flame graph
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_core::profiling::{FlameGraphGenerator, FlameGraphConfig};
+    /// # use keyrx_core::profiling::StackSample;
+    /// # use std::time::Duration;
+    ///
+    /// let generator = FlameGraphGenerator::default();
+    /// # let baseline: Vec<StackSample> = vec![];
+    /// # let current: Vec<StackSample> = vec![];
+    /// let svg = generator.generate_diff(&baseline, &current);
+    /// ```
+    pub fn generate_diff(&self, baseline: &[StackSample], current: &[StackSample]) -> String {
+        use super::flamegraph_diff::{DiffFlameGraphConfig, DiffFlameGraphGenerator};
+
+        let diff_config = DiffFlameGraphConfig::from(self.config.clone());
+        let diff_generator = DiffFlameGraphGenerator::new(diff_config);
+        diff_generator.generate(baseline, current)
+    }
+
     /// Generate an empty SVG with a message
     fn generate_empty_svg(&self, message: &str) -> String {
         format!(
@@ -496,5 +530,44 @@ mod tests {
 
         let hash3 = generator.hash_string("other");
         assert_ne!(hash1, hash3);
+    }
+
+    #[test]
+    fn test_generate_diff() {
+        let generator = FlameGraphGenerator::default();
+
+        let baseline = vec![
+            StackSample {
+                timestamp: Duration::from_millis(0),
+                frames: vec!["main".to_string(), "slow".to_string()],
+            },
+            StackSample {
+                timestamp: Duration::from_millis(10),
+                frames: vec!["main".to_string(), "slow".to_string()],
+            },
+        ];
+
+        let current = vec![
+            StackSample {
+                timestamp: Duration::from_millis(0),
+                frames: vec!["main".to_string(), "fast".to_string()],
+            },
+            StackSample {
+                timestamp: Duration::from_millis(10),
+                frames: vec!["main".to_string(), "fast".to_string()],
+            },
+        ];
+
+        let svg = generator.generate_diff(&baseline, &current);
+
+        // Verify it's a valid SVG differential flame graph
+        assert!(svg.contains("<?xml"));
+        assert!(svg.contains("<svg"));
+        assert!(svg.contains("</svg>"));
+        // Check for "Diff" in the title (since it prefixes the original title)
+        assert!(svg.contains("Diff:"));
+        assert!(svg.contains("main"));
+        // Verify differential coloring is present
+        assert!(svg.contains("legend"));
     }
 }
