@@ -4,9 +4,9 @@ use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DevicesCommand,
-        DiscoverCommand, DoctorCommand, GoldenCommand, GoldenSubcommand, RegressionCommand,
-        ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
-        UatCommand,
+        DiscoverCommand, DoctorCommand, ExitCodesCommand, GoldenCommand, GoldenSubcommand,
+        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand,
+        TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -46,6 +46,9 @@ enum Commands {
 
     /// List available keyboard devices
     Devices,
+
+    /// Show all exit codes with descriptions
+    ExitCodes,
 
     /// Run the engine in headless mode
     Run {
@@ -452,6 +455,10 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             let mut cmd = DevicesCommand::new(ctx.output_format());
             cmd.execute(ctx)
         }
+        Commands::ExitCodes => {
+            let mut cmd = ExitCodesCommand::new();
+            cmd.execute(ctx)
+        }
         Commands::Run {
             script,
             debug,
@@ -492,7 +499,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         }
         Commands::Bench { iterations, script } => {
             let mut cmd = BenchCommand::new(iterations, script, ctx.output_format());
-            cmd.execute(ctx)
+            Command::execute(&mut cmd, ctx)
         }
         Commands::Simulate {
             input,

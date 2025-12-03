@@ -9,6 +9,7 @@ mod discover;
 mod discover_session;
 mod discover_validation;
 mod doctor;
+mod exit_codes;
 mod golden;
 mod regression;
 mod repl;
@@ -29,6 +30,7 @@ pub use ci_check::{exit_codes as ci_check_exit_codes, CiCheckCommand, CiCheckSum
 pub use devices::DevicesCommand;
 pub use discover::{DiscoverCommand, DiscoverExit};
 pub use doctor::{CheckStatus, DiagnosticCheck, DoctorCommand};
+pub use exit_codes::ExitCodesCommand;
 pub use golden::{exit_codes as golden_exit_codes, GoldenCommand, GoldenSubcommand};
 pub use regression::{exit_codes as regression_exit_codes, RegressionCommand, RegressionSummary};
 pub use repl::ReplCommand;
