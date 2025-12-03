@@ -108,7 +108,7 @@
   - _Requirements: All (documentation)_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer | Task: Add to README.md: "## Development Setup" section with `just setup` command and prerequisites (Rust, Flutter, just); "## Building" section with `just build`, `just build-all`; "## Contributing" section with `just check` and pre-commit hooks explanation | Restrictions: ≤50 lines added; use existing README style; include code blocks for commands | _Leverage: existing README.md structure | _Requirements: All | Success: New contributor can follow README to setup and build._
 
-- [ ] 15. Integration test and verification
+- [x] 15. Integration test and verification
   - Files: N/A (manual verification)
   - Test full workflow: setup → dev → check → build → release
   - _Leverage: all created components_
