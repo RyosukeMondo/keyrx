@@ -2,5 +2,324 @@
 //!
 //! This module provides constants for paths used throughout KeyRx,
 //! including device paths, config directories, and file names.
+//!
+//! # Path Categories
+//!
+//! - **Device paths**: System device files (uinput on Linux)
+//! - **Config paths**: User configuration directories and file names
+//! - **Runtime paths**: Temporary files and history
+//!
+//! # XDG Base Directory Support
+//!
+//! Helper functions follow the XDG Base Directory Specification where applicable,
+//! falling back to sensible defaults when XDG variables are not set.
 
-// TODO: Path constants will be added in task 4
+use std::env;
+use std::path::PathBuf;
+
+// =============================================================================
+// Linux Device Paths
+// =============================================================================
+
+/// Path to the uinput device file on Linux.
+///
+/// This is the kernel interface for creating virtual input devices.
+/// Requires write access; see `LinuxInput::check_uinput_accessible()` for
+/// permission requirements.
+///
+/// # Platform
+/// Linux only.
+#[cfg(target_os = "linux")]
+pub const UINPUT_PATH: &str = "/dev/uinput";
+
+/// Name of the virtual keyboard device created via uinput.
+///
+/// This is the device name shown in `/dev/input/by-id/` and in tools
+/// like `evtest`. Used to identify KeyRx's virtual keyboard.
+///
+/// # Platform
+/// Linux only.
+#[cfg(target_os = "linux")]
+pub const UINPUT_DEVICE_NAME: &str = "KeyRx Virtual Keyboard";
+
+// =============================================================================
+// Config File Names
+// =============================================================================
+
+/// Default configuration file name.
+///
+/// KeyRx looks for this file in the config directory to load user settings.
+/// If not found, built-in defaults are used.
+pub const CONFIG_FILE_NAME: &str = "config.toml";
+
+/// Default directory name for user scripts.
+///
+/// Scripts are loaded from `{config_dir}/scripts/` by default.
+pub const SCRIPTS_DIR: &str = "scripts";
+
+// =============================================================================
+// History and Temporary Files
+// =============================================================================
+
+/// REPL command history file name.
+///
+/// Stored in the user's home directory to persist command history
+/// across REPL sessions.
+pub const REPL_HISTORY_FILE: &str = ".keyrx_repl_history";
+
+/// Performance baseline file path (relative to project root).
+///
+/// Used by the performance UAT system to store baseline measurements
+/// for regression detection.
+pub const PERF_BASELINE_FILE: &str = "target/perf-baseline.json";
+
+// =============================================================================
+// Path Resolution Functions
+// =============================================================================
+
+/// Resolve the KeyRx configuration directory.
+///
+/// Preference order:
+/// 1. `$XDG_CONFIG_HOME/keyrx`
+/// 2. `$HOME/.config/keyrx`
+/// 3. `.config/keyrx` relative to CWD (last-resort fallback)
+///
+/// # Returns
+///
+/// Path to the KeyRx configuration directory.
+///
+/// # Example
+///
+/// ```
+/// use keyrx_core::config::config_dir;
+///
+/// let dir = config_dir();
+/// println!("Config directory: {}", dir.display());
+/// ```
+pub fn config_dir() -> PathBuf {
+    if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
+        return PathBuf::from(xdg).join("keyrx");
+    }
+
+    if let Ok(home) = env::var("HOME") {
+        return PathBuf::from(home).join(".config").join("keyrx");
+    }
+
+    PathBuf::from(".").join(".config").join("keyrx")
+}
+
+/// Resolve the device profiles directory.
+///
+/// Preference order:
+/// 1. `$XDG_CONFIG_HOME/keyrx/devices`
+/// 2. `$HOME/.config/keyrx/devices`
+/// 3. `.config/keyrx/devices` relative to CWD (last-resort fallback)
+///
+/// This is a convenience wrapper that appends "devices" to [`config_dir()`].
+///
+/// # Returns
+///
+/// Path to the device profiles directory.
+pub fn device_profiles_dir() -> PathBuf {
+    config_dir().join("devices")
+}
+
+/// Resolve the scripts directory.
+///
+/// Returns `{config_dir}/scripts` where user Rhai scripts are stored.
+///
+/// # Returns
+///
+/// Path to the scripts directory.
+pub fn scripts_dir() -> PathBuf {
+    config_dir().join(SCRIPTS_DIR)
+}
+
+/// Get the user's home directory.
+///
+/// Preference order:
+/// 1. `$HOME` (Unix/Linux/macOS)
+/// 2. `$USERPROFILE` (Windows)
+/// 3. `None` if neither is set
+///
+/// # Returns
+///
+/// Optional path to the user's home directory.
+pub fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME")
+        .or_else(|| env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+}
+
+/// Get the REPL history file path.
+///
+/// Returns `$HOME/.keyrx_repl_history` if home directory is available,
+/// otherwise `None`.
+///
+/// # Returns
+///
+/// Optional path to the REPL history file.
+pub fn repl_history_path() -> Option<PathBuf> {
+    home_dir().map(|h| h.join(REPL_HISTORY_FILE))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+    use std::env;
+    use tempfile::tempdir;
+
+    #[test]
+    #[serial]
+    fn config_dir_prefers_xdg_config_home() {
+        let temp = tempdir().unwrap();
+        let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
+        let prev_home = env::var("HOME").ok();
+
+        env::set_var("XDG_CONFIG_HOME", temp.path());
+        env::remove_var("HOME");
+
+        let path = config_dir();
+        assert!(path.starts_with(temp.path()));
+        assert!(path.ends_with("keyrx"));
+
+        match prev_xdg {
+            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+            None => env::remove_var("XDG_CONFIG_HOME"),
+        }
+        if let Some(home) = prev_home {
+            env::set_var("HOME", home);
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn config_dir_falls_back_to_home() {
+        let temp = tempdir().unwrap();
+        let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
+        let prev_home = env::var("HOME").ok();
+
+        env::remove_var("XDG_CONFIG_HOME");
+        env::set_var("HOME", temp.path());
+
+        let path = config_dir();
+        assert!(path.starts_with(temp.path()));
+        assert!(path.ends_with(PathBuf::from(".config").join("keyrx")));
+
+        if let Some(xdg) = prev_xdg {
+            env::set_var("XDG_CONFIG_HOME", xdg);
+        }
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn device_profiles_dir_is_subdir_of_config() {
+        // Ensure stable environment for this test
+        let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
+        let prev_home = env::var("HOME").ok();
+
+        // Set a known HOME to ensure consistent behavior
+        env::remove_var("XDG_CONFIG_HOME");
+        env::set_var("HOME", "/tmp/test_home");
+
+        let config = config_dir();
+        let devices = device_profiles_dir();
+        assert!(devices.starts_with(&config));
+        assert!(devices.ends_with("devices"));
+
+        // Restore environment
+        match prev_xdg {
+            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+            None => env::remove_var("XDG_CONFIG_HOME"),
+        }
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn scripts_dir_is_subdir_of_config() {
+        // Ensure stable environment for this test
+        let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
+        let prev_home = env::var("HOME").ok();
+
+        // Set a known HOME to ensure consistent behavior
+        env::remove_var("XDG_CONFIG_HOME");
+        env::set_var("HOME", "/tmp/test_home");
+
+        let config = config_dir();
+        let scripts = scripts_dir();
+        assert!(scripts.starts_with(&config));
+        assert!(scripts.ends_with(SCRIPTS_DIR));
+
+        // Restore environment
+        match prev_xdg {
+            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+            None => env::remove_var("XDG_CONFIG_HOME"),
+        }
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn home_dir_returns_home() {
+        let temp = tempdir().unwrap();
+        let prev_home = env::var("HOME").ok();
+
+        env::set_var("HOME", temp.path());
+
+        let home = home_dir();
+        assert!(home.is_some());
+        assert_eq!(home.unwrap(), temp.path());
+
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn repl_history_path_returns_path_when_home_set() {
+        let temp = tempdir().unwrap();
+        let prev_home = env::var("HOME").ok();
+
+        env::set_var("HOME", temp.path());
+
+        let history = repl_history_path();
+        assert!(history.is_some());
+        let path = history.unwrap();
+        assert!(path.starts_with(temp.path()));
+        assert!(path.ends_with(REPL_HISTORY_FILE));
+
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    fn constants_have_expected_values() {
+        assert_eq!(CONFIG_FILE_NAME, "config.toml");
+        assert_eq!(SCRIPTS_DIR, "scripts");
+        assert_eq!(REPL_HISTORY_FILE, ".keyrx_repl_history");
+        assert_eq!(PERF_BASELINE_FILE, "target/perf-baseline.json");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_constants_have_expected_values() {
+        assert_eq!(UINPUT_PATH, "/dev/uinput");
+        assert_eq!(UINPUT_DEVICE_NAME, "KeyRx Virtual Keyboard");
+    }
+}
