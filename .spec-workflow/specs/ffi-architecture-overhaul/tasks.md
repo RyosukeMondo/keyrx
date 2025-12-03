@@ -12,7 +12,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in error handling and FFI | Task: Create FfiError and FfiResult types in core/src/ffi/error.rs following requirements 4.1 and 4.2, with JSON serialization producing "ok:{...}" or "error:{code, message, details}" format | Restrictions: Do not modify existing exports yet, maintain backward compatibility, use serde for serialization | _Leverage: Review exports_discovery.rs for current error patterns | Success: Types compile, serialize correctly to expected JSON format, unit tests pass for all error constructors | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create FfiContext handle-based state management
+- [x] 2. Create FfiContext handle-based state management
   - File: `core/src/ffi/context.rs`
   - Define `FfiContext` struct with handle, domain state storage
   - Implement `new()`, `get_domain<T>()`, `get_domain_mut<T>()`
