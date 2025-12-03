@@ -128,7 +128,7 @@
   - _Requirements: 5.1, 1.1_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating FFI code | Task: Migrate exports_validation.rs to ValidationFfi following DiscoveryFfi pattern | Restrictions: Maintain same functionality, use #[ffi_export] macro, migrate to EventRegistry | _Leverage: exports_validation.rs as source, DiscoveryFfi as pattern | Success: ValidationFfi works with new architecture, code reduced, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 13. Migrate EngineFfi
+- [-] 13. Migrate EngineFfi
   - File: `core/src/ffi/domains/engine.rs`
   - Implement FfiExportable for EngineFfi
   - Apply #[ffi_export] to engine functions

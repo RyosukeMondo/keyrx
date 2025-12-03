@@ -8,9 +8,13 @@
 //! guidance pointing to the new recommended APIs.
 
 pub mod discovery_compat;
+pub mod engine_compat;
 
 // Re-export for convenience
 #[allow(deprecated)]
 pub use discovery_compat::{
     keyrx_on_discovery_duplicate, keyrx_on_discovery_progress, keyrx_on_discovery_summary,
 };
+
+#[allow(deprecated)]
+pub use engine_compat::keyrx_on_state;
