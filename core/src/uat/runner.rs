@@ -60,6 +60,35 @@ pub struct UatFilter {
     pub pattern: Option<String>,
 }
 
+impl UatFilter {
+    /// Check if a test matches this filter.
+    ///
+    /// All specified criteria must match (AND logic):
+    /// - If categories are specified, test category must be in the list
+    /// - If priorities are specified, test priority must be in the list
+    /// - If pattern is specified, test name must contain the pattern
+    pub fn matches(&self, test: &UatTest) -> bool {
+        // Category filter (if any categories specified, test must match one)
+        if !self.categories.is_empty() && !self.categories.contains(&test.category) {
+            return false;
+        }
+
+        // Priority filter (if any priorities specified, test must match one)
+        if !self.priorities.is_empty() && !self.priorities.contains(&test.priority) {
+            return false;
+        }
+
+        // Pattern filter (substring match on test name)
+        if let Some(ref pattern) = self.pattern {
+            if !test.name.contains(pattern) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 /// Result of a single UAT test.
 #[derive(Debug, Clone)]
 pub struct UatResult {
@@ -167,6 +196,110 @@ impl UatRunner {
         );
 
         tests
+    }
+
+    /// Run UAT tests with the given filter.
+    ///
+    /// Discovers tests, applies the filter, and executes matching tests.
+    ///
+    /// # Arguments
+    /// * `filter` - Filter to select which tests to run
+    ///
+    /// # Returns
+    /// Aggregated results from the test run.
+    pub fn run(&self, filter: &UatFilter) -> UatResults {
+        self.run_internal(filter, false)
+    }
+
+    /// Run UAT tests with fail-fast mode.
+    ///
+    /// Stops execution on the first test failure.
+    ///
+    /// # Arguments
+    /// * `filter` - Filter to select which tests to run
+    ///
+    /// # Returns
+    /// Aggregated results from the test run.
+    pub fn run_fail_fast(&self, filter: &UatFilter) -> UatResults {
+        self.run_internal(filter, true)
+    }
+
+    /// Internal implementation of test execution.
+    fn run_internal(&self, filter: &UatFilter, fail_fast: bool) -> UatResults {
+        let start_time = std::time::Instant::now();
+        let discovered = self.discover();
+
+        // Apply filter
+        let tests_to_run: Vec<_> = discovered
+            .into_iter()
+            .filter(|t| filter.matches(t))
+            .collect();
+
+        let total = tests_to_run.len();
+        let mut results = Vec::with_capacity(total);
+        let mut passed = 0;
+        let mut failed = 0;
+        let mut skipped = 0;
+
+        tracing::info!(
+            service = "keyrx",
+            event = "uat_run_start",
+            component = "uat_runner",
+            test_count = total,
+            fail_fast = fail_fast,
+            "Starting UAT run with {} tests",
+            total
+        );
+
+        for test in tests_to_run {
+            // Skip remaining tests in fail-fast mode after a failure
+            if fail_fast && failed > 0 {
+                skipped += 1;
+                results.push(UatResult {
+                    test,
+                    passed: false,
+                    duration_us: 0,
+                    error: Some("Skipped due to fail-fast mode".to_string()),
+                });
+                continue;
+            }
+
+            let result = execute_test(&test);
+
+            if result.passed {
+                passed += 1;
+            } else {
+                failed += 1;
+            }
+
+            results.push(result);
+        }
+
+        let duration_us = start_time.elapsed().as_micros() as u64;
+
+        tracing::info!(
+            service = "keyrx",
+            event = "uat_run_complete",
+            component = "uat_runner",
+            total = total,
+            passed = passed,
+            failed = failed,
+            skipped = skipped,
+            duration_us = duration_us,
+            "UAT run complete: {} passed, {} failed, {} skipped",
+            passed,
+            failed,
+            skipped
+        );
+
+        UatResults {
+            total,
+            passed,
+            failed,
+            skipped,
+            duration_us,
+            results,
+        }
     }
 }
 
@@ -332,6 +465,95 @@ fn parse_metadata_line(
     else if let Some(value) = line.strip_prefix("@latency:") {
         if let Ok(us) = value.trim().parse::<u64>() {
             *latency_threshold = Some(us);
+        }
+    }
+}
+
+/// Execute a single UAT test and return the result.
+fn execute_test(test: &UatTest) -> UatResult {
+    let start_time = std::time::Instant::now();
+
+    tracing::debug!(
+        service = "keyrx",
+        event = "uat_test_start",
+        component = "uat_runner",
+        test_name = %test.name,
+        test_file = %test.file,
+        category = %test.category,
+        "Executing UAT test"
+    );
+
+    // Read the test file
+    let content = match fs::read_to_string(&test.file) {
+        Ok(c) => c,
+        Err(e) => {
+            let duration_us = start_time.elapsed().as_micros() as u64;
+            return UatResult {
+                test: test.clone(),
+                passed: false,
+                duration_us,
+                error: Some(format!("Failed to read test file: {}", e)),
+            };
+        }
+    };
+
+    // Create Rhai engine
+    let engine = Engine::new();
+
+    // Compile and run the test
+    let result = (|| -> Result<(), String> {
+        let ast = engine
+            .compile(&content)
+            .map_err(|e| format!("Compilation error: {}", e))?;
+
+        // Run the script to define functions
+        engine
+            .run_ast(&ast)
+            .map_err(|e| format!("Script error: {}", e))?;
+
+        // Call the test function
+        engine
+            .call_fn::<()>(&mut rhai::Scope::new(), &ast, &test.name, ())
+            .map_err(|e| format!("Test execution error: {}", e))?;
+
+        Ok(())
+    })();
+
+    let duration_us = start_time.elapsed().as_micros() as u64;
+
+    match result {
+        Ok(()) => {
+            tracing::debug!(
+                service = "keyrx",
+                event = "uat_test_pass",
+                component = "uat_runner",
+                test_name = %test.name,
+                duration_us = duration_us,
+                "UAT test passed"
+            );
+            UatResult {
+                test: test.clone(),
+                passed: true,
+                duration_us,
+                error: None,
+            }
+        }
+        Err(e) => {
+            tracing::debug!(
+                service = "keyrx",
+                event = "uat_test_fail",
+                component = "uat_runner",
+                test_name = %test.name,
+                duration_us = duration_us,
+                error = %e,
+                "UAT test failed"
+            );
+            UatResult {
+                test: test.clone(),
+                passed: false,
+                duration_us,
+                error: Some(e),
+            }
         }
     }
 }
@@ -574,5 +796,284 @@ fn uat_no_metadata() {
 
         assert_eq!(files.len(), 1);
         assert!(files[0].to_string_lossy().ends_with(".rhai"));
+    }
+
+    #[test]
+    fn filter_matches_all_when_empty() {
+        let filter = UatFilter::default();
+        let test = UatTest {
+            name: "uat_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+        assert!(filter.matches(&test));
+    }
+
+    #[test]
+    fn filter_matches_by_category() {
+        let filter = UatFilter {
+            categories: vec!["core".to_string()],
+            ..Default::default()
+        };
+
+        let matching = UatTest {
+            name: "uat_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        let non_matching = UatTest {
+            name: "uat_test2".to_string(),
+            file: "test.rhai".to_string(),
+            category: "layers".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        assert!(filter.matches(&matching));
+        assert!(!filter.matches(&non_matching));
+    }
+
+    #[test]
+    fn filter_matches_by_priority() {
+        let filter = UatFilter {
+            priorities: vec![Priority::P0, Priority::P1],
+            ..Default::default()
+        };
+
+        let matching = UatTest {
+            name: "uat_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P0,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        let non_matching = UatTest {
+            name: "uat_test2".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P2,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        assert!(filter.matches(&matching));
+        assert!(!filter.matches(&non_matching));
+    }
+
+    #[test]
+    fn filter_matches_by_pattern() {
+        let filter = UatFilter {
+            pattern: Some("layer".to_string()),
+            ..Default::default()
+        };
+
+        let matching = UatTest {
+            name: "uat_layer_switch".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        let non_matching = UatTest {
+            name: "uat_basic_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        assert!(filter.matches(&matching));
+        assert!(!filter.matches(&non_matching));
+    }
+
+    #[test]
+    fn filter_uses_and_logic() {
+        let filter = UatFilter {
+            categories: vec!["core".to_string()],
+            priorities: vec![Priority::P0],
+            pattern: Some("basic".to_string()),
+        };
+
+        // Matches all criteria
+        let matching = UatTest {
+            name: "uat_basic_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P0,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        // Wrong category
+        let wrong_category = UatTest {
+            name: "uat_basic_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "layers".to_string(),
+            priority: Priority::P0,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        // Wrong priority
+        let wrong_priority = UatTest {
+            name: "uat_basic_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P1,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        // Wrong pattern
+        let wrong_pattern = UatTest {
+            name: "uat_advanced_test".to_string(),
+            file: "test.rhai".to_string(),
+            category: "core".to_string(),
+            priority: Priority::P0,
+            requirements: vec![],
+            latency_threshold: None,
+        };
+
+        assert!(filter.matches(&matching));
+        assert!(!filter.matches(&wrong_category));
+        assert!(!filter.matches(&wrong_priority));
+        assert!(!filter.matches(&wrong_pattern));
+    }
+
+    #[test]
+    fn run_executes_passing_tests() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.rhai");
+
+        let script = r#"
+fn uat_passing() {
+    let x = 1 + 1;
+    // Test passes if no error is thrown
+}
+"#;
+        fs::write(&test_file, script).unwrap();
+
+        let runner = UatRunner::with_test_dir(temp_dir.path());
+        let results = runner.run(&UatFilter::default());
+
+        assert_eq!(results.total, 1);
+        assert_eq!(results.passed, 1);
+        assert_eq!(results.failed, 0);
+        assert!(results.results[0].passed);
+        assert!(results.results[0].error.is_none());
+    }
+
+    #[test]
+    fn run_detects_failing_tests() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.rhai");
+
+        let script = r#"
+fn uat_failing() {
+    throw "Test failed intentionally";
+}
+"#;
+        fs::write(&test_file, script).unwrap();
+
+        let runner = UatRunner::with_test_dir(temp_dir.path());
+        let results = runner.run(&UatFilter::default());
+
+        assert_eq!(results.total, 1);
+        assert_eq!(results.passed, 0);
+        assert_eq!(results.failed, 1);
+        assert!(!results.results[0].passed);
+        assert!(results.results[0].error.is_some());
+    }
+
+    #[test]
+    fn run_fail_fast_skips_remaining() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.rhai");
+
+        // Two tests: first fails, second would pass
+        let script = r#"
+fn uat_a_fails() {
+    throw "First test fails";
+}
+
+fn uat_b_passes() {
+    let x = 1;
+}
+"#;
+        fs::write(&test_file, script).unwrap();
+
+        let runner = UatRunner::with_test_dir(temp_dir.path());
+        let results = runner.run_fail_fast(&UatFilter::default());
+
+        assert_eq!(results.total, 2);
+        assert_eq!(results.failed, 1);
+        assert_eq!(results.skipped, 1);
+        // Second test should be skipped
+        assert!(results.results[1]
+            .error
+            .as_ref()
+            .map(|e| e.contains("fail-fast"))
+            .unwrap_or(false));
+    }
+
+    #[test]
+    fn run_applies_filter() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.rhai");
+
+        let script = r#"
+// @category: core
+fn uat_core_test() {
+    let x = 1;
+}
+
+// @category: layers
+fn uat_layer_test() {
+    let y = 2;
+}
+"#;
+        fs::write(&test_file, script).unwrap();
+
+        let runner = UatRunner::with_test_dir(temp_dir.path());
+        let filter = UatFilter {
+            categories: vec!["core".to_string()],
+            ..Default::default()
+        };
+        let results = runner.run(&filter);
+
+        assert_eq!(results.total, 1);
+        assert_eq!(results.results[0].test.name, "uat_core_test");
+    }
+
+    #[test]
+    fn run_measures_duration() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.rhai");
+
+        let script = r#"
+fn uat_timed() {
+    let x = 1;
+}
+"#;
+        fs::write(&test_file, script).unwrap();
+
+        let runner = UatRunner::with_test_dir(temp_dir.path());
+        let results = runner.run(&UatFilter::default());
+
+        assert!(results.duration_us > 0);
+        assert!(results.results[0].duration_us > 0);
     }
 }

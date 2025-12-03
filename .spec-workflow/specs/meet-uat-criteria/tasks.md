@@ -16,14 +16,14 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Role: Rust developer specializing in test frameworks | Task: Create runner.rs with UatTest struct (name, file, category, priority, requirements, latency_threshold) and discover() function that scans tests/uat/ for uat_* Rhai functions | Restrictions: ≤150 lines; reuse test_harness patterns; return Vec<UatTest> | Success: Discovers uat_* functions with parsed metadata._
 
-- [ ] 3. Implement UAT metadata parsing
+- [x] 3. Implement UAT metadata parsing
   - Files: core/src/uat/runner.rs (extend)
   - Parse @category, @priority, @requirement, @latency from Rhai comments
   - _Leverage: Rhai comment parsing_
   - _Requirements: 1.5, 1.6_
   - _Prompt: Role: Parser developer | Task: Extend runner.rs with parse_metadata() that extracts @category, @priority (P0/P1/P2), @requirement (comma-separated IDs), @latency (microseconds) from Rhai function comments | Restrictions: ≤100 lines; regex-based parsing; handle missing metadata gracefully | Success: All metadata types parsed correctly from test comments._
 
-- [ ] 4. Implement UAT test execution
+- [x] 4. Implement UAT test execution
   - Files: core/src/uat/runner.rs (extend)
   - Add UatRunner struct with run() and run_fail_fast() methods
   - _Leverage: core/src/test_harness/ execution engine_
