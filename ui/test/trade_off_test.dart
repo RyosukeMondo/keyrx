@@ -17,6 +17,8 @@ import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:provider/provider.dart';
 
+import 'helpers/fake_services.dart';
+
 class _FakeEngineService implements EngineService {
   final StreamController<EngineSnapshot> _stateController =
       StreamController.broadcast();
@@ -101,6 +103,9 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
     errorTranslator: _FakeErrorTranslator(),
     engineService: fakeEngine,
     mappingRepository: MappingRepository(),
+    deviceService: FakeDeviceService(),
+    testService: FakeTestService(),
+    bridge: FakeBridge(),
   );
 
   return MultiProvider(
