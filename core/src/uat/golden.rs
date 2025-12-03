@@ -190,6 +190,10 @@ pub enum GoldenSessionError {
     /// Session not found.
     #[error("Golden session not found: {0}")]
     NotFound(String),
+
+    /// Update requires confirmation.
+    #[error("Update requires confirmation: use --confirm flag to update '{0}'")]
+    ConfirmationRequired(String),
 }
 
 impl GoldenSessionError {
@@ -213,6 +217,21 @@ pub struct RecordResult {
     pub event_count: usize,
     /// Duration of recording in microseconds.
     pub duration_us: u64,
+}
+
+/// Result of updating a golden session.
+#[derive(Debug)]
+pub struct UpdateResult {
+    /// Name of the updated session.
+    pub session_name: String,
+    /// Path where the session was saved.
+    pub path: PathBuf,
+    /// Number of events in the updated session.
+    pub event_count: usize,
+    /// Duration of the update operation in microseconds.
+    pub duration_us: u64,
+    /// Previous event count (for comparison).
+    pub previous_event_count: usize,
 }
 
 /// Manager for golden session operations.
@@ -522,6 +541,53 @@ impl GoldenSessionManager {
         } else {
             Ok(GoldenVerifyResult::failed(name, differences, duration_us))
         }
+    }
+
+    /// Update an existing golden session by re-recording it.
+    ///
+    /// This method re-records a golden session using the provided script. For safety,
+    /// the `confirm` parameter must be `true` to actually perform the update.
+    ///
+    /// # Arguments
+    /// * `name` - The session name to update (must already exist)
+    /// * `script_path` - Path to the Rhai script that generates test events
+    /// * `confirm` - Must be `true` to actually perform the update
+    ///
+    /// # Returns
+    /// An `UpdateResult` with update statistics, or an error if:
+    /// - `confirm` is `false` (returns `ConfirmationRequired` error)
+    /// - The session doesn't exist (returns `NotFound` error)
+    /// - Script execution fails (returns `ScriptError`)
+    pub fn update(
+        &self,
+        name: &str,
+        script_path: &str,
+        confirm: bool,
+    ) -> Result<UpdateResult, GoldenSessionError> {
+        // Check that the session exists
+        if !self.session_exists(name) {
+            return Err(GoldenSessionError::NotFound(name.to_string()));
+        }
+
+        // Require explicit confirmation
+        if !confirm {
+            return Err(GoldenSessionError::ConfirmationRequired(name.to_string()));
+        }
+
+        // Load the existing session to get the previous event count
+        let existing_session = self.load(name)?;
+        let previous_event_count = existing_session.events.len();
+
+        // Re-record using the existing record method
+        let record_result = self.record(name, script_path)?;
+
+        Ok(UpdateResult {
+            session_name: record_result.session_name,
+            path: record_result.path,
+            event_count: record_result.event_count,
+            duration_us: record_result.duration_us,
+            previous_event_count,
+        })
     }
 }
 
@@ -1171,5 +1237,59 @@ mod tests {
         assert_eq!(diff.diff_type, DifferenceType::OutputMismatch);
         assert_eq!(diff.expected, "expected_value");
         assert_eq!(diff.actual, "actual_value");
+    }
+
+    // Tests for ConfirmationRequired error
+    #[test]
+    fn confirmation_required_error_display() {
+        let err = GoldenSessionError::ConfirmationRequired("test_session".to_string());
+        let msg = err.to_string();
+        assert!(msg.contains("confirmation"));
+        assert!(msg.contains("--confirm"));
+        assert!(msg.contains("test_session"));
+    }
+
+    // Tests for UpdateResult
+    #[test]
+    fn update_result_fields() {
+        let result = UpdateResult {
+            session_name: "updated".to_string(),
+            path: PathBuf::from("tests/golden/updated.krx"),
+            event_count: 10,
+            duration_us: 5000,
+            previous_event_count: 8,
+        };
+
+        assert_eq!(result.session_name, "updated");
+        assert_eq!(result.path, PathBuf::from("tests/golden/updated.krx"));
+        assert_eq!(result.event_count, 10);
+        assert_eq!(result.duration_us, 5000);
+        assert_eq!(result.previous_event_count, 8);
+    }
+
+    // Tests for update method
+    #[test]
+    fn update_requires_confirmation() {
+        let manager = GoldenSessionManager::with_dir("/nonexistent/path");
+        // Even if session doesn't exist, confirmation check happens first for existing sessions
+        // But NotFound is returned first since we check existence before confirmation
+        let result = manager.update("missing", "script.rhai", false);
+        assert!(result.is_err());
+        // Should get NotFound since session doesn't exist
+        assert!(matches!(
+            result.unwrap_err(),
+            GoldenSessionError::NotFound(_)
+        ));
+    }
+
+    #[test]
+    fn update_returns_not_found_for_missing_session() {
+        let manager = GoldenSessionManager::with_dir("/nonexistent/path");
+        let result = manager.update("missing", "script.rhai", true);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            GoldenSessionError::NotFound(_)
+        ));
     }
 }

@@ -76,7 +76,7 @@
   - _Requirements: 2.2, 2.3, 2.4_
   - _Prompt: Role: Comparison algorithm engineer | Task: Extend golden.rs with GoldenSessionManager.verify(name) that replays session and compares output semantically (ignoring non-deterministic timestamps). Return GoldenVerifyResult with differences | Restrictions: ≤150 lines; detailed diff output; event index tracking | Success: `keyrx verify-golden basic` reports exact differences._
 
-- [ ] 11. Implement golden session update
+- [x] 11. Implement golden session update
   - Files: core/src/uat/golden.rs (extend)
   - Add update() method with confirmation
   - _Leverage: record() method_
