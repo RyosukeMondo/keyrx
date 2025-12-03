@@ -5,6 +5,8 @@ mod bench;
 mod check;
 mod devices;
 mod discover;
+mod discover_session;
+mod discover_validation;
 mod doctor;
 mod repl;
 mod replay;

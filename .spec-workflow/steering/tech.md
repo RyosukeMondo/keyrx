@@ -483,6 +483,748 @@ keyrx repl
 - **Installation Requirements**: No external runtime dependencies
 - **Update Mechanism**: In-app update check (planned)
 
+## Build System & Cross-Platform Compilation
+
+### Build Targets Matrix
+
+| Target | OS | Arch | Rust Target | Flutter | Status |
+|--------|-----|------|-------------|---------|--------|
+| Linux x64 | Ubuntu 20.04+ | x86_64 | `x86_64-unknown-linux-gnu` | linux-x64 | ✓ Primary |
+| Linux ARM64 | Ubuntu 20.04+ | aarch64 | `aarch64-unknown-linux-gnu` | linux-arm64 | Planned |
+| Windows x64 | Windows 10+ | x86_64 | `x86_64-pc-windows-msvc` | windows-x64 | ✓ Primary |
+| Windows ARM64 | Windows 11+ | aarch64 | `aarch64-pc-windows-msvc` | windows-arm64 | Planned |
+
+### Build Profiles
+
+```toml
+# Cargo.toml profiles
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true
+panic = "abort"
+codegen-units = 1
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false
+```
+
+### Feature Flags
+
+```toml
+[features]
+default = ["linux"]
+linux = ["evdev", "uinput"]
+windows = ["windows-rs"]
+tracing = ["opentelemetry", "opentelemetry-otlp"]
+profiling = ["tracy-client"]
+```
+
+### Cross-Platform Build with cross-rs
+
+```bash
+# Install cross for cross-compilation
+cargo install cross
+
+# Build for Linux ARM64 from any host
+cross build --release --target aarch64-unknown-linux-gnu
+
+# Build for Windows from Linux
+cross build --release --target x86_64-pc-windows-msvc
+```
+
+### Flutter Build Commands
+
+```bash
+# Linux release
+flutter build linux --release
+
+# Windows release
+flutter build windows --release
+
+# With specific Dart defines
+flutter build linux --release --dart-define=SENTRY_DSN=$SENTRY_DSN
+```
+
+### Unified Build with Task Runner (just)
+
+```just
+# justfile - Modern command runner (https://just.systems)
+
+# Default recipe
+default: check
+
+# === Development ===
+
+# One-command dev setup
+setup:
+    rustup update stable
+    cargo install cargo-watch cargo-nextest cross just
+    cd ui && flutter pub get
+    ./scripts/install-hooks.sh
+
+# Watch mode for Rust development
+dev:
+    cd core && cargo watch -x 'clippy -- -D warnings' -x 'nextest run'
+
+# Run Flutter with hot reload
+ui:
+    cd ui && flutter run -d linux
+
+# === Quality ===
+
+# Run all checks (CI-equivalent locally)
+check: fmt clippy test
+
+# Format all code
+fmt:
+    cd core && cargo fmt
+    cd ui && dart format lib test
+
+# Lint all code
+clippy:
+    cd core && cargo clippy --all-features -- -D warnings
+
+# Run all tests
+test:
+    cd core && cargo nextest run --all-features
+    cd ui && flutter test
+
+# Run benchmarks
+bench:
+    cd core && cargo bench --bench latency
+
+# === Build ===
+
+# Build release binaries for current platform
+build:
+    cd core && cargo build --release
+    cd ui && flutter build linux --release
+
+# Build for all platforms (requires cross)
+build-all: build-linux build-windows
+
+build-linux:
+    cd core && cargo build --release --target x86_64-unknown-linux-gnu
+
+build-windows:
+    cd core && cross build --release --target x86_64-pc-windows-msvc
+
+# === Release ===
+
+# Create release with changelog
+release version:
+    ./scripts/release.sh {{version}}
+
+# Publish to GitHub Releases
+publish version:
+    gh release create v{{version}} \
+        --title "v{{version}}" \
+        --notes-file CHANGELOG.md \
+        dist/*
+```
+
+## CI/CD Pipeline Architecture
+
+### Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         GitHub Actions Workflows                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  on: push/PR to main                                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ ci.yml - Continuous Integration                                   │   │
+│  │  ├─ check: fmt + clippy (Linux)                                  │   │
+│  │  ├─ test-linux: cargo nextest (Ubuntu)                           │   │
+│  │  ├─ test-windows: cargo nextest (Windows)                        │   │
+│  │  ├─ test-flutter: flutter test (Linux)                           │   │
+│  │  ├─ coverage: cargo llvm-cov → Codecov                           │   │
+│  │  ├─ security: cargo audit + cargo deny                           │   │
+│  │  └─ benchmark: criterion (on PR, compare with main)              │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  on: push tag v*                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ release.yml - Release Automation                                  │   │
+│  │  ├─ build-linux-x64: cargo build --release                       │   │
+│  │  ├─ build-linux-arm64: cross build (aarch64)                     │   │
+│  │  ├─ build-windows-x64: cargo build --release                     │   │
+│  │  ├─ build-flutter-linux: flutter build linux                     │   │
+│  │  ├─ build-flutter-windows: flutter build windows                 │   │
+│  │  ├─ package: create archives + checksums                         │   │
+│  │  └─ publish: GitHub Release + artifacts                          │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  on: schedule (weekly)                                                   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ maintenance.yml - Maintenance                                     │   │
+│  │  ├─ dependencies: cargo update + PR                              │   │
+│  │  ├─ security-audit: cargo audit (notify on vulnerabilities)      │   │
+│  │  └─ stale: close stale issues/PRs                                │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### CI Workflow (ci.yml)
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Fast checks first (fail fast)
+  check:
+    name: Check (fmt + clippy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+      - name: Check formatting
+        run: cargo fmt --check
+        working-directory: ./core
+      - name: Clippy
+        run: cargo clippy --all-features -- -D warnings
+        working-directory: ./core
+
+  # Test matrix
+  test:
+    name: Test (${{ matrix.os }})
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+      - uses: taiki-e/install-action@nextest
+      - name: Run tests
+        run: cargo nextest run --all-features --profile ci
+        working-directory: ./core
+
+  # Flutter tests
+  test-flutter:
+    name: Test Flutter
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+      - name: Analyze
+        run: flutter analyze
+        working-directory: ./ui
+      - name: Run tests
+        run: flutter test --coverage
+        working-directory: ./ui
+
+  # Code coverage
+  coverage:
+    name: Coverage
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate coverage
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        working-directory: ./core
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ./core/lcov.info
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Security audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          working-directory: ./core
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Benchmark regression check (PRs only)
+  benchmark:
+    name: Benchmark
+    if: github.event_name == 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+      - name: Run benchmarks
+        run: cargo bench --bench latency -- --save-baseline pr-${{ github.event.number }}
+        working-directory: ./core
+      - name: Compare with main
+        run: |
+          cargo bench --bench latency -- --baseline main --save-baseline pr-${{ github.event.number }} 2>&1 | tee bench-result.txt
+          if grep -q "regressed" bench-result.txt; then
+            echo "::warning::Performance regression detected"
+          fi
+        working-directory: ./core
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: core/target/criterion
+```
+
+### Release Workflow (release.yml)
+
+```yaml
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: linux-x64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+
+      - name: Build Rust core
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: ./core
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Build Flutter (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+          flutter pub get
+          flutter build linux --release
+        working-directory: ./ui
+
+      - name: Build Flutter (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          flutter pub get
+          flutter build windows --release
+        working-directory: ./ui
+
+      - name: Package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p dist
+          tar -czvf dist/keyrx-${{ github.ref_name }}-${{ matrix.name }}.tar.gz \
+            -C core/target/${{ matrix.target }}/release keyrx \
+            -C ../../ui/build/linux/x64/release/bundle .
+          sha256sum dist/*.tar.gz > dist/checksums-${{ matrix.name }}.txt
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir dist
+          Compress-Archive -Path core/target/${{ matrix.target }}/release/keyrx.exe, ui/build/windows/x64/runner/Release/* -DestinationPath dist/keyrx-${{ github.ref_name }}-${{ matrix.name }}.zip
+          Get-FileHash dist/*.zip | Format-Table -Property Hash, Path > dist/checksums-${{ matrix.name }}.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.name }}
+          path: dist/*
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: release-*
+          merge-multiple: true
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Extract changelog for this version
+          VERSION=${{ github.ref_name }}
+          echo "Generating changelog for $VERSION"
+          # Use git-cliff or manual extraction
+          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s" > RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+```
+
+### Maintenance Workflow (maintenance.yml)
+
+```yaml
+name: Maintenance
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Update Cargo dependencies
+        run: cargo update
+        working-directory: ./core
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(deps): weekly dependency update'
+          title: 'chore(deps): Weekly dependency update'
+          branch: deps/weekly-update
+          delete-branch: true
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          working-directory: ./core
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## Release Management
+
+### Versioning Strategy
+
+**Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH[-PRERELEASE]`
+
+| Component | When to Increment |
+|-----------|------------------|
+| MAJOR | Breaking changes to Rhai API, FFI contract, or config format |
+| MINOR | New features, new Rhai functions, non-breaking additions |
+| PATCH | Bug fixes, performance improvements, documentation |
+| PRERELEASE | Alpha (`-alpha.1`), Beta (`-beta.1`), RC (`-rc.1`) |
+
+### Release Checklist
+
+```markdown
+## Release v{VERSION} Checklist
+
+### Pre-Release
+- [ ] All CI checks passing on main
+- [ ] CHANGELOG.md updated with release notes
+- [ ] Version bumped in: Cargo.toml, pubspec.yaml
+- [ ] Documentation updated for new features
+- [ ] Breaking changes documented in migration guide
+
+### Release
+- [ ] Create annotated tag: `git tag -a v{VERSION} -m "Release v{VERSION}"`
+- [ ] Push tag: `git push origin v{VERSION}`
+- [ ] Verify GitHub Actions release workflow completes
+- [ ] Verify artifacts uploaded to GitHub Release
+
+### Post-Release
+- [ ] Announce on relevant channels
+- [ ] Update version in main to next dev version
+- [ ] Close milestone in GitHub
+```
+
+### Changelog Format (Keep a Changelog)
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- New feature description
+
+### Changed
+- Changed behavior description
+
+### Deprecated
+- Deprecated feature
+
+### Removed
+- Removed feature
+
+### Fixed
+- Bug fix description
+
+### Security
+- Security fix description
+
+## [1.0.0] - 2025-01-15
+
+### Added
+- Initial release with core remapping engine
+- Rhai scripting support
+- Windows and Linux drivers
+- Flutter GUI with debugger, training, trade-off visualizer
+```
+
+### Automated Changelog with git-cliff
+
+```toml
+# cliff.toml
+[changelog]
+header = """
+# Changelog\n
+"""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+commit_parsers = [
+    { message = "^feat", group = "Added" },
+    { message = "^fix", group = "Fixed" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Changed" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^chore\\(deps\\)", group = "Dependencies" },
+]
+```
+
+## Developer Experience & Tooling
+
+### One-Command Setup
+
+```bash
+# Clone and setup in one command
+git clone https://github.com/user/keyrx.git && cd keyrx && just setup
+```
+
+### Pre-commit Hooks
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit (installed by install-hooks.sh)
+
+echo "Running pre-commit checks..."
+
+# Format check
+echo "  Checking formatting..."
+(cd core && cargo fmt --check) || { echo "  ✗ Run 'cargo fmt'"; exit 1; }
+echo "  ✓ Formatting OK"
+
+# Clippy
+echo "  Running clippy..."
+(cd core && cargo clippy -- -D warnings) || { echo "  ✗ Clippy failed"; exit 1; }
+echo "  ✓ Clippy OK"
+
+# Tests
+echo "  Running unit tests..."
+(cd core && cargo test --lib) || { echo "  ✗ Tests failed"; exit 1; }
+echo "  ✓ Tests OK"
+
+echo "✅ All pre-commit checks passed!"
+```
+
+### IDE Configuration
+
+**VS Code Settings (.vscode/settings.json)**:
+```json
+{
+  "rust-analyzer.cargo.features": "all",
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.check.extraArgs": ["--", "-D", "warnings"],
+  "editor.formatOnSave": true,
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code"
+  },
+  "dart.flutterSdkPath": ".fvm/flutter_sdk"
+}
+```
+
+**VS Code Extensions (.vscode/extensions.json)**:
+```json
+{
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml",
+    "serayuzgur.crates",
+    "Dart-Code.flutter",
+    "Dart-Code.dart-code",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}
+```
+
+### Debug Configurations (.vscode/launch.json)
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug keyrx run",
+      "cargo": {
+        "args": ["build", "--bin=keyrx", "--package=keyrx_core"],
+        "filter": { "kind": "bin" }
+      },
+      "args": ["run", "--script", "scripts/example_config.rhai", "--debug"],
+      "cwd": "${workspaceFolder}/core"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Tests",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib"],
+        "filter": { "kind": "lib" }
+      },
+      "cwd": "${workspaceFolder}/core"
+    },
+    {
+      "name": "Flutter",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/ui"
+    }
+  ]
+}
+```
+
+### Development Container (devcontainer.json)
+
+```json
+{
+  "name": "KeyRx Development",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "stable",
+      "profile": "default"
+    },
+    "ghcr.io/aspect-build/aspect-workflows-images/features/just:1": {}
+  },
+  "postCreateCommand": "just setup",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "Dart-Code.flutter"
+      ]
+    }
+  },
+  "forwardPorts": [8080],
+  "remoteUser": "vscode"
+}
+```
+
+### Recommended Developer Tools
+
+| Tool | Purpose | Install |
+|------|---------|---------|
+| `just` | Task runner (modern Make) | `cargo install just` |
+| `cargo-nextest` | Fast test runner | `cargo install cargo-nextest` |
+| `cargo-watch` | File watcher | `cargo install cargo-watch` |
+| `cargo-llvm-cov` | Code coverage | `cargo install cargo-llvm-cov` |
+| `cargo-audit` | Security audit | `cargo install cargo-audit` |
+| `cargo-deny` | Dependency linting | `cargo install cargo-deny` |
+| `cross` | Cross-compilation | `cargo install cross` |
+| `git-cliff` | Changelog generator | `cargo install git-cliff` |
+| `fvm` | Flutter version manager | `dart pub global activate fvm` |
+
 ## Technical Requirements & Constraints
 
 ### Performance Requirements
