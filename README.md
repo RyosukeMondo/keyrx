@@ -86,6 +86,96 @@ Run it:
 keyrx run --script my-config.rhai
 ```
 
+## Script Validation
+
+KeyRx provides comprehensive script validation with semantic analysis, conflict detection, and safety warnings.
+
+### Basic Validation
+
+```bash
+keyrx check my-config.rhai
+```
+
+### Validation Flags
+
+| Flag | Description |
+|------|-------------|
+| `--strict` | Treat warnings as errors (exit code 2) |
+| `--no-warnings` | Suppress warnings in output |
+| `--coverage` | Show coverage report (keys affected by category) |
+| `--visual` | Display ASCII keyboard visualization |
+| `--config <path>` | Use custom config file |
+| `--show-config` | Display current validation config and exit |
+| `--json` | Output results in JSON format |
+
+### Example Usage
+
+```bash
+# Full validation with coverage and keyboard visualization
+keyrx check --coverage --visual my-config.rhai
+
+# Strict mode for CI (warnings fail the build)
+keyrx check --strict my-config.rhai
+
+# JSON output for tooling integration
+keyrx check --json my-config.rhai
+
+# Custom config file
+keyrx check --config ~/my-validation.toml my-config.rhai
+```
+
+### Validation Categories
+
+**Errors** (always reported):
+- Invalid key names with suggestions (e.g., "Escpe" → "Escape")
+- Undefined layer references
+- Undefined modifier references
+
+**Warnings** (suppressible with `--no-warnings`):
+- **Conflict**: Duplicate remaps, key remapped and blocked, combo shadowing, circular remaps
+- **Safety**: Escape key modified, emergency exit combo interference, all modifiers blocked
+- **Performance**: Extreme timing values outside recommended ranges
+
+### Configuration File
+
+Create `~/.config/keyrx/validation.toml` to customize validation behavior:
+
+```toml
+# Maximum errors before stopping validation
+max_errors = 20
+
+# Maximum suggestions for invalid key names
+max_suggestions = 5
+
+# Levenshtein distance threshold for similar key detection
+similarity_threshold = 3
+
+# Warn when blocking more than N keys
+blocked_keys_warning_threshold = 10
+
+# Maximum depth for circular remap detection (A→B→C→...→A)
+max_cycle_depth = 10
+
+# Tap timeout warning range [min, max] in milliseconds
+tap_timeout_warn_range = [50, 500]
+
+# Combo timeout warning range [min, max] in milliseconds
+combo_timeout_warn_range = [10, 100]
+
+# UI validation debounce delay in milliseconds
+ui_validation_debounce_ms = 500
+```
+
+All fields are optional; missing values use sensible defaults.
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Valid (may have warnings) |
+| 1 | Has errors |
+| 2 | Has warnings in strict mode |
+
 ## CLI Commands
 
 | Command | Description |
