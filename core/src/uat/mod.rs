@@ -11,6 +11,8 @@
 mod coverage;
 mod fuzz;
 mod gates;
+mod gates_definitions;
+mod gates_evaluation;
 mod golden;
 mod golden_comparison;
 mod golden_types;
