@@ -45,8 +45,11 @@ opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true
 opentelemetry-otlp = { version = "0.27", features = ["tonic"], optional = true }
 
 [features]
+# Enable platform drivers by default on their respective platforms
 default = []
 otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
+windows-driver = ["windows"]
+linux-driver = ["evdev", "nix", "signal-hook"]
 
 [dev-dependencies]
 proptest = "1"
@@ -61,7 +64,7 @@ name = "latency"
 harness = false
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.52", features = [
+windows = { version = "0.52", optional = true, features = [
     "Win32_Foundation",
     "Win32_System_Threading",
     "Win32_UI_Input_KeyboardAndMouse",
@@ -69,9 +72,9 @@ windows = { version = "0.52", features = [
 ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-evdev = { version = "0.12", features = ["tokio"] }
-nix = { version = "0.27", features = ["ioctl"] }
-signal-hook = "0.3"
+evdev = { version = "0.12", optional = true, features = ["tokio"] }
+nix = { version = "0.27", optional = true, features = ["ioctl"] }
+signal-hook = { version = "0.3", optional = true }
 
 [profile.dev]
 opt-level = 0

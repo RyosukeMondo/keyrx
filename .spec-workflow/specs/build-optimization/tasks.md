@@ -51,7 +51,7 @@
 
 ## Phase 3: Platform Feature Gates
 
-- [ ] 6. Create platform feature flags
+- [-] 6. Create platform feature flags
   - File: `core/Cargo.toml`
   - Add windows-driver and linux-driver features
   - Gate platform dependencies
