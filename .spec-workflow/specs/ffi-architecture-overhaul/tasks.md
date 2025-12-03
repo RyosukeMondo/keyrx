@@ -86,7 +86,7 @@
   - _Requirements: 5.1, 3.1_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating FFI code | Task: Create DiscoveryFfi in core/src/ffi/domains/discovery.rs implementing FfiExportable trait | Restrictions: Must maintain same functionality as exports_discovery.rs, no global statics, state in struct | _Leverage: exports_discovery.rs as source, FfiExportable trait from task 4 | Success: DiscoveryFfi has same capabilities as current exports, uses instance state, passes existing tests | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 9. Apply #[ffi_export] to Discovery methods
+- [x] 9. Apply #[ffi_export] to Discovery methods
   - File: `core/src/ffi/domains/discovery.rs`
   - Add #[ffi_export] to start_discovery, process_event, cancel, get_progress
   - Remove manual C-ABI wrapper code
