@@ -18,6 +18,7 @@ pub mod types;
 pub use config::ValidationConfig;
 pub use conflicts::{detect_remap_conflicts, ConflictDetector};
 pub use coverage::{analyze_coverage, render_ascii_keyboard, CoverageAnalyzer};
+pub use engine::{collect_definitions, ValidationEngine};
 pub use safety::{analyze_safety, SafetyAnalyzer};
 pub use semantic::{validate_operations, validate_timing, SemanticValidator};
 pub use suggestions::suggest_similar_keys;
