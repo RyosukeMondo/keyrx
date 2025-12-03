@@ -58,14 +58,14 @@
   - _Requirements: 9_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_run_doctor` FFI export returning JSON {checks: [{name, status, details, remediation}], passed, failed, warned} | Restrictions: ≤80 lines; platform-specific checks | _Leverage: core/src/cli/commands/doctor.rs | _Requirements: 9 | Success: All diagnostic checks run and report correctly._
 
-- [ ] 9. Add discovery FFI exports
+- [x] 9. Add discovery FFI exports
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_start_discovery(device_id)` and progress callback
   - _Leverage: core/src/cli/commands/discover.rs_
   - _Requirements: 11_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add discovery FFI: `keyrx_start_discovery` taking device ID, `keyrx_on_discovery_progress` for callback registration. Return JSON progress updates and final result | Restrictions: ≤100 lines; handle cancellation | _Leverage: core/src/cli/commands/discover.rs | _Requirements: 11 | Success: Discovery wizard controllable from Flutter._
 
-- [ ] 10. Add recording control FFI exports
+- [x] 10. Add recording control FFI exports
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_start_recording(path)` and `keyrx_stop_recording()`
   - _Leverage: existing session recording_
