@@ -17,6 +17,7 @@
 //! - `error`: Standardized FFI error types and result handling
 //! - `context`: Handle-based state management replacing global statics
 //! - `events`: Unified event registry for all FFI callbacks
+//! - `traits`: FFI exportable trait definitions for domain modules
 
 mod callbacks;
 pub mod context;
@@ -33,6 +34,7 @@ mod exports_recording;
 mod exports_script;
 mod exports_testing;
 mod exports_validation;
+pub mod traits;
 
 pub use callbacks::{
     callback_registry, CallbackRegistry, DiscoveryEventCallback, IsolatedRegistry,
@@ -49,3 +51,4 @@ pub use exports_recording::*;
 pub use exports_script::*;
 pub use exports_testing::*;
 pub use exports_validation::*;
+pub use traits::{FfiDomain, FfiExportable};

@@ -32,7 +32,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in callback systems | Task: Create EventRegistry in core/src/ffi/events.rs implementing unified callback management per requirements 2.1-2.4 | Restrictions: Must handle null callbacks gracefully, thread-safe invocation, no memory leaks | _Leverage: Study CallbackRegistry in ffi/callbacks.rs for current pattern | Success: Single registration point for all event types, callbacks invoked with JSON payloads, replaces 3+ individual callback functions | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Create FfiExportable trait definition
+- [x] 4. Create FfiExportable trait definition
   - File: `core/src/ffi/traits.rs`
   - Define `FfiExportable` trait with DOMAIN const, init(), cleanup()
   - Add documentation with usage examples
