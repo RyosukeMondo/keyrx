@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+
+      - name: Build Rust binary
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: ./core
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
+      - name: Build Flutter (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+          flutter build linux --release
+        working-directory: ./ui
+
+      - name: Build Flutter (Windows)
+        if: matrix.os == 'windows-latest'
+        run: flutter build windows --release
+        working-directory: ./ui
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          DIST_DIR="keyrx-${{ steps.version.outputs.version }}-linux-x64"
+          mkdir -p "$DIST_DIR"
+          cp core/target/${{ matrix.target }}/release/keyrx "$DIST_DIR/"
+          cp -r ui/build/linux/x64/release/bundle/* "$DIST_DIR/"
+          tar -czvf "$DIST_DIR.tar.gz" "$DIST_DIR"
+          sha256sum "$DIST_DIR.tar.gz" > "$DIST_DIR.tar.gz.sha256"
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $distDir = "keyrx-$version-windows-x64"
+          New-Item -ItemType Directory -Force -Path $distDir
+          Copy-Item "core/target/${{ matrix.target }}/release/keyrx.exe" -Destination $distDir
+          Copy-Item -Recurse "ui/build/windows/x64/runner/Release/*" -Destination $distDir
+          Compress-Archive -Path $distDir -DestinationPath "$distDir.zip"
+          $hash = (Get-FileHash "$distDir.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $distDir.zip" | Out-File -FilePath "$distDir.zip.sha256" -Encoding ASCII
+
+      - name: Upload artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyrx-linux-x64
+          path: |
+            keyrx-*.tar.gz
+            keyrx-*.tar.gz.sha256
+          retention-days: 1
+
+      - name: Upload artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyrx-windows-x64
+          path: |
+            keyrx-*.zip
+            keyrx-*.zip.sha256
+          retention-days: 1
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Get version info
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect release files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KeyRx ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generate_release_notes: true
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
