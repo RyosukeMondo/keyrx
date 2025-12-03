@@ -295,4 +295,105 @@ mod tests {
         assert_eq!(result.outputs, vec![OutputAction::KeyDown(KeyCode::B)]);
         assert!(result.consumed);
     }
+
+    // Additional edge case tests
+
+    #[test]
+    fn update_key_state_handles_repeat_events() {
+        let mut key_state = KeyStateTracker::new();
+        let event1 = key_down(KeyCode::A, 100);
+        update_key_state(&event1, &mut key_state);
+        assert_eq!(key_state.press_time(KeyCode::A), Some(100));
+
+        // Repeat event should not change timestamp
+        let mut event2 = key_down(KeyCode::A, 200);
+        event2.is_repeat = true;
+        update_key_state(&event2, &mut key_state);
+        assert_eq!(key_state.press_time(KeyCode::A), Some(100));
+    }
+
+    #[test]
+    fn update_key_state_release_without_press() {
+        let mut key_state = KeyStateTracker::new();
+        let event = key_up(KeyCode::A, 100);
+
+        // Should not panic
+        update_key_state(&event, &mut key_state);
+        assert!(!key_state.is_pressed(KeyCode::A));
+    }
+
+    #[test]
+    fn apply_decision_release_not_in_blocked_set() {
+        let event = key_up(KeyCode::B, 100);
+        let mut blocked_releases = HashSet::new();
+        blocked_releases.insert(KeyCode::A); // Different key
+        let decision = DecisionResult {
+            outputs: vec![],
+            consumed: false,
+            decision_type: DecisionType::PassThrough,
+            skip_layer_actions: false,
+            blocked_for_combo: false,
+        };
+
+        let result = apply_decision(&event, &mut blocked_releases, decision);
+        // Should pass through since B is not in blocked_releases
+        assert_eq!(result.outputs, vec![OutputAction::KeyUp(KeyCode::B)]);
+        assert!(!result.consumed);
+        assert!(blocked_releases.contains(&KeyCode::A));
+    }
+
+    #[test]
+    fn apply_decision_combo_blocks_then_passes_release() {
+        // Key down is blocked for combo
+        let event_down = key_down(KeyCode::A, 0);
+        let mut blocked_releases = HashSet::new();
+        let decision = DecisionResult {
+            outputs: vec![],
+            consumed: false,
+            decision_type: DecisionType::Combo,
+            skip_layer_actions: false,
+            blocked_for_combo: true,
+        };
+
+        let result = apply_decision(&event_down, &mut blocked_releases, decision);
+        assert!(result.outputs.contains(&OutputAction::Block));
+        assert!(result.consumed);
+    }
+
+    #[test]
+    fn validation_result_default_state() {
+        let result = ValidationResult {
+            early_return: false,
+            early_output: Vec::new(),
+            safe_mode_toggled: false,
+        };
+        assert!(!result.early_return);
+        assert!(result.early_output.is_empty());
+        assert!(!result.safe_mode_toggled);
+    }
+
+    #[test]
+    fn decision_result_default_state() {
+        let result = DecisionResult::default();
+        assert!(result.outputs.is_empty());
+        assert!(!result.consumed);
+        assert!(!result.skip_layer_actions);
+        assert!(!result.blocked_for_combo);
+    }
+
+    #[test]
+    fn apply_decision_key_up_passes_through_when_not_consumed() {
+        let event = key_up(KeyCode::A, 100);
+        let mut blocked_releases = HashSet::new();
+        let decision = DecisionResult {
+            outputs: vec![],
+            consumed: false,
+            decision_type: DecisionType::PassThrough,
+            skip_layer_actions: false,
+            blocked_for_combo: false,
+        };
+
+        let result = apply_decision(&event, &mut blocked_releases, decision);
+        assert_eq!(result.outputs, vec![OutputAction::KeyUp(KeyCode::A)]);
+    }
 }
