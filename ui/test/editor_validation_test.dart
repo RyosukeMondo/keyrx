@@ -14,6 +14,8 @@ import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:provider/provider.dart';
 
+import 'helpers/fake_services.dart';
+
 void main() {
   group('KeyMappings', () {
     test('recognizes known keys case-insensitively', () {
@@ -69,12 +71,19 @@ void main() {
       KeyMappings.allowedKeys = [];
 
       final engine = _FakeEngineService();
-      addTearDown(() => engine.dispose());
+      final bridge = FakeBridge();
+      addTearDown(() async {
+        await engine.dispose();
+        await bridge.dispose();
+      });
       final registry = ServiceRegistry.withOverrides(
         permissionService: _FakePermissionService(),
         audioService: _FakeAudioService(),
         errorTranslator: _FakeErrorTranslator(),
         engineService: engine,
+        deviceService: FakeDeviceService(),
+        testService: FakeTestService(),
+        bridge: bridge,
         mappingRepository: MappingRepository(),
       );
 
@@ -93,12 +102,16 @@ void main() {
             home: EditorPage(
               engineService: engine,
               mappingRepository: registry.mappingRepository,
+              bridge: bridge,
             ),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
+      // Use pump with duration instead of pumpAndSettle to avoid timeout
+      // from validation debounce timer
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.textContaining('Loaded 3 canonical keys'), findsOneWidget);
 
@@ -114,7 +127,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Q → Space'), findsOneWidget);
       expect(find.text('from Q'), findsOneWidget);

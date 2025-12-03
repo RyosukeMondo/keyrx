@@ -85,6 +85,78 @@ class _FakeBridge implements KeyrxBridge {
 
   @override
   KeyRegistryResult listKeys() => const KeyRegistryResult(entries: []);
+
+  @override
+  bool isBypassActive() => false;
+
+  @override
+  void setBypass(bool active) {}
+
+  @override
+  DeviceListResult listDevices() => const DeviceListResult(devices: []);
+
+  @override
+  int selectDevice(String path) => 0;
+
+  @override
+  ScriptValidationResult checkScript(String path) =>
+      const ScriptValidationResult(valid: true, errors: []);
+
+  @override
+  TestDiscoveryResult discoverTests(String path) =>
+      const TestDiscoveryResult(tests: []);
+
+  @override
+  TestRunResult runTests(String path, {String? filter}) => const TestRunResult(
+        total: 0,
+        passed: 0,
+        failed: 0,
+        durationMs: 0,
+        results: [],
+      );
+
+  @override
+  SimulationResult simulate(
+    List<KeyInput> keys, {
+    String? scriptPath,
+    bool comboMode = false,
+  }) =>
+      const SimulationResult(mappings: [], activeLayers: [], pending: []);
+
+  @override
+  SessionListResult listSessions(String dirPath) =>
+      const SessionListResult(sessions: []);
+
+  @override
+  SessionAnalysisResult analyzeSession(String path) =>
+      SessionAnalysisResult.error('not implemented');
+
+  @override
+  ReplayResult replaySession(String path, {bool verify = false}) =>
+      ReplayResult.error('not implemented');
+
+  @override
+  BenchmarkResult runBenchmark(int iterations, {String? scriptPath}) =>
+      BenchmarkResult.error('not implemented');
+
+  @override
+  DoctorResult runDoctor() => DoctorResult.error('not implemented');
+
+  @override
+  DiscoveryStartResult startDiscovery(
+    String deviceId,
+    int rows,
+    List<int> colsPerRow,
+  ) =>
+      DiscoveryStartResult.error('not implemented');
+
+  @override
+  RecordingStartResult startRecording(String path) =>
+      RecordingStartResult.error('not implemented');
+
+  @override
+  RecordingStopResult stopRecording() =>
+      RecordingStopResult.error('not implemented');
 }
 
 void main() {

@@ -15,6 +15,8 @@ import 'package:keyrx_ui/services/mapping_validator.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 
+import '../helpers/fake_services.dart';
+
 class _FakeEngineService implements EngineService {
   final StreamController<EngineSnapshot> _stateController =
       StreamController.broadcast();
@@ -80,16 +82,19 @@ void main() {
   late _FakeEngineService fakeEngine;
   late MappingRepository mappingRepository;
   late _FakeScriptFileService fakeScriptFileService;
+  late FakeBridge fakeBridge;
 
   setUp(() {
     fakeEngine = _FakeEngineService();
     mappingRepository = MappingRepository();
     fakeScriptFileService = _FakeScriptFileService();
+    fakeBridge = FakeBridge();
   });
 
   tearDown(() async {
     await fakeEngine.dispose();
     mappingRepository.dispose();
+    await fakeBridge.dispose();
   });
 
   Widget buildTestWidget({
@@ -115,6 +120,7 @@ void main() {
           mappingRepository: mappingRepository,
           validator: validator,
           scriptFileService: fakeScriptFileService,
+          bridge: fakeBridge,
         ),
       ),
     );

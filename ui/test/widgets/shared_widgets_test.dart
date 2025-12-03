@@ -16,6 +16,8 @@ import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/ui/widgets/app_error_dialog.dart';
 import 'package:keyrx_ui/ui/widgets/loading_overlay.dart';
 
+import '../helpers/fake_services.dart';
+
 class _FakeAudioService implements AudioService {
   AudioState _state = AudioState.idle;
   AudioOperationResult startResult =
@@ -213,6 +215,7 @@ void main() {
         ),
       );
 
+    final bridge = FakeBridge();
     final registry = ServiceRegistry.withOverrides(
       permissionService: const _StubPermissionService(),
       audioService: audio,
@@ -220,6 +223,9 @@ void main() {
         UserMessage(title: 'Translated', body: 'Unused'),
       ),
       engineService: const _StubEngineService(),
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: bridge,
       mappingRepository: MappingRepository(),
     );
 
