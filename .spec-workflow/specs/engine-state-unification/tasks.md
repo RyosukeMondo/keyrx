@@ -94,7 +94,7 @@
   - _Requirements: 2.1, 2.3_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing mutations | Task: Implement apply() in EngineState for atomic mutations | Restrictions: Atomic updates, produce StateChange, handle errors | _Leverage: Mutation enum, components | Success: apply() works for all mutations, changes tracked | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 10. Implement apply_batch() for atomic batches
+- [x] 10. Implement apply_batch() for atomic batches
   - File: `core/src/engine/state/mod.rs`
   - Apply multiple mutations atomically
   - Rollback on failure
