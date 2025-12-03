@@ -11,7 +11,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer auditing deps | Task: Audit all Cargo.toml dependencies and features | Restrictions: Document all features, identify unused | _Leverage: cargo tree | Success: Complete dependency inventory | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Measure baseline build metrics
+- [x] 2. Measure baseline build metrics
   - File: Document in spec notes
   - Measure dev build time
   - Measure release build time and size
