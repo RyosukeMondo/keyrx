@@ -140,7 +140,7 @@
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Role: Report generation engineer | Task: Create report.rs with ReportGenerator.generate_html(data) that creates comprehensive HTML report with summary, test results by category, coverage matrix, performance metrics, gate status, trend comparison | Restrictions: ≤250 lines; embedded CSS; no external dependencies | Success: `keyrx uat --report` generates readable HTML._
 
-- [-] 19. Implement Markdown report generator
+- [x] 19. Implement Markdown report generator
   - Files: core/src/uat/report.rs (extend)
   - Add Markdown output for PR comments
   - _Leverage: HTML report data_
