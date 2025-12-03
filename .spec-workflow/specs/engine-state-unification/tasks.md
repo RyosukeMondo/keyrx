@@ -21,7 +21,7 @@
   - _Requirements: 2.3, 4.4_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating event types | Task: Create StateChange and Effect in core/src/engine/state/change.rs | Restrictions: Serializable, include version, track all effects | _Leverage: Event sourcing patterns | Success: Changes capture all state effects, serializes correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create StateError type
+- [x] 3. Create StateError type
   - File: `core/src/engine/state/error.rs`
   - Define error variants for invalid mutations
   - Implement std::error::Error

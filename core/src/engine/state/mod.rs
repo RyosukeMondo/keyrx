@@ -1,6 +1,7 @@
 //! Layer and modifier state management.
 
 mod change;
+mod error;
 mod key_state;
 mod layers;
 mod modifiers;
@@ -13,6 +14,8 @@ use std::collections::HashSet;
 pub use change::{
     AutoReleaseReason, Effect, HoldOutcome, PendingDecisionType, PendingResolution, StateChange,
 };
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use error::{StateError, StateResult};
 pub use key_state::KeyStateTracker;
 pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
