@@ -30,7 +30,7 @@
   - _Requirements: 3.1, 3.7_
   - _Prompt: Role: Test framework engineer | Task: Extend runner.rs with UatRunner struct and run(filter: UatFilter) method that executes discovered tests, collecting UatResults (total, passed, failed, skipped, duration, test results) | Restrictions: ≤200 lines; reuse test_harness execution; support fail-fast mode | Success: `keyrx uat` runs all uat_* tests and reports results._
 
-- [ ] 5. Implement UAT filter and categorization
+- [x] 5. Implement UAT filter and categorization
   - Files: core/src/uat/runner.rs (extend)
   - Add UatFilter with category, priority, and pattern filtering
   - _Leverage: existing filter patterns_
