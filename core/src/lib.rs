@@ -17,6 +17,7 @@ pub mod mocks;
 pub mod scripting;
 pub mod traits;
 pub mod uat;
+pub mod validation;
 
 // Re-export commonly used types
 pub use discovery::{
