@@ -7,6 +7,11 @@ mod helpers;
 mod keymap;
 mod reader;
 mod writer;
+
+/// Safety wrappers for Linux driver operations.
+///
+/// Contains safe abstractions over evdev and uinput operations.
+pub mod safety;
 use crate::config::UINPUT_PATH;
 use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};

@@ -11,7 +11,7 @@
   - _Requirements: 5.2, 5.3_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating error types | Task: Create DriverError in core/src/drivers/common/error.rs | Restrictions: Include recovery hints, is_retryable flag, suggested actions | _Leverage: thiserror patterns | Success: Error variants cover all driver scenarios, hints are helpful | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create safety module structure
+- [x] 2. Create safety module structure
   - Files: `core/src/drivers/{windows,linux}/safety/mod.rs`
   - Set up module hierarchy
   - Add documentation explaining safety approach
