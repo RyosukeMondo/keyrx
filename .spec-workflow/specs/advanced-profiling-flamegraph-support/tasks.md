@@ -18,7 +18,7 @@
 
 ## Phase 2: Flame Graph
 
-- [ ] 3. Create FlameGraphGenerator
+- [x] 3. Create FlameGraphGenerator
   - File: `core/src/profiling/flamegraph.rs`
   - SVG generation
   - Color schemes

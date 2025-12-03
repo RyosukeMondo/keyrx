@@ -27,9 +27,11 @@
 //! println!("Collected {} samples", result.sample_count);
 //! ```
 
+pub mod flamegraph;
 pub mod profiler;
 pub mod sampler;
 
 // Re-export main types
+pub use flamegraph::{ColorScheme, FlameGraphConfig, FlameGraphGenerator};
 pub use profiler::{ProfileResult, Profiler, ProfilerConfig, StackSample};
 pub use sampler::StackSampler;
