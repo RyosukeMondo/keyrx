@@ -5,11 +5,10 @@
 //! types are in `builtins.rs`.
 
 use super::bindings::register_all_functions;
-use super::builtins::{
-    apply_timing_update, LayerMapAction, LayerView, ModifierPreview, ModifierView, PendingOp,
-    PendingOps,
-};
-use crate::engine::{KeyCode, LayerAction, LayerStack, TimingConfig};
+use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
+use super::pending_ops::PendingOpsApplier;
+use super::registry_sync::RegistrySyncer;
+use crate::engine::{KeyCode, LayerStack};
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Result};
@@ -28,8 +27,7 @@ pub struct RhaiRuntime {
     defined_hooks: HashSet<String>,
     registry: RemapRegistry,
     pending_ops: PendingOps,
-    layer_view: LayerView,
-    modifier_view: ModifierView,
+    syncer: RegistrySyncer,
 }
 
 impl RhaiRuntime {
@@ -49,14 +47,15 @@ impl RhaiRuntime {
         // Register script functions
         register_all_functions(&mut engine, &pending_ops, &layer_view, &modifier_view);
 
+        let syncer = RegistrySyncer::new(layer_view, modifier_view);
+
         Ok(Self {
             engine,
             ast: None,
             defined_hooks: HashSet::new(),
             registry: RemapRegistry::new(),
             pending_ops,
-            layer_view,
-            modifier_view,
+            syncer,
         })
     }
 
@@ -70,196 +69,10 @@ impl RhaiRuntime {
         }
     }
 
-    /// Apply pending operations to the registry.
+    /// Apply pending operations to the registry and sync views.
     fn apply_pending_ops(&mut self) {
-        if let Ok(mut ops) = self.pending_ops.lock() {
-            for op in ops.drain(..) {
-                match op {
-                    PendingOp::Remap { from, to } => {
-                        self.registry.remap(from, to);
-                    }
-                    PendingOp::Block { key } => {
-                        self.registry.block(key);
-                    }
-                    PendingOp::Pass { key } => {
-                        self.registry.pass(key);
-                    }
-                    PendingOp::TapHold { key, tap, hold } => {
-                        self.registry.register_tap_hold(key, tap, hold);
-                    }
-                    PendingOp::Combo { keys, action } => {
-                        if !self.registry.register_combo(&keys, action) {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_combo_register_failed",
-                                component = "scripting_runtime",
-                                keys = ?keys,
-                                "Combo registration rejected (invalid key count)"
-                            );
-                        }
-                    }
-                    PendingOp::LayerDefine { name, transparent } => {
-                        if let Err(err) = self.registry.define_layer(&name, transparent) {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_layer_define_failed",
-                                component = "scripting_runtime",
-                                layer = name,
-                                error = %err,
-                                "Layer definition failed"
-                            );
-                        }
-                    }
-                    PendingOp::LayerMap { layer, key, action } => {
-                        match Self::resolve_layer_action(&self.registry, action) {
-                            Ok(resolved) => {
-                                if let Err(err) =
-                                    self.registry.map_layer(&layer, key, resolved.clone())
-                                {
-                                    tracing::warn!(
-                                        service = "keyrx",
-                                        event = "rhai_layer_map_failed",
-                                        component = "scripting_runtime",
-                                        layer = layer,
-                                        key = ?key,
-                                        action = ?resolved,
-                                        error = %err,
-                                        "Layer mapping failed"
-                                    );
-                                }
-                            }
-                            Err(err) => {
-                                tracing::warn!(
-                                    service = "keyrx",
-                                    event = "rhai_layer_map_resolve_failed",
-                                    component = "scripting_runtime",
-                                    layer = layer,
-                                    key = ?key,
-                                    error = %err,
-                                    "Failed to resolve layer action"
-                                );
-                            }
-                        }
-                    }
-                    PendingOp::LayerPush { name } => {
-                        if let Err(err) = self.registry.push_layer(&name) {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_layer_push_failed",
-                                component = "scripting_runtime",
-                                layer = name,
-                                error = %err,
-                                "Layer push failed"
-                            );
-                        }
-                    }
-                    PendingOp::LayerToggle { name } => {
-                        if let Err(err) = self.registry.toggle_layer(&name) {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_layer_toggle_failed",
-                                component = "scripting_runtime",
-                                layer = name,
-                                error = %err,
-                                "Layer toggle failed"
-                            );
-                        }
-                    }
-                    PendingOp::LayerPop => {
-                        let _ = self.registry.pop_layer();
-                    }
-                    PendingOp::DefineModifier { name, id } => {
-                        if let Err(err) = self.registry.define_modifier_with_id(&name, Some(id)) {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_define_modifier_failed",
-                                component = "scripting_runtime",
-                                modifier = name,
-                                error = %err,
-                                "Modifier definition failed"
-                            );
-                        }
-                    }
-                    PendingOp::ModifierActivate { name, id } => {
-                        if self.registry.modifier_id(&name).is_none() {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_modifier_activate_undefined",
-                                component = "scripting_runtime",
-                                modifier = name,
-                                "Modifier activation ignored (undefined)"
-                            );
-                        } else {
-                            self.registry.activate_modifier(id);
-                        }
-                    }
-                    PendingOp::ModifierDeactivate { name, id } => {
-                        if self.registry.modifier_id(&name).is_none() {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_modifier_deactivate_undefined",
-                                component = "scripting_runtime",
-                                modifier = name,
-                                "Modifier deactivation ignored (undefined)"
-                            );
-                        } else {
-                            self.registry.deactivate_modifier(id);
-                        }
-                    }
-                    PendingOp::ModifierOneShot { name, id } => {
-                        if self.registry.modifier_id(&name).is_none() {
-                            tracing::warn!(
-                                service = "keyrx",
-                                event = "rhai_modifier_one_shot_undefined",
-                                component = "scripting_runtime",
-                                modifier = name,
-                                "Modifier one-shot ignored (undefined)"
-                            );
-                        } else {
-                            self.registry.one_shot_modifier(id);
-                        }
-                    }
-                    PendingOp::SetTiming(update) => {
-                        let mut timing: TimingConfig = self.registry.timing_config().clone();
-                        apply_timing_update(&mut timing, update);
-                        self.registry.set_timing_config(timing);
-                    }
-                }
-            }
-        }
-
-        if let Ok(mut view) = self.layer_view.lock() {
-            *view = self.registry.layers().clone();
-        }
-
-        if let Ok(mut view) = self.modifier_view.lock() {
-            view.sync_from_registry(&self.registry);
-        }
-    }
-
-    fn resolve_layer_action(
-        registry: &RemapRegistry,
-        action: LayerMapAction,
-    ) -> Result<LayerAction, String> {
-        match action {
-            LayerMapAction::Remap(key) => Ok(LayerAction::Remap(key)),
-            LayerMapAction::Block => Ok(LayerAction::Block),
-            LayerMapAction::Pass => Ok(LayerAction::Pass),
-            LayerMapAction::TapHold { tap, hold } => Ok(LayerAction::TapHold { tap, hold }),
-            LayerMapAction::LayerPush(name) => {
-                let id = registry
-                    .layer_id(&name)
-                    .ok_or_else(|| format!("layer '{}' is not defined", name))?;
-                Ok(LayerAction::LayerPush(id))
-            }
-            LayerMapAction::LayerToggle(name) => {
-                let id = registry
-                    .layer_id(&name)
-                    .ok_or_else(|| format!("layer '{}' is not defined", name))?;
-                Ok(LayerAction::LayerToggle(id))
-            }
-            LayerMapAction::LayerPop => Ok(LayerAction::LayerPop),
-        }
+        let mut applier = PendingOpsApplier::new(&mut self.registry);
+        applier.apply_all(&self.pending_ops, &mut self.syncer);
     }
 
     /// Get a reference to the remap registry.
