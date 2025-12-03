@@ -4,9 +4,10 @@ use super::run_builder::RuntimeBuilder;
 use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::Config;
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
-use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent};
+use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
 use crate::mocks::MockInput;
 use crate::scripting::RhaiRuntime;
 use crate::traits::InputSource;
@@ -38,6 +39,8 @@ pub struct RunCommand {
     pub record_path: Option<PathBuf>,
     /// Optional path to export OpenTelemetry traces to.
     pub trace_path: Option<PathBuf>,
+    /// Runtime configuration loaded from file.
+    pub config: Option<Config>,
 }
 
 impl RunCommand {
@@ -57,6 +60,7 @@ impl RunCommand {
             mock_run_limit: None,
             record_path: None,
             trace_path: None,
+            config: None,
         }
     }
 
@@ -76,6 +80,31 @@ impl RunCommand {
     pub fn with_mock_run_limit(mut self, duration: Duration) -> Self {
         self.mock_run_limit = Some(duration);
         self
+    }
+
+    /// Set the runtime configuration.
+    pub fn with_config(mut self, config: Config) -> Self {
+        self.config = Some(config);
+        self
+    }
+
+    /// Get the timing configuration from loaded config, or use defaults.
+    fn timing_config_from_config(&self) -> TimingConfig {
+        if let Some(ref config) = self.config {
+            // Start with defaults for fields not in the config file
+            let defaults = TimingConfig::default();
+            TimingConfig {
+                tap_timeout_ms: config.timing.tap_timeout_ms,
+                combo_timeout_ms: config.timing.combo_timeout_ms,
+                hold_delay_ms: config.timing.hold_delay_ms,
+                // These fields aren't exposed in config.toml yet, use defaults
+                eager_tap: defaults.eager_tap,
+                permissive_hold: defaults.permissive_hold,
+                retro_tap: defaults.retro_tap,
+            }
+        } else {
+            TimingConfig::default()
+        }
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -137,9 +166,13 @@ impl RunCommand {
             .success("Using mock input (no real keyboard interception)");
 
         let mut input = MockInput::new();
-        let registry = runtime.registry().clone();
+        let mut registry = runtime.registry().clone();
+
+        // Apply config-based timing overrides
+        let timing_config = self.timing_config_from_config();
+        registry.set_timing_config(timing_config.clone());
+
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
-        let timing_config = registry.timing_config().clone();
         let mut engine = builder.build_engine(runtime, registry);
 
         let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
@@ -212,9 +245,13 @@ impl RunCommand {
         let profile_entry = self.load_device_profile(&device_info);
         self.report_profile_status(&device_info, &profile_entry);
 
-        let registry = runtime.registry().clone();
+        let mut registry = runtime.registry().clone();
+
+        // Apply config-based timing overrides
+        let timing_config = self.timing_config_from_config();
+        registry.set_timing_config(timing_config.clone());
+
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
-        let timing_config = registry.timing_config().clone();
         let mut engine = builder.build_engine(runtime, registry);
 
         let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
@@ -317,9 +354,13 @@ impl RunCommand {
         builder: &RuntimeBuilder<'_>,
     ) -> Result<()> {
         let mut input = self.init_windows_input()?;
-        let registry = runtime.registry().clone();
+        let mut registry = runtime.registry().clone();
+
+        // Apply config-based timing overrides
+        let timing_config = self.timing_config_from_config();
+        registry.set_timing_config(timing_config.clone());
+
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
-        let timing_config = registry.timing_config().clone();
         let mut engine = builder.build_engine(runtime, registry);
 
         let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);

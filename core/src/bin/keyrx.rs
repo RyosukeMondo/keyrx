@@ -11,6 +11,7 @@ use keyrx_core::cli::{
     },
     OutputFormat,
 };
+use keyrx_core::config::{load_config, merge_cli_overrides, Config};
 use keyrx_core::KeyRxError;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -27,6 +28,10 @@ struct Cli {
     /// Shortcut for JSON output (equivalent to --format json)
     #[arg(long)]
     json: bool,
+
+    /// Path to configuration file (default: ~/.config/keyrx/config.toml)
+    #[arg(long, global = true)]
+    config: Option<PathBuf>,
 
     #[command(subcommand)]
     command: Commands,
@@ -68,6 +73,18 @@ enum Commands {
         /// Export OpenTelemetry traces to file (requires otel-tracing feature)
         #[arg(long)]
         trace: Option<PathBuf>,
+
+        /// Override tap timeout in milliseconds (valid: 50-1000)
+        #[arg(long)]
+        tap_timeout: Option<u32>,
+
+        /// Override combo timeout in milliseconds (valid: 10-200)
+        #[arg(long)]
+        combo_timeout: Option<u32>,
+
+        /// Override hold delay in milliseconds (valid: 0-500)
+        #[arg(long)]
+        hold_delay: Option<u32>,
     },
 
     /// Inspect current engine state
@@ -348,7 +365,10 @@ async fn main() -> ExitCode {
     let cli = Cli::parse();
     let format = parse_format(&cli.format, cli.json);
 
-    let result = run_command(cli.command, format).await;
+    // Load configuration from file (or use defaults)
+    let config = load_config(cli.config.as_deref());
+
+    let result = run_command(cli.command, format, config).await;
 
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -360,7 +380,11 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<()> {
+async fn run_command(
+    command: Commands,
+    format: OutputFormat,
+    config: Config,
+) -> anyhow::Result<()> {
     match command {
         Commands::Check { script } => {
             CheckCommand::new(script, format).run()?;
@@ -375,10 +399,18 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
             device,
             record,
             trace,
+            tap_timeout,
+            combo_timeout,
+            hold_delay,
         } => {
+            // Merge CLI overrides into config
+            let mut config = config;
+            merge_cli_overrides(&mut config, tap_timeout, combo_timeout, hold_delay);
+
             RunCommand::new(script, debug, mock, device, format)
                 .with_record_path(record)
                 .with_trace_path(trace)
+                .with_config(config)
                 .run()
                 .await?;
         }
