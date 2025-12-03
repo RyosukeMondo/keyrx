@@ -138,7 +138,7 @@
   - _Requirements: Non-functional (verification)_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer measuring builds | Task: Measure optimized build times and sizes | Restrictions: Same conditions as baseline | _Leverage: time command | Success: Improvements documented | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Test all feature combinations
+- [-] 15. Test all feature combinations
   - Files: CI or local test
   - Build with minimal features
   - Build with full features

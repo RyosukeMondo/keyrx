@@ -69,7 +69,8 @@ impl EngineTracer {
     #[cfg(feature = "otel-tracing")]
     pub fn with_file_export<P: AsRef<Path>>(service_name: &str, _path: P) -> TracingResult<Self> {
         use opentelemetry::global;
-        use opentelemetry_otlp::{SpanExporter, WithExportConfig, WithTonicConfig};
+        use opentelemetry_otlp::{SpanExporter, WithExportConfig};
+        use opentelemetry_sdk::runtime::Tokio;
         use opentelemetry_sdk::trace::{BatchSpanProcessor, TracerProvider as SdkTracerProvider};
 
         // Create OTLP exporter - using gRPC endpoint
@@ -82,7 +83,7 @@ impl EngineTracer {
             .map_err(|e| TracingError::InitializationFailed(e.to_string()))?;
 
         let provider = SdkTracerProvider::builder()
-            .with_span_processor(BatchSpanProcessor::builder(exporter).build())
+            .with_span_processor(BatchSpanProcessor::builder(exporter, Tokio).build())
             .build();
 
         let service_name_owned = service_name.to_string();
