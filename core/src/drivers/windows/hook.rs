@@ -3,58 +3,36 @@
 //! This module provides the `HookManager` for managing the lifecycle of a Windows
 //! keyboard hook, and the `low_level_keyboard_proc` callback function.
 
+use crate::drivers::common::error::DriverError;
 use crate::engine::{InputEvent, KeyCode};
-use crate::error::WindowsDriverError;
 use crossbeam_channel::Sender;
-use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
-use tracing::{debug, error, warn};
-use windows::Win32::Foundation::HINSTANCE;
+use tracing::debug;
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
-    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_INJECTED, MSG, PM_REMOVE,
-    WH_KEYBOARD_LL, WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
+    CallNextHookEx, DispatchMessageW, PeekMessageW, TranslateMessage, HHOOK, KBDLLHOOKSTRUCT,
+    LLKHF_EXTENDED, LLKHF_INJECTED, MSG, PM_REMOVE, WM_KEYDOWN, WM_QUIT, WM_SYSKEYDOWN,
 };
 
-use super::hook_thread::spawn_hook_thread;
 use super::keymap::vk_to_keycode;
+use super::safety::hook::SafeHook;
+use super::safety::thread_local::ThreadLocalState;
 use crate::config::keys::{VK_CONTROL, VK_ESCAPE, VK_MENU, VK_SHIFT};
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
-
-/// Thread-local storage for the event sender used by the hook callback.
-///
-/// This is necessary because the hook callback is a C-style function pointer
-/// that cannot capture any context. We store the sender in thread-local storage
-/// and access it from within the callback.
-thread_local! {
-    pub static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
-}
-
-/// Thread-local storage for tracking key press states (for is_repeat detection).
-///
-/// Maps virtual key codes to their current pressed state. When we receive a key down
-/// event for a key that's already marked as pressed, it's a repeat event.
-thread_local! {
-    pub static KEY_STATES: RefCell<std::collections::HashSet<u16>> = RefCell::new(std::collections::HashSet::new());
-}
-
-/// Global storage for the hook thread's thread ID.
-///
-/// This is used to post WM_QUIT to the hook thread when shutting down.
-/// We use an atomic because it needs to be accessed from multiple threads.
-// pub static HOOK_THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 /// Low-level keyboard hook manager.
 ///
 /// Manages the lifecycle of a Windows keyboard hook, including installation,
 /// event capture, and cleanup.
+///
+/// This manager now uses the `SafeHook` wrapper to ensure proper RAII
+/// semantics and safe hook lifecycle management.
 pub struct HookManager {
-    /// The hook handle returned by SetWindowsHookExW.
-    hook_handle: Option<HHOOK>,
+    /// Safe RAII wrapper for the Windows keyboard hook.
+    safe_hook: Option<SafeHook>,
     /// Flag to signal the message pump to stop.
     running: Arc<AtomicBool>,
     /// Storage for the thread ID of the message loop
@@ -67,7 +45,7 @@ impl HookManager {
     /// The hook is not installed until `install()` is called.
     pub fn new(running: Arc<AtomicBool>, thread_id_store: Arc<AtomicU32>) -> Self {
         Self {
-            hook_handle: None,
+            safe_hook: None,
             running,
             thread_id_store,
         }
@@ -84,90 +62,32 @@ impl HookManager {
     ///
     /// # Errors
     ///
-    /// Returns `WindowsDriverError::HookInstallFailed` if the hook cannot be installed.
-    pub fn install(&mut self, sender: Sender<InputEvent>) -> Result<(), WindowsDriverError> {
-        // Store the sender in thread-local storage for the callback
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = Some(sender);
-        });
+    /// Returns `DriverError::HookFailed` if the hook cannot be installed.
+    pub fn install(&mut self, sender: Sender<InputEvent>) -> Result<(), DriverError> {
+        // Use SafeHook to install the hook with proper RAII semantics
+        let hook = SafeHook::install(sender, self.running.clone(), self.thread_id_store.clone())?;
 
-        // Install the low-level keyboard hook
-        // SAFETY: We pass null for hmod (current process) and 0 for thread ID (all threads)
-        let hook = unsafe {
-            SetWindowsHookExW(
-                WH_KEYBOARD_LL,
-                Some(low_level_keyboard_proc),
-                HINSTANCE::default(),
-                0,
-            )
-        };
-
-        match hook {
-            Ok(handle) => {
-                debug!(
-                    service = "keyrx",
-                    event = "keyboard_hook_installed",
-                    component = "windows_hook",
-                    "Keyboard hook installed successfully"
-                );
-                self.hook_handle = Some(handle);
-                Ok(())
-            }
-            Err(e) => {
-                error!(
-                    service = "keyrx",
-                    event = "keyboard_hook_install_failed",
-                    component = "windows_hook",
-                    error = %e,
-                    "Failed to install keyboard hook"
-                );
-                // Clear the sender since we failed
-                HOOK_SENDER.with(|s| {
-                    *s.borrow_mut() = None;
-                });
-                Err(WindowsDriverError::hook_install_failed(e.code().0 as u32))
-            }
-        }
+        self.safe_hook = Some(hook);
+        Ok(())
     }
 
     /// Uninstall the keyboard hook.
     ///
     /// This should be called before the thread exits to properly clean up.
+    /// The SafeHook wrapper will automatically uninstall on drop, but this
+    /// provides explicit control over the timing.
     pub fn uninstall(&mut self) {
-        if let Some(handle) = self.hook_handle.take() {
-            // SAFETY: We're passing a valid hook handle that we received from SetWindowsHookExW
-            let result = unsafe { UnhookWindowsHookEx(handle) };
-            if result.is_err() {
-                warn!(
-                    service = "keyrx",
-                    event = "keyboard_hook_uninstall_failed",
-                    component = "windows_hook",
-                    "Failed to unhook keyboard hook"
-                );
-            } else {
-                debug!(
-                    service = "keyrx",
-                    event = "keyboard_hook_uninstalled",
-                    component = "windows_hook",
-                    "Keyboard hook uninstalled"
-                );
-            }
+        if let Some(mut hook) = self.safe_hook.take() {
+            hook.uninstall();
         }
-
-        // Clear the thread-local sender
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = None;
-        });
-
-        // Clear key states for clean restart
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
     }
 
     /// Check if the hook is currently installed.
     pub fn is_installed(&self) -> bool {
-        self.hook_handle.is_some()
+        self.safe_hook
+            .as_ref()
+            .map(|h| h.is_installed())
+            .unwrap_or(false)
     }
 
     /// Get the running flag.
@@ -317,12 +237,16 @@ fn check_emergency_exit_combo(vk_code: i32) -> bool {
 fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
     let vk_code = kb_struct.vkCode as u16;
     let is_extended = kb_struct.flags.contains(LLKHF_EXTENDED);
+
+    // Use ThreadLocalState for safe key state tracking
+    let is_repeat = ThreadLocalState::track_key_state(vk_code, pressed);
+
     InputEvent {
         key: map_vk_to_keycode(vk_code, is_extended),
         pressed,
         timestamp_us: (kb_struct.time as u64) * 1000,
         device_id: None,
-        is_repeat: track_repeat_state(pressed, vk_code),
+        is_repeat,
         is_synthetic: kb_struct.flags.contains(LLKHF_INJECTED),
         scan_code: kb_struct.scanCode as u16,
     }
@@ -337,28 +261,9 @@ fn map_vk_to_keycode(vk_code: u16, is_extended: bool) -> KeyCode {
     vk_to_keycode(vk_code)
 }
 
-fn track_repeat_state(pressed: bool, vk_code: u16) -> bool {
-    KEY_STATES.with(|states| {
-        let mut states = states.borrow_mut();
-        if pressed {
-            let was_pressed = states.contains(&vk_code);
-            if !was_pressed {
-                states.insert(vk_code);
-            }
-            was_pressed
-        } else {
-            states.remove(&vk_code);
-            false
-        }
-    })
-}
-
 fn send_event(event: InputEvent) {
-    HOOK_SENDER.with(|s| {
-        if let Some(sender) = s.borrow().as_ref() {
-            let _ = sender.try_send(event);
-        }
-    });
+    // Use ThreadLocalState for safe event sending
+    ThreadLocalState::try_send(event);
 }
 
 #[cfg(test)]
@@ -401,102 +306,78 @@ mod tests {
     #[test]
     fn key_states_tracking_basic() {
         // Clear any existing state
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
 
         // Test: First key down should NOT be a repeat
-        let is_repeat = KEY_STATES.with(|states| {
-            let mut states = states.borrow_mut();
-            let was_pressed = states.contains(&0x41); // 'A' key
-            if !was_pressed {
-                states.insert(0x41);
-            }
-            was_pressed
-        });
+        let is_repeat = ThreadLocalState::track_key_state(0x41, true); // 'A' key
         assert!(!is_repeat, "First key down should not be a repeat");
 
         // Test: Second key down (while still pressed) SHOULD be a repeat
-        let is_repeat = KEY_STATES.with(|states| {
-            let states = states.borrow();
-            states.contains(&0x41)
-        });
+        let is_repeat = ThreadLocalState::track_key_state(0x41, true);
         assert!(is_repeat, "Second key down should be a repeat");
 
         // Test: Key up should remove the state
-        KEY_STATES.with(|states| {
-            states.borrow_mut().remove(&0x41);
-        });
-        let is_pressed = KEY_STATES.with(|states| states.borrow().contains(&0x41));
+        ThreadLocalState::track_key_state(0x41, false);
+        let is_pressed = ThreadLocalState::is_key_pressed(0x41);
         assert!(!is_pressed, "Key should be removed after key up");
 
         // Clean up
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
     }
 
     #[test]
     fn key_states_tracking_multiple_keys() {
         // Clear any existing state
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
 
         // Press multiple keys
-        KEY_STATES.with(|states| {
-            let mut states = states.borrow_mut();
-            states.insert(0x41); // A
-            states.insert(0x42); // B
-            states.insert(0x43); // C
-        });
+        ThreadLocalState::mark_key_pressed(0x41); // A
+        ThreadLocalState::mark_key_pressed(0x42); // B
+        ThreadLocalState::mark_key_pressed(0x43); // C
 
         // Verify all are tracked
-        let count = KEY_STATES.with(|states| states.borrow().len());
+        let count = ThreadLocalState::pressed_key_count();
         assert_eq!(count, 3, "Should have 3 keys tracked");
 
         // Release one key
-        KEY_STATES.with(|states| {
-            states.borrow_mut().remove(&0x42); // Release B
-        });
+        ThreadLocalState::mark_key_released(0x42); // Release B
 
-        let count = KEY_STATES.with(|states| states.borrow().len());
+        let count = ThreadLocalState::pressed_key_count();
         assert_eq!(count, 2, "Should have 2 keys tracked after release");
 
         // Verify A and C are still tracked, B is not
-        KEY_STATES.with(|states| {
-            let states = states.borrow();
-            assert!(states.contains(&0x41), "A should still be tracked");
-            assert!(!states.contains(&0x42), "B should not be tracked");
-            assert!(states.contains(&0x43), "C should still be tracked");
-        });
+        assert!(
+            ThreadLocalState::is_key_pressed(0x41),
+            "A should still be tracked"
+        );
+        assert!(
+            !ThreadLocalState::is_key_pressed(0x42),
+            "B should not be tracked"
+        );
+        assert!(
+            ThreadLocalState::is_key_pressed(0x43),
+            "C should still be tracked"
+        );
 
         // Clean up
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
     }
 
     #[test]
     fn key_states_clear_on_uninstall() {
         // Simulate some pressed keys
-        KEY_STATES.with(|states| {
-            let mut states = states.borrow_mut();
-            states.insert(0x41);
-            states.insert(0x42);
-        });
+        ThreadLocalState::mark_key_pressed(0x41);
+        ThreadLocalState::mark_key_pressed(0x42);
 
         // Verify keys are tracked
-        let count = KEY_STATES.with(|states| states.borrow().len());
+        let count = ThreadLocalState::pressed_key_count();
         assert!(count > 0, "Should have keys tracked before clear");
 
         // Clear (as done in uninstall)
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
 
         // Verify cleared
-        let count = KEY_STATES.with(|states| states.borrow().len());
+        let count = ThreadLocalState::pressed_key_count();
         assert_eq!(count, 0, "Should have no keys tracked after clear");
     }
 
@@ -524,6 +405,9 @@ mod tests {
 
     #[test]
     fn build_input_event_handles_extended_enter() {
+        // Clear state before test
+        ThreadLocalState::cleanup();
+
         let kb_struct = KBDLLHOOKSTRUCT {
             vkCode: 0x0D,
             scanCode: 0x1C,
@@ -537,7 +421,10 @@ mod tests {
         assert!(event.pressed);
         assert_eq!(event.timestamp_us, 123_000);
         assert!(!event.is_synthetic);
-        assert!(!event.is_repeat);
+        assert!(!event.is_repeat); // First press should not be a repeat
+
+        // Clean up
+        ThreadLocalState::cleanup();
     }
 
     #[test]

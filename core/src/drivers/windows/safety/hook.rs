@@ -439,7 +439,10 @@ mod tests {
             let states_cleared = KEY_STATES.with(|states| states.borrow().is_empty());
 
             assert!(sender_cleared, "Sender should be cleared after uninstall");
-            assert!(states_cleared, "Key states should be cleared after uninstall");
+            assert!(
+                states_cleared,
+                "Key states should be cleared after uninstall"
+            );
         }
     }
 

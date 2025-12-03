@@ -6,7 +6,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use std::thread;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 pub(crate) fn spawn_hook_thread(
     running: Arc<AtomicBool>,

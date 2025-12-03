@@ -51,7 +51,7 @@
   - _Requirements: 1.2, 1.3, 2.1, 2.3, 2.4_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Windows API expertise | Task: Create SafeHook in safety/hook.rs with SAFETY comments | Restrictions: RAII for cleanup, document invariants, handle all errors | _Leverage: windows-rs, existing hook.rs | Success: Hook lifecycle is safe, cleanup guaranteed | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Update WindowsInputSource to use safety wrappers
+- [x] 6. Update WindowsInputSource to use safety wrappers
   - File: `core/src/drivers/windows/mod.rs`
   - Replace direct unsafe with SafeHook
   - Use ThreadLocalState for event routing
