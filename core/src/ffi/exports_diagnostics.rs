@@ -1,6 +1,6 @@
-//! Session management FFI exports.
+//! Diagnostics and benchmarking FFI exports.
 //!
-//! Functions for benchmarking and diagnostics.
+//! Functions for system diagnostics and performance benchmarking.
 #![allow(unsafe_code)]
 
 use serde::Serialize;
@@ -288,199 +288,8 @@ fn run_windows_diagnostics(checks: &mut Vec<crate::cli::commands::DiagnosticChec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::keycodes::KeyCode;
-    use crate::engine::RemapAction;
-    use crate::ffi::{keyrx_check_script, keyrx_eval, keyrx_free_string, keyrx_load_script};
-    use crate::scripting::{clear_active_runtime, set_active_runtime, RhaiRuntime};
-    use crate::traits::ScriptRuntime;
-    use serial_test::serial;
-
-    #[test]
-    #[serial]
-    fn load_script_returns_error_without_runtime() {
-        clear_active_runtime();
-        let path = CString::new("script.rhai").expect("CString should not contain nulls");
-        let result = unsafe { keyrx_load_script(path.as_ptr()) };
-        assert_eq!(result, -4); // Engine not initialized
-    }
-
-    #[test]
-    #[serial]
-    fn load_script_returns_error_for_missing_file() {
-        clear_active_runtime();
-        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
-        set_active_runtime(&mut runtime);
-
-        let path = CString::new("/nonexistent/path/script.rhai")
-            .expect("CString should not contain nulls");
-        let result = unsafe { keyrx_load_script(path.as_ptr()) };
-        assert_eq!(result, -3); // File not found / syntax error
-
-        clear_active_runtime();
-    }
-
-    #[test]
-    #[serial]
-    fn load_script_loads_valid_script() {
-        use std::io::Write;
-        use tempfile::NamedTempFile;
-
-        clear_active_runtime();
-        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
-        set_active_runtime(&mut runtime);
-
-        // Create a temporary script file
-        let mut temp_file = NamedTempFile::new().expect("temp file should create");
-        writeln!(temp_file, r#"remap("A", "B");"#).expect("write should succeed");
-        let temp_path = temp_file
-            .path()
-            .to_str()
-            .expect("path should be valid UTF-8");
-
-        let path = CString::new(temp_path).expect("CString should not contain nulls");
-        let result = unsafe { keyrx_load_script(path.as_ptr()) };
-        assert_eq!(result, 0); // Success
-
-        // Verify the mapping was registered
-        assert!(matches!(
-            runtime.lookup_remap(KeyCode::A),
-            RemapAction::Remap(KeyCode::B)
-        ));
-
-        clear_active_runtime();
-    }
-
-    #[test]
-    fn load_script_rejects_null_pointer() {
-        let result = unsafe { keyrx_load_script(ptr::null()) };
-        assert_eq!(result, -1);
-    }
-
-    #[test]
-    fn load_script_rejects_invalid_utf8() {
-        static INVALID_UTF8: [u8; 2] = [0xFF, 0x00];
-        let result = unsafe { keyrx_load_script(INVALID_UTF8.as_ptr() as *const c_char) };
-        assert_eq!(result, -2);
-    }
-
-    #[test]
-    fn check_script_valid_syntax() {
-        use std::io::Write;
-        use tempfile::NamedTempFile;
-
-        let mut temp = NamedTempFile::new().unwrap();
-        writeln!(temp, "let x = 1 + 2;").unwrap();
-
-        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
-        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
-        assert!(!ptr.is_null());
-
-        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
-        unsafe { keyrx_free_string(ptr) };
-
-        assert!(raw.starts_with("ok:"));
-        let json_str = &raw["ok:".len()..];
-        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
-        assert_eq!(result["valid"], true);
-        assert!(result["errors"].as_array().unwrap().is_empty());
-    }
-
-    #[test]
-    fn check_script_invalid_syntax() {
-        use std::io::Write;
-        use tempfile::NamedTempFile;
-
-        let mut temp = NamedTempFile::new().unwrap();
-        writeln!(temp, "let x = (1 + 2").unwrap(); // Missing closing paren
-
-        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
-        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
-        assert!(!ptr.is_null());
-
-        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
-        unsafe { keyrx_free_string(ptr) };
-
-        assert!(raw.starts_with("ok:"));
-        let json_str = &raw["ok:".len()..];
-        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
-        assert_eq!(result["valid"], false);
-        assert!(!result["errors"].as_array().unwrap().is_empty());
-
-        let error = &result["errors"][0];
-        assert!(error["message"].as_str().unwrap().len() > 0);
-    }
-
-    #[test]
-    fn check_script_missing_file() {
-        let path = CString::new("/nonexistent/script.rhai").unwrap();
-        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
-        assert!(!ptr.is_null());
-
-        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
-        unsafe { keyrx_free_string(ptr) };
-
-        assert!(raw.starts_with("ok:"));
-        let json_str = &raw["ok:".len()..];
-        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
-        assert_eq!(result["valid"], false);
-        assert!(result["errors"][0]["message"]
-            .as_str()
-            .unwrap()
-            .contains("Failed to read file"));
-    }
-
-    #[test]
-    fn check_script_null_pointer() {
-        let ptr = unsafe { keyrx_check_script(ptr::null()) };
-        assert!(!ptr.is_null());
-
-        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
-        unsafe { keyrx_free_string(ptr) };
-        assert!(raw.starts_with("error:"));
-    }
-
-    #[test]
-    #[serial]
-    fn eval_returns_error_when_runtime_missing() {
-        clear_active_runtime();
-        let cmd = CString::new(r#"remap("A","B");"#).unwrap();
-        let ptr = unsafe { keyrx_eval(cmd.as_ptr()) };
-        assert!(!ptr.is_null());
-        let response = unsafe { CStr::from_ptr(ptr) }
-            .to_str()
-            .expect("response should be utf8");
-        assert!(
-            response.starts_with("error: engine not initialized"),
-            "unexpected response: {response}"
-        );
-        unsafe { keyrx_free_string(ptr) };
-    }
-
-    #[test]
-    #[serial]
-    fn eval_executes_against_shared_runtime() {
-        clear_active_runtime();
-        let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
-        set_active_runtime(&mut runtime);
-
-        let cmd = CString::new(r#"remap("A","B");"#).unwrap();
-        let ptr = unsafe { keyrx_eval(cmd.as_ptr()) };
-        assert!(!ptr.is_null());
-        let response = unsafe { CStr::from_ptr(ptr) }
-            .to_str()
-            .expect("response should be utf8");
-        assert!(
-            response.starts_with("ok:"),
-            "unexpected response: {response}"
-        );
-        unsafe { keyrx_free_string(ptr) };
-
-        assert!(matches!(
-            runtime.lookup_remap(KeyCode::A),
-            RemapAction::Remap(KeyCode::B)
-        ));
-        clear_active_runtime();
-    }
+    use crate::ffi::keyrx_free_string;
+    use std::ffi::CStr;
 
     #[test]
     fn run_benchmark_basic() {
@@ -502,7 +311,17 @@ mod tests {
         assert_eq!(result["iterations"], 100);
     }
 
-    // ─── Diagnostics Tests ──────────────────────────────────────────────────
+    #[test]
+    fn run_benchmark_zero_iterations_returns_error() {
+        let ptr = unsafe { keyrx_run_benchmark(0, ptr::null()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("error:"), "got: {raw}");
+        assert!(raw.contains("iterations must be > 0"));
+    }
 
     #[test]
     fn run_doctor_returns_diagnostics() {
