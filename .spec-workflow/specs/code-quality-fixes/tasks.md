@@ -182,7 +182,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split src/engine/tracing.rs (621 lines) into tracing_types.rs (TraceSpan, TraceEvent structs) and tracing_formatters.rs (formatting/display logic). Keep TracingEngine in tracing.rs. Update engine/mod.rs. | Restrictions: Maintain tracing API | Success: Engine tests pass, all files under 500 lines. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 22. Refactor cli/commands/ci_check.rs
+- [x] 22. Refactor cli/commands/ci_check.rs
   - File: `src/cli/commands/ci_check.rs`
   - Split into: ci_check_phases.rs (phase runners), ci_check_summary.rs (summary generation)
   - Keep ci_check.rs as main command under 500 lines
@@ -192,7 +192,7 @@
 
 ## Phase 8: Verification
 
-- [ ] 23. Run full test suite
+- [x] 23. Run full test suite
   - Run: `cargo test --lib` - verify 0 failures
   - Run: `cargo test --test '*'` - verify integration tests pass
   - Purpose: Ensure all tests pass after refactoring
