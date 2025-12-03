@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../config/config.dart';
 import '../models/keyboard_layout.dart';
 
 /// Individual key widget within the visual keyboard.
@@ -93,7 +94,7 @@ class KeyWidget extends StatelessWidget {
         onTap: enabled ? onTap : null,
         onLongPress: enabled ? onLongPress : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
+          duration: const Duration(milliseconds: TimingConfig.keyAnimationMs),
           width: width,
           height: height,
           decoration: BoxDecoration(

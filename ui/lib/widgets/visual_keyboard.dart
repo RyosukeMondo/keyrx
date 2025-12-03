@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../config/config.dart';
 import '../models/keyboard_layout.dart';
 import 'mapping_overlay.dart';
 import 'visual_keyboard_keys.dart';
@@ -145,7 +146,8 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
     if (layoutWidth <= availableWidth) {
       return 1.0;
     }
-    return (availableWidth / layoutWidth).clamp(0.5, 1.0);
+    return (availableWidth / layoutWidth)
+        .clamp(UiConstants.minKeyboardScale, UiConstants.maxKeyboardScale);
   }
 
   KeyboardLayout _createScaledLayout(double scale) {
@@ -299,7 +301,7 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+            duration: const Duration(milliseconds: TimingConfig.animationDurationMs),
             decoration: isAccepting
                 ? BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
