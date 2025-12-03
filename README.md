@@ -399,6 +399,46 @@ keyrx.exe run --script my-config.rhai
 - Use `--mock` flag to test scripts without capturing real keyboard
 - Press **Ctrl+C** to stop KeyRx and release the keyboard
 
+## Flutter UI
+
+KeyRx includes a Flutter-based GUI for visual configuration and debugging.
+
+### Running the UI
+
+```bash
+just ui            # Development mode
+just ui-build      # Production build
+```
+
+### User Interface (4 Main Screens)
+
+| Screen | Description |
+|--------|-------------|
+| **Editor** | Visual script editor with syntax highlighting and validation |
+| **Devices** | Keyboard device selection and profile management |
+| **Run Controls** | Start/stop engine with recording toggle and status indicators |
+| **Training** | Typing pattern analysis for optimal tap-hold timeout |
+
+### Developer Tools
+
+Access developer tools via the wrench icon in the app bar (developer mode).
+
+| Tool | Description |
+|------|-------------|
+| **Debugger** | Real-time state visualization with layers, modifiers, pending |
+| **Console** | Interactive REPL for Rhai commands |
+| **Test Runner** | Discover and execute Rhai test functions |
+| **Simulator** | Build key sequences visually and test mappings |
+| **Analyzer** | Session analysis with statistics and decision breakdown |
+| **Benchmark** | Latency performance testing (min/mean/p99/max) |
+| **Doctor** | System diagnostics with remediation steps |
+| **Replay** | Session replay with verification mode |
+| **Discovery** | Guided wizard for keyboard layout discovery |
+
+### Screenshots
+
+<!-- TODO: Add screenshots -->
+
 ## License
 
 See LICENSE file for details.
