@@ -4,6 +4,7 @@
 //! Unsafe code is required for FFI interoperability.
 #![allow(unsafe_code)]
 
+use super::callbacks::{callback_registry, DiscoveryEventCallback, StateEventCallback};
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
 use crate::drivers::emergency_exit::{is_bypass_active, set_bypass_mode};
 use crate::drivers::keycodes::key_definitions;
@@ -14,7 +15,7 @@ use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
 use std::ptr;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
 
 /// Initialize the KeyRx engine.
 ///
@@ -143,68 +144,28 @@ pub unsafe extern "C" fn keyrx_eval(command: *const c_char) -> *mut c_char {
     CString::new(response).map_or_else(|_| ptr::null_mut(), CString::into_raw)
 }
 
-type DiscoveryEventCallback = unsafe extern "C" fn(*const u8, usize);
-type StateEventCallback = unsafe extern "C" fn(*const u8, usize);
-
-fn progress_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
-    static SLOT: OnceLock<Mutex<Option<DiscoveryEventCallback>>> = OnceLock::new();
-    SLOT.get_or_init(|| Mutex::new(None))
-}
-
-fn duplicate_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
-    static SLOT: OnceLock<Mutex<Option<DiscoveryEventCallback>>> = OnceLock::new();
-    SLOT.get_or_init(|| Mutex::new(None))
-}
-
-fn summary_callback() -> &'static Mutex<Option<DiscoveryEventCallback>> {
-    static SLOT: OnceLock<Mutex<Option<DiscoveryEventCallback>>> = OnceLock::new();
-    SLOT.get_or_init(|| Mutex::new(None))
-}
-
-fn state_callback() -> &'static Mutex<Option<StateEventCallback>> {
-    static SLOT: OnceLock<Mutex<Option<StateEventCallback>>> = OnceLock::new();
-    SLOT.get_or_init(|| Mutex::new(None))
-}
-
-fn any_callback_registered() -> bool {
-    [
-        progress_callback(),
-        duplicate_callback(),
-        summary_callback(),
-    ]
-    .iter()
-    .any(|slot| slot.lock().map(|guard| guard.is_some()).unwrap_or(false))
-}
-
-fn register_callback(
-    slot: &'static Mutex<Option<DiscoveryEventCallback>>,
-    callback: Option<DiscoveryEventCallback>,
-) {
-    if let Ok(mut guard) = slot.lock() {
-        *guard = callback;
-    }
-    refresh_discovery_sink();
-}
-
 /// Register a callback for discovery progress updates.
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
 pub extern "C" fn keyrx_on_discovery_progress(callback: Option<DiscoveryEventCallback>) {
-    register_callback(progress_callback(), callback);
+    callback_registry().set_progress(callback);
+    refresh_discovery_sink();
 }
 
 /// Register a callback for duplicate key warnings during discovery.
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
 pub extern "C" fn keyrx_on_discovery_duplicate(callback: Option<DiscoveryEventCallback>) {
-    register_callback(duplicate_callback(), callback);
+    callback_registry().set_duplicate(callback);
+    refresh_discovery_sink();
 }
 
 /// Register a callback for discovery summaries (completed, cancelled, or bypassed).
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
 pub extern "C" fn keyrx_on_discovery_summary(callback: Option<DiscoveryEventCallback>) {
-    register_callback(summary_callback(), callback);
+    callback_registry().set_summary(callback);
+    refresh_discovery_sink();
 }
 
 /// Register a callback for engine state snapshots.
@@ -212,9 +173,7 @@ pub extern "C" fn keyrx_on_discovery_summary(callback: Option<DiscoveryEventCall
 /// The payload is a JSON blob with fields: layers, modifiers, held, pending, event, latency_us, timing.
 #[no_mangle]
 pub extern "C" fn keyrx_on_state(callback: Option<StateEventCallback>) {
-    if let Ok(mut guard) = state_callback().lock() {
-        *guard = callback;
-    }
+    callback_registry().set_state(callback);
 
     emit_state_snapshot(FfiState {
         layers: vec!["base".into()],
@@ -265,7 +224,7 @@ pub extern "C" fn keyrx_set_bypass(active: bool) {
 }
 
 fn refresh_discovery_sink() {
-    if any_callback_registered() {
+    if callback_registry().has_any_discovery_callback() {
         set_session_update_sink(Some(discovery_sink()));
     } else {
         set_session_update_sink(None);
@@ -284,22 +243,7 @@ struct FfiState {
 }
 
 fn emit_state_snapshot(state: FfiState) {
-    let callback = state_callback().lock().ok().and_then(|guard| *guard);
-
-    let Some(cb) = callback else { return };
-
-    match serde_json::to_vec(&state) {
-        Ok(bytes) => unsafe {
-            cb(bytes.as_ptr(), bytes.len());
-        },
-        Err(err) => tracing::warn!(
-            service = "keyrx",
-            component = "ffi_exports",
-            event = "state",
-            error = %err,
-            "Failed to serialize state payload for FFI"
-        ),
-    }
+    callback_registry().invoke_state(&state);
 }
 
 /// Expose a safe-ish API for internal callers to emit state snapshots to the FFI listeners.
@@ -325,43 +269,21 @@ pub fn publish_state_snapshot(
 }
 
 fn discovery_sink() -> Arc<dyn Fn(&SessionUpdate) + Send + Sync + 'static> {
-    Arc::new(|update| match update {
-        SessionUpdate::Ignored => {}
-        SessionUpdate::Progress(progress) => {
-            serialize_and_invoke(progress_callback(), progress, "progress")
-        }
-        SessionUpdate::Duplicate(dup) => {
-            serialize_and_invoke(duplicate_callback(), dup, "duplicate")
-        }
-        SessionUpdate::Finished(summary) => {
-            serialize_and_invoke(summary_callback(), summary, "summary")
+    Arc::new(|update| {
+        let registry = callback_registry();
+        match update {
+            SessionUpdate::Ignored => {}
+            SessionUpdate::Progress(progress) => {
+                registry.invoke_discovery(registry.progress(), progress, "progress");
+            }
+            SessionUpdate::Duplicate(dup) => {
+                registry.invoke_discovery(registry.duplicate(), dup, "duplicate");
+            }
+            SessionUpdate::Finished(summary) => {
+                registry.invoke_discovery(registry.summary(), summary, "summary");
+            }
         }
     })
-}
-
-fn serialize_and_invoke<T: Serialize>(
-    slot: &'static Mutex<Option<DiscoveryEventCallback>>,
-    payload: &T,
-    event: &'static str,
-) {
-    let callback = slot.lock().ok().and_then(|guard| *guard);
-
-    let Some(cb) = callback else {
-        return;
-    };
-
-    match serde_json::to_vec(payload) {
-        Ok(bytes) => unsafe {
-            cb(bytes.as_ptr(), bytes.len());
-        },
-        Err(err) => tracing::warn!(
-            service = "keyrx",
-            component = "ffi_exports",
-            event,
-            error = %err,
-            "Failed to serialize discovery payload for FFI"
-        ),
-    }
 }
 
 #[cfg(test)]
@@ -378,7 +300,7 @@ mod tests {
     use std::collections::HashMap;
     use std::ptr;
     use std::slice;
-    use std::sync::Mutex;
+    use std::sync::{Mutex, OnceLock};
 
     fn progress_store() -> &'static Mutex<Vec<Vec<u8>>> {
         static STORE: OnceLock<Mutex<Vec<Vec<u8>>>> = OnceLock::new();
