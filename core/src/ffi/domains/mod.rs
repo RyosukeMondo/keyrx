@@ -4,5 +4,7 @@
 //! domain of functionality (discovery, validation, engine, etc.).
 
 pub mod discovery;
+pub mod validation;
 
 pub use discovery::DiscoveryFfi;
+pub use validation::ValidationFfi;

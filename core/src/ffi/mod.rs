@@ -58,7 +58,7 @@ pub use exports_validation::*;
 pub use traits::{FfiDomain, FfiExportable};
 
 // Re-export new domain implementations
-pub use domains::DiscoveryFfi;
+pub use domains::{DiscoveryFfi, ValidationFfi};
 
 // Re-export backward-compatible shims (deprecated)
 #[allow(deprecated)]

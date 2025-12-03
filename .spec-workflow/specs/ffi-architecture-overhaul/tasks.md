@@ -118,7 +118,7 @@
 
 ## Phase 4: Additional Domain Migrations
 
-- [ ] 12. Migrate ValidationFfi
+- [-] 12. Migrate ValidationFfi
   - File: `core/src/ffi/domains/validation.rs`
   - Implement FfiExportable for ValidationFfi
   - Apply #[ffi_export] to validation functions
