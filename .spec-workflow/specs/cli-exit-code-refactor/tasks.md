@@ -22,7 +22,7 @@
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with type system expertise | Task: Create CommandResult<T> in core/src/cli/result.rs following requirements 2.1-2.3 | Restrictions: Must be ergonomic to use, support message chaining, preserve exit codes | _Leverage: Rust Result/Option patterns | Success: Type compiles, constructors work, exit codes preserved through operations | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create HasExitCode trait
+- [x] 3. Create HasExitCode trait
   - File: `core/src/cli/traits.rs`
   - Define trait with exit_code() method
   - Implement for anyhow::Error (downcast to CommandError)
