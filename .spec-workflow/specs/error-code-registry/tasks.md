@@ -139,7 +139,7 @@
   - _Requirements: 1.2, 2.3_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating generator | Task: Create ErrorDocGenerator for markdown | Restrictions: Per-category, include hints, examples | _Leverage: ErrorRegistry | Success: Docs generate from registry | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Generate initial error documentation
+- [x] 16. Generate initial error documentation
   - Files: `docs/errors/{index,config,runtime,driver,validation}.md`
   - Run generator for all categories
   - Purpose: User-facing error docs
