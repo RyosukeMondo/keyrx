@@ -178,7 +178,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter state engineer | Task: Add isDeveloperMode bool to AppState with SharedPreferences persistence. Add toggleDeveloperMode() method | Restrictions: ≤30 lines added; persist across restarts | _Leverage: app_state.dart | _Requirements: 4 | Success: Developer mode persists and controls drawer visibility._
 
-- [ ] 25. Integrate DeveloperDrawer into main app
+- [x] 25. Integrate DeveloperDrawer into main app
   - Files: ui/lib/main.dart (modify)
   - Add developer tools button and drawer integration
   - _Leverage: existing main.dart_
@@ -187,49 +187,49 @@
 
 ## Developer Tool Pages
 
-- [ ] 26. Create TestRunnerPage
+- [x] 26. Create TestRunnerPage
   - Files: ui/lib/pages/developer/test_runner_page.dart (new)
   - Test discovery, execution, and results display
   - _Leverage: ui/lib/pages/debugger_page.dart patterns_
   - _Requirements: 5_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create TestRunnerPage with: test list showing name/status, Run All button, filter TextField, individual test tap-to-run, expandable error details, watch mode toggle | Restrictions: ≤250 lines; real-time status updates | _Leverage: debugger_page.dart | _Requirements: 5 | Success: Full test runner UI with live results._
 
-- [ ] 27. Create SimulatorPage
+- [x] 27. Create SimulatorPage
   - Files: ui/lib/pages/developer/simulator_page.dart (new)
   - Key sequence simulation with virtual keyboard
   - _Leverage: ui/lib/widgets/keyboard.dart_
   - _Requirements: 6_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create SimulatorPage with: virtual keyboard for key selection, key sequence chips with hold duration editor, combo mode toggle, Simulate button, results showing input→output mappings, layer/pending state | Restrictions: ≤300 lines; interactive keyboard | _Leverage: keyboard.dart | _Requirements: 6 | Success: Users can build and test key sequences visually._
 
-- [ ] 28. Create AnalyzerPage
+- [x] 28. Create AnalyzerPage
   - Files: ui/lib/pages/developer/analyzer_page.dart (new)
   - Session analysis with statistics and timeline
   - _Leverage: ui/lib/pages/debugger_page.dart patterns_
   - _Requirements: 7_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create AnalyzerPage with: session file picker, statistics cards (events, duration, latency), decision breakdown pie chart, timeline view with event details on tap | Restrictions: ≤250 lines; use fl_chart for visualization | _Leverage: debugger_page.dart, trade_off_chart.dart | _Requirements: 7 | Success: Sessions analyzable with visual timeline._
 
-- [ ] 29. Create BenchmarkPage
+- [x] 29. Create BenchmarkPage
   - Files: ui/lib/pages/developer/benchmark_page.dart (new)
   - Latency benchmark configuration and results
   - _Leverage: ui/lib/pages/trade_off_page.dart patterns_
   - _Requirements: 8_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create BenchmarkPage with: iterations slider (1K-100K), Run Benchmark button with progress, results cards (min/max/mean/p99), warning banner if >1ms, optional history chart | Restrictions: ≤180 lines; clear results display | _Leverage: trade_off_page.dart | _Requirements: 8 | Success: Benchmarks runnable with clear latency reporting._
 
-- [ ] 30. Create DoctorPage
+- [x] 30. Create DoctorPage
   - Files: ui/lib/pages/developer/doctor_page.dart (new)
   - System diagnostics with remediation
   - _Leverage: ui/lib/pages/ patterns_
   - _Requirements: 9_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create DoctorPage with: auto-run on open, check list with pass/fail/warn icons, expandable details, remediation steps for failures, Re-run button, summary counts | Restrictions: ≤180 lines; helpful remediation | _Leverage: existing page patterns | _Requirements: 9 | Success: Users can diagnose setup issues from UI._
 
-- [ ] 31. Create ReplayPage
+- [x] 31. Create ReplayPage
   - Files: ui/lib/pages/developer/replay_page.dart (new)
   - Session replay with playback controls
   - _Leverage: ui/lib/pages/debugger_page.dart patterns_
   - _Requirements: 10_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create ReplayPage with: session list, metadata display, Play/Pause/Stop controls, speed slider (0x/1x/2x), verify mode toggle, event visualization during playback, mismatch highlighting | Restrictions: ≤250 lines; real-time playback | _Leverage: debugger_page.dart | _Requirements: 10 | Success: Sessions replayable with verification._
 
-- [ ] 32. Create DiscoveryPage
+- [x] 32. Create DiscoveryPage
   - Files: ui/lib/pages/developer/discovery_page.dart (new)
   - Device profile discovery wizard
   - _Leverage: ui/lib/pages/ patterns_
@@ -238,35 +238,35 @@
 
 ## Integration & Testing
 
-- [ ] 33. Create developer pages directory structure
+- [x] 33. Create developer pages directory structure
   - Files: ui/lib/pages/developer/ (new directory)
   - Ensure proper directory structure for developer pages
   - _Leverage: existing ui/lib/pages/ structure_
   - _Requirements: 4_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer | Task: Create ui/lib/pages/developer/ directory. Add barrel file (developer.dart) exporting all developer pages | Restrictions: ≤20 lines for barrel file | _Leverage: existing structure | _Requirements: 4 | Success: Developer pages properly organized._
 
-- [ ] 34. Add data models for new features
+- [x] 34. Add data models for new features
   - Files: ui/lib/models/ (new directory with model files)
   - Create typed models for all new data structures
   - _Leverage: existing model patterns_
   - _Requirements: All_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter data engineer | Task: Create models: KeyboardDevice, TestCase, TestResult, SimulationResult, SessionInfo, SessionAnalysis, BenchmarkResult, DiagnosticCheck. Use freezed or manual immutable classes | Restrictions: ≤200 lines total; JSON serialization | _Leverage: existing patterns | _Requirements: All | Success: All data types properly modeled._
 
-- [ ] 35. Write widget tests for new pages
+- [x] 35. Write widget tests for new pages
   - Files: ui/test/pages/ (new test files)
   - Test key UI interactions for each new page
   - _Leverage: existing ui/test/ patterns_
   - _Requirements: All_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter test engineer | Task: Create widget tests for: DevicesPage (list, select), RunControlsPage (start/stop), TestRunnerPage (run, filter), SimulatorPage (add keys, simulate). Mock services | Restrictions: ≤300 lines total; mock FFI | _Leverage: existing tests | _Requirements: All | Success: Core UI flows have test coverage._
 
-- [ ] 36. Write integration tests for FFI round-trip
+- [x] 36. Write integration tests for FFI round-trip
   - Files: ui/integration_test/ffi_test.dart (new)
   - Test Dart→Rust→Dart data flow
   - _Leverage: Flutter integration test patterns_
   - _Requirements: All_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter integration test engineer | Task: Create integration tests verifying FFI round-trip for: listDevices, checkScript, simulate, runBenchmark. Test on real library | Restrictions: ≤150 lines; skip if library unavailable | _Leverage: Flutter integration_test | _Requirements: All | Success: FFI calls work end-to-end._
 
-- [ ] 37. Update README with new UI features
+- [x] 37. Update README with new UI features
   - Files: README.md (modify)
   - Document new User and Developer tool screens
   - _Leverage: existing README structure_

@@ -156,28 +156,28 @@
 
 ## CLI Commands
 
-- [ ] 21. Implement keyrx uat command
+- [x] 21. Implement keyrx uat command
   - Files: core/src/cli/commands/uat.rs (new)
   - Create UAT command with all flags
   - _Leverage: existing CLI command patterns_
   - _Requirements: 3.1-3.7_
   - _Prompt: Role: CLI engineer | Task: Create uat.rs with keyrx uat command supporting: --category, --priority, --json, --fail-fast, --perf, --fuzz, --coverage-report, --report, --report-format, --report-output, --gate. Return appropriate exit codes (0/1/2/3) | Restrictions: ≤200 lines; clap derive macros; integrate all UAT components | Success: `keyrx uat --help` shows all options._
 
-- [ ] 22. Implement keyrx golden commands
+- [x] 22. Implement keyrx golden commands
   - Files: core/src/cli/commands/golden.rs (new)
   - Create record-golden, verify-golden, update-golden commands
   - _Leverage: GoldenSessionManager_
   - _Requirements: 2.1, 2.2, 2.5_
   - _Prompt: Role: CLI developer | Task: Create golden.rs with subcommands: record-golden <name> --script <path>, verify-golden <name>, update-golden <name> --confirm. Wire to GoldenSessionManager | Restrictions: ≤150 lines; clear error messages | Success: All golden session commands functional._
 
-- [ ] 23. Implement keyrx regression command
+- [x] 23. Implement keyrx regression command
   - Files: core/src/cli/commands/regression.rs (new)
   - Create regression command for all golden sessions
   - _Leverage: GoldenSessionManager.verify()_
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
   - _Prompt: Role: Regression testing engineer | Task: Create regression.rs with keyrx regression that replays all golden sessions, reports regressions with session name/event index/expected/actual, supports --update-all for intentional changes | Restrictions: ≤120 lines; fail CI on regression | Success: `keyrx regression` verifies all golden sessions._
 
-- [ ] 24. Implement keyrx ci-check command
+- [x] 24. Implement keyrx ci-check command
   - Files: core/src/cli/commands/ci_check.rs (new)
   - Create unified CI command
   - _Leverage: all test runners_
@@ -186,63 +186,63 @@
 
 ## Integration & Testing
 
-- [ ] 25. Create sample UAT tests
+- [x] 25. Create sample UAT tests
   - Files: tests/uat/core/basic.rhai (new), tests/uat/layers/switching.rhai (new)
   - Create example UAT tests demonstrating all features
   - _Leverage: existing test patterns_
   - _Requirements: 1.1-1.6_
   - _Prompt: Role: QA engineer | Task: Create sample UAT tests in tests/uat/ with uat_* functions, demonstrating @category, @priority, @requirement, @latency metadata. Cover basic typing, layer switching, combo execution | Restrictions: ≤200 lines total; realistic scenarios | Success: Sample tests discoverable and runnable._
 
-- [ ] 26. Create default quality gate config
+- [x] 26. Create default quality gate config
   - Files: .keyrx/quality-gates.toml (new)
   - Create quality gate configuration with all presets
   - _Leverage: design spec_
   - _Requirements: 4.1-4.7_
   - _Prompt: Role: DevOps engineer | Task: Create .keyrx/quality-gates.toml with gates: default (95% pass, 0 P0, 2 P1, 1000µs, 80% coverage), alpha (relaxed), beta, rc, ga (strict) | Restrictions: ≤40 lines; documented comments | Success: All gate presets defined and loadable._
 
-- [ ] 27. Create initial golden sessions
+- [x] 27. Create initial golden sessions
   - Files: tests/golden/basic_typing.krx (new), tests/golden/layer_switch.krx (new)
   - Record baseline golden sessions
   - _Leverage: keyrx record-golden command_
   - _Requirements: 2.1, 2.6_
   - _Prompt: Role: QA engineer | Task: Record golden sessions for basic typing and layer switching using keyrx record-golden. Ensure JSON format, human-readable | Restrictions: Cover core functionality; ≤5 sessions initially | Success: Golden sessions exist and verify successfully._
 
-- [ ] 28. Add UAT module to Cargo.toml
+- [x] 28. Add UAT module to Cargo.toml
   - Files: core/Cargo.toml (modify)
   - Add any new dependencies for UAT system
   - _Leverage: existing dependencies_
   - _Requirements: All_
   - _Prompt: Role: Build engineer | Task: Add any required dependencies to core/Cargo.toml for UAT system (likely: none new, reuse existing serde, toml, chrono) | Restrictions: Minimize new dependencies; ≤5 lines added | Success: `cargo build` succeeds with UAT module._
 
-- [ ] 29. Write UAT runner unit tests
+- [x] 29. Write UAT runner unit tests
   - Files: core/src/uat/runner.rs (extend with #[cfg(test)])
   - Add unit tests for discovery, parsing, filtering
   - _Leverage: existing test patterns_
   - _Requirements: 1.1-1.6, 3.1-3.3_
   - _Prompt: Role: Test engineer | Task: Add unit tests to runner.rs for: metadata parsing, filter matching, result aggregation. Use #[cfg(test)] module | Restrictions: ≤150 lines; test edge cases | Success: `cargo test uat::runner` passes._
 
-- [ ] 30. Write quality gate unit tests
+- [x] 30. Write quality gate unit tests
   - Files: core/src/uat/gates.rs (extend with #[cfg(test)])
   - Add unit tests for gate loading and evaluation
   - _Leverage: existing test patterns_
   - _Requirements: 4.1-4.7_
   - _Prompt: Role: Test engineer | Task: Add unit tests to gates.rs for: config loading, threshold evaluation, violation detection. Test all gate criteria | Restrictions: ≤120 lines; cover all thresholds | Success: `cargo test uat::gates` passes._
 
-- [ ] 31. Write integration tests for UAT system
+- [x] 31. Write integration tests for UAT system
   - Files: core/tests/uat_integration.rs (new)
   - End-to-end tests for UAT workflow
   - _Leverage: existing integration test patterns_
   - _Requirements: All_
   - _Prompt: Role: Integration test engineer | Task: Create uat_integration.rs with tests for: full UAT run, golden session lifecycle, gate evaluation, report generation | Restrictions: ≤200 lines; use temp directories | Success: `cargo test --test uat_integration` passes._
 
-- [ ] 32. Update CI workflow for UAT
+- [x] 32. Update CI workflow for UAT
   - Files: .github/workflows/ci.yml (modify)
   - Add UAT step to CI pipeline
   - _Leverage: existing CI structure_
   - _Requirements: 10.1-10.6_
   - _Prompt: Role: CI engineer | Task: Add UAT job to ci.yml that runs `keyrx ci-check --gate beta --json`. Fail PR on gate failure. Upload report as artifact | Restrictions: ≤30 lines added; after test job | Success: CI runs UAT checks on every PR._
 
-- [ ] 33. Documentation and README update
+- [x] 33. Documentation and README update
   - Files: README.md (modify)
   - Add UAT system documentation
   - _Leverage: existing README structure_
