@@ -28,7 +28,7 @@ pub use check::CheckCommand;
 pub use ci_check::{exit_codes as ci_check_exit_codes, CiCheckCommand, CiCheckSummary};
 pub use devices::DevicesCommand;
 pub use discover::{DiscoverCommand, DiscoverExit};
-pub use doctor::DoctorCommand;
+pub use doctor::{CheckStatus, DiagnosticCheck, DoctorCommand};
 pub use golden::{exit_codes as golden_exit_codes, GoldenCommand, GoldenSubcommand};
 pub use regression::{exit_codes as regression_exit_codes, RegressionCommand, RegressionSummary};
 pub use repl::ReplCommand;

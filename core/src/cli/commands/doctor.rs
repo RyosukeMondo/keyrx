@@ -38,7 +38,8 @@ pub struct DiagnosticCheck {
 }
 
 impl DiagnosticCheck {
-    fn pass(name: impl Into<String>, message: impl Into<String>) -> Self {
+    /// Create a passing diagnostic check.
+    pub fn pass(name: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             name: name.into(),
             status: CheckStatus::Pass,
@@ -47,7 +48,8 @@ impl DiagnosticCheck {
         }
     }
 
-    fn fail(
+    /// Create a failing diagnostic check with remediation steps.
+    pub fn fail(
         name: impl Into<String>,
         message: impl Into<String>,
         remediation: impl Into<String>,
@@ -60,7 +62,8 @@ impl DiagnosticCheck {
         }
     }
 
-    fn warn(
+    /// Create a warning diagnostic check with remediation steps.
+    pub fn warn(
         name: impl Into<String>,
         message: impl Into<String>,
         remediation: impl Into<String>,

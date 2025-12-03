@@ -51,7 +51,7 @@
   - _Requirements: 8_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_run_benchmark` FFI export taking iteration count, returning JSON {minNs, maxNs, meanNs, p99Ns, hasWarning} | Restrictions: ≤60 lines; reuse bench.rs | _Leverage: core/src/cli/commands/bench.rs | _Requirements: 8 | Success: Benchmark results match CLI output format._
 
-- [ ] 8. Add diagnostics FFI export
+- [x] 8. Add diagnostics FFI export
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_run_doctor()` returning diagnostics JSON
   - _Leverage: core/src/cli/commands/doctor.rs_
