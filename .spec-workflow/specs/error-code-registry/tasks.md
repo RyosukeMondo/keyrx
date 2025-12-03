@@ -78,7 +78,7 @@
   - _Requirements: 2.2, 4.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer defining errors | Task: Define Config category errors (KRX-C1xx) | Restrictions: Cover all config failures, helpful hints | _Leverage: define_errors! | Success: Config errors comprehensive | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Define Runtime errors (2xxx)
+- [x] 9. Define Runtime errors (2xxx)
   - File: `core/src/errors/runtime.rs`
   - Engine, processing, state errors
   - Purpose: Runtime error codes
