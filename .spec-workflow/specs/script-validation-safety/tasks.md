@@ -159,7 +159,7 @@
 
 ## Phase 8: FFI & Flutter Integration
 
-- [ ] 18. Add validation FFI exports
+- [x] 18. Add validation FFI exports
   - Files: `core/src/ffi/exports_validation.rs` (new)
   - Export validate_script() returning JSON result
   - Export get_key_suggestions() for autocomplete
