@@ -2,8 +2,7 @@
 ///
 /// Provides a drag-and-drop interface for creating key mappings
 /// that generates the underlying Rhai script automatically.
-
-import 'dart:io';
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../repositories/mapping_repository.dart';
 import '../services/engine_service.dart';
 import '../services/mapping_validator.dart';
+import '../services/script_file_service.dart';
 import '../state/app_state.dart';
 import '../widgets/keyboard.dart';
 import 'editor_widgets.dart';
@@ -22,6 +22,7 @@ class EditorPage extends StatefulWidget {
     required this.engineService,
     required this.mappingRepository,
     this.validator = const MappingValidator(),
+    this.scriptFileService = const ScriptFileService(),
   });
 
   /// The engine service for key registry and script loading.
@@ -32,6 +33,9 @@ class EditorPage extends StatefulWidget {
 
   /// The validator for key mappings and combos.
   final MappingValidator validator;
+
+  /// The service for script file I/O operations.
+  final ScriptFileService scriptFileService;
 
   @override
   State<EditorPage> createState() => _EditorPageState();
@@ -219,16 +223,27 @@ class _EditorPageState extends State<EditorPage> {
     setState(() => _isSaving = true);
     final script = repo.generateScript();
 
-    try {
-      final file = File(_defaultScriptPath);
-      await file.parent.create(recursive: true);
-      await file.writeAsString(script);
+    final result = await widget.scriptFileService.saveScript(
+      _defaultScriptPath,
+      script,
+    );
 
-      final engine = widget.engineService;
-      final loaded = engine.isInitialized
-          ? await engine.loadScript(_defaultScriptPath)
-          : false;
+    if (!result.success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save script: ${result.errorMessage}')),
+        );
+        setState(() => _isSaving = false);
+      }
+      return;
+    }
 
+    final engine = widget.engineService;
+    final loaded = engine.isInitialized
+        ? await engine.loadScript(_defaultScriptPath)
+        : false;
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -238,14 +253,7 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save script: $e')));
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      setState(() => _isSaving = false);
     }
   }
 
