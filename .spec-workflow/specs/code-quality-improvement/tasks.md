@@ -161,14 +161,14 @@
 
 ## Phase 7: Flutter DRY
 
-- [ ] 22. Create StreamSubscriber mixin
+- [x] 22. Create StreamSubscriber mixin
   - Files: ui/lib/mixins/stream_subscriber.dart (new)
   - Extract repeated stream subscription pattern
   - _Leverage: existing debugger_page.dart, training_screen.dart patterns_
   - _Requirements: 8_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer | Task: Create StreamSubscriber mixin with subscribe<S>() method handling mounted checks, error handling, and auto-dispose. Track subscriptions in list, cancel all in dispose | Restrictions: ≤50 lines; generic over stream type | _Leverage: debugger_page.dart | _Requirements: 8 | Success: Stream subscription pattern in one place._
 
-- [ ] 23. Apply StreamSubscriber mixin to pages
+- [x] 23. Apply StreamSubscriber mixin to pages
   - Files: ui/lib/pages/debugger_page.dart (modify), ui/lib/pages/training_screen.dart (modify)
   - Replace manual subscription code with mixin
   - _Leverage: StreamSubscriber from task 22_
