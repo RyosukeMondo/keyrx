@@ -129,7 +129,7 @@ void main() {
       child: MaterialApp(
         title: 'KeyRx Test',
         theme: ThemeData.dark(useMaterial3: true),
-        home: const _TestNavigationShell(),
+        home: _TestNavigationShell(engineService: mockEngine),
       ),
     );
   }
@@ -358,7 +358,9 @@ void main() {
 
 /// Test shell with navigation bar for testing page transitions.
 class _TestNavigationShell extends StatefulWidget {
-  const _TestNavigationShell();
+  const _TestNavigationShell({required this.engineService});
+
+  final EngineService engineService;
 
   @override
   State<_TestNavigationShell> createState() => _TestNavigationShellState();
@@ -367,15 +369,18 @@ class _TestNavigationShell extends StatefulWidget {
 class _TestNavigationShellState extends State<_TestNavigationShell> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    KeyrxTrainingScreen(),
-    DebuggerPage(),
-  ];
+  List<Widget> _buildPages() {
+    return [
+      const KeyrxTrainingScreen(),
+      DebuggerPage(engineService: widget.engineService),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final pages = _buildPages();
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {

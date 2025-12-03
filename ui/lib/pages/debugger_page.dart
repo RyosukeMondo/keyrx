@@ -6,16 +6,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../services/engine_service.dart';
-import '../services/service_registry.dart';
 import 'debugger_meters.dart';
 import 'debugger_widgets.dart';
 
 /// Real-time state debugger page.
 class DebuggerPage extends StatefulWidget {
-  const DebuggerPage({super.key});
+  const DebuggerPage({
+    super.key,
+    required this.engineService,
+  });
+
+  /// The engine service for state stream access.
+  final EngineService engineService;
 
   @override
   State<DebuggerPage> createState() => _DebuggerPageState();
@@ -25,8 +29,6 @@ class _DebuggerPageState extends State<DebuggerPage>
     with SingleTickerProviderStateMixin {
   static const Duration _animationDuration = Duration(milliseconds: 150);
 
-  EngineService? _engine;
-  Stream<EngineSnapshot>? _stateStream;
   StreamSubscription<EngineSnapshot>? _streamSubscription;
   final List<EngineSnapshot> _recent = [];
   bool _isRecording = true;
@@ -55,17 +57,13 @@ class _DebuggerPageState extends State<DebuggerPage>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    final registry = Provider.of<ServiceRegistry>(context, listen: false);
-    _engine = registry.engineService;
-    _stateStream = _engine?.stateStream;
-
     // Subscribe to state stream for immediate updates
     _subscribeToStateStream();
   }
 
   void _subscribeToStateStream() {
     _streamSubscription?.cancel();
-    _streamSubscription = _stateStream?.listen((snapshot) {
+    _streamSubscription = widget.engineService.stateStream.listen((snapshot) {
       if (!_isRecording) return;
 
       setState(() {
@@ -170,40 +168,38 @@ class _DebuggerPageState extends State<DebuggerPage>
           ),
         ],
       ),
-      body: _stateStream == null
-          ? const Center(child: Text('Engine stream unavailable.'))
-          : Row(
+      body: Row(
+        children: [
+          // State panel with animation
+          Expanded(
+            flex: 1,
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) => _buildStatePanel(latest),
+            ),
+          ),
+          const VerticalDivider(),
+          // Event log
+          Expanded(
+            flex: 2,
+            child: Column(
               children: [
-                // State panel with animation
-                Expanded(
-                  flex: 1,
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) => _buildStatePanel(latest),
-                  ),
-                ),
-                const VerticalDivider(),
-                // Event log
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      Expanded(child: EventLogWidget(events: _recent)),
-                      const Divider(height: 1),
-                      SizedBox(
-                        height: 200,
-                        child: SingleChildScrollView(
-                          child: TimelineWidget(
-                            events: _recent,
-                            animationDuration: _animationDuration,
-                          ),
-                        ),
-                      ),
-                    ],
+                Expanded(child: EventLogWidget(events: _recent)),
+                const Divider(height: 1),
+                SizedBox(
+                  height: 200,
+                  child: SingleChildScrollView(
+                    child: TimelineWidget(
+                      events: _recent,
+                      animationDuration: _animationDuration,
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 

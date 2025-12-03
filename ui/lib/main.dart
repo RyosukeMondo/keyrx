@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
     return [
       const TrainingScreen(),
       EditorPage(engineService: registry.engineService),
-      const DebuggerPage(),
+      DebuggerPage(engineService: registry.engineService),
       ConsolePage(engineService: registry.engineService),
       const TradeOffVisualizerPage(),
     ];

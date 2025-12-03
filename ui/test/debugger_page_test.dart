@@ -102,7 +102,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [Provider<ServiceRegistry>.value(value: registry)],
-        child: const MaterialApp(home: DebuggerPage()),
+        child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
       ),
     );
 
@@ -152,7 +152,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [Provider<ServiceRegistry>.value(value: registry)],
-        child: const MaterialApp(home: DebuggerPage()),
+        child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
       ),
     );
 
@@ -200,7 +200,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -240,7 +240,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -292,7 +292,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -326,7 +326,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -360,7 +360,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -394,7 +394,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -441,7 +441,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -464,7 +464,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -502,7 +502,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -550,7 +550,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -586,7 +586,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -623,7 +623,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -658,7 +658,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -692,7 +692,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -733,7 +733,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
@@ -783,7 +783,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: DebuggerPage()),
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
