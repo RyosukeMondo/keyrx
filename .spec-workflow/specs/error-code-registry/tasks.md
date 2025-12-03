@@ -130,7 +130,7 @@
 
 ## Phase 5: Documentation
 
-- [ ] 15. Create ErrorDocGenerator
+- [-] 15. Create ErrorDocGenerator
   - File: `core/src/errors/doc_generator.rs`
   - Generate markdown from registry
   - Per-category documentation
