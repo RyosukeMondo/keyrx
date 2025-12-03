@@ -12,7 +12,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in type design | Task: Create ExitCode enum in core/src/cli/exit_codes.rs with all variants and conversions | Restrictions: Use repr(u8) for stable ABI, implement Into<std::process::ExitCode>, follow existing config pattern | _Leverage: config/exit_codes.rs constants | Success: Enum compiles, all variants have correct values, conversions work | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create CommandResult<T> type
+- [x] 2. Create CommandResult<T> type
   - File: `core/src/cli/result.rs`
   - Define struct with value, exit_code, messages fields
   - Implement success(), failure(), from_result() constructors
