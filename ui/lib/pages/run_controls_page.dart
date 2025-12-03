@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../ffi/bridge.dart';
 import '../services/device_service.dart';
 import '../state/app_state.dart';
+import 'run_controls_widgets.dart';
 
 /// Engine running state.
 enum EngineRunState { stopped, starting, running, stopping }
@@ -225,28 +226,28 @@ class _RunControlsPageState extends State<RunControlsPage> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            _StatusIndicator(
+            StatusIndicator(
               icon: Icons.power_settings_new,
               label: 'Engine',
               value: _runState.name,
               isActive: isRunning,
             ),
             const SizedBox(height: 8),
-            _StatusIndicator(
+            StatusIndicator(
               icon: Icons.keyboard,
               label: 'Device',
               value: _selectedDevice?.name ?? 'None selected',
               isActive: _selectedDevice != null,
             ),
             const SizedBox(height: 8),
-            _StatusIndicator(
+            StatusIndicator(
               icon: Icons.description,
               label: 'Script',
               value: appState.loadedScript ?? 'None loaded',
               isActive: appState.loadedScript != null,
             ),
             const SizedBox(height: 8),
-            _StatusIndicator(
+            StatusIndicator(
               icon: Icons.fiber_manual_record,
               label: 'Recording',
               value: _isRecording ? 'Active' : 'Off',
@@ -261,41 +262,11 @@ class _RunControlsPageState extends State<RunControlsPage> {
 
   Widget _buildDeviceSelector() {
     if (_isLoadingDevices) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Loading devices...'),
-            ],
-          ),
-        ),
-      );
+      return const LoadingCard(message: 'Loading devices...');
     }
 
     if (_error != null) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red),
-              const SizedBox(width: 12),
-              Expanded(child: Text(_error!)),
-              TextButton(
-                onPressed: _loadDevices,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ErrorCard(error: _error!, onRetry: _loadDevices);
     }
 
     return Card(
@@ -460,83 +431,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
   }
 
   Widget _buildStartStopButton(bool isRunning, bool isBusy) {
-    return SizedBox(
-      height: 80,
-      child: FilledButton.icon(
-        onPressed: isBusy ? null : _toggleEngine,
-        style: FilledButton.styleFrom(
-          backgroundColor: isRunning ? Colors.red : Colors.green,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        icon: isBusy
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Icon(
-                isRunning ? Icons.stop : Icons.play_arrow,
-                size: 32,
-              ),
-        label: Text(
-          isBusy
-              ? (_runState == EngineRunState.starting ? 'Starting...' : 'Stopping...')
-              : (isRunning ? 'Stop Engine' : 'Start Engine'),
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusIndicator extends StatelessWidget {
-  const _StatusIndicator({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.isActive,
-    this.activeColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool isActive;
-  final Color? activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive ? (activeColor ?? Colors.green) : Colors.grey;
-
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-                ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+    return StartStopButton(
+      isRunning: isRunning,
+      isBusy: isBusy,
+      onPressed: _toggleEngine,
     );
   }
 }
