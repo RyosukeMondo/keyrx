@@ -3,60 +3,33 @@
 //! Functions for device key discovery session management.
 #![allow(unsafe_code)]
 
-use super::callbacks::{callback_registry, DiscoveryEventCallback};
-use crate::discovery::{session::set_session_update_sink, SessionUpdate};
-use std::sync::Arc;
+use crate::ffi::domains::discovery::{global_event_registry, refresh_discovery_sink};
+use crate::ffi::events::{EventCallback, EventType};
 
 // ─── Discovery Callbacks ───────────────────────────────────────────────────
 
 /// Register a callback for discovery progress updates.
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
-pub extern "C" fn keyrx_on_discovery_progress(callback: Option<DiscoveryEventCallback>) {
-    callback_registry().set_progress(callback);
+pub extern "C" fn keyrx_on_discovery_progress(callback: Option<EventCallback>) {
+    global_event_registry().register(EventType::DiscoveryProgress, callback);
     refresh_discovery_sink();
 }
 
 /// Register a callback for duplicate key warnings during discovery.
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
-pub extern "C" fn keyrx_on_discovery_duplicate(callback: Option<DiscoveryEventCallback>) {
-    callback_registry().set_duplicate(callback);
+pub extern "C" fn keyrx_on_discovery_duplicate(callback: Option<EventCallback>) {
+    global_event_registry().register(EventType::DiscoveryDuplicate, callback);
     refresh_discovery_sink();
 }
 
 /// Register a callback for discovery summaries (completed, cancelled, or bypassed).
 /// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
 #[no_mangle]
-pub extern "C" fn keyrx_on_discovery_summary(callback: Option<DiscoveryEventCallback>) {
-    callback_registry().set_summary(callback);
+pub extern "C" fn keyrx_on_discovery_summary(callback: Option<EventCallback>) {
+    global_event_registry().register(EventType::DiscoverySummary, callback);
     refresh_discovery_sink();
-}
-
-fn refresh_discovery_sink() {
-    if callback_registry().has_any_discovery_callback() {
-        set_session_update_sink(Some(discovery_sink()));
-    } else {
-        set_session_update_sink(None);
-    }
-}
-
-fn discovery_sink() -> Arc<dyn Fn(&SessionUpdate) + Send + Sync + 'static> {
-    Arc::new(|update| {
-        let registry = callback_registry();
-        match update {
-            SessionUpdate::Ignored => {}
-            SessionUpdate::Progress(progress) => {
-                registry.invoke_discovery(registry.progress(), progress, "progress");
-            }
-            SessionUpdate::Duplicate(dup) => {
-                registry.invoke_discovery(registry.duplicate(), dup, "duplicate");
-            }
-            SessionUpdate::Finished(summary) => {
-                registry.invoke_discovery(registry.summary(), summary, "summary");
-            }
-        }
-    })
 }
 
 // ─── Discovery FFI Exports ─────────────────────────────────────────────────
@@ -388,7 +361,7 @@ mod tests {
     use super::*;
     use crate::discovery::{
         session::publish_session_update, DeviceId, DiscoveryProgress, DiscoverySummary,
-        ExpectedPosition, PhysicalKey, SessionStatus,
+        ExpectedPosition, PhysicalKey, SessionStatus, SessionUpdate,
     };
     use crate::ffi::keyrx_free_string;
     // Import the new FFI functions from domains/discovery

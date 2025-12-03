@@ -6,9 +6,9 @@
 #![allow(unsafe_code)]
 
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
-use crate::ffi::callbacks::callback_registry;
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
+use crate::ffi::events::{EventRegistry, EventType};
 use crate::ffi::traits::FfiExportable;
 use keyrx_ffi_macros::ffi_export;
 use serde::Serialize;
@@ -90,8 +90,13 @@ pub struct DiscoveryStartResult {
 }
 
 /// Refresh the discovery sink based on registered callbacks.
-fn refresh_discovery_sink() {
-    if callback_registry().has_any_discovery_callback() {
+pub(crate) fn refresh_discovery_sink() {
+    let registry = global_event_registry();
+    // Check if any discovery callbacks are registered
+    if registry.is_registered(EventType::DiscoveryProgress)
+        || registry.is_registered(EventType::DiscoveryDuplicate)
+        || registry.is_registered(EventType::DiscoverySummary)
+    {
         set_session_update_sink(Some(discovery_sink()));
     } else {
         set_session_update_sink(None);
@@ -101,24 +106,24 @@ fn refresh_discovery_sink() {
 /// Create the discovery sink closure that routes updates to callbacks.
 fn discovery_sink() -> Arc<dyn Fn(&SessionUpdate) + Send + Sync + 'static> {
     Arc::new(|update| {
-        let registry = callback_registry();
+        let registry = global_event_registry();
         match update {
             SessionUpdate::Ignored => {}
             SessionUpdate::Progress(progress) => {
-                registry.invoke_discovery(registry.progress(), progress, "progress");
+                registry.invoke(EventType::DiscoveryProgress, progress);
             }
             SessionUpdate::Duplicate(dup) => {
-                registry.invoke_discovery(registry.duplicate(), dup, "duplicate");
+                registry.invoke(EventType::DiscoveryDuplicate, dup);
             }
             SessionUpdate::Finished(summary) => {
-                registry.invoke_discovery(registry.summary(), summary, "summary");
+                registry.invoke(EventType::DiscoverySummary, summary);
             }
         }
     })
 }
 
 // Note: Callback registration functions (keyrx_on_discovery_progress, etc.)
-// are still in exports_discovery.rs and will be migrated to EventRegistry in task 10.
+// are in exports_discovery.rs and now use EventRegistry for unified callback management.
 
 // ─── FFI Exports ───────────────────────────────────────────────────────────
 
@@ -128,6 +133,13 @@ use std::sync::{Mutex, OnceLock};
 pub(crate) fn global_discovery_context() -> &'static Mutex<Option<FfiContext>> {
     static CONTEXT: OnceLock<Mutex<Option<FfiContext>>> = OnceLock::new();
     CONTEXT.get_or_init(|| Mutex::new(Some(FfiContext::new())))
+}
+
+/// Global event registry for Discovery domain.
+/// This will be moved into FfiContext in a future refactor.
+pub(crate) fn global_event_registry() -> &'static EventRegistry {
+    static REGISTRY: OnceLock<EventRegistry> = OnceLock::new();
+    REGISTRY.get_or_init(EventRegistry::new)
 }
 
 /// Start a discovery session for a device.

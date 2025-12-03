@@ -96,7 +96,7 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer applying new patterns | Task: Apply #[ffi_export] macro to DiscoveryFfi methods, removing manual wrapper code | Restrictions: Generated exports must match existing function signatures exactly, all tests must pass | _Leverage: Current exports_discovery.rs function signatures | Success: Discovery FFI works with macro-generated wrappers, code reduced by ~200 lines, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Migrate Discovery callbacks to EventRegistry
+- [-] 10. Migrate Discovery callbacks to EventRegistry
   - File: `core/src/ffi/domains/discovery.rs`
   - Replace keyrx_on_discovery_progress/duplicate/summary with EventRegistry
   - Add DiscoveryProgress, DiscoveryDuplicate, DiscoverySummary event types
