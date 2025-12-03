@@ -59,7 +59,7 @@
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Macro Developer | Task: Create keyrx_err! and bail_keyrx! macros | Restrictions: Ergonomic, context support | _Leverage: anyhow patterns | Success: Errors easy to create | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Create ErrorRegistry
+- [-] 7. Create ErrorRegistry
   - File: `core/src/errors/registry.rs`
   - Static registry of all errors
   - Lookup by code and category

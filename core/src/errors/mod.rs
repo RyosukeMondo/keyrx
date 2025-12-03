@@ -24,7 +24,9 @@ pub mod definition;
 pub mod error;
 #[macro_use]
 pub mod macros;
+pub mod registry;
 
 pub use code::{ErrorCategory, ErrorCode};
 pub use definition::{ErrorDef, ErrorSeverity};
 pub use error::KeyrxError;
+pub use registry::ErrorRegistry;
