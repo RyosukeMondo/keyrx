@@ -16,4 +16,7 @@ pub mod suggestions;
 pub mod types;
 
 pub use config::ValidationConfig;
-// Re-exports from types will be added in Task 3
+pub use types::{
+    CoverageReport, LayerCoverage, SourceLocation, ValidationError, ValidationOptions,
+    ValidationResult, ValidationWarning, WarningCategory,
+};
