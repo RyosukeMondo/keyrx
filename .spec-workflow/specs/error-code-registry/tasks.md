@@ -86,7 +86,7 @@
   - _Requirements: 2.2, 4.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer defining errors | Task: Define Runtime category errors (KRX-R2xx) | Restrictions: Cover all runtime failures, hints | _Leverage: define_errors! | Success: Runtime errors comprehensive | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Define Driver errors (3xxx)
+- [x] 10. Define Driver errors (3xxx)
   - File: `core/src/errors/driver.rs`
   - Windows and Linux driver errors
   - Purpose: Driver error codes

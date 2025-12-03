@@ -22,6 +22,7 @@
 pub mod code;
 pub mod config;
 pub mod definition;
+pub mod driver;
 pub mod error;
 #[macro_use]
 pub mod macros;
