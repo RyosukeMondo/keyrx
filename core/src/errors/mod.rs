@@ -22,6 +22,8 @@
 pub mod code;
 pub mod definition;
 pub mod error;
+#[macro_use]
+pub mod macros;
 
 pub use code::{ErrorCategory, ErrorCode};
 pub use definition::{ErrorDef, ErrorSeverity};

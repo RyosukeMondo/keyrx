@@ -41,7 +41,7 @@
 
 ## Phase 2: Registry Infrastructure
 
-- [ ] 5. Create define_errors! macro
+- [x] 5. Create define_errors! macro
   - File: `core/src/errors/macros.rs`
   - Macro for defining error sets
   - Compile-time duplicate detection
@@ -50,7 +50,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Macro Developer | Task: Create define_errors! macro with duplicate detection | Restrictions: Compile-time checks, clear syntax | _Leverage: Macro patterns | Success: Macro defines errors cleanly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Create keyrx_err! and bail_keyrx! macros
+- [x] 6. Create keyrx_err! and bail_keyrx! macros
   - File: `core/src/errors/macros.rs`
   - Error creation macros
   - Context injection
