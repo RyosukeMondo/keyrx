@@ -24,7 +24,7 @@ mod uat;
 
 pub use analyze::{AnalysisResult, AnalyzeCommand};
 pub use bench::BenchCommand;
-pub use check::{exit_codes as check_exit_codes, CheckCommand};
+pub use check::CheckCommand;
 pub use ci_check::{exit_codes as ci_check_exit_codes, CiCheckCommand, CiCheckSummary};
 pub use devices::DevicesCommand;
 pub use discover::{DiscoverCommand, DiscoverExit};

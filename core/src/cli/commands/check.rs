@@ -2,23 +2,13 @@
 //!
 //! Full semantic validation with configurable options for checking scripts.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::validation::config::ValidationConfig;
 use crate::validation::coverage::render_ascii_keyboard;
 use crate::validation::engine::ValidationEngine;
 use crate::validation::types::{ValidationOptions, ValidationResult, WarningCategory};
 use anyhow::Result;
 use std::path::PathBuf;
-
-/// Exit codes for the check command.
-pub mod exit_codes {
-    /// Script is valid with no errors (warnings may be present).
-    pub const VALID: i32 = 0;
-    /// Script has errors.
-    pub const ERRORS: i32 = 1;
-    /// Script has warnings in strict mode.
-    pub const WARNINGS_STRICT: i32 = 2;
-}
 
 /// Validate and lint a Rhai script with full semantic validation.
 pub struct CheckCommand {
@@ -89,7 +79,7 @@ impl CheckCommand {
     }
 
     /// Run the check command.
-    pub fn run(&self) -> Result<i32> {
+    fn run_internal(&self) -> Result<ValidationResult> {
         // Load config
         let config = match &self.config_path {
             Some(path) => ValidationConfig::load_from_path(path)
@@ -99,7 +89,8 @@ impl CheckCommand {
 
         // Show config and exit if requested
         if self.show_config {
-            return self.print_config(&config);
+            self.print_config(&config)?;
+            return Ok(ValidationResult::default());
         }
 
         // Read and validate script
@@ -112,8 +103,7 @@ impl CheckCommand {
         // Print results
         self.print_result(&result, &engine)?;
 
-        // Return appropriate exit code
-        Ok(self.exit_code(&result))
+        Ok(result)
     }
 
     fn build_options(&self) -> ValidationOptions {
@@ -133,7 +123,7 @@ impl CheckCommand {
         options
     }
 
-    fn print_config(&self, config: &ValidationConfig) -> Result<i32> {
+    fn print_config(&self, config: &ValidationConfig) -> Result<()> {
         match self.output.format() {
             OutputFormat::Json => {
                 self.output.data(config)?;
@@ -162,7 +152,7 @@ impl CheckCommand {
                 );
             }
         }
-        Ok(exit_codes::VALID)
+        Ok(())
     }
 
     fn print_result(&self, result: &ValidationResult, engine: &ValidationEngine) -> Result<()> {
@@ -311,13 +301,55 @@ impl CheckCommand {
         Ok(())
     }
 
-    fn exit_code(&self, result: &ValidationResult) -> i32 {
+    fn result_to_command_result(&self, result: ValidationResult) -> CommandResult<()> {
         if result.has_errors() {
-            exit_codes::ERRORS
+            // Build error message with location info
+            let mut error_messages = Vec::new();
+            for error in &result.errors {
+                let location = error
+                    .location
+                    .as_ref()
+                    .map(|l| {
+                        if let Some(col) = l.column {
+                            format!("{}:{}:{}", self.script_path.display(), l.line, col)
+                        } else {
+                            format!("{}:{}", self.script_path.display(), l.line)
+                        }
+                    })
+                    .unwrap_or_else(|| self.script_path.display().to_string());
+                error_messages.push(format!("{} ({})", error.message, location));
+            }
+
+            CommandResult::failure(
+                ExitCode::ValidationFailed,
+                format!("Script has {} error(s)", result.errors.len()),
+            )
         } else if self.strict && result.has_warnings() {
-            exit_codes::WARNINGS_STRICT
+            CommandResult::failure(
+                ExitCode::AssertionFailed,
+                format!(
+                    "Script has {} warning(s) in strict mode",
+                    result.warnings.len()
+                ),
+            )
         } else {
-            exit_codes::VALID
+            CommandResult::success(())
+        }
+    }
+}
+
+impl Command for CheckCommand {
+    fn name(&self) -> &str {
+        "check"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        match self.run_internal() {
+            Ok(result) => self.result_to_command_result(result),
+            Err(err) => CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Check command failed: {err}"),
+            ),
         }
     }
 }
@@ -325,6 +357,7 @@ impl CheckCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cli::Verbosity;
     use std::io::Write;
     use tempfile::NamedTempFile;
 
@@ -334,20 +367,26 @@ mod tests {
         file
     }
 
+    fn create_ctx(format: OutputFormat) -> CommandContext {
+        CommandContext::new(format, Verbosity::Normal)
+    }
+
     #[test]
     fn validates_valid_script() {
         let file = create_script(r#"remap("CapsLock", "Escape");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn detects_invalid_key() {
         let file = create_script(r#"remap("InvalidKey", "Escape");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::ERRORS);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::ValidationFailed);
     }
 
     #[test]
@@ -358,9 +397,10 @@ mod tests {
             remap("A", "C");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).strict();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::WARNINGS_STRICT);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).strict();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::AssertionFailed);
     }
 
     #[test]
@@ -371,41 +411,50 @@ mod tests {
             remap("A", "C");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).no_warnings();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).no_warnings();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn coverage_flag_works() {
         let file = create_script(r#"remap("A", "B");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_coverage();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_coverage();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn visual_flag_works() {
         let file = create_script(r#"remap("A", "B");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_visual();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_visual();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn show_config_works() {
         let file = create_script("");
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).show_config();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).show_config();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn json_output_works() {
         let file = create_script(r#"remap("CapsLock", "Escape");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Json);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Json);
+        let result = cmd.execute(&create_ctx(OutputFormat::Json));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -414,27 +463,30 @@ mod tests {
         writeln!(config_file, "max_errors = 5").unwrap();
 
         let script_file = create_script(r#"remap("CapsLock", "Escape");"#);
-        let cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
+        let mut cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
             .with_config(config_file.path().to_path_buf());
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn invalid_config_fails() {
         let script_file = create_script(r#"remap("CapsLock", "Escape");"#);
-        let cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
+        let mut cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
             .with_config(PathBuf::from("/nonexistent/config.toml"));
-        let result = cmd.run();
-        assert!(result.is_err());
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::GeneralError);
     }
 
     #[test]
     fn detects_undefined_layer() {
         let file = create_script(r#"layer_push("undefined_layer");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::ERRORS);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::ValidationFailed);
     }
 
     #[test]
@@ -445,8 +497,9 @@ mod tests {
             layer_push("nav");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, exit_codes::VALID);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 }

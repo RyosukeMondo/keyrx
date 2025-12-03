@@ -8,7 +8,7 @@ use keyrx_core::cli::{
         ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
         UatCommand,
     },
-    CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
+    Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
 use keyrx_core::config::{load_config, merge_cli_overrides, Config};
 use std::path::PathBuf;
@@ -444,10 +444,10 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
     };
 
     match command {
-        Commands::Check { script } => match CheckCommand::new(script, ctx.output_format()).run() {
-            Ok(_) => CommandResult::success(()),
-            Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-        },
+        Commands::Check { script } => {
+            let mut cmd = CheckCommand::new(script, ctx.output_format());
+            cmd.execute(&ctx)
+        }
         Commands::Devices => convert_result(DevicesCommand::new(ctx.output_format()).run()),
         Commands::Run {
             script,

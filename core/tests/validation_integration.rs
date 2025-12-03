@@ -7,8 +7,8 @@
 //! - JSON output parsing
 //! - Config-driven behavior
 
-use keyrx_core::cli::commands::{check_exit_codes, CheckCommand};
-use keyrx_core::cli::OutputFormat;
+use keyrx_core::cli::commands::CheckCommand;
+use keyrx_core::cli::{Command, CommandContext, ExitCode, OutputFormat, Verbosity};
 use keyrx_core::validation::config::ValidationConfig;
 use keyrx_core::validation::engine::ValidationEngine;
 use keyrx_core::validation::types::{ValidationOptions, WarningCategory};
@@ -383,20 +383,26 @@ mod cli_integration {
         file
     }
 
+    fn create_ctx(format: OutputFormat) -> CommandContext {
+        CommandContext::new(format, Verbosity::Normal)
+    }
+
     #[test]
     fn exit_code_valid_script() {
         let file = create_script_file(r#"remap("CapsLock", "Escape");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::VALID);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn exit_code_errors() {
         let file = create_script_file(r#"remap("InvalidKey", "Escape");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::ERRORS);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::ValidationFailed);
     }
 
     #[test]
@@ -407,9 +413,10 @@ mod cli_integration {
             remap("A", "C");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).strict();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::WARNINGS_STRICT);
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).strict();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::AssertionFailed);
     }
 
     #[test]
@@ -421,11 +428,12 @@ mod cli_integration {
         // Script with tap_timeout outside the range
         let script_file = create_script_file("tap_timeout(50);");
 
-        let cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
+        let mut cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
             .with_config(config_file.path().to_path_buf());
-        let exit = cmd.run().unwrap();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
         // Should still be valid (warnings don't cause failure by default)
-        assert_eq!(exit, check_exit_codes::VALID);
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -437,12 +445,13 @@ mod cli_integration {
         // Script with tap_timeout outside the range
         let script_file = create_script_file("tap_timeout(50);");
 
-        let cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
+        let mut cmd = CheckCommand::new(script_file.path().to_path_buf(), OutputFormat::Human)
             .with_config(config_file.path().to_path_buf())
             .strict();
-        let exit = cmd.run().unwrap();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
         // Should fail in strict mode with warnings
-        assert_eq!(exit, check_exit_codes::WARNINGS_STRICT);
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::AssertionFailed);
     }
 
     #[test]
@@ -453,17 +462,21 @@ mod cli_integration {
             block("C");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_coverage();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_coverage();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn visual_includes_keyboard() {
         let file = create_script_file(r#"remap("A", "B");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_visual();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).with_visual();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -474,26 +487,31 @@ mod cli_integration {
             remap("A", "C");
         "#,
         );
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).no_warnings();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).no_warnings();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn show_config_returns_valid() {
         let file = create_script_file("");
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).show_config();
-        let exit = cmd.run().unwrap();
-        assert_eq!(exit, check_exit_codes::VALID);
+        let mut cmd =
+            CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human).show_config();
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
     fn invalid_config_path_errors() {
         let file = create_script_file(r#"remap("A", "B");"#);
-        let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human)
+        let mut cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human)
             .with_config("/nonexistent/config.toml".into());
-        let result = cmd.run();
-        assert!(result.is_err());
+        let result = cmd.execute(&create_ctx(OutputFormat::Human));
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::GeneralError);
     }
 }
 
