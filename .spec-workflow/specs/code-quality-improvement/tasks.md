@@ -198,7 +198,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer | Task: Remove all #[serial] attributes from Rust tests. Run cargo nextest run without --test-threads=1. Verify no race conditions or flaky tests | Restrictions: All tests must pass in parallel | _Leverage: nextest | _Requirements: 1 | Success: Tests pass with parallel execution._
 
-- [ ] 27. Verify no performance regression
+- [x] 27. Verify no performance regression
   - Files: N/A (benchmark verification)
   - Run benchmarks before/after, compare
   - _Leverage: existing benches/_
