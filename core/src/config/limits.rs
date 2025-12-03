@@ -49,3 +49,72 @@ pub const LATENCY_THRESHOLD_NS: u64 = 1_000_000;
 /// When comparing against a baseline, a latency regression of more than 100μs
 /// is flagged as a potential performance regression.
 pub const DEFAULT_REGRESSION_THRESHOLD_US: u64 = 100;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn constants_have_expected_values() {
+        assert_eq!(MAX_PENDING_DECISIONS, 32);
+        assert_eq!(MIN_COMBO_KEYS, 2);
+        assert_eq!(MAX_COMBO_KEYS, 4);
+        assert_eq!(MAX_MODIFIER_ID, 255);
+        assert_eq!(MAX_TIMEOUT_MS, 5000);
+        assert_eq!(DEFAULT_EVENT_GAP_US, 1_000);
+        assert_eq!(LATENCY_THRESHOLD_NS, 1_000_000);
+        assert_eq!(DEFAULT_REGRESSION_THRESHOLD_US, 100);
+    }
+
+    #[test]
+    fn combo_keys_range_is_valid() {
+        // Min must be at least 2 (a combo requires multiple keys)
+        assert!(MIN_COMBO_KEYS >= 2);
+        // Max must be greater than or equal to min
+        assert!(MAX_COMBO_KEYS >= MIN_COMBO_KEYS);
+        // Max should be reasonable for typical usage
+        assert!(MAX_COMBO_KEYS <= 10);
+    }
+
+    #[test]
+    fn pending_decisions_capacity_is_reasonable() {
+        // Should be power of 2 for efficient allocation
+        assert!(MAX_PENDING_DECISIONS.is_power_of_two());
+        // Should be sufficient for typical usage (10 fingers, simultaneous combos)
+        assert!(MAX_PENDING_DECISIONS >= 16);
+        // Should not be excessive (memory efficiency)
+        assert!(MAX_PENDING_DECISIONS <= 256);
+    }
+
+    #[test]
+    fn modifier_id_uses_full_u8_range() {
+        // Should use full u8 range (0-255) for bitmap storage
+        assert_eq!(MAX_MODIFIER_ID, u8::MAX);
+    }
+
+    #[test]
+    fn timeout_limit_is_reasonable() {
+        // 5 seconds is a reasonable upper bound for interactive use
+        assert_eq!(MAX_TIMEOUT_MS, 5000);
+        // Should be positive
+        assert!(MAX_TIMEOUT_MS > 0);
+    }
+
+    #[test]
+    fn latency_thresholds_are_consistent() {
+        // Threshold should be 1ms (1,000,000ns = 1ms)
+        assert_eq!(LATENCY_THRESHOLD_NS, 1_000_000);
+        // Regression threshold should be less than latency threshold
+        assert!(DEFAULT_REGRESSION_THRESHOLD_US < LATENCY_THRESHOLD_NS / 1000);
+    }
+
+    #[test]
+    fn event_gap_is_reasonable() {
+        // 1ms is a reasonable default gap between events
+        assert_eq!(DEFAULT_EVENT_GAP_US, 1_000);
+        // Should be at least 100μs for timing accuracy
+        assert!(DEFAULT_EVENT_GAP_US >= 100);
+        // Should not exceed 10ms (would feel sluggish)
+        assert!(DEFAULT_EVENT_GAP_US <= 10_000);
+    }
+}
