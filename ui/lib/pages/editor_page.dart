@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import '../repositories/mapping_repository.dart';
 import '../services/engine_service.dart';
+import '../services/mapping_validator.dart';
 import '../state/app_state.dart';
 import '../widgets/keyboard.dart';
 import 'editor_widgets.dart';
@@ -20,6 +21,7 @@ class EditorPage extends StatefulWidget {
     super.key,
     required this.engineService,
     required this.mappingRepository,
+    this.validator = const MappingValidator(),
   });
 
   /// The engine service for key registry and script loading.
@@ -27,6 +29,9 @@ class EditorPage extends StatefulWidget {
 
   /// The shared mapping repository for key mappings.
   final MappingRepository mappingRepository;
+
+  /// The validator for key mappings and combos.
+  final MappingValidator validator;
 
   @override
   State<EditorPage> createState() => _EditorPageState();
@@ -171,34 +176,9 @@ class _EditorPageState extends State<EditorPage> {
 
   void _applyMapping() {
     if (_selectedKey == null) return;
-    if (_selectedAction == KeyActionType.remap &&
-        _outputController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Provide a target key for remap.')),
-      );
-      return;
-    }
-
-    final fromKey = _selectedKey!;
-    if (!KeyMappings.isKnownKey(fromKey)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Unknown key: $fromKey')));
-      return;
-    }
-
-    if (_selectedAction == KeyActionType.remap &&
-        !KeyMappings.isKnownKey(_outputController.text.trim())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unknown target key: ${_outputController.text.trim()}'),
-        ),
-      );
-      return;
-    }
 
     final mapping = KeyMapping(
-      from: fromKey,
+      from: _selectedKey!,
       type: _selectedAction,
       to: _selectedAction == KeyActionType.remap
           ? _outputController.text.trim()
@@ -213,6 +193,14 @@ class _EditorPageState extends State<EditorPage> {
           ? null
           : _holdOutputController.text.trim(),
     );
+
+    final result = widget.validator.validateMapping(_selectedKey, mapping);
+    if (!result.isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.errorMessage ?? 'Invalid mapping')),
+      );
+      return;
+    }
 
     widget.mappingRepository.setMapping(_selectedKey!, mapping);
   }
@@ -293,17 +281,11 @@ class _EditorPageState extends State<EditorPage> {
         .toList();
     final output = _comboOutputController.text.trim();
 
-    if (keys.length < 2 || output.isEmpty) {
+    final result = widget.validator.validateCombo(keys, output);
+    if (!result.isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Provide at least 2 keys and an output.')),
+        SnackBar(content: Text(result.errorMessage ?? 'Invalid combo')),
       );
-      return;
-    }
-
-    if (keys.any((k) => !KeyMappings.isKnownKey(k))) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Unknown key in combo.')));
       return;
     }
 

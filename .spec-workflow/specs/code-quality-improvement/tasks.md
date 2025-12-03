@@ -131,7 +131,7 @@
 
 ## Phase 6: Flutter Complexity Reduction
 
-- [ ] 18. Extract MappingValidator service
+- [x] 18. Extract MappingValidator service
   - Files: ui/lib/services/mapping_validator.dart (new), ui/lib/pages/editor_page.dart (modify)
   - Move validation logic out of EditorPage
   - _Leverage: existing editor_page.dart validation code_
