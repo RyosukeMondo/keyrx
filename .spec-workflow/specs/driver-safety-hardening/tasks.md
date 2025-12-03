@@ -92,7 +92,7 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Linux permissions knowledge | Task: Create permission checking in safety/permissions.rs | Restrictions: Check /dev/input access, suggest input group, udev rules | _Leverage: DriverError | Success: Permission errors have actionable suggestions | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Update LinuxInputSource to use safety wrappers
+- [x] 10. Update LinuxInputSource to use safety wrappers
   - File: `core/src/drivers/linux/mod.rs`
   - Replace direct device operations with SafeDevice
   - Use SafeUinput for injection
@@ -104,7 +104,7 @@
 
 ## Phase 4: Error Recovery
 
-- [ ] 11. Implement retry with backoff
+- [x] 11. Implement retry with backoff
   - File: `core/src/drivers/common/recovery.rs`
   - Add exponential backoff for retryable errors
   - Configure max retries and delays
