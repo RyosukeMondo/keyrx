@@ -193,7 +193,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Refactor `ui/lib/pages/debugger_page.dart` to import from 'package:keyrx/config/config.dart' and use TimingConfig.animationDurationMs, TimingConfig.pulseAnimationMs, TimingConfig.debounceMs, ThresholdConstants.maxEventsHistory instead of hardcoded values. | Restrictions: Do not change behavior | _Leverage: ui/lib/config/config.dart_ | Success: No hardcoded timing/threshold values in debugger_page.dart. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 24. Refactor debugger_meters.dart to use config
+- [x] 24. Refactor debugger_meters.dart to use config
   - File: `ui/lib/pages/debugger_meters.dart`
   - Import and use threshold constants
   - Purpose: Use centralized constants
@@ -201,7 +201,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Refactor `ui/lib/pages/debugger_meters.dart` to use ThresholdConstants.latencyWarningUs, ThresholdConstants.latencyCautionUs, TimingConfig.animationDurationMs from config module instead of hardcoded values in LatencyThresholds class. | Restrictions: Do not change behavior | _Leverage: ui/lib/config/config.dart_ | Success: No hardcoded threshold values. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 25. Refactor visual_keyboard.dart and visual_keyboard_keys.dart to use config
+- [x] 25. Refactor visual_keyboard.dart and visual_keyboard_keys.dart to use config
   - Files: `ui/lib/widgets/visual_keyboard.dart`, `ui/lib/widgets/visual_keyboard_keys.dart`
   - Import and use UI/timing constants
   - Purpose: Use centralized constants
