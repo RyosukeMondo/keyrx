@@ -187,7 +187,7 @@
 
 ## Phase 9: Testing & Documentation
 
-- [ ] 21. Add unit tests for ValidationConfig
+- [x] 21. Add unit tests for ValidationConfig
   - Files: `core/src/validation/config.rs` (extend with #[cfg(test)])
   - Test config loading from file
   - Test default values
