@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'pages/editor_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
+import 'pages/devices_page.dart';
+import 'pages/run_controls_page.dart';
 import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
@@ -73,6 +75,11 @@ class _HomePageState extends State<HomePage> {
         mappingRepository: registry.mappingRepository,
         bridge: registry.bridge,
       ),
+      DevicesPage(deviceService: registry.deviceService),
+      RunControlsPage(
+        deviceService: registry.deviceService,
+        bridge: registry.bridge,
+      ),
       DebuggerPage(engineService: registry.engineService),
       ConsolePage(engineService: registry.engineService),
       const TradeOffVisualizerPage(),
@@ -86,9 +93,19 @@ class _HomePageState extends State<HomePage> {
       label: 'Training',
     ),
     NavigationDestination(
-      icon: Icon(Icons.keyboard),
-      selectedIcon: Icon(Icons.keyboard),
+      icon: Icon(Icons.edit_outlined),
+      selectedIcon: Icon(Icons.edit),
       label: 'Editor',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.keyboard_outlined),
+      selectedIcon: Icon(Icons.keyboard),
+      label: 'Devices',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.play_circle_outlined),
+      selectedIcon: Icon(Icons.play_circle),
+      label: 'Run',
     ),
     NavigationDestination(
       icon: Icon(Icons.bug_report_outlined),
