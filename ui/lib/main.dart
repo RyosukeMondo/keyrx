@@ -71,6 +71,7 @@ class _HomePageState extends State<HomePage> {
       EditorPage(
         engineService: registry.engineService,
         mappingRepository: registry.mappingRepository,
+        bridge: registry.bridge,
       ),
       DebuggerPage(engineService: registry.engineService),
       ConsolePage(engineService: registry.engineService),

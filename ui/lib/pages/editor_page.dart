@@ -4,9 +4,13 @@
 /// that generates the underlying Rhai script automatically.
 library;
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import '../services/engine_service.dart';
 import '../services/mapping_validator.dart';
@@ -21,6 +25,7 @@ class EditorPage extends StatefulWidget {
     super.key,
     required this.engineService,
     required this.mappingRepository,
+    required this.bridge,
     this.validator = const MappingValidator(),
     this.scriptFileService = const ScriptFileService(),
   });
@@ -30,6 +35,9 @@ class EditorPage extends StatefulWidget {
 
   /// The shared mapping repository for key mappings.
   final MappingRepository mappingRepository;
+
+  /// The FFI bridge for script validation.
+  final KeyrxBridge bridge;
 
   /// The validator for key mappings and combos.
   final MappingValidator validator;
@@ -56,6 +64,13 @@ class _EditorPageState extends State<EditorPage> {
   String? _registryError;
   List<String> _canonicalKeys = KeyMappings.allowedKeys;
   static const String _defaultScriptPath = 'scripts/generated.rhai';
+  static const String _tempValidationPath = '/tmp/keyrx_validation.rhai';
+
+  // Script validation state
+  Timer? _validationDebounce;
+  bool _isValidating = false;
+  ScriptValidationResult? _validationResult;
+  static const _validationDebounceMs = 500;
 
   @override
   void initState() {
@@ -68,6 +83,7 @@ class _EditorPageState extends State<EditorPage> {
 
   @override
   void dispose() {
+    _validationDebounce?.cancel();
     widget.mappingRepository.removeListener(_onMappingsChanged);
     _outputController.dispose();
     _layerController.dispose();
@@ -79,7 +95,54 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _onMappingsChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      _scheduleValidation();
+    }
+  }
+
+  void _scheduleValidation() {
+    _validationDebounce?.cancel();
+    _validationDebounce = Timer(
+      const Duration(milliseconds: _validationDebounceMs),
+      _validateScript,
+    );
+  }
+
+  Future<void> _validateScript() async {
+    final repo = widget.mappingRepository;
+    if (repo.mappings.isEmpty) {
+      setState(() {
+        _validationResult = null;
+        _isValidating = false;
+      });
+      return;
+    }
+
+    setState(() => _isValidating = true);
+
+    final script = repo.generateScript();
+    try {
+      final file = File(_tempValidationPath);
+      await file.parent.create(recursive: true);
+      await file.writeAsString(script);
+
+      final result = widget.bridge.checkScript(_tempValidationPath);
+
+      if (mounted) {
+        setState(() {
+          _validationResult = result;
+          _isValidating = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _validationResult = ScriptValidationResult.error('$e');
+          _isValidating = false;
+        });
+      }
+    }
   }
 
   @override
@@ -109,6 +172,7 @@ class _EditorPageState extends State<EditorPage> {
             registryError: _registryError,
             onRefresh: _fetchKeyRegistry,
           ),
+          _buildValidationBanner(),
           Expanded(
             flex: 2,
             child: KeyboardWidget(
@@ -117,6 +181,98 @@ class _EditorPageState extends State<EditorPage> {
             ),
           ),
           Expanded(flex: 1, child: _buildConfigPanel()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValidationBanner() {
+    if (_isValidating) {
+      return Container(
+        color: Colors.blue.withValues(alpha: 0.1),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text('Validating script...'),
+          ],
+        ),
+      );
+    }
+
+    final result = _validationResult;
+    if (result == null || result.valid) {
+      return const SizedBox.shrink();
+    }
+
+    final errors = result.errors;
+    final errorMessage = result.errorMessage;
+
+    return Material(
+      color: Colors.red.withValues(alpha: 0.15),
+      child: InkWell(
+        onTap: errors.isNotEmpty ? () => _showValidationErrors(errors) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  errorMessage ??
+                      (errors.isNotEmpty
+                          ? 'Script has ${errors.length} error${errors.length > 1 ? 's' : ''}: ${errors.first.message}'
+                          : 'Script validation failed'),
+                  style: const TextStyle(color: Colors.red),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (errors.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.red),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showValidationErrors(List<ScriptValidationError> errors) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Script Validation Errors'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: errors.length,
+            separatorBuilder: (_, __) => const Divider(),
+            itemBuilder: (context, index) {
+              final error = errors[index];
+              return ListTile(
+                leading: const Icon(Icons.error, color: Colors.red),
+                title: Text(error.message),
+                subtitle: error.line != null
+                    ? Text('Line ${error.line}${error.column != null ? ', Column ${error.column}' : ''}')
+                    : null,
+                dense: true,
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -220,6 +376,18 @@ class _EditorPageState extends State<EditorPage> {
       return;
     }
 
+    // Block save if script validation failed
+    final validationResult = _validationResult;
+    if (validationResult != null && !validationResult.valid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fix script validation errors before saving.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     final script = repo.generateScript();
 
@@ -238,6 +406,7 @@ class _EditorPageState extends State<EditorPage> {
       return;
     }
 
+    // Only load into engine if validation passed
     final engine = widget.engineService;
     final loaded = engine.isInitialized
         ? await engine.loadScript(_defaultScriptPath)
