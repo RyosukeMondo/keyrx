@@ -465,7 +465,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
     match command {
         Commands::Check { script } => {
             let mut cmd = CheckCommand::new(script, ctx.output_format());
-            cmd.execute(&ctx)
+            cmd.execute(ctx)
         }
         Commands::Devices => {
             let mut cmd = DevicesCommand::new(ctx.output_format());

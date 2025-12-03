@@ -3,6 +3,7 @@
 mod change;
 mod error;
 mod key_state;
+mod keys;
 mod layers;
 mod modifiers;
 mod mutation;
@@ -17,6 +18,8 @@ pub use change::{
 #[allow(unused_imports)] // Will be used when EngineState is implemented
 pub use error::{StateError, StateResult};
 pub use key_state::KeyStateTracker;
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use keys::KeyState;
 pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
     Modifier, ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
