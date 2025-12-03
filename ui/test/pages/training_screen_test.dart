@@ -14,6 +14,8 @@ import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 
+import '../helpers/fake_services.dart';
+
 class _FakePermissionService implements PermissionService {
   const _FakePermissionService([this.result = const PermissionResult(
     state: PermissionState.granted,
@@ -138,6 +140,7 @@ void main() {
     final audio = _ControllableAudioService();
     audio.startCompleter = Completer<AudioOperationResult>();
 
+    final bridge = FakeBridge();
     final registry = ServiceRegistry.withOverrides(
       permissionService: const _FakePermissionService(),
       audioService: audio,
@@ -146,9 +149,15 @@ void main() {
       ),
       engineService: const _FakeEngineService(),
       mappingRepository: MappingRepository(),
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: bridge,
     );
 
-    addTearDown(registry.dispose);
+    addTearDown(() async {
+      await registry.dispose();
+      await bridge.dispose();
+    });
 
     await tester.pumpWidget(
       MultiProvider(
@@ -183,6 +192,7 @@ void main() {
   testWidgets('renders classification results from the audio stream',
       (tester) async {
     final audio = _ControllableAudioService();
+    final bridge = FakeBridge();
     final registry = ServiceRegistry.withOverrides(
       permissionService: const _FakePermissionService(),
       audioService: audio,
@@ -191,9 +201,15 @@ void main() {
       ),
       engineService: const _FakeEngineService(),
       mappingRepository: MappingRepository(),
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: bridge,
     );
 
-    addTearDown(registry.dispose);
+    addTearDown(() async {
+      await registry.dispose();
+      await bridge.dispose();
+    });
 
     await tester.pumpWidget(
       MultiProvider(
@@ -234,15 +250,22 @@ void main() {
     );
 
     final audio = _ControllableAudioService();
+    final bridge = FakeBridge();
     final registry = ServiceRegistry.withOverrides(
       permissionService: const _FakePermissionService(),
       audioService: audio,
       errorTranslator: const _RecordingTranslator(translated),
       engineService: const _FakeEngineService(),
       mappingRepository: MappingRepository(),
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: bridge,
     );
 
-    addTearDown(registry.dispose);
+    addTearDown(() async {
+      await registry.dispose();
+      await bridge.dispose();
+    });
 
     await tester.pumpWidget(
       MultiProvider(
