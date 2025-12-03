@@ -149,8 +149,6 @@ impl KeyInjector for UinputWriter {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn uinput_writer_uses_safe_wrapper() {
         // This test verifies that UinputWriter uses SafeUinput
