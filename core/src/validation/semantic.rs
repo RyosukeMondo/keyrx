@@ -584,4 +584,252 @@ mod tests {
         let warnings = validate_timing(&ops, &config);
         assert!(warnings.is_empty());
     }
+
+    // Additional edge case tests for config-driven behavior and false positive prevention
+
+    #[test]
+    fn layer_toggle_with_undefined_layer_produces_error() {
+        let config = test_config();
+        let ops = vec![PendingOp::LayerToggle {
+            name: "missing_layer".to_string(),
+        }];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].code, "E002");
+        assert!(errors[0].message.contains("missing_layer"));
+    }
+
+    #[test]
+    fn modifier_deactivate_with_undefined_modifier_produces_error() {
+        let config = test_config();
+        let ops = vec![PendingOp::ModifierDeactivate {
+            name: "unknown_mod".to_string(),
+            id: 0,
+        }];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].code, "E003");
+    }
+
+    #[test]
+    fn modifier_one_shot_with_undefined_modifier_produces_error() {
+        let config = test_config();
+        let ops = vec![PendingOp::ModifierOneShot {
+            name: "oneshot_mod".to_string(),
+            id: 0,
+        }];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].code, "E003");
+    }
+
+    #[test]
+    fn layer_map_action_layer_toggle_validates_target() {
+        let config = test_config();
+        let mut layers = HashSet::new();
+        layers.insert("base".to_string());
+
+        let ops = vec![PendingOp::LayerMap {
+            layer: "base".to_string(),
+            key: KeyCode::A,
+            action: LayerMapAction::LayerToggle("unknown_layer".to_string()),
+        }];
+
+        let errors = validate_operations(&ops, &layers, &HashSet::new(), &config);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].message.contains("unknown_layer"));
+    }
+
+    #[test]
+    fn layer_map_non_layer_actions_produce_no_errors() {
+        let config = test_config();
+        let mut layers = HashSet::new();
+        layers.insert("base".to_string());
+
+        let ops = vec![
+            PendingOp::LayerMap {
+                layer: "base".to_string(),
+                key: KeyCode::A,
+                action: LayerMapAction::Remap(KeyCode::B),
+            },
+            PendingOp::LayerMap {
+                layer: "base".to_string(),
+                key: KeyCode::B,
+                action: LayerMapAction::Block,
+            },
+            PendingOp::LayerMap {
+                layer: "base".to_string(),
+                key: KeyCode::C,
+                action: LayerMapAction::Pass,
+            },
+            PendingOp::LayerMap {
+                layer: "base".to_string(),
+                key: KeyCode::D,
+                action: LayerMapAction::TapHold {
+                    tap: KeyCode::E,
+                    hold: HoldAction::Key(KeyCode::F),
+                },
+            },
+            PendingOp::LayerMap {
+                layer: "base".to_string(),
+                key: KeyCode::E,
+                action: LayerMapAction::LayerPop,
+            },
+        ];
+
+        let errors = validate_operations(&ops, &layers, &HashSet::new(), &config);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn layer_pop_produces_no_error() {
+        let config = test_config();
+        let ops = vec![PendingOp::LayerPop];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn set_timing_produces_no_errors_in_semantic_validation() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::SetTiming(TimingUpdate::TapTimeout(200)),
+            PendingOp::SetTiming(TimingUpdate::ComboTimeout(50)),
+            PendingOp::SetTiming(TimingUpdate::HoldDelay(300)),
+        ];
+
+        // Semantic validation (validate_operations) produces no errors for timing
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn tap_timeout_at_exact_boundary_no_warning() {
+        let config = test_config(); // default range: (50, 500)
+
+        // At exact minimum
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(50))];
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+
+        // At exact maximum
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(500))];
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn combo_timeout_at_exact_boundary_no_warning() {
+        let config = test_config(); // default range: (10, 100)
+
+        // At exact minimum
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::ComboTimeout(10))];
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+
+        // At exact maximum
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::ComboTimeout(100))];
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn validate_key_name_with_custom_config() {
+        let mut config = ValidationConfig::default();
+        config.max_suggestions = 2;
+        config.similarity_threshold = 2;
+
+        let error = validate_key_name("Escpe", &config);
+        assert!(error.is_some());
+        let err = error.unwrap();
+        assert!(err.suggestions.len() <= 2);
+    }
+
+    #[test]
+    fn defined_layer_in_multiple_operations_no_errors() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::LayerDefine {
+                name: "nav".to_string(),
+                transparent: false,
+            },
+            PendingOp::LayerPush {
+                name: "nav".to_string(),
+            },
+            PendingOp::LayerToggle {
+                name: "nav".to_string(),
+            },
+        ];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn defined_modifier_in_multiple_operations_no_errors() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::DefineModifier {
+                name: "hyper".to_string(),
+                id: 0,
+            },
+            PendingOp::ModifierActivate {
+                name: "hyper".to_string(),
+                id: 0,
+            },
+            PendingOp::ModifierDeactivate {
+                name: "hyper".to_string(),
+                id: 0,
+            },
+            PendingOp::ModifierOneShot {
+                name: "hyper".to_string(),
+                id: 0,
+            },
+        ];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn layer_defined_after_use_still_valid() {
+        // Testing that the two-pass approach correctly handles forward references
+        let config = test_config();
+        let ops = vec![
+            PendingOp::LayerPush {
+                name: "future_layer".to_string(),
+            },
+            PendingOp::LayerDefine {
+                name: "future_layer".to_string(),
+                transparent: false,
+            },
+        ];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        // Should have no errors due to two-pass collection
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn modifier_defined_after_use_still_valid() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::ModifierActivate {
+                name: "future_mod".to_string(),
+                id: 0,
+            },
+            PendingOp::DefineModifier {
+                name: "future_mod".to_string(),
+                id: 0,
+            },
+        ];
+
+        let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
+        // Should have no errors due to two-pass collection
+        assert!(errors.is_empty());
+    }
 }

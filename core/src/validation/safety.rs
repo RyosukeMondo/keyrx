@@ -595,4 +595,294 @@ mod tests {
             .collect();
         assert!(escape_warnings.is_empty());
     }
+
+    // Additional edge case tests for config-driven behavior and false positive prevention
+
+    #[test]
+    fn escape_as_remap_target_no_warning() {
+        // Remapping TO Escape should not trigger warnings (only FROM Escape)
+        let ops = vec![PendingOp::Remap {
+            from: KeyCode::CapsLock,
+            to: KeyCode::Escape,
+        }];
+        let warnings = analyze_safety(&ops, &default_config());
+        let escape_warnings: Vec<_> = warnings
+            .iter()
+            .filter(|w| w.code.starts_with("W10"))
+            .collect();
+        assert!(escape_warnings.is_empty());
+    }
+
+    #[test]
+    fn pass_on_escape_no_warning() {
+        // Pass on Escape is explicitly allowing it, not a safety concern
+        let ops = vec![PendingOp::Pass {
+            key: KeyCode::Escape,
+        }];
+        let warnings = analyze_safety(&ops, &default_config());
+        let escape_warnings: Vec<_> = warnings
+            .iter()
+            .filter(|w| w.code.starts_with("W10"))
+            .collect();
+        assert!(escape_warnings.is_empty());
+    }
+
+    #[test]
+    fn layer_map_on_escape_no_warning() {
+        // Layer-specific mapping on Escape is not detected by base safety analyzer
+        use crate::scripting::LayerMapAction;
+        let ops = vec![PendingOp::LayerMap {
+            layer: "nav".to_string(),
+            key: KeyCode::Escape,
+            action: LayerMapAction::Block,
+        }];
+        let warnings = analyze_safety(&ops, &default_config());
+        // LayerMap is not checked for escape warnings (only base operations)
+        let escape_warnings: Vec<_> = warnings
+            .iter()
+            .filter(|w| w.code.starts_with("W10"))
+            .collect();
+        assert!(escape_warnings.is_empty());
+    }
+
+    #[test]
+    fn blocked_keys_warning_threshold_exact_boundary() {
+        let mut config = ValidationConfig::default();
+        config.blocked_keys_warning_threshold = 3;
+
+        // Exactly at threshold should warn
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::A },
+            PendingOp::Block { key: KeyCode::B },
+            PendingOp::Block { key: KeyCode::C },
+        ];
+        let warnings = analyze_safety(&ops, &config);
+        assert!(warnings.iter().any(|w| w.code == "W106"));
+
+        // One below threshold should not warn
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::A },
+            PendingOp::Block { key: KeyCode::B },
+        ];
+        let warnings = analyze_safety(&ops, &config);
+        assert!(!warnings.iter().any(|w| w.code == "W106"));
+    }
+
+    #[test]
+    fn emergency_combo_with_alt_blocked() {
+        // Block Escape and both Alt keys - should trigger emergency warning
+        let ops = vec![
+            PendingOp::Block {
+                key: KeyCode::Escape,
+            },
+            PendingOp::Block {
+                key: KeyCode::LeftAlt,
+            },
+            PendingOp::Block {
+                key: KeyCode::RightAlt,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let emergency_warning = warnings.iter().find(|w| w.code == "W104");
+        assert!(emergency_warning.is_some());
+        assert!(emergency_warning.unwrap().message.contains("Alt"));
+    }
+
+    #[test]
+    fn emergency_combo_with_shift_blocked() {
+        // Block Escape and both Shift keys - should trigger emergency warning
+        let ops = vec![
+            PendingOp::Block {
+                key: KeyCode::Escape,
+            },
+            PendingOp::Block {
+                key: KeyCode::LeftShift,
+            },
+            PendingOp::Block {
+                key: KeyCode::RightShift,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let emergency_warning = warnings.iter().find(|w| w.code == "W104");
+        assert!(emergency_warning.is_some());
+        assert!(emergency_warning.unwrap().message.contains("Shift"));
+    }
+
+    #[test]
+    fn no_emergency_warning_without_escape_blocked() {
+        // Both Ctrl keys blocked but Escape is not - no emergency warning
+        let ops = vec![
+            PendingOp::Block {
+                key: KeyCode::LeftCtrl,
+            },
+            PendingOp::Block {
+                key: KeyCode::RightCtrl,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let emergency_warning = warnings.iter().find(|w| w.code == "W104");
+        assert!(emergency_warning.is_none());
+    }
+
+    #[test]
+    fn multiple_modifier_pair_warnings() {
+        // Block multiple modifier pairs - should get multiple W105 warnings
+        let ops = vec![
+            PendingOp::Block {
+                key: KeyCode::LeftCtrl,
+            },
+            PendingOp::Block {
+                key: KeyCode::RightCtrl,
+            },
+            PendingOp::Block {
+                key: KeyCode::LeftAlt,
+            },
+            PendingOp::Block {
+                key: KeyCode::RightAlt,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let modifier_warnings: Vec<_> = warnings.iter().filter(|w| w.code == "W105").collect();
+        assert_eq!(modifier_warnings.len(), 2);
+    }
+
+    #[test]
+    fn remap_escape_has_different_code_than_block_escape() {
+        let remap_ops = vec![PendingOp::Remap {
+            from: KeyCode::Escape,
+            to: KeyCode::CapsLock,
+        }];
+        let block_ops = vec![PendingOp::Block {
+            key: KeyCode::Escape,
+        }];
+
+        let remap_warnings = analyze_safety(&remap_ops, &default_config());
+        let block_warnings = analyze_safety(&block_ops, &default_config());
+
+        assert_eq!(remap_warnings[0].code, "W101"); // Remap
+        assert_eq!(block_warnings[0].code, "W102"); // Block
+    }
+
+    #[test]
+    fn escape_tap_hold_warning_mentions_responsiveness() {
+        let ops = vec![PendingOp::TapHold {
+            key: KeyCode::Escape,
+            tap: KeyCode::Escape,
+            hold: HoldAction::Key(KeyCode::LeftCtrl),
+        }];
+        let warnings = analyze_safety(&ops, &default_config());
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].message.contains("responsiveness"));
+    }
+
+    #[test]
+    fn config_with_high_threshold_suppresses_many_blocked_warning() {
+        let mut config = ValidationConfig::default();
+        config.blocked_keys_warning_threshold = 100;
+
+        let ops: Vec<PendingOp> = (0..20)
+            .map(|i| {
+                let key = match i % 10 {
+                    0 => KeyCode::A,
+                    1 => KeyCode::B,
+                    2 => KeyCode::C,
+                    3 => KeyCode::D,
+                    4 => KeyCode::E,
+                    5 => KeyCode::F,
+                    6 => KeyCode::G,
+                    7 => KeyCode::H,
+                    8 => KeyCode::I,
+                    _ => KeyCode::J,
+                };
+                PendingOp::Block { key }
+            })
+            .collect();
+
+        let warnings = analyze_safety(&ops, &config);
+        // Should not have W106 because threshold is 100
+        let many_blocked = warnings.iter().find(|w| w.code == "W106");
+        assert!(many_blocked.is_none());
+    }
+
+    #[test]
+    fn escape_remap_from_multiple_locations() {
+        // Multiple escape remaps should produce multiple warnings
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::Escape,
+                to: KeyCode::A,
+            },
+            PendingOp::Block { key: KeyCode::X },
+            PendingOp::Remap {
+                from: KeyCode::Escape,
+                to: KeyCode::B,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let escape_warnings: Vec<_> = warnings.iter().filter(|w| w.code == "W101").collect();
+        assert_eq!(escape_warnings.len(), 2);
+    }
+
+    #[test]
+    fn modifier_pair_warning_shows_operation_indices() {
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::X }, // index 0
+            PendingOp::Block {
+                key: KeyCode::LeftCtrl,
+            }, // index 1
+            PendingOp::Block { key: KeyCode::Y }, // index 2
+            PendingOp::Block {
+                key: KeyCode::RightCtrl,
+            }, // index 3
+        ];
+        let warnings = analyze_safety(&ops, &default_config());
+        let modifier_warning = warnings.iter().find(|w| w.code == "W105").unwrap();
+        // Message should contain 1-indexed positions
+        assert!(modifier_warning.message.contains("2") && modifier_warning.message.contains("4"));
+    }
+
+    #[test]
+    fn combo_ops_not_counted_as_blocked_keys() {
+        // Combo operations should not affect the blocked key count
+        let mut config = ValidationConfig::default();
+        config.blocked_keys_warning_threshold = 2;
+
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::A },
+            PendingOp::Combo {
+                keys: vec![KeyCode::B, KeyCode::C],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::D, KeyCode::E],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &config);
+        // Only 1 actual Block operation, so W106 should not trigger
+        let many_blocked = warnings.iter().find(|w| w.code == "W106");
+        assert!(many_blocked.is_none());
+    }
+
+    #[test]
+    fn remap_ops_not_counted_as_blocked_keys() {
+        let mut config = ValidationConfig::default();
+        config.blocked_keys_warning_threshold = 2;
+
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::A },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::D,
+                to: KeyCode::E,
+            },
+        ];
+        let warnings = analyze_safety(&ops, &config);
+        // Only 1 actual Block operation, so W106 should not trigger
+        let many_blocked = warnings.iter().find(|w| w.code == "W106");
+        assert!(many_blocked.is_none());
+    }
 }

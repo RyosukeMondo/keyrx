@@ -1048,4 +1048,274 @@ mod tests {
         let warnings = detect_circular_remaps(&ops, &default_config());
         assert_eq!(warnings[0].category, WarningCategory::Conflict);
     }
+
+    // Additional edge case tests for config-driven behavior and false positive prevention
+
+    #[test]
+    fn single_key_combo_can_shadow_larger_combo() {
+        // Single-key "combos" are unusual but the detector should handle them
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::B],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].message.contains("shadows"));
+    }
+
+    #[test]
+    fn partial_overlap_combos_no_shadowing() {
+        // [A, B] and [B, C] overlap but neither is a subset
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::B],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::B, KeyCode::C],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn config_max_cycle_depth_of_one_only_finds_self_loops() {
+        // With max_depth=1, we should only find direct self-loops (A→A)
+        // A→B→A requires depth 2
+        let mut config = ValidationConfig::default();
+        config.max_cycle_depth = 1;
+
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &config);
+        // Path length check happens after we've traversed, so depth=1 means path.len() > 1 fails
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn config_max_cycle_depth_of_two_finds_simple_cycles() {
+        let mut config = ValidationConfig::default();
+        config.max_cycle_depth = 2;
+
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn multiple_remaps_to_same_target_no_false_positive_cycle() {
+        // A→C, B→C is not a cycle (both point to C but don't loop back)
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn same_key_to_different_targets_creates_conflict() {
+        // A→B, A→C - same source, different targets
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::C,
+            },
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W001");
+    }
+
+    #[test]
+    fn self_remap_is_not_a_cycle() {
+        // A→A is technically a remap but treated as a no-op, not a cycle
+        let ops = vec![PendingOp::Remap {
+            from: KeyCode::A,
+            to: KeyCode::A,
+        }];
+        let warnings = detect_circular_remaps(&ops, &default_config());
+        // This creates a self-loop in the graph, but path length is 1, requiring 2 edges for cycle detection
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn four_key_cycle_detected_within_depth() {
+        let mut config = ValidationConfig::default();
+        config.max_cycle_depth = 5;
+
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Remap {
+                from: KeyCode::B,
+                to: KeyCode::C,
+            },
+            PendingOp::Remap {
+                from: KeyCode::C,
+                to: KeyCode::D,
+            },
+            PendingOp::Remap {
+                from: KeyCode::D,
+                to: KeyCode::A,
+            },
+        ];
+        let warnings = detect_circular_remaps(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn duplicate_block_is_detected() {
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::A },
+            PendingOp::Block { key: KeyCode::A },
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W002");
+    }
+
+    #[test]
+    fn tap_hold_on_different_keys_no_conflict() {
+        let ops = vec![
+            PendingOp::TapHold {
+                key: KeyCode::A,
+                tap: KeyCode::B,
+                hold: HoldAction::Key(KeyCode::C),
+            },
+            PendingOp::TapHold {
+                key: KeyCode::D,
+                tap: KeyCode::E,
+                hold: HoldAction::Key(KeyCode::F),
+            },
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn remap_and_tap_hold_on_different_keys_no_conflict() {
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::TapHold {
+                key: KeyCode::C,
+                tap: KeyCode::D,
+                hold: HoldAction::Key(KeyCode::E),
+            },
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn combo_with_all_common_keys_but_different_order_shadows() {
+        // Same keys in different order should still be detected
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::B],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::C, KeyCode::B, KeyCode::A], // A,B is subset
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn layer_map_ops_not_tracked_in_remap_conflicts() {
+        // LayerMap operations should not be considered for remap conflict detection
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::LayerMap {
+                layer: "nav".to_string(),
+                key: KeyCode::A,
+                action: crate::scripting::LayerMapAction::Remap(KeyCode::C),
+            },
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        // LayerMap on key A should not conflict with base Remap on key A
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn combo_with_remap_action_also_detected_for_shadowing() {
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::B],
+                action: LayerAction::Remap(KeyCode::X),
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::B, KeyCode::C],
+                action: LayerAction::Remap(KeyCode::Y),
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn warning_message_contains_operation_indices() {
+        let ops = vec![
+            PendingOp::Block { key: KeyCode::X }, // index 0
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            }, // index 1
+            PendingOp::Block { key: KeyCode::Y }, // index 2
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::C,
+            }, // index 3
+        ];
+        let warnings = detect_remap_conflicts(&ops);
+        assert_eq!(warnings.len(), 1);
+        // Message should contain the 1-indexed operation numbers
+        assert!(warnings[0].message.contains("2") && warnings[0].message.contains("4"));
+    }
 }
