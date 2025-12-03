@@ -5,12 +5,12 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../ffi/bridge.dart';
+import '../models/validation.dart' as validation_models;
 import '../repositories/mapping_repository.dart';
 import '../services/engine_service.dart';
 import '../services/mapping_validator.dart';
@@ -64,13 +64,12 @@ class _EditorPageState extends State<EditorPage> {
   String? _registryError;
   List<String> _canonicalKeys = KeyMappings.allowedKeys;
   static const String _defaultScriptPath = 'scripts/generated.rhai';
-  static const String _tempValidationPath = '/tmp/keyrx_validation.rhai';
 
   // Script validation state
   Timer? _validationDebounce;
   bool _isValidating = false;
-  ScriptValidationResult? _validationResult;
-  static const _validationDebounceMs = 500;
+  validation_models.ValidationResult? _validationResult;
+  final int _validationDebounceMs = 500; // Default from config
 
   @override
   void initState() {
@@ -104,7 +103,7 @@ class _EditorPageState extends State<EditorPage> {
   void _scheduleValidation() {
     _validationDebounce?.cancel();
     _validationDebounce = Timer(
-      const Duration(milliseconds: _validationDebounceMs),
+      Duration(milliseconds: _validationDebounceMs),
       _validateScript,
     );
   }
@@ -123,11 +122,11 @@ class _EditorPageState extends State<EditorPage> {
 
     final script = repo.generateScript();
     try {
-      final file = File(_tempValidationPath);
-      await file.parent.create(recursive: true);
-      await file.writeAsString(script);
-
-      final result = widget.bridge.checkScript(_tempValidationPath);
+      // Use full validation with coverage for richer feedback
+      final result = widget.bridge.validateScript(
+        script,
+        const validation_models.ValidationOptions(includeCoverage: true),
+      );
 
       if (mounted) {
         setState(() {
@@ -138,7 +137,7 @@ class _EditorPageState extends State<EditorPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _validationResult = ScriptValidationResult.error('$e');
+          _validationResult = validation_models.ValidationResult.error('$e');
           _isValidating = false;
         });
       }
@@ -172,10 +171,9 @@ class _EditorPageState extends State<EditorPage> {
             registryError: _registryError,
             onRefresh: _fetchKeyRegistry,
           ),
-          ValidationBanner(
+          ValidationBannerRich(
             isValidating: _isValidating,
             validationResult: _validationResult,
-            onShowErrors: (errors) => showValidationErrorsDialog(context, errors),
           ),
           Expanded(
             flex: 2,
@@ -288,16 +286,25 @@ class _EditorPageState extends State<EditorPage> {
       return;
     }
 
-    // Block save if script validation failed
+    // Check validation result
     final validationResult = _validationResult;
-    if (validationResult != null && !validationResult.valid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Fix script validation errors before saving.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+    if (validationResult != null && !validationResult.isValid) {
+      // Has errors - block save
+      if (validationResult.hasErrors) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fix script validation errors before saving.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    // Has warnings - confirm save
+    if (validationResult != null && validationResult.hasWarnings) {
+      final confirmed = await _showSaveWithWarningsDialog(validationResult);
+      if (!confirmed) return;
     }
 
     setState(() => _isSaving = true);
@@ -318,7 +325,7 @@ class _EditorPageState extends State<EditorPage> {
       return;
     }
 
-    // Only load into engine if validation passed
+    // Load into engine
     final engine = widget.engineService;
     final loaded = engine.isInitialized
         ? await engine.loadScript(_defaultScriptPath)
@@ -336,6 +343,85 @@ class _EditorPageState extends State<EditorPage> {
       );
       setState(() => _isSaving = false);
     }
+  }
+
+  Future<bool> _showSaveWithWarningsDialog(
+    validation_models.ValidationResult result,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Save with warnings?'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your script has ${result.warnings.length} warning${result.warnings.length > 1 ? 's' : ''}:',
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: result.warnings.length,
+                  itemBuilder: (_, index) {
+                    final w = result.warnings[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            _iconForCategory(w.category),
+                            size: 16,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(w.message)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Do you want to save anyway?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save anyway'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  IconData _iconForCategory(validation_models.WarningCategory category) {
+    return switch (category) {
+      validation_models.WarningCategory.conflict => Icons.compare_arrows,
+      validation_models.WarningCategory.safety => Icons.warning_amber,
+      validation_models.WarningCategory.performance => Icons.speed,
+    };
   }
 
   void _viewScript() {
