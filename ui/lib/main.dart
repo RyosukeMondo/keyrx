@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
-      const TrainingScreen(),
+      TrainingScreen(audioService: registry.audioService),
       EditorPage(engineService: registry.engineService),
       DebuggerPage(engineService: registry.engineService),
       ConsolePage(engineService: registry.engineService),

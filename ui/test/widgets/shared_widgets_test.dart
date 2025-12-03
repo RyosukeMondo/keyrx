@@ -236,7 +236,7 @@ void main() {
             ),
           ),
         ],
-        child: const MaterialApp(home: TrainingScreen()),
+        child: MaterialApp(home: TrainingScreen(audioService: audio)),
       ),
     );
 

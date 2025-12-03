@@ -13,7 +13,13 @@ import '../ui/widgets/loading_overlay.dart';
 
 /// Screen that wires the service layer into a simple training flow.
 class TrainingScreen extends StatefulWidget {
-  const TrainingScreen({super.key});
+  const TrainingScreen({
+    super.key,
+    required this.audioService,
+  });
+
+  /// The audio service for training functionality.
+  final AudioService audioService;
 
   @override
   State<TrainingScreen> createState() => _TrainingScreenState();
@@ -21,8 +27,6 @@ class TrainingScreen extends StatefulWidget {
 
 class _TrainingScreenState extends State<TrainingScreen> {
   late final TextEditingController _bpmController;
-  late AudioService _audioService;
-  late ServiceRegistry _registry;
 
   StreamSubscription<ClassificationResult>? _classificationSub;
   List<ClassificationResult> _recentResults = [];
@@ -30,12 +34,12 @@ class _TrainingScreenState extends State<TrainingScreen> {
   bool _isLoading = false;
   String? _loadingMessage;
 
+  AudioService get _audioService => widget.audioService;
+
   @override
   void initState() {
     super.initState();
     _bpmController = TextEditingController(text: '120');
-    _registry = Provider.of<ServiceRegistry>(context, listen: false);
-    _audioService = _registry.audioService;
     _state = _audioService.state;
     _attachClassificationStream();
   }
@@ -51,7 +55,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
       },
       onError: (error, stackTrace) {
         if (!mounted) return;
-        final message = _registry.errorTranslator.translate(error);
+        final registry = Provider.of<ServiceRegistry>(context, listen: false);
+        final message = registry.errorTranslator.translate(error);
         _showMessage(message);
       },
     );

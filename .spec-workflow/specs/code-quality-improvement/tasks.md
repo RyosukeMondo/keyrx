@@ -85,21 +85,21 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer | Task: Change EditorPage to accept required EngineService and MappingRepository via constructor. Remove nullable _engine field. Remove Provider.of in initState. Update instantiation sites | Restrictions: ≤50 lines changed; maintain functionality | _Leverage: editor_page.dart | _Requirements: 2 | Success: EditorPage testable with mock services._
 
-- [ ] 12. Refactor ConsolePage for constructor injection
+- [x] 12. Refactor ConsolePage for constructor injection
   - Files: ui/lib/pages/console.dart (modify)
   - Accept required services via constructor
   - _Leverage: existing console.dart_
   - _Requirements: 2_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer | Task: Change ConsolePage to accept required EngineService via constructor. Remove nullable field and Provider.of in initState | Restrictions: ≤40 lines changed | _Leverage: console.dart | _Requirements: 2 | Success: ConsolePage testable with mock services._
 
-- [ ] 13. Refactor DebuggerPage for constructor injection
+- [x] 13. Refactor DebuggerPage for constructor injection
   - Files: ui/lib/pages/debugger_page.dart (modify)
   - Accept required services via constructor
   - _Leverage: existing debugger_page.dart_
   - _Requirements: 2_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter engineer | Task: Change DebuggerPage to accept required EngineService and state Stream via constructor. Remove nullable fields and Provider.of in initState | Restrictions: ≤40 lines changed | _Leverage: debugger_page.dart | _Requirements: 2 | Success: DebuggerPage testable with mock services._
 
-- [ ] 14. Refactor TrainingScreen for constructor injection
+- [x] 14. Refactor TrainingScreen for constructor injection
   - Files: ui/lib/pages/training_screen.dart (modify)
   - Accept required services via constructor
   - _Leverage: existing training_screen.dart_
