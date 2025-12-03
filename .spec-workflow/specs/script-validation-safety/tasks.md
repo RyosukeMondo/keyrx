@@ -175,7 +175,7 @@
   - _Requirements: REQ-6.1, REQ-6.4_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter FFI developer | Task: Extend ui/lib/ffi/bridge.dart with validateScript(String script) -> Future<ValidationResult> and suggestKeys(String partial) -> Future<List<String>>. Parse JSON from FFI, create Dart model classes for ValidationResult, ValidationError, ValidationWarning | Restrictions: ≤150 lines added; create models in lib/models/validation.dart | Success: Flutter can call validation and get structured results. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 20. Add validation display to editor page
+- [x] 20. Add validation display to editor page
   - Files: `ui/lib/pages/editor_page.dart` (extend)
   - Display validation errors/warnings inline
   - Highlight problematic lines
