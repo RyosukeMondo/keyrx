@@ -22,7 +22,7 @@
 
 ## Phase 2: Tokio Optimization
 
-- [ ] 3. Minimize tokio features
+- [x] 3. Minimize tokio features
   - File: `core/Cargo.toml`
   - Replace "full" with specific features
   - Test all tokio usage still works
@@ -31,7 +31,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer optimizing deps | Task: Replace tokio "full" with minimal features | Restrictions: Only used features, test everything | _Leverage: tokio docs | Success: Tokio compiles faster, all works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Minimize serde features
+- [x] 4. Minimize serde features
   - File: `core/Cargo.toml`
   - Use default-features = false
   - Add only derive if needed

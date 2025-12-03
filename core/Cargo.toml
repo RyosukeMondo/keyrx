@@ -13,7 +13,7 @@ path = "src/bin/keyrx.rs"
 [dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
 rhai = "1.16"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
 thiserror = "1"
