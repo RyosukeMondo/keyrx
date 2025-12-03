@@ -46,7 +46,7 @@
   - _Requirements: 4.1, 4.7_
   - _Prompt: Role: Configuration engineer | Task: Create gates.rs with QualityGate struct (pass_rate, p0_open, p1_open, max_latency_us, coverage_min) and load() function parsing .keyrx/quality-gates.toml with named gates (default, alpha, beta, rc, ga) | Restrictions: ≤120 lines; use serde for TOML; provide sensible defaults | Success: Loads quality gate config with gate selection._
 
-- [ ] 7. Implement quality gate evaluation
+- [x] 7. Implement quality gate evaluation
   - Files: core/src/uat/gates.rs (extend)
   - Add QualityGateEnforcer with evaluate() method
   - _Leverage: UatResults from runner_
