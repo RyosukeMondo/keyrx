@@ -84,7 +84,7 @@
   - _Requirements: 1.1, 1.3, 1.4_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating unified state | Task: Create EngineState in core/src/engine/state/mod.rs | Restrictions: Own all components, version tracking, Clone-able | _Leverage: All state components | Success: EngineState provides unified access to all state | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Implement apply() mutation method
+- [x] 9. Implement apply() mutation method
   - File: `core/src/engine/state/mod.rs`
   - Apply single mutation atomically
   - Update affected components

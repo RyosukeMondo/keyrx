@@ -360,6 +360,217 @@ impl EngineState {
     pub fn pending_mut(&mut self) -> &mut PendingState {
         &mut self.pending
     }
+
+    // === Mutation Methods ===
+
+    /// Apply a single mutation atomically.
+    ///
+    /// This is the primary way to mutate engine state. Each mutation:
+    /// - Updates the relevant state component
+    /// - Increments the state version
+    /// - Produces a StateChange event with effects
+    /// - Ensures state invariants are maintained
+    ///
+    /// # Arguments
+    ///
+    /// * `mutation` - The mutation to apply
+    ///
+    /// # Returns
+    ///
+    /// A StateChange recording the mutation and any secondary effects,
+    /// or a StateError if the mutation is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_core::engine::state::{EngineState, Mutation};
+    /// use keyrx_core::engine::KeyCode;
+    /// use keyrx_core::engine::decision::timing::TimingConfig;
+    ///
+    /// let mut state = EngineState::new(TimingConfig::default());
+    /// let mutation = Mutation::KeyDown {
+    ///     key: KeyCode::A,
+    ///     timestamp_us: 1000,
+    ///     is_repeat: false,
+    /// };
+    ///
+    /// let change = state.apply(mutation).expect("valid mutation");
+    /// assert_eq!(change.version, 1);
+    /// assert!(state.is_key_pressed(KeyCode::A));
+    /// ```
+    pub fn apply(&mut self, mutation: Mutation) -> StateResult<StateChange> {
+        // Get timestamp from mutation or use 0 for mutations without timestamps
+        let timestamp_us = mutation.timestamp().unwrap_or(0);
+
+        // Create change that will be returned
+        let mut effects = Vec::new();
+
+        // Apply the mutation to the appropriate component(s)
+        match &mutation {
+            // === Key State Mutations ===
+            Mutation::KeyDown {
+                key,
+                timestamp_us: ts,
+                is_repeat,
+            } => {
+                let changed = self.keys.press(*key, *ts, *is_repeat);
+                if !changed && !is_repeat {
+                    return Err(StateError::KeyAlreadyPressed { key: *key });
+                }
+            }
+
+            Mutation::KeyUp { key, .. } => {
+                let press_time = self.keys.release(*key);
+                if press_time.is_none() {
+                    return Err(StateError::KeyNotPressed { key: *key });
+                }
+                // TODO: In task 11, add synchronization that deactivates modifiers
+                // associated with this key
+            }
+
+            // === Layer State Mutations ===
+            Mutation::PushLayer { layer_id } => {
+                self.layers.push(*layer_id);
+                // TODO: In task 11, add synchronization that clears pending
+                // decisions invalidated by layer change
+            }
+
+            Mutation::PopLayer => {
+                let popped = self.layers.pop();
+                if let Some(layer_id) = popped {
+                    effects.push(Effect::LayerPopped { layer_id });
+                } else {
+                    return Err(StateError::CannotPopBaseLayer);
+                }
+                // TODO: In task 11, add synchronization that clears pending
+                // decisions invalidated by layer change
+            }
+
+            Mutation::ToggleLayer { layer_id } => {
+                self.layers.toggle(*layer_id);
+                // TODO: In task 11, add synchronization that clears pending
+                // decisions invalidated by layer change
+            }
+
+            // === Modifier State Mutations ===
+            Mutation::ActivateModifier { modifier_id } => {
+                // Validate modifier ID (255 is reserved)
+                if *modifier_id == 255 {
+                    return Err(StateError::InvalidModifierId {
+                        modifier_id: *modifier_id,
+                    });
+                }
+                let modifier = Modifier::Virtual(*modifier_id);
+                self.modifiers.activate(modifier);
+            }
+
+            Mutation::DeactivateModifier { modifier_id } => {
+                // Validate modifier ID
+                if *modifier_id == 255 {
+                    return Err(StateError::InvalidModifierId {
+                        modifier_id: *modifier_id,
+                    });
+                }
+                let modifier = Modifier::Virtual(*modifier_id);
+                self.modifiers.deactivate(modifier);
+                effects.push(Effect::ModifierDeactivated {
+                    modifier_id: *modifier_id,
+                });
+            }
+
+            Mutation::ArmOneShotModifier { modifier_id } => {
+                // Validate modifier ID
+                if *modifier_id == 255 {
+                    return Err(StateError::InvalidModifierId {
+                        modifier_id: *modifier_id,
+                    });
+                }
+                let modifier = Modifier::Virtual(*modifier_id);
+                self.modifiers.arm_one_shot(modifier);
+            }
+
+            Mutation::ClearModifiers => {
+                self.modifiers.clear();
+                effects.push(Effect::AllModifiersCleared);
+            }
+
+            // === Pending Decision Mutations ===
+            Mutation::AddTapHold {
+                key,
+                pressed_at,
+                tap_action,
+                hold_action,
+            } => {
+                let (added, eager_resolution) =
+                    self.pending
+                        .add_tap_hold(*key, *pressed_at, *tap_action, hold_action.clone());
+
+                if !added {
+                    return Err(StateError::PendingQueueFull {
+                        max_size: PendingState::MAX_PENDING,
+                    });
+                }
+
+                // Handle eager resolution if configured
+                if let Some(resolution) = eager_resolution {
+                    effects.push(Effect::PendingResolved {
+                        decision_type: PendingDecisionType::TapHold,
+                        resolution: match resolution {
+                            crate::engine::decision::pending::DecisionResolution::Tap {
+                                ..
+                            } => PendingResolution::Tap,
+                            crate::engine::decision::pending::DecisionResolution::Hold {
+                                ..
+                            } => PendingResolution::Hold,
+                            _ => PendingResolution::Cancelled,
+                        },
+                    });
+                }
+            }
+
+            Mutation::AddCombo {
+                keys,
+                started_at,
+                action,
+            } => {
+                let added = self.pending.add_combo(keys, *started_at, action.clone());
+                if !added {
+                    return Err(StateError::PendingQueueFull {
+                        max_size: PendingState::MAX_PENDING,
+                    });
+                }
+            }
+
+            Mutation::MarkInterrupted { by_key } => {
+                self.pending.mark_interrupted(*by_key);
+                // Count is tracked via internal queue state, we approximate here
+                // A more accurate count would require changes to PendingState API
+                effects.push(Effect::PendingInterrupted { count: 1 });
+            }
+
+            Mutation::ClearPending => {
+                let count = self.pending.clear();
+                effects.push(Effect::PendingCleared { count });
+            }
+
+            // === Batch Mutations ===
+            Mutation::Batch { .. } => {
+                // Batch mutations are handled by apply_batch(), not apply()
+                return Err(StateError::NestedBatch);
+            }
+        }
+
+        // Increment version
+        self.version += 1;
+
+        // Return the state change with effects
+        Ok(StateChange::with_effects(
+            mutation,
+            self.version,
+            timestamp_us,
+            effects,
+        ))
+    }
 }
 
 impl Default for EngineState {
@@ -454,5 +665,296 @@ mod tests {
         let cloned = state.clone();
         assert_eq!(state.version(), cloned.version());
         assert_eq!(state.base_layer(), cloned.base_layer());
+    }
+
+    // === Mutation Tests ===
+
+    #[test]
+    fn apply_key_down_success() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::KeyDown {
+            key: KeyCode::A,
+            timestamp_us: 1000,
+            is_repeat: false,
+        };
+
+        let change = state.apply(mutation.clone()).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.timestamp_us, 1000);
+        assert_eq!(change.mutation, mutation);
+        assert!(state.is_key_pressed(KeyCode::A));
+        assert_eq!(state.version(), 1);
+    }
+
+    #[test]
+    fn apply_key_down_already_pressed() {
+        let mut state = EngineState::default();
+        state.keys_mut().press(KeyCode::A, 1000, false);
+
+        let mutation = Mutation::KeyDown {
+            key: KeyCode::A,
+            timestamp_us: 2000,
+            is_repeat: false,
+        };
+
+        let result = state.apply(mutation);
+        assert!(matches!(
+            result,
+            Err(StateError::KeyAlreadyPressed { key: KeyCode::A })
+        ));
+    }
+
+    #[test]
+    fn apply_key_up_success() {
+        let mut state = EngineState::default();
+        state.keys_mut().press(KeyCode::A, 1000, false);
+
+        let mutation = Mutation::KeyUp {
+            key: KeyCode::A,
+            timestamp_us: 2000,
+        };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert!(!state.is_key_pressed(KeyCode::A));
+    }
+
+    #[test]
+    fn apply_key_up_not_pressed() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::KeyUp {
+            key: KeyCode::A,
+            timestamp_us: 1000,
+        };
+
+        let result = state.apply(mutation);
+        assert!(matches!(
+            result,
+            Err(StateError::KeyNotPressed { key: KeyCode::A })
+        ));
+    }
+
+    #[test]
+    fn apply_push_layer() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::PushLayer { layer_id: 1 };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert!(state.is_layer_active(1));
+        assert_eq!(state.top_layer(), 1);
+    }
+
+    #[test]
+    fn apply_pop_layer_success() {
+        let mut state = EngineState::default();
+        state.layers_mut().push(1);
+
+        let mutation = Mutation::PopLayer;
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.effects.len(), 1);
+        assert!(matches!(
+            change.effects[0],
+            Effect::LayerPopped { layer_id: 1 }
+        ));
+        assert!(!state.is_layer_active(1));
+    }
+
+    #[test]
+    fn apply_pop_layer_base_only() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::PopLayer;
+
+        let result = state.apply(mutation);
+        assert!(matches!(result, Err(StateError::CannotPopBaseLayer)));
+    }
+
+    #[test]
+    fn apply_toggle_layer() {
+        let mut state = EngineState::default();
+
+        // Toggle on
+        let mutation = Mutation::ToggleLayer { layer_id: 1 };
+        state.apply(mutation).expect("valid mutation");
+        assert!(state.is_layer_active(1));
+
+        // Toggle off
+        let mutation = Mutation::ToggleLayer { layer_id: 1 };
+        state.apply(mutation).expect("valid mutation");
+        assert!(!state.is_layer_active(1));
+    }
+
+    #[test]
+    fn apply_activate_modifier() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::ActivateModifier { modifier_id: 5 };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert!(state.is_modifier_active(Modifier::Virtual(5)));
+    }
+
+    #[test]
+    fn apply_activate_modifier_invalid_id() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::ActivateModifier { modifier_id: 255 };
+
+        let result = state.apply(mutation);
+        assert!(matches!(
+            result,
+            Err(StateError::InvalidModifierId { modifier_id: 255 })
+        ));
+    }
+
+    #[test]
+    fn apply_deactivate_modifier() {
+        let mut state = EngineState::default();
+        state.modifiers_mut().activate(Modifier::Virtual(5));
+
+        let mutation = Mutation::DeactivateModifier { modifier_id: 5 };
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.effects.len(), 1);
+        assert!(matches!(
+            change.effects[0],
+            Effect::ModifierDeactivated { modifier_id: 5 }
+        ));
+        assert!(!state.is_modifier_active(Modifier::Virtual(5)));
+    }
+
+    #[test]
+    fn apply_arm_one_shot_modifier() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::ArmOneShotModifier { modifier_id: 3 };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert!(state.is_modifier_active(Modifier::Virtual(3)));
+    }
+
+    #[test]
+    fn apply_clear_modifiers() {
+        let mut state = EngineState::default();
+        state.modifiers_mut().activate(Modifier::Virtual(1));
+        state.modifiers_mut().activate(Modifier::Virtual(2));
+
+        let mutation = Mutation::ClearModifiers;
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.effects.len(), 1);
+        assert!(matches!(change.effects[0], Effect::AllModifiersCleared));
+        assert!(!state.is_modifier_active(Modifier::Virtual(1)));
+        assert!(!state.is_modifier_active(Modifier::Virtual(2)));
+    }
+
+    #[test]
+    fn apply_add_tap_hold() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::AddTapHold {
+            key: KeyCode::A,
+            pressed_at: 1000,
+            tap_action: KeyCode::B,
+            hold_action: HoldAction::Key(KeyCode::C),
+        };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(state.pending_count(), 1);
+    }
+
+    #[test]
+    fn apply_add_combo() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::AddCombo {
+            keys: vec![KeyCode::A, KeyCode::B],
+            started_at: 1000,
+            action: LayerAction::LayerPush(1),
+        };
+
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(state.pending_count(), 1);
+    }
+
+    #[test]
+    fn apply_mark_interrupted() {
+        let mut state = EngineState::default();
+        // Add a pending decision first
+        state
+            .pending_mut()
+            .add_tap_hold(KeyCode::A, 1000, KeyCode::B, HoldAction::Key(KeyCode::C));
+
+        let mutation = Mutation::MarkInterrupted { by_key: KeyCode::B };
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.effects.len(), 1);
+        assert!(matches!(
+            change.effects[0],
+            Effect::PendingInterrupted { .. }
+        ));
+    }
+
+    #[test]
+    fn apply_clear_pending() {
+        let mut state = EngineState::default();
+        // Add some pending decisions
+        state
+            .pending_mut()
+            .add_tap_hold(KeyCode::A, 1000, KeyCode::B, HoldAction::Key(KeyCode::C));
+        state
+            .pending_mut()
+            .add_tap_hold(KeyCode::D, 1000, KeyCode::E, HoldAction::Key(KeyCode::F));
+
+        let mutation = Mutation::ClearPending;
+        let change = state.apply(mutation).expect("valid mutation");
+        assert_eq!(change.version, 1);
+        assert_eq!(change.effects.len(), 1);
+        assert!(matches!(
+            change.effects[0],
+            Effect::PendingCleared { count: 2 }
+        ));
+        assert_eq!(state.pending_count(), 0);
+    }
+
+    #[test]
+    fn apply_batch_returns_error() {
+        let mut state = EngineState::default();
+        let mutation = Mutation::Batch {
+            mutations: vec![Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            }],
+        };
+
+        let result = state.apply(mutation);
+        assert!(matches!(result, Err(StateError::NestedBatch)));
+    }
+
+    #[test]
+    fn apply_increments_version() {
+        let mut state = EngineState::default();
+        assert_eq!(state.version(), 0);
+
+        state
+            .apply(Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            })
+            .unwrap();
+        assert_eq!(state.version(), 1);
+
+        state
+            .apply(Mutation::KeyUp {
+                key: KeyCode::A,
+                timestamp_us: 2000,
+            })
+            .unwrap();
+        assert_eq!(state.version(), 2);
+
+        state.apply(Mutation::PushLayer { layer_id: 1 }).unwrap();
+        assert_eq!(state.version(), 3);
     }
 }
