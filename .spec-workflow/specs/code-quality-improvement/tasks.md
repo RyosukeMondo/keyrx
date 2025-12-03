@@ -69,7 +69,7 @@
   - _Requirements: 8_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Create apply_layer_action() taking optional event context. Implement handle_layer_action and execute_layer_action as thin wrappers. Remove 95% duplicate code | Restrictions: ≤120 lines; backward compatible; add tests | _Leverage: decision_engine.rs | _Requirements: 8 | Success: Single implementation for layer actions._
 
-- [ ] 10. Extract error handling helper for pending ops
+- [x] 10. Extract error handling helper for pending ops
   - Files: core/src/scripting/pending_ops.rs (modify)
   - Create apply_op helper for repeated pattern
   - _Leverage: existing runtime.rs patterns_

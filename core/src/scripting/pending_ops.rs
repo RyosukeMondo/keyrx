@@ -3,10 +3,43 @@
 //! This module contains the logic for applying pending operations (PendingOp)
 //! from script execution to the remap registry.
 
+use std::fmt::Display;
+
 use super::builtins::{apply_timing_update, LayerMapAction, PendingOp, PendingOps};
 use super::registry_sync::RegistrySyncer;
 use crate::engine::{KeyCode, LayerAction, TimingConfig};
 use crate::scripting::RemapRegistry;
+
+/// Helper to execute a fallible operation and log errors with structured tracing.
+///
+/// This reduces boilerplate for the common pattern of:
+/// `if let Err(err) = operation { tracing::warn!(...) }`
+fn log_on_err<T, E: Display>(result: Result<T, E>, event: &str, message: &str, context: &str) {
+    if let Err(err) = result {
+        tracing::warn!(
+            service = "keyrx",
+            event = event,
+            component = "scripting_runtime",
+            context = context,
+            error = %err,
+            "{message}"
+        );
+    }
+}
+
+/// Helper to warn when a modifier is undefined, returning whether operation should proceed.
+fn warn_undefined_modifier(exists: bool, event: &str, message: &str, modifier: &str) -> bool {
+    if !exists {
+        tracing::warn!(
+            service = "keyrx",
+            event = event,
+            component = "scripting_runtime",
+            modifier = modifier,
+            "{message}"
+        );
+    }
+    exists
+}
 
 /// Applies pending operations to the registry.
 ///
@@ -89,34 +122,17 @@ impl<'a> PendingOpsApplier<'a> {
     }
 
     fn apply_layer_define(&mut self, name: &str, transparent: bool) {
-        if let Err(err) = self.registry.define_layer(name, transparent) {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_layer_define_failed",
-                component = "scripting_runtime",
-                layer = name,
-                error = %err,
-                "Layer definition failed"
-            );
-        }
+        log_on_err(
+            self.registry.define_layer(name, transparent),
+            "rhai_layer_define_failed",
+            "Layer definition failed",
+            name,
+        );
     }
 
     fn apply_layer_map(&mut self, layer: &str, key: KeyCode, action: LayerMapAction) {
-        match resolve_layer_action(self.registry, action) {
-            Ok(resolved) => {
-                if let Err(err) = self.registry.map_layer(layer, key, resolved.clone()) {
-                    tracing::warn!(
-                        service = "keyrx",
-                        event = "rhai_layer_map_failed",
-                        component = "scripting_runtime",
-                        layer = layer,
-                        key = ?key,
-                        action = ?resolved,
-                        error = %err,
-                        "Layer mapping failed"
-                    );
-                }
-            }
+        let resolved = match resolve_layer_action(self.registry, action) {
+            Ok(r) => r,
             Err(err) => {
                 tracing::warn!(
                     service = "keyrx",
@@ -127,34 +143,34 @@ impl<'a> PendingOpsApplier<'a> {
                     error = %err,
                     "Failed to resolve layer action"
                 );
+                return;
             }
-        }
+        };
+        let context = format!("{}:{:?}", layer, key);
+        log_on_err(
+            self.registry.map_layer(layer, key, resolved),
+            "rhai_layer_map_failed",
+            "Layer mapping failed",
+            &context,
+        );
     }
 
     fn apply_layer_push(&mut self, name: &str) {
-        if let Err(err) = self.registry.push_layer(name) {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_layer_push_failed",
-                component = "scripting_runtime",
-                layer = name,
-                error = %err,
-                "Layer push failed"
-            );
-        }
+        log_on_err(
+            self.registry.push_layer(name),
+            "rhai_layer_push_failed",
+            "Layer push failed",
+            name,
+        );
     }
 
     fn apply_layer_toggle(&mut self, name: &str) {
-        if let Err(err) = self.registry.toggle_layer(name) {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_layer_toggle_failed",
-                component = "scripting_runtime",
-                layer = name,
-                error = %err,
-                "Layer toggle failed"
-            );
-        }
+        log_on_err(
+            self.registry.toggle_layer(name),
+            "rhai_layer_toggle_failed",
+            "Layer toggle failed",
+            name,
+        );
     }
 
     fn apply_layer_pop(&mut self) {
@@ -162,56 +178,46 @@ impl<'a> PendingOpsApplier<'a> {
     }
 
     fn apply_define_modifier(&mut self, name: &str, id: u8) {
-        if let Err(err) = self.registry.define_modifier_with_id(name, Some(id)) {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_define_modifier_failed",
-                component = "scripting_runtime",
-                modifier = name,
-                error = %err,
-                "Modifier definition failed"
-            );
-        }
+        log_on_err(
+            self.registry.define_modifier_with_id(name, Some(id)),
+            "rhai_define_modifier_failed",
+            "Modifier definition failed",
+            name,
+        );
     }
 
     fn apply_modifier_activate(&mut self, name: &str, id: u8) {
-        if self.registry.modifier_id(name).is_none() {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_modifier_activate_undefined",
-                component = "scripting_runtime",
-                modifier = name,
-                "Modifier activation ignored (undefined)"
-            );
-        } else {
+        let defined = self.registry.modifier_id(name).is_some();
+        if warn_undefined_modifier(
+            defined,
+            "rhai_modifier_activate_undefined",
+            "Modifier activation ignored (undefined)",
+            name,
+        ) {
             self.registry.activate_modifier(id);
         }
     }
 
     fn apply_modifier_deactivate(&mut self, name: &str, id: u8) {
-        if self.registry.modifier_id(name).is_none() {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_modifier_deactivate_undefined",
-                component = "scripting_runtime",
-                modifier = name,
-                "Modifier deactivation ignored (undefined)"
-            );
-        } else {
+        let defined = self.registry.modifier_id(name).is_some();
+        if warn_undefined_modifier(
+            defined,
+            "rhai_modifier_deactivate_undefined",
+            "Modifier deactivation ignored (undefined)",
+            name,
+        ) {
             self.registry.deactivate_modifier(id);
         }
     }
 
     fn apply_modifier_one_shot(&mut self, name: &str, id: u8) {
-        if self.registry.modifier_id(name).is_none() {
-            tracing::warn!(
-                service = "keyrx",
-                event = "rhai_modifier_one_shot_undefined",
-                component = "scripting_runtime",
-                modifier = name,
-                "Modifier one-shot ignored (undefined)"
-            );
-        } else {
+        let defined = self.registry.modifier_id(name).is_some();
+        if warn_undefined_modifier(
+            defined,
+            "rhai_modifier_one_shot_undefined",
+            "Modifier one-shot ignored (undefined)",
+            name,
+        ) {
             self.registry.one_shot_modifier(id);
         }
     }
