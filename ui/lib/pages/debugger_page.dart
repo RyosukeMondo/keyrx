@@ -3,10 +3,9 @@
 // Shows the current engine state including active layers,
 // held modifiers, and why keys were blocked.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
+import '../mixins/stream_subscriber.dart';
 import '../services/engine_service.dart';
 import 'debugger_meters.dart';
 import 'debugger_widgets.dart';
@@ -26,10 +25,9 @@ class DebuggerPage extends StatefulWidget {
 }
 
 class _DebuggerPageState extends State<DebuggerPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, StreamSubscriber<DebuggerPage> {
   static const Duration _animationDuration = Duration(milliseconds: 150);
 
-  StreamSubscription<EngineSnapshot>? _streamSubscription;
   final List<EngineSnapshot> _recent = [];
   bool _isRecording = true;
   final int _maxEvents = 300;
@@ -62,32 +60,35 @@ class _DebuggerPageState extends State<DebuggerPage>
   }
 
   void _subscribeToStateStream() {
-    _streamSubscription?.cancel();
-    _streamSubscription = widget.engineService.stateStream.listen((snapshot) {
-      if (!_isRecording) return;
+    cancelAllSubscriptions();
+    subscribe<EngineSnapshot>(
+      widget.engineService.stateStream,
+      onData: (snapshot) {
+        if (!_isRecording) return;
 
-      setState(() {
-        _recent.insert(0, snapshot);
-        if (_recent.length > _maxEvents) {
-          _recent.removeLast();
-        }
+        setState(() {
+          _recent.insert(0, snapshot);
+          if (_recent.length > _maxEvents) {
+            _recent.removeLast();
+          }
 
-        // Track changes for animation
-        final newLayers = snapshot.activeLayers.toSet();
-        final newModifiers = snapshot.activeModifiers.toSet();
-        final newHeldKeys = snapshot.heldKeys.toSet();
+          // Track changes for animation
+          final newLayers = snapshot.activeLayers.toSet();
+          final newModifiers = snapshot.activeModifiers.toSet();
+          final newHeldKeys = snapshot.heldKeys.toSet();
 
-        // Trigger pulse animation on significant changes
-        if (_hasSignificantChange(newLayers, newModifiers, newHeldKeys)) {
-          _pulseController.forward(from: 0);
-        }
+          // Trigger pulse animation on significant changes
+          if (_hasSignificantChange(newLayers, newModifiers, newHeldKeys)) {
+            _pulseController.forward(from: 0);
+          }
 
-        _previousLayers = newLayers;
-        _previousModifiers = newModifiers;
-        _previousHeldKeys = newHeldKeys;
-        _previousLatency = snapshot.latencyUs;
-      });
-    });
+          _previousLayers = newLayers;
+          _previousModifiers = newModifiers;
+          _previousHeldKeys = newHeldKeys;
+          _previousLatency = snapshot.latencyUs;
+        });
+      },
+    );
   }
 
   bool _hasSignificantChange(
@@ -107,7 +108,6 @@ class _DebuggerPageState extends State<DebuggerPage>
 
   @override
   void dispose() {
-    _streamSubscription?.cancel();
     _pulseController.dispose();
     super.dispose();
   }

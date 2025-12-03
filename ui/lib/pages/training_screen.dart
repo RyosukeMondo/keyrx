@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../mixins/stream_subscriber.dart';
 import '../services/audio_service.dart';
 import '../services/error_translator.dart';
 import '../services/service_registry.dart';
@@ -25,10 +26,10 @@ class TrainingScreen extends StatefulWidget {
   State<TrainingScreen> createState() => _TrainingScreenState();
 }
 
-class _TrainingScreenState extends State<TrainingScreen> {
+class _TrainingScreenState extends State<TrainingScreen>
+    with StreamSubscriber<TrainingScreen> {
   late final TextEditingController _bpmController;
 
-  StreamSubscription<ClassificationResult>? _classificationSub;
   List<ClassificationResult> _recentResults = [];
   AudioState _state = AudioState.idle;
   bool _isLoading = false;
@@ -45,16 +46,15 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _attachClassificationStream() {
-    _classificationSub?.cancel();
-    _classificationSub = _audioService.classificationStream.listen(
-      (event) {
-        if (!mounted) return;
+    cancelAllSubscriptions();
+    subscribe<ClassificationResult>(
+      _audioService.classificationStream,
+      onData: (event) {
         setState(() {
           _recentResults = [event, ..._recentResults].take(15).toList();
         });
       },
       onError: (error, stackTrace) {
-        if (!mounted) return;
         final registry = Provider.of<ServiceRegistry>(context, listen: false);
         final message = registry.errorTranslator.translate(error);
         _showMessage(message);
@@ -64,7 +64,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   void dispose() {
-    _classificationSub?.cancel();
     // Ensure we stop audio if user navigates away.
     unawaited(_audioService.stop());
     _bpmController.dispose();
