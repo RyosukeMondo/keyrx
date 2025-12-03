@@ -87,6 +87,20 @@ impl BenchCommand {
     }
 
     pub async fn run(&self) -> Result<()> {
+        let result = self.execute().await?;
+
+        // Output warning to stderr if present
+        if let Some(ref warning) = result.warning {
+            self.output.error(warning);
+        }
+
+        self.output.data(&result)?;
+
+        Ok(())
+    }
+
+    /// Execute benchmark and return results directly.
+    pub async fn execute(&self) -> Result<BenchResult> {
         // Create runtime and load script if provided
         let mut runtime = RhaiRuntime::new()?;
         if let Some(path) = &self.script_path {
@@ -122,17 +136,8 @@ impl BenchCommand {
             latencies.push(elapsed);
         }
 
-        // Calculate and output results
-        let result = self.calculate_stats(&mut latencies);
-
-        // Output warning to stderr if present
-        if let Some(ref warning) = result.warning {
-            self.output.error(warning);
-        }
-
-        self.output.data(&result)?;
-
-        Ok(())
+        // Calculate and return results
+        Ok(self.calculate_stats(&mut latencies))
     }
 }
 

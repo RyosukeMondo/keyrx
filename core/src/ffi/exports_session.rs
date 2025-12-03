@@ -899,6 +899,93 @@ pub unsafe extern "C" fn keyrx_replay_session(path: *const c_char, verify: bool)
     CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
 }
 
+// ─── Benchmark FFI Export ─────────────────────────────────────────────────
+
+/// Benchmark result for FFI JSON output.
+#[derive(Serialize)]
+struct BenchmarkResultJson {
+    #[serde(rename = "minNs")]
+    min_ns: u64,
+    #[serde(rename = "maxNs")]
+    max_ns: u64,
+    #[serde(rename = "meanNs")]
+    mean_ns: u64,
+    #[serde(rename = "p99Ns")]
+    p99_ns: u64,
+    iterations: usize,
+    #[serde(rename = "hasWarning")]
+    has_warning: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    warning: Option<String>,
+}
+
+/// Run latency benchmark on the engine.
+///
+/// Returns JSON: `ok:{minNs, maxNs, meanNs, p99Ns, iterations, hasWarning, warning?}`
+///
+/// Caller must free with `keyrx_free_string`.
+///
+/// # Safety
+/// `script_path` must be a valid null-terminated UTF-8 string or null.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_run_benchmark(
+    iterations: u32,
+    script_path: *const c_char,
+) -> *mut c_char {
+    use crate::cli::commands::BenchCommand;
+    use crate::cli::OutputFormat;
+
+    let iterations = iterations as usize;
+    if iterations == 0 {
+        return CString::new("error:iterations must be > 0")
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let script_path_opt = if script_path.is_null() {
+        None
+    } else {
+        match CStr::from_ptr(script_path).to_str() {
+            Ok(s) if !s.is_empty() => Some(std::path::PathBuf::from(s)),
+            _ => None,
+        }
+    };
+
+    let cmd = BenchCommand::new(iterations, script_path_opt, OutputFormat::Json);
+
+    // Use tokio runtime for async execution
+    let rt = match tokio::runtime::Builder::new_current_thread().build() {
+        Ok(rt) => rt,
+        Err(err) => {
+            return CString::new(format!("error:Failed to create runtime: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let bench_result = match rt.block_on(cmd.execute()) {
+        Ok(r) => r,
+        Err(err) => {
+            return CString::new(format!("error:Benchmark failed: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let result = BenchmarkResultJson {
+        min_ns: bench_result.min_ns,
+        max_ns: bench_result.max_ns,
+        mean_ns: bench_result.mean_ns,
+        p99_ns: bench_result.p99_ns,
+        iterations: bench_result.iterations,
+        has_warning: bench_result.warning.is_some(),
+        warning: bench_result.warning,
+    };
+
+    let payload = serde_json::to_string(&result)
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
+
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1558,5 +1645,25 @@ mod tests {
         let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
         unsafe { keyrx_free_string(ptr) };
         assert!(raw.starts_with("error:"));
+    }
+
+    #[test]
+    fn run_benchmark_basic() {
+        let ptr = unsafe { keyrx_run_benchmark(100, ptr::null()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"), "got: {raw}");
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+
+        assert!(result["minNs"].as_u64().is_some());
+        assert!(result["maxNs"].as_u64().is_some());
+        assert!(result["meanNs"].as_u64().is_some());
+        assert!(result["p99Ns"].as_u64().is_some());
+        assert!(result["iterations"].as_u64().is_some());
+        assert_eq!(result["iterations"], 100);
     }
 }

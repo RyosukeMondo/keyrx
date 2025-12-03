@@ -44,7 +44,7 @@
   - _Requirements: 7, 10_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add session FFI exports: list_sessions returns [{path, name, created, eventCount, durationMs}], analyze_session returns full analysis JSON, replay_session streams events or returns verification result | Restrictions: ≤150 lines; scan sessions/ directory | _Leverage: analyze.rs, replay.rs | _Requirements: 7, 10 | Success: Sessions listable, analyzable, replayable from FFI._
 
-- [ ] 7. Add benchmark FFI export
+- [x] 7. Add benchmark FFI export
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_run_benchmark(iterations)` returning results JSON
   - _Leverage: core/src/cli/commands/bench.rs_
