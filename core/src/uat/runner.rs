@@ -7,7 +7,7 @@ use std::str::FromStr;
 use rhai::Engine;
 
 /// Test priority levels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize)]
 pub enum Priority {
     /// Critical path tests that must always pass.
     P0,
@@ -33,7 +33,7 @@ impl FromStr for Priority {
 }
 
 /// A discovered UAT test.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct UatTest {
     /// Test name.
     pub name: String,
@@ -90,7 +90,7 @@ impl UatFilter {
 }
 
 /// Result of a single UAT test.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct UatResult {
     /// Test that was run.
     pub test: UatTest,
@@ -103,7 +103,7 @@ pub struct UatResult {
 }
 
 /// Aggregated results from a UAT run.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct UatResults {
     /// Total tests run.
     pub total: usize,

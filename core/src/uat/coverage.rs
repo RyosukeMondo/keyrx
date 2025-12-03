@@ -7,7 +7,7 @@ use chrono::Utc;
 use crate::uat::runner::{UatResults, UatTest};
 
 /// Coverage status for a requirement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum CoverageStatus {
     /// All linked tests pass.
     Verified,
@@ -18,7 +18,7 @@ pub enum CoverageStatus {
 }
 
 /// Coverage information for a single requirement.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct RequirementCoverage {
     /// Requirement ID.
     pub id: String,
@@ -31,7 +31,7 @@ pub struct RequirementCoverage {
 }
 
 /// Map of requirement IDs to their coverage.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct CoverageMap {
     /// Mapping of requirement ID to coverage info.
     pub requirements: HashMap<String, RequirementCoverage>,
@@ -82,7 +82,7 @@ impl CoverageMap {
 }
 
 /// Coverage report with summary statistics.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct CoverageReport {
     /// Coverage map.
     pub coverage: CoverageMap,

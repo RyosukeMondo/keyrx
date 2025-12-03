@@ -117,7 +117,7 @@ impl QualityGate {
 }
 
 /// Result of quality gate evaluation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GateResult {
     /// Whether the gate passed.
     pub passed: bool,
@@ -144,7 +144,7 @@ impl GateResult {
 }
 
 /// A quality gate violation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GateViolation {
     /// Name of the violated criterion.
     pub criterion: String,

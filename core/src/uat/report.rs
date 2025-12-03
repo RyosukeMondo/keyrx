@@ -5,6 +5,7 @@
 use std::collections::HashMap;
 
 use chrono::Utc;
+use serde::Serialize;
 
 use super::coverage::{CoverageReport, CoverageStatus};
 use super::gates::GateResult;
@@ -12,7 +13,7 @@ use super::perf::PerfResults;
 use super::runner::{Priority, UatResults};
 
 /// Aggregated data for report generation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ReportData {
     /// UAT test results.
     pub uat_results: UatResults,
@@ -121,7 +122,7 @@ impl ReportData {
 }
 
 /// Statistics for a category or priority group.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct CategoryStats {
     /// Total tests in this group.
     pub total: usize,
@@ -260,6 +261,18 @@ impl ReportGenerator {
         }
 
         md
+    }
+
+    /// Generate a JSON report for machine parsing.
+    ///
+    /// Creates a machine-readable JSON output containing all report data
+    /// for programmatic consumption by CI/CD systems and other tools.
+    ///
+    /// # Returns
+    /// A JSON string containing all report data.
+    pub fn generate_json(&self, data: &ReportData) -> String {
+        serde_json::to_string_pretty(data)
+            .unwrap_or_else(|e| format!("{{\"error\": \"Failed to serialize report: {}\"}}", e))
     }
 
     /// Generate markdown summary section.
@@ -1648,5 +1661,168 @@ mod tests {
         // Truncates at 47 chars + "..." = 50 chars total
         assert!(md.contains("This is a very long error message that should b..."));
         assert!(!md.contains("exceeds the maximum length"));
+    }
+
+    // JSON report tests
+
+    #[test]
+    fn generate_json_basic() {
+        let results = create_uat_results();
+        let data = ReportData::new(results);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+
+        // Verify it's valid JSON
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        // Check structure
+        assert!(parsed.get("uat_results").is_some());
+        assert!(parsed.get("title").is_some());
+        assert!(parsed.get("generated_at").is_some());
+
+        // Check values
+        assert_eq!(parsed["uat_results"]["total"], 10);
+        assert_eq!(parsed["uat_results"]["passed"], 8);
+        assert_eq!(parsed["uat_results"]["failed"], 2);
+        assert_eq!(parsed["title"], "UAT Report");
+    }
+
+    #[test]
+    fn generate_json_with_gate_result() {
+        let results = create_uat_results();
+        let gate_result = GateResult {
+            passed: false,
+            violations: vec![GateViolation::new("pass_rate", "≥95.0%", "80.0%")],
+        };
+        let data = ReportData::new(results).with_gate_result(gate_result);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        assert!(parsed.get("gate_result").is_some());
+        assert_eq!(parsed["gate_result"]["passed"], false);
+        assert!(parsed["gate_result"]["violations"].is_array());
+        assert_eq!(
+            parsed["gate_result"]["violations"][0]["criterion"],
+            "pass_rate"
+        );
+    }
+
+    #[test]
+    fn generate_json_with_coverage() {
+        let results = create_uat_results();
+        let mut coverage_map = CoverageMap::new();
+        coverage_map.requirements.insert(
+            "1.1".to_string(),
+            RequirementCoverage {
+                id: "1.1".to_string(),
+                linked_tests: vec!["test1".to_string()],
+                status: CoverageStatus::Verified,
+                last_verified: Some("2025-01-01".to_string()),
+            },
+        );
+        let coverage = CoverageReport {
+            coverage: coverage_map,
+            total: 1,
+            verified: 1,
+            at_risk: 0,
+            uncovered: 0,
+            coverage_percentage: 1.0,
+            generated_at: "2025-01-01".to_string(),
+        };
+        let data = ReportData::new(results).with_coverage(coverage);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        assert!(parsed.get("coverage").is_some());
+        assert_eq!(parsed["coverage"]["total"], 1);
+        assert_eq!(parsed["coverage"]["verified"], 1);
+        assert_eq!(parsed["coverage"]["coverage_percentage"], 1.0);
+    }
+
+    #[test]
+    fn generate_json_with_performance() {
+        let results = create_uat_results();
+        let perf = PerfResults {
+            total: 2,
+            passed: 1,
+            failed: 1,
+            aggregate_p50_us: 100,
+            aggregate_p95_us: 200,
+            aggregate_p99_us: 300,
+            aggregate_max_us: 500,
+            total_duration_us: 10000,
+            results: vec![],
+            all_violations: vec![LatencyViolation {
+                test_name: "perf_test".to_string(),
+                threshold_us: 1000,
+                actual_us: 1500,
+                iteration: 50,
+            }],
+        };
+        let data = ReportData::new(results).with_performance(perf);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        assert!(parsed.get("performance").is_some());
+        assert_eq!(parsed["performance"]["aggregate_p50_us"], 100);
+        assert_eq!(parsed["performance"]["aggregate_p95_us"], 200);
+        assert_eq!(parsed["performance"]["aggregate_p99_us"], 300);
+        assert_eq!(parsed["performance"]["aggregate_max_us"], 500);
+        assert!(parsed["performance"]["all_violations"].is_array());
+    }
+
+    #[test]
+    fn generate_json_empty_results() {
+        let results = UatResults {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            skipped: 0,
+            duration_us: 0,
+            results: vec![],
+        };
+        let data = ReportData::new(results);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        assert_eq!(parsed["uat_results"]["total"], 0);
+        assert_eq!(parsed["uat_results"]["passed"], 0);
+        assert_eq!(
+            parsed["uat_results"]["results"].as_array().unwrap().len(),
+            0
+        );
+    }
+
+    #[test]
+    fn generate_json_includes_test_details() {
+        let results = create_uat_results();
+        let data = ReportData::new(results);
+        let generator = ReportGenerator::new();
+
+        let json = generator.generate_json(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
+        let test_results = parsed["uat_results"]["results"].as_array().unwrap();
+        assert_eq!(test_results.len(), 10);
+
+        // Check first test structure
+        let first_test = &test_results[0];
+        assert!(first_test.get("test").is_some());
+        assert!(first_test.get("passed").is_some());
+        assert!(first_test.get("duration_us").is_some());
+
+        // Check test metadata
+        assert!(first_test["test"].get("name").is_some());
+        assert!(first_test["test"].get("category").is_some());
+        assert!(first_test["test"].get("priority").is_some());
     }
 }
