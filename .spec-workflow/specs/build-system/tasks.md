@@ -101,7 +101,7 @@
   - _Requirements: 4, 5_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust build configuration engineer | Task: Add to core/Cargo.toml: [profile.release] with opt-level=3, lto="thin", strip=true, panic="abort", codegen-units=1; [profile.profiling] inherits="release" with debug=true, strip=false | Restrictions: ≤15 lines added; append to existing file; don't modify existing content | _Leverage: existing Cargo.toml structure | _Requirements: 4, 5 | Success: `cargo build --release` produces optimized binary, `cargo build --profile profiling` includes debug info._
 
-- [ ] 14. Add build system documentation to README
+- [x] 14. Add build system documentation to README
   - Files: README.md (modify)
   - Add "Development Setup" and "Building" sections
   - _Leverage: existing README.md_

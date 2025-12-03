@@ -23,6 +23,93 @@ cargo build --release
 
 The binary will be at `core/target/release/keyrx`.
 
+## Development Setup
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (stable toolchain)
+- [Flutter](https://docs.flutter.dev/get-started/install) (for UI development)
+- [just](https://github.com/casey/just#installation) (task runner)
+
+### Quick Setup
+
+```bash
+just setup
+```
+
+This installs all toolchain components, development tools (cargo-nextest, cargo-watch), dependencies, and git hooks.
+
+### Available Commands
+
+Run `just` to see all available commands:
+
+| Command | Description |
+|---------|-------------|
+| `just setup` | Install tools, dependencies, and git hooks |
+| `just dev` | Run core with auto-reload (cargo watch) |
+| `just ui` | Run Flutter UI in development mode |
+| `just check` | Run all quality checks (fmt, clippy, test) |
+| `just fmt` | Format Rust code |
+| `just clippy` | Run clippy linter |
+| `just test` | Run tests with nextest |
+| `just bench` | Run benchmarks |
+| `just clean` | Clean build artifacts |
+
+## Building
+
+### Current Platform
+
+```bash
+just build
+```
+
+Creates an optimized release binary at `core/target/release/keyrx`.
+
+### All Platforms
+
+```bash
+just build-all
+```
+
+Builds for Linux and Windows x86_64. Windows builds require [cross](https://github.com/cross-rs/cross).
+
+### Individual Platforms
+
+```bash
+just build-linux    # Linux x86_64
+just build-windows  # Windows x86_64 (requires cross)
+```
+
+## Contributing
+
+### Code Quality Checks
+
+Before submitting changes, run the full quality suite:
+
+```bash
+just check
+```
+
+This runs formatting checks, clippy linting, and all tests.
+
+### Pre-commit Hooks
+
+Git hooks are automatically installed with `just setup`. The pre-commit hook runs:
+
+1. `cargo fmt --check` - Code formatting
+2. `cargo clippy -- -D warnings` - Linting
+3. `cargo test --lib` - Unit tests
+
+Commits are blocked if any check fails. Run `just fmt` to fix formatting issues.
+
+### Creating a Release
+
+```bash
+just release 1.0.0
+```
+
+This updates version numbers, generates the changelog, and creates a git tag.
+
 ## Quick Start
 
 ### 1. Check your system
