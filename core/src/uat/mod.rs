@@ -18,7 +18,7 @@ mod runner;
 
 pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
 pub use fuzz::{FuzzEngine, FuzzResult};
-pub use gates::{GateResult, GateViolation, QualityGate, QualityGateEnforcer};
+pub use gates::{GateLoadError, GateResult, GateViolation, QualityGate, QualityGateEnforcer};
 pub use golden::{GoldenSession, GoldenSessionManager, GoldenVerifyResult};
 pub use perf::{PerformanceResult, PerformanceUat};
 pub use report::ReportGenerator;
