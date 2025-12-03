@@ -97,7 +97,7 @@
 
 ## Services Layer
 
-- [ ] 14. Create DeviceService
+- [x] 14. Create DeviceService
   - Files: ui/lib/services/device_service.dart (new)
   - Implement device listing, selection, profile checking
   - _Leverage: ui/lib/services/engine_service.dart patterns_
