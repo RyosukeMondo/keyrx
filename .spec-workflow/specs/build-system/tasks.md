@@ -39,14 +39,14 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CI/CD engineer specializing in GitHub Actions | Task: Replace .github/workflows/ci.yml with full pipeline: (1) check job (fmt + clippy), (2) test job with matrix [ubuntu-latest, windows-latest] using nextest, (3) test-flutter job (analyze + test --coverage), (4) coverage job (cargo-llvm-cov → Codecov), (5) security job (cargo audit), (6) benchmark job (PR only, criterion comparison) | Restrictions: ≤200 lines; use concurrency cancel-in-progress; needs: check for dependent jobs; cache with Swatinem/rust-cache | _Leverage: existing ci.yml, dtolnay/rust-toolchain, codecov/codecov-action | _Requirements: 4 | Success: All jobs run on PR, benchmark only on PR, coverage uploads to Codecov._
 
-- [ ] 6. Create release workflow for automated publishing
+- [x] 6. Create release workflow for automated publishing
   - Files: .github/workflows/release.yml (new)
   - Implement matrix build, packaging, and GitHub Release publishing
   - _Leverage: softprops/action-gh-release, subosito/flutter-action_
   - _Requirements: 5_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer specializing in GitHub Actions | Task: Create .github/workflows/release.yml triggered on push tags v*: (1) build job with matrix [linux-x64, windows-x64] building Rust + Flutter, (2) package step creating tar.gz (Linux) or zip (Windows) with checksums, (3) publish job downloading artifacts and creating GitHub Release with softprops/action-gh-release | Restrictions: ≤180 lines; permissions contents:write; prerelease if tag contains '-'; use flutter-action for Flutter builds | _Leverage: softprops/action-gh-release, subosito/flutter-action | _Requirements: 5 | Success: Push v1.0.0 tag creates GitHub Release with linux + windows artifacts._
 
-- [ ] 7. Create maintenance workflow for automated updates
+- [x] 7. Create maintenance workflow for automated updates
   - Files: .github/workflows/maintenance.yml (new)
   - Implement weekly dependency updates and security audit
   - _Leverage: peter-evans/create-pull-request, rustsec/audit-check_
@@ -55,7 +55,7 @@
 
 ## IDE & Developer Experience
 
-- [ ] 8. Create VS Code settings configuration
+- [x] 8. Create VS Code settings configuration
   - Files: .vscode/settings.json (new)
   - Configure rust-analyzer, formatOnSave, clippy as check command
   - _Leverage: rust-analyzer documentation_
