@@ -123,4 +123,63 @@ mod tests {
         assert!(path.to_string_lossy().contains("keyrx"));
         assert!(path.to_string_lossy().contains("validation.toml"));
     }
+
+    #[test]
+    fn load_parses_all_fields() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("full_config.toml");
+        let mut file = std::fs::File::create(&path).unwrap();
+        writeln!(file, "max_errors = 100").unwrap();
+        writeln!(file, "max_suggestions = 8").unwrap();
+        writeln!(file, "similarity_threshold = 5").unwrap();
+        writeln!(file, "blocked_keys_warning_threshold = 15").unwrap();
+        writeln!(file, "max_cycle_depth = 20").unwrap();
+        writeln!(file, "tap_timeout_warn_range = [25, 750]").unwrap();
+        writeln!(file, "combo_timeout_warn_range = [5, 200]").unwrap();
+        writeln!(file, "ui_validation_debounce_ms = 300").unwrap();
+
+        let config = ValidationConfig::load_from_path(&path).unwrap();
+        assert_eq!(config.max_errors, 100);
+        assert_eq!(config.max_suggestions, 8);
+        assert_eq!(config.similarity_threshold, 5);
+        assert_eq!(config.blocked_keys_warning_threshold, 15);
+        assert_eq!(config.max_cycle_depth, 20);
+        assert_eq!(config.tap_timeout_warn_range, (25, 750));
+        assert_eq!(config.combo_timeout_warn_range, (5, 200));
+        assert_eq!(config.ui_validation_debounce_ms, 300);
+    }
+
+    #[test]
+    fn wrong_type_returns_none() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("wrong_type.toml");
+        let mut file = std::fs::File::create(&path).unwrap();
+        writeln!(file, "max_errors = \"not_a_number\"").unwrap();
+
+        let config = ValidationConfig::load_from_path(&path);
+        assert!(config.is_none());
+    }
+
+    #[test]
+    fn empty_file_uses_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty.toml");
+        let file = std::fs::File::create(&path).unwrap();
+        drop(file); // Create empty file
+
+        let config = ValidationConfig::load_from_path(&path).unwrap();
+        assert_eq!(config.max_errors, 20);
+        assert_eq!(config.max_suggestions, 5);
+    }
+
+    #[test]
+    fn load_falls_back_to_default() {
+        // load() should return defaults when config file doesn't exist
+        let config = ValidationConfig::load();
+        // Should get default values since ~/.config/keyrx/validation.toml likely doesn't exist
+        assert!(config.max_errors > 0);
+        assert!(config.max_suggestions > 0);
+    }
 }
