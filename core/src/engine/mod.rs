@@ -6,6 +6,7 @@ pub mod decision_engine;
 mod event_loop;
 mod event_recorder;
 mod event_recording;
+pub mod layer_actions;
 mod processing;
 pub mod replay;
 mod state;

@@ -62,7 +62,7 @@
 
 ## Phase 3: Rust DRY
 
-- [ ] 9. Unify layer action handlers
+- [x] 9. Unify layer action handlers
   - Files: core/src/engine/layer_actions.rs (new), core/src/engine/decision_engine.rs (modify)
   - Merge handle_layer_action and execute_layer_action
   - _Leverage: existing decision_engine.rs_

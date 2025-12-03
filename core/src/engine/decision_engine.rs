@@ -4,6 +4,7 @@
 //! advanced engine, providing pure functions for handling timing-based decisions.
 
 use crate::engine::{
+    layer_actions::{self, LayerActionContext},
     DecisionResolution, DecisionType, HoldAction, InputEvent, KeyCode, KeyStateTracker,
     LayerAction, LayerStack, Modifier, ModifierState, OutputAction,
 };
@@ -146,107 +147,31 @@ pub fn activate_hold_action(
 /// Handle a layer action for a given event.
 ///
 /// Returns the outputs and whether the event was consumed.
-/// Some actions require mutable state access which is passed in.
+/// This is a thin wrapper around the unified `apply_layer_action`.
 pub fn handle_layer_action(
     event: &InputEvent,
     action: &LayerAction,
     modifiers: &mut ModifierState,
     layers: &mut LayerStack,
 ) -> LayerActionResult {
-    let mut outputs = Vec::new();
-    let mut consumed = true;
-
-    match action {
-        LayerAction::Remap(target) => {
-            outputs.push(if event.pressed {
-                OutputAction::KeyDown(*target)
-            } else {
-                OutputAction::KeyUp(*target)
-            });
-        }
-        LayerAction::Block => outputs.push(OutputAction::Block),
-        LayerAction::TapHold { .. } => {
-            // TapHold requires DecisionQueue interaction - caller handles this
-            // We just return Block for now, actual handling is in advanced.rs
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::LayerPush(id) => {
-            layers.push(*id);
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::LayerPop => {
-            layers.pop();
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::LayerToggle(id) => {
-            layers.toggle(*id);
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::ModifierActivate(id) => {
-            modifiers.activate(Modifier::Virtual(*id));
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::ModifierDeactivate(id) => {
-            modifiers.deactivate(Modifier::Virtual(*id));
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::ModifierOneShot(id) => {
-            modifiers.arm_one_shot(Modifier::Virtual(*id));
-            outputs.push(OutputAction::Block);
-        }
-        LayerAction::Pass => {
-            outputs.push(OutputAction::PassThrough);
-            consumed = false;
-        }
+    let ctx = LayerActionContext::with_event(event);
+    let result = layer_actions::apply_layer_action(action, ctx, modifiers, layers);
+    LayerActionResult {
+        outputs: result.outputs,
+        consumed: result.consumed,
     }
-
-    LayerActionResult { outputs, consumed }
 }
 
-/// Execute a layer action with an optional event context (for combos).
+/// Execute a layer action without event context (for combos).
 ///
-/// This is used for combo-triggered actions and other non-event-driven executions.
+/// This is a thin wrapper around the unified `apply_layer_action`.
 pub fn execute_layer_action(
     action: &LayerAction,
     modifiers: &mut ModifierState,
     layers: &mut LayerStack,
 ) -> Vec<OutputAction> {
-    match action {
-        LayerAction::Remap(target) => {
-            vec![OutputAction::KeyDown(*target), OutputAction::KeyUp(*target)]
-        }
-        LayerAction::Block => vec![OutputAction::Block],
-        LayerAction::TapHold { .. } => {
-            // TapHold combo trigger needs event context - return empty
-            // Actual handling requires DecisionQueue in advanced.rs
-            Vec::new()
-        }
-        LayerAction::LayerPush(id) => {
-            layers.push(*id);
-            vec![OutputAction::Block]
-        }
-        LayerAction::LayerPop => {
-            layers.pop();
-            vec![OutputAction::Block]
-        }
-        LayerAction::LayerToggle(id) => {
-            layers.toggle(*id);
-            vec![OutputAction::Block]
-        }
-        LayerAction::ModifierActivate(id) => {
-            modifiers.activate(Modifier::Virtual(*id));
-            vec![OutputAction::Block]
-        }
-        LayerAction::ModifierDeactivate(id) => {
-            modifiers.deactivate(Modifier::Virtual(*id));
-            vec![OutputAction::Block]
-        }
-        LayerAction::ModifierOneShot(id) => {
-            modifiers.arm_one_shot(Modifier::Virtual(*id));
-            vec![OutputAction::Block]
-        }
-        LayerAction::Pass => vec![OutputAction::PassThrough],
-    }
+    let ctx = LayerActionContext::without_event();
+    layer_actions::apply_layer_action(action, ctx, modifiers, layers).outputs
 }
 
 /// Result of combo processing.
