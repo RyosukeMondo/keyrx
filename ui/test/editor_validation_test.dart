@@ -10,6 +10,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -73,6 +74,7 @@ void main() {
         audioService: _FakeAudioService(),
         errorTranslator: _FakeErrorTranslator(),
         engineService: engine,
+        mappingRepository: MappingRepository(),
       );
 
       await tester.pumpWidget(

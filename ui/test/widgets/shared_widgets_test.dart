@@ -11,6 +11,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/ui/widgets/app_error_dialog.dart';
 import 'package:keyrx_ui/ui/widgets/loading_overlay.dart';
@@ -219,6 +220,7 @@ void main() {
         UserMessage(title: 'Translated', body: 'Unused'),
       ),
       engineService: const _StubEngineService(),
+      mappingRepository: MappingRepository(),
     );
 
     addTearDown(registry.dispose);

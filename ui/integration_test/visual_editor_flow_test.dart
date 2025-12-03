@@ -22,6 +22,7 @@ import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/rhai_generator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/widgets/visual_keyboard.dart';
 
@@ -116,6 +117,7 @@ void main() {
       audioService: MockAudioService(),
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
+      mappingRepository: MappingRepository(),
     );
 
     return MultiProvider(

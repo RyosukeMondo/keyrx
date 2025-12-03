@@ -11,6 +11,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 
 class _FakePermissionService implements PermissionService {
@@ -144,6 +145,7 @@ void main() {
         UserMessage(title: 'Unused', body: 'Unused'),
       ),
       engineService: const _FakeEngineService(),
+      mappingRepository: MappingRepository(),
     );
 
     addTearDown(registry.dispose);
@@ -188,6 +190,7 @@ void main() {
         UserMessage(title: 'Unused', body: 'Unused'),
       ),
       engineService: const _FakeEngineService(),
+      mappingRepository: MappingRepository(),
     );
 
     addTearDown(registry.dispose);
@@ -236,6 +239,7 @@ void main() {
       audioService: audio,
       errorTranslator: const _RecordingTranslator(translated),
       engineService: const _FakeEngineService(),
+      mappingRepository: MappingRepository(),
     );
 
     addTearDown(registry.dispose);

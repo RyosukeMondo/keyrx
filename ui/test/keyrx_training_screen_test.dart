@@ -13,6 +13,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 
 // Mock implementations
 
@@ -101,6 +102,7 @@ Widget _buildTestApp({
     audioService: _FakeAudioService(),
     errorTranslator: _FakeErrorTranslator(),
     engineService: engineService,
+    mappingRepository: MappingRepository(),
   );
 
   return MultiProvider(

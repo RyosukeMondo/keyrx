@@ -19,6 +19,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 
 /// Mock engine service with controllable state stream.
@@ -114,6 +115,7 @@ void main() {
       audioService: MockAudioService(),
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
+      mappingRepository: MappingRepository(),
     );
 
     return MultiProvider(
