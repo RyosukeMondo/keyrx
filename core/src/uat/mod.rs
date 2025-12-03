@@ -15,6 +15,7 @@ mod golden;
 mod perf;
 mod report;
 mod report_data;
+mod report_html;
 mod report_markdown;
 mod runner;
 
