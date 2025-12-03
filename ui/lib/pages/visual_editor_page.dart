@@ -4,14 +4,13 @@
 /// to "eject to code" and see/edit the generated Rhai script.
 library;
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/keyboard_layout.dart';
 import '../repositories/mapping_repository.dart';
 import '../services/rhai_generator.dart';
+import '../services/script_file_service.dart';
 import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
 import 'editor_widgets.dart' show KeyMapping, KeyActionType;
@@ -19,10 +18,17 @@ import 'visual_editor_widgets.dart';
 
 /// Visual editor page combining keyboard, mappings, and code view.
 class VisualEditorPage extends StatefulWidget {
-  const VisualEditorPage({super.key, required this.mappingRepository});
+  const VisualEditorPage({
+    super.key,
+    required this.mappingRepository,
+    this.scriptFileService = const ScriptFileService(),
+  });
 
   /// The shared mapping repository for key mappings.
   final MappingRepository mappingRepository;
+
+  /// The service for script file I/O operations.
+  final ScriptFileService scriptFileService;
 
   @override
   State<VisualEditorPage> createState() => _VisualEditorPageState();
@@ -270,86 +276,81 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   }
 
   Future<void> _loadScript() async {
-    final result = await VisualEditorDialogs.showLoadDialog(context);
-    if (result == null || result.isEmpty || !mounted) return;
+    final path = await VisualEditorDialogs.showLoadDialog(context);
+    if (path == null || path.isEmpty || !mounted) return;
 
-    try {
-      final file = File(result);
-      if (!await file.exists()) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('File not found: $result')),
-          );
-        }
-        return;
-      }
-      final code = await file.readAsString();
-      final config = _generator.parseScript(code);
-      widget.mappingRepository.loadFromRemapConfigs(config.mappings);
-      setState(() {
-        _tapHoldConfigs = config.tapHoldConfigs;
-        _hasAdvancedFeatures = config.hasAdvancedFeatures;
-        _codeController.text = code;
-        _codeModified = false;
-        _lastSavedPath = result;
-        _fileNameController.text = result.split('/').last;
-      });
+    final code = await widget.scriptFileService.loadScript(path);
+    if (code == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Loaded: $result')),
+          SnackBar(content: Text('File not found: $path')),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load script: $e')),
-        );
-      }
+      return;
+    }
+
+    final config = _generator.parseScript(code);
+    widget.mappingRepository.loadFromRemapConfigs(config.mappings);
+    setState(() {
+      _tapHoldConfigs = config.tapHoldConfigs;
+      _hasAdvancedFeatures = config.hasAdvancedFeatures;
+      _codeController.text = code;
+      _codeModified = false;
+      _lastSavedPath = path;
+      _fileNameController.text = path.split('/').last;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Loaded: $path')),
+      );
     }
   }
 
   Future<void> _saveScript() async {
     final suggestedPath =
         _lastSavedPath ?? 'scripts/${_fileNameController.text}';
-    final result =
+    final path =
         await VisualEditorDialogs.showSaveDialog(context, suggestedPath);
-    if (result == null || result.isEmpty || !mounted) return;
+    if (path == null || path.isEmpty || !mounted) return;
 
     setState(() => _isSaving = true);
-    try {
-      final code = _showCode && _codeModified
-          ? _codeController.text
-          : _generator.generateScript(_visualConfig);
-      final file = File(result);
-      await file.parent.create(recursive: true);
-      await file.writeAsString(code);
-      _lastSavedPath = result;
-      _fileNameController.text = result.split('/').last;
+    final code = _showCode && _codeModified
+        ? _codeController.text
+        : _generator.generateScript(_visualConfig);
 
-      var loaded = false;
-      if (mounted) {
-        final registry = Provider.of<ServiceRegistry>(context, listen: false);
-        final engine = registry.engineService;
-        loaded = engine.isInitialized ? await engine.loadScript(result) : false;
-      }
+    final saveResult = await widget.scriptFileService.saveScript(path, code);
+    if (!saveResult.success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(loaded
-                ? 'Script saved and loaded: $result'
-                : 'Script saved: $result'),
-          ),
+              content: Text('Failed to save: ${saveResult.errorMessage}')),
         );
+        setState(() => _isSaving = false);
       }
-      setState(() => _codeModified = false);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save script: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      return;
+    }
+
+    _lastSavedPath = path;
+    _fileNameController.text = path.split('/').last;
+
+    var loaded = false;
+    if (mounted) {
+      final registry = Provider.of<ServiceRegistry>(context, listen: false);
+      final engine = registry.engineService;
+      loaded = engine.isInitialized ? await engine.loadScript(path) : false;
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loaded
+              ? 'Script saved and loaded: $path'
+              : 'Script saved: $path'),
+        ),
+      );
+      setState(() {
+        _codeModified = false;
+        _isSaving = false;
+      });
     }
   }
 }

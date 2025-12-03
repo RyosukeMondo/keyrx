@@ -118,11 +118,73 @@ class _ConsolePageState extends State<ConsolePage> {
   Widget _buildEntry(ConsoleEntry entry) {
     final parser = widget.parser;
     final entryType = parser.classify(entry.text, isInput: entry.isInput);
-    final isError =
-        entry.isError || entryType == ConsoleEntryType.error;
-    final showInitButton =
-        parser.needsInitButton(entry.text, isError: isError);
-    final badgeColor = switch (entryType) {
+    final isError = entry.isError || entryType == ConsoleEntryType.error;
+    final style = _getEntryStyle(entryType, isError);
+    final showInitButton = parser.needsInitButton(entry.text, isError: isError);
+    final displayText =
+        entry.isInput ? entry.text : parser.stripPrefix(entry.text);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: style.color.withOpacity(0.35)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildEntryRow(displayText, style),
+            if (showInitButton) _buildInitButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntryRow(String text, _EntryStyle style) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildBadge(style.label, style.color),
+        const SizedBox(width: 6),
+        Icon(style.icon, color: style.color, size: 16),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SelectableText(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'monospace',
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInitButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: ElevatedButton.icon(
+        onPressed: _initializeEngine,
+        icon: const Icon(Icons.power_settings_new, size: 16),
+        label: const Text('Initialize Engine'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          textStyle: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  _EntryStyle _getEntryStyle(ConsoleEntryType entryType, bool isError) {
+    final color = switch (entryType) {
       ConsoleEntryType.command => Colors.blueAccent,
       ConsoleEntryType.error => Colors.redAccent,
       _ when isError => Colors.redAccent,
@@ -141,59 +203,7 @@ class _ConsolePageState extends State<ConsolePage> {
       _ when isError => Icons.warning_amber_rounded,
       _ => Icons.check_circle_outline,
     };
-    final displayText =
-        entry.isInput ? entry.text : parser.stripPrefix(entry.text);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: badgeColor.withOpacity(0.35)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBadge(label, badgeColor),
-                const SizedBox(width: 6),
-                Icon(icon, color: badgeColor, size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: SelectableText(
-                    displayText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'monospace',
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (showInitButton) ...[
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: _initializeEngine,
-                icon: const Icon(Icons.power_settings_new, size: 16),
-                label: const Text('Initialize Engine'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  textStyle: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+    return _EntryStyle(color: color, label: label, icon: icon);
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -303,4 +313,17 @@ class ConsoleEntry {
   final bool isError;
 
   ConsoleEntry(this.text, {this.isInput = false, this.isError = false});
+}
+
+/// Style configuration for a console entry.
+class _EntryStyle {
+  const _EntryStyle({
+    required this.color,
+    required this.label,
+    required this.icon,
+  });
+
+  final Color color;
+  final String label;
+  final IconData icon;
 }
