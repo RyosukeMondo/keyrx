@@ -475,3 +475,20 @@ mod windows_tests {
         input.stop().await.expect("stop failed");
     }
 }
+
+// ============================================================================
+// Driver Safety Integration Tests
+// ============================================================================
+
+// Include the driver safety tests from the integration module
+#[cfg(test)]
+mod driver_safety_tests {
+    // Re-export all tests from the integration::drivers modules
+    pub use crate::integration::drivers::error_recovery::*;
+
+    #[cfg(target_os = "windows")]
+    pub use crate::integration::drivers::windows_safety::*;
+
+    #[cfg(target_os = "linux")]
+    pub use crate::integration::drivers::linux_safety::*;
+}

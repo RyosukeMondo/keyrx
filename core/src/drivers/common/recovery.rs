@@ -85,7 +85,7 @@ impl RetryConfig {
     ///
     /// Uses exponential backoff: delay = initial_delay * (multiplier ^ attempt)
     /// capped at max_delay.
-    fn delay_for_attempt(&self, attempt: u32) -> Duration {
+    pub fn delay_for_attempt(&self, attempt: u32) -> Duration {
         let delay_ms =
             (self.initial_delay.as_millis() as f64) * self.backoff_multiplier.powi(attempt as i32);
         let delay_ms = delay_ms.min(self.max_delay.as_millis() as f64);

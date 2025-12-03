@@ -5,7 +5,7 @@
 //! appropriate driver for the current operating system.
 
 pub mod bypass;
-mod common;
+pub mod common;
 pub mod emergency_exit;
 mod injector;
 pub mod keycodes;
@@ -15,10 +15,10 @@ pub use bypass::BypassController;
 pub use injector::{InjectedKey, KeyInjector, MockKeyInjector};
 
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
-mod windows;
+pub mod windows;
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-mod linux;
+pub mod linux;
 
 pub use common::DeviceInfo;
 
