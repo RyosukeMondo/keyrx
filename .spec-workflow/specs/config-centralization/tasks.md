@@ -217,7 +217,7 @@
   - _Requirements: 2.2, 2.3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Refactor `ui/lib/pages/editor_page.dart` to use PathConstants.defaultScriptPath, PathConstants.tempValidationPath, UiConstants.defaultPadding instead of hardcoded values. | Restrictions: Do not change behavior | _Leverage: ui/lib/config/config.dart_ | Success: No hardcoded paths or padding values. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 27. Refactor app_state.dart to use config
+- [x] 27. Refactor app_state.dart to use config
   - File: `ui/lib/state/app_state.dart`
   - Import and use storage key constants
   - Purpose: Use centralized constants
@@ -225,7 +225,7 @@
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Refactor `ui/lib/state/app_state.dart` to use StorageKeys.developerModeKey instead of hardcoded "_kDeveloperModeKey" constant. Import from config module. | Restrictions: Do not change behavior | _Leverage: ui/lib/config/config.dart_ | Success: SharedPreferences key from config. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 28. Refactor remaining Dart files to use config
+- [x] 28. Refactor remaining Dart files to use config
   - Files: `surfaces.dart`, `trade_off_*.dart`, `typing_simulator.dart`, FFI bridge files
   - Replace remaining hardcoded values
   - Purpose: Complete Dart config centralization
