@@ -4,6 +4,7 @@
 //! evdev devices on Linux.
 
 use super::keymap::evdev_to_keycode;
+use super::safety::device::SafeDevice;
 use crate::config::{
     EVDEV_KEY_ESC, EVDEV_KEY_LEFTALT, EVDEV_KEY_LEFTCTRL, EVDEV_KEY_LEFTSHIFT, EVDEV_KEY_RIGHTALT,
     EVDEV_KEY_RIGHTCTRL, EVDEV_KEY_RIGHTSHIFT,
@@ -11,7 +12,6 @@ use crate::config::{
 use crate::drivers::common::extract_panic_message;
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
-use crate::error::LinuxDriverError;
 use anyhow::Result;
 use crossbeam_channel::Sender;
 use std::panic::{self, AssertUnwindSafe};
@@ -24,8 +24,8 @@ use tracing::{debug, error, trace, warn};
 /// Reader for keyboard events from an evdev device.
 ///
 /// `EvdevReader` provides exclusive access to a keyboard device through the evdev
-/// subsystem. It uses the EVIOCGRAB ioctl to grab the device, preventing other
-/// applications from receiving keyboard events while KeyRx is active.
+/// subsystem. It uses SafeDevice wrapper which automatically handles device
+/// grabbing/ungrabbing with RAII guarantees.
 ///
 /// # Thread Safety
 ///
@@ -36,10 +36,10 @@ use tracing::{debug, error, trace, warn};
 ///
 /// The reader thread is wrapped in `catch_unwind` to handle panics gracefully.
 /// If a panic occurs, the `panic_error` flag is set and the keyboard device is
-/// ungrabbed to prevent leaving the keyboard in a stuck state.
+/// automatically ungrabbed via SafeDevice's Drop implementation.
 pub struct EvdevReader {
-    /// The evdev device handle for reading keyboard events.
-    device: evdev::Device,
+    /// Safe wrapper around the evdev device with RAII cleanup.
+    device: SafeDevice,
     /// Channel sender for forwarding events to the async engine.
     tx: Sender<InputEvent>,
     /// Shared flag to signal when the reader should stop.
@@ -102,23 +102,16 @@ impl EvdevReader {
         running: Arc<AtomicBool>,
         panic_error: Arc<AtomicBool>,
     ) -> Result<Self> {
-        let device = evdev::Device::open(&device_path).map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                LinuxDriverError::device_not_found(&device_path)
-            } else if e.kind() == std::io::ErrorKind::PermissionDenied {
-                LinuxDriverError::permission_denied(&device_path)
-            } else {
-                LinuxDriverError::GrabFailed(e)
-            }
-        })?;
+        // Use SafeDevice wrapper which provides better error messages and RAII cleanup
+        let device = SafeDevice::open(&device_path)?;
 
         debug!(
             service = "keyrx",
             event = "evdev_opened",
             component = "linux_reader",
-            device = device.name().unwrap_or("Unknown"),
+            device = device.device().name().unwrap_or("Unknown"),
             path = %device_path.display(),
-            "Opened evdev device"
+            "Opened evdev device with SafeDevice wrapper"
         );
 
         // Create device_id from path for event metadata
@@ -142,13 +135,12 @@ impl EvdevReader {
     ///
     /// # Errors
     ///
-    /// Returns `LinuxDriverError::GrabFailed` if:
+    /// Returns `DriverError::GrabFailed` if:
     /// - Another process has already grabbed the device
     /// - The user lacks sufficient permissions
     pub fn grab(&mut self) -> Result<()> {
-        self.device
-            .grab()
-            .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
+        // SafeDevice handles the actual grabbing with proper error messages
+        self.device.grab()?;
         debug!(
             service = "keyrx",
             event = "evdev_grabbed",
@@ -162,16 +154,16 @@ impl EvdevReader {
     /// Release the keyboard grab.
     ///
     /// This restores normal keyboard operation, allowing other applications
-    /// to receive keyboard events again. Called automatically during shutdown.
+    /// to receive keyboard events again. Called automatically during shutdown
+    /// and via SafeDevice's Drop implementation.
     ///
     /// # Errors
     ///
     /// Returns an error if the ungrab operation fails. This is rare and usually
     /// indicates a system-level issue.
     pub fn ungrab(&mut self) -> Result<()> {
-        self.device
-            .ungrab()
-            .map_err(|e| LinuxDriverError::grab_failed(std::io::Error::other(e.to_string())))?;
+        // SafeDevice handles the actual ungrabbing with proper error messages
+        self.device.ungrab()?;
         debug!(
             service = "keyrx",
             event = "evdev_released",
@@ -188,15 +180,15 @@ impl EvdevReader {
         self.running.load(Ordering::Relaxed)
     }
 
-    /// Get a reference to the underlying evdev device.
+    /// Get a reference to the underlying SafeDevice wrapper.
     #[allow(dead_code)]
-    pub fn device(&self) -> &evdev::Device {
+    pub fn safe_device(&self) -> &SafeDevice {
         &self.device
     }
 
-    /// Get a mutable reference to the underlying evdev device.
+    /// Get a mutable reference to the underlying SafeDevice wrapper.
     #[allow(dead_code)]
-    pub fn device_mut(&mut self) -> &mut evdev::Device {
+    pub fn safe_device_mut(&mut self) -> &mut SafeDevice {
         &mut self.device
     }
 
@@ -302,6 +294,7 @@ impl EvdevReader {
     /// Returns `Ok(events)` on success, `Err(Some(e))` on read error,
     /// or `Err(None)` if shutdown was requested.
     fn fetch_key_events(&mut self) -> Result<Vec<evdev::InputEvent>, Option<std::io::Error>> {
+        // Use SafeDevice's fetch_events method which handles disconnection gracefully
         match self.device.fetch_events() {
             Ok(events) => {
                 let key_events: Vec<_> = events
@@ -313,7 +306,9 @@ impl EvdevReader {
                 if !self.running.load(Ordering::Relaxed) {
                     Err(None)
                 } else {
-                    Err(Some(e))
+                    // Convert DriverError to io::Error for compatibility
+                    // SafeDevice already provides good error messages
+                    Err(Some(std::io::Error::other(e.to_string())))
                 }
             }
         }

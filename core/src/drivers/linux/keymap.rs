@@ -7,7 +7,7 @@
 use crate::engine::KeyCode;
 
 // Re-export conversion helpers from the centralized keycodes module (SSOT)
-pub use crate::drivers::keycodes::{all_evdev_codes, evdev_to_keycode, keycode_to_evdev};
+pub use crate::drivers::keycodes::{evdev_to_keycode, keycode_to_evdev};
 
 #[cfg(test)]
 mod tests {
