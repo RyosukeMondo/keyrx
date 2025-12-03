@@ -120,6 +120,7 @@ pub fn device_profiles_dir() -> PathBuf {
 mod tests {
     use super::*;
     use serde_json::json;
+    use serial_test::serial;
     use std::env;
     use tempfile::tempdir;
 
@@ -149,6 +150,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn device_profiles_dir_prefers_xdg_config_home() {
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
@@ -171,6 +173,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn device_profiles_dir_falls_back_to_home() {
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
