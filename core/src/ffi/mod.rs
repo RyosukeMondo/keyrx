@@ -12,8 +12,12 @@
 //! - `exports_script`: Script loading and validation
 //! - `exports_testing`: Test discovery and execution
 //! - `exports_validation`: Script validation and key suggestions
+//!
+//! ## New Architecture Components
+//! - `error`: Standardized FFI error types and result handling
 
 mod callbacks;
+pub mod error;
 mod exports;
 mod exports_analysis;
 mod exports_device;
