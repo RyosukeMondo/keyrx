@@ -22,13 +22,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 use super::hook_thread::spawn_hook_thread;
 use super::keymap::vk_to_keycode;
+use crate::config::keys::{VK_CONTROL, VK_ESCAPE, VK_MENU, VK_SHIFT};
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
-
-/// Virtual key code constants for emergency exit detection.
-const VK_ESCAPE: i32 = 0x1B;
-const VK_CONTROL: i32 = 0x11;
-const VK_SHIFT: i32 = 0x10;
-const VK_MENU: i32 = 0x12; // Alt key
 
 /// Thread-local storage for the event sender used by the hook callback.
 ///
@@ -546,8 +541,9 @@ mod tests {
     }
 
     #[test]
-    fn vk_constants_correct() {
-        // Verify VK constants match Windows API values
+    fn vk_constants_from_config_correct() {
+        // Verify VK constants from config module match Windows API values
+        use crate::config::keys::{VK_CONTROL, VK_ESCAPE, VK_MENU, VK_SHIFT};
         assert_eq!(VK_ESCAPE, 0x1B);
         assert_eq!(VK_CONTROL, 0x11);
         assert_eq!(VK_SHIFT, 0x10);
