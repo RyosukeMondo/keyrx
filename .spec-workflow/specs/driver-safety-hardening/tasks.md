@@ -22,7 +22,7 @@
 
 ## Phase 2: Windows Safety Wrappers
 
-- [ ] 3. Create HookCallback with panic catching
+- [x] 3. Create HookCallback with panic catching
   - File: `core/src/drivers/windows/safety/callback.rs`
   - Implement panic-safe callback wrapper
   - Log panics for debugging

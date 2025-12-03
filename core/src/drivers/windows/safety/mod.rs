@@ -59,6 +59,6 @@
 //! ```
 
 // Module declarations (components will be implemented in subsequent tasks)
-// pub mod callback;
+pub mod callback;
 // pub mod hook;
 // pub mod thread_local;
