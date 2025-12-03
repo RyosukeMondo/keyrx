@@ -7,6 +7,7 @@ import 'pages/editor_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
+import 'pages/developer/test_runner_page.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
@@ -237,6 +238,7 @@ class _HomePageState extends State<HomePage> {
       case DeveloperTool.console:
         return ConsolePage(engineService: registry.engineService);
       case DeveloperTool.testRunner:
+        return TestRunnerPage(testService: registry.testService);
       case DeveloperTool.simulator:
       case DeveloperTool.analyzer:
       case DeveloperTool.benchmark:

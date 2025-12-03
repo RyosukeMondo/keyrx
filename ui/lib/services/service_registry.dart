@@ -11,6 +11,7 @@ import 'error_translator.dart';
 import 'error_translator_impl.dart';
 import 'permission_service.dart';
 import 'permission_service_impl.dart';
+import 'test_service.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
 class ServiceRegistry {
@@ -21,6 +22,7 @@ class ServiceRegistry {
     required this.engineService,
     required this.mappingRepository,
     required this.deviceService,
+    required this.testService,
     required this.bridge,
   });
 
@@ -33,6 +35,7 @@ class ServiceRegistry {
     PermissionService? permissionService,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    TestService? testService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final permissions =
@@ -41,6 +44,7 @@ class ServiceRegistry {
     final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
+    final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
     final mappedClassificationSource =
         classificationSource ??
         effectiveBridge.classificationStream?.map(
@@ -65,6 +69,7 @@ class ServiceRegistry {
       engineService: engine,
       mappingRepository: mappingRepository ?? MappingRepository(),
       deviceService: device,
+      testService: tests,
       bridge: effectiveBridge,
     );
   }
@@ -77,6 +82,7 @@ class ServiceRegistry {
     required EngineService engineService,
     required MappingRepository mappingRepository,
     required DeviceService deviceService,
+    required TestService testService,
     required KeyrxBridge bridge,
   }) {
     return ServiceRegistry(
@@ -86,6 +92,7 @@ class ServiceRegistry {
       engineService: engineService,
       mappingRepository: mappingRepository,
       deviceService: deviceService,
+      testService: testService,
       bridge: bridge,
     );
   }
@@ -96,6 +103,7 @@ class ServiceRegistry {
   final EngineService engineService;
   final MappingRepository mappingRepository;
   final DeviceService deviceService;
+  final TestService testService;
   final KeyrxBridge bridge;
 
   /// Convenience for producing a registry with selective overrides.
@@ -106,6 +114,7 @@ class ServiceRegistry {
     EngineService? engineService,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    TestService? testService,
     KeyrxBridge? bridge,
   }) {
     return ServiceRegistry(
@@ -115,6 +124,7 @@ class ServiceRegistry {
       engineService: engineService ?? this.engineService,
       mappingRepository: mappingRepository ?? this.mappingRepository,
       deviceService: deviceService ?? this.deviceService,
+      testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
     );
   }
@@ -124,6 +134,7 @@ class ServiceRegistry {
     await audioService.dispose();
     await engineService.dispose();
     await deviceService.dispose();
+    await testService.dispose();
     await bridge.dispose();
   }
 }
