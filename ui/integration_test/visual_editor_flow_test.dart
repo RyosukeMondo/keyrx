@@ -17,14 +17,18 @@ import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/models/keyboard_layout.dart';
 import 'package:keyrx_ui/pages/visual_editor_page.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
+import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/rhai_generator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/test_service.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/widgets/visual_keyboard.dart';
+
+import '../test/helpers/fake_services.dart';
 
 /// Mock engine service for testing.
 class MockEngineService implements EngineService {
@@ -119,6 +123,9 @@ void main() {
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
       mappingRepository: mappingRepo,
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: FakeBridge(),
     );
 
     return MultiProvider(

@@ -15,12 +15,16 @@ import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
 import 'package:keyrx_ui/pages/keyrx_training_screen.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
+import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/test_service.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
+
+import '../test/helpers/fake_services.dart';
 
 /// Mock engine service with controllable state stream.
 class MockEngineService implements EngineService {
@@ -116,6 +120,9 @@ void main() {
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
       mappingRepository: MappingRepository(),
+      deviceService: FakeDeviceService(),
+      testService: FakeTestService(),
+      bridge: FakeBridge(),
     );
 
     return MultiProvider(

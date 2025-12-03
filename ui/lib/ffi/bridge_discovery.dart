@@ -1,6 +1,6 @@
 /// Device discovery FFI methods.
 ///
-/// Provides device discovery functionality for the KeyRx bridge.
+/// Provides device discovery and listing functionality for the KeyRx bridge.
 library;
 
 import 'dart:convert';
@@ -9,6 +9,76 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
+
+/// Keyboard device information from the FFI layer.
+class KeyboardDevice {
+  const KeyboardDevice({
+    required this.name,
+    required this.vendorId,
+    required this.productId,
+    required this.path,
+    required this.hasProfile,
+  });
+
+  final String name;
+  final int vendorId;
+  final int productId;
+  final String path;
+  final bool hasProfile;
+}
+
+/// Result of listing keyboard devices.
+class DeviceListResult {
+  const DeviceListResult({
+    required this.devices,
+    this.errorMessage,
+  });
+
+  factory DeviceListResult.error(String message) => DeviceListResult(
+        devices: const [],
+        errorMessage: message,
+      );
+
+  factory DeviceListResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return DeviceListResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! List) {
+        return DeviceListResult.error('invalid device list payload');
+      }
+
+      final devices = decoded.map((entry) {
+        if (entry is! Map<String, dynamic>) {
+          return null;
+        }
+        return KeyboardDevice(
+          name: entry['name']?.toString() ?? 'Unknown',
+          vendorId: (entry['vendorId'] as num?)?.toInt() ?? 0,
+          productId: (entry['productId'] as num?)?.toInt() ?? 0,
+          path: entry['path']?.toString() ?? '',
+          hasProfile: entry['hasProfile'] as bool? ?? false,
+        );
+      }).whereType<KeyboardDevice>().toList();
+
+      return DeviceListResult(devices: devices);
+    } catch (e) {
+      return DeviceListResult.error('$e');
+    }
+  }
+
+  final List<KeyboardDevice> devices;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
 
 /// Discovery start result.
 class DiscoveryStartResult {
@@ -57,10 +127,58 @@ class DiscoveryStartResult {
   bool get hasError => errorMessage != null || !success;
 }
 
-/// Mixin providing device discovery FFI methods.
+/// Mixin providing device discovery and listing FFI methods.
 mixin BridgeDiscoveryMixin {
   KeyrxBindings? get bindings;
   Object? get loadFailure;
+
+  /// List available keyboard devices.
+  ///
+  /// Returns a list of [KeyboardDevice] or an error result.
+  DeviceListResult listDevices() {
+    final listFn = bindings?.listDevices;
+    if (listFn == null) {
+      return DeviceListResult.error('listDevices not available');
+    }
+
+    Pointer<Char>? ptr;
+    try {
+      ptr = listFn();
+      if (ptr == nullptr) {
+        return DeviceListResult.error('listDevices returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return DeviceListResult.parse(raw);
+    } catch (e) {
+      return DeviceListResult.error('$e');
+    } finally {
+      if (ptr != null && ptr != nullptr) {
+        try {
+          bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Select a device by path for the engine to use.
+  ///
+  /// Returns 0 on success, negative on error:
+  /// - -1: Null pointer
+  /// - -2: Invalid UTF-8
+  /// - -3: Device path does not exist
+  /// - -4: Lock error
+  int selectDevice(String path) {
+    final selectFn = bindings?.selectDevice;
+    if (selectFn == null) return -1;
+
+    final pathPtr = path.toNativeUtf8();
+    try {
+      return selectFn(pathPtr);
+    } finally {
+      calloc.free(pathPtr);
+    }
+  }
 
   /// Start a discovery session for a device.
   ///

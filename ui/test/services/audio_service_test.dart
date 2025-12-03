@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/audio_service_impl.dart';
@@ -32,6 +33,22 @@ class _FakeBridge implements KeyrxBridge {
   int setBpmCalls = 0;
   bool _initialized = false;
   final Stream<BridgeClassification>? _classificationStream;
+
+  // Mixin interface implementations - these are required by the mixins.
+  @override
+  KeyrxBindings? get bindings => null;
+
+  @override
+  StreamController<BridgeClassification>? get classificationController => null;
+
+  @override
+  StreamController<BridgeState>? get stateController => null;
+
+  @override
+  bool get initialized => _initialized;
+
+  @override
+  set initialized(bool value) => _initialized = value;
 
   @override
   bool initialize() {

@@ -28,8 +28,8 @@ enum _DiscoveryStep { selectDevice, configureLayout, discovering, complete }
 
 class _DiscoveryPageState extends State<DiscoveryPage> {
   _DiscoveryStep _currentStep = _DiscoveryStep.selectDevice;
-  List<KeyboardDeviceInfo> _devices = [];
-  KeyboardDeviceInfo? _selectedDevice;
+  List<KeyboardDevice> _devices = [];
+  KeyboardDevice? _selectedDevice;
   bool _isLoading = false;
   String? _error;
 
@@ -53,16 +53,18 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       _error = null;
     });
 
-    final result = await widget.deviceService.listDevices();
-
-    setState(() {
-      _isLoading = false;
-      if (result.hasError) {
-        _error = result.errorMessage;
-      } else {
-        _devices = result.devices;
-      }
-    });
+    try {
+      final devices = await widget.deviceService.listDevices();
+      setState(() {
+        _isLoading = false;
+        _devices = devices;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   void _startDiscovery() {
@@ -196,7 +198,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.keyboard_off, size: 48, color: Colors.grey[400]),
+            Icon(Icons.keyboard, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             const Text('No devices found'),
             const SizedBox(height: 8),
@@ -210,7 +212,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     );
   }
 
-  Widget _buildDeviceTile(KeyboardDeviceInfo device) {
+  Widget _buildDeviceTile(KeyboardDevice device) {
     final isSelected = _selectedDevice?.path == device.path;
 
     return Card(

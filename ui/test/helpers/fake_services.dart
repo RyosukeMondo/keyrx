@@ -6,6 +6,7 @@ library;
 
 import 'dart:async';
 
+import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
@@ -149,8 +150,27 @@ class FakeBridge implements KeyrxBridge {
   final StreamController<BridgeState> _stateController =
       StreamController<BridgeState>.broadcast();
 
+  bool _initialized = true;
+
+  // Mixin interface implementations - these are required by the mixins.
   @override
-  bool get isInitialized => true;
+  KeyrxBindings? get bindings => null;
+
+  @override
+  StreamController<BridgeClassification>? get classificationController =>
+      _classificationController;
+
+  @override
+  StreamController<BridgeState>? get stateController => _stateController;
+
+  @override
+  bool get initialized => _initialized;
+
+  @override
+  set initialized(bool value) => _initialized = value;
+
+  @override
+  bool get isInitialized => _initialized;
 
   @override
   Object? get loadFailure => null;

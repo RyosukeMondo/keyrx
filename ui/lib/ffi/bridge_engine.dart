@@ -135,6 +135,77 @@ class KeyRegistryResult {
   List<String> get names => entries.map((e) => e.name).toList();
 }
 
+/// Script validation error detail.
+class ScriptValidationError {
+  const ScriptValidationError({
+    this.line,
+    this.column,
+    required this.message,
+  });
+
+  final int? line;
+  final int? column;
+  final String message;
+}
+
+/// Script validation result.
+class ScriptValidationResult {
+  const ScriptValidationResult({
+    required this.valid,
+    required this.errors,
+    this.errorMessage,
+  });
+
+  factory ScriptValidationResult.error(String message) =>
+      ScriptValidationResult(
+        valid: false,
+        errors: const [],
+        errorMessage: message,
+      );
+
+  factory ScriptValidationResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return ScriptValidationResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return ScriptValidationResult.error('invalid validation payload');
+      }
+
+      final valid = decoded['valid'] as bool? ?? false;
+      final errorsList = decoded['errors'] as List<dynamic>? ?? [];
+      final errors = errorsList.map((e) {
+        if (e is! Map<String, dynamic>) {
+          return const ScriptValidationError(message: 'unknown error');
+        }
+        return ScriptValidationError(
+          line: (e['line'] as num?)?.toInt(),
+          column: (e['column'] as num?)?.toInt(),
+          message: e['message']?.toString() ?? 'unknown error',
+        );
+      }).toList();
+
+      return ScriptValidationResult(valid: valid, errors: errors);
+    } catch (e) {
+      return ScriptValidationResult.error('$e');
+    }
+  }
+
+  final bool valid;
+  final List<ScriptValidationError> errors;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
 /// Mixin providing engine control FFI methods.
 mixin BridgeEngineMixin {
   KeyrxBindings? get bindings;
@@ -229,6 +300,37 @@ mixin BridgeEngineMixin {
     final fn = bindings?.setBypass;
     if (fn == null) return;
     fn(active);
+  }
+
+  /// Validate a Rhai script without executing it.
+  ///
+  /// Returns validation result with any syntax errors.
+  ScriptValidationResult checkScript(String path) {
+    final checkFn = bindings?.checkScript;
+    if (checkFn == null) {
+      return ScriptValidationResult.error('checkScript not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = checkFn(pathPtr);
+      if (ptr == nullptr) {
+        return ScriptValidationResult.error('checkScript returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return ScriptValidationResult.parse(raw);
+    } catch (e) {
+      return ScriptValidationResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
   }
 
   static String _normalizeEval(String raw) {

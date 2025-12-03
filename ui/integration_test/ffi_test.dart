@@ -1,7 +1,8 @@
-/// Integration test: FFI round-trip verification
+/// Integration test: FFI round-trip verification.
 ///
 /// Tests Dart→Rust→Dart data flow for key FFI operations.
 /// Skips tests if the native library is unavailable.
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -15,7 +16,7 @@ void main() {
   bool libraryAvailable = false;
 
   setUpAll(() {
-    bridge = KeyrxBridge();
+    bridge = KeyrxBridge.open();
     libraryAvailable = bridge.loadFailure == null;
     if (!libraryAvailable) {
       // ignore: avoid_print
@@ -35,7 +36,7 @@ void main() {
 
       // Should return a list (possibly empty) without error
       expect(result.hasError, isFalse);
-      expect(result.devices, isA<List<KeyboardDeviceInfo>>());
+      expect(result.devices, isA<List<KeyboardDevice>>());
     });
 
     testWidgets('checkScript validates Rhai syntax', (tester) async {
@@ -105,7 +106,7 @@ void main() {
 
       // Should return diagnostic data
       if (!result.hasError) {
-        expect(result.checks, isA<List<DoctorCheck>>());
+        expect(result.checks, isA<List<DiagnosticCheck>>());
         expect(result.passed, greaterThanOrEqualTo(0));
         expect(result.failed, greaterThanOrEqualTo(0));
         expect(result.warned, greaterThanOrEqualTo(0));

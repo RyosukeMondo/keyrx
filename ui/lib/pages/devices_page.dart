@@ -168,7 +168,7 @@ class _DevicesPageState extends State<DevicesPage> {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 48),
-        const Icon(Icons.keyboard_off, size: 64, color: Colors.grey),
+        const Icon(Icons.keyboard, size: 64, color: Colors.grey),
         const SizedBox(height: 16),
         Text(
           'No devices found',
