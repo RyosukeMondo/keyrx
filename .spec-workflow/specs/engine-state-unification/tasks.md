@@ -42,7 +42,7 @@
   - _Requirements: 1.2, 3.1_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer refactoring state | Task: Create KeyState in core/src/engine/state/keys.rs from KeyStateTracker | Restrictions: Same functionality, timestamp tracking, efficient lookups | _Leverage: Existing KeyStateTracker | Success: KeyState works identically, cleaner API | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Refactor LayerState component
+- [x] 5. Refactor LayerState component
   - File: `core/src/engine/state/layers.rs`
   - Extract from LayerStack
   - Implement push, pop, active_layers methods

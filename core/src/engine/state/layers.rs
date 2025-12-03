@@ -1,3 +1,9 @@
+//! Layer state tracking for the unified engine state.
+//!
+//! This module provides both the legacy LayerStack for backward compatibility and
+//! the new LayerState component which tracks active layers and their priorities.
+//! LayerState is designed to be part of the unified EngineState.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -94,7 +100,179 @@ pub enum HoldAction {
     Layer(LayerId),
 }
 
-/// Stack of active layers.
+/// Unified layer state component for the engine.
+///
+/// This tracks which layers are currently active and provides efficient
+/// operations for layer management. It's designed to be part of EngineState.
+///
+/// Key differences from LayerStack:
+/// - Focused on state tracking, not layer definitions
+/// - Cleaner separation of concerns
+/// - More efficient for state queries
+#[derive(Debug, Clone)]
+#[allow(dead_code)] // Will be used when EngineState is implemented in Phase 3
+pub struct LayerState {
+    /// Active layer IDs in priority order (last = highest priority).
+    /// The first element is always the base layer.
+    stack: Vec<LayerId>,
+    /// Base layer ID (always present in stack).
+    base: LayerId,
+}
+
+impl Default for LayerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)] // Will be used when EngineState is implemented in Phase 3
+impl LayerState {
+    /// Create a new LayerState with base layer (id 0).
+    pub fn new() -> Self {
+        Self::with_base(0)
+    }
+
+    /// Create a new LayerState with a specific base layer ID.
+    pub fn with_base(base: LayerId) -> Self {
+        Self {
+            stack: vec![base],
+            base,
+        }
+    }
+
+    /// Push a layer to the top of the stack.
+    ///
+    /// If the layer is already in the stack, it's moved to the top.
+    /// The base layer cannot be pushed (it's always at the bottom).
+    ///
+    /// # Arguments
+    /// * `layer_id` - The layer to activate
+    ///
+    /// # Returns
+    /// `true` if the stack changed, `false` otherwise
+    pub fn push(&mut self, layer_id: LayerId) -> bool {
+        // Cannot push the base layer
+        if layer_id == self.base {
+            return false;
+        }
+
+        // If already at the top, no change needed
+        if self.stack.last() == Some(&layer_id) {
+            return false;
+        }
+
+        // Remove from current position if present
+        if let Some(pos) = self.stack.iter().position(|&id| id == layer_id) {
+            self.stack.remove(pos);
+        }
+
+        // Add to top
+        self.stack.push(layer_id);
+        true
+    }
+
+    /// Pop the top-most non-base layer from the stack.
+    ///
+    /// # Returns
+    /// The layer ID that was popped, or None if only the base layer remains
+    pub fn pop(&mut self) -> Option<LayerId> {
+        if self.stack.len() <= 1 {
+            return None;
+        }
+
+        self.stack.pop()
+    }
+
+    /// Toggle a layer on/off.
+    ///
+    /// If the layer is active, it's removed. If inactive, it's pushed to the top.
+    /// The base layer cannot be toggled.
+    ///
+    /// # Arguments
+    /// * `layer_id` - The layer to toggle
+    ///
+    /// # Returns
+    /// `true` if the operation succeeded, `false` if the layer is the base
+    pub fn toggle(&mut self, layer_id: LayerId) -> bool {
+        if layer_id == self.base {
+            return false;
+        }
+
+        if let Some(pos) = self.stack.iter().position(|&id| id == layer_id) {
+            // Layer is active - remove it
+            self.stack.remove(pos);
+        } else {
+            // Layer is inactive - push it
+            self.stack.push(layer_id);
+        }
+        true
+    }
+
+    /// Check if a layer is currently active.
+    ///
+    /// # Arguments
+    /// * `layer_id` - The layer to check
+    ///
+    /// # Returns
+    /// `true` if the layer is in the active stack
+    #[inline]
+    pub fn is_active(&self, layer_id: LayerId) -> bool {
+        self.stack.contains(&layer_id)
+    }
+
+    /// Get the top-most active layer ID.
+    ///
+    /// # Returns
+    /// The ID of the highest-priority active layer
+    #[inline]
+    pub fn top_layer(&self) -> LayerId {
+        *self.stack.last().unwrap_or(&self.base)
+    }
+
+    /// Get all active layer IDs in priority order (first = lowest priority).
+    ///
+    /// # Returns
+    /// A slice of active layer IDs with the base layer first
+    #[inline]
+    pub fn active_layers(&self) -> &[LayerId] {
+        &self.stack
+    }
+
+    /// Get the number of active layers (including base).
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.stack.len()
+    }
+
+    /// Check if only the base layer is active.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.stack.len() <= 1
+    }
+
+    /// Clear all non-base layers, leaving only the base layer active.
+    pub fn clear(&mut self) {
+        self.stack.truncate(1);
+    }
+
+    /// Get the base layer ID.
+    #[inline]
+    pub fn base_layer(&self) -> LayerId {
+        self.base
+    }
+
+    /// Get a copy of the active layer IDs as a vector.
+    ///
+    /// This is useful when you need ownership of the layer list.
+    pub fn active_layers_vec(&self) -> Vec<LayerId> {
+        self.stack.clone()
+    }
+}
+
+/// Stack of active layers (legacy implementation).
+///
+/// This is the original LayerStack implementation maintained for backward
+/// compatibility. New code should prefer the unified LayerState component.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerStack {
     /// All defined layers.
@@ -348,95 +526,277 @@ impl LayerProvider for LayerStack {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::KeyCode;
 
-    #[test]
-    fn push_adds_layer_and_respects_priority() {
-        let mut stack = LayerStack::new();
-        let mut nav = Layer::with_id(1, "nav");
-        nav.set_mapping(KeyCode::A, LayerAction::Remap(KeyCode::B));
-        stack.define_layer(nav);
+    // LayerState tests
+    mod layer_state_tests {
+        use super::*;
 
-        let mut fn_layer = Layer::with_id(2, "fn");
-        fn_layer.set_mapping(KeyCode::A, LayerAction::Block);
-        stack.define_layer(fn_layer);
+        #[test]
+        fn new_layer_state_has_base_only() {
+            let state = LayerState::new();
+            assert_eq!(state.len(), 1);
+            assert!(state.is_empty());
+            assert_eq!(state.top_layer(), 0);
+            assert!(state.is_active(0));
+        }
 
-        assert!(stack.push(1));
-        assert!(stack.push(2));
+        #[test]
+        fn with_base_creates_correct_state() {
+            let state = LayerState::with_base(5);
+            assert_eq!(state.base_layer(), 5);
+            assert_eq!(state.top_layer(), 5);
+            assert!(state.is_active(5));
+        }
 
-        let action = stack.lookup(KeyCode::A);
-        assert_eq!(action, Some(&LayerAction::Block));
-        assert!(stack.is_active(1));
-        assert!(stack.is_active(2));
+        #[test]
+        fn push_adds_layer_to_top() {
+            let mut state = LayerState::new();
+            assert!(state.push(1));
+            assert_eq!(state.len(), 2);
+            assert_eq!(state.top_layer(), 1);
+            assert!(state.is_active(1));
+        }
+
+        #[test]
+        fn push_base_layer_returns_false() {
+            let mut state = LayerState::new();
+            assert!(!state.push(0));
+            assert_eq!(state.len(), 1);
+        }
+
+        #[test]
+        fn push_existing_layer_moves_to_top() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+            assert!(state.push(1));
+
+            let layers = state.active_layers();
+            assert_eq!(layers, &[0, 2, 1]);
+            assert_eq!(state.top_layer(), 1);
+        }
+
+        #[test]
+        fn push_already_at_top_returns_false() {
+            let mut state = LayerState::new();
+            state.push(1);
+            assert!(!state.push(1));
+            assert_eq!(state.len(), 2);
+        }
+
+        #[test]
+        fn pop_removes_top_layer() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+
+            assert_eq!(state.pop(), Some(2));
+            assert_eq!(state.top_layer(), 1);
+            assert!(!state.is_active(2));
+        }
+
+        #[test]
+        fn pop_with_only_base_returns_none() {
+            let mut state = LayerState::new();
+            assert_eq!(state.pop(), None);
+            assert_eq!(state.len(), 1);
+            assert!(state.is_active(0));
+        }
+
+        #[test]
+        fn toggle_activates_inactive_layer() {
+            let mut state = LayerState::new();
+            assert!(state.toggle(1));
+            assert!(state.is_active(1));
+            assert_eq!(state.top_layer(), 1);
+        }
+
+        #[test]
+        fn toggle_deactivates_active_layer() {
+            let mut state = LayerState::new();
+            state.push(1);
+            assert!(state.toggle(1));
+            assert!(!state.is_active(1));
+            assert_eq!(state.top_layer(), 0);
+        }
+
+        #[test]
+        fn toggle_base_layer_returns_false() {
+            let mut state = LayerState::new();
+            assert!(!state.toggle(0));
+            assert!(state.is_active(0));
+        }
+
+        #[test]
+        fn is_active_checks_presence_in_stack() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+
+            assert!(state.is_active(0));
+            assert!(state.is_active(1));
+            assert!(state.is_active(2));
+            assert!(!state.is_active(3));
+        }
+
+        #[test]
+        fn active_layers_returns_slice() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+
+            let layers = state.active_layers();
+            assert_eq!(layers, &[0, 1, 2]);
+        }
+
+        #[test]
+        fn clear_removes_all_non_base_layers() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+            state.push(3);
+
+            state.clear();
+            assert_eq!(state.len(), 1);
+            assert!(state.is_empty());
+            assert_eq!(state.top_layer(), 0);
+            assert!(state.is_active(0));
+            assert!(!state.is_active(1));
+        }
+
+        #[test]
+        fn active_layers_vec_returns_owned_copy() {
+            let mut state = LayerState::new();
+            state.push(1);
+            state.push(2);
+
+            let vec = state.active_layers_vec();
+            assert_eq!(vec, vec![0, 1, 2]);
+        }
+
+        #[test]
+        fn multiple_operations_maintain_consistency() {
+            let mut state = LayerState::new();
+
+            state.push(1);
+            state.push(2);
+            assert_eq!(state.top_layer(), 2);
+
+            state.pop();
+            assert_eq!(state.top_layer(), 1);
+
+            state.toggle(2);
+            assert_eq!(state.top_layer(), 2);
+
+            state.toggle(1);
+            assert_eq!(state.top_layer(), 2);
+            assert!(!state.is_active(1));
+
+            state.clear();
+            assert_eq!(state.top_layer(), 0);
+        }
+
+        #[test]
+        fn default_creates_base_state() {
+            let state = LayerState::default();
+            assert_eq!(state.base_layer(), 0);
+            assert!(state.is_empty());
+        }
     }
 
-    #[test]
-    fn pop_deactivates_top_non_base_layer() {
-        let mut stack = LayerStack::new();
-        let nav = Layer::with_id(1, "nav");
-        stack.define_layer(nav);
-        assert!(stack.push(1));
+    // Legacy LayerStack tests
+    mod layer_stack_tests {
+        use super::*;
+        use crate::KeyCode;
 
-        let popped = stack.pop();
-        assert_eq!(popped, Some(1));
-        assert!(!stack.is_active(1));
-        // Base layer remains.
-        assert!(stack.is_active(0));
-        assert!(stack.pop().is_none());
-    }
+        #[test]
+        fn push_adds_layer_and_respects_priority() {
+            let mut stack = LayerStack::new();
+            let mut nav = Layer::with_id(1, "nav");
+            nav.set_mapping(KeyCode::A, LayerAction::Remap(KeyCode::B));
+            stack.define_layer(nav);
 
-    #[test]
-    fn toggle_toggles_activation_state() {
-        let mut stack = LayerStack::new();
-        stack.define_layer(Layer::with_id(1, "nav"));
+            let mut fn_layer = Layer::with_id(2, "fn");
+            fn_layer.set_mapping(KeyCode::A, LayerAction::Block);
+            stack.define_layer(fn_layer);
 
-        assert!(stack.toggle(1));
-        assert!(stack.is_active(1));
-        assert!(stack.toggle(1));
-        assert!(!stack.is_active(1));
-    }
+            assert!(stack.push(1));
+            assert!(stack.push(2));
 
-    #[test]
-    fn lookup_respects_transparency() {
-        let mut stack = LayerStack::new();
+            let action = stack.lookup(KeyCode::A);
+            assert_eq!(action, Some(&LayerAction::Block));
+            assert!(stack.is_active(1));
+            assert!(stack.is_active(2));
+        }
 
-        let mut base = Layer::with_id(0, "base");
-        base.set_mapping(KeyCode::A, LayerAction::Remap(KeyCode::B));
-        stack.define_layer(base);
+        #[test]
+        fn pop_deactivates_top_non_base_layer() {
+            let mut stack = LayerStack::new();
+            let nav = Layer::with_id(1, "nav");
+            stack.define_layer(nav);
+            assert!(stack.push(1));
 
-        let mut overlay = Layer::with_id(1, "overlay");
-        overlay.transparent = true;
-        stack.define_layer(overlay);
-        stack.push(1);
+            let popped = stack.pop();
+            assert_eq!(popped, Some(1));
+            assert!(!stack.is_active(1));
+            // Base layer remains.
+            assert!(stack.is_active(0));
+            assert!(stack.pop().is_none());
+        }
 
-        assert_eq!(
-            stack.lookup(KeyCode::A),
-            Some(&LayerAction::Remap(KeyCode::B))
-        );
-    }
+        #[test]
+        fn toggle_toggles_activation_state() {
+            let mut stack = LayerStack::new();
+            stack.define_layer(Layer::with_id(1, "nav"));
 
-    #[test]
-    fn opaque_layer_without_mapping_blocks_lookup() {
-        let mut stack = LayerStack::new();
-        let mut opaque = Layer::with_id(1, "opaque");
-        opaque.transparent = false;
-        stack.define_layer(opaque);
-        stack.push(1);
+            assert!(stack.toggle(1));
+            assert!(stack.is_active(1));
+            assert!(stack.toggle(1));
+            assert!(!stack.is_active(1));
+        }
 
-        assert_eq!(stack.lookup(KeyCode::A), None);
-    }
+        #[test]
+        fn lookup_respects_transparency() {
+            let mut stack = LayerStack::new();
 
-    #[test]
-    fn push_moves_existing_layer_to_top() {
-        let mut stack = LayerStack::new();
-        stack.define_layer(Layer::with_id(1, "nav"));
-        stack.define_layer(Layer::with_id(2, "fn"));
-        assert!(stack.push(1));
-        assert!(stack.push(2));
+            let mut base = Layer::with_id(0, "base");
+            base.set_mapping(KeyCode::A, LayerAction::Remap(KeyCode::B));
+            stack.define_layer(base);
 
-        // Re-pushing layer 1 should move it above layer 2.
-        assert!(stack.push(1));
-        let names = stack.active_layers();
-        assert_eq!(names.first(), Some(&"nav"));
+            let mut overlay = Layer::with_id(1, "overlay");
+            overlay.transparent = true;
+            stack.define_layer(overlay);
+            stack.push(1);
+
+            assert_eq!(
+                stack.lookup(KeyCode::A),
+                Some(&LayerAction::Remap(KeyCode::B))
+            );
+        }
+
+        #[test]
+        fn opaque_layer_without_mapping_blocks_lookup() {
+            let mut stack = LayerStack::new();
+            let mut opaque = Layer::with_id(1, "opaque");
+            opaque.transparent = false;
+            stack.define_layer(opaque);
+            stack.push(1);
+
+            assert_eq!(stack.lookup(KeyCode::A), None);
+        }
+
+        #[test]
+        fn push_moves_existing_layer_to_top() {
+            let mut stack = LayerStack::new();
+            stack.define_layer(Layer::with_id(1, "nav"));
+            stack.define_layer(Layer::with_id(2, "fn"));
+            assert!(stack.push(1));
+            assert!(stack.push(2));
+
+            // Re-pushing layer 1 should move it above layer 2.
+            assert!(stack.push(1));
+            let names = stack.active_layers();
+            assert_eq!(names.first(), Some(&"nav"));
+        }
     }
 }

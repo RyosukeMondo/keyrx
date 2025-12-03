@@ -20,6 +20,8 @@ pub use error::{StateError, StateResult};
 pub use key_state::KeyStateTracker;
 #[allow(unused_imports)] // Will be used when EngineState is implemented
 pub use keys::KeyState;
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use layers::LayerState;
 pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
     Modifier, ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
