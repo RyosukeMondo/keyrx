@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create Mutation enum
+- [x] 1. Create Mutation enum
   - File: `core/src/engine/state/mutation.rs`
   - Define all mutation variants (KeyDown, KeyUp, PushLayer, etc.)
   - Add Debug, Clone derives

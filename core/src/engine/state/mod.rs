@@ -3,6 +3,7 @@
 mod key_state;
 mod layers;
 mod modifiers;
+mod mutation;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -12,6 +13,8 @@ pub use layers::{HoldAction, Layer, LayerAction, LayerId, LayerStack};
 pub use modifiers::{
     Modifier, ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
 };
+#[allow(unused_imports)] // Will be used when EngineState is implemented
+pub use mutation::Mutation;
 
 /// A set of active modifiers (both physical and virtual).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
