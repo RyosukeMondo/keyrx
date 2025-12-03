@@ -94,7 +94,7 @@
   - _Requirements: 2.2, 4.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer defining errors | Task: Define Driver category errors (KRX-D3xx) | Restrictions: Platform-specific hints, cover all drivers | _Leverage: define_errors! | Success: Driver errors comprehensive | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Define Validation errors (4xxx)
+- [x] 11. Define Validation errors (4xxx)
   - File: `core/src/errors/validation.rs`
   - Config validation, conflict detection errors
   - Purpose: Validation error codes
