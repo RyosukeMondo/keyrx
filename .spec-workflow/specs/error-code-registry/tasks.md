@@ -11,7 +11,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create ErrorCode with KRX-XXXX format | Restrictions: Category prefix, 3-digit number, Display impl | _Leverage: Type patterns | Success: ErrorCode displays correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create ErrorCategory enum
+- [x] 2. Create ErrorCategory enum
   - File: `core/src/errors/category.rs`
   - Define categories: Config, Runtime, Driver, Validation, Ffi, Internal
   - Assign number ranges to each category
