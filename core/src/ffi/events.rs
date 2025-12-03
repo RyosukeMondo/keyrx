@@ -231,6 +231,7 @@ impl Default for EventRegistry {
 mod tests {
     use super::*;
     use serde_json::json;
+    use serial_test::serial;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Mutex;
 
@@ -255,6 +256,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn registry_starts_empty() {
         let registry = EventRegistry::new();
         assert_eq!(registry.callback_count(), 0);
@@ -262,6 +264,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn can_register_and_unregister_callbacks() {
         let registry = EventRegistry::new();
 
@@ -275,6 +278,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn latest_registration_replaces_previous() {
         reset_test_state();
         let registry = EventRegistry::new();
@@ -290,6 +294,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn invoke_calls_registered_callback() {
         reset_test_state();
         let registry = EventRegistry::new();
@@ -311,6 +316,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn invoke_without_callback_is_silent() {
         reset_test_state();
         let registry = EventRegistry::new();
@@ -324,6 +330,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn multiple_event_types_independent() {
         reset_test_state();
         let registry = EventRegistry::new();
@@ -344,6 +351,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn clear_removes_all_callbacks() {
         let registry = EventRegistry::new();
 
@@ -358,6 +366,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn registry_is_clonable() {
         let registry1 = EventRegistry::new();
         registry1.register(EventType::DiscoveryProgress, Some(test_callback));
@@ -371,6 +380,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn event_type_names_are_unique() {
         use std::collections::HashSet;
 

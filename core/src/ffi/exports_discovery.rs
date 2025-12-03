@@ -1,36 +1,17 @@
 //! Discovery session FFI exports.
 //!
 //! Functions for device key discovery session management.
+//!
+//! # Migration Notice
+//!
+//! Discovery callback registration functions have been moved to the compat module.
+//! They are still available for backward compatibility but are deprecated.
+//! See `crate::ffi::compat::discovery_compat` for details.
 #![allow(unsafe_code)]
 
-use crate::ffi::domains::discovery::{global_event_registry, refresh_discovery_sink};
-use crate::ffi::events::{EventCallback, EventType};
-
-// ─── Discovery Callbacks ───────────────────────────────────────────────────
-
-/// Register a callback for discovery progress updates.
-/// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
-#[no_mangle]
-pub extern "C" fn keyrx_on_discovery_progress(callback: Option<EventCallback>) {
-    global_event_registry().register(EventType::DiscoveryProgress, callback);
-    refresh_discovery_sink();
-}
-
-/// Register a callback for duplicate key warnings during discovery.
-/// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
-#[no_mangle]
-pub extern "C" fn keyrx_on_discovery_duplicate(callback: Option<EventCallback>) {
-    global_event_registry().register(EventType::DiscoveryDuplicate, callback);
-    refresh_discovery_sink();
-}
-
-/// Register a callback for discovery summaries (completed, cancelled, or bypassed).
-/// The provided pointer/length pair references a JSON payload that is only valid for the duration of the callback.
-#[no_mangle]
-pub extern "C" fn keyrx_on_discovery_summary(callback: Option<EventCallback>) {
-    global_event_registry().register(EventType::DiscoverySummary, callback);
-    refresh_discovery_sink();
-}
+// Note: Discovery callback registration functions (keyrx_on_discovery_progress, etc.)
+// have been moved to crate::ffi::compat::discovery_compat for backward compatibility.
+// They are re-exported from the main ffi module.
 
 // ─── Discovery FFI Exports ─────────────────────────────────────────────────
 
@@ -358,7 +339,7 @@ pub(crate) fn clear_discovery_session() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::clear_discovery_session;
     use crate::discovery::{
         session::publish_session_update, DeviceId, DiscoveryProgress, DiscoverySummary,
         ExpectedPosition, PhysicalKey, SessionStatus, SessionUpdate,
@@ -369,6 +350,8 @@ mod tests {
         keyrx_cancel_discovery, keyrx_get_discovery_progress, keyrx_process_discovery_event,
         keyrx_start_discovery,
     };
+    // Import deprecated compat functions for testing
+    use crate::ffi::compat::{keyrx_on_discovery_progress, keyrx_on_discovery_summary};
     use serial_test::serial;
     use std::collections::HashMap;
     use std::ffi::{CStr, CString};
@@ -397,6 +380,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn discovery_callbacks_emit_json_payloads() {
         progress_store().lock().unwrap().clear();
         summary_store().lock().unwrap().clear();

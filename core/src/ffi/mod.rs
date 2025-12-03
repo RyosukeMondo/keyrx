@@ -19,8 +19,10 @@
 //! - `events`: Unified event registry for all FFI callbacks
 //! - `traits`: FFI exportable trait definitions for domain modules
 //! - `domains`: New domain implementations using FfiExportable trait
+//! - `compat`: Backward-compatible shims for incremental migration
 
 mod callbacks;
+pub mod compat;
 pub mod context;
 pub mod domains;
 pub mod error;
@@ -46,7 +48,7 @@ pub use exports::*;
 pub use exports_analysis::*;
 pub use exports_device::*;
 pub use exports_diagnostics::*;
-pub use exports_discovery::*;
+// Note: exports_discovery callback functions moved to compat module
 pub use exports_engine::*;
 pub use exports_errors::*;
 pub use exports_recording::*;
@@ -57,3 +59,9 @@ pub use traits::{FfiDomain, FfiExportable};
 
 // Re-export new domain implementations
 pub use domains::DiscoveryFfi;
+
+// Re-export backward-compatible shims (deprecated)
+#[allow(deprecated)]
+pub use compat::{
+    keyrx_on_discovery_duplicate, keyrx_on_discovery_progress, keyrx_on_discovery_summary,
+};
