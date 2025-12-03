@@ -58,7 +58,7 @@
 
 ## Phase 3: Conflict Detection
 
-- [ ] 7. Implement remap conflict detection
+- [x] 7. Implement remap conflict detection
   - Files: `core/src/validation/conflicts.rs` (new)
   - Detect when same key is remapped multiple times
   - Detect when key is both remapped and blocked
@@ -67,14 +67,14 @@
   - _Requirements: REQ-2.1, REQ-2.2, REQ-2.3_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Conflict analysis engineer | Task: Create core/src/validation/conflicts.rs with ConflictDetector and detect_remap_conflicts(ops: &[PendingOp]) -> Vec<ValidationWarning>. Track key→operation mappings, detect duplicates. Show both conflicting lines | Restrictions: ≤200 lines; track operation indices for line numbers; categorize as WarningCategory::Conflict | Success: Duplicate remaps and remap+block conflicts detected. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 8. Implement combo shadowing detection
+- [x] 8. Implement combo shadowing detection
   - Files: `core/src/validation/conflicts.rs` (extend)
   - Detect when combo keys overlap (e.g., [A,S] shadows [A,S,D])
   - _Leverage: existing combo parsing_
   - _Requirements: REQ-2.4_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Combo analysis engineer | Task: Extend core/src/validation/conflicts.rs with detect_combo_shadowing(ops: &[PendingOp]) -> Vec<ValidationWarning>. Detect when one combo's keys are a subset of another (potential shadowing) | Restrictions: ≤80 lines added; only warn if subset relationship exists | Success: Overlapping combos produce warnings. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 9. Implement circular remap detection
+- [x] 9. Implement circular remap detection
   - Files: `core/src/validation/conflicts.rs` (extend)
   - Detect A→B, B→A circular dependencies
   - Detect longer chains using `ValidationConfig.max_cycle_depth`
@@ -84,7 +84,7 @@
 
 ## Phase 4: Safety Analysis
 
-- [ ] 10. Implement safety analyzer
+- [x] 10. Implement safety analyzer
   - Files: `core/src/validation/safety.rs` (new)
   - Warn on Escape key remapping/blocking
   - Warn on emergency exit combo interference
@@ -96,14 +96,14 @@
 
 ## Phase 5: Coverage Analysis
 
-- [ ] 11. Implement coverage analyzer
+- [x] 11. Implement coverage analyzer
   - Files: `core/src/validation/coverage.rs` (new)
   - Categorize keys by behavior type (remapped, blocked, tap-hold, combo, unaffected)
   - Track per-layer coverage
   - _Requirements: REQ-5.1, REQ-5.2, REQ-5.3_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Coverage analysis developer | Task: Create core/src/validation/coverage.rs with CoverageAnalyzer and analyze_coverage(ops: &[PendingOp]) -> CoverageReport. Categorize all affected keys by type, track layer-specific mappings | Restrictions: ≤150 lines; use HashSet for deduplication | Success: Coverage report shows all affected keys by category. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 12. Implement ASCII keyboard visualization
+- [x] 12. Implement ASCII keyboard visualization
   - Files: `core/src/validation/coverage.rs` (extend)
   - Render ANSI keyboard layout with affected keys highlighted
   - Use symbols: [R]emap, [B]lock, [T]ap-hold, [C]ombo, [ ] unaffected
@@ -113,7 +113,7 @@
 
 ## Phase 6: Validation Engine
 
-- [ ] 13. Implement validation engine orchestrator
+- [x] 13. Implement validation engine orchestrator
   - Files: `core/src/validation/engine.rs` (new)
   - Orchestrate all validation passes
   - Load and apply ValidationConfig
@@ -122,7 +122,7 @@
   - _Requirements: REQ-1.5, REQ-1.6, REQ-2.6, REQ-3.6, REQ-7_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration architect | Task: Create core/src/validation/engine.rs with ValidationEngine that loads ValidationConfig and validate(script: &str, options: ValidationOptions) -> ValidationResult. Parse script with Rhai, collect PendingOps, run all validators passing config, aggregate results respecting config.max_errors | Restrictions: ≤200 lines; handle parse errors gracefully; use config throughout | Success: Full validation pipeline works end-to-end with config. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 14. Add operation collection for validation
+- [x] 14. Add operation collection for validation
   - Files: `core/src/validation/engine.rs` (extend)
   - Extract layer and modifier definitions during parsing
   - Track operation source locations
@@ -132,7 +132,7 @@
 
 ## Phase 7: CLI Integration
 
-- [ ] 15. Enhance keyrx check command
+- [x] 15. Enhance keyrx check command
   - Files: `core/src/cli/commands/check.rs` (rewrite)
   - Replace syntax-only check with full semantic validation
   - Add --strict, --no-warnings, --coverage, --visual, --config, --show-config flags
@@ -141,7 +141,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-3, REQ-5, REQ-7_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI developer | Task: Rewrite core/src/cli/commands/check.rs to use ValidationEngine. Add clap flags: --strict (warnings as errors), --no-warnings, --coverage (include coverage report), --visual (ASCII keyboard), --config <path> (custom config), --show-config (display current config). Output errors/warnings with colors, support --json | Restrictions: ≤250 lines; maintain backward compatibility for basic check; exit code 0=valid, 1=errors, 2=warnings in strict mode | Success: `keyrx check --coverage --visual script.rhai` shows full validation. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 16. Enhance keyrx simulate for dry-run
+- [x] 16. Enhance keyrx simulate for dry-run
   - Files: `core/src/cli/commands/simulate.rs` (extend)
   - Add --script flag to load script before simulation
   - Show both tap and hold behaviors for tap-hold keys
@@ -149,7 +149,7 @@
   - _Requirements: REQ-4.1, REQ-4.2, REQ-4.3_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI developer | Task: Extend core/src/cli/commands/simulate.rs with --script flag. When provided, load script first, then simulate with that config. For tap-hold keys, show "Tap: X, Hold: Y (threshold: Zms)" | Restrictions: ≤100 lines added; reuse existing simulation engine | Success: `keyrx simulate --script config.rhai --input CapsLock` shows tap-hold behavior. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 17. Add interactive simulation mode
+- [x] 17. Add interactive simulation mode
   - Files: `core/src/cli/commands/simulate.rs` (extend)
   - Add --interactive flag for REPL-style simulation
   - User types key names, system shows output
