@@ -35,7 +35,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create `core/src/config/paths.rs` with path constants: UINPUT_PATH="/dev/uinput", UINPUT_DEVICE_NAME="KeyRx Virtual Keyboard", REPL_HISTORY_FILE=".keyrx_repl_history", PERF_BASELINE_FILE="target/perf-baseline.json", CONFIG_FILE_NAME="config.toml", SCRIPTS_DIR="scripts". Include helper function for XDG config path resolution. | Restrictions: Reuse existing device_profiles_dir() pattern from discovery/types.rs | _Leverage: core/src/drivers/linux/mod.rs:25, core/src/drivers/linux/writer.rs:17, core/src/cli/commands/repl.rs:12, core/src/uat/perf.rs:27, core/src/discovery/types.rs_ | Success: All path constants defined with doc comments. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 5. Create limits constants module
+- [x] 5. Create limits constants module
   - File: `core/src/config/limits.rs`
   - Extract capacity and threshold limits
   - Purpose: Centralize all limit-related constants
