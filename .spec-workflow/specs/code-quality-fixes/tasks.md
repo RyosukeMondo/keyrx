@@ -82,14 +82,14 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/report_data.rs by extracting ReportData struct (line 17), CategoryStats struct (line 126), and all their impl blocks from report.rs. Add proper imports and module documentation. | Restrictions: Keep all method signatures | Success: Structs compile. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 10. Create uat/report_markdown.rs module
+- [x] 10. Create uat/report_markdown.rs module
   - File: `src/uat/report_markdown.rs`
   - Move: Markdown generation methods from ReportGenerator
   - Purpose: Isolate markdown report generation
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/report_markdown.rs by extracting markdown generation methods (generate_markdown, generate_markdown_summary, etc.) from ReportGenerator impl in report.rs. Create a MarkdownReportGenerator struct or use free functions. | Restrictions: Maintain output format | Success: Markdown generation works. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 11. Create uat/report_html.rs module
+- [x] 11. Create uat/report_html.rs module
   - File: `src/uat/report_html.rs`
   - Move: HTML generation methods from ReportGenerator
   - Move: escape_html helper function
@@ -97,7 +97,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/report_html.rs by extracting HTML generation methods and escape_html helper from report.rs. | Restrictions: Maintain HTML output format | Success: HTML generation works. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 12. Update uat/report.rs and mod.rs
+- [x] 12. Update uat/report.rs and mod.rs
   - Files: `src/uat/report.rs`, `src/uat/mod.rs`
   - Keep ReportGenerator as coordinator
   - Add re-exports for backward compatibility
