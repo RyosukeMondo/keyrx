@@ -143,7 +143,7 @@
   - _Requirements: Non-functional (reliability)_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create driver integration tests | Restrictions: Test error paths, mock where needed, platform-specific | _Leverage: Test fixtures | Success: Error handling tested, recovery verified | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Create driver debugging guide
+- [x] 15. Create driver debugging guide
   - File: `docs/driver-debugging.md`
   - Document environment flags for debugging
   - Explain common issues and solutions
