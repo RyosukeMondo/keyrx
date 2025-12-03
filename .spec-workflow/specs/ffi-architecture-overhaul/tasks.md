@@ -150,7 +150,7 @@
 
 ## Phase 5: Dart Binding Generation
 
-- [ ] 15. Create Dart binding generator script
+- [x] 15. Create Dart binding generator script
   - File: `scripts/generate_dart_bindings.py`
   - Parse Rust FFI exports (from macro annotations or cbindgen output)
   - Generate Dart FFI bindings with type conversions
