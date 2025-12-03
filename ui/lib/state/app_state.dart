@@ -4,10 +4,13 @@
 /// engine connection status, loaded scripts, and UI state.
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/engine_service.dart';
 import '../services/error_translator.dart';
 import '../widgets/layer_panel.dart';
+
+const _kDeveloperModeKey = 'developer_mode';
 
 /// Global application state.
 class AppState extends ChangeNotifier {
@@ -23,6 +26,7 @@ class AppState extends ChangeNotifier {
   String? _loadedScript;
   List<LayerInfo> _layers = [];
   String? _error;
+  bool _isDeveloperMode = false;
 
   /// Whether the engine is initialized.
   bool get initialized => _initialized || _engineService.isInitialized;
@@ -35,6 +39,9 @@ class AppState extends ChangeNotifier {
 
   /// Current error message, if any.
   String? get error => _error;
+
+  /// Whether developer mode is enabled.
+  bool get isDeveloperMode => _isDeveloperMode;
 
   /// Core library version.
   String get version {
@@ -122,6 +129,21 @@ class AppState extends ChangeNotifier {
   /// Clear any error.
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  /// Load developer mode setting from persistent storage.
+  Future<void> loadDeveloperMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDeveloperMode = prefs.getBool(_kDeveloperModeKey) ?? false;
+    notifyListeners();
+  }
+
+  /// Toggle developer mode on/off.
+  Future<void> toggleDeveloperMode() async {
+    _isDeveloperMode = !_isDeveloperMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kDeveloperModeKey, _isDeveloperMode);
     notifyListeners();
   }
 }

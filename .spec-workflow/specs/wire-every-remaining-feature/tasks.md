@@ -171,7 +171,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create DeveloperDrawer with NavigationDrawer containing destinations: Debugger, Console, Test Runner, Simulator, Analyzer, Benchmark, Doctor, Replay, Discovery. Include header and close button | Restrictions: ≤100 lines; consistent styling | _Leverage: main.dart navigation | _Requirements: 4 | Success: Drawer shows all 9 developer tools._
 
-- [ ] 24. Add developer mode to AppState
+- [x] 24. Add developer mode to AppState
   - Files: ui/lib/state/app_state.dart (modify)
   - Add developer mode flag with persistence
   - _Leverage: existing app_state.dart_
