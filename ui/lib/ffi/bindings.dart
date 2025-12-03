@@ -117,6 +117,32 @@ typedef KeyrxStartRecording = Pointer<Char> Function(Pointer<Utf8> path);
 typedef KeyrxStopRecordingNative = Pointer<Char> Function();
 typedef KeyrxStopRecording = Pointer<Char> Function();
 
+typedef KeyrxValidateScriptNative = Pointer<Char> Function(
+  Pointer<Utf8> script,
+);
+typedef KeyrxValidateScript = Pointer<Char> Function(
+  Pointer<Utf8> script,
+);
+
+typedef KeyrxValidateScriptWithOptionsNative = Pointer<Char> Function(
+  Pointer<Utf8> script,
+  Pointer<Utf8> optionsJson,
+);
+typedef KeyrxValidateScriptWithOptions = Pointer<Char> Function(
+  Pointer<Utf8> script,
+  Pointer<Utf8> optionsJson,
+);
+
+typedef KeyrxSuggestKeysNative = Pointer<Char> Function(
+  Pointer<Utf8> partial,
+);
+typedef KeyrxSuggestKeys = Pointer<Char> Function(
+  Pointer<Utf8> partial,
+);
+
+typedef KeyrxAllKeyNamesNative = Pointer<Char> Function();
+typedef KeyrxAllKeyNames = Pointer<Char> Function();
+
 typedef KeyrxStateCallbackNative = Void Function(
   Pointer<Uint8> bytes,
   IntPtr length,
@@ -180,6 +206,10 @@ class KeyrxBindings {
   late final KeyrxStartDiscovery? startDiscovery;
   late final KeyrxStartRecording? startRecording;
   late final KeyrxStopRecording? stopRecording;
+  late final KeyrxValidateScript? validateScript;
+  late final KeyrxValidateScriptWithOptions? validateScriptWithOptions;
+  late final KeyrxSuggestKeys? suggestKeys;
+  late final KeyrxAllKeyNames? allKeyNames;
 
   KeyrxBindings(this._lib) {
     init = _lib.lookupFunction<KeyrxInitNative, KeyrxInit>('keyrx_init');
@@ -212,6 +242,10 @@ class KeyrxBindings {
     startDiscovery = _tryLookupStartDiscovery();
     startRecording = _tryLookupStartRecording();
     stopRecording = _tryLookupStopRecording();
+    validateScript = _tryLookupValidateScript();
+    validateScriptWithOptions = _tryLookupValidateScriptWithOptions();
+    suggestKeys = _tryLookupSuggestKeys();
+    allKeyNames = _tryLookupAllKeyNames();
   }
 
   KeyrxStartAudio? _tryLookupStartAudio() {
@@ -437,6 +471,47 @@ class KeyrxBindings {
     try {
       return _lib.lookupFunction<KeyrxStopRecordingNative, KeyrxStopRecording>(
         'keyrx_stop_recording',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxValidateScript? _tryLookupValidateScript() {
+    try {
+      return _lib.lookupFunction<KeyrxValidateScriptNative, KeyrxValidateScript>(
+        'keyrx_validate_script',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxValidateScriptWithOptions? _tryLookupValidateScriptWithOptions() {
+    try {
+      return _lib.lookupFunction<KeyrxValidateScriptWithOptionsNative,
+          KeyrxValidateScriptWithOptions>(
+        'keyrx_validate_script_with_options',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxSuggestKeys? _tryLookupSuggestKeys() {
+    try {
+      return _lib.lookupFunction<KeyrxSuggestKeysNative, KeyrxSuggestKeys>(
+        'keyrx_suggest_keys',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxAllKeyNames? _tryLookupAllKeyNames() {
+    try {
+      return _lib.lookupFunction<KeyrxAllKeyNamesNative, KeyrxAllKeyNames>(
+        'keyrx_all_key_names',
       );
     } on ArgumentError {
       return null;

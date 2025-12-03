@@ -7,6 +7,9 @@ library;
 // Layout models
 export 'keyboard_layout.dart';
 
+// Validation models
+export 'validation.dart';
+
 // Service models - re-exported for convenience
 // These are defined in their respective service files:
 // - KeyboardDevice, KeyboardDeviceInfo → device_service.dart

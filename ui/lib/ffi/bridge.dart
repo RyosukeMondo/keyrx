@@ -14,6 +14,7 @@ import 'bridge_discovery.dart';
 import 'bridge_engine.dart';
 import 'bridge_session.dart';
 import 'bridge_testing.dart';
+import 'bridge_validation.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
 export 'bridge_audio.dart' show BridgeClassification;
@@ -50,6 +51,16 @@ export 'bridge_testing.dart'
         TestDiscoveryResult,
         TestResult,
         TestRunResult;
+export 'bridge_validation.dart'
+    show
+        CoverageReport,
+        LayerCoverage,
+        SourceLocation,
+        ValidationError,
+        ValidationOptions,
+        ValidationResult,
+        ValidationWarning,
+        WarningCategory;
 
 /// Bridge to the KeyRx Core library.
 ///
@@ -60,6 +71,7 @@ export 'bridge_testing.dart'
 /// - [BridgeSessionMixin]: Session recording, analysis, replay
 /// - [BridgeDiscoveryMixin]: Device listing and discovery
 /// - [BridgeTestingMixin]: Testing, simulation, benchmarks, diagnostics
+/// - [BridgeValidationMixin]: Script validation and key suggestions
 class KeyrxBridge
     with
         BridgeCoreMixin,
@@ -67,7 +79,8 @@ class KeyrxBridge
         BridgeAudioMixin,
         BridgeSessionMixin,
         BridgeDiscoveryMixin,
-        BridgeTestingMixin {
+        BridgeTestingMixin,
+        BridgeValidationMixin {
   static KeyrxBridge? _currentInstance;
 
   KeyrxBindings? _bindings;
