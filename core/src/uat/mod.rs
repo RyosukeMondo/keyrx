@@ -1,0 +1,25 @@
+//! User Acceptance Testing (UAT) framework for KeyRx.
+//!
+//! This module provides comprehensive UAT capabilities including:
+//! - Test discovery and execution
+//! - Golden session recording and verification
+//! - Quality gate enforcement
+//! - Coverage mapping and reporting
+//! - Performance testing
+//! - Fuzz testing
+
+mod coverage;
+mod fuzz;
+mod gates;
+mod golden;
+mod perf;
+mod report;
+mod runner;
+
+pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
+pub use fuzz::{FuzzEngine, FuzzResult};
+pub use gates::{GateResult, GateViolation, QualityGate, QualityGateEnforcer};
+pub use golden::{GoldenSession, GoldenSessionManager, GoldenVerifyResult};
+pub use perf::{PerformanceResult, PerformanceUat};
+pub use report::ReportGenerator;
+pub use runner::{Priority, UatFilter, UatResult, UatResults, UatRunner, UatTest};

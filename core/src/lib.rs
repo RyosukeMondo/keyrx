@@ -16,6 +16,7 @@ pub mod ffi;
 pub mod mocks;
 pub mod scripting;
 pub mod traits;
+pub mod uat;
 
 // Re-export commonly used types
 pub use discovery::{
