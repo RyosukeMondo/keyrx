@@ -4,25 +4,31 @@
 //! all key remapping when they press Ctrl+Alt+Shift+Escape. This is essential for
 //! recovering from broken configurations that might otherwise lock the user out.
 //!
-//! The bypass mode is implemented using an atomic flag to ensure thread-safety
-//! across all driver callbacks.
+//! The bypass mode is implemented using [`BypassController`] which uses an atomic
+//! flag for thread-safety. The functions here delegate to a global controller for
+//! backward compatibility, but new code should use [`BypassController`] directly
+//! for testability.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 use tracing::warn;
 
+use super::bypass::BypassController;
 use crate::drivers::keycodes::KeyCode;
 use crate::engine::{ModifierState, StandardModifier};
 
-/// Static atomic flag indicating whether bypass mode is active.
+pub use super::bypass::BypassCallback;
+
+/// Global bypass controller for backward compatibility.
 ///
-/// When true, all remapping should be skipped and keys should pass through directly.
-static BYPASS_MODE: AtomicBool = AtomicBool::new(false);
+/// New code should inject [`BypassController`] instead of using these functions.
+static GLOBAL_CONTROLLER: OnceLock<BypassController> = OnceLock::new();
 
-/// Callback type for notifying UI about bypass mode changes.
-pub type BypassCallback = Box<dyn Fn(bool) + Send + Sync>;
+/// Static callback holder for bypass mode notifications (legacy).
+static BYPASS_CALLBACK: OnceLock<BypassCallback> = OnceLock::new();
 
-/// Static callback holder for bypass mode notifications.
-static BYPASS_CALLBACK: std::sync::OnceLock<BypassCallback> = std::sync::OnceLock::new();
+fn global_controller() -> &'static BypassController {
+    GLOBAL_CONTROLLER.get_or_init(BypassController::new)
+}
 
 /// Register a callback to be invoked when bypass mode changes.
 ///
@@ -72,7 +78,8 @@ pub fn check_emergency_exit(key: KeyCode, modifiers: &ModifierState) -> bool {
 /// When bypass mode is active, all keys should pass through unchanged.
 /// This function logs a warning to alert the user that remapping has been disabled.
 pub fn activate_bypass_mode() {
-    let was_active = BYPASS_MODE.swap(true, Ordering::SeqCst);
+    let was_active = global_controller().is_active();
+    global_controller().activate();
     if !was_active {
         warn!(
             "Emergency exit triggered: bypass mode ACTIVATED. \
@@ -87,7 +94,8 @@ pub fn activate_bypass_mode() {
 ///
 /// After calling this, normal key remapping will resume.
 pub fn deactivate_bypass_mode() {
-    let was_active = BYPASS_MODE.swap(false, Ordering::SeqCst);
+    let was_active = global_controller().is_active();
+    global_controller().deactivate();
     if was_active {
         warn!("Bypass mode DEACTIVATED. Key remapping is now re-enabled.");
         notify_callback(false);
@@ -103,7 +111,7 @@ pub fn deactivate_bypass_mode() {
 ///
 /// The new state of bypass mode after toggling.
 pub fn toggle_bypass_mode() -> bool {
-    let new_state = !BYPASS_MODE.load(Ordering::SeqCst);
+    let new_state = !global_controller().is_active();
     if new_state {
         activate_bypass_mode();
     } else {
@@ -119,7 +127,7 @@ pub fn toggle_bypass_mode() -> bool {
 /// `true` if bypass mode is active (remapping disabled), `false` otherwise.
 #[inline]
 pub fn is_bypass_active() -> bool {
-    BYPASS_MODE.load(Ordering::SeqCst)
+    global_controller().is_active()
 }
 
 /// Set bypass mode to a specific state.
@@ -144,7 +152,7 @@ pub fn set_bypass_mode(active: bool) {
 /// Does not trigger the callback.
 #[cfg(test)]
 pub fn reset_bypass_mode() {
-    BYPASS_MODE.store(false, Ordering::SeqCst);
+    global_controller().deactivate();
 }
 
 #[cfg(test)]

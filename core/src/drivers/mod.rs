@@ -4,10 +4,13 @@
 //! and output injection. The [`PlatformInput`] type alias resolves to the
 //! appropriate driver for the current operating system.
 
+pub mod bypass;
 mod common;
 pub mod emergency_exit;
 mod injector;
 pub mod keycodes;
+
+pub use bypass::BypassController;
 
 pub use injector::{InjectedKey, KeyInjector, MockKeyInjector};
 
