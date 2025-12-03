@@ -27,7 +27,8 @@ pub use golden::{
     RecordResult, GOLDEN_SESSION_VERSION,
 };
 pub use perf::{
-    LatencyPercentiles, LatencyViolation, PerfResults, PerformanceResult, PerformanceUat,
+    BaselineData, BaselineError, BaselineRegression, BaselineTestData, LatencyPercentiles,
+    LatencyViolation, PerfComparison, PerfResults, PerformanceResult, PerformanceUat,
 };
 pub use report::ReportGenerator;
 pub use runner::{Priority, UatFilter, UatResult, UatResults, UatRunner, UatTest};

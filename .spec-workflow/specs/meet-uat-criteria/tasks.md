@@ -101,14 +101,14 @@
 
 ## Performance UAT
 
-- [ ] 14. Implement performance UAT runner
+- [x] 14. Implement performance UAT runner
   - Files: core/src/uat/perf.rs (new)
   - Create PerformanceUat with latency measurement
   - _Leverage: core/benches/latency.rs patterns_
   - _Requirements: 7.1, 7.2, 7.3_
   - _Prompt: Role: Performance engineer | Task: Create perf.rs with PerformanceUat.run() that executes tests with @latency threshold, measuring p50/p95/p99/max latencies and collecting violations | Restrictions: ≤150 lines; reuse benchmark timing; microsecond precision | Success: `keyrx uat --perf` reports latency percentiles._
 
-- [ ] 15. Implement baseline comparison
+- [x] 15. Implement baseline comparison
   - Files: core/src/uat/perf.rs (extend)
   - Add compare_baseline() for regression detection
   - _Leverage: git branch comparison_
