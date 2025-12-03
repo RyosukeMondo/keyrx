@@ -32,7 +32,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with trait design expertise | Task: Create HasExitCode trait in core/src/cli/traits.rs with implementations for common error types | Restrictions: Must work with anyhow::Error via downcast, provide sensible defaults | _Leverage: anyhow downcast pattern | Success: Trait compiles, implementations work, errors carry exit codes | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Create CommandError enum
+- [x] 4. Create CommandError enum
   - File: `core/src/cli/error.rs`
   - Define variants: Validation, TestFailure, DeviceNotFound, PermissionDenied, Timeout, Other
   - Implement HasExitCode for each variant

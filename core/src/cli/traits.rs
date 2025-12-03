@@ -42,7 +42,12 @@ pub trait HasExitCode {
 /// Falls back to `GeneralError` if the error type is not recognized.
 impl HasExitCode for anyhow::Error {
     fn exit_code(&self) -> ExitCode {
-        // Try to downcast to std::io::Error first
+        // Try to downcast to CommandError first (most specific)
+        if let Some(cmd_err) = self.downcast_ref::<super::CommandError>() {
+            return cmd_err.exit_code();
+        }
+
+        // Try to downcast to std::io::Error
         if let Some(io_err) = self.downcast_ref::<std::io::Error>() {
             return io_err.exit_code();
         }
@@ -136,5 +141,19 @@ mod tests {
         let io_error = io::Error::new(io::ErrorKind::NotFound, "not found");
         let boxed: Box<dyn std::error::Error> = Box::new(io_error);
         assert_eq!(boxed.exit_code(), ExitCode::DeviceNotFound);
+    }
+
+    #[test]
+    fn anyhow_with_command_error() {
+        let cmd_error = super::super::CommandError::validation("Invalid config", None::<String>);
+        let anyhow_error: anyhow::Error = cmd_error.into();
+        assert_eq!(anyhow_error.exit_code(), ExitCode::ValidationFailed);
+    }
+
+    #[test]
+    fn anyhow_with_timeout_error() {
+        let cmd_error = super::super::CommandError::timeout("Operation timed out", 5000);
+        let anyhow_error: anyhow::Error = cmd_error.into();
+        assert_eq!(anyhow_error.exit_code(), ExitCode::Timeout);
     }
 }

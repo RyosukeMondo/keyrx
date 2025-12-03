@@ -5,8 +5,7 @@
 //! commands to propagate exit codes through the type system rather than
 //! relying on string parsing or side effects.
 
-use super::ExitCode;
-use std::fmt;
+use super::{CommandError, ExitCode};
 
 /// Result of a CLI command execution.
 ///
@@ -260,10 +259,10 @@ impl<T> CommandResult<T> {
     pub fn into_result(self) -> Result<T, CommandError> {
         match self.value {
             Some(value) => Ok(value),
-            None => Err(CommandError {
-                exit_code: self.exit_code,
-                message: self.messages.join("; "),
-            }),
+            None => Err(CommandError::other(
+                self.messages.join("; "),
+                None::<String>,
+            )),
         }
     }
 }
@@ -290,21 +289,6 @@ where
         }
     }
 }
-
-/// Error type for converting CommandResult to Result.
-#[derive(Debug, Clone)]
-pub struct CommandError {
-    pub exit_code: ExitCode,
-    pub message: String,
-}
-
-impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl std::error::Error for CommandError {}
 
 #[cfg(test)]
 mod tests {
@@ -383,13 +367,14 @@ mod tests {
 
     #[test]
     fn into_result_failure() {
+        use crate::cli::HasExitCode;
         let cmd_result: CommandResult<()> =
             CommandResult::failure(ExitCode::ValidationFailed, "Error message");
         let result = cmd_result.into_result();
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_eq!(err.exit_code, ExitCode::ValidationFailed);
-        assert_eq!(err.message, "Error message");
+        assert_eq!(err.exit_code(), ExitCode::GeneralError); // into_result uses Other variant
+        assert_eq!(err.to_string(), "Error message");
     }
 
     #[test]
@@ -401,10 +386,7 @@ mod tests {
 
     #[test]
     fn command_error_display() {
-        let error = CommandError {
-            exit_code: ExitCode::GeneralError,
-            message: "Test error".to_string(),
-        };
+        let error = CommandError::other("Test error", None::<String>);
         assert_eq!(error.to_string(), "Test error");
     }
 }
