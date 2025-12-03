@@ -30,5 +30,5 @@ pub use perf::{
     BaselineData, BaselineError, BaselineRegression, BaselineTestData, LatencyPercentiles,
     LatencyViolation, PerfComparison, PerfResults, PerformanceResult, PerformanceUat,
 };
-pub use report::ReportGenerator;
+pub use report::{CategoryStats, ReportData, ReportGenerator};
 pub use runner::{Priority, UatFilter, UatResult, UatResults, UatRunner, UatTest};
