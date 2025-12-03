@@ -5,18 +5,24 @@
 //! - Category-based organization
 //! - Template-based error messages
 //! - Automatic documentation generation
+//! - Runtime error type with context chaining
 //!
 //! # Example
 //!
 //! ```ignore
-//! use keyrx_core::errors::{ErrorCode, ErrorCategory};
+//! use keyrx_core::errors::{ErrorCode, ErrorCategory, KeyrxError};
 //!
 //! let code = ErrorCode::new(ErrorCategory::Config, 1001);
 //! assert_eq!(code.to_string(), "KRX-C1001");
+//!
+//! // Create runtime error
+//! let err = KeyrxError::simple(&CONFIG_NOT_FOUND);
 //! ```
 
 pub mod code;
 pub mod definition;
+pub mod error;
 
 pub use code::{ErrorCategory, ErrorCode};
 pub use definition::{ErrorDef, ErrorSeverity};
+pub use error::KeyrxError;
