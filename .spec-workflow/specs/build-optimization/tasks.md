@@ -69,7 +69,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer adding cfg | Task: Add cfg gates to driver modules | Restrictions: Clean cross-compilation, no dead code | _Leverage: Rust cfg | Success: Cross-compile works cleanly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Use target-specific dependencies
+- [x] 8. Use target-specific dependencies
   - File: `core/Cargo.toml`
   - Use [target.'cfg(...)'.dependencies]
   - Remove conditional compilation in code where possible
