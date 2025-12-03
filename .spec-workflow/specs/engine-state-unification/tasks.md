@@ -155,7 +155,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating state | Task: Update Engine core to use EngineState exclusively | Restrictions: Same behavior, use mutations, maintain performance | _Leverage: EngineState | Success: Engine uses unified state, all tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 16. Update FFI state exports
+- [x] 16. Update FFI state exports
   - File: `core/src/ffi/exports_engine.rs`
   - Use StateSnapshot for state queries
   - Emit StateChange events
