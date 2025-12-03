@@ -9,7 +9,7 @@ mod event_recording;
 pub mod layer_actions;
 mod processing;
 pub mod replay;
-mod state;
+pub mod state;
 pub mod tracing;
 mod types;
 

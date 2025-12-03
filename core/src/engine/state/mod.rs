@@ -1,6 +1,6 @@
 //! Layer and modifier state management.
 
-mod change;
+pub mod change;
 mod error;
 pub mod history;
 mod key_state;

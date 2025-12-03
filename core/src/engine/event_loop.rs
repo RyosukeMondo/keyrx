@@ -1,7 +1,8 @@
 //! Main engine event loop.
 
 use crate::engine::{InputEvent, OutputAction, RemapAction, TimingConfig};
-use crate::ffi::publish_state_snapshot;
+#[allow(deprecated)]
+use crate::ffi::publish_state_snapshot_legacy;
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use crate::KeyCode;
 use anyhow::Result;
@@ -208,6 +209,7 @@ where
         Ok(())
     }
 
+    #[allow(deprecated)]
     fn publish_state(&self, event: Option<String>, latency_us: Option<u64>) {
         let layers = self
             .state
@@ -224,7 +226,7 @@ where
             .collect();
         let held: Vec<String> = self.held_keys.iter().map(|k| format!("{k:?}")).collect();
 
-        publish_state_snapshot(
+        publish_state_snapshot_legacy(
             layers,
             modifiers,
             held,
