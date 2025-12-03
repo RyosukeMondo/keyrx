@@ -189,8 +189,103 @@ keyrx run --script my-config.rhai
 | `bench`    | Run latency benchmark                          |
 | `state`    | Inspect current engine state                   |
 | `repl`     | Start interactive REPL (not yet implemented)   |
+| `uat`      | Run User Acceptance Tests                      |
+| `golden`   | Manage golden sessions for regression testing  |
+| `regression` | Verify golden sessions for regressions       |
+| `ci-check` | Run complete CI test suite with gates          |
 
 Use `--format json` for machine-readable output.
+
+## Testing
+
+### User Acceptance Tests (UAT)
+
+Run the UAT test suite:
+
+```bash
+keyrx uat
+```
+
+Filter tests by category or priority:
+
+```bash
+keyrx uat --category core --priority P0
+keyrx uat --category layers
+```
+
+Apply a quality gate:
+
+```bash
+keyrx uat --gate default  # 95% pass rate required
+keyrx uat --gate alpha    # Relaxed (80% pass rate)
+keyrx uat --gate ga       # Strictest (100% pass rate)
+```
+
+### Golden Sessions (Regression Testing)
+
+Record a golden session:
+
+```bash
+keyrx golden record my_session --script path/to/script.rhai
+```
+
+Verify a golden session:
+
+```bash
+keyrx golden verify my_session
+```
+
+Run all regression tests:
+
+```bash
+keyrx regression
+```
+
+### CI Check
+
+Run the complete CI test suite:
+
+```bash
+keyrx ci-check                  # Run all tests
+keyrx ci-check --gate beta      # With quality gate enforcement
+keyrx ci-check --skip-perf      # Skip performance tests
+keyrx ci-check --json           # JSON output for CI parsing
+```
+
+### Quality Gates
+
+Quality gates are defined in `.keyrx/quality-gates.toml`:
+
+| Gate | Pass Rate | Max P0 | Max P1 | Max Latency | Min Coverage |
+|------|-----------|--------|--------|-------------|--------------|
+| alpha | 80% | 0 | 5 | 2000µs | 60% |
+| beta | 90% | 0 | 2 | 1000µs | 75% |
+| default | 95% | 0 | 2 | 1000µs | 80% |
+| rc | 98% | 0 | 0 | 500µs | 85% |
+| ga | 100% | 0 | 0 | 500µs | 90% |
+
+### Writing UAT Tests
+
+Create Rhai test files in `tests/uat/`:
+
+```javascript
+// @category: core
+// @priority: P0
+// @requirement: REQ-001
+// @latency: 1000
+fn uat_basic_mapping() {
+    let result = 1 + 1;
+    if result != 2 {
+        throw "Basic math failed";
+    }
+}
+```
+
+Metadata tags:
+- `@category`: Test category for filtering (e.g., core, layers, performance)
+- `@priority`: P0 (critical), P1 (high), P2 (normal)
+- `@requirement`: Traceability to requirements
+- `@latency`: Maximum allowed execution time in microseconds
 
 ## Key Reference
 
