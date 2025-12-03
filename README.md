@@ -2,17 +2,13 @@
 
 The Ultimate Input Remapping Engine - a cross-platform keyboard remapper powered by Rhai scripting.
 
-- **core/**: The Rust backend (Logic, Rhai Scripting).
-- **ui/**: The Flutter frontend (GUI, Visualizer).
-- **docs/**: Documentation and Architecture.
-
-## Origin of the Name
+## Overview
 
 **KeyRx** (pronounced "Key-Rex" or "Key-Rx") carries a triple meaning:
 
-1. **"Rex" (The King/Dinosaur)**: Like *Tyrannosaurus Rex*, this tool is designed to be the dominant, powerful force in input remapping.
-2. **"Rx" (The Prescription)**: Default keyboard layouts are often "broken" or inefficient. You are the doctor prescribing a script to fix your input and make it healthy for your hands.
-3. **"Rx" (Reactive)**: The engine is built on *Reactive Programming* principles. Input is treated as a stream of events that flows through your logic to trigger instant reactions.
+1. **"Rex" (The King)**: Designed to be the dominant, powerful force in input remapping
+2. **"Rx" (The Prescription)**: You are the doctor prescribing a script to fix your input
+3. **"Rx" (Reactive)**: Built on reactive programming principles with instant event reactions
 
 ## Installation
 
@@ -23,93 +19,6 @@ cargo build --release
 
 The binary will be at `core/target/release/keyrx`.
 
-## Development Setup
-
-### Prerequisites
-
-- [Rust](https://rustup.rs/) (stable toolchain)
-- [Flutter](https://docs.flutter.dev/get-started/install) (for UI development)
-- [just](https://github.com/casey/just#installation) (task runner)
-
-### Quick Setup
-
-```bash
-just setup
-```
-
-This installs all toolchain components, development tools (cargo-nextest, cargo-watch), dependencies, and git hooks.
-
-### Available Commands
-
-Run `just` to see all available commands:
-
-| Command | Description |
-|---------|-------------|
-| `just setup` | Install tools, dependencies, and git hooks |
-| `just dev` | Run core with auto-reload (cargo watch) |
-| `just ui` | Run Flutter UI in development mode |
-| `just check` | Run all quality checks (fmt, clippy, test) |
-| `just fmt` | Format Rust code |
-| `just clippy` | Run clippy linter |
-| `just test` | Run tests with nextest |
-| `just bench` | Run benchmarks |
-| `just clean` | Clean build artifacts |
-
-## Building
-
-### Current Platform
-
-```bash
-just build
-```
-
-Creates an optimized release binary at `core/target/release/keyrx`.
-
-### All Platforms
-
-```bash
-just build-all
-```
-
-Builds for Linux and Windows x86_64. Windows builds require [cross](https://github.com/cross-rs/cross).
-
-### Individual Platforms
-
-```bash
-just build-linux    # Linux x86_64
-just build-windows  # Windows x86_64 (requires cross)
-```
-
-## Contributing
-
-### Code Quality Checks
-
-Before submitting changes, run the full quality suite:
-
-```bash
-just check
-```
-
-This runs formatting checks, clippy linting, and all tests.
-
-### Pre-commit Hooks
-
-Git hooks are automatically installed with `just setup`. The pre-commit hook runs:
-
-1. `cargo fmt --check` - Code formatting
-2. `cargo clippy -- -D warnings` - Linting
-3. `cargo test --lib` - Unit tests
-
-Commits are blocked if any check fails. Run `just fmt` to fix formatting issues.
-
-### Creating a Release
-
-```bash
-just release 1.0.0
-```
-
-This updates version numbers, generates the changelog, and creates a git tag.
-
 ## Quick Start
 
 ### 1. Check your system
@@ -118,7 +27,7 @@ This updates version numbers, generates the changelog, and creates a git tag.
 keyrx doctor
 ```
 
-This runs diagnostics to verify your system is ready (uinput on Linux, keyboard hooks on Windows).
+Runs diagnostics to verify your system is ready.
 
 ### 2. Validate a script
 
@@ -179,113 +88,22 @@ keyrx run --script my-config.rhai
 
 ## CLI Commands
 
-| Command    | Description                                    |
-|------------|------------------------------------------------|
-| `check`    | Validate and lint a Rhai script                |
-| `run`      | Run the engine with optional script            |
-| `simulate` | Simulate key events without real keyboard      |
-| `devices`  | List available keyboard devices                |
-| `doctor`   | Run self-diagnostics                           |
-| `bench`    | Run latency benchmark                          |
-| `state`    | Inspect current engine state                   |
-| `repl`     | Start interactive REPL (not yet implemented)   |
-| `uat`      | Run User Acceptance Tests                      |
-| `golden`   | Manage golden sessions for regression testing  |
-| `regression` | Verify golden sessions for regressions       |
-| `ci-check` | Run complete CI test suite with gates          |
+| Command | Description |
+|---------|-------------|
+| `check` | Validate and lint a Rhai script |
+| `run` | Run the engine with optional script |
+| `simulate` | Simulate key events without real keyboard |
+| `devices` | List available keyboard devices |
+| `doctor` | Run self-diagnostics |
+| `bench` | Run latency benchmark |
+| `state` | Inspect current engine state |
+| `repl` | Start interactive REPL |
+| `uat` | Run User Acceptance Tests |
+| `golden` | Manage golden sessions for regression testing |
+| `regression` | Verify golden sessions for regressions |
+| `ci-check` | Run complete CI test suite with gates |
 
 Use `--format json` for machine-readable output.
-
-## Testing
-
-### User Acceptance Tests (UAT)
-
-Run the UAT test suite:
-
-```bash
-keyrx uat
-```
-
-Filter tests by category or priority:
-
-```bash
-keyrx uat --category core --priority P0
-keyrx uat --category layers
-```
-
-Apply a quality gate:
-
-```bash
-keyrx uat --gate default  # 95% pass rate required
-keyrx uat --gate alpha    # Relaxed (80% pass rate)
-keyrx uat --gate ga       # Strictest (100% pass rate)
-```
-
-### Golden Sessions (Regression Testing)
-
-Record a golden session:
-
-```bash
-keyrx golden record my_session --script path/to/script.rhai
-```
-
-Verify a golden session:
-
-```bash
-keyrx golden verify my_session
-```
-
-Run all regression tests:
-
-```bash
-keyrx regression
-```
-
-### CI Check
-
-Run the complete CI test suite:
-
-```bash
-keyrx ci-check                  # Run all tests
-keyrx ci-check --gate beta      # With quality gate enforcement
-keyrx ci-check --skip-perf      # Skip performance tests
-keyrx ci-check --json           # JSON output for CI parsing
-```
-
-### Quality Gates
-
-Quality gates are defined in `.keyrx/quality-gates.toml`:
-
-| Gate | Pass Rate | Max P0 | Max P1 | Max Latency | Min Coverage |
-|------|-----------|--------|--------|-------------|--------------|
-| alpha | 80% | 0 | 5 | 2000µs | 60% |
-| beta | 90% | 0 | 2 | 1000µs | 75% |
-| default | 95% | 0 | 2 | 1000µs | 80% |
-| rc | 98% | 0 | 0 | 500µs | 85% |
-| ga | 100% | 0 | 0 | 500µs | 90% |
-
-### Writing UAT Tests
-
-Create Rhai test files in `tests/uat/`:
-
-```javascript
-// @category: core
-// @priority: P0
-// @requirement: REQ-001
-// @latency: 1000
-fn uat_basic_mapping() {
-    let result = 1 + 1;
-    if result != 2 {
-        throw "Basic math failed";
-    }
-}
-```
-
-Metadata tags:
-- `@category`: Test category for filtering (e.g., core, layers, performance)
-- `@priority`: P0 (critical), P1 (high), P2 (normal)
-- `@requirement`: Traceability to requirements
-- `@latency`: Maximum allowed execution time in microseconds
 
 ## Key Reference
 
@@ -371,33 +189,7 @@ KeyRx uses **low-level keyboard hooks** for capturing events and **SendInput** f
 keyrx.exe run --script my-config.rhai
 ```
 
-**Note**: Some enterprise security software may block low-level keyboard hooks. Contact your IT department if you encounter issues.
-
-## Troubleshooting
-
-### Linux
-
-| Issue | Solution |
-|-------|----------|
-| "Permission denied" accessing `/dev/input/event*` | Add user to `input` group and re-login |
-| "Failed to create uinput device" | Run `sudo modprobe uinput` and check udev rules |
-| "Device not found" | Run `keyrx devices` to list available keyboards |
-| Keyboard stays grabbed after crash | Run `sudo killall keyrx` or unplug/replug keyboard |
-
-### Windows
-
-| Issue | Solution |
-|-------|----------|
-| "Failed to install keyboard hook" | Check for conflicting keyboard software |
-| Antivirus blocking KeyRx | Add KeyRx to antivirus exclusions |
-| Keys not being remapped | Ensure KeyRx is running in foreground |
-| Keyboard unresponsive | Press Ctrl+C to stop KeyRx cleanly |
-
-### General
-
-- Use `keyrx doctor` to run diagnostics
-- Use `--mock` flag to test scripts without capturing real keyboard
-- Press **Ctrl+C** to stop KeyRx and release the keyboard
+**Note**: Some enterprise security software may block low-level keyboard hooks.
 
 ## Flutter UI
 
@@ -435,9 +227,35 @@ Access developer tools via the wrench icon in the app bar (developer mode).
 | **Replay** | Session replay with verification mode |
 | **Discovery** | Guided wizard for keyboard layout discovery |
 
-### Screenshots
+## Troubleshooting
 
-<!-- TODO: Add screenshots -->
+### Linux
+
+| Issue | Solution |
+|-------|----------|
+| "Permission denied" accessing `/dev/input/event*` | Add user to `input` group and re-login |
+| "Failed to create uinput device" | Run `sudo modprobe uinput` and check udev rules |
+| "Device not found" | Run `keyrx devices` to list available keyboards |
+| Keyboard stays grabbed after crash | Run `sudo killall keyrx` or unplug/replug keyboard |
+
+### Windows
+
+| Issue | Solution |
+|-------|----------|
+| "Failed to install keyboard hook" | Check for conflicting keyboard software |
+| Antivirus blocking KeyRx | Add KeyRx to antivirus exclusions |
+| Keys not being remapped | Ensure KeyRx is running in foreground |
+| Keyboard unresponsive | Press Ctrl+C to stop KeyRx cleanly |
+
+### General
+
+- Use `keyrx doctor` to run diagnostics
+- Use `--mock` flag to test scripts without capturing real keyboard
+- Press **Ctrl+C** to stop KeyRx and release the keyboard
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and contribution guidelines.
 
 ## License
 

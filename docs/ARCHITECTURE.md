@@ -1,7 +1,6 @@
-# KeyRx Project Steering: The Path to Success
+# KeyRx Architecture
 
-**Status:** Living Document  
-**Goal:** Define the strategic decisions, technology justifications, and quality standards required to build the "Ultimate" input remapper.
+Technical architecture, design decisions, and quality standards for KeyRx.
 
 ---
 
