@@ -116,7 +116,7 @@
 
 ## Phase 4: Snapshots and Inspection
 
-- [ ] 12. Create StateSnapshot type
+- [x] 12. Create StateSnapshot type
   - File: `core/src/engine/state/snapshot.rs`
   - Serializable state representation
   - Implement From<&EngineState>

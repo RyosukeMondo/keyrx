@@ -8,6 +8,7 @@ mod layers;
 mod modifiers;
 mod mutation;
 mod pending;
+pub mod snapshot;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
