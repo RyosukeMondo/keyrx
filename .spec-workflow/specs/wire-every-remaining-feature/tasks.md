@@ -37,7 +37,7 @@
   - _Requirements: 6_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_simulate` FFI export taking JSON keys array [{code, holdMs}] and comboMode bool, returning JSON {mappings: [{input, output, decision}], activeLayers, pending} | Restrictions: ≤80 lines; reuse simulate.rs | _Leverage: core/src/cli/commands/simulate.rs | _Requirements: 6 | Success: Key sequences processed with full state output._
 
-- [ ] 6. Add session management FFI exports
+- [x] 6. Add session management FFI exports
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_list_sessions()`, `keyrx_analyze_session(path)`, `keyrx_replay_session(path, verify)`
   - _Leverage: core/src/cli/commands/analyze.rs, replay.rs_
