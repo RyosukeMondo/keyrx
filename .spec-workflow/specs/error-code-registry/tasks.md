@@ -70,7 +70,7 @@
 
 ## Phase 3: Define Errors
 
-- [ ] 8. Define Config errors (1xxx)
+- [x] 8. Define Config errors (1xxx)
   - File: `core/src/errors/config.rs`
   - Config loading, parsing, validation errors
   - Purpose: Configuration error codes
