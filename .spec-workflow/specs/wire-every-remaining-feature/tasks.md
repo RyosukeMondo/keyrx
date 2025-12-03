@@ -155,7 +155,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Modify EditorPage to call checkScript on script changes (debounced 500ms). Show error banner when invalid, highlight line on tap. Block Load if invalid | Restrictions: ≤80 lines added; non-intrusive UX | _Leverage: existing editor_page.dart | _Requirements: 3 | Success: Syntax errors visible before loading script._
 
-- [ ] 22. Update main navigation for User screens
+- [x] 22. Update main navigation for User screens
   - Files: ui/lib/main.dart (modify)
   - Add Devices and Run Controls to NavigationRail
   - _Leverage: existing main.dart navigation_
