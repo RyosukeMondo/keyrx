@@ -1,22 +1,21 @@
 //! Engine run command.
 
+use super::run_builder::RuntimeBuilder;
+use super::run_recorder::{RecordingContext, RecordingManager};
+use super::run_tracer::TracingManager;
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
-use crate::engine::{
-    infer_decision_type, AdvancedEngine, EngineTracer, EventRecordBuilder, EventRecorder,
-    InputEvent, LayerAction, RemapAction,
-};
+use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent};
 use crate::mocks::MockInput;
-use crate::scripting::{RemapRegistry, RhaiRuntime};
-use crate::traits::{InputSource, ScriptRuntime};
-use anyhow::{anyhow, Result};
+use crate::scripting::RhaiRuntime;
+use crate::traits::InputSource;
+use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, instrument, warn};
-use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
 
 #[cfg(target_os = "linux")]
 use crate::drivers::LinuxInput;
@@ -80,86 +79,18 @@ impl RunCommand {
     }
 
     pub async fn run(&self) -> Result<()> {
-        // Initialize tracing if debug mode
-        if self.debug {
-            self.init_debug_logging()?;
-            debug!(
-                service = "keyrx",
-                event = "debug_mode_enabled",
-                component = "cli_run",
-                format = "json",
-                "Debug logging enabled"
-            );
-        }
+        let builder = RuntimeBuilder::new(self.script_path.clone(), self.debug, &self.output);
+        builder.init_debug_logging()?;
 
         self.output.success("Starting KeyRx engine...");
 
-        let runtime = self.prepare_runtime()?;
+        let runtime = builder.prepare_runtime()?;
 
-        // Run with appropriate input source
         if self.use_mock {
-            self.run_with_mock(runtime).await
+            self.run_with_mock(runtime, &builder).await
         } else {
-            self.run_with_platform_driver(runtime).await
+            self.run_with_platform_driver(runtime, &builder).await
         }
-    }
-
-    fn prepare_runtime(&self) -> Result<RhaiRuntime> {
-        let mut runtime = RhaiRuntime::new()?;
-
-        if let Some(path) = &self.script_path {
-            self.output
-                .success(&format!("Loading script: {}", path.display()));
-            let path_str = path
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
-            runtime.load_file(path_str)?;
-
-            debug!(
-                service = "keyrx",
-                event = "run_script_start",
-                component = "cli_run",
-                script = %path.display(),
-                "Running script top-level statements"
-            );
-            runtime.run_script()?;
-
-            if runtime.has_hook("on_init") {
-                debug!(
-                    service = "keyrx",
-                    event = "script_on_init",
-                    component = "cli_run",
-                    script = %path.display(),
-                    "Calling on_init() hook"
-                );
-                runtime.call_hook("on_init")?;
-                self.output.success("Script initialized (on_init called)");
-            }
-        }
-
-        Ok(runtime)
-    }
-
-    fn init_debug_logging(&self) -> Result<()> {
-        let env_filter =
-            EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("debug"))?;
-
-        let fmt_layer = fmt::layer()
-            .json()
-            .flatten_event(true)
-            .with_target(true)
-            .with_level(true)
-            .with_timer(fmt::time::SystemTime)
-            .with_current_span(true)
-            .with_span_list(true);
-
-        tracing_subscriber::registry()
-            .with(env_filter)
-            .with(fmt_layer)
-            .try_init()
-            .map_err(|e| anyhow!("failed to initialize tracing subscriber: {e}"))?;
-
-        Ok(())
     }
 
     fn load_device_profile(&self, device_info: &DeviceInfo) -> RegistryEntry {
@@ -178,7 +109,7 @@ impl RunCommand {
                 ));
             }
             RegistryStatus::NeedsDiscovery(reason) => {
-                let reason_text = self.describe_reason(reason);
+                let reason_text = describe_reason(reason);
                 self.output.warning(&format!(
                     "Using default profile for {:04x}:{:04x} ({}). Discovery recommended: {}",
                     device_info.vendor_id, device_info.product_id, device_info.name, reason_text
@@ -197,19 +128,11 @@ impl RunCommand {
         }
     }
 
-    fn describe_reason(&self, reason: &DiscoveryReason) -> String {
-        match reason {
-            DiscoveryReason::MissingProfile => "no profile found on disk".to_string(),
-            DiscoveryReason::ParseError => "stored profile is corrupt".to_string(),
-            DiscoveryReason::SchemaMismatch { expected, found } => format!(
-                "profile schema mismatch (expected {}, found {})",
-                expected, found
-            ),
-            DiscoveryReason::IoError(msg) => format!("I/O error loading profile: {msg}"),
-        }
-    }
-
-    async fn run_with_mock(&self, runtime: RhaiRuntime) -> Result<()> {
+    async fn run_with_mock(
+        &self,
+        runtime: RhaiRuntime,
+        builder: &RuntimeBuilder<'_>,
+    ) -> Result<()> {
         self.output
             .success("Using mock input (no real keyboard interception)");
 
@@ -217,14 +140,15 @@ impl RunCommand {
         let registry = runtime.registry().clone();
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
         let timing_config = registry.timing_config().clone();
-        let mut engine = self.build_engine(runtime, registry);
+        let mut engine = builder.build_engine(runtime, registry);
 
-        // Initialize recorder if --record specified
-        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
+        let mut recorder =
+            recording_mgr.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
 
-        // Initialize tracer if --trace specified
-        let tracer = self.create_tracer()?;
+        let tracing_mgr = TracingManager::new(self.trace_path.clone(), &self.output);
+        let tracer = tracing_mgr.create_tracer()?;
 
         input.start().await?;
 
@@ -237,7 +161,6 @@ impl RunCommand {
             "Engine running with mock input"
         );
 
-        // Set up Ctrl+C handler
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();
         tokio::spawn(async move {
@@ -256,7 +179,7 @@ impl RunCommand {
             }
 
             let events = input.poll_events().await?;
-            self.process_events_with_engine(
+            self.process_events(
                 &mut engine,
                 &mut input,
                 events,
@@ -270,17 +193,20 @@ impl RunCommand {
         }
 
         input.stop().await?;
-        self.finish_recording(recorder)?;
-        self.finish_tracing(tracer);
+        recording_mgr.finish_recording(recorder)?;
+        tracing_mgr.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
 
     #[cfg(target_os = "linux")]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
+    async fn run_with_platform_driver(
+        &self,
+        runtime: RhaiRuntime,
+        builder: &RuntimeBuilder<'_>,
+    ) -> Result<()> {
         self.output.success("Using Linux input driver");
 
-        // Show which device we're using and initialize input
         let mut input = self.initialize_linux_input()?;
         let device_info = input.device_info().clone();
         let profile_entry = self.load_device_profile(&device_info);
@@ -289,14 +215,15 @@ impl RunCommand {
         let registry = runtime.registry().clone();
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
         let timing_config = registry.timing_config().clone();
-        let mut engine = self.build_engine(runtime, registry);
+        let mut engine = builder.build_engine(runtime, registry);
 
-        // Initialize recorder if --record specified
-        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
+        let mut recorder =
+            recording_mgr.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
 
-        // Initialize tracer if --trace specified
-        let tracer = self.create_tracer()?;
+        let tracing_mgr = TracingManager::new(self.trace_path.clone(), &self.output);
+        let tracer = tracing_mgr.create_tracer()?;
 
         input.start().await?;
 
@@ -309,15 +236,13 @@ impl RunCommand {
             "Engine running with Linux input driver"
         );
 
-        // Set up graceful shutdown with signal handlers
         let running = self.setup_signal_handlers()?;
 
-        // Run event loop until interrupted
         let mut last_timestamp = 0u64;
         while running.load(Ordering::SeqCst) {
             let events = input.poll_events().await?;
             if !events.is_empty() {
-                self.process_events_with_engine(
+                self.process_events(
                     &mut engine,
                     &mut input,
                     events,
@@ -334,13 +259,12 @@ impl RunCommand {
 
         self.output.success("Signal received, stopping...");
         input.stop().await?;
-        self.finish_recording(recorder)?;
-        self.finish_tracing(tracer);
+        recording_mgr.finish_recording(recorder)?;
+        tracing_mgr.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
 
-    /// Initialize the Linux input driver with the configured device path.
     #[cfg(target_os = "linux")]
     fn initialize_linux_input(&self) -> Result<LinuxInput> {
         if let Some(ref device) = self.device_path {
@@ -366,15 +290,10 @@ impl RunCommand {
         }
     }
 
-    /// Set up signal handlers for graceful shutdown on SIGINT and SIGTERM.
     #[cfg(target_os = "linux")]
     fn setup_signal_handlers(&self) -> Result<Arc<AtomicBool>> {
-        // Set up graceful shutdown using signal-hook for SIGINT and SIGTERM
-        // This ensures clean keyboard release even when killed by systemd/init
         let running = Arc::new(AtomicBool::new(true));
 
-        // Register signal handlers for both SIGINT (Ctrl+C) and SIGTERM (kill/systemd)
-        // signal-hook uses a single Arc<AtomicBool> and sets it to false on signal
         flag::register(SIGINT, running.clone())
             .map_err(|e| anyhow::anyhow!("Failed to register SIGINT handler: {e}"))?;
         flag::register(SIGTERM, running.clone())
@@ -392,20 +311,24 @@ impl RunCommand {
     }
 
     #[cfg(target_os = "windows")]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
-        let input = self.init_windows_input()?;
-        let mut input = input;
+    async fn run_with_platform_driver(
+        &self,
+        runtime: RhaiRuntime,
+        builder: &RuntimeBuilder<'_>,
+    ) -> Result<()> {
+        let mut input = self.init_windows_input()?;
         let registry = runtime.registry().clone();
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
         let timing_config = registry.timing_config().clone();
-        let mut engine = self.build_engine(runtime, registry);
+        let mut engine = builder.build_engine(runtime, registry);
 
-        // Initialize recorder if --record specified
-        let mut recorder = self.create_recorder(&engine, script_path_str, timing_config)?;
+        let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
+        let mut recorder =
+            recording_mgr.create_recorder(&engine, script_path_str, timing_config)?;
         let mut seq = 0u64;
 
-        // Initialize tracer if --trace specified
-        let tracer = self.create_tracer()?;
+        let tracing_mgr = TracingManager::new(self.trace_path.clone(), &self.output);
+        let tracer = tracing_mgr.create_tracer()?;
 
         input.start().await?;
 
@@ -418,16 +341,14 @@ impl RunCommand {
             "Engine running with Windows input driver"
         );
 
-        // Set up graceful shutdown
         let running = Arc::new(AtomicBool::new(true));
         Self::spawn_ctrl_c_flag(running.clone());
 
-        // Run event loop until interrupted
         let mut last_timestamp = 0u64;
         while running.load(Ordering::SeqCst) {
             let events = input.poll_events().await?;
             if !events.is_empty() {
-                self.process_events_with_engine(
+                self.process_events(
                     &mut engine,
                     &mut input,
                     events,
@@ -443,17 +364,21 @@ impl RunCommand {
         }
 
         input.stop().await?;
-        self.finish_recording(recorder)?;
-        self.finish_tracing(tracer);
+        recording_mgr.finish_recording(recorder)?;
+        tracing_mgr.finish_tracing(tracer);
         self.output.success("Engine stopped.");
         Ok(())
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-    async fn run_with_platform_driver(&self, runtime: RhaiRuntime) -> Result<()> {
+    async fn run_with_platform_driver(
+        &self,
+        runtime: RhaiRuntime,
+        builder: &RuntimeBuilder<'_>,
+    ) -> Result<()> {
         self.output
             .warning("No platform driver available for this OS, falling back to mock input");
-        self.run_with_mock(runtime).await
+        self.run_with_mock(runtime, builder).await
     }
 
     #[cfg(target_os = "windows")]
@@ -489,124 +414,13 @@ impl RunCommand {
         });
     }
 
-    /// Create an EventRecorder if --record path is specified.
-    fn create_recorder(
-        &self,
-        engine: &AdvancedEngine<RhaiRuntime>,
-        script_path: Option<String>,
-        timing_config: crate::engine::TimingConfig,
-    ) -> Result<Option<EventRecorder>> {
-        match &self.record_path {
-            Some(path) => {
-                self.output
-                    .success(&format!("Recording session to: {}", path.display()));
-                let initial_state = engine.snapshot();
-                EventRecorder::new(path, script_path, timing_config, initial_state)
-                    .map(Some)
-                    .map_err(|e| anyhow!("Failed to create recorder: {}", e))
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// Finish recording and save to file.
-    fn finish_recording(&self, recorder: Option<EventRecorder>) -> Result<()> {
-        if let Some(rec) = recorder {
-            let count = rec.event_count();
-            match rec.finish() {
-                Ok(session) => {
-                    self.output.success(&format!(
-                        "Session saved: {} events, avg latency {}µs",
-                        count,
-                        session.avg_latency_us()
-                    ));
-                }
-                Err(e) => {
-                    self.output.error(&format!("Failed to save session: {}", e));
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// Create an EngineTracer if --trace path is specified.
-    fn create_tracer(&self) -> Result<Option<EngineTracer>> {
-        match &self.trace_path {
-            Some(path) => {
-                self.output
-                    .success(&format!("Exporting traces to: {}", path.display()));
-                match EngineTracer::with_file_export("keyrx", path) {
-                    Ok(tracer) => Ok(Some(tracer)),
-                    Err(e) => {
-                        self.output.warning(&format!(
-                            "Failed to initialize tracer: {}. Continuing without tracing.",
-                            e
-                        ));
-                        Ok(None)
-                    }
-                }
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// Shutdown the tracer and flush pending spans.
-    fn finish_tracing(&self, tracer: Option<EngineTracer>) {
-        if let Some(t) = tracer {
-            t.shutdown();
-            self.output.success("Traces exported successfully.");
-        }
-    }
-
-    fn build_engine(
-        &self,
-        runtime: RhaiRuntime,
-        registry: RemapRegistry,
-    ) -> AdvancedEngine<RhaiRuntime> {
-        let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
-
-        // Seed layer mappings and tap-holds into the base layer.
-        let mut layers = registry.layers().clone();
-        if let Some(base_id) = layers.layer_id_by_name("base") {
-            for (key, action) in registry.mappings() {
-                if let Some(layer_action) = Self::to_layer_action(action) {
-                    layers.set_mapping_for_layer(base_id, key, layer_action);
-                }
-            }
-
-            for (key, binding) in registry.tap_holds() {
-                layers.set_mapping_for_layer(
-                    base_id,
-                    *key,
-                    LayerAction::TapHold {
-                        tap: binding.tap,
-                        hold: binding.hold.clone(),
-                    },
-                );
-            }
-        }
-        *engine.layers_mut() = layers;
-
-        // Seed combos and modifiers.
-        for combo in registry.combos().all() {
-            engine
-                .combos_mut()
-                .register(&combo.keys, combo.action.clone());
-        }
-        engine
-            .modifiers_mut()
-            .clone_from(&registry.modifier_state());
-
-        engine
-    }
-
     #[allow(clippy::too_many_arguments)]
     #[instrument(
         level = "trace",
         skip(self, engine, input, events, last_timestamp, recorder, seq, tracer),
         fields(event_count = events.len())
     )]
-    async fn process_events_with_engine<I: InputSource>(
+    async fn process_events<I: InputSource>(
         &self,
         engine: &mut AdvancedEngine<RhaiRuntime>,
         input: &mut I,
@@ -626,25 +440,9 @@ impl RunCommand {
 
             let process_start = Instant::now();
             let outputs = engine.process_event_traced(event.clone(), tracer);
-            let latency_us = process_start.elapsed().as_micros() as u64;
 
-            if let Some(ref mut rec) = recorder {
-                let snapshot = engine.snapshot();
-                let active_layers: Vec<u32> = snapshot.layers.active_layer_ids();
-                rec.record_event(
-                    EventRecordBuilder::new()
-                        .seq(*seq)
-                        .timestamp_us(event.timestamp_us)
-                        .input(event.clone())
-                        .output(outputs.clone())
-                        .decision_type(infer_decision_type(&event, &outputs))
-                        .active_layers(active_layers)
-                        .modifiers_state(snapshot.modifiers)
-                        .latency_us(latency_us)
-                        .build(),
-                );
-                *seq += 1;
-            }
+            let mut ctx = RecordingContext::new(recorder, seq);
+            ctx.record_event(&event, &outputs, engine, process_start);
 
             for action in outputs {
                 input.send_output(action).await?;
@@ -652,62 +450,18 @@ impl RunCommand {
         }
         Ok(())
     }
+}
 
-    fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
-        match action {
-            RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
-            RemapAction::Block => Some(LayerAction::Block),
-            RemapAction::Pass => None,
-        }
+fn describe_reason(reason: &DiscoveryReason) -> String {
+    match reason {
+        DiscoveryReason::MissingProfile => "no profile found on disk".to_string(),
+        DiscoveryReason::ParseError => "stored profile is corrupt".to_string(),
+        DiscoveryReason::SchemaMismatch { expected, found } => format!(
+            "profile schema mismatch (expected {}, found {})",
+            expected, found
+        ),
+        DiscoveryReason::IoError(msg) => format!("I/O error loading profile: {msg}"),
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::engine::{KeyCode, RemapAction};
-    use std::fs;
-    use std::path::PathBuf;
-    use tempfile::TempDir;
-
-    #[test]
-    fn prepare_runtime_loads_script_and_on_init() {
-        let temp_dir = TempDir::new().unwrap();
-        let script_path = temp_dir.path().join("script.rhai");
-
-        fs::write(
-            &script_path,
-            r#"
-remap("A", "B");
-
-fn on_init() {
-    block("CapsLock");
-}
-"#,
-        )
-        .unwrap();
-
-        let cmd = RunCommand::new(Some(script_path), false, true, None, OutputFormat::Human);
-        let runtime = cmd.prepare_runtime().expect("runtime should load script");
-
-        assert_eq!(
-            runtime.lookup_remap(KeyCode::A),
-            RemapAction::Remap(KeyCode::B)
-        );
-        assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Block);
-    }
-
-    #[test]
-    fn prepare_runtime_errors_on_invalid_path() {
-        let cmd = RunCommand::new(
-            Some(PathBuf::from("/not/a/real/script.rhai")),
-            false,
-            true,
-            None,
-            OutputFormat::Human,
-        );
-
-        let result = cmd.prepare_runtime();
-        assert!(result.is_err());
-    }
-}
+// Tests for RuntimeBuilder are in run_builder.rs
