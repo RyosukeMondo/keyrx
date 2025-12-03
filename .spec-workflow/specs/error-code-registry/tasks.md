@@ -112,7 +112,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating errors | Task: Replace println errors in CLI with keyrx_err! | Restrictions: All user-facing errors, preserve context | _Leverage: keyrx_err! | Success: CLI uses error codes | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 13. Replace anyhow errors in core
+- [-] 13. Replace anyhow errors in core
   - Files: Core engine and processing
   - Migrate anyhow::anyhow! to keyrx_err!
   - Purpose: Structured core errors

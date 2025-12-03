@@ -4,7 +4,7 @@
 use super::*;
 use crate::drivers::{InjectedKey, MockKeyInjector};
 use crate::engine::KeyCode;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 
 /// Test that LinuxInput can be created with a mock injector.
 /// This test requires a keyboard device to be available, but doesn't
@@ -12,7 +12,7 @@ use anyhow::Result;
 #[test]
 fn linux_input_with_mock_injector_compiles() {
     // This test verifies the type signatures work correctly
-    fn _create_with_mock(_path: PathBuf) -> Result<LinuxInput> {
+    fn _create_with_mock(_path: PathBuf) -> Result<LinuxInput, KeyrxError> {
         let mock = MockKeyInjector::new();
         LinuxInput::new_with_injector(Some(_path), Box::new(mock))
     }
@@ -22,10 +22,10 @@ fn linux_input_with_mock_injector_compiles() {
 fn prepare_start_skips_uinput_for_mock_injector() {
     struct NoUinputInjector;
     impl KeyInjector for NoUinputInjector {
-        fn inject(&mut self, _key: KeyCode, _pressed: bool) -> Result<()> {
+        fn inject(&mut self, _key: KeyCode, _pressed: bool) -> Result<(), KeyrxError> {
             Ok(())
         }
-        fn sync(&mut self) -> Result<()> {
+        fn sync(&mut self) -> Result<(), KeyrxError> {
             Ok(())
         }
         fn needs_uinput(&self) -> bool {

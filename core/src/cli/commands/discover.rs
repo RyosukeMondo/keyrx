@@ -43,12 +43,15 @@ impl DiscoverCommand {
         assume_yes: bool,
         format: OutputFormat,
     ) -> Self {
+        fn adapter() -> Result<Vec<DeviceInfo>> {
+            drivers::list_keyboards().map_err(|e| anyhow::anyhow!("{}", e))
+        }
         Self {
             device,
             force,
             assume_yes,
             output: OutputWriter::new(format),
-            list_devices: Box::new(drivers::list_keyboards),
+            list_devices: Box::new(adapter),
             build_input: Box::new(default_input_builder),
         }
     }

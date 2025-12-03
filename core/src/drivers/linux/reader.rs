@@ -12,7 +12,7 @@ use crate::config::{
 use crate::drivers::common::extract_panic_message;
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use crossbeam_channel::Sender;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
@@ -101,7 +101,7 @@ impl EvdevReader {
         tx: Sender<InputEvent>,
         running: Arc<AtomicBool>,
         panic_error: Arc<AtomicBool>,
-    ) -> Result<Self> {
+    ) -> Result<Self, KeyrxError> {
         // Use SafeDevice wrapper which provides better error messages and RAII cleanup
         let device = SafeDevice::open(&device_path)?;
 
@@ -138,7 +138,7 @@ impl EvdevReader {
     /// Returns `DriverError::GrabFailed` if:
     /// - Another process has already grabbed the device
     /// - The user lacks sufficient permissions
-    pub fn grab(&mut self) -> Result<()> {
+    pub fn grab(&mut self) -> Result<(), KeyrxError> {
         // SafeDevice handles the actual grabbing with proper error messages
         self.device.grab()?;
         debug!(
@@ -161,7 +161,7 @@ impl EvdevReader {
     ///
     /// Returns an error if the ungrab operation fails. This is rare and usually
     /// indicates a system-level issue.
-    pub fn ungrab(&mut self) -> Result<()> {
+    pub fn ungrab(&mut self) -> Result<(), KeyrxError> {
         // SafeDevice handles the actual ungrabbing with proper error messages
         self.device.ungrab()?;
         debug!(

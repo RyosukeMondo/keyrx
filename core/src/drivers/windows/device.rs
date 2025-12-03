@@ -3,7 +3,7 @@
 //! This module provides functionality for listing keyboard devices on Windows.
 
 use crate::drivers::DeviceInfo;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use std::path::PathBuf;
 
 /// List all keyboard devices available on the system.
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 /// # Errors
 ///
 /// This function currently always succeeds on Windows.
-pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
     // Windows uses a global keyboard hook that captures all keyboard input.
     // We return a single "virtual" device representing the system keyboard.
     // Full HID device enumeration could be added later for device-specific handling.

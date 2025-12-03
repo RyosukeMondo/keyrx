@@ -1,12 +1,13 @@
 use super::{EvdevReader, LinuxInput};
 use crate::engine::{InputEvent, KeyCode};
-use anyhow::{bail, Context, Result};
+use crate::errors::{driver::*, runtime::*, KeyrxError};
+use crate::{bail_keyrx, keyrx_err};
 use crossbeam_channel::TryRecvError;
 use std::sync::atomic::Ordering;
 use tracing::{debug, error, trace, warn};
 
 impl LinuxInput {
-    pub(super) fn fail_if_reader_panicked(&mut self) -> Result<()> {
+    pub(super) fn fail_if_reader_panicked(&mut self) -> Result<(), KeyrxError> {
         if self.panic_error.load(Ordering::SeqCst) {
             error!(
                 service = "keyrx",
@@ -15,7 +16,7 @@ impl LinuxInput {
                 "poll_events called after reader thread panic"
             );
             self.running.store(false, Ordering::Relaxed);
-            bail!("Input reader thread panicked - keyboard has been ungrabbed for safety");
+            bail_keyrx!(THREAD_PANIC, thread = "input reader");
         }
         Ok(())
     }
@@ -33,7 +34,7 @@ impl LinuxInput {
         );
     }
 
-    pub(super) fn next_event(&mut self) -> Result<Option<InputEvent>> {
+    pub(super) fn next_event(&mut self) -> Result<Option<InputEvent>, KeyrxError> {
         match self.rx.try_recv() {
             Ok(event) => {
                 trace!(
@@ -51,7 +52,7 @@ impl LinuxInput {
         }
     }
 
-    fn handle_disconnected_channel(&mut self) -> Result<Option<InputEvent>> {
+    fn handle_disconnected_channel(&mut self) -> Result<Option<InputEvent>, KeyrxError> {
         if self.panic_error.load(Ordering::SeqCst) {
             error!(
                 service = "keyrx",
@@ -61,7 +62,7 @@ impl LinuxInput {
                 "Event channel disconnected due to reader thread panic"
             );
             self.running.store(false, Ordering::Relaxed);
-            bail!("Input reader thread panicked - keyboard has been ungrabbed for safety");
+            bail_keyrx!(THREAD_PANIC, thread = "input reader");
         }
         error!(
             service = "keyrx",
@@ -71,7 +72,7 @@ impl LinuxInput {
             "Event channel disconnected - reader thread may have crashed"
         );
         self.running.store(false, Ordering::Relaxed);
-        bail!("Input reader disconnected unexpectedly");
+        bail_keyrx!(DRIVER_DEVICE_DISCONNECTED, device = "input reader channel");
     }
 
     pub(super) fn log_polled_events(&self, count: usize) {
@@ -100,7 +101,7 @@ impl LinuxInput {
         key: KeyCode,
         pressed: bool,
         event: &'static str,
-    ) -> Result<()> {
+    ) -> Result<(), KeyrxError> {
         debug!(
             service = "keyrx",
             event = event,
@@ -112,7 +113,7 @@ impl LinuxInput {
         self.injector.inject(key, pressed)
     }
 
-    pub(super) fn tap_key(&mut self, key: KeyCode) -> Result<()> {
+    pub(super) fn tap_key(&mut self, key: KeyCode) -> Result<(), KeyrxError> {
         debug!(
             service = "keyrx",
             event = "linux_key_tap",
@@ -142,7 +143,7 @@ impl LinuxInput {
         );
     }
 
-    pub(super) fn prepare_start(&mut self) -> Result<()> {
+    pub(super) fn prepare_start(&mut self) -> Result<(), KeyrxError> {
         if self.injector.needs_uinput() {
             LinuxInput::check_uinput_accessible()?;
         }
@@ -151,14 +152,14 @@ impl LinuxInput {
         Ok(())
     }
 
-    pub(super) fn build_reader(&self) -> Result<EvdevReader> {
+    pub(super) fn build_reader(&self) -> Result<EvdevReader, KeyrxError> {
         EvdevReader::new(
             self.device_path.clone(),
             self.tx.clone(),
             self.running.clone(),
             self.panic_error.clone(),
         )
-        .context("Failed to create evdev reader")
+        .map_err(|e| keyrx_err!(DRIVER_INIT_FAILED, reason = e.to_string()))
     }
 
     pub(super) fn spawn_reader(&mut self, reader: EvdevReader) {

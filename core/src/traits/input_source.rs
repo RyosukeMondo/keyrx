@@ -65,7 +65,7 @@
 //! - **Testing**: Use [`MockInput`](crate::mocks::MockInput) for unit tests
 
 use crate::engine::{InputEvent, OutputAction};
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use async_trait::async_trait;
 
 /// Trait for input sources (keyboard hooks, virtual devices).
@@ -114,7 +114,7 @@ pub trait InputSource: Send {
     /// # Panics
     ///
     /// Should not panic. Device errors should be returned as `Err`.
-    async fn poll_events(&mut self) -> Result<Vec<InputEvent>>;
+    async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError>;
 
     /// Send an output action to the OS.
     ///
@@ -140,7 +140,7 @@ pub trait InputSource: Send {
     /// - The virtual input device is not available
     /// - The OS rejected the synthetic event
     /// - Permission to inject input was denied
-    async fn send_output(&mut self, action: OutputAction) -> Result<()>;
+    async fn send_output(&mut self, action: OutputAction) -> Result<(), KeyrxError>;
 
     /// Start capturing input.
     ///
@@ -167,7 +167,7 @@ pub trait InputSource: Send {
     /// input.start().await?;
     /// // Now ready to poll events and send output
     /// ```
-    async fn start(&mut self) -> Result<()>;
+    async fn start(&mut self) -> Result<(), KeyrxError>;
 
     /// Stop capturing input.
     ///
@@ -189,5 +189,5 @@ pub trait InputSource: Send {
     /// Note: Even if `stop` returns an error, the implementation should make
     /// a best effort to release resources. Subsequent calls to `start` should
     /// attempt to reinitialize cleanly.
-    async fn stop(&mut self) -> Result<()>;
+    async fn stop(&mut self) -> Result<(), KeyrxError>;
 }

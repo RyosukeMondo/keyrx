@@ -48,7 +48,7 @@
 //! - **Testing**: Use [`MockKeyInjector`] for unit tests
 
 use crate::engine::KeyCode;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use std::sync::{Arc, Mutex};
 
 /// Trait for key injection (synthetic keyboard output).
@@ -64,7 +64,7 @@ use std::sync::{Arc, Mutex};
 ///
 /// # Error Handling
 ///
-/// All methods return `Result<()>` using the `anyhow` crate. Implementations should:
+/// All methods return `Result<(), KeyrxError>`. Implementations should:
 /// - Return meaningful error messages that help diagnose the issue
 /// - Not panic on recoverable errors
 /// - Clean up resources appropriately when errors occur
@@ -96,7 +96,7 @@ pub trait KeyInjector: Send {
     /// - The OS rejected the synthetic event
     /// - Permission to inject input was denied
     /// - The injection API call failed
-    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()>;
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<(), KeyrxError>;
 
     /// Synchronize pending events.
     ///
@@ -114,7 +114,7 @@ pub trait KeyInjector: Send {
     /// For most implementations, `inject()` already includes synchronization.
     /// This method is provided for cases where manual sync control is needed,
     /// such as batching multiple events before flushing.
-    fn sync(&mut self) -> Result<()>;
+    fn sync(&mut self) -> Result<(), KeyrxError>;
 
     /// Whether this injector requires uinput device access (Linux-only concern).
     ///
@@ -291,13 +291,19 @@ impl MockKeyInjector {
 
 impl KeyInjector for MockKeyInjector {
     #[allow(clippy::expect_used)] // Mock lock should never be poisoned
-    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<(), KeyrxError> {
+        use crate::errors::runtime::OUTPUT_INJECTION_FAILED;
+        use crate::keyrx_err;
+
         // Check if we should fail
         {
             let mut fail = self.fail_next.lock().expect("mock fail_next lock poisoned");
             if *fail {
                 *fail = false;
-                return Err(anyhow::anyhow!("Mock injection failure (intentional)"));
+                return Err(keyrx_err!(
+                    OUTPUT_INJECTION_FAILED,
+                    reason = "Mock injection failure (intentional)"
+                ));
             }
         }
 
@@ -310,7 +316,7 @@ impl KeyInjector for MockKeyInjector {
     }
 
     #[allow(clippy::expect_used)] // Mock lock should never be poisoned
-    fn sync(&mut self) -> Result<()> {
+    fn sync(&mut self) -> Result<(), KeyrxError> {
         *self
             .sync_count
             .lock()

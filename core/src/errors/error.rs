@@ -206,6 +206,61 @@ impl From<std::io::Error> for KeyrxError {
     }
 }
 
+/// Convert from DriverError to KeyrxError.
+///
+/// Maps driver-specific errors to appropriate KeyrxError categories.
+impl From<crate::drivers::common::error::DriverError> for KeyrxError {
+    fn from(err: crate::drivers::common::error::DriverError) -> Self {
+        use crate::errors::driver::*;
+        use crate::keyrx_err;
+
+        // Map driver errors to appropriate KeyrxError codes
+        match err {
+            crate::drivers::common::error::DriverError::DeviceNotFound { path } => {
+                keyrx_err!(DRIVER_DEVICE_NOT_FOUND, device = path.display().to_string())
+            }
+            crate::drivers::common::error::DriverError::PermissionDenied { resource, .. } => {
+                keyrx_err!(DRIVER_PERMISSION_DENIED, device = resource)
+            }
+            crate::drivers::common::error::DriverError::DeviceDisconnected { device } => {
+                keyrx_err!(DRIVER_DEVICE_DISCONNECTED, device = device)
+            }
+            crate::drivers::common::error::DriverError::HookFailed { code } => {
+                keyrx_err!(
+                    WINDOWS_HOOK_FAILED,
+                    reason = format!("error code 0x{:x}", code)
+                )
+            }
+            crate::drivers::common::error::DriverError::GrabFailed { reason } => {
+                keyrx_err!(EVDEV_DEVICE_GRAB_FAILED, device = reason)
+            }
+            crate::drivers::common::error::DriverError::VirtualDeviceError { message } => {
+                keyrx_err!(EVDEV_UINPUT_CREATE_FAILED, reason = message)
+            }
+            crate::drivers::common::error::DriverError::InjectionFailed { reason } => {
+                use crate::errors::runtime::OUTPUT_INJECTION_FAILED;
+                keyrx_err!(OUTPUT_INJECTION_FAILED, reason = reason)
+            }
+            crate::drivers::common::error::DriverError::InvalidEvent { details } => {
+                use crate::errors::runtime::INVALID_EVENT_DATA;
+                keyrx_err!(INVALID_EVENT_DATA, reason = details)
+            }
+            _ => {
+                // For other errors, create a generic driver error
+                Self {
+                    definition: None,
+                    code: "KRX-D3999".to_string(),
+                    message: format!("Driver error: {}", err),
+                    context: Default::default(),
+                    hint: Some(err.suggested_action().to_string()),
+                    severity: "Error".to_string(),
+                    source: None,
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

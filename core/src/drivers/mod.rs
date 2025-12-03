@@ -54,7 +54,7 @@ pub type PlatformInput = WindowsInput;
 ///
 /// Returns an error if device enumeration fails (e.g., permission denied).
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>, crate::errors::KeyrxError> {
     linux::list_keyboards()
 }
 
@@ -68,7 +68,7 @@ pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
 ///
 /// Returns an error if device enumeration fails (e.g., permission denied).
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
-pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>, crate::errors::KeyrxError> {
     windows::list_keyboards()
 }
 
@@ -79,10 +79,16 @@ pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
     all(target_os = "linux", feature = "linux-driver"),
     all(target_os = "windows", feature = "windows-driver")
 )))]
-pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
-    anyhow::bail!(
-        "No platform driver compiled in. Enable 'linux-driver' or 'windows-driver' feature."
-    )
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>, crate::errors::KeyrxError> {
+    use crate::errors::driver::DRIVER_INITIALIZATION_FAILED;
+    use crate::keyrx_err;
+
+    Err(keyrx_err!(
+        DRIVER_INITIALIZATION_FAILED,
+        reason =
+            "No platform driver compiled in. Enable 'linux-driver' or 'windows-driver' feature."
+                .to_string()
+    ))
 }
 
 /// Fallback type alias when no platform driver is available.

@@ -2,15 +2,15 @@ use super::input::WindowsInput;
 use crate::{
     drivers::KeyInjector,
     engine::{InputEvent, OutputAction},
+    errors::KeyrxError,
     traits::InputSource,
 };
-use anyhow::Result;
 use async_trait::async_trait;
 use std::sync::atomic::Ordering;
 
 #[async_trait]
 impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
-    async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+    async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
         self.fail_if_hook_panicked()?;
         if self.is_inactive() {
             self.log_poll_when_inactive();
@@ -25,7 +25,7 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         self.log_polled_events(events.len());
         Ok(events)
     }
-    async fn send_output(&mut self, action: OutputAction) -> Result<()> {
+    async fn send_output(&mut self, action: OutputAction) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_inactive_send();
             return Ok(());
@@ -39,7 +39,7 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         }
         Ok(())
     }
-    async fn start(&mut self) -> Result<()> {
+    async fn start(&mut self) -> Result<(), KeyrxError> {
         if self.running.load(Ordering::Relaxed) {
             self.log_start_skipped();
             return Ok(());
@@ -52,7 +52,7 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         self.log_started();
         Ok(())
     }
-    async fn stop(&mut self) -> Result<()> {
+    async fn stop(&mut self) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_stop_skipped();
             return Ok(());

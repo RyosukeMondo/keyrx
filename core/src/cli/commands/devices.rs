@@ -11,7 +11,10 @@ pub struct DevicesCommand {
 
 impl DevicesCommand {
     pub fn new(format: OutputFormat) -> Self {
-        Self::with_provider(format, drivers::list_keyboards)
+        fn adapter() -> anyhow::Result<Vec<drivers::DeviceInfo>> {
+            drivers::list_keyboards().map_err(|e| anyhow::anyhow!("{}", e))
+        }
+        Self::with_provider(format, adapter)
     }
 
     pub fn with_provider(

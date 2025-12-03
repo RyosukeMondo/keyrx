@@ -15,8 +15,9 @@ pub mod safety;
 use crate::config::UINPUT_PATH;
 use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};
+use crate::errors::{driver::*, KeyrxError};
 use crate::traits::InputSource;
-use anyhow::{bail, Context, Result};
+use crate::{bail_keyrx, keyrx_err};
 use async_trait::async_trait;
 use crossbeam_channel::Sender;
 use device_info::try_get_keyboard_info;
@@ -33,6 +34,8 @@ const UINPUT_NOT_FOUND_HELP: &str = "uinput device not found at /dev/uinput\n\n\
  1. Load the uinput kernel module: sudo modprobe uinput\n  \
  2. If that fails, check if uinput is built into your kernel\n  \
  3. Ensure your kernel supports CONFIG_INPUT_UINPUT";
+
+#[allow(dead_code)]
 const UINPUT_PERMISSION_DENIED_HELP: &str = "Permission denied accessing /dev/uinput\n\n\
  Remediation:\n  \
  1. Add your user to the 'input' group: sudo usermod -aG input $USER\n  \
@@ -43,6 +46,8 @@ const UINPUT_PERMISSION_DENIED_HELP: &str = "Permission denied accessing /dev/ui
     sudo udevadm trigger\n  \
  4. Log out and log back in for group changes to take effect\n  \
  5. Alternatively, run with sudo (not recommended for regular use)";
+
+#[allow(dead_code)]
 const UINPUT_ACCESS_FAILED_HELP: &str = "Remediation:\n  \
  1. Check device permissions: ls -la /dev/uinput\n  \
  2. Check if you have read/write access to the device\n  \
@@ -58,14 +63,15 @@ pub struct LinuxInput {
     panic_error: Arc<AtomicBool>,
 }
 impl LinuxInput {
-    pub fn new(device_path: Option<PathBuf>) -> Result<Self> {
-        let injector = UinputWriter::new().context("Failed to create uinput writer")?;
+    pub fn new(device_path: Option<PathBuf>) -> Result<Self, KeyrxError> {
+        let injector = UinputWriter::new()
+            .map_err(|e| e.with_context("operation", "Failed to create uinput writer"))?;
         Self::new_with_injector(device_path, Box::new(injector))
     }
     pub fn new_with_injector(
         device_path: Option<PathBuf>,
         injector: Box<dyn KeyInjector>,
-    ) -> Result<Self> {
+    ) -> Result<Self, KeyrxError> {
         // Determine device path: use provided or auto-detect
         let (device_path, device_info) = match device_path {
             Some(path) => {
@@ -114,17 +120,15 @@ impl LinuxInput {
             panic_error,
         })
     }
-    fn find_first_keyboard() -> Result<DeviceInfo> {
+    fn find_first_keyboard() -> Result<DeviceInfo, KeyrxError> {
         let keyboards = list_keyboards()?;
         if keyboards.is_empty() {
-            bail!(
-                "No keyboard devices found\n\n\
-                 Remediation:\n  \
-                 1. Ensure a keyboard is connected\n  \
-                 2. Check permissions: ls -la /dev/input/event*\n  \
-                 3. Add user to input group: sudo usermod -aG input $USER\n  \
-                 4. Log out and back in for group changes to take effect"
-            );
+            return Err(keyrx_err!(
+                DRIVER_DEVICE_NOT_FOUND,
+                device = "keyboard".to_string(),
+                reason = "No keyboard devices found. Check permissions: ls -la /dev/input/event*"
+                    .to_string()
+            ));
         }
         let device = &keyboards[0];
         debug!(
@@ -137,7 +141,7 @@ impl LinuxInput {
         );
         Ok(device.clone())
     }
-    pub fn list_devices() -> Result<Vec<DeviceInfo>> {
+    pub fn list_devices() -> Result<Vec<DeviceInfo>, KeyrxError> {
         list_keyboards()
     }
     pub fn device_path(&self) -> &Path {
@@ -152,10 +156,10 @@ impl LinuxInput {
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
-    fn check_uinput_accessible() -> Result<()> {
+    fn check_uinput_accessible() -> Result<(), KeyrxError> {
         let path = Path::new(UINPUT_PATH);
         if !path.exists() {
-            bail!(UINPUT_NOT_FOUND_HELP);
+            bail_keyrx!(EVDEV_UINPUT_CREATE_FAILED, reason = UINPUT_NOT_FOUND_HELP);
         }
         // Check if readable/writable by attempting to open for read
         match std::fs::OpenOptions::new()
@@ -174,15 +178,18 @@ impl LinuxInput {
                 Ok(())
             }
             Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-                bail!(UINPUT_PERMISSION_DENIED_HELP)
+                bail_keyrx!(DRIVER_PERMISSION_DENIED, device = UINPUT_PATH)
             }
-            Err(e) => bail!("Failed to access {UINPUT_PATH}: {e}\n\n{UINPUT_ACCESS_FAILED_HELP}"),
+            Err(e) => bail_keyrx!(
+                LINUX_DEVICE_NODE_ERROR,
+                path = format!("{}: {}", UINPUT_PATH, e)
+            ),
         }
     }
 }
 #[async_trait]
 impl InputSource for LinuxInput {
-    async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+    async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
         self.fail_if_reader_panicked()?;
         if self.is_inactive() {
             self.log_poll_when_inactive();
@@ -197,7 +204,7 @@ impl InputSource for LinuxInput {
         self.log_polled_events(events.len());
         Ok(events)
     }
-    async fn send_output(&mut self, action: OutputAction) -> Result<()> {
+    async fn send_output(&mut self, action: OutputAction) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_inactive_send();
             return Ok(());
@@ -212,21 +219,23 @@ impl InputSource for LinuxInput {
         }
         Ok(())
     }
-    async fn start(&mut self) -> Result<()> {
+    async fn start(&mut self) -> Result<(), KeyrxError> {
         if self.running.load(Ordering::Relaxed) {
             self.log_start_skipped();
             return Ok(());
         }
 
         self.prepare_start()
-            .context("Failed to start Linux input source")?;
+            .map_err(|e| keyrx_err!(DRIVER_INIT_FAILED, reason = e.to_string()))?;
         let mut reader = self.build_reader()?;
-        reader.grab().context("Failed to grab keyboard device")?;
+        reader
+            .grab()
+            .map_err(|e| keyrx_err!(EVDEV_DEVICE_GRAB_FAILED, device = e.to_string()))?;
         self.spawn_reader(reader);
         self.log_started();
         Ok(())
     }
-    async fn stop(&mut self) -> Result<()> {
+    async fn stop(&mut self) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_stop_skipped();
             return Ok(());

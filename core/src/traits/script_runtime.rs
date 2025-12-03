@@ -19,7 +19,7 @@
 //!
 //! # Error Handling
 //!
-//! All fallible methods return `Result<()>` using the `anyhow` crate. Errors can occur:
+//! All fallible methods return `Result<(), KeyrxError>`. Errors can occur:
 //!
 //! - **Script compilation**: Syntax errors, file not found
 //! - **Script execution**: Runtime errors, invalid key names, division by zero
@@ -70,7 +70,7 @@
 //! primitives based on your application's needs.
 
 use crate::engine::{KeyCode, RemapAction};
-use anyhow::Result;
+use crate::errors::KeyrxError;
 
 /// Trait for script execution runtime.
 ///
@@ -99,7 +99,7 @@ use anyhow::Result;
 ///
 /// # Error Handling
 ///
-/// All methods that can fail return `Result<()>`. Implementors should:
+/// All methods that can fail return `Result<(), KeyrxError>`. Implementors should:
 /// - Return descriptive error messages that help diagnose issues
 /// - Include file paths and line numbers when available
 /// - Not panic on recoverable errors
@@ -138,7 +138,7 @@ pub trait ScriptRuntime {
     /// runtime.execute(r#"remap("CapsLock", "Escape");"#)?;
     /// assert_eq!(runtime.lookup_remap(KeyCode::CapsLock), RemapAction::Remap(KeyCode::Escape));
     /// ```
-    fn execute(&mut self, script: &str) -> Result<()>;
+    fn execute(&mut self, script: &str) -> Result<(), KeyrxError>;
 
     /// Call a named hook function defined in the loaded script.
     ///
@@ -178,7 +178,7 @@ pub trait ScriptRuntime {
     ///     runtime.call_hook("on_init")?;
     /// }
     /// ```
-    fn call_hook(&mut self, hook: &str) -> Result<()>;
+    fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError>;
 
     /// Load and compile a script file.
     ///
@@ -215,7 +215,7 @@ pub trait ScriptRuntime {
     /// // Script is compiled but not yet executed
     /// assert!(runtime.has_hook("on_init")); // Can check for hooks
     /// ```
-    fn load_file(&mut self, path: &str) -> Result<()>;
+    fn load_file(&mut self, path: &str) -> Result<(), KeyrxError>;
 
     /// Execute the loaded script's top-level statements.
     ///
@@ -253,7 +253,7 @@ pub trait ScriptRuntime {
     /// // Now remappings are registered and can be queried
     /// let action = runtime.lookup_remap(KeyCode::CapsLock);
     /// ```
-    fn run_script(&mut self) -> Result<()>;
+    fn run_script(&mut self) -> Result<(), KeyrxError>;
 
     /// Check if a hook function is defined in the loaded script.
     ///

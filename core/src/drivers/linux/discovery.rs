@@ -4,7 +4,8 @@
 //! devices available on the system via the evdev interface.
 
 use crate::drivers::DeviceInfo;
-use anyhow::{bail, Context, Result};
+use crate::errors::KeyrxError;
+use crate::keyrx_err;
 use std::path::Path;
 
 use super::device_info::try_get_keyboard_info;
@@ -32,19 +33,28 @@ use super::device_info::try_get_keyboard_info;
 ///     println!("Found keyboard: {} at {}", kb.name, kb.path.display());
 /// }
 /// ```
-pub fn list_keyboards() -> Result<Vec<DeviceInfo>> {
+pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
+    use crate::errors::driver::DRIVER_DEVICE_NOT_FOUND;
+
     let input_dir = Path::new("/dev/input");
 
     if !input_dir.exists() {
-        bail!(
-            "/dev/input directory not found\n\n\
-             Remediation:\n  \
-             1. Ensure you are running on a Linux system with evdev support\n  \
-             2. Check if the input subsystem is loaded"
-        );
+        return Err(keyrx_err!(
+            DRIVER_DEVICE_NOT_FOUND,
+            device = "/dev/input".to_string(),
+            reason =
+                "Directory not found. Ensure you are running on a Linux system with evdev support"
+                    .to_string()
+        ));
     }
 
-    let entries = std::fs::read_dir(input_dir).context("Failed to read /dev/input directory")?;
+    let entries = std::fs::read_dir(input_dir).map_err(|e| {
+        keyrx_err!(
+            DRIVER_DEVICE_NOT_FOUND,
+            device = "/dev/input".to_string(),
+            error = e.to_string()
+        )
+    })?;
     let mut keyboards: Vec<DeviceInfo> = entries
         .flatten()
         .filter_map(|entry| try_get_keyboard_info(&entry.path()))

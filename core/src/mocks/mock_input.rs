@@ -1,8 +1,9 @@
 //! Mock input source for testing.
 
 use crate::engine::{InputEvent, KeyCode, OutputAction};
+use crate::errors::KeyrxError;
+use crate::keyrx_err;
 use crate::traits::InputSource;
-use anyhow::Result;
 use async_trait::async_trait;
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -174,27 +175,29 @@ impl Default for MockInput {
 
 #[async_trait]
 impl InputSource for MockInput {
-    async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+    async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
         self.call_history.push(MockCall::PollEvents);
         Ok(self.input_queue.drain(..).collect())
     }
 
-    async fn send_output(&mut self, action: OutputAction) -> Result<()> {
+    async fn send_output(&mut self, action: OutputAction) -> Result<(), KeyrxError> {
         self.call_history.push(MockCall::SendOutput(action.clone()));
         self.output_log.push(action);
         Ok(())
     }
 
-    async fn start(&mut self) -> Result<()> {
+    async fn start(&mut self) -> Result<(), KeyrxError> {
+        use crate::errors::runtime::ENGINE_START_FAILED;
+
         self.call_history.push(MockCall::Start);
         if let Some(ref error) = self.start_error {
-            return Err(anyhow::anyhow!("{}", error));
+            return Err(keyrx_err!(ENGINE_START_FAILED, reason = error.clone()));
         }
         self.running = true;
         Ok(())
     }
 
-    async fn stop(&mut self) -> Result<()> {
+    async fn stop(&mut self) -> Result<(), KeyrxError> {
         self.call_history.push(MockCall::Stop);
         self.running = false;
         Ok(())

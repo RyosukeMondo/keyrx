@@ -322,7 +322,7 @@ impl RunCommand {
             Err(e) => {
                 self.output
                     .error(&format!("Failed to initialize driver: {e:#}"));
-                Err(e)
+                Err(anyhow::anyhow!("{}", e))
             }
         }
     }

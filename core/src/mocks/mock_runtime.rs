@@ -1,9 +1,10 @@
 //! Mock script runtime for testing.
 
 use crate::engine::{KeyCode, RemapAction};
+use crate::errors::{runtime::*, KeyrxError};
+use crate::keyrx_err;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
-use anyhow::Result;
 use std::collections::HashSet;
 
 /// Represents a recorded method call on MockRuntime.
@@ -117,31 +118,34 @@ impl Default for MockRuntime {
 }
 
 impl ScriptRuntime for MockRuntime {
-    fn execute(&mut self, script: &str) -> Result<()> {
+    fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
         self.call_history
             .push(MockRuntimeCall::Execute(script.to_string()));
         Ok(())
     }
 
-    fn call_hook(&mut self, hook: &str) -> Result<()> {
+    fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError> {
         self.call_history
             .push(MockRuntimeCall::CallHook(hook.to_string()));
         if self.hooks_succeed && self.defined_hooks.contains(hook) {
             Ok(())
         } else if !self.defined_hooks.contains(hook) {
-            anyhow::bail!("Hook '{}' not defined", hook)
+            Err(keyrx_err!(SCRIPT_HOOK_NOT_FOUND, hook = hook))
         } else {
-            anyhow::bail!("Hook '{}' failed", hook)
+            Err(keyrx_err!(
+                SCRIPT_EXECUTION_FAILED,
+                error = format!("Hook '{}' failed", hook)
+            ))
         }
     }
 
-    fn load_file(&mut self, path: &str) -> Result<()> {
+    fn load_file(&mut self, path: &str) -> Result<(), KeyrxError> {
         self.call_history
             .push(MockRuntimeCall::LoadFile(path.to_string()));
         Ok(())
     }
 
-    fn run_script(&mut self) -> Result<()> {
+    fn run_script(&mut self) -> Result<(), KeyrxError> {
         self.call_history.push(MockRuntimeCall::RunScript);
         // Mock runtime doesn't execute real scripts
         Ok(())

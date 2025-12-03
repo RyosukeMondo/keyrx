@@ -5,8 +5,9 @@
 //! with the same timing as the original recording.
 
 use crate::engine::{EventRecord, InputEvent, OutputAction, SessionFile};
+use crate::errors::KeyrxError;
+use crate::keyrx_err;
 use crate::traits::InputSource;
-use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::collections::VecDeque;
 use std::path::Path;
@@ -114,20 +115,33 @@ impl ReplaySession {
     }
 
     /// Load a replay session from a `.krx` file.
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let path = path.as_ref();
-        let content = std::fs::read_to_string(path)
-            .with_context(|| format!("Failed to read session file: {}", path.display()))?;
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, KeyrxError> {
+        use crate::errors::config::CONFIG_READ_ERROR;
+        use crate::errors::runtime::{SESSION_FILE_CORRUPT, SESSION_VERSION_MISMATCH};
 
-        let session = SessionFile::from_json(&content)
-            .with_context(|| format!("Failed to parse session file: {}", path.display()))?;
+        let path = path.as_ref();
+        let content = std::fs::read_to_string(path).map_err(|e| {
+            keyrx_err!(
+                CONFIG_READ_ERROR,
+                path = path.display().to_string(),
+                error = e.to_string()
+            )
+        })?;
+
+        let session = SessionFile::from_json(&content).map_err(|e| {
+            keyrx_err!(
+                SESSION_FILE_CORRUPT,
+                path = path.display().to_string(),
+                error = e.to_string()
+            )
+        })?;
 
         // Verify version compatibility
         if session.version > crate::engine::SESSION_FILE_VERSION {
-            return Err(anyhow::anyhow!(
-                "Session file version {} is newer than supported version {}",
-                session.version,
-                crate::engine::SESSION_FILE_VERSION
+            return Err(keyrx_err!(
+                SESSION_VERSION_MISMATCH,
+                found = session.version.to_string(),
+                expected = crate::engine::SESSION_FILE_VERSION.to_string()
             ));
         }
 
@@ -209,9 +223,14 @@ impl ReplaySession {
 
 #[async_trait]
 impl InputSource for ReplaySession {
-    async fn start(&mut self) -> Result<()> {
+    async fn start(&mut self) -> Result<(), KeyrxError> {
+        use crate::errors::runtime::SESSION_REPLAY_FAILED;
+
         if self.state == ReplayState::Playing {
-            return Err(anyhow::anyhow!("Replay already started"));
+            return Err(keyrx_err!(
+                SESSION_REPLAY_FAILED,
+                reason = "Replay already started".to_string()
+            ));
         }
 
         self.start_time = Some(Instant::now());
@@ -225,7 +244,7 @@ impl InputSource for ReplaySession {
         Ok(())
     }
 
-    async fn poll_events(&mut self) -> Result<Vec<InputEvent>> {
+    async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
         if self.state != ReplayState::Playing {
             return Ok(vec![]);
         }
@@ -260,13 +279,13 @@ impl InputSource for ReplaySession {
         Ok(ready_events)
     }
 
-    async fn send_output(&mut self, _action: OutputAction) -> Result<()> {
+    async fn send_output(&mut self, _action: OutputAction) -> Result<(), KeyrxError> {
         // In replay mode, we don't actually send outputs to the OS.
         // The caller can optionally compare outputs against recorded ones.
         Ok(())
     }
 
-    async fn stop(&mut self) -> Result<()> {
+    async fn stop(&mut self) -> Result<(), KeyrxError> {
         self.state = ReplayState::Idle;
         self.start_time = None;
         // Clear remaining events

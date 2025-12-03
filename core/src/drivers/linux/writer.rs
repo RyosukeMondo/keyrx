@@ -8,7 +8,7 @@ use super::safety::uinput::SafeUinput;
 use crate::config::UINPUT_DEVICE_NAME;
 use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use tracing::{debug, trace};
 
 /// Writer for injecting keyboard events via uinput.
@@ -46,7 +46,7 @@ impl UinputWriter {
     /// Returns an error if:
     /// - The uinput device cannot be accessed (permission denied)
     /// - The virtual device creation fails
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, KeyrxError> {
         // Use SafeUinput wrapper which provides RAII cleanup and event validation
         let device = SafeUinput::new(UINPUT_DEVICE_NAME)?;
 
@@ -96,7 +96,7 @@ impl UinputWriter {
     /// writer.emit(KeyCode::Escape, true)?;
     /// writer.emit(KeyCode::Escape, false)?;
     /// ```
-    pub fn emit(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+    pub fn emit(&mut self, key: KeyCode, pressed: bool) -> Result<(), KeyrxError> {
         trace!(
             "Emitting key event: {:?} {}",
             key,
@@ -126,7 +126,7 @@ impl UinputWriter {
     /// # Errors
     ///
     /// Returns an error if the sync event cannot be written.
-    fn sync_internal(&mut self) -> Result<()> {
+    fn sync_internal(&mut self) -> Result<(), KeyrxError> {
         // SafeUinput handles sync event emission
         self.device.sync()?;
         Ok(())
@@ -134,11 +134,11 @@ impl UinputWriter {
 }
 
 impl KeyInjector for UinputWriter {
-    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<(), KeyrxError> {
         self.emit(key, pressed)
     }
 
-    fn sync(&mut self) -> Result<()> {
+    fn sync(&mut self) -> Result<(), KeyrxError> {
         self.sync_internal()
     }
 

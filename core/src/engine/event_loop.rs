@@ -1,11 +1,11 @@
 //! Main engine event loop.
 
 use crate::engine::{InputEvent, OutputAction, RemapAction, TimingConfig};
+use crate::errors::KeyrxError;
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use crate::KeyCode;
-use anyhow::Result;
 use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::debug;
@@ -45,14 +45,14 @@ where
     }
 
     /// Start the engine event loop.
-    pub async fn start(&mut self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<(), KeyrxError> {
         self.input.start().await?;
         self.running = true;
         Ok(())
     }
 
     /// Stop the engine.
-    pub async fn stop(&mut self) -> Result<()> {
+    pub async fn stop(&mut self) -> Result<(), KeyrxError> {
         self.running = false;
         self.input.stop().await?;
         Ok(())
@@ -161,7 +161,7 @@ where
     /// Polls the input source for events, processes each through `process_event`,
     /// and sends the resulting output actions back to the OS. Runs until
     /// `stop()` is called or an error occurs.
-    pub async fn run_loop(&mut self) -> Result<()> {
+    pub async fn run_loop(&mut self) -> Result<(), KeyrxError> {
         debug!(
             service = "keyrx",
             event = "event_loop_start",

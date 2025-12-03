@@ -7,6 +7,9 @@
 //! - OS-specific input drivers
 //! - FFI exports for Flutter integration
 
+// KeyrxError is intentionally large to include all necessary context
+#![allow(clippy::result_large_err)]
+
 pub mod cli;
 pub mod config;
 pub mod discovery;

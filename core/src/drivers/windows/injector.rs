@@ -7,7 +7,7 @@
 use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
 use crate::error::WindowsDriverError;
-use anyhow::Result;
+use crate::errors::KeyrxError;
 use tracing::{debug, error};
 use windows::core::Error as WinError;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
@@ -113,11 +113,11 @@ impl Default for SendInputInjector {
 }
 
 impl KeyInjector for SendInputInjector {
-    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
+    fn inject(&mut self, key: KeyCode, pressed: bool) -> Result<(), KeyrxError> {
         self.inject_key(key, pressed).map_err(Into::into)
     }
 
-    fn sync(&mut self) -> Result<()> {
+    fn sync(&mut self) -> Result<(), KeyrxError> {
         // Windows SendInput processes events immediately, no sync needed
         Ok(())
     }

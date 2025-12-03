@@ -9,9 +9,10 @@ use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
 use super::pending_ops::PendingOpsApplier;
 use super::registry_sync::RegistrySyncer;
 use crate::engine::{KeyCode, LayerStack};
+use crate::errors::{runtime::*, KeyrxError};
+use crate::keyrx_err;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
-use anyhow::{anyhow, Result};
 use rhai::{Engine, Scope, AST};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -32,7 +33,7 @@ pub struct RhaiRuntime {
 
 impl RhaiRuntime {
     /// Create a new Rhai runtime.
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, KeyrxError> {
         let mut engine = Engine::new();
 
         // Sandbox: disable dangerous operations
@@ -90,49 +91,54 @@ impl RhaiRuntime {
 }
 
 impl ScriptRuntime for RhaiRuntime {
-    fn execute(&mut self, script: &str) -> Result<()> {
+    fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
         self.engine
             .run(script)
-            .map_err(|e| anyhow!("Script execution failed: {}", e))?;
+            .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
 
         self.apply_pending_ops();
         Ok(())
     }
 
-    fn call_hook(&mut self, hook: &str) -> Result<()> {
+    fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError> {
         let ast = self
             .ast
             .as_ref()
-            .ok_or_else(|| anyhow!("No script loaded"))?;
+            .ok_or_else(|| keyrx_err!(SCRIPT_HOOK_NOT_FOUND, hook = hook))?;
 
         self.engine
             .call_fn::<()>(&mut Scope::new(), ast, hook, ())
-            .map_err(|e| anyhow!("Hook '{}' call failed: {}", hook, e))?;
+            .map_err(|e| {
+                keyrx_err!(
+                    SCRIPT_EXECUTION_FAILED,
+                    error = format!("Hook '{}' call failed: {}", hook, e)
+                )
+            })?;
 
         self.apply_pending_ops();
         Ok(())
     }
 
-    fn load_file(&mut self, path: &str) -> Result<()> {
+    fn load_file(&mut self, path: &str) -> Result<(), KeyrxError> {
         let ast = self
             .engine
             .compile_file(path.into())
-            .map_err(|e| anyhow!("Failed to compile script '{}': {}", path, e))?;
+            .map_err(|e| keyrx_err!(SCRIPT_COMPILATION_FAILED, error = format!("{}", e)))?;
 
         self.ast = Some(ast);
         self.scan_for_hooks();
         Ok(())
     }
 
-    fn run_script(&mut self) -> Result<()> {
+    fn run_script(&mut self) -> Result<(), KeyrxError> {
         let ast = self
             .ast
             .as_ref()
-            .ok_or_else(|| anyhow!("No script loaded"))?;
+            .ok_or_else(|| keyrx_err!(SCRIPT_HOOK_NOT_FOUND, hook = "script"))?;
 
         self.engine
             .run_ast(ast)
-            .map_err(|e| anyhow!("Script execution failed: {}", e))?;
+            .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
 
         self.apply_pending_ops();
         Ok(())
