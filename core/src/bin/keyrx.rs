@@ -19,6 +19,22 @@ use tracing::error;
 #[command(name = "keyrx")]
 #[command(about = "KeyRx - The Ultimate Input Remapping Engine")]
 #[command(version)]
+#[command(after_help = "\
+EXIT CODES:
+  0 - Success
+  1 - General error
+  2 - Assertion failed (tests/validation)
+  3 - Device not found
+  4 - Permission denied
+  5 - Timeout
+  6 - Invalid argument
+  7 - Configuration error
+  101 - Panic (internal error)
+
+For detailed exit code information, run:
+  keyrx exit-codes
+  keyrx exit-codes --json
+")]
 struct Cli {
     /// Output format (human or json)
     #[arg(long, default_value = "human", conflicts_with = "json")]
