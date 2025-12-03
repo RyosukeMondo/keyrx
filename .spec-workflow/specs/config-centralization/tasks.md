@@ -242,7 +242,7 @@
   - _Requirements: NFR - Reliability_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Add unit tests for config module: test_default_values_match_original() verifying defaults match previous hardcoded values, test_load_missing_file_uses_defaults(), test_load_invalid_toml_uses_defaults(), test_value_range_clamping(), test_cli_override_merging(). | Restrictions: Use #[cfg(test)] module, follow existing test patterns | _Leverage: core/src/config/loader.rs_ | Success: >80% coverage on config module. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 30. Add Dart config module tests
+- [x] 30. Add Dart config module tests
   - File: `ui/test/config/config_test.dart`
   - Test constant values and exports
   - Purpose: Ensure Dart config module correctness
