@@ -4,13 +4,15 @@
 #![allow(unsafe_code)]
 
 use super::callbacks::{callback_registry, DiscoveryEventCallback};
+use crate::cli::commands::SimulateCommand;
+use crate::cli::OutputFormat;
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
 use crate::scripting::test_discovery::discover_tests;
 use crate::scripting::test_runner::{TestRunner, TestSummary};
 use crate::scripting::with_active_runtime;
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
 use std::ptr;
@@ -353,6 +355,164 @@ pub unsafe extern "C" fn keyrx_run_tests(
         failed: summary.failed,
         duration_ms: summary.duration_us as f64 / 1000.0,
         results: json_results,
+    };
+
+    let payload = serde_json::to_string(&result)
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
+
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
+/// Key input for simulation FFI.
+#[derive(Deserialize)]
+struct SimKeyInput {
+    code: String,
+    #[serde(rename = "holdMs", default)]
+    hold_ms: Option<u64>,
+}
+
+/// Simulation mapping result for FFI JSON output.
+#[derive(Serialize)]
+struct SimMapping {
+    input: String,
+    output: String,
+    decision: String,
+}
+
+/// Simulation result for FFI JSON output.
+#[derive(Serialize)]
+struct SimFfiResult {
+    mappings: Vec<SimMapping>,
+    #[serde(rename = "activeLayers")]
+    active_layers: Vec<String>,
+    pending: Vec<String>,
+}
+
+/// Simulate key sequences through the engine.
+///
+/// # Arguments
+/// * `keys_json` - JSON array of key inputs: `[{code: "A", holdMs: 100}, ...]`
+/// * `script_path` - Optional path to Rhai script (can be null)
+/// * `combo_mode` - If true, keys are pressed simultaneously; otherwise sequentially
+///
+/// Returns JSON: `ok:{mappings: [{input, output, decision}], activeLayers, pending}`
+///
+/// Caller must free with `keyrx_free_string`.
+///
+/// # Safety
+/// `keys_json` and `script_path` must be valid null-terminated UTF-8 strings or null.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_simulate(
+    keys_json: *const c_char,
+    script_path: *const c_char,
+    combo_mode: bool,
+) -> *mut c_char {
+    if keys_json.is_null() {
+        return CString::new("error:null keys_json")
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let keys_str = match CStr::from_ptr(keys_json).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return CString::new("error:invalid utf8 in keys_json")
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let keys: Vec<SimKeyInput> = match serde_json::from_str(keys_str) {
+        Ok(k) => k,
+        Err(err) => {
+            return CString::new(format!("error:Invalid keys JSON: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    if keys.is_empty() {
+        let result = SimFfiResult {
+            mappings: vec![],
+            active_layers: vec!["base".to_string()],
+            pending: vec![],
+        };
+        let payload = serde_json::to_string(&result)
+            .map(|json| format!("ok:{json}"))
+            .unwrap_or_else(|err| format!("error:{err}"));
+        return CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    // Build input string for SimulateCommand
+    let input_keys: Vec<String> = keys
+        .iter()
+        .map(|k| {
+            if let Some(hold) = k.hold_ms {
+                format!("{}:hold:{}", k.code, hold)
+            } else {
+                k.code.clone()
+            }
+        })
+        .collect();
+    let input_str = input_keys.join(",");
+
+    // Get script path if provided
+    let script_path_opt = if script_path.is_null() {
+        None
+    } else {
+        match CStr::from_ptr(script_path).to_str() {
+            Ok(s) if !s.is_empty() => Some(std::path::PathBuf::from(s)),
+            _ => None,
+        }
+    };
+
+    // Create and run simulation
+    let cmd =
+        SimulateCommand::new(input_str, script_path_opt, OutputFormat::Json).with_combo(combo_mode);
+
+    // Use tokio runtime for async execution
+    let rt = match tokio::runtime::Builder::new_current_thread().build() {
+        Ok(rt) => rt,
+        Err(err) => {
+            return CString::new(format!("error:Failed to create runtime: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let output = match rt.block_on(cmd.execute()) {
+        Ok(o) => o,
+        Err(err) => {
+            return CString::new(format!("error:Simulation failed: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    // Convert to FFI result format
+    let mappings: Vec<SimMapping> = output
+        .results
+        .iter()
+        .map(|r| {
+            let decision = if r.output == "BLOCKED" {
+                "block"
+            } else if r.output == r.input {
+                "pass"
+            } else if r.output == "NO_OUTPUT" {
+                "pending"
+            } else {
+                "remap"
+            };
+            SimMapping {
+                input: r.input.clone(),
+                output: r.output.clone(),
+                decision: decision.to_string(),
+            }
+        })
+        .collect();
+
+    let pending: Vec<String> = output.pending.iter().map(|p| format!("{:?}", p)).collect();
+
+    let result = SimFfiResult {
+        mappings,
+        active_layers: output.active_layers,
+        pending,
     };
 
     let payload = serde_json::to_string(&result)
@@ -728,6 +888,63 @@ mod tests {
         // Only test_alpha should run due to filter
         assert_eq!(result["total"], 1);
         assert_eq!(result["results"][0]["name"], "test_alpha");
+    }
+
+    #[test]
+    fn simulate_empty_keys() {
+        let keys = CString::new("[]").unwrap();
+        let ptr = unsafe { keyrx_simulate(keys.as_ptr(), ptr::null(), false) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        assert!(result["mappings"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn simulate_basic_key() {
+        let keys = CString::new(r#"[{"code": "A"}]"#).unwrap();
+        let ptr = unsafe { keyrx_simulate(keys.as_ptr(), ptr::null(), false) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"), "got: {raw}");
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        // Without a script, key should pass through
+        assert!(!result["mappings"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn simulate_with_script() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::with_suffix(".rhai").unwrap();
+        writeln!(temp, r#"remap("A", "B");"#).unwrap();
+
+        let keys = CString::new(r#"[{"code": "A"}]"#).unwrap();
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_simulate(keys.as_ptr(), path.as_ptr(), false) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"), "got: {raw}");
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        let mappings = result["mappings"].as_array().unwrap();
+
+        // Find the A key press result
+        let a_press = mappings.iter().find(|m| m["input"] == "A");
+        assert!(a_press.is_some(), "should have A input in mappings");
     }
 
     #[test]

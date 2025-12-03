@@ -30,7 +30,7 @@
   - _Requirements: 5_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_discover_tests` returning JSON array of test_* functions [{name, file, line}], and `keyrx_run_tests` returning JSON results [{name, passed, error, durationMs}] | Restrictions: ≤100 lines; support filter pattern | _Leverage: core/src/cli/commands/test.rs | _Requirements: 5 | Success: Tests discoverable and runnable from FFI._
 
-- [ ] 5. Add simulation FFI export
+- [x] 5. Add simulation FFI export
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_simulate(keys_json, combo_mode)` returning simulation results
   - _Leverage: core/src/cli/commands/simulate.rs_
