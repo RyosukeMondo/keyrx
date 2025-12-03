@@ -21,7 +21,10 @@ pub use fuzz::{FuzzEngine, FuzzResult};
 pub use gates::{
     EvaluationContext, GateLoadError, GateResult, GateViolation, QualityGate, QualityGateEnforcer,
 };
-pub use golden::{GoldenSession, GoldenSessionManager, GoldenVerifyResult};
+pub use golden::{
+    DifferenceType, ExpectedOutput, GoldenDifference, GoldenEvent, GoldenEventType, GoldenSession,
+    GoldenSessionManager, GoldenSessionMetadata, GoldenVerifyResult, GOLDEN_SESSION_VERSION,
+};
 pub use perf::{PerformanceResult, PerformanceUat};
 pub use report::ReportGenerator;
 pub use runner::{Priority, UatFilter, UatResult, UatResults, UatRunner, UatTest};
