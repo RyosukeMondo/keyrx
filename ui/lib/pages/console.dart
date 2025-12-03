@@ -5,14 +5,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 import '../services/engine_service.dart';
-import '../services/service_registry.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
-  const ConsolePage({super.key});
+  const ConsolePage({
+    super.key,
+    required this.engineService,
+  });
+
+  /// The engine service for evaluating Rhai commands.
+  final EngineService engineService;
 
   @override
   State<ConsolePage> createState() => _ConsolePageState();
@@ -24,15 +28,7 @@ class _ConsolePageState extends State<ConsolePage> {
   final List<ConsoleEntry> _history = [];
   final List<String> _commandHistory = [];
   int _historyIndex = -1;
-  EngineService? _engine;
   bool _isBusy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final registry = Provider.of<ServiceRegistry>(context, listen: false);
-    _engine = registry.engineService;
-  }
 
   @override
   void dispose() {
@@ -228,17 +224,7 @@ class _ConsolePageState extends State<ConsolePage> {
       _isBusy = true;
     });
 
-    final engine = _engine;
-    ConsoleEvalResult result;
-
-    if (engine == null) {
-      result = const ConsoleEvalResult(
-        success: false,
-        output: 'Engine unavailable.',
-      );
-    } else {
-      result = await engine.eval(command);
-    }
+    final result = await widget.engineService.eval(command);
 
     setState(() {
       _history.add(ConsoleEntry(result.output, isError: result.isError));
@@ -266,11 +252,8 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   Future<void> _initializeEngine() async {
-    final engine = _engine;
-    if (engine == null) return;
-
     setState(() => _isBusy = true);
-    final success = await engine.initialize();
+    final success = await widget.engineService.initialize();
     setState(() {
       _history.add(ConsoleEntry(
         success ? 'ok: Engine initialized.' : 'error: Initialization failed.',
