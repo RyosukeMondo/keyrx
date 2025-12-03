@@ -1,6 +1,6 @@
 //! Simulate command for headless testing.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::DEFAULT_EVENT_GAP_US;
 use crate::engine::{
     AdvancedEngine, EngineState, HoldAction, InputEvent, KeyCode, LayerAction, OutputAction,
@@ -721,5 +721,36 @@ impl InteractiveSession {
         let script_path = self.script_path.clone();
         *self = Self::new(script_path)?;
         Ok(())
+    }
+}
+
+impl Command for SimulateCommand {
+    fn name(&self) -> &str {
+        "simulate"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        use crate::cli::ExitCode;
+
+        // Create a new runtime for async execution
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(runtime) => runtime,
+            Err(err) => {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to create tokio runtime: {err}"),
+                )
+            }
+        };
+
+        // Run the async logic and convert Result to CommandResult
+        match rt.block_on(self.run()) {
+            Ok(()) => CommandResult::success(()),
+            Err(err) => {
+                use crate::cli::HasExitCode;
+                let exit_code = err.exit_code();
+                CommandResult::failure(exit_code, format!("{err:#}"))
+            }
+        }
     }
 }
