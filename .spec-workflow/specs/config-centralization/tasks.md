@@ -143,7 +143,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/timing_config.dart` with abstract class TimingConfig containing: animationDurationMs=150, pulseAnimationMs=300, debounceMs=500, keyAnimationMs=100, typingTimeLimitSec=30. Use static const for all values. Add doc comments. | Restrictions: Use abstract class to prevent instantiation | _Leverage: ui/lib/pages/debugger_page.dart:29,51,73_ | Success: All UI timing constants centralized. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 18. Create Dart UI constants
+- [x] 18. Create Dart UI constants
   - File: `ui/lib/config/ui_constants.dart`
   - Extract padding, elevation, scale constants
   - Purpose: Centralize UI dimension constants
@@ -151,7 +151,7 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/ui_constants.dart` with abstract class UiConstants containing: defaultPadding=16.0, smallPadding=8.0, tinyPadding=4.0, defaultElevation=6.0, minKeyboardScale=0.5, maxKeyboardScale=1.0, defaultIconSize=24.0, defaultBorderRadius=4.0. Add doc comments. | Restrictions: Use abstract class, maintain double types for dimension values | _Leverage: ui/lib/ui/styles/surfaces.dart:19, ui/lib/widgets/visual_keyboard.dart:146-148_ | Success: All UI dimension constants centralized. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 19. Create Dart storage keys
+- [x] 19. Create Dart storage keys
   - File: `ui/lib/config/storage_keys.dart`
   - Extract SharedPreferences key constants
   - Purpose: Centralize storage key strings
@@ -159,7 +159,7 @@
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/storage_keys.dart` with abstract class StorageKeys containing: developerModeKey="developer_mode", trainingProgressKey="keyrx_training_progress". Add doc comments explaining what each key stores. | Restrictions: Use abstract class, ensure exact string matches existing values | _Leverage: ui/lib/state/app_state.dart:13, ui/lib/pages/keyrx_training_screen.dart:26_ | Success: All SharedPreferences keys centralized. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 20. Create Dart FFI constants
+- [x] 20. Create Dart FFI constants
   - File: `ui/lib/config/ffi_constants.dart`
   - Extract FFI function names and JSON response keys
   - Purpose: Centralize FFI-related strings
@@ -167,7 +167,7 @@
   - _Requirements: 2.4_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/ffi_constants.dart` with: abstract class FfiFunctions (all keyrx_* function names), abstract class JsonKeys (response keys like "success", "error", "totalKeys", "avgLatencyUs", etc.), abstract class ResponsePrefixes ("ok:", "error:"). Extract from bindings.dart and bridge_*.dart files. | Restrictions: Use abstract classes, organize by category | _Leverage: ui/lib/ffi/bindings.dart:189-439, ui/lib/ffi/bridge_engine.dart, ui/lib/ffi/bridge_session.dart_ | Success: All FFI strings centralized. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 21. Create Dart threshold constants
+- [x] 21. Create Dart threshold constants
   - File: `ui/lib/config/threshold_constants.dart`
   - Extract performance threshold constants
   - Purpose: Centralize threshold values
@@ -175,7 +175,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Create `ui/lib/config/threshold_constants.dart` with abstract class ThresholdConstants containing: latencyWarningUs=20000, latencyCautionUs=10000, warningThresholdNs=1000000, minKeystrokes=10, pauseThresholdMs=2000, maxEventsHistory=300. Add doc comments with units. Update config.dart barrel export. | Restrictions: Use abstract class, maintain int types | _Leverage: ui/lib/pages/debugger_meters.dart:14-15, ui/lib/pages/developer/benchmark_page.dart_ | Success: All threshold constants centralized. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 22. Create Dart path constants
+- [x] 22. Create Dart path constants
   - File: `ui/lib/config/path_constants.dart`
   - Extract file path constants
   - Purpose: Centralize path strings
