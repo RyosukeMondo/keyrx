@@ -16,5 +16,7 @@
 //! ```
 
 pub mod code;
+pub mod definition;
 
 pub use code::{ErrorCategory, ErrorCode};
+pub use definition::{ErrorDef, ErrorSeverity};

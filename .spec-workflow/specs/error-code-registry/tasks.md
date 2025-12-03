@@ -20,7 +20,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating enums | Task: Create ErrorCategory with prefix and range | Restrictions: Clear prefixes, no overlap in ranges | _Leverage: Enum patterns | Success: Categories cover all error types | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create ErrorDef type
+- [x] 3. Create ErrorDef type
   - File: `core/src/errors/definition.rs`
   - Define error with code, template, hint, severity
   - Add message formatting with args
