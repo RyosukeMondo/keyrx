@@ -191,7 +191,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter test engineer | Task: Create widget tests for EditorPage and ConsolePage using mock services. Test key user flows: add mapping, validate error, execute command | Restrictions: ≥80% coverage; use mockito or manual mocks | _Leverage: Flutter testing | _Requirements: All | Success: Pages testable with mocks._
 
-- [ ] 26. Verify parallel test execution
+- [x] 26. Verify parallel test execution
   - Files: N/A (CI verification)
   - Confirm tests run in parallel without failures
   - _Leverage: cargo nextest_
