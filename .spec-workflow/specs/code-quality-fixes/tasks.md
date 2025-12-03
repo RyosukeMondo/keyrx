@@ -132,21 +132,21 @@
 
 ## Phase 5: UAT Performance Module Refactoring
 
-- [ ] 16. Create uat/perf_types.rs module
+- [x] 16. Create uat/perf_types.rs module
   - File: `src/uat/perf_types.rs`
   - Move: Performance-related structs and enums
   - Purpose: Isolate performance type definitions
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/perf_types.rs with performance data structures from perf.rs (PerformanceResult, PerformanceStats, RegressionCheck, etc.) | Restrictions: Keep serde derives | Success: Types compile. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 17. Create uat/perf_analysis.rs module
+- [x] 17. Create uat/perf_analysis.rs module
   - File: `src/uat/perf_analysis.rs`
   - Move: Statistical analysis and regression detection functions
   - Purpose: Isolate analysis logic
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/perf_analysis.rs with statistical analysis functions from perf.rs (calculate_stats, detect_regression, compare_baselines, etc.) | Restrictions: Keep calculation accuracy | Success: Analysis functions work. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 18. Update uat/perf.rs and mod.rs
+- [x] 18. Update uat/perf.rs and mod.rs
   - Files: `src/uat/perf.rs`, `src/uat/mod.rs`
   - Keep test runner coordination in perf.rs
   - Add re-exports
