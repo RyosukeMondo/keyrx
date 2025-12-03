@@ -1,6 +1,7 @@
 //! UAT command for running User Acceptance Tests.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::exit_codes::{CRASH, GATE_FAIL, PASS, TEST_FAIL};
 use crate::uat::{
     CoverageMapper, FuzzConfig, FuzzEngine, GateResult, PerformanceUat, QualityGateEnforcer,
     ReportData, ReportGenerator, UatFilter, UatRunner,
@@ -10,12 +11,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// Exit codes for UAT command per requirements.
+/// Exit codes for UAT command (re-exported from config).
 pub mod exit_codes {
-    pub const PASS: i32 = 0;
-    pub const TEST_FAIL: i32 = 1;
-    pub const GATE_FAIL: i32 = 2;
-    pub const CRASH: i32 = 3;
+    pub use crate::config::exit_codes::{CRASH, GATE_FAIL, PASS, TEST_FAIL};
 }
 
 /// UAT command for running User Acceptance Tests.
@@ -200,7 +198,7 @@ impl UatCommand {
                         crash.file_path, crash.error
                     ));
                 }
-                return Ok(exit_codes::CRASH);
+                return Ok(CRASH);
             }
 
             Some(result)
@@ -279,17 +277,17 @@ impl UatCommand {
     ) -> i32 {
         // Check for test failures first
         if uat_results.failed > 0 {
-            return exit_codes::TEST_FAIL;
+            return TEST_FAIL;
         }
 
         // Check gate result
         if let Some(ref gate) = gate_result {
             if !gate.passed {
-                return exit_codes::GATE_FAIL;
+                return GATE_FAIL;
             }
         }
 
-        exit_codes::PASS
+        PASS
     }
 
     /// Generate and write a report to file.

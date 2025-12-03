@@ -4,20 +4,16 @@
 //! for regression testing.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::exit_codes::{CONFIRMATION_REQUIRED, ERROR, SUCCESS, VERIFICATION_FAILED};
 use crate::uat::{GoldenSessionError, GoldenSessionManager};
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-/// Exit codes for golden session commands.
+/// Exit codes for golden session commands (re-exported from config).
 pub mod exit_codes {
-    /// Operation completed successfully.
-    pub const SUCCESS: i32 = 0;
-    /// General error (file not found, parse error, etc.).
-    pub const ERROR: i32 = 1;
-    /// Verification failed (outputs didn't match).
-    pub const VERIFICATION_FAILED: i32 = 2;
-    /// Confirmation required but not provided.
-    pub const CONFIRMATION_REQUIRED: i32 = 3;
+    pub use crate::config::exit_codes::{
+        CONFIRMATION_REQUIRED, ERROR, SUCCESS, VERIFICATION_FAILED,
+    };
 }
 
 /// Golden session subcommand type.
@@ -124,16 +120,16 @@ impl GoldenCommand {
                     .success(&format!("  Events: {}", result.event_count));
                 self.output
                     .success(&format!("  Duration: {} µs", result.duration_us));
-                Ok(exit_codes::SUCCESS)
+                Ok(SUCCESS)
             }
             Err(GoldenSessionError::InvalidName { name, reason }) => {
                 self.output
                     .error(&format!("Invalid session name '{}': {}", name, reason));
-                Ok(exit_codes::ERROR)
+                Ok(ERROR)
             }
             Err(GoldenSessionError::ScriptError(msg)) => {
                 self.output.error(&format!("Script error: {}", msg));
-                Ok(exit_codes::ERROR)
+                Ok(ERROR)
             }
             Err(e) => Err(e).context("Failed to record golden session"),
         }
@@ -165,7 +161,7 @@ impl GoldenCommand {
             ));
             self.output
                 .success(&format!("  Duration: {} µs", result.duration_us));
-            Ok(exit_codes::SUCCESS)
+            Ok(SUCCESS)
         } else {
             self.output.error(&format!(
                 "Golden session '{}' verification failed",
@@ -195,7 +191,7 @@ impl GoldenCommand {
                 ));
             }
 
-            Ok(exit_codes::VERIFICATION_FAILED)
+            Ok(VERIFICATION_FAILED)
         }
     }
 
@@ -221,7 +217,7 @@ impl GoldenCommand {
                 ));
                 self.output
                     .success(&format!("  Duration: {} µs", result.duration_us));
-                Ok(exit_codes::SUCCESS)
+                Ok(SUCCESS)
             }
             Err(GoldenSessionError::ConfirmationRequired(session)) => {
                 self.output.warning(&format!(
@@ -230,18 +226,18 @@ impl GoldenCommand {
                 ));
                 self.output
                     .warning("  Use --confirm flag to proceed with the update.");
-                Ok(exit_codes::CONFIRMATION_REQUIRED)
+                Ok(CONFIRMATION_REQUIRED)
             }
             Err(GoldenSessionError::NotFound(session)) => {
                 self.output
                     .error(&format!("Golden session '{}' not found", session));
                 self.output
                     .warning("  Use 'keyrx golden record' to create a new session first.");
-                Ok(exit_codes::ERROR)
+                Ok(ERROR)
             }
             Err(GoldenSessionError::ScriptError(msg)) => {
                 self.output.error(&format!("Script error: {}", msg));
-                Ok(exit_codes::ERROR)
+                Ok(ERROR)
             }
             Err(e) => Err(e).context("Failed to update golden session"),
         }
@@ -269,7 +265,7 @@ impl GoldenCommand {
             }
         }
 
-        Ok(exit_codes::SUCCESS)
+        Ok(SUCCESS)
     }
 }
 

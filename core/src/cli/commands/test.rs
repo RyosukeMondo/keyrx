@@ -1,7 +1,13 @@
 //! Test command for running Rhai script tests.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::exit_codes::{ASSERTION_FAIL, ERROR, PASS};
 use crate::error::KeyRxError;
+
+/// Exit codes for test command (re-exported from config).
+pub mod exit_codes {
+    pub use crate::config::exit_codes::{ASSERTION_FAIL, ERROR, PASS, TIMEOUT};
+}
 use crate::scripting::test_discovery::discover_tests;
 use crate::scripting::test_runner::{TestResult, TestRunner, TestSummary};
 use crate::scripting::RhaiRuntime;
@@ -12,14 +18,6 @@ use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::time::Duration;
-
-/// Exit codes per product.md specification.
-pub mod exit_codes {
-    pub const PASS: i32 = 0;
-    pub const ERROR: i32 = 1;
-    pub const ASSERTION_FAIL: i32 = 2;
-    pub const TIMEOUT: i32 = 3;
-}
 
 /// Run tests in a Rhai script.
 pub struct TestCommand {
@@ -122,7 +120,7 @@ impl TestCommand {
         if discovered.is_empty() {
             self.output
                 .warning("No test functions found (functions must start with 'test_')");
-            return Ok(exit_codes::PASS);
+            return Ok(PASS);
         }
 
         // Create runtime and load script
@@ -148,9 +146,9 @@ impl TestCommand {
         // Determine exit code
         let summary = TestSummary::from_results(&results);
         if summary.failed > 0 {
-            Ok(exit_codes::ASSERTION_FAIL)
+            Ok(ASSERTION_FAIL)
         } else {
-            Ok(exit_codes::PASS)
+            Ok(PASS)
         }
     }
 
@@ -197,7 +195,7 @@ impl TestCommand {
                         Ok(code) => last_exit_code = code,
                         Err(e) => {
                             self.output.error(&format!("Test run failed: {e}"));
-                            last_exit_code = exit_codes::ERROR;
+                            last_exit_code = ERROR;
                         }
                     }
                 }
@@ -284,7 +282,7 @@ mod tests {
         let result = cmd.run();
 
         assert!(result.is_ok());
-        assert_eq!(result.expect("run"), exit_codes::PASS);
+        assert_eq!(result.expect("run"), PASS);
     }
 
     #[test]
@@ -296,7 +294,7 @@ mod tests {
         let result = cmd.run();
 
         assert!(result.is_ok());
-        assert_eq!(result.expect("run"), exit_codes::PASS);
+        assert_eq!(result.expect("run"), PASS);
     }
 
     #[test]
@@ -308,7 +306,7 @@ mod tests {
         let result = cmd.run();
 
         assert!(result.is_ok());
-        assert_eq!(result.expect("run"), exit_codes::ASSERTION_FAIL);
+        assert_eq!(result.expect("run"), ASSERTION_FAIL);
     }
 
     #[test]
@@ -337,7 +335,7 @@ mod tests {
         let result = cmd.run();
 
         assert!(result.is_ok());
-        assert_eq!(result.expect("run"), exit_codes::PASS);
+        assert_eq!(result.expect("run"), PASS);
     }
 
     #[test]
@@ -349,7 +347,7 @@ mod tests {
         let result = cmd.run();
 
         assert!(result.is_ok());
-        assert_eq!(result.expect("run"), exit_codes::PASS);
+        assert_eq!(result.expect("run"), PASS);
     }
 
     #[test]

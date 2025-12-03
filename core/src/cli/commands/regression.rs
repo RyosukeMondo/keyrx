@@ -4,20 +4,16 @@
 //! regressions. Used in CI to block merges when regressions are detected.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::exit_codes::{ERROR, REGRESSION, SUCCESS};
 use crate::uat::{GoldenSessionManager, GoldenVerifyResult};
 use anyhow::{Context, Result};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::time::Instant;
 
-/// Exit codes for regression command.
+/// Exit codes for regression command (re-exported from config).
 pub mod exit_codes {
-    /// All golden sessions passed.
-    pub const SUCCESS: i32 = 0;
-    /// General error (file not found, parse error, etc.).
-    pub const ERROR: i32 = 1;
-    /// One or more regressions detected.
-    pub const REGRESSION: i32 = 2;
+    pub use crate::config::exit_codes::{ERROR, REGRESSION, SUCCESS};
 }
 
 /// Result of a single session verification.
@@ -178,7 +174,7 @@ impl RegressionCommand {
                 self.output
                     .warning("  Use 'keyrx golden record' to create golden sessions.");
             }
-            return Ok(exit_codes::SUCCESS);
+            return Ok(SUCCESS);
         }
 
         if !self.json {
@@ -237,11 +233,11 @@ impl RegressionCommand {
 
         // Determine exit code
         if summary.errors > 0 {
-            Ok(exit_codes::ERROR)
+            Ok(ERROR)
         } else if summary.regressed > 0 {
-            Ok(exit_codes::REGRESSION)
+            Ok(REGRESSION)
         } else {
-            Ok(exit_codes::SUCCESS)
+            Ok(SUCCESS)
         }
     }
 

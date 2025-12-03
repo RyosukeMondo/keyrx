@@ -13,7 +13,7 @@
 // Note: Allow unused until submodule constants are implemented (tasks 2-6, 13)
 #![allow(unused_imports)]
 
-mod exit_codes;
+pub mod exit_codes;
 mod keys;
 mod limits;
 mod loader;

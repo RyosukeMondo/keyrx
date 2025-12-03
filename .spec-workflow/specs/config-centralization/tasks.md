@@ -61,7 +61,7 @@
   - _Requirements: 1.6_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor `core/src/engine/decision/timing.rs` to import DEFAULT_TAP_TIMEOUT_MS, DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS from crate::config::timing and use them in TimingConfig::default(). Also update pending.rs to use MICROS_PER_MS from config. | Restrictions: Do not change behavior, only source of constants | _Leverage: core/src/config/timing.rs, core/src/engine/decision/pending.rs_ | Success: TimingConfig::default() uses config constants, tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 8. Refactor Linux driver to use key/path constants
+- [x] 8. Refactor Linux driver to use key/path constants
   - Files: `core/src/drivers/linux/reader.rs`, `core/src/drivers/linux/mod.rs`, `core/src/drivers/linux/writer.rs`
   - Import and use constants from config module
   - Purpose: Use centralized key codes and paths
@@ -69,7 +69,7 @@
   - _Requirements: 1.2, 1.3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor Linux driver files to use config constants. In reader.rs: replace hardcoded evdev codes with EVDEV_KEY_* from crate::config::keys. In mod.rs: use UINPUT_PATH from crate::config::paths. In writer.rs: use UINPUT_DEVICE_NAME from config. | Restrictions: Do not change behavior, maintain #[cfg(target_os = "linux")] guards | _Leverage: core/src/config/keys.rs, core/src/config/paths.rs_ | Success: All hardcoded key codes and paths replaced, tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 9. Refactor Windows driver to use key constants
+- [x] 9. Refactor Windows driver to use key constants
   - File: `core/src/drivers/windows/hook.rs`
   - Import and use VK_* constants from config module
   - Purpose: Use centralized Windows key codes
@@ -77,7 +77,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor `core/src/drivers/windows/hook.rs` to use VK_ESCAPE, VK_CONTROL, VK_SHIFT, VK_MENU from crate::config::keys instead of hardcoded hex values (0x1B, 0x11, 0x10, 0x12). | Restrictions: Maintain #[cfg(target_os = "windows")] guards, do not change behavior | _Leverage: core/src/config/keys.rs_ | Success: All hardcoded VK codes replaced. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 10. Refactor pending.rs to use limit constants
+- [x] 10. Refactor pending.rs to use limit constants
   - File: `core/src/engine/decision/pending.rs`
   - Import and use MAX_PENDING_DECISIONS, combo key limits from config
   - Purpose: Use centralized limit constants
@@ -85,7 +85,7 @@
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor `core/src/engine/decision/pending.rs` to use MAX_PENDING_DECISIONS, MIN_COMBO_KEYS, MAX_COMBO_KEYS from crate::config::limits. Replace DecisionQueue::MAX_PENDING constant with the config value. | Restrictions: Ensure validation logic using these limits works identically | _Leverage: core/src/config/limits.rs_ | Success: Limit constants centralized, tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 11. Refactor CLI commands to use exit codes
+- [x] 11. Refactor CLI commands to use exit codes
   - Files: `core/src/cli/commands/test.rs`, `replay.rs`, `golden.rs`, `uat.rs`, `regression.rs`, `ci_check_summary.rs`
   - Import and use ExitCode enum from config
   - Purpose: Use centralized exit codes

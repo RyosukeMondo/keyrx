@@ -595,7 +595,7 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
 
     // Check for replay verification failures
     if err_str.contains("Replay verification failed with exit code") {
-        return ExitCode::from(replay_exit_codes::VERIFICATION_FAILED);
+        return ExitCode::from(replay_exit_codes::VERIFICATION_FAILED as u8);
     }
 
     // Check for UAT failures

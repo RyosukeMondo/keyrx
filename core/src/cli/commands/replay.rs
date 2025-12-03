@@ -298,14 +298,9 @@ impl ReplayCommand {
     }
 }
 
-/// Exit codes for the replay command.
+/// Exit codes for the replay command (re-exported from config).
 pub mod exit_codes {
-    /// All outputs matched (or no verification).
-    pub const SUCCESS: u8 = 0;
-    /// Execution error (file not found, parse error, etc.).
-    pub const ERROR: u8 = 1;
-    /// Verification failed (outputs didn't match).
-    pub const VERIFICATION_FAILED: u8 = 2;
+    pub use crate::config::exit_codes::{ERROR, SUCCESS, VERIFICATION_FAILED};
 }
 
 #[cfg(test)]

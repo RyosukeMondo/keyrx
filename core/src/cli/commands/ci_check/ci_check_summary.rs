@@ -3,19 +3,13 @@
 //! Contains the data structures for check phase results and summary,
 //! as well as human-readable output formatting.
 
+use crate::config::exit_codes::{CRASH, GATE_FAIL, SUCCESS, TEST_FAIL};
 use crate::uat::GateResult;
 use serde::Serialize;
 
-/// Exit codes for CI check command.
+/// Exit codes for CI check command (re-exported from config).
 pub mod exit_codes {
-    /// All checks passed and gate passed.
-    pub const SUCCESS: i32 = 0;
-    /// Test failure (unit, integration, UAT, or regression).
-    pub const TEST_FAIL: i32 = 1;
-    /// Gate failure (tests passed but gate criteria not met).
-    pub const GATE_FAIL: i32 = 2;
-    /// Crash detected (in fuzz testing or panic).
-    pub const CRASH: i32 = 3;
+    pub use crate::config::exit_codes::{CRASH, GATE_FAIL, SUCCESS, TEST_FAIL};
 }
 
 /// Result of a single check phase.
@@ -71,7 +65,7 @@ impl CiCheckSummary {
             phases_failed: 0,
             phases: Vec::new(),
             gate_result: None,
-            exit_code: exit_codes::SUCCESS,
+            exit_code: SUCCESS,
         }
     }
 
@@ -83,8 +77,8 @@ impl CiCheckSummary {
         } else {
             self.phases_failed += 1;
             self.passed = false;
-            if self.exit_code == exit_codes::SUCCESS {
-                self.exit_code = exit_codes::TEST_FAIL;
+            if self.exit_code == SUCCESS {
+                self.exit_code = TEST_FAIL;
             }
         }
         self.phases.push(result);
@@ -92,8 +86,8 @@ impl CiCheckSummary {
 
     /// Set the gate result.
     pub fn set_gate_result(&mut self, result: GateResult) {
-        if !result.passed && self.exit_code == exit_codes::SUCCESS {
-            self.exit_code = exit_codes::GATE_FAIL;
+        if !result.passed && self.exit_code == SUCCESS {
+            self.exit_code = GATE_FAIL;
             self.passed = false;
         }
         self.gate_result = Some(result);
@@ -170,16 +164,16 @@ pub fn output_human_summary(summary: &CiCheckSummary) {
     // Final status
     println!();
     match summary.exit_code {
-        exit_codes::SUCCESS => {
+        SUCCESS => {
             println!("  Status: PASSED ✓");
         }
-        exit_codes::TEST_FAIL => {
+        TEST_FAIL => {
             println!("  Status: FAILED (test failures)");
         }
-        exit_codes::GATE_FAIL => {
+        GATE_FAIL => {
             println!("  Status: FAILED (gate violations)");
         }
-        exit_codes::CRASH => {
+        CRASH => {
             println!("  Status: FAILED (crash detected)");
         }
         _ => {
