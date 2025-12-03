@@ -164,7 +164,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Split src/uat/runner.rs (1079 lines) into runner_discovery.rs (test file discovery, metadata parsing) and runner_execution.rs (test execution logic). Keep UatRunner struct and coordination in runner.rs. Update mod.rs. | Restrictions: Maintain UatRunner public API | Success: Runner tests pass, all files under 500 lines. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 20. Refactor uat/gates.rs
+- [x] 20. Refactor uat/gates.rs
   - File: `src/uat/gates.rs`
   - Split into: gates_definitions.rs (gate types), gates_evaluation.rs (gate checking)
   - Keep gates.rs as coordinator under 500 lines
@@ -174,7 +174,7 @@
 
 ## Phase 7: Engine/CLI Refactoring
 
-- [ ] 21. Refactor engine/tracing.rs
+- [x] 21. Refactor engine/tracing.rs
   - File: `src/engine/tracing.rs`
   - Split into: tracing_types.rs (span types), tracing_formatters.rs (output formatters)
   - Keep tracing.rs as coordinator under 500 lines
