@@ -6,11 +6,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/config.dart';
 import '../services/engine_service.dart';
 import '../services/error_translator.dart';
 import '../widgets/layer_panel.dart';
-
-const _kDeveloperModeKey = 'developer_mode';
 
 /// Global application state.
 class AppState extends ChangeNotifier {
@@ -135,7 +134,7 @@ class AppState extends ChangeNotifier {
   /// Load developer mode setting from persistent storage.
   Future<void> loadDeveloperMode() async {
     final prefs = await SharedPreferences.getInstance();
-    _isDeveloperMode = prefs.getBool(_kDeveloperModeKey) ?? false;
+    _isDeveloperMode = prefs.getBool(StorageKeys.developerModeKey) ?? false;
     notifyListeners();
   }
 
@@ -143,7 +142,7 @@ class AppState extends ChangeNotifier {
   Future<void> toggleDeveloperMode() async {
     _isDeveloperMode = !_isDeveloperMode;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kDeveloperModeKey, _isDeveloperMode);
+    await prefs.setBool(StorageKeys.developerModeKey, _isDeveloperMode);
     notifyListeners();
   }
 }
