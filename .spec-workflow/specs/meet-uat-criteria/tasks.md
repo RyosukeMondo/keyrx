@@ -147,7 +147,7 @@
   - _Requirements: 9.5, 9.6_
   - _Prompt: Role: Markdown engineer | Task: Extend report.rs with generate_markdown(data) for GitHub PR comment format. Support --report-format md and --report-output path | Restrictions: ≤100 lines; GitHub-flavored markdown | Success: Report suitable for PR comment posting._
 
-- [ ] 20. Implement JSON report output
+- [x] 20. Implement JSON report output
   - Files: core/src/uat/report.rs (extend)
   - Add JSON output for machine parsing
   - _Leverage: serde serialization_

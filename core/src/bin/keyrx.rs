@@ -3,9 +3,9 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        replay_exit_codes, test_exit_codes, AnalyzeCommand, BenchCommand, CheckCommand,
-        DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand, ReplayCommand,
-        RunCommand, SimulateCommand, StateCommand, TestCommand,
+        replay_exit_codes, test_exit_codes, uat_exit_codes, AnalyzeCommand, BenchCommand,
+        CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand,
+        ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     OutputFormat,
 };
@@ -180,6 +180,61 @@ enum Commands {
         #[arg(long)]
         diagram: bool,
     },
+
+    /// Run User Acceptance Tests (UAT)
+    Uat {
+        /// Filter by category (can be specified multiple times)
+        #[arg(short, long, value_delimiter = ',')]
+        category: Vec<String>,
+
+        /// Filter by priority (P0, P1, P2)
+        #[arg(short, long, value_delimiter = ',')]
+        priority: Vec<String>,
+
+        /// Output results in JSON format
+        #[arg(long)]
+        json: bool,
+
+        /// Stop on first failure
+        #[arg(long)]
+        fail_fast: bool,
+
+        /// Run performance tests
+        #[arg(long)]
+        perf: bool,
+
+        /// Run fuzz tests
+        #[arg(long)]
+        fuzz: bool,
+
+        /// Fuzz test duration in seconds
+        #[arg(long, default_value = "60")]
+        fuzz_duration: u64,
+
+        /// Fuzz test sequence count (overrides duration)
+        #[arg(long)]
+        fuzz_count: Option<u64>,
+
+        /// Generate coverage report
+        #[arg(long)]
+        coverage: bool,
+
+        /// Generate full report
+        #[arg(long)]
+        report: bool,
+
+        /// Report format (html, md, json)
+        #[arg(long, default_value = "html")]
+        report_format: String,
+
+        /// Report output path
+        #[arg(long)]
+        report_output: Option<PathBuf>,
+
+        /// Quality gate to enforce (alpha, beta, ga)
+        #[arg(long)]
+        gate: Option<String>,
+    },
 }
 
 fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
@@ -305,6 +360,42 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 .with_diagram(diagram)
                 .run()?;
         }
+        Commands::Uat {
+            category,
+            priority,
+            json,
+            fail_fast,
+            perf,
+            fuzz,
+            fuzz_duration,
+            fuzz_count,
+            coverage,
+            report,
+            report_format,
+            report_output,
+            gate,
+        } => {
+            let exit_code = UatCommand::new(format)
+                .with_categories(category)
+                .with_priorities(priority)
+                .with_json(json)
+                .with_fail_fast(fail_fast)
+                .with_perf(perf)
+                .with_fuzz(fuzz)
+                .with_fuzz_duration(fuzz_duration)
+                .with_fuzz_count(fuzz_count)
+                .with_coverage_report(coverage)
+                .with_report(report)
+                .with_report_format(report_format)
+                .with_report_output(report_output)
+                .with_gate(gate)
+                .run()?;
+
+            // Return early with specific exit code for UAT failures
+            if exit_code != uat_exit_codes::PASS {
+                return Err(anyhow::anyhow!("UAT failed with exit code {}", exit_code));
+            }
+        }
     }
     Ok(())
 }
@@ -331,6 +422,20 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
     // Check for replay verification failures
     if err_str.contains("Replay verification failed with exit code") {
         return ExitCode::from(replay_exit_codes::VERIFICATION_FAILED);
+    }
+
+    // Check for UAT failures
+    if err_str.contains("UAT failed with exit code") {
+        if err_str.contains(&format!("{}", uat_exit_codes::TEST_FAIL)) {
+            return ExitCode::from(uat_exit_codes::TEST_FAIL as u8);
+        }
+        if err_str.contains(&format!("{}", uat_exit_codes::GATE_FAIL)) {
+            return ExitCode::from(uat_exit_codes::GATE_FAIL as u8);
+        }
+        if err_str.contains(&format!("{}", uat_exit_codes::CRASH)) {
+            return ExitCode::from(uat_exit_codes::CRASH as u8);
+        }
+        return ExitCode::from(uat_exit_codes::TEST_FAIL as u8);
     }
 
     // Check if the root cause is a KeyRxError

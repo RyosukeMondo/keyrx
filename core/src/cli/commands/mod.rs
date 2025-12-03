@@ -17,6 +17,7 @@ mod run_tracer;
 mod simulate;
 mod state;
 mod test;
+mod uat;
 
 pub use analyze::{AnalysisResult, AnalyzeCommand};
 pub use bench::BenchCommand;
@@ -30,3 +31,4 @@ pub use run::RunCommand;
 pub use simulate::{SimulateCommand, SimulationOutput, SimulationResult};
 pub use state::StateCommand;
 pub use test::{exit_codes as test_exit_codes, TestCommand};
+pub use uat::{exit_codes as uat_exit_codes, UatCommand};
