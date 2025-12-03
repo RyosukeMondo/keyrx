@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/console_parser.dart';
 import '../services/engine_service.dart';
 
 /// Interactive Rhai REPL console.
@@ -13,10 +14,14 @@ class ConsolePage extends StatefulWidget {
   const ConsolePage({
     super.key,
     required this.engineService,
+    this.parser = const ConsoleParser(),
   });
 
   /// The engine service for evaluating Rhai commands.
   final EngineService engineService;
+
+  /// The parser for classifying console output.
+  final ConsoleParser parser;
 
   @override
   State<ConsolePage> createState() => _ConsolePageState();
@@ -111,28 +116,33 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   Widget _buildEntry(ConsoleEntry entry) {
-    final lower = entry.text.toLowerCase();
-    final isError = entry.isError || lower.startsWith('error:');
-    final isOk = lower.startsWith('ok:');
-    final showInitButton = isError && lower.contains('not initialized');
-    final badgeColor = entry.isInput
-        ? Colors.blueAccent
-        : isError
-            ? Colors.redAccent
-            : Colors.green;
-    final label = entry.isInput
-        ? 'CMD'
-        : isError
-            ? 'ERROR'
-            : isOk
-                ? 'OK'
-                : 'OUT';
-    final icon = entry.isInput
-        ? Icons.chevron_right
-        : isError
-            ? Icons.warning_amber_rounded
-            : Icons.check_circle_outline;
-    final displayText = entry.isInput ? entry.text : _stripPrefix(entry.text);
+    final parser = widget.parser;
+    final entryType = parser.classify(entry.text, isInput: entry.isInput);
+    final isError =
+        entry.isError || entryType == ConsoleEntryType.error;
+    final showInitButton =
+        parser.needsInitButton(entry.text, isError: isError);
+    final badgeColor = switch (entryType) {
+      ConsoleEntryType.command => Colors.blueAccent,
+      ConsoleEntryType.error => Colors.redAccent,
+      _ when isError => Colors.redAccent,
+      _ => Colors.green,
+    };
+    final label = switch (entryType) {
+      ConsoleEntryType.command => 'CMD',
+      ConsoleEntryType.error => 'ERROR',
+      _ when isError => 'ERROR',
+      ConsoleEntryType.ok => 'OK',
+      ConsoleEntryType.output => 'OUT',
+    };
+    final icon = switch (entryType) {
+      ConsoleEntryType.command => Icons.chevron_right,
+      ConsoleEntryType.error => Icons.warning_amber_rounded,
+      _ when isError => Icons.warning_amber_rounded,
+      _ => Icons.check_circle_outline,
+    };
+    final displayText =
+        entry.isInput ? entry.text : parser.stripPrefix(entry.text);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -284,14 +294,6 @@ class _ConsolePageState extends State<ConsolePage> {
     );
   }
 
-  String _stripPrefix(String text) {
-    final lower = text.toLowerCase();
-    if (lower.startsWith('ok:') || lower.startsWith('error:')) {
-      final idx = text.indexOf(':');
-      return idx > -1 ? text.substring(idx + 1).trimLeft() : text;
-    }
-    return text;
-  }
 }
 
 /// A single console history entry.

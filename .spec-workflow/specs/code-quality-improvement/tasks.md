@@ -138,7 +138,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create MappingValidator with validate(fromKey, mapping) returning ValidationResult. Move all validation from EditorPage._applyMapping to validator. EditorPage calls validator | Restrictions: ≤80 lines; testable without UI | _Leverage: editor_page.dart | _Requirements: 7 | Success: Validation logic in isolated service._
 
-- [ ] 19. Extract ConsoleParser service
+- [-] 19. Extract ConsoleParser service
   - Files: ui/lib/services/console_parser.dart (new), ui/lib/pages/console.dart (modify)
   - Move parsing/classification logic out of ConsolePage
   - _Leverage: existing console.dart parsing code_
