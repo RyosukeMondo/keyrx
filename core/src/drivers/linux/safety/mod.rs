@@ -80,6 +80,6 @@
 //! - Target: < 10μs overhead per operation
 
 // Module declarations (components will be implemented in subsequent tasks)
-// pub mod device;
+pub mod device;
 // pub mod uinput;
 // pub mod permissions;

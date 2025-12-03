@@ -63,7 +63,7 @@
 
 ## Phase 3: Linux Safety Wrappers
 
-- [ ] 7. Create SafeDevice wrapper
+- [x] 7. Create SafeDevice wrapper
   - File: `core/src/drivers/linux/safety/device.rs`
   - Wrap evdev device operations
   - Handle disconnection gracefully
