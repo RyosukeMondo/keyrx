@@ -9,7 +9,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_list_devices` FFI export to core/src/ffi/mod.rs that returns JSON array [{name, vendorId, productId, path, hasProfile}] using existing devices.rs logic | Restrictions: ≤50 lines; return CString; handle errors as JSON | _Leverage: core/src/cli/commands/devices.rs | _Requirements: 1 | Success: FFI function callable, returns valid JSON device list._
 
-- [ ] 2. Add device selection FFI export
+- [x] 2. Add device selection FFI export
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_select_device(path)` to set active device
   - _Leverage: existing device registry_
