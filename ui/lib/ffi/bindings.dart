@@ -47,6 +47,32 @@ typedef KeyrxListDevices = Pointer<Char> Function();
 typedef KeyrxSelectDeviceNative = Int32 Function(Pointer<Utf8> path);
 typedef KeyrxSelectDevice = int Function(Pointer<Utf8> path);
 
+typedef KeyrxCheckScriptNative = Pointer<Char> Function(Pointer<Utf8> path);
+typedef KeyrxCheckScript = Pointer<Char> Function(Pointer<Utf8> path);
+
+typedef KeyrxDiscoverTestsNative = Pointer<Char> Function(Pointer<Utf8> path);
+typedef KeyrxDiscoverTests = Pointer<Char> Function(Pointer<Utf8> path);
+
+typedef KeyrxRunTestsNative = Pointer<Char> Function(
+  Pointer<Utf8> path,
+  Pointer<Utf8> filter,
+);
+typedef KeyrxRunTests = Pointer<Char> Function(
+  Pointer<Utf8> path,
+  Pointer<Utf8> filter,
+);
+
+typedef KeyrxSimulateNative = Pointer<Char> Function(
+  Pointer<Utf8> keysJson,
+  Pointer<Utf8> scriptPath,
+  Bool comboMode,
+);
+typedef KeyrxSimulate = Pointer<Char> Function(
+  Pointer<Utf8> keysJson,
+  Pointer<Utf8> scriptPath,
+  bool comboMode,
+);
+
 typedef KeyrxStateCallbackNative = Void Function(
   Pointer<Uint8> bytes,
   IntPtr length,
@@ -98,6 +124,10 @@ class KeyrxBindings {
   late final KeyrxSetBypass? setBypass;
   late final KeyrxListDevices? listDevices;
   late final KeyrxSelectDevice? selectDevice;
+  late final KeyrxCheckScript? checkScript;
+  late final KeyrxDiscoverTests? discoverTests;
+  late final KeyrxRunTests? runTests;
+  late final KeyrxSimulate? simulate;
 
   KeyrxBindings(this._lib) {
     init = _lib.lookupFunction<KeyrxInitNative, KeyrxInit>('keyrx_init');
@@ -118,6 +148,10 @@ class KeyrxBindings {
     setBypass = _tryLookupSetBypass();
     listDevices = _tryLookupListDevices();
     selectDevice = _tryLookupSelectDevice();
+    checkScript = _tryLookupCheckScript();
+    discoverTests = _tryLookupDiscoverTests();
+    runTests = _tryLookupRunTests();
+    simulate = _tryLookupSimulate();
   }
 
   KeyrxStartAudio? _tryLookupStartAudio() {
@@ -222,6 +256,46 @@ class KeyrxBindings {
     try {
       return _lib.lookupFunction<KeyrxSelectDeviceNative, KeyrxSelectDevice>(
         'keyrx_select_device',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxCheckScript? _tryLookupCheckScript() {
+    try {
+      return _lib.lookupFunction<KeyrxCheckScriptNative, KeyrxCheckScript>(
+        'keyrx_check_script',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxDiscoverTests? _tryLookupDiscoverTests() {
+    try {
+      return _lib.lookupFunction<KeyrxDiscoverTestsNative, KeyrxDiscoverTests>(
+        'keyrx_discover_tests',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxRunTests? _tryLookupRunTests() {
+    try {
+      return _lib.lookupFunction<KeyrxRunTestsNative, KeyrxRunTests>(
+        'keyrx_run_tests',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxSimulate? _tryLookupSimulate() {
+    try {
+      return _lib.lookupFunction<KeyrxSimulateNative, KeyrxSimulate>(
+        'keyrx_simulate',
       );
     } on ArgumentError {
       return null;

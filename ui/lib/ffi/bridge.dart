@@ -254,6 +254,146 @@ class KeyrxBridge {
     }
   }
 
+  /// Validate a Rhai script without executing it.
+  ///
+  /// Returns validation result with any syntax errors.
+  ScriptValidationResult checkScript(String path) {
+    final checkFn = _bindings?.checkScript;
+    if (checkFn == null) {
+      return ScriptValidationResult.error('checkScript not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = checkFn(pathPtr);
+      if (ptr == nullptr) {
+        return ScriptValidationResult.error('checkScript returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return ScriptValidationResult.parse(raw);
+    } catch (e) {
+      return ScriptValidationResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Discover test functions in a Rhai script.
+  ///
+  /// Returns list of discovered test functions.
+  TestDiscoveryResult discoverTests(String path) {
+    final discoverFn = _bindings?.discoverTests;
+    if (discoverFn == null) {
+      return TestDiscoveryResult.error('discoverTests not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = discoverFn(pathPtr);
+      if (ptr == nullptr) {
+        return TestDiscoveryResult.error('discoverTests returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return TestDiscoveryResult.parse(raw);
+    } catch (e) {
+      return TestDiscoveryResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Run tests in a Rhai script with optional filter.
+  ///
+  /// [path] - Path to the script file.
+  /// [filter] - Optional pattern to filter test names (null for all tests).
+  TestRunResult runTests(String path, {String? filter}) {
+    final runFn = _bindings?.runTests;
+    if (runFn == null) {
+      return TestRunResult.error('runTests not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    final filterPtr = filter?.toNativeUtf8() ?? nullptr;
+    Pointer<Char>? ptr;
+    try {
+      ptr = runFn(pathPtr, filterPtr);
+      if (ptr == nullptr) {
+        return TestRunResult.error('runTests returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return TestRunResult.parse(raw);
+    } catch (e) {
+      return TestRunResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (filterPtr != nullptr) {
+        calloc.free(filterPtr);
+      }
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Simulate key sequences through the engine.
+  ///
+  /// [keys] - List of key inputs to simulate.
+  /// [scriptPath] - Optional path to Rhai script (null uses active script).
+  /// [comboMode] - If true, keys are pressed simultaneously; otherwise sequentially.
+  SimulationResult simulate(
+    List<KeyInput> keys, {
+    String? scriptPath,
+    bool comboMode = false,
+  }) {
+    final simFn = _bindings?.simulate;
+    if (simFn == null) {
+      return SimulationResult.error('simulate not available');
+    }
+
+    final keysJson = json.encode(keys.map((k) => k.toJson()).toList());
+    final keysPtr = keysJson.toNativeUtf8();
+    final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
+    Pointer<Char>? ptr;
+    try {
+      ptr = simFn(keysPtr, scriptPtr, comboMode);
+      if (ptr == nullptr) {
+        return SimulationResult.error('simulate returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return SimulationResult.parse(raw);
+    } catch (e) {
+      return SimulationResult.error('$e');
+    } finally {
+      calloc.free(keysPtr);
+      if (scriptPtr != nullptr) {
+        calloc.free(scriptPtr);
+      }
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
   /// Close any native resources and stop dispatching callbacks.
   Future<void> dispose() async {
     _currentInstance = null;
@@ -595,4 +735,319 @@ class DeviceListResult {
   final String? errorMessage;
 
   bool get hasError => errorMessage != null;
+}
+
+/// Script validation error detail.
+class ScriptValidationError {
+  const ScriptValidationError({
+    this.line,
+    this.column,
+    required this.message,
+  });
+
+  final int? line;
+  final int? column;
+  final String message;
+}
+
+/// Script validation result.
+class ScriptValidationResult {
+  const ScriptValidationResult({
+    required this.valid,
+    required this.errors,
+    this.errorMessage,
+  });
+
+  factory ScriptValidationResult.error(String message) => ScriptValidationResult(
+        valid: false,
+        errors: const [],
+        errorMessage: message,
+      );
+
+  factory ScriptValidationResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return ScriptValidationResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return ScriptValidationResult.error('invalid validation payload');
+      }
+
+      final valid = decoded['valid'] as bool? ?? false;
+      final errorsList = decoded['errors'] as List<dynamic>? ?? [];
+      final errors = errorsList.map((e) {
+        if (e is! Map<String, dynamic>) {
+          return const ScriptValidationError(message: 'unknown error');
+        }
+        return ScriptValidationError(
+          line: (e['line'] as num?)?.toInt(),
+          column: (e['column'] as num?)?.toInt(),
+          message: e['message']?.toString() ?? 'unknown error',
+        );
+      }).toList();
+
+      return ScriptValidationResult(valid: valid, errors: errors);
+    } catch (e) {
+      return ScriptValidationResult.error('$e');
+    }
+  }
+
+  final bool valid;
+  final List<ScriptValidationError> errors;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Discovered test function.
+class DiscoveredTest {
+  const DiscoveredTest({
+    required this.name,
+    required this.file,
+    this.line,
+  });
+
+  final String name;
+  final String file;
+  final int? line;
+}
+
+/// Test discovery result.
+class TestDiscoveryResult {
+  const TestDiscoveryResult({
+    required this.tests,
+    this.errorMessage,
+  });
+
+  factory TestDiscoveryResult.error(String message) => TestDiscoveryResult(
+        tests: const [],
+        errorMessage: message,
+      );
+
+  factory TestDiscoveryResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return TestDiscoveryResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! List) {
+        return TestDiscoveryResult.error('invalid test list payload');
+      }
+
+      final tests = decoded.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return DiscoveredTest(
+          name: e['name']?.toString() ?? '',
+          file: e['file']?.toString() ?? '',
+          line: (e['line'] as num?)?.toInt(),
+        );
+      }).whereType<DiscoveredTest>().toList();
+
+      return TestDiscoveryResult(tests: tests);
+    } catch (e) {
+      return TestDiscoveryResult.error('$e');
+    }
+  }
+
+  final List<DiscoveredTest> tests;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Individual test result.
+class TestResult {
+  const TestResult({
+    required this.name,
+    required this.passed,
+    this.error,
+    required this.durationMs,
+  });
+
+  final String name;
+  final bool passed;
+  final String? error;
+  final double durationMs;
+}
+
+/// Test run result.
+class TestRunResult {
+  const TestRunResult({
+    required this.total,
+    required this.passed,
+    required this.failed,
+    required this.durationMs,
+    required this.results,
+    this.errorMessage,
+  });
+
+  factory TestRunResult.error(String message) => TestRunResult(
+        total: 0,
+        passed: 0,
+        failed: 0,
+        durationMs: 0,
+        results: const [],
+        errorMessage: message,
+      );
+
+  factory TestRunResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return TestRunResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return TestRunResult.error('invalid test run payload');
+      }
+
+      final resultsList = decoded['results'] as List<dynamic>? ?? [];
+      final results = resultsList.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return TestResult(
+          name: e['name']?.toString() ?? '',
+          passed: e['passed'] as bool? ?? false,
+          error: e['error']?.toString(),
+          durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
+        );
+      }).whereType<TestResult>().toList();
+
+      return TestRunResult(
+        total: (decoded['total'] as num?)?.toInt() ?? 0,
+        passed: (decoded['passed'] as num?)?.toInt() ?? 0,
+        failed: (decoded['failed'] as num?)?.toInt() ?? 0,
+        durationMs: (decoded['durationMs'] as num?)?.toDouble() ?? 0,
+        results: results,
+      );
+    } catch (e) {
+      return TestRunResult.error('$e');
+    }
+  }
+
+  final int total;
+  final int passed;
+  final int failed;
+  final double durationMs;
+  final List<TestResult> results;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Key mapping from simulation.
+class SimulationMapping {
+  const SimulationMapping({
+    required this.input,
+    required this.output,
+    required this.decision,
+  });
+
+  final String input;
+  final String output;
+  final String decision;
+}
+
+/// Simulation result.
+class SimulationResult {
+  const SimulationResult({
+    required this.mappings,
+    required this.activeLayers,
+    required this.pending,
+    this.errorMessage,
+  });
+
+  factory SimulationResult.error(String message) => SimulationResult(
+        mappings: const [],
+        activeLayers: const [],
+        pending: const [],
+        errorMessage: message,
+      );
+
+  factory SimulationResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return SimulationResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return SimulationResult.error('invalid simulation payload');
+      }
+
+      final mappingsList = decoded['mappings'] as List<dynamic>? ?? [];
+      final mappings = mappingsList.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return SimulationMapping(
+          input: e['input']?.toString() ?? '',
+          output: e['output']?.toString() ?? '',
+          decision: e['decision']?.toString() ?? '',
+        );
+      }).whereType<SimulationMapping>().toList();
+
+      final layers = (decoded['activeLayers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+      final pending = (decoded['pending'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+
+      return SimulationResult(
+        mappings: mappings,
+        activeLayers: layers,
+        pending: pending,
+      );
+    } catch (e) {
+      return SimulationResult.error('$e');
+    }
+  }
+
+  final List<SimulationMapping> mappings;
+  final List<String> activeLayers;
+  final List<String> pending;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Key input for simulation.
+class KeyInput {
+  const KeyInput({
+    required this.code,
+    this.holdMs,
+  });
+
+  final String code;
+  final int? holdMs;
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        if (holdMs != null) 'holdMs': holdMs,
+      };
 }
