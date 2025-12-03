@@ -53,7 +53,7 @@
   - _Requirements: 6_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust modularization engineer | Task: Split discover.rs into: discover.rs (DiscoverCommand, ≤200 lines), discover_session.rs (DiscoverySession state machine, ≤250 lines), discover_validation.rs (validation logic, ≤200 lines) | Restrictions: Each file ≤500 lines; clear module boundaries | _Leverage: discover.rs | _Requirements: 6 | Success: All files ≤500 lines._
 
-- [ ] 8. Split runtime.rs (683 lines)
+- [x] 8. Split runtime.rs (683 lines)
   - Files: core/src/scripting/runtime.rs (modify), pending_ops.rs (new), registry_sync.rs (new)
   - Extract pending operations and registry sync
   - _Leverage: existing runtime.rs_
