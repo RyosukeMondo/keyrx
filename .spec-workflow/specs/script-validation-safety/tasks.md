@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Validation Infrastructure
 
-- [-] 1. Create ValidationConfig module
+- [x] 1. Create ValidationConfig module
   - Files: `core/src/validation/config.rs` (new)
   - Implement ValidationConfig struct with all configurable thresholds
   - Add TOML loading from `~/.config/keyrx/validation.toml`
