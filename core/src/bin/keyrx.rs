@@ -13,6 +13,7 @@ use keyrx_core::cli::{
 use keyrx_core::config::{load_config, merge_cli_overrides, Config};
 use std::path::PathBuf;
 use std::process::ExitCode;
+use tracing::error;
 
 #[derive(Parser)]
 #[command(name = "keyrx")]
@@ -358,8 +359,52 @@ fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
     }
 }
 
+/// Install a panic handler that logs panic info and ensures proper exit code.
+///
+/// When a panic occurs, this handler:
+/// 1. Logs the panic information at error level using tracing
+/// 2. Ensures the process exits with code 101 (Rust panic convention)
+///
+/// This provides graceful panic handling and consistent exit codes even
+/// when unrecoverable errors occur.
+fn install_panic_handler() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        // Extract panic location
+        let location = panic_info
+            .location()
+            .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+            .unwrap_or_else(|| "unknown location".to_string());
+
+        // Extract panic message
+        let message = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "unknown panic message".to_string()
+        };
+
+        // Log panic at error level
+        error!(
+            location = %location,
+            message = %message,
+            "Panic occurred"
+        );
+
+        // Print to stderr as well for visibility when tracing isn't initialized
+        eprintln!("Error: Panic at {}: {}", location, message);
+        eprintln!("This is a bug. Please report it at: https://github.com/keyrx/keyrx/issues");
+
+        // Exit with code 101 (Rust panic convention)
+        std::process::exit(101);
+    }));
+}
+
 #[tokio::main]
 async fn main() -> ExitCode {
+    // Install panic handler to catch panics and return exit code 101
+    install_panic_handler();
+
     let cli = Cli::parse();
     let format = parse_format(&cli.format, cli.json);
 

@@ -64,7 +64,7 @@
   - _Requirements: 3.2, 2.1_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer refactoring CLI | Task: Refactor keyrx.rs to use Command trait and CommandResult, remove string parsing | Restrictions: Must maintain all existing functionality, reduce to ~150 LOC, use type-safe dispatch | _Leverage: Command trait, CommandResult from previous tasks | Success: Entry point compiles, all commands work, no string-based exit code logic | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Add panic handler for exit code 101
+- [x] 7. Add panic handler for exit code 101
   - File: `core/src/bin/keyrx.rs`
   - Set panic hook to catch panics
   - Log panic info at error level
