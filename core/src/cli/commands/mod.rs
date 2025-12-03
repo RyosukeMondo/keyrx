@@ -34,7 +34,7 @@ pub use regression::{exit_codes as regression_exit_codes, RegressionCommand, Reg
 pub use repl::ReplCommand;
 pub use replay::{exit_codes as replay_exit_codes, ReplayCommand, VerificationResult};
 pub use run::RunCommand;
-pub use simulate::{SimulateCommand, SimulationOutput, SimulationResult};
+pub use simulate::{SimulateCommand, SimulationOutput, SimulationResult, TapHoldInfo};
 pub use state::StateCommand;
 pub use test::{exit_codes as test_exit_codes, TestCommand};
 pub use uat::{exit_codes as uat_exit_codes, UatCommand};

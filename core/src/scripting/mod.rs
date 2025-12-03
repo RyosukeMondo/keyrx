@@ -31,7 +31,7 @@ pub use builtins::{LayerMapAction, PendingOp, TimingUpdate};
 pub use context::{
     clear_active_runtime, global_context, set_active_runtime, with_active_runtime, RuntimeContext,
 };
-pub use registry::RemapRegistry;
+pub use registry::{RemapRegistry, TapHoldBinding};
 pub use runtime::RhaiRuntime;
 pub use test_discovery::{discover_tests, filter_tests, matches_filter, DiscoveredTest};
 pub use test_harness::{

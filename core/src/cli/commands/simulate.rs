@@ -2,13 +2,14 @@
 
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::engine::{
-    AdvancedEngine, EngineState, InputEvent, KeyCode, LayerAction, OutputAction,
-    PendingDecisionState, RemapAction,
+    AdvancedEngine, EngineState, HoldAction, InputEvent, KeyCode, LayerAction, OutputAction,
+    PendingDecisionState, RemapAction, TimingConfig,
 };
-use crate::scripting::{RemapRegistry, RhaiRuntime};
+use crate::scripting::{RemapRegistry, RhaiRuntime, TapHoldBinding};
 use crate::traits::ScriptRuntime;
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 const DEFAULT_EVENT_GAP_US: u64 = 1_000;
@@ -17,6 +18,32 @@ const DEFAULT_EVENT_GAP_US: u64 = 1_000;
 struct ParsedKey {
     key: KeyCode,
     hold_ms: Option<u64>,
+}
+
+/// Information about a tap-hold key binding.
+#[derive(Debug, Clone, Serialize)]
+pub struct TapHoldInfo {
+    /// Key output on tap (quick press and release).
+    pub tap: String,
+    /// Key/action on hold (press and hold beyond threshold).
+    pub hold: String,
+    /// Tap-hold threshold in milliseconds.
+    pub threshold_ms: u32,
+}
+
+impl TapHoldInfo {
+    fn from_binding(binding: &TapHoldBinding, timing: &TimingConfig) -> Self {
+        let hold = match &binding.hold {
+            HoldAction::Key(k) => k.name(),
+            HoldAction::Modifier(id) => format!("Modifier({})", id),
+            HoldAction::Layer(id) => format!("Layer({})", id),
+        };
+        Self {
+            tap: binding.tap.name(),
+            hold,
+            threshold_ms: timing.tap_timeout_ms,
+        }
+    }
 }
 
 /// Result of simulating a single key event.
@@ -32,6 +59,9 @@ pub struct SimulationResult {
     pub pressed: bool,
     /// Event timestamp in microseconds.
     pub timestamp_us: u64,
+    /// Tap-hold info if this key has tap-hold behavior.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tap_hold: Option<TapHoldInfo>,
 }
 
 /// Complete simulation output.
@@ -118,11 +148,19 @@ impl SimulateCommand {
         let runtime = self.create_runtime()?;
         let registry = runtime.registry().clone();
 
+        // Build tap-hold info map for result enrichment
+        let timing = registry.timing_config().clone();
+        let tap_hold_info: HashMap<KeyCode, TapHoldInfo> = registry
+            .tap_holds()
+            .map(|(key, binding)| (*key, TapHoldInfo::from_binding(binding, &timing)))
+            .collect();
+
         // Create engine with mocks
         let mut engine = self.create_engine(&registry, runtime);
 
         // Process events and collect results
-        let (results, remapped, blocked, passed) = self.process_events(&mut engine, &events);
+        let (results, remapped, blocked, passed) =
+            self.process_events(&mut engine, &events, &tap_hold_info);
         let state = engine.snapshot();
         let active_layers = state
             .layers
@@ -223,6 +261,7 @@ impl SimulateCommand {
         &self,
         engine: &mut AdvancedEngine<RhaiRuntime>,
         events: &[InputEvent],
+        tap_hold_info: &HashMap<KeyCode, TapHoldInfo>,
     ) -> (Vec<SimulationResult>, usize, usize, usize) {
         let mut results = Vec::new();
         let mut remapped = 0;
@@ -237,9 +276,10 @@ impl SimulateCommand {
             }
 
             outputs.extend(engine.process_event(event.clone()));
-            self.record_result(
+            Self::record_result(
                 event,
                 outputs,
+                tap_hold_info,
                 &mut results,
                 &mut remapped,
                 &mut blocked,
@@ -252,9 +292,9 @@ impl SimulateCommand {
     }
 
     fn record_result(
-        &self,
         event: &InputEvent,
         outputs: Vec<OutputAction>,
+        tap_hold_info: &HashMap<KeyCode, TapHoldInfo>,
         results: &mut Vec<SimulationResult>,
         remapped: &mut usize,
         blocked: &mut usize,
@@ -305,12 +345,20 @@ impl SimulateCommand {
             .cloned()
             .unwrap_or_else(|| "NO_OUTPUT".to_string());
 
+        // Include tap-hold info if this key has tap-hold behavior (only for key-down events)
+        let tap_hold = if event.pressed {
+            tap_hold_info.get(&event.key).cloned()
+        } else {
+            None
+        };
+
         results.push(SimulationResult {
             input: event.key.name(),
             output: primary,
             outputs: output_strings,
             pressed: event.pressed,
             timestamp_us: event.timestamp_us,
+            tap_hold,
         });
     }
 
