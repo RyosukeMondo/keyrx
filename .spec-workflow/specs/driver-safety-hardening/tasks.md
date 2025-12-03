@@ -41,7 +41,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with thread-local expertise | Task: Create ThreadLocalState in safety/thread_local.rs | Restrictions: Safe access, no panics, proper initialization | _Leverage: thread_local! macro | Success: Thread-local access is safe and documented | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Create SafeHook wrapper
+- [x] 5. Create SafeHook wrapper
   - File: `core/src/drivers/windows/safety/hook.rs`
   - Wrap SetWindowsHookEx with safe API
   - Implement Drop for cleanup
