@@ -18,12 +18,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, instrument, warn};
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::LinuxInput;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use signal_hook::consts::{SIGINT, SIGTERM};
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use signal_hook::flag;
 
 /// Run the engine in headless mode.
@@ -232,7 +232,7 @@ impl RunCommand {
         Ok(())
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     async fn run_with_platform_driver(
         &self,
         runtime: RhaiRuntime,
@@ -302,7 +302,7 @@ impl RunCommand {
         Ok(())
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     fn initialize_linux_input(&self) -> Result<LinuxInput> {
         if let Some(ref device) = self.device_path {
             self.output
@@ -327,7 +327,7 @@ impl RunCommand {
         }
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     fn setup_signal_handlers(&self) -> Result<Arc<AtomicBool>> {
         let running = Arc::new(AtomicBool::new(true));
 
@@ -347,7 +347,7 @@ impl RunCommand {
         Ok(running)
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", feature = "windows-driver"))]
     async fn run_with_platform_driver(
         &self,
         runtime: RhaiRuntime,
@@ -411,7 +411,10 @@ impl RunCommand {
         Ok(())
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(not(any(
+        all(target_os = "linux", feature = "linux-driver"),
+        all(target_os = "windows", feature = "windows-driver")
+    )))]
     async fn run_with_platform_driver(
         &self,
         runtime: RhaiRuntime,
@@ -422,7 +425,7 @@ impl RunCommand {
         self.run_with_mock(runtime, builder).await
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", feature = "windows-driver"))]
     fn init_windows_input(&self) -> Result<crate::drivers::WindowsInput> {
         use crate::drivers::WindowsInput;
 
@@ -447,7 +450,7 @@ impl RunCommand {
         }
     }
 
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", feature = "windows-driver"))]
     fn spawn_ctrl_c_flag(running: Arc<AtomicBool>) {
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.ok();

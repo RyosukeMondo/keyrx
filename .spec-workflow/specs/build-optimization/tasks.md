@@ -60,7 +60,7 @@
   - _Requirements: 2.1, 2.3_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating features | Task: Create platform feature flags in Cargo.toml | Restrictions: Clear naming, proper gating | _Leverage: Cargo features | Success: Platform deps are optional | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Add cfg gates to driver modules
+- [x] 7. Add cfg gates to driver modules
   - Files: `core/src/drivers/{mod,windows,linux}.rs`
   - Add #[cfg] attributes to platform code
   - Ensure clean compilation on all platforms

@@ -14,18 +14,18 @@ pub use bypass::BypassController;
 
 pub use injector::{InjectedKey, KeyInjector, MockKeyInjector};
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 mod windows;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 mod linux;
 
 pub use common::DeviceInfo;
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 pub use windows::WindowsInput;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub use linux::LinuxInput;
 
 /// Platform-specific input driver.
@@ -33,7 +33,7 @@ pub use linux::LinuxInput;
 /// This type alias resolves to:
 /// - [`LinuxInput`] on Linux (using evdev/uinput)
 /// - `WindowsInput` on Windows (using WH_KEYBOARD_LL hooks)
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub type PlatformInput = LinuxInput;
 
 /// Platform-specific input driver.
@@ -41,7 +41,7 @@ pub type PlatformInput = LinuxInput;
 /// This type alias resolves to:
 /// - `LinuxInput` on Linux (using evdev/uinput)
 /// - [`WindowsInput`] on Windows (using WH_KEYBOARD_LL hooks)
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 pub type PlatformInput = WindowsInput;
 
 /// List all available keyboard devices on the current platform.
@@ -53,7 +53,7 @@ pub type PlatformInput = WindowsInput;
 /// # Errors
 ///
 /// Returns an error if device enumeration fails (e.g., permission denied).
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
     linux::list_keyboards()
 }
@@ -67,7 +67,29 @@ pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
 /// # Errors
 ///
 /// Returns an error if device enumeration fails (e.g., permission denied).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
     windows::list_keyboards()
 }
+
+/// Fallback implementation when no platform driver is available.
+///
+/// Returns an error indicating that no platform driver is compiled in.
+#[cfg(not(any(
+    all(target_os = "linux", feature = "linux-driver"),
+    all(target_os = "windows", feature = "windows-driver")
+)))]
+pub fn list_keyboards() -> anyhow::Result<Vec<DeviceInfo>> {
+    anyhow::bail!(
+        "No platform driver compiled in. Enable 'linux-driver' or 'windows-driver' feature."
+    )
+}
+
+/// Fallback type alias when no platform driver is available.
+///
+/// This uses MockKeyInjector as a placeholder when no real driver is compiled in.
+#[cfg(not(any(
+    all(target_os = "linux", feature = "linux-driver"),
+    all(target_os = "windows", feature = "windows-driver")
+)))]
+pub type PlatformInput = crate::mocks::MockInput;

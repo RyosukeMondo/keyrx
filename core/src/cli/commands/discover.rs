@@ -199,7 +199,7 @@ impl DiscoverCommand {
 }
 
 fn default_input_builder(device: &DeviceInfo) -> Result<DiscoverInput> {
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     {
         use crate::drivers::LinuxInput;
         let input = LinuxInput::new(Some(device.path.clone()))?;
@@ -208,13 +208,24 @@ fn default_input_builder(device: &DeviceInfo) -> Result<DiscoverInput> {
         })
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(all(target_os = "windows", feature = "windows-driver"))]
     {
-        use crate::drivers::PlatformInput;
-        let input = PlatformInput::new()?;
+        use crate::drivers::WindowsInput;
+        let input = WindowsInput::new()?;
         Ok(DiscoverInput {
             input: Box::new(input),
         })
+    }
+
+    #[cfg(not(any(
+        all(target_os = "linux", feature = "linux-driver"),
+        all(target_os = "windows", feature = "windows-driver")
+    )))]
+    {
+        anyhow::bail!(
+            "Device discovery requires platform driver support. \
+             Enable 'linux-driver' or 'windows-driver' feature."
+        )
     }
 }
 
