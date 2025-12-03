@@ -1,4 +1,5 @@
 //! Discovery domain FFI implementation.
+#![allow(dead_code)] // TODO: Remove when #[ffi_export] is uncommented (task 20)
 //!
 //! Implements the FfiExportable trait for discovery session management.
 //! This module replaces the global static pattern from exports_discovery.rs
@@ -10,7 +11,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::events::{EventRegistry, EventType};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
@@ -150,7 +151,7 @@ pub(crate) fn global_event_registry() -> &'static EventRegistry {
 /// * `cols_per_row_json` - JSON array of column counts per row (e.g., "[14, 14, 13, 12, 8]")
 ///
 /// Returns JSON: `ok:{success: bool, error?: string, totalKeys?: number}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn start_discovery(
     device_id: &str,
     rows: u8,
@@ -284,7 +285,7 @@ fn start_discovery(
 /// - 1: Discovery session completed
 /// - -1: No active discovery session
 /// - -2: Discovery was cancelled
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn process_discovery_event(scan_code: u16, pressed: bool, timestamp_us: u64) -> FfiResult<i32> {
     let mut ctx_guard = global_discovery_context()
         .lock()
@@ -342,7 +343,7 @@ fn process_discovery_event(scan_code: u16, pressed: bool, timestamp_us: u64) -> 
 /// Returns:
 /// - 0: Discovery cancelled successfully
 /// - -1: No active discovery session
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn cancel_discovery() -> FfiResult<i32> {
     let mut ctx_guard = global_discovery_context()
         .lock()
@@ -388,7 +389,7 @@ struct DiscoveryProgressResult {
 /// Get the current discovery progress.
 ///
 /// Returns JSON: `ok:{captured, total, next?: {row, col}}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn get_discovery_progress() -> FfiResult<DiscoveryProgressResult> {
     let ctx_guard = global_discovery_context()
         .lock()

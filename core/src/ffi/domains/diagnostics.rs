@@ -9,7 +9,7 @@ use crate::cli::OutputFormat;
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -37,7 +37,7 @@ impl FfiExportable for DiagnosticsFfi {
 
 /// Benchmark result for FFI JSON output.
 #[derive(Serialize, Debug)]
-struct BenchmarkResultJson {
+pub struct BenchmarkResultJson {
     #[serde(rename = "minNs")]
     min_ns: u64,
     #[serde(rename = "maxNs")]
@@ -64,7 +64,7 @@ struct DiagnosticCheckJson {
 
 /// Diagnostics result for FFI JSON output.
 #[derive(Serialize)]
-struct DiagnosticsResultJson {
+pub struct DiagnosticsResultJson {
     checks: Vec<DiagnosticCheckJson>,
     passed: usize,
     failed: usize,
@@ -74,7 +74,8 @@ struct DiagnosticsResultJson {
 /// Run latency benchmark on the engine.
 ///
 /// Returns: `{minNs, maxNs, meanNs, p99Ns, iterations, hasWarning, warning?}`
-#[ffi_export]
+#[allow(improper_ctypes_definitions)]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn run_benchmark(iterations: u32, script_path: Option<&str>) -> FfiResult<BenchmarkResultJson> {
     let iterations = iterations as usize;
     if iterations == 0 {
@@ -88,11 +89,11 @@ pub fn run_benchmark(iterations: u32, script_path: Option<&str>) -> FfiResult<Be
     // Use tokio runtime for async execution
     let rt = tokio::runtime::Builder::new_current_thread()
         .build()
-        .map_err(|e| FfiError::internal(&format!("Failed to create runtime: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to create runtime: {}", e)))?;
 
     let bench_result = rt
         .block_on(cmd.execute())
-        .map_err(|e| FfiError::internal(&format!("Benchmark failed: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Benchmark failed: {}", e)))?;
 
     Ok(BenchmarkResultJson {
         min_ns: bench_result.min_ns,
@@ -108,7 +109,7 @@ pub fn run_benchmark(iterations: u32, script_path: Option<&str>) -> FfiResult<Be
 /// Run system diagnostics.
 ///
 /// Returns: `{checks: [{name, status, details, remediation}], passed, failed, warned}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn run_doctor() -> FfiResult<DiagnosticsResultJson> {
     let mut checks: Vec<DiagnosticCheck> = Vec::new();
 

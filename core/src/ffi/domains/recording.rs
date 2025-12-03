@@ -7,7 +7,7 @@
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -106,7 +106,7 @@ impl RecordingFfi {
 
 /// Recording start result for FFI JSON output.
 #[derive(Serialize)]
-struct RecordingStartResult {
+pub struct RecordingStartResult {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
@@ -116,7 +116,7 @@ struct RecordingStartResult {
 
 /// Recording stop result for FFI JSON output.
 #[derive(Serialize)]
-struct RecordingStopResult {
+pub struct RecordingStopResult {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
@@ -132,7 +132,7 @@ struct RecordingStopResult {
 /// Call `stop_recording()` to stop recording and save the session.
 ///
 /// Returns: `{success: bool, error?: string, outputPath?: string}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn start_recording(ctx: &mut FfiContext, path: &str) -> FfiResult<RecordingStartResult> {
     let output_path = PathBuf::from(path);
 
@@ -186,7 +186,7 @@ pub fn start_recording(ctx: &mut FfiContext, path: &str) -> FfiResult<RecordingS
 /// Stop recording and save the session file.
 ///
 /// Returns: `{success: bool, error?: string, sessionPath?: string, eventCount?: number}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
     if let Some(mut state_guard) = ctx.get_domain_mut::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_mut::<RecordingState>() {
@@ -252,7 +252,7 @@ pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
 }
 
 /// Check if recording is currently active.
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn is_recording(ctx: &FfiContext) -> FfiResult<bool> {
     if let Some(state_guard) = ctx.get_domain::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_ref::<RecordingState>() {
@@ -265,7 +265,7 @@ pub fn is_recording(ctx: &FfiContext) -> FfiResult<bool> {
 /// Get the current recording output path (if recording is active).
 ///
 /// Returns the path as a string, or None if not recording.
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn get_recording_path(ctx: &FfiContext) -> FfiResult<Option<String>> {
     if let Some(state_guard) = ctx.get_domain::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_ref::<RecordingState>() {

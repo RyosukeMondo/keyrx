@@ -66,17 +66,15 @@ pub fn ffi_export(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // If neither works, return an error
     syn::Error::new(
         proc_macro2::Span::call_site(),
-        "#[ffi_export] can only be applied to functions or impl methods"
+        "#[ffi_export] can only be applied to functions or impl methods",
     )
     .to_compile_error()
     .into()
 }
 
 /// Generate FFI wrapper for a standalone function
-fn generate_ffi_wrapper_for_item_fn(
-    func: &syn::ItemFn,
-) -> syn::Result<proc_macro2::TokenStream> {
-    use quote::{quote, format_ident};
+fn generate_ffi_wrapper_for_item_fn(func: &syn::ItemFn) -> syn::Result<proc_macro2::TokenStream> {
+    use quote::{format_ident, quote};
 
     let func_name = &func.sig.ident;
     let func_inputs = &func.sig.inputs;
@@ -95,7 +93,7 @@ fn generate_ffi_wrapper_for_item_fn(
             syn::FnArg::Receiver(_) => {
                 return Err(syn::Error::new_spanned(
                     input,
-                    "Standalone functions cannot have self parameter"
+                    "Standalone functions cannot have self parameter",
                 ));
             }
             syn::FnArg::Typed(pat_type) => {
@@ -104,7 +102,7 @@ fn generate_ffi_wrapper_for_item_fn(
                 } else {
                     return Err(syn::Error::new_spanned(
                         &pat_type.pat,
-                        "Expected identifier pattern for parameter"
+                        "Expected identifier pattern for parameter",
                     ));
                 };
 
@@ -150,7 +148,7 @@ fn generate_ffi_wrapper_for_item_fn(
         syn::ReturnType::Default => {
             return Err(syn::Error::new_spanned(
                 &func.sig,
-                "#[ffi_export] requires explicit return type (Result<T, E>)"
+                "#[ffi_export] requires explicit return type (Result<T, E>)",
             ));
         }
         syn::ReturnType::Type(_, ty) => ty,
@@ -170,6 +168,7 @@ fn generate_ffi_wrapper_for_item_fn(
 
         // Generate the FFI wrapper function
         #[no_mangle]
+        #[allow(improper_ctypes_definitions)]
         pub unsafe extern "C" fn #ffi_name(#(#ffi_params),*) -> *mut std::ffi::c_char {
             use crate::ffi::error::{FfiError, serialize_ffi_result};
 
@@ -219,7 +218,7 @@ fn generate_ffi_wrapper_for_item_fn(
 fn generate_ffi_wrapper_for_impl_fn(
     method: &syn::ImplItemFn,
 ) -> syn::Result<proc_macro2::TokenStream> {
-    use quote::{quote, format_ident};
+    use quote::{format_ident, quote};
 
     let method_name = &method.sig.ident;
     let method_inputs = &method.sig.inputs;
@@ -247,7 +246,7 @@ fn generate_ffi_wrapper_for_impl_fn(
                 } else {
                     return Err(syn::Error::new_spanned(
                         &pat_type.pat,
-                        "Expected identifier pattern for parameter"
+                        "Expected identifier pattern for parameter",
                     ));
                 };
 
@@ -297,7 +296,7 @@ fn generate_ffi_wrapper_for_impl_fn(
         syn::ReturnType::Default => {
             return Err(syn::Error::new_spanned(
                 &method.sig,
-                "#[ffi_export] requires explicit return type (Result<T, E>)"
+                "#[ffi_export] requires explicit return type (Result<T, E>)",
             ));
         }
         syn::ReturnType::Type(_, ty) => ty,
@@ -324,6 +323,7 @@ fn generate_ffi_wrapper_for_impl_fn(
 
         // Generate the FFI wrapper function
         #[no_mangle]
+        #[allow(improper_ctypes_definitions)]
         pub unsafe extern "C" fn #ffi_name(#(#ffi_params),*) -> *mut std::ffi::c_char {
             use crate::ffi::error::{FfiError, serialize_ffi_result};
 
@@ -395,4 +395,3 @@ fn is_string_type(ty: &syn::Type) -> bool {
         _ => false,
     }
 }
-

@@ -9,7 +9,19 @@ Any manual changes will be overwritten the next time the script runs.
 
 ## Regenerating Bindings
 
-To regenerate the bindings after making changes to Rust FFI exports:
+The bindings are automatically regenerated as part of the build process.
+
+### Automatic Generation (Recommended)
+
+```bash
+# Using justfile (recommended)
+just gen-bindings
+
+# Or as part of the full build
+just build
+```
+
+### Manual Generation
 
 ```bash
 # From project root
@@ -19,6 +31,27 @@ python3 scripts/generate_dart_bindings.py
 cd ui
 dart format lib/ffi/generated/
 ```
+
+## Build Integration
+
+The binding generator is integrated into the build pipeline:
+
+1. **Build Script** (`core/build.rs`): Tracks FFI source files and triggers rebuild when they change
+2. **Just Recipes**: `just gen-bindings` generates bindings, `just verify-bindings` checks sync status
+3. **CI Checks**: `just ci-check` verifies bindings are in sync, failing the build if they drift
+4. **Pre-Build Hook**: `scripts/flutter_prebuild.sh` can verify bindings before Flutter builds
+
+### Verifying Bindings Are In Sync
+
+```bash
+# Verify bindings match current Rust exports
+just verify-bindings
+
+# Or directly
+python3 scripts/verify_bindings.py
+```
+
+This check is automatically run in CI to catch binding drift.
 
 ## How It Works
 

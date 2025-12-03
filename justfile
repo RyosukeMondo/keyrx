@@ -27,8 +27,8 @@ dev:
 ui:
     cd ui && flutter run -d linux
 
-# Run all quality checks (fmt, clippy, test, docs)
-check: fmt-check clippy test docs-errors
+# Run all quality checks (fmt, clippy, test, docs, bindings)
+check: fmt-check clippy test docs-errors verify-bindings
     @echo "All checks passed!"
 
 # Format all Rust code
@@ -65,8 +65,29 @@ docs-errors:
     @echo "Generating error documentation..."
     cd core && cargo run --bin generate_error_docs
 
+# Generate Dart FFI bindings from Rust exports
+gen-bindings:
+    @echo "Generating Dart FFI bindings..."
+    python3 scripts/generate_dart_bindings.py
+    @echo "Formatting generated Dart code..."
+    cd ui && dart format lib/ffi/generated/bindings_generated.dart
+
+# Verify Dart FFI bindings are in sync with Rust exports
+verify-bindings:
+    @echo "Verifying Dart FFI bindings..."
+    python3 scripts/verify_bindings.py
+
+# Run comprehensive build (error docs + bindings + Rust + Flutter)
+build-full:
+    @echo "Running comprehensive build..."
+    ./scripts/build.sh --release
+
+# CI-specific checks (strict verification, fail on binding drift)
+ci-check: fmt-check clippy test verify-bindings
+    @echo "CI checks passed!"
+
 # Build release binary for current platform
-build: docs-errors
+build: docs-errors gen-bindings
     cd core && cargo build --release
 
 # Build for all supported platforms

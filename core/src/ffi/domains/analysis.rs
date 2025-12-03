@@ -10,7 +10,7 @@ use crate::engine::DecisionType;
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::Path;
 
@@ -38,7 +38,7 @@ impl FfiExportable for AnalysisFfi {
 
 /// Session info for FFI JSON output.
 #[derive(Serialize)]
-struct SessionInfo {
+pub struct SessionInfo {
     path: String,
     name: String,
     created: String,
@@ -64,7 +64,7 @@ struct DecisionBreakdownJson {
 
 /// Analysis result for FFI JSON output.
 #[derive(Serialize)]
-struct AnalysisResultJson {
+pub struct AnalysisResultJson {
     #[serde(rename = "sessionPath")]
     session_path: String,
     #[serde(rename = "eventCount")]
@@ -91,7 +91,7 @@ struct MismatchJson {
 
 /// Replay verification result for FFI JSON output.
 #[derive(Serialize)]
-struct ReplayResultJson {
+pub struct ReplayResultJson {
     #[serde(rename = "totalEvents")]
     total_events: usize,
     matched: usize,
@@ -103,7 +103,7 @@ struct ReplayResultJson {
 /// List all .krx session files in a directory.
 ///
 /// Returns: `[{path, name, created, eventCount, durationMs}, ...]`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn list_sessions(dir_path: &str) -> FfiResult<Vec<SessionInfo>> {
     let dir = Path::new(dir_path);
     if !dir.exists() {
@@ -111,7 +111,7 @@ pub fn list_sessions(dir_path: &str) -> FfiResult<Vec<SessionInfo>> {
     }
 
     let entries = std::fs::read_dir(dir)
-        .map_err(|e| FfiError::internal(&format!("Failed to read directory: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to read directory: {}", e)))?;
 
     let mut sessions: Vec<SessionInfo> = Vec::new();
 
@@ -146,13 +146,13 @@ pub fn list_sessions(dir_path: &str) -> FfiResult<Vec<SessionInfo>> {
 /// Analyze a .krx session file.
 ///
 /// Returns: `{sessionPath, eventCount, durationMs, avgLatencyUs, minLatencyUs, maxLatencyUs, decisionBreakdown}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn analyze_session(path: &str) -> FfiResult<AnalysisResultJson> {
     let content = std::fs::read_to_string(path)
-        .map_err(|e| FfiError::not_found(&format!("Failed to read session: {}", e)))?;
+        .map_err(|e| FfiError::not_found(format!("Failed to read session: {}", e)))?;
 
     let session = crate::engine::SessionFile::from_json(&content)
-        .map_err(|e| FfiError::invalid_input(&format!("Failed to parse session: {}", e)))?;
+        .map_err(|e| FfiError::invalid_input(format!("Failed to parse session: {}", e)))?;
 
     // Calculate statistics
     let mut breakdown = DecisionBreakdownJson::default();
@@ -192,13 +192,13 @@ pub fn analyze_session(path: &str) -> FfiResult<AnalysisResultJson> {
 /// Replay a .krx session with optional verification.
 ///
 /// Returns: `{totalEvents, matched, mismatched, success, mismatches: [{seq, recorded, actual}]}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn replay_session(path: &str, verify: bool) -> FfiResult<ReplayResultJson> {
     // Use tokio runtime for async execution
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .map_err(|e| FfiError::internal(&format!("Failed to create runtime: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to create runtime: {}", e)))?;
 
     let verification = rt.block_on(async {
         let cmd = ReplayCommand::new(std::path::PathBuf::from(path), OutputFormat::Json)
@@ -209,7 +209,7 @@ pub fn replay_session(path: &str, verify: bool) -> FfiResult<ReplayResultJson> {
     });
 
     let verification =
-        verification.map_err(|e| FfiError::internal(&format!("Replay failed: {}", e)))?;
+        verification.map_err(|e| FfiError::internal(format!("Replay failed: {}", e)))?;
 
     let mismatches: Vec<MismatchJson> = verification
         .mismatches
@@ -360,8 +360,8 @@ mod tests {
         let replay = result.unwrap();
 
         assert_eq!(replay.total_events, 3);
-        // Verification result depends on engine state match
-        assert!(replay.success || !replay.success); // Just verify it returns a boolean
+        // Verification result depends on engine state match - just verify it's a boolean
+        let _ = replay.success; // Verify success field exists and is boolean
     }
 
     #[test]

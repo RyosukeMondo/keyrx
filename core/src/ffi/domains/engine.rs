@@ -1,4 +1,5 @@
 //! Engine domain FFI implementation.
+#![allow(dead_code)] // TODO: Remove when #[ffi_export] is uncommented (task 20)
 //!
 //! Implements the FfiExportable trait for engine control, including bypass mode
 //! and state event callbacks. Migrated from exports_engine.rs.
@@ -10,7 +11,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::events::{EventRegistry, EventType};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::sync::OnceLock;
 
@@ -51,7 +52,7 @@ pub(crate) fn global_event_registry() -> &'static EventRegistry {
 /// When bypass mode is active, all key remapping is disabled.
 ///
 /// Returns JSON: `ok:true` or `ok:false`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn is_bypass_mode_active() -> FfiResult<bool> {
     Ok(is_bypass_active())
 }
@@ -60,10 +61,10 @@ fn is_bypass_mode_active() -> FfiResult<bool> {
 ///
 /// # Arguments
 /// * `active` - If true, enable bypass mode (disable remapping).
-///              If false, disable bypass mode (re-enable remapping).
+///   If false, disable bypass mode (re-enable remapping).
 ///
 /// Returns JSON: `ok:null`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 fn set_bypass_mode_state(active: bool) -> FfiResult<()> {
     set_bypass_mode(active);
     Ok(())

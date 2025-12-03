@@ -12,7 +12,7 @@ use crate::scripting::test_discovery::discover_tests as discover_test_functions;
 use crate::scripting::test_runner::{TestRunner, TestSummary};
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -40,7 +40,7 @@ impl FfiExportable for TestingFfi {
 
 /// Discovered test for FFI JSON output.
 #[derive(Serialize)]
-struct DiscoveredTestJson {
+pub struct DiscoveredTestJson {
     name: String,
     file: String,
     line: Option<u32>,
@@ -58,7 +58,7 @@ struct TestResultJson {
 
 /// Test run result for FFI JSON output.
 #[derive(Serialize)]
-struct TestRunResult {
+pub struct TestRunResult {
     total: usize,
     passed: usize,
     failed: usize,
@@ -85,7 +85,7 @@ struct SimMapping {
 
 /// Simulation result for FFI JSON output.
 #[derive(Serialize)]
-struct SimFfiResult {
+pub struct SimFfiResult {
     mappings: Vec<SimMapping>,
     #[serde(rename = "activeLayers")]
     active_layers: Vec<String>,
@@ -95,15 +95,15 @@ struct SimFfiResult {
 /// Discover test functions in a Rhai script.
 ///
 /// Returns JSON: `[{name, file, line}, ...]`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn discover_tests(path: &str) -> FfiResult<Vec<DiscoveredTestJson>> {
     let script = std::fs::read_to_string(path)
-        .map_err(|e| FfiError::not_found(&format!("Failed to read file: {}", e)))?;
+        .map_err(|e| FfiError::not_found(format!("Failed to read file: {}", e)))?;
 
     let engine = rhai::Engine::new();
     let ast = engine
         .compile(&script)
-        .map_err(|e| FfiError::invalid_input(&format!("Compile error: {}", e)))?;
+        .map_err(|e| FfiError::invalid_input(format!("Compile error: {}", e)))?;
 
     let tests = discover_test_functions(&ast);
     let json_tests: Vec<DiscoveredTestJson> = tests
@@ -121,16 +121,17 @@ pub fn discover_tests(path: &str) -> FfiResult<Vec<DiscoveredTestJson>> {
 /// Run tests in a Rhai script with optional filter.
 ///
 /// Returns JSON: `{total, passed, failed, durationMs, results: [{name, passed, error, durationMs}]}`
-#[ffi_export]
+#[allow(improper_ctypes_definitions)]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn run_tests(path: &str, filter: Option<&str>) -> FfiResult<TestRunResult> {
     // Read and compile script
     let script = std::fs::read_to_string(path)
-        .map_err(|e| FfiError::not_found(&format!("Failed to read file: {}", e)))?;
+        .map_err(|e| FfiError::not_found(format!("Failed to read file: {}", e)))?;
 
     let engine = rhai::Engine::new();
     let ast = engine
         .compile(&script)
-        .map_err(|e| FfiError::invalid_input(&format!("Compile error: {}", e)))?;
+        .map_err(|e| FfiError::invalid_input(format!("Compile error: {}", e)))?;
 
     // Discover tests
     let discovered = discover_test_functions(&ast);
@@ -146,11 +147,11 @@ pub fn run_tests(path: &str, filter: Option<&str>) -> FfiResult<TestRunResult> {
 
     // Create runtime and load script
     let mut runtime = RhaiRuntime::new()
-        .map_err(|e| FfiError::internal(&format!("Failed to create runtime: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to create runtime: {}", e)))?;
 
     runtime
         .load_file(path)
-        .map_err(|e| FfiError::internal(&format!("Failed to load script: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to load script: {}", e)))?;
 
     // Run tests
     let runner = TestRunner::new();
@@ -189,14 +190,15 @@ pub fn run_tests(path: &str, filter: Option<&str>) -> FfiResult<TestRunResult> {
 /// * `combo_mode` - If true, keys are pressed simultaneously; otherwise sequentially
 ///
 /// Returns JSON: `{mappings: [{input, output, decision}], activeLayers, pending}`
-#[ffi_export]
+#[allow(improper_ctypes_definitions)]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn simulate(
     keys_json: &str,
     script_path: Option<&str>,
     combo_mode: bool,
 ) -> FfiResult<SimFfiResult> {
     let keys: Vec<SimKeyInput> = serde_json::from_str(keys_json)
-        .map_err(|e| FfiError::invalid_input(&format!("Invalid keys JSON: {}", e)))?;
+        .map_err(|e| FfiError::invalid_input(format!("Invalid keys JSON: {}", e)))?;
 
     if keys.is_empty() {
         return Ok(SimFfiResult {
@@ -229,11 +231,11 @@ pub fn simulate(
     // Use tokio runtime for async execution
     let rt = tokio::runtime::Builder::new_current_thread()
         .build()
-        .map_err(|e| FfiError::internal(&format!("Failed to create runtime: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to create runtime: {}", e)))?;
 
     let output = rt
         .block_on(cmd.execute())
-        .map_err(|e| FfiError::internal(&format!("Simulation failed: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Simulation failed: {}", e)))?;
 
     // Convert to FFI result format
     let mappings: Vec<SimMapping> = output

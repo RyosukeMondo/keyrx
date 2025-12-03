@@ -9,7 +9,7 @@ use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
 use crate::scripting::with_active_runtime;
 use crate::traits::ScriptRuntime;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::Path;
 
@@ -56,7 +56,7 @@ pub struct ValidationResult {
 /// # Returns
 /// * `Ok(())` on success
 /// * `Err(FfiError)` if file not found, invalid UTF-8, syntax error, or engine not initialized
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn load_script(path: &str) -> FfiResult<()> {
     let script_name = Path::new(path)
         .file_name()
@@ -86,7 +86,7 @@ pub fn load_script(path: &str) -> FfiResult<()> {
                 error = %err,
                 "Script syntax/execution error"
             );
-            Err(FfiError::invalid_input(&format!("Script error: {}", err)))
+            Err(FfiError::invalid_input(format!("Script error: {}", err)))
         }
         None => {
             tracing::error!(
@@ -104,10 +104,10 @@ pub fn load_script(path: &str) -> FfiResult<()> {
 /// Validate a Rhai script without executing it.
 ///
 /// Returns: `{valid: bool, errors: [{line, column, message}]}`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn check_script(path: &str) -> FfiResult<ValidationResult> {
     let script = std::fs::read_to_string(path)
-        .map_err(|e| FfiError::not_found(&format!("Failed to read file: {}", e)))?;
+        .map_err(|e| FfiError::not_found(format!("Failed to read file: {}", e)))?;
 
     let engine = rhai::Engine::new();
     let result = match engine.compile(&script) {
@@ -144,11 +144,11 @@ pub fn check_script(path: &str) -> FfiResult<ValidationResult> {
 /// # Returns
 /// * `Ok(())` on success
 /// * `Err(FfiError)` if engine not initialized or command fails
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn eval(command: &str) -> FfiResult<()> {
     match with_active_runtime(|runtime| runtime.execute(command)) {
         Some(Ok(_)) => Ok(()),
-        Some(Err(err)) => Err(FfiError::invalid_input(&format!("Eval error: {}", err))),
+        Some(Err(err)) => Err(FfiError::invalid_input(format!("Eval error: {}", err))),
         None => Err(FfiError::internal("Engine not initialized")),
     }
 }

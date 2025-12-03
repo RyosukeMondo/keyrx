@@ -11,7 +11,7 @@ use crate::drivers::keycodes::key_definitions;
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
-use keyrx_ffi_macros::ffi_export;
+// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -61,7 +61,7 @@ impl DeviceFfi {
 
 /// Device info with profile status for FFI.
 #[derive(Serialize)]
-struct DeviceInfoWithProfile {
+pub struct DeviceInfoWithProfile {
     name: String,
     #[serde(rename = "vendorId")]
     vendor_id: u16,
@@ -75,10 +75,10 @@ struct DeviceInfoWithProfile {
 /// Return list of keyboard devices as `ok:<json>` (or `error:<message>`).
 ///
 /// Returns JSON array: `[{name, vendorId, productId, path, hasProfile}, ...]`
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn list_devices() -> FfiResult<Vec<DeviceInfoWithProfile>> {
     let devices = drivers::list_keyboards()
-        .map_err(|e| FfiError::internal(&format!("Failed to list keyboards: {}", e)))?;
+        .map_err(|e| FfiError::internal(format!("Failed to list keyboards: {}", e)))?;
 
     let enriched: Vec<DeviceInfoWithProfile> = devices
         .into_iter()
@@ -107,11 +107,11 @@ pub fn list_devices() -> FfiResult<Vec<DeviceInfoWithProfile>> {
 /// # Returns
 /// * `Ok(())` on success
 /// * `Err(FfiError)` if device path does not exist
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn select_device(ctx: &mut FfiContext, path: &str) -> FfiResult<()> {
     let device_path = PathBuf::from(path);
     if !device_path.exists() {
-        return Err(FfiError::not_found(&format!(
+        return Err(FfiError::not_found(format!(
             "Device path does not exist: {}",
             path
         )));
@@ -128,14 +128,13 @@ pub fn select_device(ctx: &mut FfiContext, path: &str) -> FfiResult<()> {
 }
 
 /// Return canonical key registry as `ok:<json>` (or `error:<message>`).
-#[ffi_export]
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn list_keys() -> FfiResult<Vec<serde_json::Value>> {
     let keys = key_definitions();
-    let json_keys: Vec<serde_json::Value> = keys
-        .iter()
-        .map(|k| serde_json::to_value(k).unwrap())
-        .collect();
-    Ok(json_keys)
+    let json_keys: Result<Vec<serde_json::Value>, _> =
+        keys.iter().map(serde_json::to_value).collect();
+
+    json_keys.map_err(|e| FfiError::internal(format!("Failed to serialize key definitions: {}", e)))
 }
 
 #[cfg(test)]
