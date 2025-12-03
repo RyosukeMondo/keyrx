@@ -459,7 +459,7 @@ pub fn merge_cli_overrides(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
+    use crate::discovery::test_utils::config_env_lock;
     use std::env;
     use tempfile::tempdir;
 
@@ -528,7 +528,6 @@ max_events_history = 500
     }
 
     #[test]
-    #[serial]
     fn load_config_returns_defaults_when_file_not_found() {
         let temp = tempdir().unwrap();
         let nonexistent = temp.path().join("nonexistent.toml");
@@ -538,7 +537,6 @@ max_events_history = 500
     }
 
     #[test]
-    #[serial]
     fn load_config_from_file() {
         let temp = tempdir().unwrap();
         let config_path = temp.path().join("config.toml");
@@ -564,7 +562,6 @@ latency_caution_us = 12000
     }
 
     #[test]
-    #[serial]
     fn load_config_handles_invalid_toml() {
         let temp = tempdir().unwrap();
         let config_path = temp.path().join("config.toml");
@@ -672,13 +669,18 @@ latency_caution_us = 12000
     }
 
     #[test]
-    #[serial]
     fn load_config_uses_default_path_when_none() {
+        // Use shared lock for XDG_CONFIG_HOME modification
+        let _guard = config_env_lock().lock().unwrap();
+
         // Create a temp directory and set it as XDG_CONFIG_HOME
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
+        let prev_home = env::var("HOME").ok();
 
         env::set_var("XDG_CONFIG_HOME", temp.path());
+        // Remove HOME to ensure XDG_CONFIG_HOME is used
+        env::remove_var("HOME");
 
         // Create keyrx config directory
         let keyrx_dir = temp.path().join("keyrx");
@@ -701,6 +703,10 @@ tap_timeout_ms = 222
         match prev_xdg {
             Some(val) => env::set_var("XDG_CONFIG_HOME", val),
             None => env::remove_var("XDG_CONFIG_HOME"),
+        }
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
         }
     }
 }
