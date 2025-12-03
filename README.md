@@ -61,6 +61,54 @@ keyrx simulate --input "CapsLock,A,B,Insert" --script scripts/std/example.rhai
 keyrx bench --iterations 10000
 ```
 
+## Configuration
+
+KeyRx behavior can be customized via a configuration file or CLI flags.
+
+### Configuration File
+
+Create `~/.config/keyrx/config.toml` to customize KeyRx settings:
+
+```toml
+[timing]
+tap_timeout_ms = 200        # Tap vs hold detection (50-1000 ms)
+combo_timeout_ms = 50       # Combo key window (10-200 ms)
+hold_delay_ms = 0           # Hold trigger delay (0-500 ms)
+
+[ui]
+max_events_history = 300    # Event buffer size (50-1000)
+animation_duration_ms = 150 # UI animation speed (50-500 ms)
+
+[performance]
+latency_warning_us = 20000  # Warning threshold (20ms)
+latency_caution_us = 10000  # Caution threshold (10ms)
+regression_threshold_us = 100
+latency_threshold_ns = 1000000
+event_gap_us = 1000
+
+[paths]
+scripts_dir = "scripts"     # Rhai scripts directory
+```
+
+See [.keyrx/config.toml.example](.keyrx/config.toml.example) for complete documentation.
+
+### CLI Overrides
+
+Configuration values can be overridden via command-line flags:
+
+```bash
+# Override timing settings
+keyrx run --config ~/.config/keyrx/config.toml --tap-timeout 250
+
+# Use custom config location
+keyrx run --config /path/to/custom/config.toml
+
+# Combine config file with script
+keyrx run --config my-config.toml --script my-script.rhai
+```
+
+CLI flags take precedence over file settings. If no config file is specified, KeyRx uses default values.
+
 ## Example Script
 
 Create a file `my-config.rhai`:

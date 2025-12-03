@@ -249,7 +249,7 @@
   - _Requirements: NFR - Reliability_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer | Task: Add unit tests for Dart config module: verify all constants have expected values, verify barrel export includes all modules, verify no runtime errors when importing config. | Restrictions: Follow existing Flutter test patterns | _Leverage: ui/test/ existing tests_ | Success: Config tests pass. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 31. Update documentation
+- [x] 31. Update documentation
   - Files: README.md, inline doc comments
   - Document new config system
   - Purpose: Help users understand configuration
