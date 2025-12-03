@@ -212,7 +212,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration test engineer | Task: Create core/tests/validation_integration.rs. Test ValidationEngine with scripts from scripts/ directory. Verify no false positives on valid example scripts. Test JSON output parsing. Test CLI exit codes. Test --config flag with custom config | Restrictions: ≤200 lines; use existing test fixtures | Success: Integration tests pass. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 24. Update documentation
+- [x] 24. Update documentation
   - Files: `README.md` (extend)
   - Document validation features in README
   - Add examples of check command usage including --config
