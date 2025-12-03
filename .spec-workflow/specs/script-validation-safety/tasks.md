@@ -220,7 +220,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer | Task: Add "## Script Validation" section to README.md. Document keyrx check flags (--strict, --coverage, --visual, --json, --config, --show-config). Show example output. Explain error/warning categories. Document ~/.config/keyrx/validation.toml format | Restrictions: ≤80 lines added; include code examples | Success: Users understand validation features and config from README. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 25. Verify all requirements met
+- [x] 25. Verify all requirements met
   - Files: N/A (manual verification)
   - Run full test suite
   - Verify each requirement (REQ-1 through REQ-7) has corresponding tests
