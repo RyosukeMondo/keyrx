@@ -210,6 +210,11 @@ pub fn record_output(action: OutputAction) {
     TEST_CONTEXT.with(|ctx| ctx.borrow_mut().add_output(action));
 }
 
+/// Add an input event to the test context (for golden session replay).
+pub fn record_input(event: InputEvent) {
+    TEST_CONTEXT.with(|ctx| ctx.borrow_mut().add_input(event));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -55,21 +55,21 @@
 
 ## Golden Sessions
 
-- [ ] 8. Implement golden session data structures
+- [x] 8. Implement golden session data structures
   - Files: core/src/uat/golden.rs (new)
   - Create GoldenSession struct and JSON serialization
   - _Leverage: core/src/session/ format patterns_
   - _Requirements: 2.6_
   - _Prompt: Role: Data modeling engineer | Task: Create golden.rs with GoldenSession struct (name, version, created, metadata, events, expected_outputs) using serde for JSON. Ensure human-readable output | Restrictions: ≤100 lines; JSON format matches design spec | Success: Golden sessions serialize to readable JSON._
 
-- [ ] 9. Implement golden session recording
+- [x] 9. Implement golden session recording
   - Files: core/src/uat/golden.rs (extend)
   - Add GoldenSessionManager.record() method
   - _Leverage: core/src/session/ recording logic_
   - _Requirements: 2.1_
   - _Prompt: Role: Session recording engineer | Task: Extend golden.rs with GoldenSessionManager.record(name, script) that executes script, captures events and outputs, saves to tests/golden/<name>.krx as JSON | Restrictions: ≤120 lines; reuse session recording; validate name format | Success: `keyrx record-golden basic --script test.rhai` creates golden session._
 
-- [ ] 10. Implement golden session verification
+- [x] 10. Implement golden session verification
   - Files: core/src/uat/golden.rs (extend)
   - Add verify() method with semantic comparison
   - _Leverage: session replay logic_

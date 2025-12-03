@@ -32,7 +32,7 @@ pub use registry::RemapRegistry;
 pub use runtime::RhaiRuntime;
 pub use test_discovery::{discover_tests, filter_tests, matches_filter, DiscoveredTest};
 pub use test_harness::{
-    get_pending_inputs, get_test_context, record_output, reset_test_context, AssertionResult,
-    TestContext, TestHarness,
+    get_pending_inputs, get_test_context, record_input, record_output, reset_test_context,
+    AssertionResult, TestContext, TestHarness,
 };
 pub use test_runner::{TestResult, TestRunner, TestSummary};
