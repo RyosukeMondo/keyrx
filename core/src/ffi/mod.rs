@@ -3,14 +3,16 @@
 //! The exports are organized into domain-specific modules:
 //! - `exports`: Core init/common functions
 //! - `exports_device`: Device and key definitions
+//! - `exports_discovery`: Device key discovery session management
 //! - `exports_engine`: Engine control and state callbacks
 //! - `exports_script`: Script loading and validation
-//! - `exports_session`: Discovery session management
+//! - `exports_session`: Session analysis, recording, benchmarking, diagnostics
 //! - `exports_testing`: Test discovery and execution
 
 mod callbacks;
 mod exports;
 mod exports_device;
+mod exports_discovery;
 mod exports_engine;
 mod exports_script;
 mod exports_session;
@@ -22,6 +24,7 @@ pub use callbacks::{
 };
 pub use exports::*;
 pub use exports_device::*;
+pub use exports_discovery::*;
 pub use exports_engine::*;
 pub use exports_script::*;
 pub use exports_session::*;
