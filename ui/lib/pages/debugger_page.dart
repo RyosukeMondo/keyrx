@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/config.dart';
 import '../mixins/stream_subscriber.dart';
 import '../services/engine_service.dart';
 import 'debugger_meters.dart';
@@ -26,11 +27,12 @@ class DebuggerPage extends StatefulWidget {
 
 class _DebuggerPageState extends State<DebuggerPage>
     with SingleTickerProviderStateMixin, StreamSubscriber<DebuggerPage> {
-  static const Duration _animationDuration = Duration(milliseconds: 150);
+  static const Duration _animationDuration =
+      Duration(milliseconds: TimingConfig.animationDurationMs);
 
   final List<EngineSnapshot> _recent = [];
   bool _isRecording = true;
-  final int _maxEvents = 300;
+  final int _maxEvents = ThresholdConstants.maxEventsHistory;
 
   // Track previous state for change detection/animation
   Set<String> _previousLayers = {};
@@ -48,7 +50,7 @@ class _DebuggerPageState extends State<DebuggerPage>
 
     // Set up pulse animation for state changes
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: TimingConfig.pulseAnimationMs),
       vsync: this,
     );
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
