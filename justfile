@@ -59,3 +59,23 @@ bench:
 clean:
     cd core && cargo clean
     cd ui && flutter clean
+
+# Build release binary for current platform
+build:
+    cd core && cargo build --release
+
+# Build for all supported platforms
+build-all: build-linux build-windows
+    @echo "All platform builds complete!"
+
+# Build release binary for Linux x86_64
+build-linux:
+    cd core && cargo build --release --target x86_64-unknown-linux-gnu
+
+# Build release binary for Windows x86_64 (requires cross)
+build-windows:
+    cd core && cross build --release --target x86_64-pc-windows-msvc
+
+# Create a new release with the specified version
+release version:
+    ./scripts/release.sh {{version}}
