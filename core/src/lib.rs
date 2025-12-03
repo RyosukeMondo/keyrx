@@ -10,6 +10,9 @@
 // KeyrxError is intentionally large to include all necessary context
 #![allow(clippy::result_large_err)]
 
+// Re-export procedural macros
+pub use keyrx_ffi_macros::ffi_export;
+
 pub mod cli;
 pub mod config;
 pub mod discovery;

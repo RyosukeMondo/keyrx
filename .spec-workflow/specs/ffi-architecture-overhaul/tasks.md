@@ -44,7 +44,7 @@
 
 ## Phase 2: Procedural Macro
 
-- [ ] 5. Set up procedural macro crate
+- [x] 5. Set up procedural macro crate
   - Files: `core/ffi-macros/Cargo.toml`, `core/ffi-macros/src/lib.rs`
   - Create new crate `keyrx-ffi-macros` as proc-macro
   - Add dependencies: syn, quote, proc-macro2
