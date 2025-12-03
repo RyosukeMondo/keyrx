@@ -7,6 +7,7 @@ use super::callbacks::{callback_registry, DiscoveryEventCallback};
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
 use crate::scripting::with_active_runtime;
 use crate::traits::ScriptRuntime;
+use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
 use std::ptr;
@@ -68,6 +69,93 @@ pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
             -4
         }
     }
+}
+
+/// Script validation error detail.
+#[derive(Serialize)]
+struct ValidationError {
+    line: Option<usize>,
+    column: Option<usize>,
+    message: String,
+}
+
+/// Script validation result.
+#[derive(Serialize)]
+struct ValidationResult {
+    valid: bool,
+    errors: Vec<ValidationError>,
+}
+
+/// Validate a Rhai script without executing it.
+///
+/// Returns JSON: `ok:{valid: bool, errors: [{line, column, message}]}`
+///
+/// Caller must free with `keyrx_free_string`.
+///
+/// # Safety
+/// `path` must be a valid null-terminated UTF-8 string.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_check_script(path: *const c_char) -> *mut c_char {
+    if path.is_null() {
+        return CString::new("error:null pointer")
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let path_str = match CStr::from_ptr(path).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return CString::new("error:invalid utf8")
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let script = match std::fs::read_to_string(path_str) {
+        Ok(s) => s,
+        Err(err) => {
+            let result = ValidationResult {
+                valid: false,
+                errors: vec![ValidationError {
+                    line: None,
+                    column: None,
+                    message: format!("Failed to read file: {err}"),
+                }],
+            };
+            let payload = serde_json::to_string(&result)
+                .map(|json| format!("ok:{json}"))
+                .unwrap_or_else(|e| format!("error:{e}"));
+            return CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let engine = rhai::Engine::new();
+    let result = match engine.compile(&script) {
+        Ok(_) => ValidationResult {
+            valid: true,
+            errors: vec![],
+        },
+        Err(e) => {
+            let position = e.position();
+            let (line, column) = if position.is_none() {
+                (None, None)
+            } else {
+                (position.line(), position.position())
+            };
+            ValidationResult {
+                valid: false,
+                errors: vec![ValidationError {
+                    line,
+                    column,
+                    message: e.to_string(),
+                }],
+            }
+        }
+    };
+
+    let payload = serde_json::to_string(&result)
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
+
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
 }
 
 /// Evaluate a console command against the active runtime.
@@ -254,6 +342,82 @@ mod tests {
         static INVALID_UTF8: [u8; 2] = [0xFF, 0x00];
         let result = unsafe { keyrx_load_script(INVALID_UTF8.as_ptr() as *const c_char) };
         assert_eq!(result, -2);
+    }
+
+    #[test]
+    fn check_script_valid_syntax() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::new().unwrap();
+        writeln!(temp, "let x = 1 + 2;").unwrap();
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        assert_eq!(result["valid"], true);
+        assert!(result["errors"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn check_script_invalid_syntax() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::new().unwrap();
+        writeln!(temp, "let x = (1 + 2").unwrap(); // Missing closing paren
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        assert_eq!(result["valid"], false);
+        assert!(!result["errors"].as_array().unwrap().is_empty());
+
+        let error = &result["errors"][0];
+        assert!(error["message"].as_str().unwrap().len() > 0);
+    }
+
+    #[test]
+    fn check_script_missing_file() {
+        let path = CString::new("/nonexistent/script.rhai").unwrap();
+        let ptr = unsafe { keyrx_check_script(path.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        assert_eq!(result["valid"], false);
+        assert!(result["errors"][0]["message"]
+            .as_str()
+            .unwrap()
+            .contains("Failed to read file"));
+    }
+
+    #[test]
+    fn check_script_null_pointer() {
+        let ptr = unsafe { keyrx_check_script(ptr::null()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+        assert!(raw.starts_with("error:"));
     }
 
     #[test]

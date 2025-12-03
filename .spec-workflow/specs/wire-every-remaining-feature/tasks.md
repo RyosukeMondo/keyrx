@@ -16,7 +16,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_select_device` FFI export that takes device path as CString, sets it as active device in engine config, returns 0 on success | Restrictions: ≤30 lines; validate path exists | _Leverage: device registry | _Requirements: 1 | Success: Selected device persists and is used on engine start._
 
-- [ ] 3. Add script validation FFI export
+- [x] 3. Add script validation FFI export
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_check_script(path)` returning validation result JSON
   - _Leverage: core/src/cli/commands/check.rs_
