@@ -3,7 +3,7 @@
 use super::run_builder::RuntimeBuilder;
 use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::Config;
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 use crate::drivers::DeviceInfo;
@@ -493,6 +493,37 @@ impl RunCommand {
             }
         }
         Ok(())
+    }
+}
+
+impl Command for RunCommand {
+    fn name(&self) -> &str {
+        "run"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        use crate::cli::ExitCode;
+
+        // Create a new runtime for async execution
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(runtime) => runtime,
+            Err(err) => {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to create tokio runtime: {err}"),
+                )
+            }
+        };
+
+        // Run the async logic and convert Result to CommandResult
+        match rt.block_on(self.run()) {
+            Ok(()) => CommandResult::success(()),
+            Err(err) => {
+                use crate::cli::HasExitCode;
+                let exit_code = err.exit_code();
+                CommandResult::failure(exit_code, format!("{err:#}"))
+            }
+        }
     }
 }
 

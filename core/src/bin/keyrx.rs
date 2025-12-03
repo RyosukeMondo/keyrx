@@ -460,15 +460,14 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             combo_timeout,
             hold_delay,
         } => {
+            use keyrx_core::cli::Command;
             let mut config = config;
             merge_cli_overrides(&mut config, tap_timeout, combo_timeout, hold_delay);
-            let result = RunCommand::new(script, debug, mock, device, ctx.output_format())
+            let mut cmd = RunCommand::new(script, debug, mock, device, ctx.output_format())
                 .with_record_path(record)
                 .with_trace_path(trace)
-                .with_config(config)
-                .run()
-                .await;
-            convert_result(result)
+                .with_config(config);
+            cmd.execute(ctx)
         }
         Commands::State {
             layers,
