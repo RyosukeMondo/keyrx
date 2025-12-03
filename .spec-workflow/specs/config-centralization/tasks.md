@@ -93,7 +93,7 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Refactor all CLI command files to use ExitCode enum from crate::config::exit_codes instead of local EXIT_* constants. Files: test.rs, replay.rs, golden.rs, uat.rs, regression.rs, ci_check/ci_check_summary.rs. Remove duplicated constant definitions. | Restrictions: Maintain exact same exit code semantics | _Leverage: core/src/config/exit_codes.rs_ | Success: All CLI commands use centralized ExitCode, no duplicate definitions. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 12. Refactor remaining Rust files to use config constants
+- [x] 12. Refactor remaining Rust files to use config constants
   - Files: `modifiers.rs`, `builtins.rs`, `repl.rs`, `simulate.rs`, `bench.rs`, `perf.rs`
   - Replace remaining hardcoded values
   - Purpose: Complete Rust config centralization
@@ -103,7 +103,7 @@
 
 ## Phase 3: TOML Config Loader
 
-- [ ] 13. Create config loader module
+- [x] 13. Create config loader module
   - File: `core/src/config/loader.rs`
   - Implement TOML loading with validation and defaults
   - Purpose: Enable runtime configuration via file
@@ -111,7 +111,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create `core/src/config/loader.rs` with: Config struct (timing, ui, performance, paths sections), load_config(path: Option<&Path>) -> Config function that loads TOML with serde, validate_config() to check ranges, merge_cli_overrides() to apply CLI args. Use dirs crate for XDG path resolution. Return defaults if file not found. | Restrictions: Log warnings for invalid values but don't crash, clamp values to valid ranges | _Leverage: .keyrx/quality-gates.toml, toml crate, dirs crate_ | Success: Config loads from file, falls back to defaults, validates ranges. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 14. Create default config.toml template
+- [x] 14. Create default config.toml template
   - File: `.keyrx/config.toml.example`
   - Document all configurable options
   - Purpose: Provide user documentation for config file
