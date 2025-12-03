@@ -138,7 +138,7 @@
   - _Requirements: 5.1, 1.1_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating FFI code | Task: Migrate exports_engine.rs to EngineFfi following established pattern | Restrictions: Maintain same functionality, use #[ffi_export] macro, handle engine state carefully | _Leverage: exports_engine.rs as source, DiscoveryFfi as pattern | Success: EngineFfi works with new architecture, state management correct, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Migrate remaining domains (Device, Testing, Analysis, Diagnostics, Script)
+- [x] 14. Migrate remaining domains (Device, Testing, Analysis, Diagnostics, Script)
   - Files: `core/src/ffi/domains/{device,testing,analysis,diagnostics,script}.rs`
   - Apply same pattern to all remaining exports_*.rs files
   - Consolidate smaller domains if < 3 functions
