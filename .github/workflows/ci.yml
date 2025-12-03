@@ -52,6 +52,26 @@ jobs:
         run: cargo nextest run --all-features --profile ci
         working-directory: ./core
 
+  uat:
+    name: UAT Tests
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+      - name: Build
+        run: cargo build --release
+        working-directory: ./core
+      - name: Run UAT tests
+        run: cargo run --release --bin keyrx -- uat --gate default
+        working-directory: ./core
+      - name: Run regression tests
+        run: cargo run --release --bin keyrx -- regression
+        working-directory: ./core
+
   test-flutter:
     name: Test Flutter
     needs: check
