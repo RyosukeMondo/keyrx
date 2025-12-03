@@ -160,7 +160,7 @@
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Python/Dart Developer with FFI experience | Task: Create binding generator script producing Dart FFI bindings from Rust exports | Restrictions: Must generate type-safe bindings, handle all parameter types, output to ui/lib/ffi/generated/ | _Leverage: dart:ffi documentation, current KeyrxBridge patterns | Success: Script generates correct Dart bindings, types match Rust, integration works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Integrate binding generation into build
+- [x] 16. Integrate binding generation into build
   - Files: `core/Cargo.toml`, `ui/pubspec.yaml`, `scripts/build.sh`
   - Add build.rs or Makefile step to run generator
   - Add Flutter pre-build hook to verify bindings
