@@ -32,7 +32,7 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with panic handling expertise | Task: Create HookCallback with panic catching in safety/callback.rs | Restrictions: Catch all panics, log details, safe fallback | _Leverage: std::panic::catch_unwind | Success: Panics in callbacks don't break hooks | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Create ThreadLocalState wrapper
+- [x] 4. Create ThreadLocalState wrapper
   - File: `core/src/drivers/windows/safety/thread_local.rs`
   - Encapsulate thread-local storage
   - Safe initialization and access
