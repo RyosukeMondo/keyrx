@@ -12,6 +12,7 @@ import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
+import 'widgets/developer_drawer.dart';
 
 void main() {
   runApp(
@@ -66,6 +67,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  DeveloperTool? _selectedDevTool;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
@@ -127,9 +130,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Initialize engine on startup
+    // Initialize engine and load developer mode on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeEngine();
+      context.read<AppState>().loadDeveloperMode();
     });
   }
 
@@ -150,21 +154,49 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final registry = context.read<ServiceRegistry>();
+    final appState = context.watch<AppState>();
     final pages = _buildPages(registry);
+
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: DeveloperDrawer(
+        selectedTool: _selectedDevTool,
+        onToolSelected: _onDevToolSelected,
+        onClose: () => _scaffoldKey.currentState?.closeEndDrawer(),
+      ),
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: _selectedIndex,
+            selectedIndex: _selectedDevTool == null ? _selectedIndex : null,
             onDestinationSelected: (index) {
               setState(() {
                 _selectedIndex = index;
+                _selectedDevTool = null;
               });
             },
             labelType: NavigationRailLabelType.all,
             leading: const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Icon(Icons.keyboard_alt, size: 32),
+            ),
+            trailing: Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (appState.isDeveloperMode)
+                    IconButton(
+                      icon: Icon(
+                        _selectedDevTool != null
+                            ? Icons.developer_mode
+                            : Icons.developer_mode_outlined,
+                      ),
+                      tooltip: 'Developer Tools',
+                      onPressed: () =>
+                          _scaffoldKey.currentState?.openEndDrawer(),
+                    ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
             destinations: _destinations
                 .map(
@@ -177,10 +209,62 @@ class _HomePageState extends State<HomePage> {
                 .toList(),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: pages[_selectedIndex]),
+          Expanded(child: _buildCurrentPage(registry, pages)),
         ],
       ),
       bottomNavigationBar: _buildStatusBar(),
+    );
+  }
+
+  void _onDevToolSelected(DeveloperTool tool) {
+    setState(() {
+      _selectedDevTool = tool;
+    });
+    _scaffoldKey.currentState?.closeEndDrawer();
+  }
+
+  Widget _buildCurrentPage(ServiceRegistry registry, List<Widget> pages) {
+    if (_selectedDevTool == null) {
+      return pages[_selectedIndex];
+    }
+    return _buildDevToolPage(registry);
+  }
+
+  Widget _buildDevToolPage(ServiceRegistry registry) {
+    switch (_selectedDevTool!) {
+      case DeveloperTool.debugger:
+        return DebuggerPage(engineService: registry.engineService);
+      case DeveloperTool.console:
+        return ConsolePage(engineService: registry.engineService);
+      case DeveloperTool.testRunner:
+      case DeveloperTool.simulator:
+      case DeveloperTool.analyzer:
+      case DeveloperTool.benchmark:
+      case DeveloperTool.doctor:
+      case DeveloperTool.replay:
+      case DeveloperTool.discovery:
+        return _buildPlaceholderPage(_selectedDevTool!.label);
+    }
+  }
+
+  Widget _buildPlaceholderPage(String title) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.construction, size: 64, color: Colors.grey[600]),
+          const SizedBox(height: 16),
+          Text(
+            '$title - Coming Soon',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This developer tool is under construction.',
+            style: TextStyle(color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -209,6 +293,33 @@ class _HomePageState extends State<HomePage> {
                   'Script: ${appState.loadedScript}',
                   style: const TextStyle(fontSize: 12),
                 ),
+              const SizedBox(width: 16),
+              InkWell(
+                onTap: appState.toggleDeveloperMode,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      appState.isDeveloperMode
+                          ? Icons.developer_mode
+                          : Icons.developer_mode_outlined,
+                      size: 14,
+                      color:
+                          appState.isDeveloperMode ? Colors.amber : Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Dev',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: appState.isDeveloperMode
+                            ? Colors.amber
+                            : Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(width: 16),
               Text(
                 'v${appState.version}',
