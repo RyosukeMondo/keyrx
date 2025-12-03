@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
@@ -282,6 +283,16 @@ class FakeBridge implements KeyrxBridge {
   void emitState(BridgeState state) {
     _stateController.add(state);
   }
+
+  @override
+  ValidationResult validateScript(String script, [ValidationOptions? options]) =>
+      const ValidationResult(isValid: true, errors: [], warnings: []);
+
+  @override
+  List<String> suggestKeys(String partial) => const [];
+
+  @override
+  List<String> allKeyNames() => const [];
 
   @override
   Future<void> dispose() async {

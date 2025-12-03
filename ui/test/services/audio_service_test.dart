@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/audio_service_impl.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
@@ -174,6 +175,16 @@ class _FakeBridge implements KeyrxBridge {
   @override
   RecordingStopResult stopRecording() =>
       RecordingStopResult.error('not implemented');
+
+  @override
+  ValidationResult validateScript(String script, [ValidationOptions? options]) =>
+      const ValidationResult(isValid: true, errors: [], warnings: []);
+
+  @override
+  List<String> suggestKeys(String partial) => const [];
+
+  @override
+  List<String> allKeyNames() => const [];
 }
 
 void main() {
