@@ -104,28 +104,28 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create DeviceService with: listDevices() → List<KeyboardDevice>, selectDevice(path), hasProfile(deviceId) → bool. Use KeyrxBridge | Restrictions: ≤80 lines; follow EngineService patterns | _Leverage: engine_service.dart | _Requirements: 1 | Success: Device operations abstracted behind clean service interface._
 
-- [ ] 15. Create TestService
+- [x] 15. Create TestService
   - Files: ui/lib/services/test_service.dart (new)
   - Implement test discovery and execution
   - _Leverage: ui/lib/services/engine_service.dart patterns_
   - _Requirements: 5_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create TestService with: discoverTests(scriptPath) → List<TestCase>, runTests(scriptPath, filter) → TestResults. Parse JSON from bridge | Restrictions: ≤100 lines; typed models | _Leverage: engine_service.dart | _Requirements: 5 | Success: Test execution abstracted with progress streaming._
 
-- [ ] 16. Create SimulationService
+- [x] 16. Create SimulationService
   - Files: ui/lib/services/simulation_service.dart (new)
   - Implement key sequence simulation
   - _Leverage: ui/lib/services/engine_service.dart patterns_
   - _Requirements: 6_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create SimulationService with: simulate(keys, comboMode) → SimulationResult. Models for KeyInput, KeyMapping, SimulationResult | Restrictions: ≤80 lines; clean API | _Leverage: engine_service.dart | _Requirements: 6 | Success: Simulation callable with typed inputs/outputs._
 
-- [ ] 17. Create SessionService
+- [x] 17. Create SessionService
   - Files: ui/lib/services/session_service.dart (new)
   - Implement session listing, analysis, replay
   - _Leverage: ui/lib/services/engine_service.dart patterns_
   - _Requirements: 7, 10_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create SessionService with: listSessions() → List<SessionInfo>, analyze(path) → SessionAnalysis, replay(path, speed, verify) → Stream<ReplayEvent> | Restrictions: ≤120 lines; stream for replay | _Leverage: engine_service.dart | _Requirements: 7, 10 | Success: Full session management through service._
 
-- [ ] 18. Create BenchmarkService and DoctorService
+- [x] 18. Create BenchmarkService and DoctorService
   - Files: ui/lib/services/benchmark_service.dart (new), ui/lib/services/doctor_service.dart (new)
   - Implement benchmarking and diagnostics
   - _Leverage: ui/lib/services/engine_service.dart patterns_
@@ -134,14 +134,14 @@
 
 ## User Interface Pages
 
-- [ ] 19. Create DevicesPage
+- [x] 19. Create DevicesPage
   - Files: ui/lib/pages/devices_page.dart (new)
   - Device list with selection and refresh
   - _Leverage: ui/lib/pages/debugger_page.dart layout patterns_
   - _Requirements: 1_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create DevicesPage showing device list with ListTile for each (name, path, profile badge). Tap to select, pull-to-refresh, empty state with troubleshooting | Restrictions: ≤150 lines; Material 3 design | _Leverage: debugger_page.dart | _Requirements: 1 | Success: Users can see and select their keyboard device._
 
-- [ ] 20. Create RunControlsPage
+- [x] 20. Create RunControlsPage
   - Files: ui/lib/pages/run_controls_page.dart (new)
   - Central engine control panel
   - _Leverage: ui/lib/pages/training_screen.dart patterns_
