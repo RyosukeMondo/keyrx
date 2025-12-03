@@ -1,4 +1,4 @@
-use crate::config::MICROS_PER_MS;
+use crate::config::{MAX_COMBO_KEYS, MAX_PENDING_DECISIONS, MICROS_PER_MS, MIN_COMBO_KEYS};
 use crate::engine::{HoldAction, InputEvent, KeyCode, LayerAction, TimingConfig};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
@@ -82,7 +82,7 @@ pub struct DecisionQueue {
 
 impl DecisionQueue {
     /// Maximum number of pending decisions to track.
-    pub const MAX_PENDING: usize = 32;
+    pub const MAX_PENDING: usize = MAX_PENDING_DECISIONS;
 
     pub fn new(config: TimingConfig) -> Self {
         Self {
@@ -140,7 +140,7 @@ impl DecisionQueue {
         if self.pending.len() >= Self::MAX_PENDING {
             return false;
         }
-        if keys.len() < 2 || keys.len() > 4 {
+        if keys.len() < MIN_COMBO_KEYS || keys.len() > MAX_COMBO_KEYS {
             return false;
         }
 
@@ -151,7 +151,7 @@ impl DecisionQueue {
             }
         }
 
-        if unique_keys.len() < 2 {
+        if unique_keys.len() < MIN_COMBO_KEYS {
             return false;
         }
 
