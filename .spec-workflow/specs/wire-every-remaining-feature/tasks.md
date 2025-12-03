@@ -23,7 +23,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Add `keyrx_check_script` FFI export that validates Rhai script syntax, returns JSON {valid: bool, errors: [{line, column, message}]} | Restrictions: ≤60 lines; reuse check.rs parser | _Leverage: core/src/cli/commands/check.rs | _Requirements: 3 | Success: Validation errors include line/column for UI highlighting._
 
-- [ ] 4. Add test discovery and execution FFI exports
+- [x] 4. Add test discovery and execution FFI exports
   - Files: core/src/ffi/mod.rs (modify)
   - Export `keyrx_discover_tests(path)` and `keyrx_run_tests(path, filter)`
   - _Leverage: core/src/cli/commands/test.rs_

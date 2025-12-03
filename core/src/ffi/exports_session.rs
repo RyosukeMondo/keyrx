@@ -5,7 +5,10 @@
 
 use super::callbacks::{callback_registry, DiscoveryEventCallback};
 use crate::discovery::{session::set_session_update_sink, SessionUpdate};
+use crate::scripting::test_discovery::discover_tests;
+use crate::scripting::test_runner::{TestRunner, TestSummary};
 use crate::scripting::with_active_runtime;
+use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
@@ -149,6 +152,207 @@ pub unsafe extern "C" fn keyrx_check_script(path: *const c_char) -> *mut c_char 
                 }],
             }
         }
+    };
+
+    let payload = serde_json::to_string(&result)
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
+
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
+/// Discovered test for FFI JSON output.
+#[derive(Serialize)]
+struct DiscoveredTestJson {
+    name: String,
+    file: String,
+    line: Option<u32>,
+}
+
+/// Discover test functions in a Rhai script.
+///
+/// Returns JSON: `ok:[{name, file, line}, ...]`
+///
+/// Caller must free with `keyrx_free_string`.
+///
+/// # Safety
+/// `path` must be a valid null-terminated UTF-8 string.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_discover_tests(path: *const c_char) -> *mut c_char {
+    if path.is_null() {
+        return CString::new("error:null pointer")
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let path_str = match CStr::from_ptr(path).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return CString::new("error:invalid utf8")
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let script = match std::fs::read_to_string(path_str) {
+        Ok(s) => s,
+        Err(err) => {
+            return CString::new(format!("error:Failed to read file: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let engine = rhai::Engine::new();
+    let ast = match engine.compile(&script) {
+        Ok(ast) => ast,
+        Err(err) => {
+            return CString::new(format!("error:Compile error: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let tests = discover_tests(&ast);
+    let json_tests: Vec<DiscoveredTestJson> = tests
+        .into_iter()
+        .map(|t| DiscoveredTestJson {
+            name: t.name,
+            file: path_str.to_string(),
+            line: t.line_number,
+        })
+        .collect();
+
+    let payload = serde_json::to_string(&json_tests)
+        .map(|json| format!("ok:{json}"))
+        .unwrap_or_else(|err| format!("error:{err}"));
+
+    CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw)
+}
+
+/// Test result for FFI JSON output.
+#[derive(Serialize)]
+struct TestResultJson {
+    name: String,
+    passed: bool,
+    error: Option<String>,
+    #[serde(rename = "durationMs")]
+    duration_ms: f64,
+}
+
+/// Test run result for FFI JSON output.
+#[derive(Serialize)]
+struct TestRunResult {
+    total: usize,
+    passed: usize,
+    failed: usize,
+    #[serde(rename = "durationMs")]
+    duration_ms: f64,
+    results: Vec<TestResultJson>,
+}
+
+/// Run tests in a Rhai script with optional filter.
+///
+/// Returns JSON: `ok:{total, passed, failed, durationMs, results: [{name, passed, error, durationMs}]}`
+///
+/// Caller must free with `keyrx_free_string`.
+///
+/// # Safety
+/// `path` and `filter` must be valid null-terminated UTF-8 strings (filter can be null).
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_run_tests(
+    path: *const c_char,
+    filter: *const c_char,
+) -> *mut c_char {
+    if path.is_null() {
+        return CString::new("error:null path").map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    let path_str = match CStr::from_ptr(path).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return CString::new("error:invalid utf8 in path")
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let filter_str = if filter.is_null() {
+        None
+    } else {
+        match CStr::from_ptr(filter).to_str() {
+            Ok(s) if !s.is_empty() => Some(s),
+            _ => None,
+        }
+    };
+
+    // Read and compile script
+    let script = match std::fs::read_to_string(path_str) {
+        Ok(s) => s,
+        Err(err) => {
+            return CString::new(format!("error:Failed to read file: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    let engine = rhai::Engine::new();
+    let ast = match engine.compile(&script) {
+        Ok(ast) => ast,
+        Err(err) => {
+            return CString::new(format!("error:Compile error: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    // Discover tests
+    let discovered = discover_tests(&ast);
+    if discovered.is_empty() {
+        let result = TestRunResult {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            duration_ms: 0.0,
+            results: vec![],
+        };
+        let payload = serde_json::to_string(&result)
+            .map(|json| format!("ok:{json}"))
+            .unwrap_or_else(|err| format!("error:{err}"));
+        return CString::new(payload).map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    // Create runtime and load script
+    let mut runtime = match RhaiRuntime::new() {
+        Ok(r) => r,
+        Err(err) => {
+            return CString::new(format!("error:Failed to create runtime: {err}"))
+                .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+        }
+    };
+
+    if let Err(err) = runtime.load_file(path_str) {
+        return CString::new(format!("error:Failed to load script: {err}"))
+            .map_or_else(|_| ptr::null_mut(), CString::into_raw);
+    }
+
+    // Run tests
+    let runner = TestRunner::new();
+    let results = match filter_str {
+        Some(pattern) => runner.run_filtered(&mut runtime, &discovered, pattern),
+        None => runner.run_tests(&mut runtime, &discovered),
+    };
+
+    let summary = TestSummary::from_results(&results);
+    let json_results: Vec<TestResultJson> = results
+        .into_iter()
+        .map(|r| TestResultJson {
+            name: r.name,
+            passed: r.passed,
+            error: if r.passed { None } else { Some(r.message) },
+            duration_ms: r.duration_us as f64 / 1000.0,
+        })
+        .collect();
+
+    let result = TestRunResult {
+        total: summary.total,
+        passed: summary.passed,
+        failed: summary.failed,
+        duration_ms: summary.duration_us as f64 / 1000.0,
+        results: json_results,
     };
 
     let payload = serde_json::to_string(&result)
@@ -418,6 +622,112 @@ mod tests {
         let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
         unsafe { keyrx_free_string(ptr) };
         assert!(raw.starts_with("error:"));
+    }
+
+    #[test]
+    fn discover_tests_finds_test_functions() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::with_suffix(".rhai").unwrap();
+        writeln!(
+            temp,
+            r#"
+            fn test_alpha() {{ let x = 1; }}
+            fn test_beta() {{ let y = 2; }}
+            fn helper() {{ }}
+        "#
+        )
+        .unwrap();
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_discover_tests(path.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let tests: Vec<serde_json::Value> = serde_json::from_str(json_str).unwrap();
+        assert_eq!(tests.len(), 2);
+        assert!(tests.iter().any(|t| t["name"] == "test_alpha"));
+        assert!(tests.iter().any(|t| t["name"] == "test_beta"));
+    }
+
+    #[test]
+    fn discover_tests_empty_script() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::with_suffix(".rhai").unwrap();
+        writeln!(temp, "fn helper() {{ }}").unwrap();
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_discover_tests(path.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let tests: Vec<serde_json::Value> = serde_json::from_str(json_str).unwrap();
+        assert!(tests.is_empty());
+    }
+
+    #[test]
+    fn run_tests_passing() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::with_suffix(".rhai").unwrap();
+        writeln!(temp, "fn test_pass() {{ let x = 1 + 1; }}").unwrap();
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let ptr = unsafe { keyrx_run_tests(path.as_ptr(), ptr::null()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"), "got: {raw}");
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        assert_eq!(result["total"], 1);
+        assert_eq!(result["passed"], 1);
+        assert_eq!(result["failed"], 0);
+    }
+
+    #[test]
+    fn run_tests_with_filter() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut temp = NamedTempFile::with_suffix(".rhai").unwrap();
+        writeln!(
+            temp,
+            r#"
+            fn test_alpha() {{ let x = 1; }}
+            fn test_beta() {{ let y = 2; }}
+        "#
+        )
+        .unwrap();
+
+        let path = CString::new(temp.path().to_str().unwrap()).unwrap();
+        let filter = CString::new("test_alpha*").unwrap();
+        let ptr = unsafe { keyrx_run_tests(path.as_ptr(), filter.as_ptr()) };
+        assert!(!ptr.is_null());
+
+        let raw = unsafe { CStr::from_ptr(ptr).to_str().unwrap().to_string() };
+        unsafe { keyrx_free_string(ptr) };
+
+        assert!(raw.starts_with("ok:"));
+        let json_str = &raw["ok:".len()..];
+        let result: serde_json::Value = serde_json::from_str(json_str).unwrap();
+        // Only test_alpha should run due to filter
+        assert_eq!(result["total"], 1);
+        assert_eq!(result["results"][0]["name"], "test_alpha");
     }
 
     #[test]
