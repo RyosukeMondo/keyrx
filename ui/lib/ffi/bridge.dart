@@ -394,6 +394,247 @@ class KeyrxBridge {
     }
   }
 
+  /// List session files in a directory.
+  SessionListResult listSessions(String dirPath) {
+    final listFn = _bindings?.listSessions;
+    if (listFn == null) {
+      return SessionListResult.error('listSessions not available');
+    }
+
+    final dirPtr = dirPath.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = listFn(dirPtr);
+      if (ptr == nullptr) {
+        return SessionListResult.error('listSessions returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return SessionListResult.parse(raw);
+    } catch (e) {
+      return SessionListResult.error('$e');
+    } finally {
+      calloc.free(dirPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Analyze a session file.
+  SessionAnalysisResult analyzeSession(String path) {
+    final analyzeFn = _bindings?.analyzeSession;
+    if (analyzeFn == null) {
+      return SessionAnalysisResult.error('analyzeSession not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = analyzeFn(pathPtr);
+      if (ptr == nullptr) {
+        return SessionAnalysisResult.error('analyzeSession returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return SessionAnalysisResult.parse(raw);
+    } catch (e) {
+      return SessionAnalysisResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Replay a session file with optional verification.
+  ReplayResult replaySession(String path, {bool verify = false}) {
+    final replayFn = _bindings?.replaySession;
+    if (replayFn == null) {
+      return ReplayResult.error('replaySession not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = replayFn(pathPtr, verify);
+      if (ptr == nullptr) {
+        return ReplayResult.error('replaySession returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return ReplayResult.parse(raw);
+    } catch (e) {
+      return ReplayResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Run benchmark with specified iterations.
+  BenchmarkResult runBenchmark(int iterations, {String? scriptPath}) {
+    final benchFn = _bindings?.runBenchmark;
+    if (benchFn == null) {
+      return BenchmarkResult.error('runBenchmark not available');
+    }
+
+    final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
+    Pointer<Char>? ptr;
+    try {
+      ptr = benchFn(iterations, scriptPtr);
+      if (ptr == nullptr) {
+        return BenchmarkResult.error('runBenchmark returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return BenchmarkResult.parse(raw);
+    } catch (e) {
+      return BenchmarkResult.error('$e');
+    } finally {
+      if (scriptPtr != nullptr) {
+        calloc.free(scriptPtr);
+      }
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Run system diagnostics.
+  DoctorResult runDoctor() {
+    final doctorFn = _bindings?.runDoctor;
+    if (doctorFn == null) {
+      return DoctorResult.error('runDoctor not available');
+    }
+
+    Pointer<Char>? ptr;
+    try {
+      ptr = doctorFn();
+      if (ptr == nullptr) {
+        return DoctorResult.error('runDoctor returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return DoctorResult.parse(raw);
+    } catch (e) {
+      return DoctorResult.error('$e');
+    } finally {
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Start a discovery session for a device.
+  ///
+  /// [deviceId] - Device identifier as "vendorId:productId" (hex format)
+  /// [rows] - Number of rows in the keyboard layout
+  /// [colsPerRow] - Number of columns for each row
+  DiscoveryStartResult startDiscovery(
+    String deviceId,
+    int rows,
+    List<int> colsPerRow,
+  ) {
+    final discoveryFn = _bindings?.startDiscovery;
+    if (discoveryFn == null) {
+      return DiscoveryStartResult.error('startDiscovery not available');
+    }
+
+    final devicePtr = deviceId.toNativeUtf8();
+    final colsJson = json.encode(colsPerRow);
+    final colsPtr = colsJson.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = discoveryFn(devicePtr, rows, colsPtr);
+      if (ptr == nullptr) {
+        return DiscoveryStartResult.error('startDiscovery returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return DiscoveryStartResult.parse(raw);
+    } catch (e) {
+      return DiscoveryStartResult.error('$e');
+    } finally {
+      calloc.free(devicePtr);
+      calloc.free(colsPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Start recording key events to a file.
+  RecordingStartResult startRecording(String path) {
+    final startFn = _bindings?.startRecording;
+    if (startFn == null) {
+      return RecordingStartResult.error('startRecording not available');
+    }
+
+    final pathPtr = path.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = startFn(pathPtr);
+      if (ptr == nullptr) {
+        return RecordingStartResult.error('startRecording returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return RecordingStartResult.parse(raw);
+    } catch (e) {
+      return RecordingStartResult.error('$e');
+    } finally {
+      calloc.free(pathPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Stop recording and save the session.
+  RecordingStopResult stopRecording() {
+    final stopFn = _bindings?.stopRecording;
+    if (stopFn == null) {
+      return RecordingStopResult.error('stopRecording not available');
+    }
+
+    Pointer<Char>? ptr;
+    try {
+      ptr = stopFn();
+      if (ptr == nullptr) {
+        return RecordingStopResult.error('stopRecording returned null');
+      }
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      return RecordingStopResult.parse(raw);
+    } catch (e) {
+      return RecordingStopResult.error('$e');
+    } finally {
+      if (ptr != null && ptr != nullptr) {
+        try {
+          _bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
+
   /// Close any native resources and stop dispatching callbacks.
   Future<void> dispose() async {
     _currentInstance = null;
@@ -1050,4 +1291,551 @@ class KeyInput {
         'code': code,
         if (holdMs != null) 'holdMs': holdMs,
       };
+}
+
+/// Session info returned by list sessions.
+class SessionInfo {
+  const SessionInfo({
+    required this.path,
+    required this.name,
+    required this.created,
+    required this.eventCount,
+    required this.durationMs,
+  });
+
+  final String path;
+  final String name;
+  final String created;
+  final int eventCount;
+  final double durationMs;
+}
+
+/// Session list result.
+class SessionListResult {
+  const SessionListResult({
+    required this.sessions,
+    this.errorMessage,
+  });
+
+  factory SessionListResult.error(String message) => SessionListResult(
+        sessions: const [],
+        errorMessage: message,
+      );
+
+  factory SessionListResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return SessionListResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! List) {
+        return SessionListResult.error('invalid session list payload');
+      }
+
+      final sessions = decoded.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return SessionInfo(
+          path: e['path']?.toString() ?? '',
+          name: e['name']?.toString() ?? '',
+          created: e['created']?.toString() ?? '',
+          eventCount: (e['eventCount'] as num?)?.toInt() ?? 0,
+          durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
+        );
+      }).whereType<SessionInfo>().toList();
+
+      return SessionListResult(sessions: sessions);
+    } catch (e) {
+      return SessionListResult.error('$e');
+    }
+  }
+
+  final List<SessionInfo> sessions;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Decision breakdown from session analysis.
+class DecisionBreakdown {
+  const DecisionBreakdown({
+    required this.passThrough,
+    required this.remap,
+    required this.block,
+    required this.tap,
+    required this.hold,
+    required this.combo,
+    required this.layer,
+    required this.modifier,
+  });
+
+  final int passThrough;
+  final int remap;
+  final int block;
+  final int tap;
+  final int hold;
+  final int combo;
+  final int layer;
+  final int modifier;
+}
+
+/// Session analysis result.
+class SessionAnalysis {
+  const SessionAnalysis({
+    required this.sessionPath,
+    required this.eventCount,
+    required this.durationMs,
+    required this.avgLatencyUs,
+    required this.minLatencyUs,
+    required this.maxLatencyUs,
+    required this.decisionBreakdown,
+  });
+
+  final String sessionPath;
+  final int eventCount;
+  final double durationMs;
+  final int avgLatencyUs;
+  final int minLatencyUs;
+  final int maxLatencyUs;
+  final DecisionBreakdown decisionBreakdown;
+}
+
+/// Session analysis result wrapper.
+class SessionAnalysisResult {
+  const SessionAnalysisResult({
+    this.analysis,
+    this.errorMessage,
+  });
+
+  factory SessionAnalysisResult.error(String message) => SessionAnalysisResult(
+        errorMessage: message,
+      );
+
+  factory SessionAnalysisResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return SessionAnalysisResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return SessionAnalysisResult.error('invalid analysis payload');
+      }
+
+      final breakdown = decoded['decisionBreakdown'] as Map<String, dynamic>?;
+      final analysis = SessionAnalysis(
+        sessionPath: decoded['sessionPath']?.toString() ?? '',
+        eventCount: (decoded['eventCount'] as num?)?.toInt() ?? 0,
+        durationMs: (decoded['durationMs'] as num?)?.toDouble() ?? 0,
+        avgLatencyUs: (decoded['avgLatencyUs'] as num?)?.toInt() ?? 0,
+        minLatencyUs: (decoded['minLatencyUs'] as num?)?.toInt() ?? 0,
+        maxLatencyUs: (decoded['maxLatencyUs'] as num?)?.toInt() ?? 0,
+        decisionBreakdown: DecisionBreakdown(
+          passThrough: (breakdown?['passThrough'] as num?)?.toInt() ?? 0,
+          remap: (breakdown?['remap'] as num?)?.toInt() ?? 0,
+          block: (breakdown?['block'] as num?)?.toInt() ?? 0,
+          tap: (breakdown?['tap'] as num?)?.toInt() ?? 0,
+          hold: (breakdown?['hold'] as num?)?.toInt() ?? 0,
+          combo: (breakdown?['combo'] as num?)?.toInt() ?? 0,
+          layer: (breakdown?['layer'] as num?)?.toInt() ?? 0,
+          modifier: (breakdown?['modifier'] as num?)?.toInt() ?? 0,
+        ),
+      );
+
+      return SessionAnalysisResult(analysis: analysis);
+    } catch (e) {
+      return SessionAnalysisResult.error('$e');
+    }
+  }
+
+  final SessionAnalysis? analysis;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Mismatch detail from replay verification.
+class ReplayMismatch {
+  const ReplayMismatch({
+    required this.seq,
+    required this.recorded,
+    required this.actual,
+  });
+
+  final int seq;
+  final String recorded;
+  final String actual;
+}
+
+/// Session replay result.
+class ReplayResult {
+  const ReplayResult({
+    required this.totalEvents,
+    required this.matched,
+    required this.mismatched,
+    required this.success,
+    required this.mismatches,
+    this.errorMessage,
+  });
+
+  factory ReplayResult.error(String message) => ReplayResult(
+        totalEvents: 0,
+        matched: 0,
+        mismatched: 0,
+        success: false,
+        mismatches: const [],
+        errorMessage: message,
+      );
+
+  factory ReplayResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return ReplayResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return ReplayResult.error('invalid replay payload');
+      }
+
+      final mismatchList = decoded['mismatches'] as List<dynamic>? ?? [];
+      final mismatches = mismatchList.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return ReplayMismatch(
+          seq: (e['seq'] as num?)?.toInt() ?? 0,
+          recorded: e['recorded']?.toString() ?? '',
+          actual: e['actual']?.toString() ?? '',
+        );
+      }).whereType<ReplayMismatch>().toList();
+
+      return ReplayResult(
+        totalEvents: (decoded['totalEvents'] as num?)?.toInt() ?? 0,
+        matched: (decoded['matched'] as num?)?.toInt() ?? 0,
+        mismatched: (decoded['mismatched'] as num?)?.toInt() ?? 0,
+        success: decoded['success'] as bool? ?? false,
+        mismatches: mismatches,
+      );
+    } catch (e) {
+      return ReplayResult.error('$e');
+    }
+  }
+
+  final int totalEvents;
+  final int matched;
+  final int mismatched;
+  final bool success;
+  final List<ReplayMismatch> mismatches;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Benchmark result.
+class BenchmarkResult {
+  const BenchmarkResult({
+    required this.minNs,
+    required this.maxNs,
+    required this.meanNs,
+    required this.p99Ns,
+    required this.iterations,
+    required this.hasWarning,
+    this.warning,
+    this.errorMessage,
+  });
+
+  factory BenchmarkResult.error(String message) => BenchmarkResult(
+        minNs: 0,
+        maxNs: 0,
+        meanNs: 0,
+        p99Ns: 0,
+        iterations: 0,
+        hasWarning: false,
+        errorMessage: message,
+      );
+
+  factory BenchmarkResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return BenchmarkResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return BenchmarkResult.error('invalid benchmark payload');
+      }
+
+      return BenchmarkResult(
+        minNs: (decoded['minNs'] as num?)?.toInt() ?? 0,
+        maxNs: (decoded['maxNs'] as num?)?.toInt() ?? 0,
+        meanNs: (decoded['meanNs'] as num?)?.toInt() ?? 0,
+        p99Ns: (decoded['p99Ns'] as num?)?.toInt() ?? 0,
+        iterations: (decoded['iterations'] as num?)?.toInt() ?? 0,
+        hasWarning: decoded['hasWarning'] as bool? ?? false,
+        warning: decoded['warning']?.toString(),
+      );
+    } catch (e) {
+      return BenchmarkResult.error('$e');
+    }
+  }
+
+  final int minNs;
+  final int maxNs;
+  final int meanNs;
+  final int p99Ns;
+  final int iterations;
+  final bool hasWarning;
+  final String? warning;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Diagnostic check result.
+class DiagnosticCheck {
+  const DiagnosticCheck({
+    required this.name,
+    required this.status,
+    this.details,
+    this.remediation,
+  });
+
+  final String name;
+  final String status;
+  final String? details;
+  final String? remediation;
+}
+
+/// Doctor result.
+class DoctorResult {
+  const DoctorResult({
+    required this.checks,
+    required this.passed,
+    required this.failed,
+    required this.warned,
+    this.errorMessage,
+  });
+
+  factory DoctorResult.error(String message) => DoctorResult(
+        checks: const [],
+        passed: 0,
+        failed: 0,
+        warned: 0,
+        errorMessage: message,
+      );
+
+  factory DoctorResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return DoctorResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return DoctorResult.error('invalid doctor payload');
+      }
+
+      final checksList = decoded['checks'] as List<dynamic>? ?? [];
+      final checks = checksList.map((e) {
+        if (e is! Map<String, dynamic>) return null;
+        return DiagnosticCheck(
+          name: e['name']?.toString() ?? '',
+          status: e['status']?.toString() ?? '',
+          details: e['details']?.toString(),
+          remediation: e['remediation']?.toString(),
+        );
+      }).whereType<DiagnosticCheck>().toList();
+
+      return DoctorResult(
+        checks: checks,
+        passed: (decoded['passed'] as num?)?.toInt() ?? 0,
+        failed: (decoded['failed'] as num?)?.toInt() ?? 0,
+        warned: (decoded['warned'] as num?)?.toInt() ?? 0,
+      );
+    } catch (e) {
+      return DoctorResult.error('$e');
+    }
+  }
+
+  final List<DiagnosticCheck> checks;
+  final int passed;
+  final int failed;
+  final int warned;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null;
+}
+
+/// Discovery start result.
+class DiscoveryStartResult {
+  const DiscoveryStartResult({
+    required this.success,
+    this.totalKeys,
+    this.errorMessage,
+  });
+
+  factory DiscoveryStartResult.error(String message) => DiscoveryStartResult(
+        success: false,
+        errorMessage: message,
+      );
+
+  factory DiscoveryStartResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return DiscoveryStartResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return DiscoveryStartResult.error('invalid discovery payload');
+      }
+
+      return DiscoveryStartResult(
+        success: decoded['success'] as bool? ?? false,
+        totalKeys: (decoded['totalKeys'] as num?)?.toInt(),
+        errorMessage: decoded['error']?.toString(),
+      );
+    } catch (e) {
+      return DiscoveryStartResult.error('$e');
+    }
+  }
+
+  final bool success;
+  final int? totalKeys;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null || !success;
+}
+
+/// Recording start result.
+class RecordingStartResult {
+  const RecordingStartResult({
+    required this.success,
+    this.outputPath,
+    this.errorMessage,
+  });
+
+  factory RecordingStartResult.error(String message) => RecordingStartResult(
+        success: false,
+        errorMessage: message,
+      );
+
+  factory RecordingStartResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return RecordingStartResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return RecordingStartResult.error('invalid recording payload');
+      }
+
+      return RecordingStartResult(
+        success: decoded['success'] as bool? ?? false,
+        outputPath: decoded['outputPath']?.toString(),
+        errorMessage: decoded['error']?.toString(),
+      );
+    } catch (e) {
+      return RecordingStartResult.error('$e');
+    }
+  }
+
+  final bool success;
+  final String? outputPath;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null || !success;
+}
+
+/// Recording stop result.
+class RecordingStopResult {
+  const RecordingStopResult({
+    required this.success,
+    this.path,
+    required this.eventCount,
+    required this.durationMs,
+    this.errorMessage,
+  });
+
+  factory RecordingStopResult.error(String message) => RecordingStopResult(
+        success: false,
+        eventCount: 0,
+        durationMs: 0,
+        errorMessage: message,
+      );
+
+  factory RecordingStopResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return RecordingStopResult.error(
+          trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return RecordingStopResult.error('invalid recording stop payload');
+      }
+
+      return RecordingStopResult(
+        success: decoded['success'] as bool? ?? false,
+        path: decoded['path']?.toString(),
+        eventCount: (decoded['eventCount'] as num?)?.toInt() ?? 0,
+        durationMs: (decoded['durationMs'] as num?)?.toDouble() ?? 0,
+        errorMessage: decoded['error']?.toString(),
+      );
+    } catch (e) {
+      return RecordingStopResult.error('$e');
+    }
+  }
+
+  final bool success;
+  final String? path;
+  final int eventCount;
+  final double durationMs;
+  final String? errorMessage;
+
+  bool get hasError => errorMessage != null || !success;
 }

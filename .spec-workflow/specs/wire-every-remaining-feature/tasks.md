@@ -74,21 +74,21 @@
 
 ## FFI Layer (Dart)
 
-- [ ] 11. Add FFI bindings for device management
+- [x] 11. Add FFI bindings for device management
   - Files: ui/lib/ffi/bindings.dart (modify), ui/lib/ffi/bridge.dart (modify)
   - Add Dart signatures and bridge methods for device functions
   - _Leverage: existing binding patterns_
   - _Requirements: 1_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter FFI engineer | Task: Add to bindings.dart: KeyrxListDevices, KeyrxSelectDevice typedefs. Add to bridge.dart: listDevices(), selectDevice(path) methods with JSON parsing | Restrictions: ≤60 lines; follow existing patterns | _Leverage: existing bindings.dart | _Requirements: 1 | Success: Dart can call device FFI functions._
 
-- [ ] 12. Add FFI bindings for validation, tests, simulation
+- [x] 12. Add FFI bindings for validation, tests, simulation
   - Files: ui/lib/ffi/bindings.dart (modify), ui/lib/ffi/bridge.dart (modify)
   - Add Dart signatures and bridge methods
   - _Leverage: existing binding patterns_
   - _Requirements: 3, 5, 6_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter FFI engineer | Task: Add bindings for: checkScript, discoverTests, runTests, simulate. Add bridge methods with proper JSON parsing and error handling | Restrictions: ≤100 lines; return typed Dart objects | _Leverage: existing bindings.dart | _Requirements: 3, 5, 6 | Success: All new FFI functions callable from Dart._
 
-- [ ] 13. Add FFI bindings for sessions, benchmark, doctor, discovery
+- [x] 13. Add FFI bindings for sessions, benchmark, doctor, discovery
   - Files: ui/lib/ffi/bindings.dart (modify), ui/lib/ffi/bridge.dart (modify)
   - Add remaining Dart signatures and bridge methods
   - _Leverage: existing binding patterns_

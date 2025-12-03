@@ -73,6 +73,50 @@ typedef KeyrxSimulate = Pointer<Char> Function(
   bool comboMode,
 );
 
+typedef KeyrxListSessionsNative = Pointer<Char> Function(Pointer<Utf8> dirPath);
+typedef KeyrxListSessions = Pointer<Char> Function(Pointer<Utf8> dirPath);
+
+typedef KeyrxAnalyzeSessionNative = Pointer<Char> Function(Pointer<Utf8> path);
+typedef KeyrxAnalyzeSession = Pointer<Char> Function(Pointer<Utf8> path);
+
+typedef KeyrxReplaySessionNative = Pointer<Char> Function(
+  Pointer<Utf8> path,
+  Bool verify,
+);
+typedef KeyrxReplaySession = Pointer<Char> Function(
+  Pointer<Utf8> path,
+  bool verify,
+);
+
+typedef KeyrxRunBenchmarkNative = Pointer<Char> Function(
+  Uint32 iterations,
+  Pointer<Utf8> scriptPath,
+);
+typedef KeyrxRunBenchmark = Pointer<Char> Function(
+  int iterations,
+  Pointer<Utf8> scriptPath,
+);
+
+typedef KeyrxRunDoctorNative = Pointer<Char> Function();
+typedef KeyrxRunDoctor = Pointer<Char> Function();
+
+typedef KeyrxStartDiscoveryNative = Pointer<Char> Function(
+  Pointer<Utf8> deviceId,
+  Uint8 rows,
+  Pointer<Utf8> colsPerRowJson,
+);
+typedef KeyrxStartDiscovery = Pointer<Char> Function(
+  Pointer<Utf8> deviceId,
+  int rows,
+  Pointer<Utf8> colsPerRowJson,
+);
+
+typedef KeyrxStartRecordingNative = Pointer<Char> Function(Pointer<Utf8> path);
+typedef KeyrxStartRecording = Pointer<Char> Function(Pointer<Utf8> path);
+
+typedef KeyrxStopRecordingNative = Pointer<Char> Function();
+typedef KeyrxStopRecording = Pointer<Char> Function();
+
 typedef KeyrxStateCallbackNative = Void Function(
   Pointer<Uint8> bytes,
   IntPtr length,
@@ -128,6 +172,14 @@ class KeyrxBindings {
   late final KeyrxDiscoverTests? discoverTests;
   late final KeyrxRunTests? runTests;
   late final KeyrxSimulate? simulate;
+  late final KeyrxListSessions? listSessions;
+  late final KeyrxAnalyzeSession? analyzeSession;
+  late final KeyrxReplaySession? replaySession;
+  late final KeyrxRunBenchmark? runBenchmark;
+  late final KeyrxRunDoctor? runDoctor;
+  late final KeyrxStartDiscovery? startDiscovery;
+  late final KeyrxStartRecording? startRecording;
+  late final KeyrxStopRecording? stopRecording;
 
   KeyrxBindings(this._lib) {
     init = _lib.lookupFunction<KeyrxInitNative, KeyrxInit>('keyrx_init');
@@ -152,6 +204,14 @@ class KeyrxBindings {
     discoverTests = _tryLookupDiscoverTests();
     runTests = _tryLookupRunTests();
     simulate = _tryLookupSimulate();
+    listSessions = _tryLookupListSessions();
+    analyzeSession = _tryLookupAnalyzeSession();
+    replaySession = _tryLookupReplaySession();
+    runBenchmark = _tryLookupRunBenchmark();
+    runDoctor = _tryLookupRunDoctor();
+    startDiscovery = _tryLookupStartDiscovery();
+    startRecording = _tryLookupStartRecording();
+    stopRecording = _tryLookupStopRecording();
   }
 
   KeyrxStartAudio? _tryLookupStartAudio() {
@@ -296,6 +356,87 @@ class KeyrxBindings {
     try {
       return _lib.lookupFunction<KeyrxSimulateNative, KeyrxSimulate>(
         'keyrx_simulate',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxListSessions? _tryLookupListSessions() {
+    try {
+      return _lib.lookupFunction<KeyrxListSessionsNative, KeyrxListSessions>(
+        'keyrx_list_sessions',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxAnalyzeSession? _tryLookupAnalyzeSession() {
+    try {
+      return _lib
+          .lookupFunction<KeyrxAnalyzeSessionNative, KeyrxAnalyzeSession>(
+        'keyrx_analyze_session',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxReplaySession? _tryLookupReplaySession() {
+    try {
+      return _lib.lookupFunction<KeyrxReplaySessionNative, KeyrxReplaySession>(
+        'keyrx_replay_session',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxRunBenchmark? _tryLookupRunBenchmark() {
+    try {
+      return _lib.lookupFunction<KeyrxRunBenchmarkNative, KeyrxRunBenchmark>(
+        'keyrx_run_benchmark',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxRunDoctor? _tryLookupRunDoctor() {
+    try {
+      return _lib.lookupFunction<KeyrxRunDoctorNative, KeyrxRunDoctor>(
+        'keyrx_run_doctor',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxStartDiscovery? _tryLookupStartDiscovery() {
+    try {
+      return _lib.lookupFunction<KeyrxStartDiscoveryNative, KeyrxStartDiscovery>(
+        'keyrx_start_discovery',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxStartRecording? _tryLookupStartRecording() {
+    try {
+      return _lib.lookupFunction<KeyrxStartRecordingNative, KeyrxStartRecording>(
+        'keyrx_start_recording',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxStopRecording? _tryLookupStopRecording() {
+    try {
+      return _lib.lookupFunction<KeyrxStopRecordingNative, KeyrxStopRecording>(
+        'keyrx_stop_recording',
       );
     } on ArgumentError {
       return null;
