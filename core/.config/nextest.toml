@@ -1,0 +1,12 @@
+# cargo-nextest configuration
+# https://nexte.st/book/configuration.html
+
+[profile.default]
+retries = 0
+slow-timeout = "60s"
+fail-fast = true
+
+[profile.ci]
+retries = 2
+fail-fast = false
+slow-timeout = "120s"
