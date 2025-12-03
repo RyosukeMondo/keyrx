@@ -256,7 +256,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Add Configuration section to README.md explaining: config file location (~/.config/keyrx/config.toml), available options with defaults, CLI override flags. Ensure all config module doc comments are complete. | Restrictions: Keep concise, link to config.toml.example | Success: Users can find and understand config options. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 32. Final verification and cleanup
+- [x] 32. Final verification and cleanup
   - Run full test suite, verify no regressions
   - Remove any remaining magic numbers/strings
   - Purpose: Ensure complete centralization

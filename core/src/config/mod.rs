@@ -10,9 +10,6 @@
 //! - [`exit_codes`]: CLI exit code definitions
 //! - [`loader`]: Runtime configuration loading from TOML
 
-// Note: Allow unused until submodule constants are implemented (tasks 2-6, 13)
-#![allow(unused_imports)]
-
 pub mod exit_codes;
 mod keys;
 mod limits;
