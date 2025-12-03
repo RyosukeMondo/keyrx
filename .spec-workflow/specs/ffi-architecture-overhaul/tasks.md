@@ -76,7 +76,7 @@
 
 ## Phase 3: First Domain Migration (Discovery)
 
-- [-] 8. Create DiscoveryFfi implementing FfiExportable
+- [x] 8. Create DiscoveryFfi implementing FfiExportable
   - File: `core/src/ffi/domains/discovery.rs`
   - Implement FfiExportable trait for DiscoveryFfi
   - Move state from global statics to domain struct
