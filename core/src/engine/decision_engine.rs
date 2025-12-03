@@ -3,10 +3,12 @@
 //! This module contains the core decision-making logic extracted from the
 //! advanced engine, providing pure functions for handling timing-based decisions.
 
+#[cfg(test)]
+use crate::engine::KeyStateTracker;
 use crate::engine::{
     layer_actions::{self, LayerActionContext},
-    DecisionResolution, DecisionType, HoldAction, InputEvent, KeyCode, KeyStateTracker,
-    LayerAction, LayerStack, Modifier, ModifierState, OutputAction,
+    DecisionResolution, DecisionType, HoldAction, InputEvent, KeyCode, LayerAction, LayerStack,
+    Modifier, ModifierState, OutputAction,
 };
 
 /// Result of handling a layer action.
@@ -35,7 +37,10 @@ pub fn decision_type_from_action(action: &LayerAction) -> DecisionType {
 }
 
 /// Check if an event triggers safe mode (Ctrl+Alt+Shift+Escape).
-pub fn check_safe_mode_toggle(event: &InputEvent, key_state: &KeyStateTracker) -> bool {
+pub fn check_safe_mode_toggle(
+    event: &InputEvent,
+    key_state: &dyn crate::traits::KeyStateProvider,
+) -> bool {
     if !event.pressed || event.key != KeyCode::Escape {
         return false;
     }
@@ -83,7 +88,7 @@ pub struct ResolutionResult {
 /// mutating state directly. The caller applies the state changes.
 pub fn process_resolutions(
     resolutions: Vec<DecisionResolution>,
-    key_state: &KeyStateTracker,
+    key_state: &dyn crate::traits::KeyStateProvider,
 ) -> ResolutionResult {
     let mut result = ResolutionResult::default();
 

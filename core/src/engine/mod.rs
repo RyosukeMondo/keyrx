@@ -13,7 +13,8 @@ mod state;
 pub mod tracing;
 mod types;
 
-pub use advanced::{AdvancedEngine, EngineState, PressedKeyState};
+// Backward compatibility: EngineState is the old snapshot type
+pub use advanced::{AdvancedEngine, EngineStateSnapshot as EngineState, PressedKeyState};
 pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
     PendingDecisionState, TimingConfig,
@@ -29,5 +30,9 @@ pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,
     ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
 };
+
+// Export the unified EngineState but with a different name to avoid confusion with the snapshot
+// For backward compatibility, EngineState refers to the old snapshot type (now EngineStateSnapshot)
+pub use state::EngineState as UnifiedEngineState;
 pub use tracing::{EngineTracer, SpanGuard, TracingError, TracingResult};
 pub use types::{InputEvent, KeyCode, OutputAction, RemapAction};

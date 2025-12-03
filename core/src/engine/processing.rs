@@ -28,7 +28,7 @@ pub struct ValidationResult {
 /// - Active safe mode (all events pass through)
 pub fn validate_and_check_safe_mode(
     event: &InputEvent,
-    key_state: &KeyStateTracker,
+    key_state: &dyn crate::traits::KeyStateProvider,
     safe_mode: bool,
 ) -> ValidationResult {
     // Synthetic events always pass through
@@ -68,6 +68,10 @@ pub fn validate_and_check_safe_mode(
 /// Update key state tracker based on the event.
 ///
 /// Tracks key press/release state for timing-based decisions.
+///
+/// DEPRECATED: This function is no longer used since the engine uses the unified
+/// EngineState with mutation API. Kept for backward compatibility.
+#[allow(dead_code)]
 pub fn update_key_state(event: &InputEvent, key_state: &mut KeyStateTracker) {
     if event.pressed {
         key_state.key_down(event.key, event.timestamp_us, event.is_repeat);

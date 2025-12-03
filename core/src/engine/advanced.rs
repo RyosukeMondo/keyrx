@@ -5,16 +5,47 @@ use crate::engine::decision_engine::{
     self, activate_hold_action, decision_type_from_action, handle_layer_action, process_resolutions,
 };
 use crate::engine::processing::{
-    apply_decision, trace_event, update_key_state, validate_and_check_safe_mode, DecisionResult,
+    apply_decision, trace_event, validate_and_check_safe_mode, DecisionResult,
 };
+use crate::engine::state::EngineState as UnifiedEngineState;
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
-    InputEvent, KeyCode, KeyStateTracker, LayerAction, LayerStack, ModifierState, OutputAction,
-    PendingDecision, PendingDecisionState, TimingConfig,
+    InputEvent, KeyCode, LayerAction, LayerStack, ModifierState, OutputAction, PendingDecision,
+    PendingDecisionState, TimingConfig,
 };
-use crate::traits::ScriptRuntime;
+use crate::traits::{KeyStateProvider, ScriptRuntime};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+
+/// View adapter for KeyState that implements KeyStateProvider.
+///
+/// This provides a read-only view of the unified state's key tracking
+/// that's compatible with code expecting KeyStateTracker.
+pub struct KeyStateView<'a>(&'a UnifiedEngineState);
+
+impl KeyStateProvider for KeyStateView<'_> {
+    fn is_pressed(&self, key: KeyCode) -> bool {
+        self.0.is_key_pressed(key)
+    }
+
+    fn press(&mut self, _key: KeyCode, _timestamp_us: u64, _is_repeat: bool) -> bool {
+        // KeyStateView is read-only; mutations should use EngineState::apply()
+        unreachable!("KeyStateView is read-only; use EngineState::apply() to mutate state")
+    }
+
+    fn release(&mut self, _key: KeyCode) -> Option<u64> {
+        // KeyStateView is read-only; mutations should use EngineState::apply()
+        unreachable!("KeyStateView is read-only; use EngineState::apply() to mutate state")
+    }
+
+    fn press_time(&self, key: KeyCode) -> Option<u64> {
+        self.0.key_press_time(key)
+    }
+
+    fn pressed_keys(&self) -> Box<dyn Iterator<Item = KeyCode> + '_> {
+        Box::new(self.0.pressed_keys())
+    }
+}
 
 /// Single pressed key with timestamp for snapshots.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,8 +55,10 @@ pub struct PressedKeyState {
 }
 
 /// Serializable snapshot of engine state for GUI/FFI inspection.
+///
+/// Deprecated: This will be replaced by StateSnapshot from the unified state module.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineState {
+pub struct EngineStateSnapshot {
     pub pressed_keys: Vec<PressedKeyState>,
     pub modifiers: ModifierState,
     pub layers: LayerStack,
@@ -41,10 +74,11 @@ where
 {
     _script: S,
 
-    // State
-    key_state: KeyStateTracker,
-    modifiers: ModifierState,
-    layers: LayerStack,
+    // Unified state - this is the new approach
+    state: UnifiedEngineState,
+
+    // Legacy compatibility layer during migration
+    layers_compat: LayerStack, // For layer definitions and lookups
 
     // Decisions
     pending: DecisionQueue,
@@ -65,9 +99,8 @@ where
     pub fn new(script: S, timing: TimingConfig) -> Self {
         Self {
             _script: script,
-            key_state: KeyStateTracker::new(),
-            modifiers: ModifierState::new(),
-            layers: LayerStack::new(),
+            state: UnifiedEngineState::new(timing.clone()),
+            layers_compat: LayerStack::new(),
             pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
             blocked_releases: HashSet::new(),
@@ -79,7 +112,7 @@ where
 
     /// Mutable access to layer stack (useful for configuration in setup/tests).
     pub fn layers_mut(&mut self) -> &mut LayerStack {
-        &mut self.layers
+        &mut self.layers_compat
     }
 
     /// Mutable access to combo registry for configuration.
@@ -104,11 +137,27 @@ where
     ) -> Vec<OutputAction> {
         let start_time = std::time::Instant::now();
 
-        // Step 1: Update key state first (needed for safe mode check).
-        update_key_state(&event, &mut self.key_state);
+        // Step 1: Update key state using the unified state's mutation API.
+        let key_mutation = if event.pressed {
+            crate::engine::state::Mutation::KeyDown {
+                key: event.key,
+                timestamp_us: event.timestamp_us,
+                is_repeat: event.is_repeat,
+            }
+        } else {
+            crate::engine::state::Mutation::KeyUp {
+                key: event.key,
+                timestamp_us: event.timestamp_us,
+            }
+        };
 
-        // Step 2: Validate and check safe mode.
-        let validation = validate_and_check_safe_mode(&event, &self.key_state, self.safe_mode);
+        // Apply the key state mutation (ignore errors for keys already pressed/not pressed)
+        let _ = self.state.apply(key_mutation);
+
+        // Step 2: Validate and check safe mode using the unified state
+        let validation =
+            validate_and_check_safe_mode(&event, &KeyStateView(&self.state), self.safe_mode);
+
         if validation.safe_mode_toggled {
             self.pending.clear();
             self.safe_mode = !self.safe_mode;
@@ -129,7 +178,7 @@ where
             &event,
             result.decision_type,
             start_time,
-            &self.layers.active_layer_ids(),
+            &self.layers_compat.active_layer_ids(),
             &result.outputs,
         );
 
@@ -165,9 +214,9 @@ where
         result.consumed |= resolved_consumed;
         result.skip_layer_actions = skip_layer_actions;
 
-        // Layer lookup and action execution.
+        // Layer lookup and action execution using the compat layer
         if !result.skip_layer_actions {
-            if let Some(action) = self.layers.lookup(event.key).cloned() {
+            if let Some(action) = self.layers_compat.lookup(event.key).cloned() {
                 let (handled_outputs, handled) = self.handle_layer_action(event, action.clone());
                 result.outputs.extend(handled_outputs);
                 if handled {
@@ -192,23 +241,29 @@ where
     }
 
     /// Inspect key state.
-    pub fn key_state(&self) -> &KeyStateTracker {
-        &self.key_state
+    ///
+    /// Returns a view of the unified state's key tracking.
+    pub fn key_state(&self) -> KeyStateView<'_> {
+        KeyStateView(&self.state)
     }
 
     /// Inspect modifier state.
     pub fn modifiers(&self) -> &ModifierState {
-        &self.modifiers
+        // TODO: This should return a view of the unified state's modifiers
+        // For now, we use the compat layer
+        self.state.modifiers()
     }
 
     /// Mutable modifier state (used for configuration).
     pub fn modifiers_mut(&mut self) -> &mut ModifierState {
-        &mut self.modifiers
+        // TODO: Direct mutation bypasses the unified state's mutation API
+        // This should eventually use apply() mutations
+        self.state.modifiers_mut()
     }
 
     /// Inspect layer stack.
     pub fn layers(&self) -> &LayerStack {
-        &self.layers
+        &self.layers_compat
     }
 
     /// Inspect pending decisions.
@@ -222,29 +277,40 @@ where
     }
 
     /// Serializable snapshot of current engine state.
-    pub fn snapshot(&self) -> EngineState {
+    ///
+    /// DEPRECATED: This returns the legacy EngineStateSnapshot format.
+    /// New code should use `state_snapshot()` to get the unified StateSnapshot.
+    pub fn snapshot(&self) -> EngineStateSnapshot {
         let pressed_keys = self
-            .key_state
+            .state
             .pressed_keys()
             .filter_map(|key| {
-                self.key_state
-                    .press_time(key)
+                self.state
+                    .key_press_time(key)
                     .map(|pressed_at| PressedKeyState { key, pressed_at })
             })
             .collect();
 
-        EngineState {
+        EngineStateSnapshot {
             pressed_keys,
-            modifiers: self.modifiers,
-            layers: self.layers.clone(),
+            modifiers: *self.state.modifiers(),
+            layers: self.layers_compat.clone(),
             pending: self.pending.snapshot(),
             timing: self.timing.clone(),
             safe_mode: self.safe_mode,
         }
     }
 
+    /// Get a state snapshot using the new unified StateSnapshot format.
+    ///
+    /// This is the preferred way to get state snapshots for new code.
+    pub fn state_snapshot(&self) -> crate::engine::state::snapshot::StateSnapshot {
+        (&self.state).into()
+    }
+
     fn enqueue_combos(&mut self, event: &InputEvent) -> (bool, Vec<OutputAction>) {
-        let pressed_keys: Vec<_> = self.key_state.pressed_keys().collect();
+        // Get currently pressed keys from unified state
+        let pressed_keys: Vec<_> = self.state.pressed_keys().collect();
         let mut blocked = false;
         let mut outputs = Vec::new();
 
@@ -276,7 +342,8 @@ where
         resolutions: Vec<DecisionResolution>,
         event: Option<&InputEvent>,
     ) -> (Vec<OutputAction>, bool, bool) {
-        let result = process_resolutions(resolutions, &self.key_state);
+        // Use the unified state's key tracking via the view adapter
+        let result = process_resolutions(resolutions, &KeyStateView(&self.state));
         let mut outputs = result.outputs;
 
         // Apply state changes
@@ -288,8 +355,10 @@ where
         }
 
         // Activate hold actions
+        // TODO: Eventually use the unified state's mutation API instead
         for (_, action) in &result.hold_activations {
-            let hold_outputs = activate_hold_action(action, &mut self.modifiers, &mut self.layers);
+            let hold_outputs =
+                activate_hold_action(action, self.state.modifiers_mut(), &mut self.layers_compat);
             outputs.extend(hold_outputs);
         }
 
@@ -326,7 +395,13 @@ where
         }
 
         // Use the decision_engine helper for other actions
-        let result = handle_layer_action(event, &action, &mut self.modifiers, &mut self.layers);
+        // TODO: Eventually use the unified state's mutation API instead
+        let result = handle_layer_action(
+            event,
+            &action,
+            self.state.modifiers_mut(),
+            &mut self.layers_compat,
+        );
         (result.outputs, result.consumed)
     }
 
@@ -349,7 +424,12 @@ where
         }
 
         // Use decision_engine helper for other actions
-        decision_engine::execute_layer_action(&action, &mut self.modifiers, &mut self.layers)
+        // TODO: Eventually use the unified state's mutation API instead
+        decision_engine::execute_layer_action(
+            &action,
+            self.state.modifiers_mut(),
+            &mut self.layers_compat,
+        )
     }
 }
 

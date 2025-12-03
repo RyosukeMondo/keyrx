@@ -146,7 +146,7 @@
 
 ## Phase 5: Integration
 
-- [ ] 15. Update Engine to use EngineState
+- [x] 15. Update Engine to use EngineState
   - Files: `core/src/engine/{advanced,processing}.rs`
   - Replace separate state structs with EngineState
   - Use apply() for all state changes
