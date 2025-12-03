@@ -1,7 +1,8 @@
 //! UAT command for running User Acceptance Tests.
 
-use crate::cli::{OutputFormat, OutputWriter};
-use crate::config::exit_codes::{CRASH, GATE_FAIL, PASS, TEST_FAIL};
+use crate::cli::{
+    Command, CommandContext, CommandError, CommandResult, ExitCode, OutputFormat, OutputWriter,
+};
 use crate::uat::{
     CoverageMapper, FuzzConfig, FuzzEngine, GateResult, PerformanceUat, QualityGateEnforcer,
     ReportData, ReportGenerator, UatFilter, UatRunner,
@@ -11,9 +12,13 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// Exit codes for UAT command (re-exported from config).
+/// Exit codes for UAT command.
 pub mod exit_codes {
-    pub use crate::config::exit_codes::{CRASH, GATE_FAIL, PASS, TEST_FAIL};
+    // Legacy exit code constants for backward compatibility
+    pub const PASS: i32 = 0;
+    pub const TEST_FAIL: i32 = 1;
+    pub const GATE_FAIL: i32 = 2;
+    pub const CRASH: i32 = 3;
 }
 
 /// UAT command for running User Acceptance Tests.
@@ -150,6 +155,43 @@ impl UatCommand {
         self
     }
 
+    /// Execute the UAT command with CommandResult.
+    ///
+    /// Returns a CommandResult indicating test success or failure with pass/fail counts.
+    pub fn execute_uat(&self) -> CommandResult<()> {
+        match self.run_internal() {
+            Ok((passed, failed, gate_passed, crash_count)) => {
+                if crash_count > 0 {
+                    CommandResult::failure(
+                        ExitCode::Panic,
+                        format!("Fuzz testing found {} crash(es)", crash_count),
+                    )
+                } else if failed > 0 {
+                    CommandResult::failure(
+                        ExitCode::AssertionFailed,
+                        CommandError::test_failure(
+                            format!("{} test(s) failed", failed),
+                            passed,
+                            failed,
+                        )
+                        .to_string(),
+                    )
+                } else if !gate_passed {
+                    CommandResult::failure(
+                        ExitCode::AssertionFailed,
+                        "Quality gate criteria not met".to_string(),
+                    )
+                } else {
+                    CommandResult::success_with_message(
+                        (),
+                        format!("All {} test(s) passed", passed),
+                    )
+                }
+            }
+            Err(e) => CommandResult::failure(ExitCode::GeneralError, e.to_string()),
+        }
+    }
+
     /// Run the UAT command.
     ///
     /// Returns the exit code:
@@ -158,6 +200,23 @@ impl UatCommand {
     /// - 2: Gate failure (tests passed but gate criteria not met)
     /// - 3: Crash detected (in fuzz testing)
     pub fn run(&self) -> Result<i32> {
+        match self.run_internal() {
+            Ok((_, failed, gate_passed, crash_count)) => {
+                if crash_count > 0 {
+                    Ok(exit_codes::CRASH)
+                } else if failed > 0 {
+                    Ok(exit_codes::TEST_FAIL)
+                } else if !gate_passed {
+                    Ok(exit_codes::GATE_FAIL)
+                } else {
+                    Ok(exit_codes::PASS)
+                }
+            }
+            Err(_) => Ok(exit_codes::TEST_FAIL),
+        }
+    }
+
+    fn run_internal(&self) -> Result<(usize, usize, bool, usize)> {
         // Build filter from options
         let filter = self.build_filter();
 
@@ -178,7 +237,7 @@ impl UatCommand {
         };
 
         // Run fuzz tests if requested
-        let fuzz_result = if self.fuzz {
+        let (fuzz_result, crash_count) = if self.fuzz {
             let fuzz_engine = FuzzEngine::new(FuzzConfig {
                 min_sequences: self.fuzz_count.unwrap_or(10_000) as usize,
                 max_duration: Duration::from_secs(self.fuzz_duration),
@@ -186,24 +245,22 @@ impl UatCommand {
             });
             let result = fuzz_engine.run(Duration::from_secs(self.fuzz_duration), self.fuzz_count);
 
-            // Check for crashes
-            if !result.crashes.is_empty() {
-                self.output.error(&format!(
-                    "Fuzz testing found {} crash(es)!",
-                    result.crashes.len()
-                ));
+            let crashes = result.crashes.len();
+            // Report crashes but don't return early - let caller handle exit
+            if crashes > 0 {
+                self.output
+                    .error(&format!("Fuzz testing found {} crash(es)!", crashes));
                 for crash in &result.crashes {
                     self.output.error(&format!(
                         "  Crash saved to: {} - {}",
                         crash.file_path, crash.error
                     ));
                 }
-                return Ok(CRASH);
             }
 
-            Some(result)
+            (Some(result), crashes)
         } else {
-            None
+            (None, 0)
         };
 
         // Build coverage map if requested or for report
@@ -227,9 +284,6 @@ impl UatCommand {
             None
         };
 
-        // Determine exit code before reporting
-        let exit_code = self.determine_exit_code(&uat_results, &gate_result);
-
         // Generate and output report if requested
         if self.report {
             self.generate_report(
@@ -249,7 +303,14 @@ impl UatCommand {
             gate_result.as_ref(),
         )?;
 
-        Ok(exit_code)
+        // Return results: (passed, failed, gate_passed, crash_count)
+        let gate_passed = gate_result.as_ref().is_none_or(|g| g.passed);
+        Ok((
+            uat_results.passed,
+            uat_results.failed,
+            gate_passed,
+            crash_count,
+        ))
     }
 
     /// Build a filter from the command options.
@@ -267,27 +328,6 @@ impl UatCommand {
             priorities,
             pattern: None,
         }
-    }
-
-    /// Determine the exit code based on results.
-    fn determine_exit_code(
-        &self,
-        uat_results: &crate::uat::UatResults,
-        gate_result: &Option<GateResult>,
-    ) -> i32 {
-        // Check for test failures first
-        if uat_results.failed > 0 {
-            return TEST_FAIL;
-        }
-
-        // Check gate result
-        if let Some(ref gate) = gate_result {
-            if !gate.passed {
-                return GATE_FAIL;
-            }
-        }
-
-        PASS
     }
 
     /// Generate and write a report to file.
@@ -489,6 +529,16 @@ impl UatCommand {
     }
 }
 
+impl Command for UatCommand {
+    fn name(&self) -> &str {
+        "uat"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        self.execute_uat()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -564,81 +614,6 @@ mod tests {
         let filter = cmd.build_filter();
 
         assert_eq!(filter.priorities.len(), 2);
-    }
-
-    #[test]
-    fn determine_exit_code_pass() {
-        let cmd = UatCommand::new(OutputFormat::Human);
-        let results = crate::uat::UatResults {
-            total: 10,
-            passed: 10,
-            failed: 0,
-            skipped: 0,
-            duration_us: 1000,
-            results: vec![],
-        };
-
-        let exit_code = cmd.determine_exit_code(&results, &None);
-        assert_eq!(exit_code, exit_codes::PASS);
-    }
-
-    #[test]
-    fn determine_exit_code_test_fail() {
-        let cmd = UatCommand::new(OutputFormat::Human);
-        let results = crate::uat::UatResults {
-            total: 10,
-            passed: 8,
-            failed: 2,
-            skipped: 0,
-            duration_us: 1000,
-            results: vec![],
-        };
-
-        let exit_code = cmd.determine_exit_code(&results, &None);
-        assert_eq!(exit_code, exit_codes::TEST_FAIL);
-    }
-
-    #[test]
-    fn determine_exit_code_gate_fail() {
-        let cmd = UatCommand::new(OutputFormat::Human);
-        let results = crate::uat::UatResults {
-            total: 10,
-            passed: 10,
-            failed: 0,
-            skipped: 0,
-            duration_us: 1000,
-            results: vec![],
-        };
-
-        let gate_result = GateResult {
-            passed: false,
-            violations: vec![crate::uat::GateViolation::new("pass_rate", "≥95%", "90%")],
-        };
-
-        let exit_code = cmd.determine_exit_code(&results, &Some(gate_result));
-        assert_eq!(exit_code, exit_codes::GATE_FAIL);
-    }
-
-    #[test]
-    fn determine_exit_code_test_fail_takes_priority() {
-        let cmd = UatCommand::new(OutputFormat::Human);
-        let results = crate::uat::UatResults {
-            total: 10,
-            passed: 8,
-            failed: 2,
-            skipped: 0,
-            duration_us: 1000,
-            results: vec![],
-        };
-
-        let gate_result = GateResult {
-            passed: false,
-            violations: vec![],
-        };
-
-        // Test failure should take priority over gate failure
-        let exit_code = cmd.determine_exit_code(&results, &Some(gate_result));
-        assert_eq!(exit_code, exit_codes::TEST_FAIL);
     }
 
     #[test]

@@ -1,7 +1,8 @@
 //! Test command for running Rhai script tests.
 
-use crate::cli::{OutputFormat, OutputWriter};
-use crate::config::exit_codes::{ASSERTION_FAIL, ERROR, PASS};
+use crate::cli::{
+    Command, CommandContext, CommandError, CommandResult, ExitCode, OutputFormat, OutputWriter,
+};
 use crate::error::KeyRxError;
 
 /// Exit codes for test command (re-exported from config).
@@ -90,7 +91,41 @@ impl TestCommand {
         }
     }
 
+    /// Execute the test command with CommandResult.
+    ///
+    /// Returns a CommandResult indicating test success or failure with pass/fail counts.
+    pub fn execute_tests(&self) -> CommandResult<()> {
+        match self.run_once_internal() {
+            Ok((passed, failed)) => {
+                if failed > 0 {
+                    CommandResult::failure(
+                        ExitCode::AssertionFailed,
+                        CommandError::test_failure(
+                            format!("{} test(s) failed", failed),
+                            passed,
+                            failed,
+                        )
+                        .to_string(),
+                    )
+                } else {
+                    CommandResult::success_with_message(
+                        (),
+                        format!("All {} test(s) passed", passed),
+                    )
+                }
+            }
+            Err(e) => CommandResult::failure(ExitCode::GeneralError, e.to_string()),
+        }
+    }
+
     fn run_once(&self) -> Result<i32> {
+        match self.run_once_internal() {
+            Ok((_, failed)) => Ok(if failed > 0 { 2 } else { 0 }),
+            Err(_) => Ok(1),
+        }
+    }
+
+    fn run_once_internal(&self) -> Result<(usize, usize)> {
         // Validate script path exists
         if !self.script_path.exists() {
             return Err(KeyRxError::InvalidPath {
@@ -120,7 +155,7 @@ impl TestCommand {
         if discovered.is_empty() {
             self.output
                 .warning("No test functions found (functions must start with 'test_')");
-            return Ok(PASS);
+            return Ok((0, 0));
         }
 
         // Create runtime and load script
@@ -143,13 +178,9 @@ impl TestCommand {
         // Output results
         self.output_results(&results);
 
-        // Determine exit code
+        // Return pass/fail counts
         let summary = TestSummary::from_results(&results);
-        if summary.failed > 0 {
-            Ok(ASSERTION_FAIL)
-        } else {
-            Ok(PASS)
-        }
+        Ok((summary.passed, summary.failed))
     }
 
     fn run_watch_mode(&self) -> Result<i32> {
@@ -191,11 +222,11 @@ impl TestCommand {
 
                     println!("\n[File changed, re-running tests...]\n");
 
-                    match self.run_once() {
-                        Ok(code) => last_exit_code = code,
+                    match self.run_once_internal() {
+                        Ok((_, failed)) => last_exit_code = if failed > 0 { 2 } else { 0 },
                         Err(e) => {
                             self.output.error(&format!("Test run failed: {e}"));
-                            last_exit_code = ERROR;
+                            last_exit_code = 1;
                         }
                     }
                 }
@@ -267,6 +298,16 @@ impl TestCommand {
     }
 }
 
+impl Command for TestCommand {
+    fn name(&self) -> &str {
+        "test"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        self.execute_tests()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,10 +320,10 @@ mod tests {
         writeln!(file, "fn helper() {{ 42 }}").expect("write file");
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_ok());
-        assert_eq!(result.expect("run"), PASS);
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -291,10 +332,10 @@ mod tests {
         writeln!(file, "fn test_simple() {{ let x = 1 + 1; }}").expect("write file");
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_ok());
-        assert_eq!(result.expect("run"), PASS);
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -303,18 +344,19 @@ mod tests {
         writeln!(file, "fn test_fail() {{ throw \"expected failure\"; }}").expect("write file");
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_ok());
-        assert_eq!(result.expect("run"), ASSERTION_FAIL);
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::AssertionFailed);
     }
 
     #[test]
     fn test_command_file_not_found() {
         let cmd = TestCommand::new(PathBuf::from("/nonexistent/path.rhai"), OutputFormat::Human);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_err());
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::GeneralError);
     }
 
     #[test]
@@ -332,10 +374,10 @@ mod tests {
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Human)
             .with_filter(Some("test_alpha*".to_string()));
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_ok());
-        assert_eq!(result.expect("run"), PASS);
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -344,10 +386,10 @@ mod tests {
         writeln!(file, "fn test_json() {{ let x = 42; }}").expect("write file");
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Json);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_ok());
-        assert_eq!(result.expect("run"), PASS);
+        assert!(result.is_success());
+        assert_eq!(result.exit_code(), ExitCode::Success);
     }
 
     #[test]
@@ -356,8 +398,9 @@ mod tests {
         writeln!(file, "fn test_bad {{ }}").expect("write file"); // Missing parens
 
         let cmd = TestCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-        let result = cmd.run();
+        let result = cmd.execute_tests();
 
-        assert!(result.is_err());
+        assert!(result.is_failure());
+        assert_eq!(result.exit_code(), ExitCode::GeneralError);
     }
 }
