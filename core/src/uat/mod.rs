@@ -15,6 +15,7 @@ mod golden;
 mod golden_comparison;
 mod golden_types;
 mod perf;
+mod perf_analysis;
 mod perf_types;
 mod report;
 mod report_data;

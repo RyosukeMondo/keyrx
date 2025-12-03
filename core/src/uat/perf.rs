@@ -4,13 +4,12 @@
 //! It measures p50, p95, p99, and max latencies and detects threshold violations.
 //! It also supports baseline comparison for regression detection.
 
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
 
 use rhai::Engine;
 
+use super::perf_analysis;
 use super::runner::{UatFilter, UatTest};
 
 // Re-export types from perf_types for backward compatibility
@@ -409,7 +408,7 @@ impl PerformanceUat {
         );
 
         // Get current branch name to ensure we're not comparing against ourselves
-        let current_branch = Self::get_current_branch()?;
+        let current_branch = perf_analysis::get_current_branch()?;
         if current_branch == branch {
             tracing::warn!(
                 service = "keyrx",
@@ -422,17 +421,21 @@ impl PerformanceUat {
         }
 
         // Get current commit hash
-        let current_commit = Self::get_current_commit()?;
+        let current_commit = perf_analysis::get_current_commit()?;
 
         // Fetch baseline data from target branch
-        let baseline = Self::fetch_baseline_from_branch(branch)?;
+        let baseline = perf_analysis::fetch_baseline_from_branch(branch)?;
 
         // Run current performance tests
         let current_results = self.run(&UatFilter::default());
 
         // Compare results
-        let comparison =
-            Self::compare_results(&baseline, &current_results, &current_commit, threshold_us);
+        let comparison = perf_analysis::compare_results(
+            &baseline,
+            &current_results,
+            &current_commit,
+            threshold_us,
+        );
 
         if comparison.has_regression {
             tracing::warn!(
@@ -457,150 +460,15 @@ impl PerformanceUat {
         Ok(comparison)
     }
 
-    /// Get the current Git branch name.
-    fn get_current_branch() -> Result<String, BaselineError> {
-        let output = Command::new("git")
-            .args(["rev-parse", "--abbrev-ref", "HEAD"])
-            .output()
-            .map_err(|e| BaselineError::GitError(format!("Failed to run git: {e}")))?;
-
-        if !output.status.success() {
-            return Err(BaselineError::GitError(
-                String::from_utf8_lossy(&output.stderr).to_string(),
-            ));
-        }
-
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-    }
-
-    /// Get the current Git commit hash.
-    fn get_current_commit() -> Result<String, BaselineError> {
-        let output = Command::new("git")
-            .args(["rev-parse", "HEAD"])
-            .output()
-            .map_err(|e| BaselineError::GitError(format!("Failed to run git: {e}")))?;
-
-        if !output.status.success() {
-            return Err(BaselineError::GitError(
-                String::from_utf8_lossy(&output.stderr).to_string(),
-            ));
-        }
-
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-    }
-
-    /// Fetch baseline data from a Git branch.
-    fn fetch_baseline_from_branch(branch: &str) -> Result<BaselineData, BaselineError> {
-        // Use git show to get the baseline file content from the target branch
-        let output = Command::new("git")
-            .args(["show", &format!("{branch}:{BASELINE_FILE}")])
-            .output()
-            .map_err(|e| BaselineError::GitError(format!("Failed to run git: {e}")))?;
-
-        if !output.status.success() {
-            // Check if it's a "file not found" error
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("does not exist") || stderr.contains("not found") {
-                return Err(BaselineError::BaselineNotFound(branch.to_string()));
-            }
-            return Err(BaselineError::GitError(stderr.to_string()));
-        }
-
-        let content = String::from_utf8_lossy(&output.stdout);
-        serde_json::from_str(&content)
-            .map_err(|e| BaselineError::ParseError(format!("Invalid baseline JSON: {e}")))
-    }
-
-    /// Compare current results against baseline and detect regressions.
-    fn compare_results(
-        baseline: &BaselineData,
-        current: &PerfResults,
-        current_commit: &str,
-        threshold_us: u64,
-    ) -> PerfComparison {
-        let mut regressions = Vec::new();
-        let mut has_regression = false;
-
-        // Compare per-test results
-        for result in &current.results {
-            if let Some(baseline_test) = baseline.tests.get(&result.test_name) {
-                let delta_us = result.p50_us as i64 - baseline_test.p50_us as i64;
-                let exceeds_threshold = delta_us > threshold_us as i64;
-
-                if exceeds_threshold {
-                    has_regression = true;
-                }
-
-                // Record all tests with positive delta (performance got worse)
-                if delta_us > 0 {
-                    regressions.push(BaselineRegression {
-                        test_name: result.test_name.clone(),
-                        baseline_p50_us: baseline_test.p50_us,
-                        current_p50_us: result.p50_us,
-                        delta_us,
-                        threshold_us,
-                        exceeds_threshold,
-                    });
-                }
-            }
-        }
-
-        // Calculate aggregate deltas
-        let aggregate_p50_delta_us =
-            current.aggregate_p50_us as i64 - baseline.aggregate_p50_us as i64;
-        let aggregate_p95_delta_us =
-            current.aggregate_p95_us as i64 - baseline.aggregate_p95_us as i64;
-        let aggregate_p99_delta_us =
-            current.aggregate_p99_us as i64 - baseline.aggregate_p99_us as i64;
-        let aggregate_max_delta_us =
-            current.aggregate_max_us as i64 - baseline.aggregate_max_us as i64;
-
-        PerfComparison {
-            baseline_branch: baseline.branch.clone(),
-            baseline_commit: baseline.commit.clone(),
-            current_commit: current_commit.to_string(),
-            has_regression,
-            threshold_us,
-            regressions,
-            aggregate_p50_delta_us,
-            aggregate_p95_delta_us,
-            aggregate_p99_delta_us,
-            aggregate_max_delta_us,
-        }
-    }
-
     /// Save current performance results as a baseline.
     ///
     /// This should be called on the main branch after tests pass to establish
     /// the baseline for future comparisons.
     pub fn save_baseline(&self, results: &PerfResults) -> Result<(), BaselineError> {
-        let branch = Self::get_current_branch()?;
-        let commit = Self::get_current_commit()?;
+        let branch = perf_analysis::get_current_branch()?;
+        let commit = perf_analysis::get_current_commit()?;
 
-        let mut tests = HashMap::new();
-        for result in &results.results {
-            tests.insert(
-                result.test_name.clone(),
-                BaselineTestData {
-                    test_name: result.test_name.clone(),
-                    p50_us: result.p50_us,
-                    p95_us: result.p95_us,
-                    p99_us: result.p99_us,
-                    max_us: result.max_us,
-                },
-            );
-        }
-
-        let baseline = BaselineData {
-            branch,
-            commit,
-            captured_at: chrono::Utc::now().to_rfc3339(),
-            tests,
-            aggregate_p50_us: results.aggregate_p50_us,
-            aggregate_p95_us: results.aggregate_p95_us,
-            aggregate_p99_us: results.aggregate_p99_us,
-            aggregate_max_us: results.aggregate_max_us,
-        };
+        let baseline = perf_analysis::create_baseline_data(results, branch, commit);
 
         // Ensure target directory exists
         if let Some(parent) = PathBuf::from(BASELINE_FILE).parent() {
@@ -814,259 +682,5 @@ fn uat_layer_perf() {
         assert_eq!(results.results[0].test_name, "uat_core_perf");
     }
 
-    // Baseline comparison tests
-
-    #[test]
-    fn compare_results_detects_regression() {
-        let mut tests = HashMap::new();
-        tests.insert(
-            "test1".to_string(),
-            BaselineTestData {
-                test_name: "test1".to_string(),
-                p50_us: 100,
-                p95_us: 150,
-                p99_us: 200,
-                max_us: 250,
-            },
-        );
-
-        let baseline = BaselineData {
-            branch: "main".to_string(),
-            commit: "abc123".to_string(),
-            captured_at: "2025-01-01T00:00:00Z".to_string(),
-            tests,
-            aggregate_p50_us: 100,
-            aggregate_p95_us: 150,
-            aggregate_p99_us: 200,
-            aggregate_max_us: 250,
-        };
-
-        // Current results with regression (p50 increased by 150µs)
-        let current = PerfResults {
-            total: 1,
-            passed: 1,
-            failed: 0,
-            aggregate_p50_us: 250,
-            aggregate_p95_us: 300,
-            aggregate_p99_us: 350,
-            aggregate_max_us: 400,
-            total_duration_us: 1000,
-            results: vec![PerformanceResult {
-                test_name: "test1".to_string(),
-                test_file: "test.rhai".to_string(),
-                p50_us: 250,
-                p95_us: 300,
-                p99_us: 350,
-                max_us: 400,
-                min_us: 50,
-                iterations: 100,
-                threshold_us: Some(1000),
-                threshold_exceeded: false,
-                violations: vec![],
-            }],
-            all_violations: vec![],
-        };
-
-        let comparison = PerformanceUat::compare_results(&baseline, &current, "def456", 100);
-
-        assert!(comparison.has_regression);
-        assert_eq!(comparison.regressions.len(), 1);
-        assert_eq!(comparison.regressions[0].test_name, "test1");
-        assert_eq!(comparison.regressions[0].baseline_p50_us, 100);
-        assert_eq!(comparison.regressions[0].current_p50_us, 250);
-        assert_eq!(comparison.regressions[0].delta_us, 150);
-        assert!(comparison.regressions[0].exceeds_threshold);
-    }
-
-    #[test]
-    fn compare_results_no_regression_within_threshold() {
-        let mut tests = HashMap::new();
-        tests.insert(
-            "test1".to_string(),
-            BaselineTestData {
-                test_name: "test1".to_string(),
-                p50_us: 100,
-                p95_us: 150,
-                p99_us: 200,
-                max_us: 250,
-            },
-        );
-
-        let baseline = BaselineData {
-            branch: "main".to_string(),
-            commit: "abc123".to_string(),
-            captured_at: "2025-01-01T00:00:00Z".to_string(),
-            tests,
-            aggregate_p50_us: 100,
-            aggregate_p95_us: 150,
-            aggregate_p99_us: 200,
-            aggregate_max_us: 250,
-        };
-
-        // Current results with small increase (50µs, within 100µs threshold)
-        let current = PerfResults {
-            total: 1,
-            passed: 1,
-            failed: 0,
-            aggregate_p50_us: 150,
-            aggregate_p95_us: 200,
-            aggregate_p99_us: 250,
-            aggregate_max_us: 300,
-            total_duration_us: 1000,
-            results: vec![PerformanceResult {
-                test_name: "test1".to_string(),
-                test_file: "test.rhai".to_string(),
-                p50_us: 150,
-                p95_us: 200,
-                p99_us: 250,
-                max_us: 300,
-                min_us: 50,
-                iterations: 100,
-                threshold_us: Some(1000),
-                threshold_exceeded: false,
-                violations: vec![],
-            }],
-            all_violations: vec![],
-        };
-
-        let comparison = PerformanceUat::compare_results(&baseline, &current, "def456", 100);
-
-        // Has regression entry but doesn't exceed threshold
-        assert!(!comparison.has_regression);
-        assert_eq!(comparison.regressions.len(), 1);
-        assert!(!comparison.regressions[0].exceeds_threshold);
-        assert_eq!(comparison.regressions[0].delta_us, 50);
-    }
-
-    #[test]
-    fn compare_results_improvement_no_regression() {
-        let mut tests = HashMap::new();
-        tests.insert(
-            "test1".to_string(),
-            BaselineTestData {
-                test_name: "test1".to_string(),
-                p50_us: 200,
-                p95_us: 250,
-                p99_us: 300,
-                max_us: 350,
-            },
-        );
-
-        let baseline = BaselineData {
-            branch: "main".to_string(),
-            commit: "abc123".to_string(),
-            captured_at: "2025-01-01T00:00:00Z".to_string(),
-            tests,
-            aggregate_p50_us: 200,
-            aggregate_p95_us: 250,
-            aggregate_p99_us: 300,
-            aggregate_max_us: 350,
-        };
-
-        // Current results with improvement (faster)
-        let current = PerfResults {
-            total: 1,
-            passed: 1,
-            failed: 0,
-            aggregate_p50_us: 100,
-            aggregate_p95_us: 150,
-            aggregate_p99_us: 200,
-            aggregate_max_us: 250,
-            total_duration_us: 1000,
-            results: vec![PerformanceResult {
-                test_name: "test1".to_string(),
-                test_file: "test.rhai".to_string(),
-                p50_us: 100,
-                p95_us: 150,
-                p99_us: 200,
-                max_us: 250,
-                min_us: 50,
-                iterations: 100,
-                threshold_us: Some(1000),
-                threshold_exceeded: false,
-                violations: vec![],
-            }],
-            all_violations: vec![],
-        };
-
-        let comparison = PerformanceUat::compare_results(&baseline, &current, "def456", 100);
-
-        // Performance improved, no regressions
-        assert!(!comparison.has_regression);
-        assert!(comparison.regressions.is_empty());
-        assert_eq!(comparison.aggregate_p50_delta_us, -100);
-    }
-
-    #[test]
-    fn compare_results_handles_new_tests() {
-        // Baseline with one test
-        let mut tests = HashMap::new();
-        tests.insert(
-            "test1".to_string(),
-            BaselineTestData {
-                test_name: "test1".to_string(),
-                p50_us: 100,
-                p95_us: 150,
-                p99_us: 200,
-                max_us: 250,
-            },
-        );
-
-        let baseline = BaselineData {
-            branch: "main".to_string(),
-            commit: "abc123".to_string(),
-            captured_at: "2025-01-01T00:00:00Z".to_string(),
-            tests,
-            aggregate_p50_us: 100,
-            aggregate_p95_us: 150,
-            aggregate_p99_us: 200,
-            aggregate_max_us: 250,
-        };
-
-        // Current has a new test not in baseline
-        let current = PerfResults {
-            total: 2,
-            passed: 2,
-            failed: 0,
-            aggregate_p50_us: 125,
-            aggregate_p95_us: 175,
-            aggregate_p99_us: 225,
-            aggregate_max_us: 275,
-            total_duration_us: 1000,
-            results: vec![
-                PerformanceResult {
-                    test_name: "test1".to_string(),
-                    test_file: "test.rhai".to_string(),
-                    p50_us: 100,
-                    p95_us: 150,
-                    p99_us: 200,
-                    max_us: 250,
-                    min_us: 50,
-                    iterations: 100,
-                    threshold_us: Some(1000),
-                    threshold_exceeded: false,
-                    violations: vec![],
-                },
-                PerformanceResult {
-                    test_name: "test2_new".to_string(),
-                    test_file: "test2.rhai".to_string(),
-                    p50_us: 150,
-                    p95_us: 200,
-                    p99_us: 250,
-                    max_us: 300,
-                    min_us: 100,
-                    iterations: 100,
-                    threshold_us: Some(1000),
-                    threshold_exceeded: false,
-                    violations: vec![],
-                },
-            ],
-            all_violations: vec![],
-        };
-
-        let comparison = PerformanceUat::compare_results(&baseline, &current, "def456", 100);
-
-        // No regression because new test isn't in baseline (nothing to compare against)
-        assert!(!comparison.has_regression);
-    }
+    // Note: Baseline comparison tests are in perf_analysis module
 }
