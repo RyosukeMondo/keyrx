@@ -1,6 +1,7 @@
 //! Interactive REPL command.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::repl_history_path;
 use crate::engine::{AdvancedEngine, EngineState, InputEvent, KeyCode, LayerAction, RemapAction};
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
@@ -8,8 +9,6 @@ use anyhow::{Context, Result};
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::path::PathBuf;
-
-const HISTORY_FILE: &str = ".keyrx_repl_history";
 
 /// Interactive REPL for KeyRx.
 pub struct ReplCommand {
@@ -25,7 +24,7 @@ impl ReplCommand {
 
     pub fn run(&self) -> Result<()> {
         let mut editor = DefaultEditor::new().context("Failed to initialize readline")?;
-        let history_path = dirs_home().map(|p| p.join(HISTORY_FILE));
+        let history_path = repl_history_path();
 
         if let Some(ref path) = history_path {
             let _ = editor.load_history(path);
@@ -480,10 +479,4 @@ fn parse_input_keys(keys: &str) -> Result<Vec<InputEvent>> {
     }
 
     Ok(events)
-}
-
-fn dirs_home() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .or_else(|| std::env::var_os("USERPROFILE"))
-        .map(PathBuf::from)
 }

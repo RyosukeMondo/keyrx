@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use super::perf_analysis;
 use super::perf_runner;
 use super::runner::{UatFilter, UatTest};
+use crate::config::{DEFAULT_REGRESSION_THRESHOLD_US, PERF_BASELINE_FILE};
 
 // Re-export types from perf_types for backward compatibility
 pub use super::perf_types::{
@@ -17,14 +18,8 @@ pub use super::perf_types::{
     LatencyViolation, PerfComparison, PerfResults, PerformanceResult,
 };
 
-/// Default regression threshold in microseconds (100µs).
-const DEFAULT_REGRESSION_THRESHOLD_US: u64 = 100;
-
 /// Number of iterations to run for each performance test.
 const DEFAULT_ITERATIONS: usize = 100;
-
-/// Default baseline file path relative to project root.
-const BASELINE_FILE: &str = "target/perf-baseline.json";
 
 /// Performance UAT runner.
 ///
@@ -276,7 +271,7 @@ impl PerformanceUat {
         let baseline = perf_analysis::create_baseline_data(results, branch, commit);
 
         // Ensure target directory exists
-        if let Some(parent) = PathBuf::from(BASELINE_FILE).parent() {
+        if let Some(parent) = PathBuf::from(PERF_BASELINE_FILE).parent() {
             fs::create_dir_all(parent)
                 .map_err(|e| BaselineError::GitError(format!("Failed to create directory: {e}")))?;
         }
@@ -284,14 +279,14 @@ impl PerformanceUat {
         let json = serde_json::to_string_pretty(&baseline)
             .map_err(|e| BaselineError::ParseError(format!("Failed to serialize baseline: {e}")))?;
 
-        fs::write(BASELINE_FILE, json)
+        fs::write(PERF_BASELINE_FILE, json)
             .map_err(|e| BaselineError::GitError(format!("Failed to write baseline file: {e}")))?;
 
         tracing::info!(
             service = "keyrx",
             event = "baseline_saved",
             component = "performance_uat",
-            path = %BASELINE_FILE,
+            path = %PERF_BASELINE_FILE,
             "Baseline saved successfully"
         );
 

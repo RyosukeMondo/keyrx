@@ -1,6 +1,7 @@
 //! Simulate command for headless testing.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::DEFAULT_EVENT_GAP_US;
 use crate::engine::{
     AdvancedEngine, EngineState, HoldAction, InputEvent, KeyCode, LayerAction, OutputAction,
     PendingDecisionState, RemapAction, TimingConfig,
@@ -13,8 +14,6 @@ use rustyline::DefaultEditor;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
-
-const DEFAULT_EVENT_GAP_US: u64 = 1_000;
 
 #[derive(Debug)]
 struct ParsedKey {

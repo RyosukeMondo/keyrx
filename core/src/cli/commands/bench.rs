@@ -1,6 +1,7 @@
 //! Bench command for latency measurement.
 
 use crate::cli::{OutputFormat, OutputWriter};
+use crate::config::LATENCY_THRESHOLD_NS;
 use crate::engine::{Engine, InputEvent, KeyCode};
 use crate::mocks::{MockInput, MockState};
 use crate::scripting::RhaiRuntime;
@@ -39,9 +40,6 @@ impl BenchCommand {
     /// Default number of iterations.
     pub const DEFAULT_ITERATIONS: usize = 10000;
 
-    /// Warning threshold in nanoseconds (1ms = 1,000,000 ns).
-    const LATENCY_THRESHOLD_NS: u64 = 1_000_000;
-
     pub fn new(iterations: usize, script_path: Option<PathBuf>, format: OutputFormat) -> Self {
         Self {
             iterations,
@@ -67,7 +65,7 @@ impl BenchCommand {
         let p99_idx = ((latencies.len() as f64 * 0.99) as usize).saturating_sub(1);
         let p99_ns = latencies.get(p99_idx).copied().unwrap_or(max_ns);
 
-        let warning = if mean_ns > Self::LATENCY_THRESHOLD_NS {
+        let warning = if mean_ns > LATENCY_THRESHOLD_NS {
             Some(format!(
                 "Mean latency ({:.2}ms) exceeds 1ms threshold",
                 mean_ns as f64 / 1_000_000.0

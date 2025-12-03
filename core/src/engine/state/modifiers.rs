@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::config::MAX_MODIFIER_ID;
 use crate::traits::ModifierProvider;
 
 /// Identifies a modifier, either a standard OS modifier or a virtual one.
@@ -65,7 +66,8 @@ pub struct VirtualModifiers {
 }
 
 impl VirtualModifiers {
-    pub const MAX_ID: u8 = 255;
+    /// Maximum virtual modifier ID (re-exported from config for convenience).
+    pub const MAX_ID: u8 = MAX_MODIFIER_ID;
 
     pub fn activate(&mut self, id: u8) {
         let (idx, mask) = Self::index_mask(id);

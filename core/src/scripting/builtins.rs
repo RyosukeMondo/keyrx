@@ -8,6 +8,7 @@
 //! - Parsing functions for arrays and layer actions
 
 use super::helpers::parse_key_or_error;
+use crate::config::MAX_TIMEOUT_MS;
 use crate::engine::{
     HoldAction, KeyCode, LayerStack, Modifier, ModifierState, TimingConfig, VirtualModifiers,
 };
@@ -233,7 +234,6 @@ pub fn validate_timeout(
     fn_name: &str,
     allow_zero: bool,
 ) -> Result<u32, Box<EvalAltResult>> {
-    const MAX_TIMEOUT_MS: i64 = 5000;
     let min = if allow_zero { 0 } else { 1 };
     if !(min..=MAX_TIMEOUT_MS).contains(&ms) {
         return Err(timing_error(
