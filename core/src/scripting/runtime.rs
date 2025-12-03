@@ -79,6 +79,14 @@ impl RhaiRuntime {
     pub fn registry(&self) -> &RemapRegistry {
         &self.registry
     }
+
+    /// Get a mutable reference to the Rhai engine.
+    ///
+    /// This allows registering additional functions (e.g., test primitives)
+    /// before executing scripts.
+    pub fn engine_mut(&mut self) -> &mut Engine {
+        &mut self.engine
+    }
 }
 
 impl ScriptRuntime for RhaiRuntime {

@@ -4,12 +4,17 @@
 //! replayed and compared against to detect regressions. They capture input
 //! events and expected outputs in a human-readable JSON format.
 
+use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::drivers::keycodes::KeyCode;
+use crate::scripting::{get_pending_inputs, reset_test_context, RhaiRuntime, TestHarness};
+use crate::traits::ScriptRuntime;
 
 /// Current schema version for golden session format.
 pub const GOLDEN_SESSION_VERSION: &str = "1.0";
@@ -160,6 +165,53 @@ impl std::fmt::Display for DifferenceType {
     }
 }
 
+/// Error type for golden session operations.
+#[derive(Debug, Error)]
+pub enum GoldenSessionError {
+    /// Invalid session name format.
+    #[error("Invalid session name '{name}': {reason}")]
+    InvalidName { name: String, reason: String },
+
+    /// Script execution failed.
+    #[error("Script execution failed: {0}")]
+    ScriptError(String),
+
+    /// I/O error during file operations.
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Serialization error.
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+
+    /// Session not found.
+    #[error("Golden session not found: {0}")]
+    NotFound(String),
+}
+
+impl GoldenSessionError {
+    /// Create an invalid name error.
+    pub fn invalid_name(name: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self::InvalidName {
+            name: name.into(),
+            reason: reason.into(),
+        }
+    }
+}
+
+/// Result of recording a golden session.
+#[derive(Debug)]
+pub struct RecordResult {
+    /// Name of the recorded session.
+    pub session_name: String,
+    /// Path where the session was saved.
+    pub path: PathBuf,
+    /// Number of events recorded.
+    pub event_count: usize,
+    /// Duration of recording in microseconds.
+    pub duration_us: u64,
+}
+
 /// Manager for golden session operations.
 #[derive(Debug)]
 pub struct GoldenSessionManager {
@@ -190,6 +242,178 @@ impl GoldenSessionManager {
     /// Get the golden directory path.
     pub fn golden_dir(&self) -> &PathBuf {
         &self.golden_dir
+    }
+
+    /// Validate a session name format.
+    ///
+    /// Valid names must:
+    /// - Be non-empty
+    /// - Contain only alphanumeric characters, underscores, and hyphens
+    /// - Start with a letter or underscore
+    /// - Be at most 64 characters
+    pub fn validate_name(name: &str) -> Result<(), GoldenSessionError> {
+        if name.is_empty() {
+            return Err(GoldenSessionError::invalid_name(
+                name,
+                "name cannot be empty",
+            ));
+        }
+        if name.len() > 64 {
+            return Err(GoldenSessionError::invalid_name(
+                name,
+                "name cannot exceed 64 characters",
+            ));
+        }
+        // Check first character (we already verified name is non-empty)
+        let first_char = match name.chars().next() {
+            Some(c) => c,
+            None => {
+                return Err(GoldenSessionError::invalid_name(
+                    name,
+                    "name cannot be empty",
+                ))
+            }
+        };
+        if !first_char.is_ascii_alphabetic() && first_char != '_' {
+            return Err(GoldenSessionError::invalid_name(
+                name,
+                "name must start with a letter or underscore",
+            ));
+        }
+        if !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(GoldenSessionError::invalid_name(
+                name,
+                "name can only contain letters, numbers, underscores, and hyphens",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Record a golden session by executing a script.
+    ///
+    /// Executes the script at `script_path`, captures input events and outputs,
+    /// and saves the session to `tests/golden/<name>.krx` as JSON.
+    ///
+    /// # Arguments
+    /// * `name` - The session name (must be valid per `validate_name`)
+    /// * `script_path` - Path to the Rhai script that generates test events
+    ///
+    /// # Returns
+    /// A `RecordResult` with recording statistics, or an error if recording fails.
+    pub fn record(
+        &self,
+        name: &str,
+        script_path: &str,
+    ) -> Result<RecordResult, GoldenSessionError> {
+        // Validate the session name
+        Self::validate_name(name)?;
+
+        let start = Instant::now();
+
+        // Initialize test harness and runtime
+        reset_test_context();
+        let harness = TestHarness::new();
+        let mut runtime =
+            RhaiRuntime::new().map_err(|e| GoldenSessionError::ScriptError(e.to_string()))?;
+        harness.register_functions(runtime.engine_mut());
+
+        // Load and execute the script
+        runtime
+            .load_file(script_path)
+            .map_err(|e| GoldenSessionError::ScriptError(e.to_string()))?;
+        runtime
+            .run_script()
+            .map_err(|e| GoldenSessionError::ScriptError(e.to_string()))?;
+
+        // Sync outputs from engine to test context
+        harness.sync_outputs();
+
+        // Capture events from test context
+        let inputs = get_pending_inputs();
+        let context = harness.context_snapshot();
+
+        // Build the golden session
+        let mut session = GoldenSession::new(name);
+
+        // Convert input events to golden events
+        for input in &inputs {
+            let event = GoldenEvent {
+                event_type: if input.pressed {
+                    GoldenEventType::KeyPress
+                } else {
+                    GoldenEventType::KeyRelease
+                },
+                key: input.key,
+                time_us: input.timestamp_us,
+            };
+            session.add_event(event);
+        }
+
+        // Convert outputs to expected outputs
+        for (index, output) in context.outputs.iter().enumerate() {
+            let output_str = format!("{:?}", output);
+            session.add_expected_output(ExpectedOutput {
+                event_index: index,
+                output: output_str,
+                timing_range_us: None,
+            });
+        }
+
+        // Ensure the golden directory exists
+        fs::create_dir_all(&self.golden_dir)?;
+
+        // Serialize and save
+        let path = self.session_path(name);
+        let json = session.to_json()?;
+        fs::write(&path, json)?;
+
+        let duration_us = start.elapsed().as_micros() as u64;
+
+        Ok(RecordResult {
+            session_name: name.to_string(),
+            path,
+            event_count: session.events.len(),
+            duration_us,
+        })
+    }
+
+    /// Load a golden session from disk.
+    pub fn load(&self, name: &str) -> Result<GoldenSession, GoldenSessionError> {
+        let path = self.session_path(name);
+        if !path.exists() {
+            return Err(GoldenSessionError::NotFound(name.to_string()));
+        }
+        let json = fs::read_to_string(&path)?;
+        let session = GoldenSession::from_json(&json)?;
+        Ok(session)
+    }
+
+    /// List all golden sessions in the directory.
+    pub fn list_sessions(&self) -> Result<Vec<String>, GoldenSessionError> {
+        if !self.golden_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut sessions = Vec::new();
+        for entry in fs::read_dir(&self.golden_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension().is_some_and(|ext| ext == "krx") {
+                if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                    sessions.push(name.to_string());
+                }
+            }
+        }
+        sessions.sort();
+        Ok(sessions)
+    }
+
+    /// Check if a golden session exists.
+    pub fn session_exists(&self, name: &str) -> bool {
+        self.session_path(name).exists()
     }
 }
 
@@ -447,5 +671,113 @@ mod tests {
 
         let json = serde_json::to_string(&output).unwrap();
         assert!(!json.contains("timing_range_us"));
+    }
+
+    // Tests for session name validation
+    #[test]
+    fn validate_name_accepts_valid_names() {
+        assert!(GoldenSessionManager::validate_name("basic_typing").is_ok());
+        assert!(GoldenSessionManager::validate_name("test123").is_ok());
+        assert!(GoldenSessionManager::validate_name("_private").is_ok());
+        assert!(GoldenSessionManager::validate_name("layer-switch").is_ok());
+        assert!(GoldenSessionManager::validate_name("Test_Name-123").is_ok());
+    }
+
+    #[test]
+    fn validate_name_rejects_empty() {
+        let result = GoldenSessionManager::validate_name("");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, GoldenSessionError::InvalidName { .. }));
+        assert!(err.to_string().contains("empty"));
+    }
+
+    #[test]
+    fn validate_name_rejects_long_names() {
+        let long_name = "a".repeat(65);
+        let result = GoldenSessionManager::validate_name(&long_name);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("64 characters"));
+    }
+
+    #[test]
+    fn validate_name_rejects_invalid_start() {
+        let result = GoldenSessionManager::validate_name("123test");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("start with a letter"));
+
+        let result = GoldenSessionManager::validate_name("-test");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_name_rejects_invalid_chars() {
+        let result = GoldenSessionManager::validate_name("test name");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("only contain"));
+
+        let result = GoldenSessionManager::validate_name("test.name");
+        assert!(result.is_err());
+
+        let result = GoldenSessionManager::validate_name("test/name");
+        assert!(result.is_err());
+    }
+
+    // Tests for session error types
+    #[test]
+    fn golden_session_error_display() {
+        let err = GoldenSessionError::invalid_name("bad name", "contains spaces");
+        assert!(err.to_string().contains("bad name"));
+        assert!(err.to_string().contains("contains spaces"));
+
+        let err = GoldenSessionError::ScriptError("syntax error".to_string());
+        assert!(err.to_string().contains("syntax error"));
+
+        let err = GoldenSessionError::NotFound("missing".to_string());
+        assert!(err.to_string().contains("missing"));
+    }
+
+    // Tests for session existence and listing
+    #[test]
+    fn session_exists_returns_false_for_missing() {
+        let manager = GoldenSessionManager::with_dir("/nonexistent/path");
+        assert!(!manager.session_exists("test"));
+    }
+
+    #[test]
+    fn list_sessions_returns_empty_for_missing_dir() {
+        let manager = GoldenSessionManager::with_dir("/nonexistent/path");
+        let sessions = manager.list_sessions().unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[test]
+    fn load_returns_not_found_for_missing() {
+        let manager = GoldenSessionManager::with_dir("/nonexistent/path");
+        let result = manager.load("missing");
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            GoldenSessionError::NotFound(_)
+        ));
+    }
+
+    // Test RecordResult
+    #[test]
+    fn record_result_fields() {
+        let result = RecordResult {
+            session_name: "test".to_string(),
+            path: PathBuf::from("tests/golden/test.krx"),
+            event_count: 5,
+            duration_us: 1000,
+        };
+
+        assert_eq!(result.session_name, "test");
+        assert_eq!(result.path, PathBuf::from("tests/golden/test.krx"));
+        assert_eq!(result.event_count, 5);
+        assert_eq!(result.duration_us, 1000);
     }
 }

@@ -23,7 +23,8 @@ pub use gates::{
 };
 pub use golden::{
     DifferenceType, ExpectedOutput, GoldenDifference, GoldenEvent, GoldenEventType, GoldenSession,
-    GoldenSessionManager, GoldenSessionMetadata, GoldenVerifyResult, GOLDEN_SESSION_VERSION,
+    GoldenSessionError, GoldenSessionManager, GoldenSessionMetadata, GoldenVerifyResult,
+    RecordResult, GOLDEN_SESSION_VERSION,
 };
 pub use perf::{PerformanceResult, PerformanceUat};
 pub use report::ReportGenerator;
