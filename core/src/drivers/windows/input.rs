@@ -101,6 +101,10 @@ impl<I: KeyInjector> WindowsInput<I> {
         if thread_id == 0 {
             return;
         }
+        // SAFETY: PostThreadMessageW is safe to call with a valid thread ID.
+        // The thread_id is either 0 (checked above) or a valid Windows thread ID
+        // stored by the hook thread during startup. WM_QUIT with null parameters
+        // is a standard message that causes the message loop to exit.
         let result = unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
         if result.is_err() {
             warn!(
@@ -367,6 +371,10 @@ impl<I: KeyInjector> WindowsInput<I> {
         if thread_id == 0 {
             return;
         }
+        // SAFETY: PostThreadMessageW is safe to call with a valid thread ID.
+        // The thread_id is either 0 (checked above) or a valid Windows thread ID
+        // stored by the hook thread during startup. WM_QUIT with null parameters
+        // is a standard message that causes the message loop to exit.
         let result = unsafe { PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)) };
         if result.is_err() {
             warn!(

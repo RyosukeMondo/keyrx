@@ -122,6 +122,8 @@ impl HookManager {
     }
 
     fn register_thread(&self) -> u32 {
+        // SAFETY: GetCurrentThreadId is always safe to call. It returns the thread ID
+        // of the calling thread and has no preconditions or failure modes.
         let thread_id = unsafe { GetCurrentThreadId() };
         self.thread_id_store.store(thread_id, Ordering::SeqCst);
         debug!(
@@ -135,6 +137,9 @@ impl HookManager {
     }
 
     fn handle_message(&self, msg: &mut MSG, thread_id: u32) -> bool {
+        // SAFETY: PeekMessageW is safe to call with a valid MSG pointer.
+        // We pass a mutable reference to our MSG struct, None for any window,
+        // and PM_REMOVE to retrieve and remove messages from the queue.
         let has_message = unsafe { PeekMessageW(msg, None, 0, 0, PM_REMOVE) }.as_bool();
         if has_message {
             if msg.message == WM_QUIT {
@@ -147,6 +152,9 @@ impl HookManager {
                 );
                 return true;
             }
+            // SAFETY: TranslateMessage and DispatchMessageW are safe to call with
+            // a valid MSG pointer that was filled by PeekMessageW. These functions
+            // process Windows messages and dispatch them to window procedures.
             unsafe {
                 let _ = TranslateMessage(msg);
                 DispatchMessageW(msg);
@@ -223,8 +231,9 @@ fn check_emergency_exit_combo(vk_code: i32) -> bool {
         return false;
     }
 
-    // Use GetAsyncKeyState to check modifier state
-    // The high bit (0x8000) is set if the key is currently down
+    // SAFETY: GetAsyncKeyState is safe to call with valid virtual key codes.
+    // It returns the state of the specified key, with the high bit (0x8000) set
+    // if the key is currently pressed. We use valid VK_* constants from config.
     unsafe {
         let ctrl_down = (GetAsyncKeyState(VK_CONTROL) as u16 & 0x8000) != 0;
         let alt_down = (GetAsyncKeyState(VK_MENU) as u16 & 0x8000) != 0;

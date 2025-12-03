@@ -59,8 +59,11 @@ impl SendInputInjector {
         let vk_code = keycode_to_vk(key);
         let input = build_keyboard_input(key, vk_code, pressed);
 
-        // Call SendInput with a single input event
-        // SAFETY: We pass a valid INPUT structure with correct size
+        // SAFETY: SendInput is safe to call with the following guarantees:
+        // - We pass a valid INPUT array containing properly initialized INPUT structures
+        // - The size parameter matches the actual size of INPUT as required by Windows
+        // - The array length (1) matches the number of structures we're passing
+        // - All fields in the INPUT structure are valid (virtual key, flags, etc.)
         let inputs = [input];
         let result = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
 
@@ -120,7 +123,11 @@ impl KeyInjector for SendInputInjector {
     }
 }
 
-// SAFETY: SendInputInjector is stateless and safe to send between threads
+// SAFETY: SendInputInjector is safe to send between threads because:
+// - It is completely stateless (zero-sized type with no fields)
+// - SendInput is a thread-safe Windows API that can be called from any thread
+// - No thread-local state is used or modified
+// - No shared mutable state exists
 unsafe impl Send for SendInputInjector {}
 
 /// Build a Windows INPUT structure for keyboard input.
