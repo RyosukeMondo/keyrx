@@ -98,7 +98,7 @@
   - _Requirements: 4.1, 4.2, 4.3_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer optimizing release | Task: Optimize release profile for size | Restrictions: Balance size vs speed, test performance | _Leverage: Cargo profiles | Success: Release binary smaller | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Add release-debug profile
+- [x] 11. Add release-debug profile
   - File: `core/Cargo.toml`
   - Profile for profiling release builds
   - Keep symbols, enable optimizations

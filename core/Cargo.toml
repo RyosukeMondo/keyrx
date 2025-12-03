@@ -119,3 +119,9 @@ inherits = "dev"
 inherits = "release"
 debug = true
 strip = false
+
+# Release build with debug symbols for profiling and debugging optimized code
+[profile.release-debug]
+inherits = "release"
+debug = true
+strip = false
