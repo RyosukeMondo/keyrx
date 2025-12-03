@@ -124,7 +124,7 @@
 
 ## Phase 5: Documentation & Testing
 
-- [-] 13. Audit and document all unsafe blocks
+- [x] 13. Audit and document all unsafe blocks
   - Files: All driver files
   - Add SAFETY comments to every unsafe block
   - Explain invariants and guarantees
