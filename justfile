@@ -27,8 +27,8 @@ dev:
 ui:
     cd ui && flutter run -d linux
 
-# Run all quality checks (fmt, clippy, test)
-check: fmt-check clippy test
+# Run all quality checks (fmt, clippy, test, docs)
+check: fmt-check clippy test docs-errors
     @echo "All checks passed!"
 
 # Format all Rust code
@@ -60,8 +60,13 @@ clean:
     cd core && cargo clean
     cd ui && flutter clean
 
+# Generate error documentation from registry
+docs-errors:
+    @echo "Generating error documentation..."
+    cd core && cargo run --bin generate_error_docs
+
 # Build release binary for current platform
-build:
+build: docs-errors
     cd core && cargo build --release
 
 # Build for all supported platforms

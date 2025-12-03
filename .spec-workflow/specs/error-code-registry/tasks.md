@@ -147,7 +147,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Generate error documentation from registry | Restrictions: All categories, searchable format | _Leverage: ErrorDocGenerator | Success: Comprehensive error docs exist | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add doc generation to build
+- [x] 17. Add doc generation to build
   - File: `core/build.rs` or script
   - Regenerate docs on error changes
   - Purpose: Keep docs in sync
