@@ -164,7 +164,7 @@
   - _Requirements: 4.1, 4.4_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer updating FFI | Task: Update FFI exports to use StateSnapshot and StateChange | Restrictions: Same API surface, emit events, serialize correctly | _Leverage: StateSnapshot, FFI patterns | Success: FFI provides state snapshots, emits changes | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Remove legacy state structs
+- [x] 17. Remove legacy state structs
   - Files: Delete or deprecate old state files
   - Update imports throughout codebase
   - Verify no dead code
