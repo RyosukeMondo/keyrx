@@ -8,6 +8,7 @@
 //! - FFI exports for Flutter integration
 
 pub mod cli;
+pub mod config;
 pub mod discovery;
 pub mod drivers;
 pub mod engine;
