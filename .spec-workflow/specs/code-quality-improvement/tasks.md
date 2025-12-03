@@ -32,14 +32,14 @@
 
 ## Phase 2: Rust Complexity Reduction
 
-- [-] 5. Split process_event_traced into sub-functions
+- [x] 5. Split process_event_traced into sub-functions
   - Files: core/src/engine/processing.rs (new), core/src/engine/advanced.rs (modify)
   - Extract 5 focused functions from 98-line function
   - _Leverage: existing advanced.rs_
   - _Requirements: 5_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust refactoring engineer | Task: Split process_event_traced into: validate_and_check_safe_mode(), update_key_state(), resolve_decision(), apply_decision(), trace_event(). Each ≤50 lines. Main function ≤20 lines orchestrating calls | Restrictions: Maintain exact behavior; add unit tests for each sub-function | _Leverage: advanced.rs | _Requirements: 5 | Success: All sub-functions ≤50 lines with tests._
 
-- [ ] 6. Split run.rs (713 lines)
+- [x] 6. Split run.rs (713 lines)
   - Files: core/src/cli/commands/run.rs (modify), run_builder.rs (new), run_recorder.rs (new), run_tracer.rs (new)
   - Extract builder, recorder, tracer into separate modules
   - _Leverage: existing run.rs_
