@@ -14,6 +14,7 @@ mod gates;
 mod golden;
 mod perf;
 mod report;
+mod report_data;
 mod runner;
 
 pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
