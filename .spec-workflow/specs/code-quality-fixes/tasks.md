@@ -107,7 +107,7 @@
 
 ## Phase 4: UAT Golden Module Refactoring
 
-- [ ] 13. Create uat/golden_types.rs module
+- [x] 13. Create uat/golden_types.rs module
   - File: `src/uat/golden_types.rs`
   - Move: GoldenSession, GoldenEvent, GoldenVerifyResult, GoldenDifference, ExpectedOutput structs
   - Move: GoldenSessionError, RecordResult, UpdateResult
@@ -115,14 +115,14 @@
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/golden_types.rs with all golden-related type definitions from golden.rs: GoldenSession, GoldenSessionMetadata, GoldenEvent, ExpectedOutput, GoldenVerifyResult, GoldenDifference, DifferenceType, GoldenSessionError, RecordResult, UpdateResult | Restrictions: Keep serde derives | Success: Types compile. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 14. Create uat/golden_comparison.rs module
+- [x] 14. Create uat/golden_comparison.rs module
   - File: `src/uat/golden_comparison.rs`
   - Move: compare_outputs, outputs_match, remove_timestamps, find_number_end helpers
   - Purpose: Isolate comparison logic
   - _Requirements: REQ-3_
   - _Prompt: Implement the task for spec code-quality-fixes, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create src/uat/golden_comparison.rs with comparison functions: compare_outputs (line 604), outputs_match (line 665), remove_timestamps (line 684), find_number_end (line 706) | Restrictions: Keep function signatures | Success: Comparison logic works. Mark [-] before, log after, mark [x] complete._
 
-- [ ] 15. Update uat/golden.rs and mod.rs
+- [x] 15. Update uat/golden.rs and mod.rs
   - Files: `src/uat/golden.rs`, `src/uat/mod.rs`
   - Keep GoldenSessionManager in golden.rs
   - Add re-exports
