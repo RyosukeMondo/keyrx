@@ -3,7 +3,7 @@
 //! Detects duplicate remaps, remap-block conflicts, tap-hold conflicts,
 //! combo shadowing, and circular remap dependencies.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::drivers::keycodes::KeyCode;
 use crate::scripting::PendingOp;
@@ -217,6 +217,96 @@ pub fn detect_remap_conflicts(ops: &[PendingOp]) -> Vec<ValidationWarning> {
     ConflictDetector::detect_remap_conflicts(ops)
 }
 
+/// Information about a combo for shadowing detection.
+#[derive(Debug, Clone)]
+struct ComboInfo {
+    /// Index in the original operations list.
+    index: OpIndex,
+    /// Keys in the combo as a set for subset comparison.
+    keys: HashSet<KeyCode>,
+    /// Keys as vector for display (preserves original order).
+    keys_display: Vec<KeyCode>,
+}
+
+/// Detect combo shadowing where one combo's keys are a subset of another.
+///
+/// When combo A's keys are a subset of combo B's keys, combo A will always
+/// trigger before combo B can be completed, effectively shadowing it.
+///
+/// Example: [A, S] shadows [A, S, D] because pressing A+S+D will trigger
+/// the A+S combo before D is pressed.
+pub fn detect_combo_shadowing(ops: &[PendingOp]) -> Vec<ValidationWarning> {
+    let mut warnings = Vec::new();
+
+    // Collect all combo operations
+    let combos: Vec<ComboInfo> = ops
+        .iter()
+        .enumerate()
+        .filter_map(|(index, op)| {
+            if let PendingOp::Combo { keys, .. } = op {
+                Some(ComboInfo {
+                    index,
+                    keys: keys.iter().copied().collect(),
+                    keys_display: keys.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Check each pair of combos for subset relationships
+    for i in 0..combos.len() {
+        for j in (i + 1)..combos.len() {
+            let combo_a = &combos[i];
+            let combo_b = &combos[j];
+
+            // Check if one is a proper subset of the other
+            if is_proper_subset(&combo_a.keys, &combo_b.keys) {
+                // combo_a shadows combo_b
+                warnings.push(create_shadowing_warning(combo_a, combo_b));
+            } else if is_proper_subset(&combo_b.keys, &combo_a.keys) {
+                // combo_b shadows combo_a
+                warnings.push(create_shadowing_warning(combo_b, combo_a));
+            }
+        }
+    }
+
+    warnings
+}
+
+/// Check if `smaller` is a proper subset of `larger`.
+fn is_proper_subset(smaller: &HashSet<KeyCode>, larger: &HashSet<KeyCode>) -> bool {
+    smaller.len() < larger.len() && smaller.is_subset(larger)
+}
+
+/// Create a warning for combo shadowing.
+fn create_shadowing_warning(shorter: &ComboInfo, longer: &ComboInfo) -> ValidationWarning {
+    let shorter_keys: Vec<String> = shorter
+        .keys_display
+        .iter()
+        .map(|k| k.name().to_string())
+        .collect();
+    let longer_keys: Vec<String> = longer
+        .keys_display
+        .iter()
+        .map(|k| k.name().to_string())
+        .collect();
+
+    ValidationWarning::new(
+        "W008",
+        WarningCategory::Conflict,
+        format!(
+            "Combo [{}] (at {}) shadows combo [{}] (at {}): shorter combo triggers first",
+            shorter_keys.join("+"),
+            shorter.index + 1,
+            longer_keys.join("+"),
+            longer.index + 1
+        ),
+    )
+    .with_location(SourceLocation::new(longer.index + 1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,5 +503,199 @@ mod tests {
         ];
         let warnings = detect_remap_conflicts(&ops);
         assert_eq!(warnings[0].category, WarningCategory::Conflict);
+    }
+
+    // Combo shadowing tests
+    use crate::engine::LayerAction;
+
+    #[test]
+    fn no_shadowing_for_empty_ops() {
+        let warnings = detect_combo_shadowing(&[]);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn no_shadowing_for_disjoint_combos() {
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::D, KeyCode::F],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn detects_simple_subset_shadowing() {
+        // [A, S] shadows [A, S, D]
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S, KeyCode::D],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W008");
+        assert!(warnings[0].message.contains("shadows"));
+        assert!(warnings[0].message.contains("A+S"));
+    }
+
+    #[test]
+    fn detects_reversed_order_shadowing() {
+        // [A, S, D] is defined first, but [A, S] still shadows it
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S, KeyCode::D],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W008");
+    }
+
+    #[test]
+    fn no_shadowing_for_same_size_different_keys() {
+        // [A, S] and [A, D] - same size, different keys
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::D],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn no_shadowing_for_identical_combos() {
+        // Same combo twice is not shadowing (it's a duplicate, handled elsewhere)
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Remap(KeyCode::B),
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn handles_unsorted_combo_keys() {
+        // Keys in different order should still be detected
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::S, KeyCode::A], // reversed
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::D, KeyCode::A, KeyCode::S], // scrambled
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+    }
+
+    #[test]
+    fn detects_multiple_shadowing_relationships() {
+        // [A] shadows [A, S] and [A, S, D]
+        // [A, S] also shadows [A, S, D]
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S, KeyCode::D],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        // [A] shadows [A,S], [A] shadows [A,S,D], [A,S] shadows [A,S,D]
+        assert_eq!(warnings.len(), 3);
+    }
+
+    #[test]
+    fn shadowing_warning_has_correct_location() {
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::X,
+                to: KeyCode::Y,
+            }, // index 0
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            }, // index 1
+            PendingOp::Block { key: KeyCode::Z }, // index 2
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S, KeyCode::D],
+                action: LayerAction::Block,
+            }, // index 3
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings.len(), 1);
+        // Location should point to the shadowed (longer) combo at index 3 -> line 4
+        assert_eq!(warnings[0].location.as_ref().unwrap().line, 4);
+    }
+
+    #[test]
+    fn shadowing_warning_category_is_conflict() {
+        let ops = vec![
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S],
+                action: LayerAction::Block,
+            },
+            PendingOp::Combo {
+                keys: vec![KeyCode::A, KeyCode::S, KeyCode::D],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert_eq!(warnings[0].category, WarningCategory::Conflict);
+    }
+
+    #[test]
+    fn ignores_non_combo_ops() {
+        // Only Combo ops should be considered
+        let ops = vec![
+            PendingOp::Remap {
+                from: KeyCode::A,
+                to: KeyCode::B,
+            },
+            PendingOp::Block { key: KeyCode::S },
+            PendingOp::Combo {
+                keys: vec![KeyCode::D, KeyCode::F],
+                action: LayerAction::Block,
+            },
+        ];
+        let warnings = detect_combo_shadowing(&ops);
+        assert!(warnings.is_empty());
     }
 }
