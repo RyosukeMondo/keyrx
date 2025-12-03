@@ -10,14 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/keyboard_layout.dart';
+import '../repositories/mapping_repository.dart';
 import '../services/rhai_generator.dart';
 import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
+import 'editor_widgets.dart' show KeyMapping, KeyActionType;
 import 'visual_editor_widgets.dart';
 
 /// Visual editor page combining keyboard, mappings, and code view.
 class VisualEditorPage extends StatefulWidget {
-  const VisualEditorPage({super.key});
+  const VisualEditorPage({super.key, required this.mappingRepository});
+
+  /// The shared mapping repository for key mappings.
+  final MappingRepository mappingRepository;
 
   @override
   State<VisualEditorPage> createState() => _VisualEditorPageState();
@@ -28,7 +33,6 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   final _codeController = TextEditingController();
   final _fileNameController = TextEditingController(text: 'config.rhai');
 
-  List<RemapConfig> _mappings = [];
   List<TapHoldConfig> _tapHoldConfigs = [];
   bool _showCode = false;
   bool _codeModified = false;
@@ -37,16 +41,30 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   String? _selectedKeyId;
   String? _lastSavedPath;
 
+  /// Get mappings from the shared repository.
+  List<RemapConfig> get _mappings => widget.mappingRepository.toRemapConfigs();
+
   VisualConfig get _visualConfig => VisualConfig(
         mappings: _mappings,
         tapHoldConfigs: _tapHoldConfigs,
       );
 
   @override
+  void initState() {
+    super.initState();
+    widget.mappingRepository.addListener(_onMappingsChanged);
+  }
+
+  @override
   void dispose() {
+    widget.mappingRepository.removeListener(_onMappingsChanged);
     _codeController.dispose();
     _fileNameController.dispose();
     super.dispose();
+  }
+
+  void _onMappingsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -175,30 +193,24 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   }
 
   void _handleMappingCreated(String sourceKeyId, String targetKeyId) {
-    setState(() {
-      final existingIndex =
-          _mappings.indexWhere((m) => m.sourceKeyId == sourceKeyId);
-      if (existingIndex >= 0) {
-        _mappings = List.from(_mappings)
-          ..[existingIndex] = RemapConfig(
-            sourceKeyId: sourceKeyId,
-            targetKeyId: targetKeyId,
-          );
-      } else {
-        _mappings = [
-          ..._mappings,
-          RemapConfig(sourceKeyId: sourceKeyId, targetKeyId: targetKeyId),
-        ];
-      }
-      _updateCodeFromVisual();
-    });
+    // Use repository to store mapping (bridges to KeyMapping internally)
+    widget.mappingRepository.setMapping(
+      sourceKeyId,
+      KeyMapping(
+        from: sourceKeyId,
+        type: KeyActionType.remap,
+        to: targetKeyId,
+      ),
+    );
+    _updateCodeFromVisual();
   }
 
   void _handleMappingDeleted(int index) {
-    setState(() {
-      _mappings = List.from(_mappings)..removeAt(index);
+    final mappings = _mappings;
+    if (index >= 0 && index < mappings.length) {
+      widget.mappingRepository.removeMapping(mappings[index].sourceKeyId);
       _updateCodeFromVisual();
-    });
+    }
   }
 
   void _toggleCodeView() async {
@@ -227,8 +239,9 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
 
   void _parseCodeToVisual() {
     final config = _generator.parseScript(_codeController.text);
+    // Load mappings into repository
+    widget.mappingRepository.loadFromRemapConfigs(config.mappings);
     setState(() {
-      _mappings = config.mappings;
       _tapHoldConfigs = config.tapHoldConfigs;
       _hasAdvancedFeatures = config.hasAdvancedFeatures;
       _codeModified = false;
@@ -247,8 +260,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     if (_mappings.isEmpty && _tapHoldConfigs.isEmpty) return;
     final confirmed = await VisualEditorDialogs.showClearConfirmation(context);
     if (confirmed != true || !mounted) return;
+    widget.mappingRepository.clear();
     setState(() {
-      _mappings = [];
       _tapHoldConfigs = [];
       _hasAdvancedFeatures = false;
       _codeModified = false;
@@ -272,8 +285,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
       }
       final code = await file.readAsString();
       final config = _generator.parseScript(code);
+      widget.mappingRepository.loadFromRemapConfigs(config.mappings);
       setState(() {
-        _mappings = config.mappings;
         _tapHoldConfigs = config.tapHoldConfigs;
         _hasAdvancedFeatures = config.hasAdvancedFeatures;
         _codeController.text = code;

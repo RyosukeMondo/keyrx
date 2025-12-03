@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../repositories/mapping_repository.dart';
 import '../services/engine_service.dart';
 import '../state/app_state.dart';
 import '../widgets/keyboard.dart';
@@ -18,10 +19,14 @@ class EditorPage extends StatefulWidget {
   const EditorPage({
     super.key,
     required this.engineService,
+    required this.mappingRepository,
   });
 
   /// The engine service for key registry and script loading.
   final EngineService engineService;
+
+  /// The shared mapping repository for key mappings.
+  final MappingRepository mappingRepository;
 
   @override
   State<EditorPage> createState() => _EditorPageState();
@@ -36,8 +41,6 @@ class _EditorPageState extends State<EditorPage> {
   final TextEditingController _holdOutputController = TextEditingController();
   final TextEditingController _comboKeysController = TextEditingController();
   final TextEditingController _comboOutputController = TextEditingController();
-  final Map<String, KeyMapping> _mappings = {};
-  final List<ComboMapping> _combos = [];
   bool _isSaving = false;
   bool _isFetchingKeys = false;
   bool _usingFallbackKeys = false;
@@ -48,6 +51,7 @@ class _EditorPageState extends State<EditorPage> {
   @override
   void initState() {
     super.initState();
+    widget.mappingRepository.addListener(_onMappingsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchKeyRegistry();
     });
@@ -55,6 +59,7 @@ class _EditorPageState extends State<EditorPage> {
 
   @override
   void dispose() {
+    widget.mappingRepository.removeListener(_onMappingsChanged);
     _outputController.dispose();
     _layerController.dispose();
     _tapOutputController.dispose();
@@ -62,6 +67,10 @@ class _EditorPageState extends State<EditorPage> {
     _comboKeysController.dispose();
     _comboOutputController.dispose();
     super.dispose();
+  }
+
+  void _onMappingsChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -106,6 +115,7 @@ class _EditorPageState extends State<EditorPage> {
 
   Widget _buildConfigPanel() {
     final appState = context.watch<AppState>();
+    final repo = widget.mappingRepository;
     return Column(
       children: [
         KeyConfigPanel(
@@ -125,7 +135,7 @@ class _EditorPageState extends State<EditorPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: MappingListPanel(
-              mappings: _mappings,
+              mappings: repo.mappings,
               layers: appState.layers,
               onRemoveMapping: _removeMapping,
               onAddLayer: _addLayer,
@@ -138,9 +148,9 @@ class _EditorPageState extends State<EditorPage> {
           child: ComboConfigRow(
             comboKeysController: _comboKeysController,
             comboOutputController: _comboOutputController,
-            combos: _combos,
+            combos: repo.combos,
             onAddCombo: _addCombo,
-            onRemoveCombo: (index) => setState(() => _combos.removeAt(index)),
+            onRemoveCombo: (index) => repo.removeCombo(index),
           ),
         ),
       ],
@@ -148,13 +158,14 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _handleKeySelected(String key) {
+    final mapping = widget.mappingRepository.getMapping(key);
     setState(() {
       _selectedKey = key;
-      _outputController.text = _mappings[key]?.to ?? '';
-      _layerController.text = _mappings[key]?.layer ?? '';
-      _tapOutputController.text = _mappings[key]?.tapHoldTap ?? '';
-      _holdOutputController.text = _mappings[key]?.tapHoldHold ?? '';
-      _selectedAction = _mappings[key]?.type ?? KeyActionType.remap;
+      _outputController.text = mapping?.to ?? '';
+      _layerController.text = mapping?.layer ?? '';
+      _tapOutputController.text = mapping?.tapHoldTap ?? '';
+      _holdOutputController.text = mapping?.tapHoldHold ?? '';
+      _selectedAction = mapping?.type ?? KeyActionType.remap;
     });
   }
 
@@ -203,13 +214,12 @@ class _EditorPageState extends State<EditorPage> {
           : _holdOutputController.text.trim(),
     );
 
-    setState(() {
-      _mappings[_selectedKey!] = mapping;
-    });
+    widget.mappingRepository.setMapping(_selectedKey!, mapping);
   }
 
   Future<void> _saveScript() async {
-    if (_mappings.isEmpty) {
+    final repo = widget.mappingRepository;
+    if (repo.mappings.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Add at least one mapping before saving.'),
@@ -219,10 +229,7 @@ class _EditorPageState extends State<EditorPage> {
     }
 
     setState(() => _isSaving = true);
-    final script = ScriptGenerator.build(
-      mappings: _mappings.values,
-      combos: _combos,
-    );
+    final script = repo.generateScript();
 
     try {
       final file = File(_defaultScriptPath);
@@ -255,10 +262,7 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _viewScript() {
-    final script = ScriptGenerator.build(
-      mappings: _mappings.values,
-      combos: _combos,
-    );
+    final script = widget.mappingRepository.generateScript();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -275,12 +279,10 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   void _removeMapping(String key) {
-    setState(() {
-      _mappings.remove(key);
-      if (_selectedKey == key) {
-        _outputController.clear();
-      }
-    });
+    widget.mappingRepository.removeMapping(key);
+    if (_selectedKey == key) {
+      _outputController.clear();
+    }
   }
 
   void _addCombo() {
@@ -305,11 +307,9 @@ class _EditorPageState extends State<EditorPage> {
       return;
     }
 
-    setState(() {
-      _combos.add(ComboMapping(keys: keys, output: output));
-      _comboKeysController.clear();
-      _comboOutputController.clear();
-    });
+    widget.mappingRepository.addCombo(ComboMapping(keys: keys, output: output));
+    _comboKeysController.clear();
+    _comboOutputController.clear();
   }
 
   void _addLayer() {

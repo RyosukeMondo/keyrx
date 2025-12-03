@@ -108,21 +108,21 @@
 
 ## Phase 5: Flutter SSOT
 
-- [ ] 15. Create MappingRepository
+- [x] 15. Create MappingRepository
   - Files: ui/lib/repositories/mapping_repository.dart (new)
   - Single source of truth for key mappings
   - _Leverage: existing editor_page.dart mapping patterns_
   - _Requirements: 3_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter architect | Task: Create MappingRepository extending ChangeNotifier with: _mappings Map, _combos List, _tapHolds List. Add CRUD methods, generateScript(). Register in ServiceRegistry | Restrictions: ≤120 lines; immutable getters | _Leverage: editor_page.dart | _Requirements: 3 | Success: Single source for all mapping data._
 
-- [ ] 16. Consolidate layer state in AppState
+- [x] 16. Consolidate layer state in AppState
   - Files: ui/lib/state/app_state.dart (modify), ui/lib/pages/editor_page.dart (modify)
   - Remove duplicate layer state from EditorPage
   - _Leverage: existing app_state.dart_
   - _Requirements: 3_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter state engineer | Task: Ensure AppState has definitive layer list with add/remove/setActive methods. Remove _layers from EditorPage. Use context.watch<AppState>().layers in build | Restrictions: ≤60 lines changed total | _Leverage: app_state.dart | _Requirements: 3 | Success: Layers stored in one place only._
 
-- [ ] 17. Unify mapping models between editors
+- [x] 17. Unify mapping models between editors
   - Files: ui/lib/pages/editor_page.dart (modify), ui/lib/pages/visual_editor_page.dart (modify)
   - Both editors use MappingRepository
   - _Leverage: MappingRepository from task 15_

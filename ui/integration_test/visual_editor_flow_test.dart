@@ -112,12 +112,13 @@ void main() {
   });
 
   Widget buildTestApp() {
+    final mappingRepo = MappingRepository();
     final registry = ServiceRegistry.withOverrides(
       permissionService: MockPermissionService(),
       audioService: MockAudioService(),
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
-      mappingRepository: MappingRepository(),
+      mappingRepository: mappingRepo,
     );
 
     return MultiProvider(
@@ -133,8 +134,8 @@ void main() {
       child: MaterialApp(
         title: 'KeyRx Test',
         theme: ThemeData.dark(useMaterial3: true),
-        home: const Scaffold(
-          body: VisualEditorPage(),
+        home: Scaffold(
+          body: VisualEditorPage(mappingRepository: mappingRepo),
         ),
       ),
     );

@@ -68,7 +68,10 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
       TrainingScreen(audioService: registry.audioService),
-      EditorPage(engineService: registry.engineService),
+      EditorPage(
+        engineService: registry.engineService,
+        mappingRepository: registry.mappingRepository,
+      ),
       DebuggerPage(engineService: registry.engineService),
       ConsolePage(engineService: registry.engineService),
       const TradeOffVisualizerPage(),

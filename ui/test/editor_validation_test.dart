@@ -11,6 +11,7 @@ import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/state/app_state.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -79,8 +80,21 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: MaterialApp(home: EditorPage(engineService: engine)),
+          providers: [
+            Provider<ServiceRegistry>.value(value: registry),
+            ChangeNotifierProvider<AppState>(
+              create: (_) => AppState(
+                engineService: engine,
+                errorTranslator: registry.errorTranslator,
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: EditorPage(
+              engineService: engine,
+              mappingRepository: registry.mappingRepository,
+            ),
+          ),
         ),
       );
 
