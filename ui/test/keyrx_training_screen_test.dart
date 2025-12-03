@@ -15,6 +15,8 @@ import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 
+import 'helpers/fake_services.dart';
+
 // Mock implementations
 
 class _ControllableEngineService implements EngineService {
@@ -103,6 +105,9 @@ Widget _buildTestApp({
     errorTranslator: _FakeErrorTranslator(),
     engineService: engineService,
     mappingRepository: MappingRepository(),
+    deviceService: FakeDeviceService(),
+    testService: FakeTestService(),
+    bridge: FakeBridge(),
   );
 
   return MultiProvider(
