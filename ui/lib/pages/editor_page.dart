@@ -16,6 +16,7 @@ import '../services/engine_service.dart';
 import '../services/mapping_validator.dart';
 import '../services/script_file_service.dart';
 import '../state/app_state.dart';
+import '../config/config.dart';
 import '../widgets/keyboard.dart';
 import 'editor_widgets.dart';
 
@@ -63,13 +64,11 @@ class _EditorPageState extends State<EditorPage> {
   bool _usingFallbackKeys = false;
   String? _registryError;
   List<String> _canonicalKeys = KeyMappings.allowedKeys;
-  static const String _defaultScriptPath = 'scripts/generated.rhai';
 
   // Script validation state
   Timer? _validationDebounce;
   bool _isValidating = false;
   validation_models.ValidationResult? _validationResult;
-  final int _validationDebounceMs = 500; // Default from config
 
   @override
   void initState() {
@@ -103,7 +102,7 @@ class _EditorPageState extends State<EditorPage> {
   void _scheduleValidation() {
     _validationDebounce?.cancel();
     _validationDebounce = Timer(
-      Duration(milliseconds: _validationDebounceMs),
+      const Duration(milliseconds: TimingConfig.debounceMs),
       _validateScript,
     );
   }
@@ -208,7 +207,9 @@ class _EditorPageState extends State<EditorPage> {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: UiConstants.defaultPadding,
+            ),
             child: MappingListPanel(
               mappings: repo.mappings,
               layers: appState.layers,
@@ -219,7 +220,7 @@ class _EditorPageState extends State<EditorPage> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(UiConstants.defaultPadding),
           child: ComboConfigRow(
             comboKeysController: _comboKeysController,
             comboOutputController: _comboOutputController,
@@ -311,7 +312,7 @@ class _EditorPageState extends State<EditorPage> {
     final script = repo.generateScript();
 
     final result = await widget.scriptFileService.saveScript(
-      _defaultScriptPath,
+      PathConstants.defaultScriptPath,
       script,
     );
 
@@ -328,7 +329,7 @@ class _EditorPageState extends State<EditorPage> {
     // Load into engine
     final engine = widget.engineService;
     final loaded = engine.isInitialized
-        ? await engine.loadScript(_defaultScriptPath)
+        ? await engine.loadScript(PathConstants.defaultScriptPath)
         : false;
 
     if (mounted) {
@@ -336,8 +337,8 @@ class _EditorPageState extends State<EditorPage> {
         SnackBar(
           content: Text(
             loaded
-                ? 'Script saved and loaded from $_defaultScriptPath'
-                : 'Script saved to $_defaultScriptPath',
+                ? 'Script saved and loaded from ${PathConstants.defaultScriptPath}'
+                : 'Script saved to ${PathConstants.defaultScriptPath}',
           ),
         ),
       );
