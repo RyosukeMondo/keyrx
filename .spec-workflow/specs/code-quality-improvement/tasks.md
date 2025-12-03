@@ -46,7 +46,7 @@
   - _Requirements: 6_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust modularization engineer | Task: Split run.rs into: run.rs (RunCommand, ≤200 lines), run_builder.rs (RuntimeBuilder, ≤200 lines), run_recorder.rs (RecordingConfig, ≤150 lines), run_tracer.rs (TracingConfig, ≤150 lines) | Restrictions: Each file ≤500 lines; maintain public API | _Leverage: run.rs | _Requirements: 6 | Success: All files ≤500 lines._
 
-- [ ] 7. Split discover.rs (712 lines)
+- [x] 7. Split discover.rs (712 lines)
   - Files: core/src/cli/commands/discover.rs (modify), discover_session.rs (new), discover_validation.rs (new)
   - Extract session management and validation
   - _Leverage: existing discover.rs_
