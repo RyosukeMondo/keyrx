@@ -25,6 +25,9 @@ mod report_html_sections;
 mod report_html_styles;
 mod report_markdown;
 mod runner;
+mod runner_discovery;
+mod runner_execution;
+mod runner_types;
 
 pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
 pub use fuzz::{CrashSequence, FuzzConfig, FuzzEngine, FuzzEvent, FuzzResult, FuzzSequence};
