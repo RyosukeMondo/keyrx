@@ -104,7 +104,7 @@
 
 ## Phase 4: Migration
 
-- [ ] 12. Replace println errors in CLI
+- [x] 12. Replace println errors in CLI
   - Files: `core/src/bin/keyrx.rs`, CLI modules
   - Replace raw println with keyrx_err!
   - Purpose: Consistent CLI errors
