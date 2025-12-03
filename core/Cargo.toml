@@ -30,6 +30,7 @@ notify.workspace = true
 rustyline.workspace = true
 dirs.workspace = true
 strsim.workspace = true
+backtrace.workspace = true
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }

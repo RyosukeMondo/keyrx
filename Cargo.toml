@@ -52,6 +52,9 @@ dirs = "6.0"
 # String similarity for key name suggestions
 strsim = "0.11"
 
+# Stack traces for profiling
+backtrace = "0.3"
+
 # OpenTelemetry for tracing
 opentelemetry = "0.27"
 opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }

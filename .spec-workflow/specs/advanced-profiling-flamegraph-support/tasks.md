@@ -2,14 +2,14 @@
 
 ## Phase 1: Stack Sampling
 
-- [ ] 1. Create Profiler struct
+- [x] 1. Create Profiler struct
   - File: `core/src/profiling/profiler.rs`
   - Configuration
   - Lifecycle management
   - Purpose: Core profiling
   - _Requirements: 1.1_
 
-- [ ] 2. Implement stack sampler
+- [x] 2. Implement stack sampler
   - File: `core/src/profiling/sampler.rs`
   - Configurable rate
   - Low overhead collection

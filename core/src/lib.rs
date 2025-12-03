@@ -15,6 +15,7 @@ pub mod engine;
 pub mod error;
 pub mod ffi;
 pub mod mocks;
+pub mod profiling;
 pub mod scripting;
 pub mod traits;
 pub mod uat;
