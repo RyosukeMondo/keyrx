@@ -9,7 +9,7 @@
   - _Requirements: All_
   - _Prompt: Role: Rust systems engineer | Task: Create core/src/uat/mod.rs with module declarations and public exports for: runner, golden, gates, coverage, perf, fuzz, report. Add mod uat to core/src/lib.rs | Restrictions: ≤30 lines; follow existing module patterns; no implementation yet | Success: `cargo check` passes with empty submodules._
 
-- [ ] 2. Implement UAT test discovery
+- [x] 2. Implement UAT test discovery
   - Files: core/src/uat/runner.rs (new)
   - Implement UatTest struct and discovery of uat_* functions
   - _Leverage: core/src/test_harness/ discovery patterns_
