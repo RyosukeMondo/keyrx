@@ -76,7 +76,7 @@
 
 ## Phase 3: Command Migration
 
-- [-] 8. Migrate RunCommand
+- [x] 8. Migrate RunCommand
   - File: `core/src/cli/commands/run.rs`
   - Update to return CommandResult<()>
   - Extract command struct if not already separate
