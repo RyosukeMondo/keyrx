@@ -7,13 +7,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../config/config.dart';
 import '../services/engine_service.dart';
 
 /// Constants for latency thresholds.
+///
+/// Uses centralized values from [ThresholdConstants] and [TimingConfig].
 class LatencyThresholds {
-  static const int warningUs = 20000;
-  static const int cautionUs = 10000;
-  static const Duration animationDuration = Duration(milliseconds: 150);
+  static const int warningUs = ThresholdConstants.latencyWarningUs;
+  static const int cautionUs = ThresholdConstants.latencyCautionUs;
+  static const Duration animationDuration =
+      Duration(milliseconds: TimingConfig.animationDurationMs);
 }
 
 /// Builds the latency card with animated meter.
