@@ -4,6 +4,7 @@ import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import 'audio_service.dart';
 import 'audio_service_impl.dart';
+import 'device_service.dart';
 import 'engine_service.dart';
 import 'engine_service_impl.dart';
 import 'error_translator.dart';
@@ -19,6 +20,8 @@ class ServiceRegistry {
     required this.errorTranslator,
     required this.engineService,
     required this.mappingRepository,
+    required this.deviceService,
+    required this.bridge,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -29,6 +32,7 @@ class ServiceRegistry {
     ErrorTranslator? errorTranslator,
     PermissionService? permissionService,
     MappingRepository? mappingRepository,
+    DeviceService? deviceService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final permissions =
@@ -36,6 +40,7 @@ class ServiceRegistry {
         PermissionServiceImpl(microphonePermission: microphonePermission);
     final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
+    final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
     final mappedClassificationSource =
         classificationSource ??
         effectiveBridge.classificationStream?.map(
@@ -59,6 +64,8 @@ class ServiceRegistry {
       errorTranslator: translator,
       engineService: engine,
       mappingRepository: mappingRepository ?? MappingRepository(),
+      deviceService: device,
+      bridge: effectiveBridge,
     );
   }
 
@@ -69,6 +76,8 @@ class ServiceRegistry {
     required ErrorTranslator errorTranslator,
     required EngineService engineService,
     required MappingRepository mappingRepository,
+    required DeviceService deviceService,
+    required KeyrxBridge bridge,
   }) {
     return ServiceRegistry(
       permissionService: permissionService,
@@ -76,6 +85,8 @@ class ServiceRegistry {
       errorTranslator: errorTranslator,
       engineService: engineService,
       mappingRepository: mappingRepository,
+      deviceService: deviceService,
+      bridge: bridge,
     );
   }
 
@@ -84,6 +95,8 @@ class ServiceRegistry {
   final ErrorTranslator errorTranslator;
   final EngineService engineService;
   final MappingRepository mappingRepository;
+  final DeviceService deviceService;
+  final KeyrxBridge bridge;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -92,6 +105,8 @@ class ServiceRegistry {
     ErrorTranslator? errorTranslator,
     EngineService? engineService,
     MappingRepository? mappingRepository,
+    DeviceService? deviceService,
+    KeyrxBridge? bridge,
   }) {
     return ServiceRegistry(
       permissionService: permissionService ?? this.permissionService,
@@ -99,6 +114,8 @@ class ServiceRegistry {
       errorTranslator: errorTranslator ?? this.errorTranslator,
       engineService: engineService ?? this.engineService,
       mappingRepository: mappingRepository ?? this.mappingRepository,
+      deviceService: deviceService ?? this.deviceService,
+      bridge: bridge ?? this.bridge,
     );
   }
 
@@ -106,5 +123,7 @@ class ServiceRegistry {
   Future<void> dispose() async {
     await audioService.dispose();
     await engineService.dispose();
+    await deviceService.dispose();
+    await bridge.dispose();
   }
 }
