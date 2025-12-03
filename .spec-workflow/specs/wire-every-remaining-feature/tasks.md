@@ -148,7 +148,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec wire-every-remaining-feature, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Create RunControlsPage with large Start/Stop FAB, device dropdown, script selector, recording toggle, status indicators (running, device, script, recording) | Restrictions: ≤200 lines; prominent controls | _Leverage: training_screen.dart | _Requirements: 2 | Success: One-tap engine start with clear status._
 
-- [ ] 21. Add script validation to EditorPage
+- [x] 21. Add script validation to EditorPage
   - Files: ui/lib/pages/editor_page.dart (modify)
   - Add real-time validation and error display
   - _Leverage: existing editor_page.dart_
