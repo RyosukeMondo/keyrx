@@ -5,18 +5,16 @@
 
 use std::collections::HashSet;
 
-use crate::scripting::{LayerMapAction, PendingOp};
+use crate::scripting::{LayerMapAction, PendingOp, TimingUpdate};
 use crate::validation::config::ValidationConfig;
 use crate::validation::suggestions::suggest_similar_keys;
-use crate::validation::types::ValidationError;
+use crate::validation::types::{ValidationError, ValidationWarning, WarningCategory};
 
 /// Semantic validator for script operations.
 ///
 /// Validates that all key names are valid and that layer/modifier
 /// references refer to defined entities.
 pub struct SemanticValidator<'a> {
-    /// Config is stored for use in timing validation (Task 6).
-    #[allow(dead_code)]
     config: &'a ValidationConfig,
     defined_layers: HashSet<String>,
     defined_modifiers: HashSet<String>,
@@ -62,6 +60,84 @@ impl<'a> SemanticValidator<'a> {
         }
 
         errors
+    }
+
+    /// Validate timing operations and return warnings.
+    pub fn validate_timing(&self, ops: &[PendingOp]) -> Vec<ValidationWarning> {
+        let mut warnings = Vec::new();
+
+        for op in ops {
+            if let PendingOp::SetTiming(update) = op {
+                if let Some(warning) = self.check_timing_bounds(update) {
+                    warnings.push(warning);
+                }
+            }
+        }
+
+        warnings
+    }
+
+    /// Check if a timing value is within configured bounds.
+    fn check_timing_bounds(&self, update: &TimingUpdate) -> Option<ValidationWarning> {
+        match update {
+            TimingUpdate::TapTimeout(ms) => {
+                let (min, max) = self.config.tap_timeout_warn_range;
+                if *ms < min {
+                    Some(ValidationWarning::new(
+                        "W001",
+                        WarningCategory::Performance,
+                        format!(
+                            "Tap timeout {}ms is below recommended minimum ({}ms). \
+                             Very short timeouts may cause accidental taps.",
+                            ms, min
+                        ),
+                    ))
+                } else if *ms > max {
+                    Some(ValidationWarning::new(
+                        "W001",
+                        WarningCategory::Performance,
+                        format!(
+                            "Tap timeout {}ms exceeds recommended maximum ({}ms). \
+                             Very long timeouts may cause sluggish behavior.",
+                            ms, max
+                        ),
+                    ))
+                } else {
+                    None
+                }
+            }
+            TimingUpdate::ComboTimeout(ms) => {
+                let (min, max) = self.config.combo_timeout_warn_range;
+                if *ms < min {
+                    Some(ValidationWarning::new(
+                        "W002",
+                        WarningCategory::Performance,
+                        format!(
+                            "Combo timeout {}ms is below recommended minimum ({}ms). \
+                             Very short timeouts may miss combos.",
+                            ms, min
+                        ),
+                    ))
+                } else if *ms > max {
+                    Some(ValidationWarning::new(
+                        "W002",
+                        WarningCategory::Performance,
+                        format!(
+                            "Combo timeout {}ms exceeds recommended maximum ({}ms). \
+                             Very long timeouts may cause delayed responses.",
+                            ms, max
+                        ),
+                    ))
+                } else {
+                    None
+                }
+            }
+            // HoldDelay doesn't have a configured range, skip validation
+            TimingUpdate::HoldDelay(_)
+            | TimingUpdate::EagerTap(_)
+            | TimingUpdate::PermissiveHold(_)
+            | TimingUpdate::RetroTap(_) => None,
+        }
     }
 }
 
@@ -180,6 +256,12 @@ pub fn validate_operations(
 ) -> Vec<ValidationError> {
     let validator = SemanticValidator::new(config, layers.clone(), modifiers.clone());
     validator.validate_operations(ops)
+}
+
+/// Convenience function to validate timing operations.
+pub fn validate_timing(ops: &[PendingOp], config: &ValidationConfig) -> Vec<ValidationWarning> {
+    let validator = SemanticValidator::new(config, HashSet::new(), HashSet::new());
+    validator.validate_timing(ops)
 }
 
 #[cfg(test)]
@@ -373,5 +455,133 @@ mod tests {
 
         let errors = validate_operations(&ops, &HashSet::new(), &HashSet::new(), &config);
         assert_eq!(errors.len(), 3);
+    }
+
+    // Timing validation tests
+
+    #[test]
+    fn tap_timeout_within_range_no_warning() {
+        let config = test_config(); // default range: (50, 500)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(200))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn tap_timeout_below_min_produces_warning() {
+        let config = test_config(); // default range: (50, 500)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(10))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W001");
+        assert!(warnings[0].message.contains("10ms"));
+        assert!(warnings[0].message.contains("below"));
+        assert_eq!(warnings[0].category, WarningCategory::Performance);
+    }
+
+    #[test]
+    fn tap_timeout_above_max_produces_warning() {
+        let config = test_config(); // default range: (50, 500)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(1000))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W001");
+        assert!(warnings[0].message.contains("1000ms"));
+        assert!(warnings[0].message.contains("exceeds"));
+    }
+
+    #[test]
+    fn combo_timeout_within_range_no_warning() {
+        let config = test_config(); // default range: (10, 100)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::ComboTimeout(50))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn combo_timeout_below_min_produces_warning() {
+        let config = test_config(); // default range: (10, 100)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::ComboTimeout(5))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W002");
+        assert!(warnings[0].message.contains("5ms"));
+        assert!(warnings[0].message.contains("below"));
+    }
+
+    #[test]
+    fn combo_timeout_above_max_produces_warning() {
+        let config = test_config(); // default range: (10, 100)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::ComboTimeout(200))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].code, "W002");
+        assert!(warnings[0].message.contains("200ms"));
+        assert!(warnings[0].message.contains("exceeds"));
+    }
+
+    #[test]
+    fn hold_delay_does_not_produce_warning() {
+        let config = test_config();
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::HoldDelay(1000))];
+
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn timing_validation_uses_config_values() {
+        // Create custom config with different ranges
+        let mut config = ValidationConfig::default();
+        config.tap_timeout_warn_range = (100, 200);
+        config.combo_timeout_warn_range = (20, 50);
+
+        // 150ms is within custom range (100-200)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(150))];
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
+
+        // 80ms is below custom min (100)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(80))];
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].message.contains("100ms")); // shows config min
+
+        // 250ms is above custom max (200)
+        let ops = vec![PendingOp::SetTiming(TimingUpdate::TapTimeout(250))];
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].message.contains("200ms")); // shows config max
+    }
+
+    #[test]
+    fn multiple_timing_warnings_collected() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::SetTiming(TimingUpdate::TapTimeout(10)),
+            PendingOp::SetTiming(TimingUpdate::ComboTimeout(5)),
+        ];
+
+        let warnings = validate_timing(&ops, &config);
+        assert_eq!(warnings.len(), 2);
+    }
+
+    #[test]
+    fn boolean_timing_options_no_warning() {
+        let config = test_config();
+        let ops = vec![
+            PendingOp::SetTiming(TimingUpdate::EagerTap(true)),
+            PendingOp::SetTiming(TimingUpdate::PermissiveHold(true)),
+            PendingOp::SetTiming(TimingUpdate::RetroTap(true)),
+        ];
+
+        let warnings = validate_timing(&ops, &config);
+        assert!(warnings.is_empty());
     }
 }

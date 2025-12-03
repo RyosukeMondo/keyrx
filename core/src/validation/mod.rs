@@ -16,6 +16,7 @@ pub mod suggestions;
 pub mod types;
 
 pub use config::ValidationConfig;
+pub use semantic::{validate_operations, validate_timing, SemanticValidator};
 pub use suggestions::suggest_similar_keys;
 pub use types::{
     CoverageReport, LayerCoverage, SourceLocation, ValidationError, ValidationOptions,
