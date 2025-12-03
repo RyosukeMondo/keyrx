@@ -7,9 +7,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rhai::Engine;
-
 use super::perf_analysis;
+use super::perf_runner;
 use super::runner::{UatFilter, UatTest};
 
 // Re-export types from perf_types for backward compatibility
@@ -102,7 +101,7 @@ impl PerformanceUat {
         let mut failed = 0;
 
         for test in &tests {
-            let result = self.run_perf_test(test);
+            let result = perf_runner::run_perf_test(test, self.iterations);
 
             if result.threshold_exceeded {
                 failed += 1;
@@ -181,200 +180,6 @@ impl PerformanceUat {
             .filter(|t| t.latency_threshold.is_some())
             .filter(|t| filter.matches(t))
             .collect()
-    }
-
-    /// Run a single performance test with multiple iterations.
-    fn run_perf_test(&self, test: &UatTest) -> PerformanceResult {
-        tracing::debug!(
-            service = "keyrx",
-            event = "perf_test_start",
-            component = "performance_uat",
-            test_name = %test.name,
-            test_file = %test.file,
-            threshold_us = ?test.latency_threshold,
-            iterations = self.iterations,
-            "Running performance test"
-        );
-
-        let threshold_us = test.latency_threshold;
-        let mut latencies = Vec::with_capacity(self.iterations);
-        let mut violations = Vec::new();
-
-        // Read test file content once
-        let content = match fs::read_to_string(&test.file) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!(
-                    service = "keyrx",
-                    event = "perf_test_read_error",
-                    component = "performance_uat",
-                    test_name = %test.name,
-                    error = %e,
-                    "Failed to read test file"
-                );
-                return PerformanceResult {
-                    test_name: test.name.clone(),
-                    test_file: test.file.clone(),
-                    p50_us: 0,
-                    p95_us: 0,
-                    p99_us: 0,
-                    max_us: 0,
-                    min_us: 0,
-                    iterations: 0,
-                    threshold_us,
-                    threshold_exceeded: true,
-                    violations: vec![LatencyViolation {
-                        test_name: test.name.clone(),
-                        threshold_us: threshold_us.unwrap_or(0),
-                        actual_us: 0,
-                        iteration: 0,
-                    }],
-                };
-            }
-        };
-
-        // Create Rhai engine
-        let engine = Engine::new();
-
-        // Compile once, run multiple times
-        let ast = match engine.compile(&content) {
-            Ok(ast) => ast,
-            Err(e) => {
-                tracing::warn!(
-                    service = "keyrx",
-                    event = "perf_test_compile_error",
-                    component = "performance_uat",
-                    test_name = %test.name,
-                    error = %e,
-                    "Failed to compile test file"
-                );
-                return PerformanceResult {
-                    test_name: test.name.clone(),
-                    test_file: test.file.clone(),
-                    p50_us: 0,
-                    p95_us: 0,
-                    p99_us: 0,
-                    max_us: 0,
-                    min_us: 0,
-                    iterations: 0,
-                    threshold_us,
-                    threshold_exceeded: true,
-                    violations: vec![LatencyViolation {
-                        test_name: test.name.clone(),
-                        threshold_us: threshold_us.unwrap_or(0),
-                        actual_us: 0,
-                        iteration: 0,
-                    }],
-                };
-            }
-        };
-
-        // Run the script once to define functions
-        if let Err(e) = engine.run_ast(&ast) {
-            tracing::warn!(
-                service = "keyrx",
-                event = "perf_test_run_error",
-                component = "performance_uat",
-                test_name = %test.name,
-                error = %e,
-                "Failed to run test script"
-            );
-            return PerformanceResult {
-                test_name: test.name.clone(),
-                test_file: test.file.clone(),
-                p50_us: 0,
-                p95_us: 0,
-                p99_us: 0,
-                max_us: 0,
-                min_us: 0,
-                iterations: 0,
-                threshold_us,
-                threshold_exceeded: true,
-                violations: vec![LatencyViolation {
-                    test_name: test.name.clone(),
-                    threshold_us: threshold_us.unwrap_or(0),
-                    actual_us: 0,
-                    iteration: 0,
-                }],
-            };
-        }
-
-        // Run iterations
-        for i in 0..self.iterations {
-            let start = std::time::Instant::now();
-
-            let result = engine.call_fn::<()>(&mut rhai::Scope::new(), &ast, &test.name, ());
-
-            let duration_us = start.elapsed().as_micros() as u64;
-            latencies.push(duration_us);
-
-            if let Err(e) = result {
-                tracing::debug!(
-                    service = "keyrx",
-                    event = "perf_test_iteration_error",
-                    component = "performance_uat",
-                    test_name = %test.name,
-                    iteration = i,
-                    error = %e,
-                    "Test iteration failed"
-                );
-                // Record as a violation if there's a threshold
-                if let Some(threshold) = threshold_us {
-                    violations.push(LatencyViolation {
-                        test_name: test.name.clone(),
-                        threshold_us: threshold,
-                        actual_us: duration_us,
-                        iteration: i,
-                    });
-                }
-                continue;
-            }
-
-            // Check threshold violation
-            if let Some(threshold) = threshold_us {
-                if duration_us > threshold {
-                    violations.push(LatencyViolation {
-                        test_name: test.name.clone(),
-                        threshold_us: threshold,
-                        actual_us: duration_us,
-                        iteration: i,
-                    });
-                }
-            }
-        }
-
-        // Calculate percentiles
-        let percentiles = LatencyPercentiles::from_samples(&mut latencies);
-
-        let threshold_exceeded = !violations.is_empty();
-
-        tracing::debug!(
-            service = "keyrx",
-            event = "perf_test_complete",
-            component = "performance_uat",
-            test_name = %test.name,
-            p50_us = percentiles.p50_us,
-            p95_us = percentiles.p95_us,
-            p99_us = percentiles.p99_us,
-            max_us = percentiles.max_us,
-            iterations = self.iterations,
-            violations = violations.len(),
-            "Performance test complete"
-        );
-
-        PerformanceResult {
-            test_name: test.name.clone(),
-            test_file: test.file.clone(),
-            p50_us: percentiles.p50_us,
-            p95_us: percentiles.p95_us,
-            p99_us: percentiles.p99_us,
-            max_us: percentiles.max_us,
-            min_us: percentiles.min_us,
-            iterations: self.iterations,
-            threshold_us,
-            threshold_exceeded,
-            violations,
-        }
     }
 
     /// Compare current performance against a baseline from another branch.
