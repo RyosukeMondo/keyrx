@@ -16,6 +16,8 @@ mod perf;
 mod report;
 mod report_data;
 mod report_html;
+mod report_html_sections;
+mod report_html_styles;
 mod report_markdown;
 mod runner;
 

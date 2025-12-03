@@ -3,10 +3,10 @@
 //! This module contains functions for generating standalone HTML reports
 //! with embedded CSS for viewing in web browsers.
 
-use super::coverage::{CoverageReport, CoverageStatus};
 use super::gates::GateResult;
-use super::perf::PerfResults;
 use super::report_data::ReportData;
+use super::report_html_sections::{html_coverage_section, html_performance_section};
+use super::report_html_styles::REPORT_CSS;
 use super::runner::Priority;
 
 /// Generate an HTML report.
@@ -84,105 +84,13 @@ pub fn html_header(title: &str) -> String {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{}</title>
 <style>
-:root {{
-  --color-pass: #22c55e;
-  --color-fail: #ef4444;
-  --color-skip: #f59e0b;
-  --color-bg: #f8fafc;
-  --color-card: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
-}}
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
-  line-height: 1.6;
-  padding: 2rem;
-}}
-.container {{ max-width: 1200px; margin: 0 auto; }}
-header {{ margin-bottom: 2rem; }}
-h1 {{ font-size: 2rem; font-weight: 700; }}
-h2 {{ font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 1rem; }}
-h3 {{ font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }}
-.timestamp {{ color: var(--color-text-muted); font-size: 0.875rem; }}
-.card {{
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}}
-.summary-grid {{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}}
-.stat {{
-  text-align: center;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: var(--color-bg);
-}}
-.stat-value {{ font-size: 2rem; font-weight: 700; }}
-.stat-label {{ font-size: 0.875rem; color: var(--color-text-muted); }}
-.stat.pass {{ border-left: 4px solid var(--color-pass); }}
-.stat.fail {{ border-left: 4px solid var(--color-fail); }}
-.stat.skip {{ border-left: 4px solid var(--color-skip); }}
-.stat.total {{ border-left: 4px solid #3b82f6; }}
-.badge {{
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}}
-.badge-pass {{ background: #dcfce7; color: #166534; }}
-.badge-fail {{ background: #fee2e2; color: #991b1b; }}
-.badge-skip {{ background: #fef3c7; color: #92400e; }}
-.badge-p0 {{ background: #fee2e2; color: #991b1b; }}
-.badge-p1 {{ background: #fef3c7; color: #92400e; }}
-.badge-p2 {{ background: #e0e7ff; color: #3730a3; }}
-table {{
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}}
-th, td {{
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-}}
-th {{ font-weight: 600; background: var(--color-bg); }}
-tr:hover {{ background: var(--color-bg); }}
-.progress-bar {{
-  height: 8px;
-  background: var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-}}
-.progress-fill {{
-  height: 100%;
-  background: var(--color-pass);
-  transition: width 0.3s;
-}}
-.gate-pass {{ color: var(--color-pass); }}
-.gate-fail {{ color: var(--color-fail); }}
-.violation {{ background: #fee2e2; padding: 0.5rem; border-radius: 0.25rem; margin: 0.25rem 0; }}
-.coverage-verified {{ color: var(--color-pass); }}
-.coverage-atrisk {{ color: var(--color-fail); }}
-.coverage-uncovered {{ color: var(--color-text-muted); }}
-.perf-metric {{ display: inline-block; margin-right: 1.5rem; }}
-.perf-value {{ font-size: 1.5rem; font-weight: 600; }}
-.perf-label {{ font-size: 0.75rem; color: var(--color-text-muted); }}
-.error-msg {{ color: var(--color-fail); font-family: monospace; font-size: 0.8rem; }}
+{}
 </style>
 </head>
 <body>
 "#,
-        escape_html(title)
+        escape_html(title),
+        REPORT_CSS
     )
 }
 
@@ -405,171 +313,6 @@ pub fn html_failed_tests_section(data: &ReportData) -> String {
     html
 }
 
-/// Generate coverage section.
-pub fn html_coverage_section(coverage: &CoverageReport) -> String {
-    let mut html = format!(
-        r#"<section class="card">
-<h2>Requirements Coverage</h2>
-<div class="summary-grid">
-<div class="stat total">
-<div class="stat-value">{}</div>
-<div class="stat-label">Total Requirements</div>
-</div>
-<div class="stat pass">
-<div class="stat-value">{}</div>
-<div class="stat-label">Verified</div>
-</div>
-<div class="stat fail">
-<div class="stat-value">{}</div>
-<div class="stat-label">At Risk</div>
-</div>
-<div class="stat skip">
-<div class="stat-value">{}</div>
-<div class="stat-label">Uncovered</div>
-</div>
-<div class="stat">
-<div class="stat-value">{:.1}%</div>
-<div class="stat-label">Coverage</div>
-</div>
-</div>
-"#,
-        coverage.total,
-        coverage.verified,
-        coverage.at_risk,
-        coverage.uncovered,
-        coverage.coverage_percentage * 100.0
-    );
-
-    // Coverage matrix table
-    if !coverage.coverage.requirements.is_empty() {
-        html.push_str(
-            r#"<h3>Coverage Matrix</h3>
-<table>
-<thead><tr><th>Requirement</th><th>Status</th><th>Linked Tests</th></tr></thead>
-<tbody>
-"#,
-        );
-
-        let mut requirements: Vec<_> = coverage.coverage.requirements.iter().collect();
-        requirements.sort_by_key(|(id, _)| id.as_str());
-
-        for (id, req) in requirements {
-            let (status_class, status_text) = match req.status {
-                CoverageStatus::Verified => ("coverage-verified", "Verified"),
-                CoverageStatus::AtRisk => ("coverage-atrisk", "At Risk"),
-                CoverageStatus::Uncovered => ("coverage-uncovered", "Uncovered"),
-            };
-            let tests = if req.linked_tests.is_empty() {
-                "-".to_string()
-            } else {
-                req.linked_tests.join(", ")
-            };
-
-            html.push_str(&format!(
-                "<tr><td>{}</td><td class=\"{}\">{}</td><td>{}</td></tr>\n",
-                escape_html(id),
-                status_class,
-                status_text,
-                escape_html(&tests)
-            ));
-        }
-
-        html.push_str("</tbody></table>\n");
-    }
-
-    html.push_str("</section>\n");
-    html
-}
-
-/// Generate performance section.
-pub fn html_performance_section(perf: &PerfResults) -> String {
-    let mut html = format!(
-        r#"<section class="card">
-<h2>Performance Metrics</h2>
-<div style="margin-bottom: 1rem;">
-<span class="perf-metric"><span class="perf-value">{}us</span><br><span class="perf-label">P50 Latency</span></span>
-<span class="perf-metric"><span class="perf-value">{}us</span><br><span class="perf-label">P95 Latency</span></span>
-<span class="perf-metric"><span class="perf-value">{}us</span><br><span class="perf-label">P99 Latency</span></span>
-<span class="perf-metric"><span class="perf-value">{}us</span><br><span class="perf-label">Max Latency</span></span>
-</div>
-<div class="summary-grid">
-<div class="stat total">
-<div class="stat-value">{}</div>
-<div class="stat-label">Total Perf Tests</div>
-</div>
-<div class="stat pass">
-<div class="stat-value">{}</div>
-<div class="stat-label">Passed</div>
-</div>
-<div class="stat fail">
-<div class="stat-value">{}</div>
-<div class="stat-label">Failed</div>
-</div>
-</div>
-"#,
-        perf.aggregate_p50_us,
-        perf.aggregate_p95_us,
-        perf.aggregate_p99_us,
-        perf.aggregate_max_us,
-        perf.total,
-        perf.passed,
-        perf.failed
-    );
-
-    // Violations
-    if !perf.all_violations.is_empty() {
-        html.push_str("<h3>Latency Violations</h3>\n");
-        for violation in &perf.all_violations {
-            html.push_str(&format!(
-                "<div class=\"violation\"><strong>{}:</strong> Expected \u{2264}{}us, got {}us (iteration {})</div>\n",
-                escape_html(&violation.test_name),
-                violation.threshold_us,
-                violation.actual_us,
-                violation.iteration
-            ));
-        }
-    }
-
-    // Per-test results
-    if !perf.results.is_empty() {
-        html.push_str(
-            r#"<h3>Per-Test Results</h3>
-<table>
-<thead><tr><th>Test</th><th>P50</th><th>P95</th><th>P99</th><th>Max</th><th>Threshold</th><th>Status</th></tr></thead>
-<tbody>
-"#,
-        );
-
-        for result in &perf.results {
-            let status = if result.threshold_exceeded {
-                "<span class=\"badge badge-fail\">FAIL</span>"
-            } else {
-                "<span class=\"badge badge-pass\">PASS</span>"
-            };
-            let threshold_str = result
-                .threshold_us
-                .map(|t| format!("{}us", t))
-                .unwrap_or_else(|| "-".to_string());
-
-            html.push_str(&format!(
-                "<tr><td>{}</td><td>{}us</td><td>{}us</td><td>{}us</td><td>{}us</td><td>{}</td><td>{}</td></tr>\n",
-                escape_html(&result.test_name),
-                result.p50_us,
-                result.p95_us,
-                result.p99_us,
-                result.max_us,
-                threshold_str,
-                status
-            ));
-        }
-
-        html.push_str("</tbody></table>\n");
-    }
-
-    html.push_str("</section>\n");
-    html
-}
-
 /// Generate all tests section.
 pub fn html_all_tests_section(data: &ReportData) -> String {
     if data.uat_results.results.is_empty() {
@@ -623,7 +366,7 @@ pub fn escape_html(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::uat::coverage::{CoverageMap, CoverageReport, RequirementCoverage};
+    use crate::uat::coverage::{CoverageMap, CoverageReport, CoverageStatus, RequirementCoverage};
     use crate::uat::gates::GateViolation;
     use crate::uat::perf::{LatencyViolation, PerfResults, PerformanceResult};
     use crate::uat::runner::{UatResult, UatResults, UatTest};
