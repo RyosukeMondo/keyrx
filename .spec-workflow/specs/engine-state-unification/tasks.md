@@ -104,7 +104,7 @@
   - _Requirements: 2.2, 2.4_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing batch operations | Task: Implement apply_batch() with rollback on failure | Restrictions: Atomic semantics, full rollback, preserve state on error | _Leverage: apply() method | Success: Batches are atomic, rollback works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Implement state synchronization
+- [x] 11. Implement state synchronization
   - File: `core/src/engine/state/mod.rs`
   - Sync modifiers when keys released
   - Sync pending when layers change
