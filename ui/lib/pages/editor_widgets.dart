@@ -2,9 +2,11 @@
 ///
 /// Contains data models, script generation, and widget components
 /// used by EditorPage.
+library;
 
 import 'package:flutter/material.dart';
 
+import '../ffi/bridge.dart';
 import '../widgets/layer_panel.dart';
 
 /// Types of key actions available in the editor.
@@ -385,10 +387,113 @@ class KeyValidityChip extends StatelessWidget {
     final baseColor = isValid ? Colors.green : Colors.redAccent;
     return Chip(
       label: Text(label),
-      backgroundColor: baseColor.withOpacity(0.12),
+      backgroundColor: baseColor.withValues(alpha: 0.12),
       labelStyle: TextStyle(color: baseColor, fontWeight: FontWeight.w600),
       visualDensity: VisualDensity.compact,
-      side: BorderSide(color: baseColor.withOpacity(0.5)),
+      side: BorderSide(color: baseColor.withValues(alpha: 0.5)),
     );
   }
+}
+
+/// Widget for displaying script validation status banner.
+class ValidationBanner extends StatelessWidget {
+  const ValidationBanner({
+    super.key,
+    required this.isValidating,
+    required this.validationResult,
+    required this.onShowErrors,
+  });
+
+  final bool isValidating;
+  final ScriptValidationResult? validationResult;
+  final void Function(List<ScriptValidationError> errors) onShowErrors;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isValidating) {
+      return Container(
+        color: Colors.blue.withValues(alpha: 0.1),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text('Validating script...'),
+          ],
+        ),
+      );
+    }
+
+    final result = validationResult;
+    if (result == null || result.valid) {
+      return const SizedBox.shrink();
+    }
+
+    final errors = result.errors;
+    final errorMessage = result.errorMessage;
+
+    return Material(
+      color: Colors.red.withValues(alpha: 0.15),
+      child: InkWell(
+        onTap: errors.isNotEmpty ? () => onShowErrors(errors) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  errorMessage ??
+                      (errors.isNotEmpty
+                          ? 'Script has ${errors.length} error${errors.length > 1 ? 's' : ''}: ${errors.first.message}'
+                          : 'Script validation failed'),
+                  style: const TextStyle(color: Colors.red),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (errors.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.red),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shows a dialog with validation errors.
+void showValidationErrorsDialog(BuildContext context, List<ScriptValidationError> errors) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Script Validation Errors'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: errors.length,
+          separatorBuilder: (_, __) => const Divider(),
+          itemBuilder: (_, index) {
+            final e = errors[index];
+            return ListTile(
+              leading: const Icon(Icons.error, color: Colors.red),
+              title: Text(e.message),
+              subtitle: e.line != null
+                  ? Text('Line ${e.line}${e.column != null ? ', Column ${e.column}' : ''}')
+                  : null,
+              dense: true,
+            );
+          },
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+    ),
+  );
 }

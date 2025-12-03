@@ -172,7 +172,11 @@ class _EditorPageState extends State<EditorPage> {
             registryError: _registryError,
             onRefresh: _fetchKeyRegistry,
           ),
-          _buildValidationBanner(),
+          ValidationBanner(
+            isValidating: _isValidating,
+            validationResult: _validationResult,
+            onShowErrors: (errors) => showValidationErrorsDialog(context, errors),
+          ),
           Expanded(
             flex: 2,
             child: KeyboardWidget(
@@ -181,98 +185,6 @@ class _EditorPageState extends State<EditorPage> {
             ),
           ),
           Expanded(flex: 1, child: _buildConfigPanel()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildValidationBanner() {
-    if (_isValidating) {
-      return Container(
-        color: Colors.blue.withValues(alpha: 0.1),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: const Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 8),
-            Text('Validating script...'),
-          ],
-        ),
-      );
-    }
-
-    final result = _validationResult;
-    if (result == null || result.valid) {
-      return const SizedBox.shrink();
-    }
-
-    final errors = result.errors;
-    final errorMessage = result.errorMessage;
-
-    return Material(
-      color: Colors.red.withValues(alpha: 0.15),
-      child: InkWell(
-        onTap: errors.isNotEmpty ? () => _showValidationErrors(errors) : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  errorMessage ??
-                      (errors.isNotEmpty
-                          ? 'Script has ${errors.length} error${errors.length > 1 ? 's' : ''}: ${errors.first.message}'
-                          : 'Script validation failed'),
-                  style: const TextStyle(color: Colors.red),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (errors.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: Colors.red),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showValidationErrors(List<ScriptValidationError> errors) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Script Validation Errors'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: errors.length,
-            separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (context, index) {
-              final error = errors[index];
-              return ListTile(
-                leading: const Icon(Icons.error, color: Colors.red),
-                title: Text(error.message),
-                subtitle: error.line != null
-                    ? Text('Line ${error.line}${error.column != null ? ', Column ${error.column}' : ''}')
-                    : null,
-                dense: true,
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
         ],
       ),
     );
