@@ -16,6 +16,7 @@ pub mod suggestions;
 pub mod types;
 
 pub use config::ValidationConfig;
+pub use suggestions::suggest_similar_keys;
 pub use types::{
     CoverageReport, LayerCoverage, SourceLocation, ValidationError, ValidationOptions,
     ValidationResult, ValidationWarning, WarningCategory,

@@ -12,7 +12,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust config engineer | Task: Create core/src/validation/config.rs with ValidationConfig struct containing: max_errors, max_suggestions, similarity_threshold, blocked_keys_warning_threshold, max_cycle_depth, tap_timeout_warn_range, combo_timeout_warn_range, ui_validation_debounce_ms. Add serde derives, Default impl, load() from ~/.config/keyrx/validation.toml | Restrictions: ≤100 lines; use dirs crate; graceful fallback to defaults | Success: Config loads from file or uses defaults. Mark [-] before starting, use log-implementation after completion, mark [x] when done._
 
-- [ ] 2. Create validation module structure
+- [x] 2. Create validation module structure
   - Files: `core/src/validation/mod.rs` (new)
   - Create module with public exports for config, types, engine, semantic, conflicts, safety, coverage, suggestions
   - Add `pub mod validation;` to `core/src/lib.rs`
@@ -20,7 +20,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems engineer | Task: Create core/src/validation/mod.rs with module declarations and public exports for: config, types, engine, semantic, conflicts, safety, coverage, suggestions. Add mod validation to core/src/lib.rs | Restrictions: ≤30 lines; follow existing module patterns; no implementation yet | Success: `cargo check` passes with empty submodules. Mark [-] before starting, use log-implementation after completion, mark [x] when done._
 
-- [ ] 3. Define validation types and result structures
+- [x] 3. Define validation types and result structures
   - Files: `core/src/validation/types.rs` (new)
   - Implement ValidationResult, ValidationError, ValidationWarning, CoverageReport, ValidationOptions, SourceLocation, WarningCategory
   - Add serde derives for JSON output
@@ -28,7 +28,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-3, REQ-5_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust developer specializing in data modeling | Task: Create core/src/validation/types.rs with ValidationResult, ValidationError, ValidationWarning, CoverageReport, ValidationOptions structs as specified in design.md. Add serde Serialize/Deserialize derives | Restrictions: ≤150 lines; use existing patterns from error.rs; include doc comments | Success: All types compile, serde works for JSON. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 4. Implement key name suggestion engine
+- [-] 4. Implement key name suggestion engine
   - Files: `core/src/validation/suggestions.rs` (new)
   - Implement Levenshtein distance-based similar key suggestions
   - Use `KeyCode::all_names()` as dictionary
