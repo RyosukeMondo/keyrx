@@ -3,9 +3,10 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        replay_exit_codes, test_exit_codes, uat_exit_codes, AnalyzeCommand, BenchCommand,
-        CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand, ReplCommand,
-        ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
+        golden_exit_codes, replay_exit_codes, test_exit_codes, uat_exit_codes, AnalyzeCommand,
+        BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand,
+        GoldenCommand, GoldenSubcommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand,
+        StateCommand, TestCommand, UatCommand,
     },
     OutputFormat,
 };
@@ -235,6 +236,53 @@ enum Commands {
         #[arg(long)]
         gate: Option<String>,
     },
+
+    /// Golden session management for regression testing
+    Golden {
+        #[command(subcommand)]
+        command: GoldenCommands,
+    },
+}
+
+/// Golden session subcommands.
+#[derive(Subcommand)]
+enum GoldenCommands {
+    /// Record a new golden session from a script
+    Record {
+        /// Name of the golden session (alphanumeric, underscores, hyphens)
+        name: String,
+
+        /// Path to the script that generates events
+        #[arg(short, long)]
+        script: PathBuf,
+    },
+
+    /// Verify an existing golden session
+    Verify {
+        /// Name of the golden session to verify
+        name: String,
+
+        /// Path to the script to run for verification (optional)
+        #[arg(short, long)]
+        script: Option<PathBuf>,
+    },
+
+    /// Update an existing golden session
+    Update {
+        /// Name of the golden session to update
+        name: String,
+
+        /// Path to the script that generates events
+        #[arg(short, long)]
+        script: PathBuf,
+
+        /// Confirm the update (required to overwrite existing session)
+        #[arg(long)]
+        confirm: bool,
+    },
+
+    /// List all golden sessions
+    List,
 }
 
 fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
@@ -396,6 +444,36 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 return Err(anyhow::anyhow!("UAT failed with exit code {}", exit_code));
             }
         }
+        Commands::Golden { command } => {
+            let subcommand = match command {
+                GoldenCommands::Record { name, script } => {
+                    GoldenSubcommand::Record { name, script }
+                }
+                GoldenCommands::Verify { name, script } => {
+                    GoldenSubcommand::Verify { name, script }
+                }
+                GoldenCommands::Update {
+                    name,
+                    script,
+                    confirm,
+                } => GoldenSubcommand::Update {
+                    name,
+                    script,
+                    confirm,
+                },
+                GoldenCommands::List => GoldenSubcommand::List,
+            };
+
+            let exit_code = GoldenCommand::new(subcommand, format).run()?;
+
+            // Return early with specific exit code for golden failures
+            if exit_code != golden_exit_codes::SUCCESS {
+                return Err(anyhow::anyhow!(
+                    "Golden command failed with exit code {}",
+                    exit_code
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -436,6 +514,17 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
             return ExitCode::from(uat_exit_codes::CRASH as u8);
         }
         return ExitCode::from(uat_exit_codes::TEST_FAIL as u8);
+    }
+
+    // Check for golden session failures
+    if err_str.contains("Golden command failed with exit code") {
+        if err_str.contains(&format!("{}", golden_exit_codes::VERIFICATION_FAILED)) {
+            return ExitCode::from(golden_exit_codes::VERIFICATION_FAILED as u8);
+        }
+        if err_str.contains(&format!("{}", golden_exit_codes::CONFIRMATION_REQUIRED)) {
+            return ExitCode::from(golden_exit_codes::CONFIRMATION_REQUIRED as u8);
+        }
+        return ExitCode::from(golden_exit_codes::ERROR as u8);
     }
 
     // Check if the root cause is a KeyRxError
