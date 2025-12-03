@@ -113,7 +113,7 @@
   - _Requirements: 3.1, 1.4_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating commands | Task: Migrate SimulateCommand to use CommandResult with timeout handling | Restrictions: Return Timeout exit code on timeout, proper error context | _Leverage: Existing simulate.rs, CommandError::Timeout | Success: SimulateCommand uses new types, timeout handled correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Migrate remaining commands
+- [-] 12. Migrate remaining commands
   - Files: All remaining `core/src/cli/commands/*.rs`
   - Apply same pattern to: doctor, bench, state, discover, etc.
   - Ensure consistent Command trait implementation

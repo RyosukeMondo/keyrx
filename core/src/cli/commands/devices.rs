@@ -1,13 +1,12 @@
 //! Device listing command.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::drivers;
-use anyhow::Result;
 
 /// List all available keyboard devices.
 pub struct DevicesCommand {
     pub output: OutputWriter,
-    list_devices: fn() -> Result<Vec<drivers::DeviceInfo>>,
+    list_devices: fn() -> anyhow::Result<Vec<drivers::DeviceInfo>>,
 }
 
 impl DevicesCommand {
@@ -17,7 +16,7 @@ impl DevicesCommand {
 
     pub fn with_provider(
         format: OutputFormat,
-        list_devices: fn() -> Result<Vec<drivers::DeviceInfo>>,
+        list_devices: fn() -> anyhow::Result<Vec<drivers::DeviceInfo>>,
     ) -> Self {
         Self {
             output: OutputWriter::new(format),
@@ -25,12 +24,20 @@ impl DevicesCommand {
         }
     }
 
-    pub fn run(&self) -> Result<()> {
-        let devices = (self.list_devices)()?;
+    pub fn run(&self) -> CommandResult<()> {
+        let devices = match (self.list_devices)() {
+            Ok(d) => d,
+            Err(e) => {
+                return CommandResult::failure(
+                    ExitCode::DeviceNotFound,
+                    format!("Failed to list devices: {}", e),
+                )
+            }
+        };
         self.render_devices(&devices)
     }
 
-    fn render_devices(&self, devices: &[drivers::DeviceInfo]) -> Result<()> {
+    fn render_devices(&self, devices: &[drivers::DeviceInfo]) -> CommandResult<()> {
         if devices.is_empty() {
             match self.output.format() {
                 OutputFormat::Human => {
@@ -56,7 +63,7 @@ impl DevicesCommand {
                     println!("[]");
                 }
             }
-            return Ok(());
+            return CommandResult::success(());
         }
 
         match self.output.format() {
@@ -72,11 +79,26 @@ impl DevicesCommand {
                 }
             }
             OutputFormat::Json => {
-                self.output.data(devices)?;
+                if let Err(e) = self.output.data(devices) {
+                    return CommandResult::failure(
+                        ExitCode::GeneralError,
+                        format!("Failed to output device list: {}", e),
+                    );
+                }
             }
         }
 
-        Ok(())
+        CommandResult::success(())
+    }
+}
+
+impl Command for DevicesCommand {
+    fn name(&self) -> &str {
+        "devices"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        self.run()
     }
 }
 
@@ -121,31 +143,36 @@ mod tests {
     #[test]
     fn devices_command_renders_empty_human() {
         let cmd = DevicesCommand::with_provider(OutputFormat::Human, || Ok(vec![]));
-        cmd.run().unwrap();
+        let result = cmd.run();
+        assert!(result.is_success());
     }
 
     #[test]
     fn devices_command_renders_empty_json() {
         let cmd = DevicesCommand::with_provider(OutputFormat::Json, || Ok(vec![]));
-        cmd.run().unwrap();
+        let result = cmd.run();
+        assert!(result.is_success());
     }
 
     #[test]
     fn devices_command_renders_devices_human() {
         let cmd = DevicesCommand::with_provider(OutputFormat::Human, || Ok(sample_devices()));
-        cmd.run().unwrap();
+        let result = cmd.run();
+        assert!(result.is_success());
     }
 
     #[test]
     fn devices_command_renders_devices_json() {
         let cmd = DevicesCommand::with_provider(OutputFormat::Json, || Ok(sample_devices()));
-        cmd.run().unwrap();
+        let result = cmd.run();
+        assert!(result.is_success());
     }
 
     #[test]
     fn devices_command_propagates_errors_from_provider() {
         let cmd = DevicesCommand::with_provider(OutputFormat::Human, || Err(anyhow!("boom")));
-        let err = cmd.run().unwrap_err();
-        assert!(err.to_string().contains("boom"));
+        let result = cmd.run();
+        assert!(result.is_failure());
+        assert!(result.messages().iter().any(|msg| msg.contains("boom")));
     }
 }

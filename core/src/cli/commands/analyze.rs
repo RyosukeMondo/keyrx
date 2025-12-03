@@ -3,9 +3,9 @@
 //! Analyzes a recorded `.krx` session file and generates timing diagrams
 //! and statistics for debugging and performance analysis.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::engine::{DecisionType, SessionFile};
-use anyhow::{Context, Result};
+use anyhow::Context;
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -83,17 +83,25 @@ impl AnalyzeCommand {
     }
 
     /// Run the analyze command.
-    pub fn run(&self) -> Result<AnalysisResult> {
+    pub fn run(&self) -> CommandResult<AnalysisResult> {
         self.output.success(&format!(
             "Analyzing session: {}",
             self.session_path.display()
         ));
 
-        let content = std::fs::read_to_string(&self.session_path)
-            .with_context(|| format!("Failed to read session: {}", self.session_path.display()))?;
+        let content = match std::fs::read_to_string(&self.session_path)
+            .with_context(|| format!("Failed to read session: {}", self.session_path.display()))
+        {
+            Ok(c) => c,
+            Err(e) => return CommandResult::failure(ExitCode::GeneralError, format!("{:#}", e)),
+        };
 
-        let session = SessionFile::from_json(&content)
-            .with_context(|| format!("Failed to parse session: {}", self.session_path.display()))?;
+        let session = match SessionFile::from_json(&content)
+            .with_context(|| format!("Failed to parse session: {}", self.session_path.display()))
+        {
+            Ok(s) => s,
+            Err(e) => return CommandResult::failure(ExitCode::GeneralError, format!("{:#}", e)),
+        };
 
         let result = self.analyze_session(&session);
 
@@ -104,10 +112,15 @@ impl AnalyzeCommand {
         self.print_summary(&result);
 
         if matches!(self.output.format(), OutputFormat::Json) {
-            let _ = self.output.data(&result);
+            if let Err(e) = self.output.data(&result) {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to output results: {}", e),
+                );
+            }
         }
 
-        Ok(result)
+        CommandResult::success(result)
     }
 
     fn analyze_session(&self, session: &SessionFile) -> AnalysisResult {
@@ -321,7 +334,9 @@ mod tests {
         let path = write_session_file(&dir, &session);
 
         let cmd = AnalyzeCommand::new(path, OutputFormat::Human);
-        let result = cmd.run().expect("analyze should succeed");
+        let cmd_result = cmd.run();
+        assert!(cmd_result.is_success());
+        let result = cmd_result.value().expect("analyze should succeed");
 
         assert_eq!(result.event_count, 3);
         assert_eq!(result.duration_us, 20_000);
@@ -334,7 +349,9 @@ mod tests {
         let path = write_session_file(&dir, &session);
 
         let cmd = AnalyzeCommand::new(path, OutputFormat::Human);
-        let result = cmd.run().expect("analyze should succeed");
+        let cmd_result = cmd.run();
+        assert!(cmd_result.is_success());
+        let result = cmd_result.value().expect("analyze should succeed");
 
         assert_eq!(result.min_latency_us, 50);
         assert_eq!(result.max_latency_us, 100);
@@ -348,7 +365,9 @@ mod tests {
         let path = write_session_file(&dir, &session);
 
         let cmd = AnalyzeCommand::new(path, OutputFormat::Human);
-        let result = cmd.run().expect("analyze should succeed");
+        let cmd_result = cmd.run();
+        assert!(cmd_result.is_success());
+        let result = cmd_result.value().expect("analyze should succeed");
 
         assert_eq!(result.decision_breakdown.pass_through, 1);
         assert_eq!(result.decision_breakdown.remap, 1);
@@ -364,7 +383,7 @@ mod tests {
         );
         let result = cmd.run();
 
-        assert!(result.is_err());
+        assert!(result.is_failure());
     }
 
     #[test]
@@ -374,7 +393,9 @@ mod tests {
         let path = write_session_file(&dir, &session);
 
         let cmd = AnalyzeCommand::new(path, OutputFormat::Human).with_diagram(true);
-        let result = cmd.run().expect("analyze should succeed");
+        let cmd_result = cmd.run();
+        assert!(cmd_result.is_success());
+        let result = cmd_result.value().expect("analyze should succeed");
 
         // Diagram is printed to stdout, verify command succeeds
         assert_eq!(result.event_count, 3);
@@ -442,10 +463,23 @@ mod tests {
         let path = write_session_file(&dir, &session);
 
         let cmd = AnalyzeCommand::new(path, OutputFormat::Human);
-        let result = cmd.run().expect("analyze should succeed");
+        let cmd_result = cmd.run();
+        assert!(cmd_result.is_success());
+        let result = cmd_result.value().expect("analyze should succeed");
 
         assert_eq!(result.event_count, 0);
         assert_eq!(result.min_latency_us, 0);
         assert_eq!(result.max_latency_us, 0);
+    }
+}
+
+impl Command for AnalyzeCommand {
+    fn name(&self) -> &str {
+        "analyze"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        // Run and discard the result value since Command trait returns ()
+        self.run().map(|_| ())
     }
 }

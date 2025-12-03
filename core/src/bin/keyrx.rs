@@ -448,7 +448,10 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             let mut cmd = CheckCommand::new(script, ctx.output_format());
             cmd.execute(&ctx)
         }
-        Commands::Devices => convert_result(DevicesCommand::new(ctx.output_format()).run()),
+        Commands::Devices => {
+            let mut cmd = DevicesCommand::new(ctx.output_format());
+            cmd.execute(ctx)
+        }
         Commands::Run {
             script,
             debug,
@@ -474,18 +477,22 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             modifiers,
             pending,
             script,
-        } => convert_result(
-            StateCommand::new(layers, modifiers, pending, script, ctx.output_format()).run(),
-        ),
-        Commands::Doctor { verbose } => {
-            convert_result(DoctorCommand::new(verbose, ctx.output_format()).run())
+        } => {
+            let mut cmd =
+                StateCommand::new(layers, modifiers, pending, script, ctx.output_format());
+            cmd.execute(ctx)
         }
-        Commands::Repl => convert_result(ReplCommand::new(ctx.output_format()).run()),
+        Commands::Doctor { verbose } => {
+            let mut cmd = DoctorCommand::new(verbose, ctx.output_format());
+            cmd.execute(ctx)
+        }
+        Commands::Repl => {
+            let mut cmd = ReplCommand::new(ctx.output_format());
+            cmd.execute(ctx)
+        }
         Commands::Bench { iterations, script } => {
-            let result = BenchCommand::new(iterations, script, ctx.output_format())
-                .run()
-                .await;
-            convert_result(result)
+            let mut cmd = BenchCommand::new(iterations, script, ctx.output_format());
+            cmd.execute(ctx)
         }
         Commands::Simulate {
             input,
@@ -550,13 +557,8 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             }
         }
         Commands::Analyze { session, diagram } => {
-            match AnalyzeCommand::new(session, ctx.output_format())
-                .with_diagram(diagram)
-                .run()
-            {
-                Ok(_) => CommandResult::success(()),
-                Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-            }
+            let mut cmd = AnalyzeCommand::new(session, ctx.output_format()).with_diagram(diagram);
+            cmd.execute(ctx)
         }
         Commands::Uat {
             category,

@@ -1,7 +1,6 @@
 //! Self-diagnostics command.
 
-use crate::cli::{OutputFormat, OutputWriter};
-use anyhow::Result;
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use serde::Serialize;
 
 /// Run self-diagnostics.
@@ -85,7 +84,7 @@ impl DoctorCommand {
         }
     }
 
-    pub fn run(&self) -> Result<()> {
+    pub fn run(&self) -> CommandResult<()> {
         let mut checks = Vec::new();
 
         // Check Rhai engine
@@ -109,15 +108,23 @@ impl DoctorCommand {
         ));
 
         // Print results
-        self.print_results(&checks)?;
+        if let Err(e) = self.print_results(&checks) {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to print diagnostics: {}", e),
+            );
+        }
 
         // Return error if any check failed
         let has_failures = checks.iter().any(|c| c.status == CheckStatus::Fail);
         if has_failures {
-            anyhow::bail!("One or more diagnostic checks failed");
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                "One or more diagnostic checks failed".to_string(),
+            );
         }
 
-        Ok(())
+        CommandResult::success(())
     }
 
     #[cfg(target_os = "linux")]
@@ -246,7 +253,7 @@ impl DoctorCommand {
         }
     }
 
-    fn print_results(&self, checks: &[DiagnosticCheck]) -> Result<()> {
+    fn print_results(&self, checks: &[DiagnosticCheck]) -> anyhow::Result<()> {
         match self.output.format() {
             OutputFormat::Human => {
                 println!("KeyRx Diagnostics\n");
@@ -287,6 +294,16 @@ impl DoctorCommand {
             }
         }
         Ok(())
+    }
+}
+
+impl Command for DoctorCommand {
+    fn name(&self) -> &str {
+        "doctor"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        self.run()
     }
 }
 

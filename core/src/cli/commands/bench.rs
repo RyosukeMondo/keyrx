@@ -1,12 +1,11 @@
 //! Bench command for latency measurement.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::config::LATENCY_THRESHOLD_NS;
 use crate::engine::{Engine, InputEvent, KeyCode};
 use crate::mocks::{MockInput, MockState};
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
-use anyhow::Result;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -84,21 +83,34 @@ impl BenchCommand {
         }
     }
 
-    pub async fn run(&self) -> Result<()> {
-        let result = self.execute().await?;
+    pub async fn run(&self) -> CommandResult<()> {
+        let result = match self.execute().await {
+            Ok(r) => r,
+            Err(e) => {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Benchmark failed: {}", e),
+                )
+            }
+        };
 
         // Output warning to stderr if present
         if let Some(ref warning) = result.warning {
             self.output.error(warning);
         }
 
-        self.output.data(&result)?;
+        if let Err(e) = self.output.data(&result) {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to output results: {}", e),
+            );
+        }
 
-        Ok(())
+        CommandResult::success(())
     }
 
     /// Execute benchmark and return results directly.
-    pub async fn execute(&self) -> Result<BenchResult> {
+    pub async fn execute(&self) -> anyhow::Result<BenchResult> {
         // Create runtime and load script if provided
         let mut runtime = RhaiRuntime::new()?;
         if let Some(path) = &self.script_path {
@@ -136,6 +148,28 @@ impl BenchCommand {
 
         // Calculate and return results
         Ok(self.calculate_stats(&mut latencies))
+    }
+}
+
+impl Command for BenchCommand {
+    fn name(&self) -> &str {
+        "bench"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        // Create a new runtime for async execution
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(runtime) => runtime,
+            Err(err) => {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to create tokio runtime: {err}"),
+                )
+            }
+        };
+
+        // Run the async logic
+        rt.block_on(self.run())
     }
 }
 

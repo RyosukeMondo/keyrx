@@ -1,13 +1,13 @@
 //! State inspection command.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::engine::{
     AdvancedEngine, EngineState, LayerAction, LayerStack, ModifierState, PendingDecisionState,
     PressedKeyState, RemapAction, TimingConfig,
 };
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -70,19 +70,27 @@ impl StateCommand {
     }
 
     /// Collect the current engine state snapshot.
-    pub fn collect_state(&self) -> Result<EngineState> {
+    pub fn collect_state(&self) -> anyhow::Result<EngineState> {
         let runtime = self.prepare_runtime()?;
         let registry = runtime.registry().clone();
         let engine = self.create_engine(&registry, runtime);
         Ok(engine.snapshot())
     }
 
-    pub fn run(&self) -> Result<()> {
-        let state = self.collect_state()?;
+    pub fn run(&self) -> CommandResult<()> {
+        let state = match self.collect_state() {
+            Ok(s) => s,
+            Err(e) => {
+                return CommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to collect state: {}", e),
+                )
+            }
+        };
 
-        if matches!(self.output.format(), OutputFormat::Json) {
+        let result = if matches!(self.output.format(), OutputFormat::Json) {
             // JSON mode returns the full EngineState for programmatic consumption.
-            self.output.data(&state)?;
+            self.output.data(&state)
         } else {
             // Human mode can optionally hide sections to reduce noise.
             let view = StateView::from_state(
@@ -91,13 +99,20 @@ impl StateCommand {
                 self.show_modifiers,
                 self.show_pending,
             );
-            self.output.data(&view)?;
+            self.output.data(&view)
+        };
+
+        if let Err(e) = result {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to output state: {}", e),
+            );
         }
 
-        Ok(())
+        CommandResult::success(())
     }
 
-    fn prepare_runtime(&self) -> Result<RhaiRuntime> {
+    fn prepare_runtime(&self) -> anyhow::Result<RhaiRuntime> {
         let mut runtime = RhaiRuntime::new()?;
 
         if let Some(path) = &self.script_path {
@@ -167,5 +182,15 @@ impl StateCommand {
             RemapAction::Block => Some(LayerAction::Block),
             RemapAction::Pass => None,
         }
+    }
+}
+
+impl Command for StateCommand {
+    fn name(&self) -> &str {
+        "state"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        self.run()
     }
 }

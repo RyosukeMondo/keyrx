@@ -1,11 +1,14 @@
 //! Interactive REPL command.
 
-use crate::cli::{OutputFormat, OutputWriter};
+use crate::cli::{
+    Command, CommandContext, CommandResult as CliCommandResult, ExitCode, OutputFormat,
+    OutputWriter,
+};
 use crate::config::repl_history_path;
 use crate::engine::{AdvancedEngine, EngineState, InputEvent, KeyCode, LayerAction, RemapAction};
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
-use anyhow::{Context, Result};
+use anyhow::Context;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::path::PathBuf;
@@ -22,15 +25,31 @@ impl ReplCommand {
         }
     }
 
-    pub fn run(&self) -> Result<()> {
-        let mut editor = DefaultEditor::new().context("Failed to initialize readline")?;
+    pub fn run(&self) -> CliCommandResult<()> {
+        let mut editor = match DefaultEditor::new().context("Failed to initialize readline") {
+            Ok(e) => e,
+            Err(err) => {
+                return CliCommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to initialize readline: {:#}", err),
+                )
+            }
+        };
         let history_path = repl_history_path();
 
         if let Some(ref path) = history_path {
             let _ = editor.load_history(path);
         }
 
-        let mut session = ReplSession::new()?;
+        let mut session = match ReplSession::new() {
+            Ok(s) => s,
+            Err(err) => {
+                return CliCommandResult::failure(
+                    ExitCode::GeneralError,
+                    format!("Failed to create REPL session: {:#}", err),
+                )
+            }
+        };
         self.print_welcome();
 
         loop {
@@ -45,8 +64,8 @@ impl ReplCommand {
                     let _ = editor.add_history_entry(line);
 
                     match self.process_command(&mut session, line) {
-                        CommandResult::Continue => {}
-                        CommandResult::Exit => break,
+                        ReplCommandResult::Continue => {}
+                        ReplCommandResult::Exit => break,
                     }
                 }
                 Err(ReadlineError::Interrupted) => {
@@ -66,7 +85,7 @@ impl ReplCommand {
             let _ = editor.save_history(path);
         }
 
-        Ok(())
+        CliCommandResult::success(())
     }
 
     fn print_welcome(&self) {
@@ -74,7 +93,7 @@ impl ReplCommand {
         println!("Type 'help' for available commands, 'exit' to quit.\n");
     }
 
-    fn process_command(&self, session: &mut ReplSession, line: &str) -> CommandResult {
+    fn process_command(&self, session: &mut ReplSession, line: &str) -> ReplCommandResult {
         let parts: Vec<&str> = line.splitn(2, ' ').collect();
         let cmd = parts[0].to_lowercase();
         let args = parts.get(1).copied().unwrap_or("");
@@ -82,40 +101,40 @@ impl ReplCommand {
         match cmd.as_str() {
             "help" | "?" => {
                 self.cmd_help();
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
-            "exit" | "quit" | "q" => CommandResult::Exit,
+            "exit" | "quit" | "q" => ReplCommandResult::Exit,
             "load" | "load_script" => {
                 self.cmd_load(session, args);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "reload" => {
                 self.cmd_reload(session);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "simulate" | "sim" => {
                 self.cmd_simulate(session, args);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "state" => {
                 self.cmd_state(session);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "layers" => {
                 self.cmd_layers(session);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "eval" => {
                 self.cmd_eval(session, args);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "reset" => {
                 self.cmd_reset(session);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             "timing" => {
                 self.cmd_timing(session);
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
             _ => {
                 // Try to evaluate as Rhai expression
@@ -127,7 +146,7 @@ impl ReplCommand {
                         cmd
                     );
                 }
-                CommandResult::Continue
+                ReplCommandResult::Continue
             }
         }
     }
@@ -283,7 +302,7 @@ Examples:
     }
 }
 
-enum CommandResult {
+enum ReplCommandResult {
     Continue,
     Exit,
 }
@@ -296,7 +315,7 @@ struct ReplSession {
 }
 
 impl ReplSession {
-    fn new() -> Result<Self> {
+    fn new() -> anyhow::Result<Self> {
         let runtime = RhaiRuntime::new()?;
         let registry = runtime.registry().clone();
         let engine = create_engine(&registry, RhaiRuntime::new()?);
@@ -321,7 +340,7 @@ impl ReplSession {
         }
     }
 
-    fn load_script(&mut self, path: &str) -> Result<()> {
+    fn load_script(&mut self, path: &str) -> anyhow::Result<()> {
         let path_buf = PathBuf::from(path);
 
         // Create fresh runtime and load script
@@ -344,7 +363,7 @@ impl ReplSession {
         Ok(())
     }
 
-    fn simulate(&mut self, keys: &str) -> Result<Vec<SimulationResult>> {
+    fn simulate(&mut self, keys: &str) -> anyhow::Result<Vec<SimulationResult>> {
         let events = parse_input_keys(keys)?;
         let mut results = Vec::new();
 
@@ -370,7 +389,7 @@ impl ReplSession {
         self.engine.snapshot()
     }
 
-    fn eval(&mut self, code: &str) -> Result<String> {
+    fn eval(&mut self, code: &str) -> anyhow::Result<String> {
         // Execute on the runtime
         self.runtime.execute(code)?;
 
@@ -381,7 +400,7 @@ impl ReplSession {
         Ok("()".to_string())
     }
 
-    fn reset(&mut self) -> Result<()> {
+    fn reset(&mut self) -> anyhow::Result<()> {
         // Reload from current script or create fresh
         if let Some(path) = self.script_path.clone() {
             self.load_script(&path.display().to_string())
@@ -446,7 +465,7 @@ fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
     }
 }
 
-fn parse_input_keys(keys: &str) -> Result<Vec<InputEvent>> {
+fn parse_input_keys(keys: &str) -> anyhow::Result<Vec<InputEvent>> {
     let mut events = Vec::new();
     let mut timestamp = 0u64;
     const GAP_US: u64 = 1_000;
@@ -479,4 +498,14 @@ fn parse_input_keys(keys: &str) -> Result<Vec<InputEvent>> {
     }
 
     Ok(events)
+}
+
+impl Command for ReplCommand {
+    fn name(&self) -> &str {
+        "repl"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CliCommandResult<()> {
+        self.run()
+    }
 }
