@@ -147,7 +147,7 @@
   - _Requirements: 2.4_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer testing builds | Task: Test all feature combinations compile | Restrictions: All combinations, both platforms | _Leverage: cargo build | Success: All combinations build | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 16. Document feature flags
+- [x] 16. Document feature flags
   - File: `core/README.md` or `docs/features.md`
   - Document all features and their purposes
   - Explain platform requirements
