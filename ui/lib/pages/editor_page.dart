@@ -6,24 +6,27 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../services/engine_service.dart';
-import '../services/service_registry.dart';
 import '../widgets/keyboard.dart';
 import '../widgets/layer_panel.dart';
 import 'editor_widgets.dart';
 
 /// Visual keymap editor page.
 class EditorPage extends StatefulWidget {
-  const EditorPage({super.key});
+  const EditorPage({
+    super.key,
+    required this.engineService,
+  });
+
+  /// The engine service for key registry and script loading.
+  final EngineService engineService;
 
   @override
   State<EditorPage> createState() => _EditorPageState();
 }
 
 class _EditorPageState extends State<EditorPage> {
-  EngineService? _engine;
   String? _selectedKey;
   KeyActionType _selectedAction = KeyActionType.remap;
   final TextEditingController _outputController = TextEditingController();
@@ -48,8 +51,6 @@ class _EditorPageState extends State<EditorPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final registry = Provider.of<ServiceRegistry>(context, listen: false);
-      _engine = registry.engineService;
       _fetchKeyRegistry();
     });
   }
@@ -229,8 +230,7 @@ class _EditorPageState extends State<EditorPage> {
       await file.parent.create(recursive: true);
       await file.writeAsString(script);
 
-      final registry = Provider.of<ServiceRegistry>(context, listen: false);
-      final engine = registry.engineService;
+      final engine = widget.engineService;
       final loaded = engine.isInitialized
           ? await engine.loadScript(_defaultScriptPath)
           : false;
@@ -341,15 +341,12 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   Future<void> _fetchKeyRegistry() async {
-    final engine = _engine;
-    if (engine == null) return;
-
     setState(() {
       _isFetchingKeys = true;
       _registryError = null;
     });
 
-    final result = await engine.fetchKeyRegistry();
+    final result = await widget.engineService.fetchKeyRegistry();
     if (!mounted) return;
 
     final canonical = result.entries

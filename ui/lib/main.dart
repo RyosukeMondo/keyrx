@@ -65,13 +65,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    TrainingScreen(),
-    EditorPage(),
-    DebuggerPage(),
-    ConsolePage(),
-    TradeOffVisualizerPage(),
-  ];
+  List<Widget> _buildPages(ServiceRegistry registry) {
+    return [
+      const TrainingScreen(),
+      EditorPage(engineService: registry.engineService),
+      const DebuggerPage(),
+      const ConsolePage(),
+      const TradeOffVisualizerPage(),
+    ];
+  }
 
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(
@@ -126,6 +128,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final registry = context.read<ServiceRegistry>();
+    final pages = _buildPages(registry);
     return Scaffold(
       body: Row(
         children: [
@@ -152,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                 .toList(),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _pages[_selectedIndex]),
+          Expanded(child: pages[_selectedIndex]),
         ],
       ),
       bottomNavigationBar: _buildStatusBar(),

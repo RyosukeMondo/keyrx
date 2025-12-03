@@ -78,7 +78,7 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [Provider<ServiceRegistry>.value(value: registry)],
-          child: const MaterialApp(home: EditorPage()),
+          child: MaterialApp(home: EditorPage(engineService: engine)),
         ),
       );
 

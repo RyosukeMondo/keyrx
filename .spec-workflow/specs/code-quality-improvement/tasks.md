@@ -78,7 +78,7 @@
 
 ## Phase 4: Flutter Testability
 
-- [ ] 11. Refactor EditorPage for constructor injection
+- [x] 11. Refactor EditorPage for constructor injection
   - Files: ui/lib/pages/editor_page.dart (modify)
   - Accept required services via constructor, remove nullable fields
   - _Leverage: existing editor_page.dart_
