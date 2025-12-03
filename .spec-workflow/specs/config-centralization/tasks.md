@@ -118,7 +118,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Create `.keyrx/config.toml.example` with all configurable options documented. Include sections: [timing] (tap_timeout_ms, combo_timeout_ms, hold_delay_ms), [ui] (max_events_history, animation_duration_ms), [performance] (latency_warning_us, latency_caution_us, regression_threshold_us), [paths] (scripts_dir, temp_dir). Add inline comments explaining each option with valid ranges. | Restrictions: Use default values in example, ensure TOML is valid | Success: Well-documented config template. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [-] 15. Integrate config loading into CLI
+- [x] 15. Integrate config loading into CLI
   - Files: `core/src/bin/keyrx.rs`, `core/src/cli/commands/run.rs`
   - Add --config flag and load config at startup
   - Purpose: Enable config file usage in CLI
