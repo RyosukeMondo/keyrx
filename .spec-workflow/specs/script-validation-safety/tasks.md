@@ -204,7 +204,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test engineer | Task: Add #[cfg(test)] modules to each validator file. Test: invalid key detection, layer/modifier undefined, duplicate remaps, combo shadowing, circular remaps, all safety patterns. Pass custom ValidationConfig to test config-driven behavior. Ensure valid scripts produce no errors | Restrictions: ≤200 lines per file; test both positive and negative cases; test with different config values | Success: `cargo test validation` passes with good coverage. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 23. Add integration tests
+- [x] 23. Add integration tests
   - Files: `core/tests/validation_integration.rs` (new)
   - Test full validation pipeline with real scripts
   - Test CLI output format with --config flag
