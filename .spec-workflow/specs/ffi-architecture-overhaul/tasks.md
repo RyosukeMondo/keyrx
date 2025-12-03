@@ -106,7 +106,7 @@
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer refactoring callbacks | Task: Migrate Discovery callbacks to EventRegistry, replacing 3 separate callback functions | Restrictions: Callback behavior must remain identical, existing Flutter code must work with shim | _Leverage: EventRegistry from task 3, current callback pattern in callbacks.rs | Success: Discovery uses EventRegistry, backward-compatible shims exist, Flutter works unchanged | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 11. Create backward-compatible shims for Discovery
+- [x] 11. Create backward-compatible shims for Discovery
   - File: `core/src/ffi/compat/discovery_compat.rs`
   - Create thin wrappers: keyrx_on_discovery_progress → EventRegistry.register
   - Mark as #[deprecated] with migration guidance
