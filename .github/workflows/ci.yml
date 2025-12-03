@@ -25,6 +25,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          # Improve cache efficiency with shared key
+          shared-key: check
+          cache-on-failure: true
       - name: Check formatting
         run: cargo fmt --check
         working-directory: ./core
@@ -46,6 +49,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          # Use OS-specific cache key for cross-platform testing
+          shared-key: test-${{ matrix.os }}
+          cache-on-failure: true
       - name: Install nextest
         uses: taiki-e/install-action@nextest
       - name: Run tests
@@ -62,6 +68,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          shared-key: uat
+          cache-on-failure: true
       - name: Build
         run: cargo build --release
         working-directory: ./core
@@ -113,6 +121,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          shared-key: coverage
+          cache-on-failure: true
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate coverage
@@ -150,6 +160,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          shared-key: benchmark
+          cache-on-failure: true
       - name: Run benchmarks
         run: cargo bench --all-features -- --noplot
         working-directory: ./core

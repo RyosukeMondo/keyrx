@@ -118,7 +118,7 @@
   - _Requirements: 1.1, 3.3_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer configuring workspace | Task: Create/update workspace Cargo.toml with shared deps | Restrictions: Consistent versions, resolver 2 | _Leverage: Cargo workspace | Success: Dependencies shared across crates | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 13. Enable cargo caching in CI
+- [x] 13. Enable cargo caching in CI
   - File: CI configuration (e.g., `.github/workflows/`)
   - Cache cargo registry and target
   - Use sccache or similar

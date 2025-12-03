@@ -23,6 +23,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          shared-key: benchmark
+          cache-on-failure: true
 
       - name: Set up Python
         uses: actions/setup-python@v5

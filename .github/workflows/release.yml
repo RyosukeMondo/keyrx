@@ -37,6 +37,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
+          # Target-specific cache for release builds
+          shared-key: release-${{ matrix.target }}
+          cache-on-failure: true
 
       - name: Build Rust binary
         run: cargo build --release --target ${{ matrix.target }}
