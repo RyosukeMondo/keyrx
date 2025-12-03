@@ -100,11 +100,20 @@ expect_used = "warn"
 panic = "warn"
 
 [profile.release]
-opt-level = 3
+# Optimize for binary size (balanced optimization)
+opt-level = "s"
+# Link-time optimization for size and performance
 lto = "thin"
+# Strip symbols from binary
 strip = true
+# Reduce binary size by disabling unwinding (note: tests must use --lib or dev profile)
 panic = "abort"
-codegen-units = 1
+# More codegen units for better incremental builds, LTO will optimize across them
+codegen-units = 16
+
+# Test profile inherits from dev, allows panic=unwind for tests
+[profile.test]
+inherits = "dev"
 
 [profile.profiling]
 inherits = "release"

@@ -89,7 +89,7 @@
   - _Requirements: 3.1, 3.4_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer optimizing builds | Task: Optimize dev profile for fast iteration | Restrictions: Keep debug info, fast incremental | _Leverage: Cargo profiles | Success: Dev builds significantly faster | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Optimize release profile
+- [x] 10. Optimize release profile
   - File: `core/Cargo.toml`
   - Enable LTO, strip, size optimization
   - Configure codegen-units
