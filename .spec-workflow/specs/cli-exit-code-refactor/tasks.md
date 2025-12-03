@@ -104,7 +104,7 @@
   - _Requirements: 3.1, 1.3_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating commands | Task: Migrate TestCommand and UatCommand to use CommandResult with test failure info | Restrictions: Return AssertionFailed (exit 2) on failures, include pass/fail counts | _Leverage: Existing test/uat commands, CommandError::TestFailure | Success: Test commands use new types, exit code 2 on failures | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Migrate SimulateCommand
+- [x] 11. Migrate SimulateCommand
   - File: `core/src/cli/commands/simulate.rs`
   - Return CommandResult with appropriate errors
   - Handle timeout with CommandError::Timeout
