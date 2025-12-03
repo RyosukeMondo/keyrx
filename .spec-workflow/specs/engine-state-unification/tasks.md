@@ -173,7 +173,7 @@
   - _Requirements: Non-functional (cleanup)_
   - _Prompt: Implement the task for spec engine-state-unification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer completing cleanup | Task: Remove legacy state structs, update imports | Restrictions: No dead code, clean imports, all tests pass | _Leverage: New state module | Success: Old structs removed, codebase cleaner | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 18. Add state invariant tests
+- [x] 18. Add state invariant tests
   - File: `core/tests/unit/engine/state_invariants_test.rs`
   - Property tests for state consistency
   - Fuzz mutation sequences
