@@ -69,7 +69,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: IDE configuration specialist | Task: Create .vscode/extensions.json with recommendations [rust-lang.rust-analyzer, tamasfe.even-better-toml, serayuzgur.crates, Dart-Code.flutter, Dart-Code.dart-code]; create .vscode/launch.json with configurations: (1) "Debug keyrx run" using lldb + cargo, (2) "Debug Tests" for lib tests, (3) "Flutter" for ui/lib/main.dart | Restrictions: extensions.json ≤15 lines; launch.json ≤50 lines; use lldb type for Rust | _Leverage: VS Code launch.json schema | _Requirements: 7 | Success: VS Code suggests extensions on open, F5 launches debugger._
 
-- [ ] 10. Create development container configuration
+- [x] 10. Create development container configuration
   - Files: .devcontainer/devcontainer.json (new)
   - Configure Rust + just with auto-setup
   - _Leverage: devcontainers/features_
@@ -78,14 +78,14 @@
 
 ## Release Management
 
-- [ ] 11. Create git-cliff changelog configuration
+- [x] 11. Create git-cliff changelog configuration
   - Files: cliff.toml (new)
   - Configure conventional commit parsing and changelog format
   - _Leverage: git-cliff documentation_
   - _Requirements: 9_
   - _Prompt: Implement the task for spec build-system, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release management engineer | Task: Create cliff.toml with: [changelog] header "# Changelog\n", body template grouping by commit type; [git] conventional_commits=true, filter_unconventional=true, commit_parsers for feat→Added, fix→Fixed, perf→Performance, refactor→Changed, docs→Documentation, chore(deps)→Dependencies | Restrictions: ≤40 lines; follow git-cliff TOML schema; use Tera template syntax | _Leverage: git-cliff configuration reference | _Requirements: 9 | Success: `git-cliff` generates changelog grouped by commit type._
 
-- [ ] 12. Create release helper script
+- [x] 12. Create release helper script
   - Files: scripts/release.sh (new)
   - Automate version bump, changelog generation, and tag creation
   - _Leverage: git-cliff, sed, git commands_
