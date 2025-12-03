@@ -196,7 +196,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test engineer | Task: Add #[cfg(test)] module to config.rs. Test: load() returns defaults when no file, load_from_path() parses valid TOML, malformed TOML returns None, Default::default() has expected values | Restrictions: ≤100 lines; use tempfile for test config files | Success: `cargo test validation::config` passes. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 22. Add unit tests for validators
+- [x] 22. Add unit tests for validators
   - Files: `core/src/validation/semantic.rs`, `conflicts.rs`, `safety.rs` (extend with #[cfg(test)])
   - Test each validation rule with config parameters
   - Test edge cases and false positive prevention
