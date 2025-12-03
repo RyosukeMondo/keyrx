@@ -92,7 +92,7 @@
   - _Requirements: 5.1, 5.2_
   - _Prompt: Role: Traceability engineer | Task: Create coverage.rs with CoverageMapper.build(tests, results) that creates CoverageMap linking requirement IDs to tests based on @requirement metadata | Restrictions: ≤120 lines; handle multiple requirements per test | Success: Coverage map shows all requirement-test links._
 
-- [ ] 13. Implement coverage report generation
+- [x] 13. Implement coverage report generation
   - Files: core/src/uat/coverage.rs (extend)
   - Add report() method with status calculation
   - _Leverage: CoverageMap data_

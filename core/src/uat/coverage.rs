@@ -217,6 +217,53 @@ impl CoverageMapper {
         map
     }
 
+    /// Generate a coverage report from a coverage map.
+    ///
+    /// Creates a `CoverageReport` with summary statistics including:
+    /// - Total requirements tracked
+    /// - Verified, at-risk, and uncovered counts
+    /// - Coverage percentage
+    /// - Timestamp of report generation
+    ///
+    /// # Arguments
+    /// * `map` - The coverage map to generate a report from
+    ///
+    /// # Returns
+    /// A `CoverageReport` with all statistics calculated.
+    pub fn report(&self, map: &CoverageMap) -> CoverageReport {
+        let total = map.total();
+        let verified = map.verified_count();
+        let at_risk = map.at_risk_count();
+        let uncovered = map.uncovered_count();
+        let coverage_percentage = map.coverage_percentage();
+        let generated_at = Utc::now().to_rfc3339();
+
+        tracing::info!(
+            service = "keyrx",
+            event = "coverage_report_generated",
+            component = "coverage_mapper",
+            total = total,
+            verified = verified,
+            at_risk = at_risk,
+            uncovered = uncovered,
+            coverage_pct = format!("{:.1}%", coverage_percentage * 100.0),
+            "Generated coverage report: {}/{} verified ({:.1}%)",
+            verified,
+            total,
+            coverage_percentage * 100.0
+        );
+
+        CoverageReport {
+            coverage: map.clone(),
+            total,
+            verified,
+            at_risk,
+            uncovered,
+            coverage_percentage,
+            generated_at,
+        }
+    }
+
     /// Calculate coverage status based on linked test results.
     fn calculate_status(
         &self,
@@ -484,5 +531,107 @@ mod tests {
         assert_eq!(CoverageStatus::Verified, CoverageStatus::Verified);
         assert_ne!(CoverageStatus::Verified, CoverageStatus::AtRisk);
         assert_ne!(CoverageStatus::AtRisk, CoverageStatus::Uncovered);
+    }
+
+    #[test]
+    fn report_empty_map() {
+        let mapper = CoverageMapper::new();
+        let map = CoverageMap::new();
+
+        let report = mapper.report(&map);
+
+        assert_eq!(report.total, 0);
+        assert_eq!(report.verified, 0);
+        assert_eq!(report.at_risk, 0);
+        assert_eq!(report.uncovered, 0);
+        assert_eq!(report.coverage_percentage, 1.0);
+        assert!(!report.generated_at.is_empty());
+    }
+
+    #[test]
+    fn report_with_mixed_statuses() {
+        let mapper = CoverageMapper::new();
+        let mut map = CoverageMap::new();
+
+        map.requirements.insert(
+            "1.1".to_string(),
+            RequirementCoverage {
+                id: "1.1".to_string(),
+                linked_tests: vec!["test1".to_string()],
+                status: CoverageStatus::Verified,
+                last_verified: Some("2024-01-01".to_string()),
+            },
+        );
+        map.requirements.insert(
+            "1.2".to_string(),
+            RequirementCoverage {
+                id: "1.2".to_string(),
+                linked_tests: vec!["test2".to_string()],
+                status: CoverageStatus::Verified,
+                last_verified: Some("2024-01-01".to_string()),
+            },
+        );
+        map.requirements.insert(
+            "1.3".to_string(),
+            RequirementCoverage {
+                id: "1.3".to_string(),
+                linked_tests: vec!["test3".to_string()],
+                status: CoverageStatus::AtRisk,
+                last_verified: None,
+            },
+        );
+        map.requirements.insert(
+            "1.4".to_string(),
+            RequirementCoverage {
+                id: "1.4".to_string(),
+                linked_tests: vec![],
+                status: CoverageStatus::Uncovered,
+                last_verified: None,
+            },
+        );
+
+        let report = mapper.report(&map);
+
+        assert_eq!(report.total, 4);
+        assert_eq!(report.verified, 2);
+        assert_eq!(report.at_risk, 1);
+        assert_eq!(report.uncovered, 1);
+        assert_eq!(report.coverage_percentage, 0.5);
+        assert!(!report.generated_at.is_empty());
+        // Verify report includes the coverage map
+        assert_eq!(report.coverage.total(), 4);
+    }
+
+    #[test]
+    fn report_all_verified() {
+        let mapper = CoverageMapper::new();
+        let test = create_test("uat_test1", vec!["1.1", "1.2"]);
+        let tests = vec![test.clone()];
+        let results = create_results(vec![create_result(test, true)]);
+
+        let map = mapper.build(&tests, &results);
+        let report = mapper.report(&map);
+
+        assert_eq!(report.total, 2);
+        assert_eq!(report.verified, 2);
+        assert_eq!(report.at_risk, 0);
+        assert_eq!(report.uncovered, 0);
+        assert_eq!(report.coverage_percentage, 1.0);
+    }
+
+    #[test]
+    fn report_timestamp_format() {
+        let mapper = CoverageMapper::new();
+        let map = CoverageMap::new();
+
+        let report = mapper.report(&map);
+
+        // Verify timestamp is valid RFC 3339 format
+        assert!(report.generated_at.contains("T"));
+        assert!(
+            report.generated_at.ends_with("Z")
+                || report.generated_at.contains("+")
+                || report.generated_at.contains("-")
+        );
     }
 }
