@@ -41,6 +41,12 @@ typedef KeyrxIsBypassActive = bool Function();
 typedef KeyrxSetBypassNative = Void Function(Bool active);
 typedef KeyrxSetBypass = void Function(bool active);
 
+typedef KeyrxListDevicesNative = Pointer<Char> Function();
+typedef KeyrxListDevices = Pointer<Char> Function();
+
+typedef KeyrxSelectDeviceNative = Int32 Function(Pointer<Utf8> path);
+typedef KeyrxSelectDevice = int Function(Pointer<Utf8> path);
+
 typedef KeyrxStateCallbackNative = Void Function(
   Pointer<Uint8> bytes,
   IntPtr length,
@@ -90,6 +96,8 @@ class KeyrxBindings {
   late final KeyrxListKeys? listKeys;
   late final KeyrxIsBypassActive? isBypassActive;
   late final KeyrxSetBypass? setBypass;
+  late final KeyrxListDevices? listDevices;
+  late final KeyrxSelectDevice? selectDevice;
 
   KeyrxBindings(this._lib) {
     init = _lib.lookupFunction<KeyrxInitNative, KeyrxInit>('keyrx_init');
@@ -108,6 +116,8 @@ class KeyrxBindings {
     listKeys = _tryLookupListKeys();
     isBypassActive = _tryLookupIsBypassActive();
     setBypass = _tryLookupSetBypass();
+    listDevices = _tryLookupListDevices();
+    selectDevice = _tryLookupSelectDevice();
   }
 
   KeyrxStartAudio? _tryLookupStartAudio() {
@@ -192,6 +202,26 @@ class KeyrxBindings {
     try {
       return _lib.lookupFunction<KeyrxSetBypassNative, KeyrxSetBypass>(
         'keyrx_set_bypass',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxListDevices? _tryLookupListDevices() {
+    try {
+      return _lib.lookupFunction<KeyrxListDevicesNative, KeyrxListDevices>(
+        'keyrx_list_devices',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxSelectDevice? _tryLookupSelectDevice() {
+    try {
+      return _lib.lookupFunction<KeyrxSelectDeviceNative, KeyrxSelectDevice>(
+        'keyrx_select_device',
       );
     } on ArgumentError {
       return null;
