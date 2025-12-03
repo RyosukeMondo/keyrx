@@ -11,7 +11,7 @@ name = "keyrx"
 path = "src/bin/keyrx.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
 rhai = "1.16"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -51,6 +51,7 @@ otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
 [dev-dependencies]
 proptest = "1"
 criterion = "0.5"
+tokio = { version = "1", features = ["test-util"] }
 tokio-test = "0.4"
 tempfile = "3"
 serial_test = "3"

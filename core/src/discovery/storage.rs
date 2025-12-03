@@ -126,6 +126,7 @@ pub fn write_profile(profile: &DeviceProfile) -> Result<PathBuf, StorageError> {
 mod tests {
     use super::*;
     use crate::discovery::test_utils::config_env_lock;
+    use serial_test::serial;
     use std::fs;
     use std::time::Duration;
     use tempfile::tempdir;
@@ -151,6 +152,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn roundtrip_write_and_read_profile() {
         with_temp_config(|| {
             let id = DeviceId::new(0x1234, 0x5678);
@@ -171,6 +173,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn read_profile_schema_mismatch() {
         with_temp_config(|| {
             let id = DeviceId::new(0x1111, 0x2222);
@@ -200,6 +203,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn parse_error_for_corrupt_file() {
         with_temp_config(|| {
             let id = DeviceId::new(0xAAAA, 0xBBBB);
@@ -214,6 +218,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn write_is_atomic_with_temp_file() {
         with_temp_config(|| {
             let id = DeviceId::new(0x0A0A, 0x0B0B);

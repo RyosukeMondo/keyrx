@@ -135,6 +135,7 @@ mod tests {
     use super::*;
     use crate::discovery::test_utils::config_env_lock;
     use crate::discovery::types::SCHEMA_VERSION;
+    use serial_test::serial;
     use std::env;
     use tempfile::tempdir;
 
@@ -161,6 +162,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn loads_existing_profile_as_ready() {
         with_temp_config(|| {
             let mut registry = DeviceRegistry::new();
@@ -178,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn missing_profile_sets_discover_needed() {
         with_temp_config(|| {
             let mut registry = DeviceRegistry::new();
@@ -195,6 +198,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn schema_mismatch_signals_discovery() {
         with_temp_config(|| {
             let mut registry = DeviceRegistry::new();
