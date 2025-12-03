@@ -25,6 +25,9 @@ pub mod test_harness;
 mod test_primitives;
 pub mod test_runner;
 
+// Re-export types needed by validation module
+pub use builtins::{LayerMapAction, PendingOp, TimingUpdate};
+
 pub use context::{
     clear_active_runtime, global_context, set_active_runtime, with_active_runtime, RuntimeContext,
 };
