@@ -16,10 +16,12 @@
 //! ## New Architecture Components
 //! - `error`: Standardized FFI error types and result handling
 //! - `context`: Handle-based state management replacing global statics
+//! - `events`: Unified event registry for all FFI callbacks
 
 mod callbacks;
 pub mod context;
 pub mod error;
+pub mod events;
 mod exports;
 mod exports_analysis;
 mod exports_device;

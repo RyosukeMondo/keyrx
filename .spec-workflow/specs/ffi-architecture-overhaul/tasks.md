@@ -22,7 +22,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with FFI and memory safety expertise | Task: Create FfiContext in core/src/ffi/context.rs implementing handle-based state per requirements 3.1-3.3, replacing global statics pattern | Restrictions: Must be thread-safe, no global mutable state, use Arc<RwLock> for shared access | _Leverage: Study DISCOVERY_SESSION static in exports_discovery.rs:68-78 for current pattern | Success: Context can store/retrieve typed domain state, handles are unique, tests run in parallel without interference | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create EventRegistry for unified callbacks
+- [x] 3. Create EventRegistry for unified callbacks
   - File: `core/src/ffi/events.rs`
   - Define `EventType` enum covering all callback categories
   - Implement `EventRegistry` with register/invoke methods
