@@ -223,7 +223,28 @@ impl FuzzEngine {
     }
 
     /// Execute a sequence against the engine, returning a path hash or error.
+    /// Uses catch_unwind to detect panics/crashes.
     fn execute_sequence(&self, sequence: &FuzzSequence) -> Result<u64, String> {
+        use std::panic::{catch_unwind, AssertUnwindSafe};
+
+        let sequence_clone = sequence.clone();
+        catch_unwind(AssertUnwindSafe(|| {
+            self.execute_sequence_inner(&sequence_clone)
+        }))
+        .map_err(|panic_info| {
+            // Extract panic message if available
+            if let Some(s) = panic_info.downcast_ref::<&str>() {
+                format!("Panic: {}", s)
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                format!("Panic: {}", s)
+            } else {
+                "Panic: unknown error".to_string()
+            }
+        })?
+    }
+
+    /// Inner execution logic (can panic).
+    fn execute_sequence_inner(&self, sequence: &FuzzSequence) -> Result<u64, String> {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
 
@@ -240,7 +261,7 @@ impl FuzzEngine {
                 InputEvent::key_up(event.key, event.timestamp_us)
             };
 
-            // Process event (panics are caught by caller if using catch_unwind)
+            // Process event
             let outputs = engine.process_event(input);
 
             // Hash the outputs for path tracking
@@ -269,7 +290,8 @@ impl FuzzEngine {
             return None;
         }
 
-        let timestamp = Utc::now().format("%Y-%m-%dT%H-%M-%S").to_string();
+        // Use millisecond precision to avoid filename collisions
+        let timestamp = Utc::now().format("%Y-%m-%dT%H-%M-%S%.3f").to_string();
         let filename = format!("{}.krx", timestamp);
         let file_path = self.config.crash_dir.join(&filename);
 
@@ -297,6 +319,7 @@ impl FuzzEngine {
     }
 
     /// Replay a crash sequence from file.
+    /// Returns Ok(()) if replay succeeds (no crash), Err with message if crash is reproduced.
     pub fn replay_crash(&self, crash_file: &Path) -> Result<(), String> {
         let content = fs::read_to_string(crash_file)
             .map_err(|e| format!("Failed to read crash file: {}", e))?;
@@ -304,10 +327,59 @@ impl FuzzEngine {
         let sequence: FuzzSequence = serde_json::from_str(&content)
             .map_err(|e| format!("Failed to parse crash sequence: {}", e))?;
 
-        match self.execute_sequence(&sequence) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
+        self.execute_sequence(&sequence).map(|_| ())
+    }
+
+    /// Load a crash sequence from file.
+    pub fn load_crash(&self, crash_file: &Path) -> Result<FuzzSequence, String> {
+        let content = fs::read_to_string(crash_file)
+            .map_err(|e| format!("Failed to read crash file: {}", e))?;
+
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse crash sequence: {}", e))
+    }
+
+    /// List all saved crash sequences in the crash directory.
+    pub fn list_crashes(&self) -> Result<Vec<CrashSequence>, String> {
+        let crash_dir = &self.config.crash_dir;
+        if !crash_dir.exists() {
+            return Ok(Vec::new());
         }
+
+        let mut crashes = Vec::new();
+        let entries = fs::read_dir(crash_dir)
+            .map_err(|e| format!("Failed to read crash directory: {}", e))?;
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|ext| ext == "krx") {
+                if let Ok(sequence) = self.load_crash(&path) {
+                    let timestamp = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    crashes.push(CrashSequence {
+                        timestamp,
+                        file_path: path.to_string_lossy().to_string(),
+                        error: sequence.error.unwrap_or_default(),
+                    });
+                }
+            }
+        }
+
+        // Sort by timestamp (newest first)
+        crashes.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        Ok(crashes)
+    }
+
+    /// Delete a crash sequence file.
+    pub fn delete_crash(&self, crash_file: &Path) -> Result<(), String> {
+        fs::remove_file(crash_file).map_err(|e| format!("Failed to delete crash file: {}", e))
+    }
+
+    /// Get the crash directory path.
+    pub fn crash_dir(&self) -> &Path {
+        &self.config.crash_dir
     }
 }
 
@@ -407,5 +479,172 @@ mod tests {
 
         assert_eq!(parsed.events.len(), 1);
         assert_eq!(parsed.events[0].key, KeyCode::A);
+    }
+
+    #[test]
+    fn test_save_crash_sequence() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        let sequence = FuzzSequence {
+            created: Utc::now(),
+            events: vec![FuzzEvent {
+                key: KeyCode::A,
+                pressed: true,
+                timestamp_us: 0,
+            }],
+            error: None,
+        };
+
+        let crash = engine
+            .save_crash_sequence(&sequence, "test error")
+            .expect("save should succeed");
+
+        assert!(crash.file_path.ends_with(".krx"));
+        assert_eq!(crash.error, "test error");
+
+        // Verify file exists and is valid JSON
+        let loaded = engine
+            .load_crash(Path::new(&crash.file_path))
+            .expect("load should succeed");
+        assert_eq!(loaded.error, Some("test error".to_string()));
+    }
+
+    #[test]
+    fn test_list_crashes_empty_dir() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        let crashes = engine.list_crashes().expect("list should succeed");
+        assert!(crashes.is_empty());
+    }
+
+    #[test]
+    fn test_list_crashes_with_files() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        // Save two crash sequences with different timestamps by sleeping
+        let sequence = FuzzSequence {
+            created: Utc::now(),
+            events: vec![FuzzEvent {
+                key: KeyCode::B,
+                pressed: true,
+                timestamp_us: 1000,
+            }],
+            error: None,
+        };
+
+        engine
+            .save_crash_sequence(&sequence, "error 1")
+            .expect("save should succeed");
+        // Sleep to ensure different millisecond timestamp
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        engine
+            .save_crash_sequence(&sequence, "error 2")
+            .expect("save should succeed");
+
+        let crashes = engine.list_crashes().expect("list should succeed");
+        assert_eq!(crashes.len(), 2);
+    }
+
+    #[test]
+    fn test_delete_crash() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        let sequence = FuzzSequence {
+            created: Utc::now(),
+            events: vec![FuzzEvent {
+                key: KeyCode::C,
+                pressed: true,
+                timestamp_us: 0,
+            }],
+            error: None,
+        };
+
+        let crash = engine
+            .save_crash_sequence(&sequence, "to delete")
+            .expect("save should succeed");
+
+        engine
+            .delete_crash(Path::new(&crash.file_path))
+            .expect("delete should succeed");
+
+        let crashes = engine.list_crashes().expect("list should succeed");
+        assert!(crashes.is_empty());
+    }
+
+    #[test]
+    fn test_replay_crash_no_error() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        let sequence = FuzzSequence {
+            created: Utc::now(),
+            events: vec![
+                FuzzEvent {
+                    key: KeyCode::D,
+                    pressed: true,
+                    timestamp_us: 0,
+                },
+                FuzzEvent {
+                    key: KeyCode::D,
+                    pressed: false,
+                    timestamp_us: 50_000,
+                },
+            ],
+            error: Some("original error".to_string()),
+        };
+
+        let crash = engine
+            .save_crash_sequence(&sequence, "original error")
+            .expect("save should succeed");
+
+        // Replay should succeed (no panic in normal execution)
+        let result = engine.replay_crash(Path::new(&crash.file_path));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_crash_sequence_json_format() {
+        let sequence = FuzzSequence {
+            created: Utc::now(),
+            events: vec![
+                FuzzEvent {
+                    key: KeyCode::E,
+                    pressed: true,
+                    timestamp_us: 0,
+                },
+                FuzzEvent {
+                    key: KeyCode::E,
+                    pressed: false,
+                    timestamp_us: 100_000,
+                },
+            ],
+            error: Some("test crash".to_string()),
+        };
+
+        let json = serde_json::to_string_pretty(&sequence).expect("serialization should work");
+
+        // Verify JSON is human-readable (contains expected fields)
+        assert!(json.contains("\"created\""));
+        assert!(json.contains("\"events\""));
+        assert!(json.contains("\"error\""));
+        assert!(json.contains("test crash"));
+
+        // Verify it can be parsed back
+        let parsed: FuzzSequence =
+            serde_json::from_str(&json).expect("deserialization should work");
+        assert_eq!(parsed.events.len(), 2);
+        assert_eq!(parsed.error, Some("test crash".to_string()));
+    }
+
+    #[test]
+    fn test_crash_dir_accessor() {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let engine = FuzzEngine::with_crash_dir(temp_dir.path());
+
+        assert_eq!(engine.crash_dir(), temp_dir.path());
     }
 }

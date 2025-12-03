@@ -124,7 +124,7 @@
   - _Requirements: 8.1, 8.2, 8.4_
   - _Prompt: Role: Fuzz testing engineer | Task: Create fuzz.rs with FuzzEngine.run(duration, count) that generates random key sequences (min 10,000), executes against engine, reports sequences_tested, duration, unique_paths | Restrictions: ≤200 lines; leverage proptest generators | Success: `keyrx uat --fuzz` runs 10,000+ sequences._
 
-- [ ] 17. Implement crash sequence saving
+- [x] 17. Implement crash sequence saving
   - Files: core/src/uat/fuzz.rs (extend)
   - Add crash detection and sequence saving
   - _Leverage: session recording for crash sequences_
