@@ -157,7 +157,7 @@
 
 ## Phase 6: Testing
 
-- [ ] 18. Add error code tests
+- [x] 18. Add error code tests
   - File: `core/tests/unit/errors/`
   - Test formatting, serialization
   - Verify no duplicate codes
