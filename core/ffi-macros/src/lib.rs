@@ -5,6 +5,7 @@
 //! - Error conversion to FfiResult
 //! - String parameter validation (null checks, UTF-8 validation)
 //! - Panic catching to prevent panics from crossing FFI boundary
+//! - Panic logging for debugging (outputs to stderr)
 //! - JSON serialization of results
 //!
 //! # Example
@@ -193,6 +194,9 @@ fn generate_ffi_wrapper_for_item_fn(
                         "unknown panic".to_string()
                     };
 
+                    // Log panic for debugging
+                    eprintln!("[FFI PANIC] Function: {}, Message: {}", stringify!(#func_name), panic_msg);
+
                     let error = FfiError::internal(
                         format!("panic in {}: {}", stringify!(#func_name), panic_msg)
                     );
@@ -348,6 +352,9 @@ fn generate_ffi_wrapper_for_impl_fn(
                     } else {
                         "unknown panic".to_string()
                     };
+
+                    // Log panic for debugging
+                    eprintln!("[FFI PANIC] Method: {}, Message: {}", stringify!(#method_name), panic_msg);
 
                     let error = FfiError::internal(
                         format!("panic in {}: {}", stringify!(#method_name), panic_msg)

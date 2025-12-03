@@ -64,7 +64,7 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with deep proc-macro expertise | Task: Implement #[ffi_export] macro generating C-ABI wrappers per requirements 1.1-1.3 | Restrictions: Generated code must handle all error cases, match existing wrapper quality, compile without warnings | _Leverage: Study keyrx_start_discovery in exports_discovery.rs:114-270 for target output pattern | Success: Macro generates correct wrappers, null checks work, UTF-8 validation works, JSON serialization works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Add panic catching to generated wrappers
+- [x] 7. Add panic catching to generated wrappers
   - File: `core/ffi-macros/src/lib.rs`
   - Wrap method calls in `std::panic::catch_unwind`
   - Convert panics to FfiError with INTERNAL_ERROR code
