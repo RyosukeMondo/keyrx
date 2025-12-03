@@ -153,7 +153,7 @@
   - _Requirements: Non-functional (usability)_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Create driver debugging documentation | Restrictions: Cover both platforms, common issues, env flags | _Leverage: Implementation knowledge | Success: Documentation helps debug driver issues | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Verify unsafe block count reduction
+- [x] 16. Verify unsafe block count reduction
   - Files: All driver files
   - Count unsafe blocks before/after
   - Report reduction percentage
