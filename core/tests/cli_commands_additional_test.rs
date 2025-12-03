@@ -3,7 +3,6 @@
 use keyrx_core::cli::commands::{CheckCommand, DevicesCommand, StateCommand};
 use keyrx_core::cli::OutputFormat;
 use keyrx_core::drivers::DeviceInfo;
-use keyrx_core::error::KeyRxError;
 use std::io::Write;
 use std::path::PathBuf;
 use tempfile::{tempdir, NamedTempFile};
@@ -36,19 +35,16 @@ fn check_command_runs_successfully_with_json_output() {
 }
 
 #[test]
-fn check_command_returns_compile_error_for_invalid_script() {
+fn check_command_returns_error_exit_code_for_invalid_script() {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "let = ;").unwrap();
 
     let cmd = CheckCommand::new(file.path().to_path_buf(), OutputFormat::Human);
-    let err = cmd.run().expect_err("invalid script should fail");
-    let compile_error = err
-        .downcast_ref::<KeyRxError>()
-        .expect("expected KeyRxError");
-    assert!(matches!(
-        compile_error,
-        KeyRxError::ScriptCompileError { .. }
-    ));
+    let exit_code = cmd
+        .run()
+        .expect("run should succeed even with invalid script");
+    // Exit code 1 indicates errors in the script
+    assert_eq!(exit_code, 1, "invalid script should return exit code 1");
 }
 
 #[test]

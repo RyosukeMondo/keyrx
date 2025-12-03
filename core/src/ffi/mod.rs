@@ -10,6 +10,7 @@
 //! - `exports_recording`: Session recording control
 //! - `exports_script`: Script loading and validation
 //! - `exports_testing`: Test discovery and execution
+//! - `exports_validation`: Script validation and key suggestions
 
 mod callbacks;
 mod exports;
@@ -21,6 +22,7 @@ mod exports_engine;
 mod exports_recording;
 mod exports_script;
 mod exports_testing;
+mod exports_validation;
 
 pub use callbacks::{
     callback_registry, CallbackRegistry, DiscoveryEventCallback, IsolatedRegistry,
@@ -35,3 +37,4 @@ pub use exports_engine::*;
 pub use exports_recording::*;
 pub use exports_script::*;
 pub use exports_testing::*;
+pub use exports_validation::*;

@@ -279,12 +279,16 @@ pub struct LayerCoverage {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ValidationOptions {
     /// Treat warnings as errors.
+    #[serde(default)]
     pub strict: bool,
     /// Suppress warnings in output.
+    #[serde(default)]
     pub no_warnings: bool,
     /// Include coverage analysis.
+    #[serde(default)]
     pub include_coverage: bool,
     /// Include ASCII keyboard visualization.
+    #[serde(default)]
     pub include_visual: bool,
 }
 
