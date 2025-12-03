@@ -1,7 +1,7 @@
 [package]
 name = "keyrx_core"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -11,38 +11,30 @@ name = "keyrx"
 path = "src/bin/keyrx.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
-rhai = "1.16"
-serde = { version = "1", default-features = false, features = ["derive"] }
-serde_json = "1"
-toml = "0.8"
-thiserror = "1"
-anyhow = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-crossbeam-channel = "0.5"
-clap = { version = "4", features = ["derive"] }
-async-trait = "0.1"
-chrono = { version = "0.4", features = ["serde", "clock"] }
-smallvec = "1"
-rand = "0.9"
-
-# File watching for test --watch mode
-notify = "6.0"
-
-# REPL readline support
-rustyline = "14.0"
-
-# Platform config directories
-dirs = "6.0"
-
-# String similarity for key name suggestions
-strsim = "0.11"
+tokio.workspace = true
+rhai.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+crossbeam-channel.workspace = true
+clap.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+smallvec.workspace = true
+rand.workspace = true
+notify.workspace = true
+rustyline.workspace = true
+dirs.workspace = true
+strsim.workspace = true
 
 # OpenTelemetry for tracing (optional)
-opentelemetry = { version = "0.27", optional = true }
-opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true }
-opentelemetry-otlp = { version = "0.27", features = ["tonic"], optional = true }
+opentelemetry = { workspace = true, optional = true }
+opentelemetry_sdk = { workspace = true, optional = true }
+opentelemetry-otlp = { workspace = true, optional = true }
 
 [features]
 # Enable platform drivers by default on their respective platforms
@@ -52,76 +44,24 @@ windows-driver = ["windows"]
 linux-driver = ["evdev", "nix", "signal-hook"]
 
 [dev-dependencies]
-proptest = "1"
-criterion = "0.5"
-tokio = { version = "1", features = ["test-util"] }
-tokio-test = "0.4"
-tempfile = "3"
-serial_test = "3"
+proptest.workspace = true
+criterion.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+tokio-test.workspace = true
+tempfile.workspace = true
+serial_test.workspace = true
 
 [[bench]]
 name = "latency"
 harness = false
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.52", optional = true, features = [
-    "Win32_Foundation",
-    "Win32_System_Threading",
-    "Win32_UI_Input_KeyboardAndMouse",
-    "Win32_UI_WindowsAndMessaging",
-] }
+windows = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-evdev = { version = "0.12", optional = true, features = ["tokio"] }
-nix = { version = "0.27", optional = true, features = ["ioctl"] }
-signal-hook = { version = "0.3", optional = true }
+evdev = { workspace = true, optional = true }
+nix = { workspace = true, optional = true }
+signal-hook = { workspace = true, optional = true }
 
-[profile.dev]
-opt-level = 0
-# Keep full debug info for better backtraces (level 2 = full)
-debug = 2
-# Enable incremental compilation for faster rebuilds (default, but explicit)
-incremental = true
-# More codegen units for faster parallel compilation
-codegen-units = 256
-
-# Optimize dependencies in dev mode for better performance
-[profile.dev.package."*"]
-opt-level = 2
-# Dependencies don't need incremental compilation
-incremental = false
-
-[lints.rust]
-unsafe_code = "warn"
-
-[lints.clippy]
-unwrap_used = "warn"
-expect_used = "warn"
-panic = "warn"
-
-[profile.release]
-# Optimize for binary size (balanced optimization)
-opt-level = "s"
-# Link-time optimization for size and performance
-lto = "thin"
-# Strip symbols from binary
-strip = true
-# Reduce binary size by disabling unwinding (note: tests must use --lib or dev profile)
-panic = "abort"
-# More codegen units for better incremental builds, LTO will optimize across them
-codegen-units = 16
-
-# Test profile inherits from dev, allows panic=unwind for tests
-[profile.test]
-inherits = "dev"
-
-[profile.profiling]
-inherits = "release"
-debug = true
-strip = false
-
-# Release build with debug symbols for profiling and debugging optimized code
-[profile.release-debug]
-inherits = "release"
-debug = true
-strip = false
+[lints]
+workspace = true

@@ -1,0 +1,128 @@
+[workspace]
+members = ["core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+async-trait = "0.1"
+
+# Scripting engine
+rhai = "1.16"
+
+# Serialization
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Concurrency utilities
+crossbeam-channel = "0.5"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Time utilities
+chrono = { version = "0.4", features = ["serde", "clock"] }
+
+# Data structures
+smallvec = "1"
+rand = "0.9"
+
+# File watching
+notify = "6.0"
+
+# REPL readline support
+rustyline = "14.0"
+
+# Platform config directories
+dirs = "6.0"
+
+# String similarity for key name suggestions
+strsim = "0.11"
+
+# OpenTelemetry for tracing
+opentelemetry = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.27", features = ["tonic"] }
+
+# Platform-specific: Windows
+windows = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+# Platform-specific: Linux
+evdev = { version = "0.12", features = ["tokio"] }
+nix = { version = "0.27", features = ["ioctl"] }
+signal-hook = "0.3"
+
+# Dev dependencies
+proptest = "1"
+criterion = "0.5"
+tokio-test = "0.4"
+tempfile = "3"
+serial_test = "3"
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+
+[profile.dev]
+opt-level = 0
+# Keep full debug info for better backtraces (level 2 = full)
+debug = 2
+# Enable incremental compilation for faster rebuilds (default, but explicit)
+incremental = true
+# More codegen units for faster parallel compilation
+codegen-units = 256
+
+# Optimize dependencies in dev mode for better performance
+[profile.dev.package."*"]
+opt-level = 2
+# Dependencies don't need incremental compilation
+incremental = false
+
+[profile.release]
+# Optimize for binary size (balanced optimization)
+opt-level = "s"
+# Link-time optimization for size and performance
+lto = "thin"
+# Strip symbols from binary
+strip = true
+# Reduce binary size by disabling unwinding (note: tests must use --lib or dev profile)
+panic = "abort"
+# More codegen units for better incremental builds, LTO will optimize across them
+codegen-units = 16
+
+# Test profile inherits from dev, allows panic=unwind for tests
+[profile.test]
+inherits = "dev"
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false
+
+# Release build with debug symbols for profiling and debugging optimized code
+[profile.release-debug]
+inherits = "release"
+debug = true
+strip = false
