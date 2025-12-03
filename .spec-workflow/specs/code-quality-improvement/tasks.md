@@ -145,14 +145,14 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create ConsoleParser with classify(text) returning ConsoleEntryType, needsInitButton(text) returning bool. Move parsing from _buildEntry to parser | Restrictions: ≤60 lines; pure functions | _Leverage: console.dart | _Requirements: 7 | Success: Parsing logic in isolated service._
 
-- [ ] 20. Extract ScriptFileService
+- [x] 20. Extract ScriptFileService
   - Files: ui/lib/services/script_file_service.dart (new), ui/lib/pages/editor_page.dart (modify)
   - Move file I/O out of EditorPage
   - _Leverage: existing editor_page.dart file operations_
   - _Requirements: 7_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Create ScriptFileService with saveScript(path, content) and loadScript(path). Move file operations from EditorPage._saveScript. Add to ServiceRegistry | Restrictions: ≤60 lines; async methods | _Leverage: editor_page.dart | _Requirements: 7 | Success: File I/O in isolated service._
 
-- [ ] 21. Split exports.rs (635 lines)
+- [x] 21. Split exports.rs (635 lines)
   - Files: core/src/ffi/exports.rs (modify), exports_device.rs (new), exports_session.rs (new), exports_engine.rs (new)
   - Split FFI exports by domain
   - _Leverage: existing exports.rs_
