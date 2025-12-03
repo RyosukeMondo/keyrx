@@ -363,6 +363,88 @@ impl EngineState {
 
     // === Mutation Methods ===
 
+    /// Apply multiple mutations atomically as a batch.
+    ///
+    /// This method applies a sequence of mutations with full rollback semantics:
+    /// - All mutations are applied in order
+    /// - If any mutation fails, the entire batch is rolled back
+    /// - The state is left unchanged on failure
+    /// - Version increments only if the entire batch succeeds
+    ///
+    /// # Arguments
+    ///
+    /// * `mutations` - Vector of mutations to apply atomically
+    ///
+    /// # Returns
+    ///
+    /// A vector of StateChange events (one per mutation) on success,
+    /// or a BatchFailed error on failure with the index of the failing mutation.
+    ///
+    /// # Errors
+    ///
+    /// * `StateError::EmptyBatch` - If the mutations vector is empty
+    /// * `StateError::NestedBatch` - If any mutation in the batch is itself a Batch
+    /// * `StateError::BatchFailed` - If any mutation fails (state is rolled back)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_core::engine::state::{EngineState, Mutation};
+    /// use keyrx_core::engine::KeyCode;
+    /// use keyrx_core::engine::decision::timing::TimingConfig;
+    ///
+    /// let mut state = EngineState::new(TimingConfig::default());
+    /// let mutations = vec![
+    ///     Mutation::KeyDown {
+    ///         key: KeyCode::A,
+    ///         timestamp_us: 1000,
+    ///         is_repeat: false,
+    ///     },
+    ///     Mutation::PushLayer { layer_id: 1 },
+    ///     Mutation::ActivateModifier { modifier_id: 5 },
+    /// ];
+    ///
+    /// let changes = state.apply_batch(mutations).expect("valid batch");
+    /// assert_eq!(changes.len(), 3);
+    /// assert!(state.is_key_pressed(KeyCode::A));
+    /// assert!(state.is_layer_active(1));
+    /// ```
+    pub fn apply_batch(&mut self, mutations: Vec<Mutation>) -> StateResult<Vec<StateChange>> {
+        // Validate batch is not empty
+        if mutations.is_empty() {
+            return Err(StateError::EmptyBatch);
+        }
+
+        // Validate no nested batches
+        for mutation in &mutations {
+            if matches!(mutation, Mutation::Batch { .. }) {
+                return Err(StateError::NestedBatch);
+            }
+        }
+
+        // Clone current state for rollback
+        let backup = self.clone();
+
+        // Apply mutations in sequence, collecting changes
+        let mut changes = Vec::with_capacity(mutations.len());
+
+        for (index, mutation) in mutations.into_iter().enumerate() {
+            match self.apply(mutation) {
+                Ok(change) => changes.push(change),
+                Err(error) => {
+                    // Rollback to backup state
+                    *self = backup;
+                    return Err(StateError::BatchFailed {
+                        index,
+                        error: Box::new(error),
+                    });
+                }
+            }
+        }
+
+        Ok(changes)
+    }
+
     /// Apply a single mutation atomically.
     ///
     /// This is the primary way to mutate engine state. Each mutation:
@@ -956,5 +1038,227 @@ mod tests {
 
         state.apply(Mutation::PushLayer { layer_id: 1 }).unwrap();
         assert_eq!(state.version(), 3);
+    }
+
+    // === Batch Mutation Tests ===
+
+    #[test]
+    fn apply_batch_success() {
+        let mut state = EngineState::default();
+        let mutations = vec![
+            Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            },
+            Mutation::PushLayer { layer_id: 1 },
+            Mutation::ActivateModifier { modifier_id: 5 },
+        ];
+
+        let changes = state.apply_batch(mutations).expect("valid batch");
+        assert_eq!(changes.len(), 3);
+
+        // Verify all mutations were applied
+        assert!(state.is_key_pressed(KeyCode::A));
+        assert!(state.is_layer_active(1));
+        assert!(state.is_modifier_active(Modifier::Virtual(5)));
+
+        // Verify version incremented for each mutation
+        assert_eq!(state.version(), 3);
+
+        // Verify each change has correct version
+        assert_eq!(changes[0].version, 1);
+        assert_eq!(changes[1].version, 2);
+        assert_eq!(changes[2].version, 3);
+    }
+
+    #[test]
+    fn apply_batch_empty_error() {
+        let mut state = EngineState::default();
+        let mutations = vec![];
+
+        let result = state.apply_batch(mutations);
+        assert!(matches!(result, Err(StateError::EmptyBatch)));
+    }
+
+    #[test]
+    fn apply_batch_nested_batch_error() {
+        let mut state = EngineState::default();
+        let mutations = vec![
+            Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            },
+            Mutation::Batch {
+                mutations: vec![Mutation::PushLayer { layer_id: 1 }],
+            },
+        ];
+
+        let result = state.apply_batch(mutations);
+        assert!(matches!(result, Err(StateError::NestedBatch)));
+    }
+
+    #[test]
+    fn apply_batch_rollback_on_failure() {
+        let mut state = EngineState::default();
+        let initial_version = state.version();
+
+        let mutations = vec![
+            Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            },
+            Mutation::PushLayer { layer_id: 1 },
+            // This will fail because key A is not pressed yet at batch start
+            Mutation::KeyUp {
+                key: KeyCode::B,
+                timestamp_us: 2000,
+            },
+        ];
+
+        let result = state.apply_batch(mutations);
+
+        // Verify batch failed at the correct index
+        assert!(matches!(
+            result,
+            Err(StateError::BatchFailed { index: 2, .. })
+        ));
+
+        // Verify complete rollback - no state changes should persist
+        assert!(!state.is_key_pressed(KeyCode::A));
+        assert!(!state.is_layer_active(1));
+        assert_eq!(state.version(), initial_version);
+    }
+
+    #[test]
+    fn apply_batch_rollback_preserves_previous_state() {
+        let mut state = EngineState::default();
+
+        // Apply some initial state
+        state
+            .apply(Mutation::KeyDown {
+                key: KeyCode::Z,
+                timestamp_us: 500,
+                is_repeat: false,
+            })
+            .unwrap();
+        state.apply(Mutation::PushLayer { layer_id: 9 }).unwrap();
+        let version_before_batch = state.version();
+
+        // Try a batch that will fail
+        let mutations = vec![
+            Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            },
+            Mutation::PopLayer, // Will pop layer 9
+            Mutation::PopLayer, // Will fail - can't pop base layer
+        ];
+
+        let result = state.apply_batch(mutations);
+        assert!(matches!(
+            result,
+            Err(StateError::BatchFailed { index: 2, .. })
+        ));
+
+        // Verify rollback preserved the state before batch
+        assert!(state.is_key_pressed(KeyCode::Z));
+        assert!(!state.is_key_pressed(KeyCode::A));
+        assert!(state.is_layer_active(9));
+        assert_eq!(state.version(), version_before_batch);
+    }
+
+    #[test]
+    fn apply_batch_complex_sequence() {
+        let mut state = EngineState::default();
+
+        let mutations = vec![
+            Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            },
+            Mutation::KeyDown {
+                key: KeyCode::B,
+                timestamp_us: 1100,
+                is_repeat: false,
+            },
+            Mutation::PushLayer { layer_id: 1 },
+            Mutation::PushLayer { layer_id: 2 },
+            Mutation::ActivateModifier { modifier_id: 10 },
+            Mutation::ActivateModifier { modifier_id: 20 },
+            Mutation::AddTapHold {
+                key: KeyCode::C,
+                pressed_at: 1200,
+                tap_action: KeyCode::D,
+                hold_action: HoldAction::Key(KeyCode::E),
+            },
+            Mutation::KeyUp {
+                key: KeyCode::A,
+                timestamp_us: 1300,
+            },
+            Mutation::PopLayer, // Pop layer 2
+            Mutation::DeactivateModifier { modifier_id: 10 },
+        ];
+
+        let changes = state.apply_batch(mutations).expect("valid complex batch");
+        assert_eq!(changes.len(), 10);
+
+        // Verify final state
+        assert!(!state.is_key_pressed(KeyCode::A));
+        assert!(state.is_key_pressed(KeyCode::B));
+        assert_eq!(state.top_layer(), 1);
+        assert!(!state.is_layer_active(2));
+        assert!(!state.is_modifier_active(Modifier::Virtual(10)));
+        assert!(state.is_modifier_active(Modifier::Virtual(20)));
+        assert_eq!(state.pending_count(), 1);
+        assert_eq!(state.version(), 10);
+    }
+
+    #[test]
+    fn apply_batch_single_mutation() {
+        let mut state = EngineState::default();
+        let mutations = vec![Mutation::KeyDown {
+            key: KeyCode::A,
+            timestamp_us: 1000,
+            is_repeat: false,
+        }];
+
+        let changes = state
+            .apply_batch(mutations)
+            .expect("valid single mutation batch");
+        assert_eq!(changes.len(), 1);
+        assert!(state.is_key_pressed(KeyCode::A));
+        assert_eq!(state.version(), 1);
+    }
+
+    #[test]
+    fn apply_batch_error_details() {
+        let mut state = EngineState::default();
+        let mutations = vec![
+            Mutation::ActivateModifier { modifier_id: 1 },
+            Mutation::ActivateModifier { modifier_id: 2 },
+            Mutation::ActivateModifier { modifier_id: 255 }, // Invalid ID
+        ];
+
+        let result = state.apply_batch(mutations);
+
+        match result {
+            Err(StateError::BatchFailed { index, error }) => {
+                assert_eq!(index, 2);
+                assert!(matches!(
+                    *error,
+                    StateError::InvalidModifierId { modifier_id: 255 }
+                ));
+            }
+            _ => panic!("Expected BatchFailed error"),
+        }
+
+        // Verify no state changes persisted
+        assert!(!state.is_modifier_active(Modifier::Virtual(1)));
+        assert!(!state.is_modifier_active(Modifier::Virtual(2)));
     }
 }
