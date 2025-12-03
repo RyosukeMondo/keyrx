@@ -2,7 +2,7 @@
 
 ## Phase 1: Foundation Types
 
-- [ ] 1. Create ExitCode enum
+- [x] 1. Create ExitCode enum
   - File: `core/src/cli/exit_codes.rs`
   - Define enum with all exit code variants (0-7, reserved 100+)
   - Implement `as_u8()`, `as_process_code()`, `description()`
