@@ -40,7 +40,7 @@
   - _Requirements: 1.1, 1.4_
   - _Prompt: Implement the task for spec build-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer optimizing deps | Task: Minimize serde features | Restrictions: Only derive if needed, test serialization | _Leverage: serde docs | Success: Serde compiles faster | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 5. Minimize windows-rs features
+- [x] 5. Minimize windows-rs features
   - File: `core/Cargo.toml`
   - List only used Windows APIs
   - Remove unused feature flags
