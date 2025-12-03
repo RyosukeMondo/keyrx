@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure
 
-- [ ] 1. Create DriverError type
+- [x] 1. Create DriverError type
   - File: `core/src/drivers/common/error.rs`
   - Define error variants with hints
   - Implement is_retryable() and suggested_action()
