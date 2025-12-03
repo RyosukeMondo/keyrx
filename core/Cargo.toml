@@ -46,7 +46,7 @@ opentelemetry-otlp = { version = "0.27", features = ["tonic"], optional = true }
 
 [features]
 # Enable platform drivers by default on their respective platforms
-default = []
+default = ["windows-driver", "linux-driver"]
 otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
 windows-driver = ["windows"]
 linux-driver = ["evdev", "nix", "signal-hook"]
