@@ -1,0 +1,101 @@
+# KeyRx Configuration File
+#
+# Copy this file to ~/.config/keyrx/config.toml to customize KeyRx behavior.
+# All values shown are defaults; you only need to include settings you want to change.
+#
+# CLI overrides (--tap-timeout, --combo-timeout, etc.) take precedence over file settings.
+#
+# Values outside valid ranges are automatically clamped with a warning.
+
+# =============================================================================
+# Timing Configuration
+# =============================================================================
+# Controls tap-hold detection and combo key windows.
+
+[timing]
+# Duration (ms) to distinguish a tap from a hold.
+# A key released before this timeout is considered a "tap".
+# A key held beyond this timeout triggers the "hold" action.
+# Valid range: 50-1000 ms
+tap_timeout_ms = 200
+
+# Window (ms) for detecting simultaneous keypresses as a combo.
+# Keys pressed within this window are candidates for combo matching.
+# Lower values require more precise timing; higher values are more lenient.
+# Valid range: 10-200 ms
+combo_timeout_ms = 50
+
+# Delay (ms) before considering a key press as a hold.
+# Used to prevent accidental hold triggers during fast typing.
+# Set to 0 to disable delay (immediate hold detection).
+# Valid range: 0-500 ms
+hold_delay_ms = 0
+
+# =============================================================================
+# UI Configuration
+# =============================================================================
+# Controls behavior of the Flutter debugger and visualizer.
+
+[ui]
+# Maximum number of key events to keep in the history buffer.
+# Higher values allow scrolling through more past events.
+# Memory usage scales linearly with this value.
+# Valid range: 50-1000
+max_events_history = 300
+
+# Duration (ms) for UI transition animations.
+# Affects keyboard highlighting, meter updates, and state transitions.
+# Set lower for snappier feel, higher for smoother animations.
+# Valid range: 50-500 ms
+animation_duration_ms = 150
+
+# =============================================================================
+# Performance Configuration
+# =============================================================================
+# Controls latency thresholds and benchmark settings.
+
+[performance]
+# Latency warning threshold in microseconds.
+# Latencies above this level are displayed in warning color (yellow/amber).
+# Should be higher than latency_caution_us.
+# Default: 20000 (20ms)
+latency_warning_us = 20000
+
+# Latency caution threshold in microseconds.
+# Latencies above this level are displayed in caution color (yellow/green).
+# Must be less than latency_warning_us.
+# Default: 10000 (10ms)
+latency_caution_us = 10000
+
+# Regression threshold in microseconds for benchmark comparisons.
+# A performance regression is flagged when latency increases by this amount
+# compared to the baseline.
+# Valid range: 10-1000 us
+regression_threshold_us = 100
+
+# Benchmark latency threshold in nanoseconds.
+# Used for pass/fail determination in benchmarks.
+# Keys processed slower than this threshold may indicate performance issues.
+# Default: 1000000 (1ms)
+latency_threshold_ns = 1000000
+
+# Default gap between simulated events in microseconds.
+# Used in simulate and replay commands to pace event injection.
+# Default: 1000 (1ms)
+event_gap_us = 1000
+
+# =============================================================================
+# Paths Configuration
+# =============================================================================
+# Configures directories and file locations.
+
+[paths]
+# Directory for user Rhai scripts.
+# Relative paths are resolved from the config directory (~/.config/keyrx/).
+# Absolute paths are used as-is.
+scripts_dir = "scripts"
+
+# Directory for temporary files.
+# Used for script validation, transient data, etc.
+# Default: system temp directory (e.g., /tmp on Linux)
+# temp_dir = "/tmp"
