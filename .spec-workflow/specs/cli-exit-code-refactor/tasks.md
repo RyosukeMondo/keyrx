@@ -95,7 +95,7 @@
   - _Requirements: 3.1, 4.3_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating commands | Task: Migrate CheckCommand to use CommandResult with proper validation errors | Restrictions: Include file:line:col in errors, return ValidationFailed exit code | _Leverage: Existing check.rs, CommandError::Validation | Success: CheckCommand uses new types, validation errors include location | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 10. Migrate TestCommand and UatCommand
+- [x] 10. Migrate TestCommand and UatCommand
   - Files: `core/src/cli/commands/test.rs`, `core/src/cli/commands/uat.rs`
   - Return CommandResult with AssertionFailed on test failure
   - Include pass/fail counts in error
