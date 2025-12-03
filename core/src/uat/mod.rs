@@ -12,6 +12,7 @@ mod coverage;
 mod fuzz;
 mod gates;
 mod golden;
+mod golden_comparison;
 mod golden_types;
 mod perf;
 mod report;
