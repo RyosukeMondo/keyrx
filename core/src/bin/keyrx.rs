@@ -3,10 +3,11 @@
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
-        golden_exit_codes, replay_exit_codes, test_exit_codes, uat_exit_codes, AnalyzeCommand,
-        BenchCommand, CheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand,
-        GoldenCommand, GoldenSubcommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand,
-        StateCommand, TestCommand, UatCommand,
+        ci_check_exit_codes, golden_exit_codes, regression_exit_codes, replay_exit_codes,
+        test_exit_codes, uat_exit_codes, AnalyzeCommand, BenchCommand, CheckCommand,
+        CiCheckCommand, DevicesCommand, DiscoverCommand, DiscoverExit, DoctorCommand,
+        GoldenCommand, GoldenSubcommand, RegressionCommand, ReplCommand, ReplayCommand, RunCommand,
+        SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     OutputFormat,
 };
@@ -242,6 +243,48 @@ enum Commands {
         #[command(subcommand)]
         command: GoldenCommands,
     },
+
+    /// Verify all golden sessions for regressions
+    Regression {
+        /// Custom golden sessions directory
+        #[arg(long)]
+        golden_dir: Option<PathBuf>,
+
+        /// Output results in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Run complete CI check (all tests + quality gates)
+    CiCheck {
+        /// Quality gate to enforce (default, alpha, beta, rc, ga)
+        #[arg(long)]
+        gate: Option<String>,
+
+        /// Output results in JSON format
+        #[arg(long)]
+        json: bool,
+
+        /// Skip unit tests
+        #[arg(long)]
+        skip_unit: bool,
+
+        /// Skip integration tests
+        #[arg(long)]
+        skip_integration: bool,
+
+        /// Skip UAT tests
+        #[arg(long)]
+        skip_uat: bool,
+
+        /// Skip regression tests
+        #[arg(long)]
+        skip_regression: bool,
+
+        /// Skip performance tests
+        #[arg(long)]
+        skip_perf: bool,
+    },
 }
 
 /// Golden session subcommands.
@@ -474,6 +517,47 @@ async fn run_command(command: Commands, format: OutputFormat) -> anyhow::Result<
                 ));
             }
         }
+        Commands::Regression { golden_dir, json } => {
+            let exit_code = RegressionCommand::new(format)
+                .with_golden_dir(golden_dir)
+                .with_json(json)
+                .run()?;
+
+            // Return early with specific exit code for regression failures
+            if exit_code != regression_exit_codes::SUCCESS {
+                return Err(anyhow::anyhow!(
+                    "Regression tests failed with exit code {}",
+                    exit_code
+                ));
+            }
+        }
+        Commands::CiCheck {
+            gate,
+            json,
+            skip_unit,
+            skip_integration,
+            skip_uat,
+            skip_regression,
+            skip_perf,
+        } => {
+            let exit_code = CiCheckCommand::new(format)
+                .with_gate(gate)
+                .with_json(json)
+                .with_skip_unit(skip_unit)
+                .with_skip_integration(skip_integration)
+                .with_skip_uat(skip_uat)
+                .with_skip_regression(skip_regression)
+                .with_skip_perf(skip_perf)
+                .run()?;
+
+            // Return early with specific exit code for CI check failures
+            if exit_code != ci_check_exit_codes::SUCCESS {
+                return Err(anyhow::anyhow!(
+                    "CI check failed with exit code {}",
+                    exit_code
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -525,6 +609,28 @@ fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
             return ExitCode::from(golden_exit_codes::CONFIRMATION_REQUIRED as u8);
         }
         return ExitCode::from(golden_exit_codes::ERROR as u8);
+    }
+
+    // Check for regression test failures
+    if err_str.contains("Regression tests failed with exit code") {
+        if err_str.contains(&format!("{}", regression_exit_codes::REGRESSION)) {
+            return ExitCode::from(regression_exit_codes::REGRESSION as u8);
+        }
+        return ExitCode::from(regression_exit_codes::ERROR as u8);
+    }
+
+    // Check for CI check failures
+    if err_str.contains("CI check failed with exit code") {
+        if err_str.contains(&format!("{}", ci_check_exit_codes::TEST_FAIL)) {
+            return ExitCode::from(ci_check_exit_codes::TEST_FAIL as u8);
+        }
+        if err_str.contains(&format!("{}", ci_check_exit_codes::GATE_FAIL)) {
+            return ExitCode::from(ci_check_exit_codes::GATE_FAIL as u8);
+        }
+        if err_str.contains(&format!("{}", ci_check_exit_codes::CRASH)) {
+            return ExitCode::from(ci_check_exit_codes::CRASH as u8);
+        }
+        return ExitCode::from(ci_check_exit_codes::TEST_FAIL as u8);
     }
 
     // Check if the root cause is a KeyRxError

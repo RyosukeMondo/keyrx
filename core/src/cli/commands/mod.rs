@@ -3,6 +3,7 @@
 mod analyze;
 mod bench;
 mod check;
+mod ci_check;
 mod devices;
 mod discover;
 mod discover_session;
@@ -24,6 +25,7 @@ mod uat;
 pub use analyze::{AnalysisResult, AnalyzeCommand};
 pub use bench::BenchCommand;
 pub use check::CheckCommand;
+pub use ci_check::{exit_codes as ci_check_exit_codes, CiCheckCommand, CiCheckSummary};
 pub use devices::DevicesCommand;
 pub use discover::{DiscoverCommand, DiscoverExit};
 pub use doctor::DoctorCommand;
