@@ -18,9 +18,11 @@
 //! - `context`: Handle-based state management replacing global statics
 //! - `events`: Unified event registry for all FFI callbacks
 //! - `traits`: FFI exportable trait definitions for domain modules
+//! - `domains`: New domain implementations using FfiExportable trait
 
 mod callbacks;
 pub mod context;
+pub mod domains;
 pub mod error;
 pub mod events;
 mod exports;
@@ -52,3 +54,6 @@ pub use exports_script::*;
 pub use exports_testing::*;
 pub use exports_validation::*;
 pub use traits::{FfiDomain, FfiExportable};
+
+// Re-export new domain implementations
+pub use domains::DiscoveryFfi;
