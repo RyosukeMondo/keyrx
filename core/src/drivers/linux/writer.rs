@@ -5,6 +5,7 @@
 //! for integration with the KeyRx remapping engine.
 
 use super::keymap::{all_evdev_codes, keycode_to_evdev};
+use crate::config::UINPUT_DEVICE_NAME;
 use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
 use crate::error::LinuxDriverError;
@@ -13,8 +14,6 @@ use evdev::{
     uinput::VirtualDeviceBuilder, AttributeSet, EventType, InputEvent as EvdevInputEvent, Key,
 };
 use tracing::{debug, trace};
-
-const UINPUT_DEVICE_NAME: &str = "KeyRx Virtual Keyboard";
 
 /// Writer for injecting keyboard events via uinput.
 ///

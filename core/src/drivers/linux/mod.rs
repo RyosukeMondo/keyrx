@@ -7,6 +7,7 @@ mod helpers;
 mod keymap;
 mod reader;
 mod writer;
+use crate::config::UINPUT_PATH;
 use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};
 use crate::traits::InputSource;
@@ -22,7 +23,6 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use tracing::{debug, warn};
 pub use writer::UinputWriter;
-const UINPUT_PATH: &str = "/dev/uinput";
 const UINPUT_NOT_FOUND_HELP: &str = "uinput device not found at /dev/uinput\n\n\
  Remediation:\n  \
  1. Load the uinput kernel module: sudo modprobe uinput\n  \

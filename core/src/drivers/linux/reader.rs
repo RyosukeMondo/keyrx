@@ -4,6 +4,10 @@
 //! evdev devices on Linux.
 
 use super::keymap::evdev_to_keycode;
+use crate::config::{
+    EVDEV_KEY_ESC, EVDEV_KEY_LEFTALT, EVDEV_KEY_LEFTCTRL, EVDEV_KEY_LEFTSHIFT, EVDEV_KEY_RIGHTALT,
+    EVDEV_KEY_RIGHTCTRL, EVDEV_KEY_RIGHTSHIFT,
+};
 use crate::drivers::common::extract_panic_message;
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
@@ -16,15 +20,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use tracing::{debug, error, trace, warn};
-
-/// Evdev key codes for modifier keys (used for emergency exit detection).
-const KEY_LEFTCTRL: u16 = 29;
-const KEY_RIGHTCTRL: u16 = 97;
-const KEY_LEFTSHIFT: u16 = 42;
-const KEY_RIGHTSHIFT: u16 = 54;
-const KEY_LEFTALT: u16 = 56;
-const KEY_RIGHTALT: u16 = 100;
-const KEY_ESC: u16 = 1;
 
 /// Reader for keyboard events from an evdev device.
 ///
@@ -70,11 +65,12 @@ struct ModifierStateTracker {
 impl ModifierStateTracker {
     /// Update modifier state based on key event.
     fn update(&mut self, code: u16, pressed: bool) {
-        match code {
-            KEY_LEFTCTRL | KEY_RIGHTCTRL => self.ctrl_down = pressed,
-            KEY_LEFTSHIFT | KEY_RIGHTSHIFT => self.shift_down = pressed,
-            KEY_LEFTALT | KEY_RIGHTALT => self.alt_down = pressed,
-            _ => {}
+        if code == EVDEV_KEY_LEFTCTRL || code == EVDEV_KEY_RIGHTCTRL {
+            self.ctrl_down = pressed;
+        } else if code == EVDEV_KEY_LEFTSHIFT || code == EVDEV_KEY_RIGHTSHIFT {
+            self.shift_down = pressed;
+        } else if code == EVDEV_KEY_LEFTALT || code == EVDEV_KEY_RIGHTALT {
+            self.alt_down = pressed;
         }
     }
 
@@ -339,7 +335,7 @@ impl EvdevReader {
             self.modifier_state.update(code, pressed);
 
             // Check for emergency exit combo: Escape pressed with all modifiers down
-            if pressed && code == KEY_ESC && self.modifier_state.all_modifiers_down() {
+            if pressed && code == EVDEV_KEY_ESC && self.modifier_state.all_modifiers_down() {
                 let new_state = toggle_bypass_mode();
                 if new_state {
                     // Bypass mode activated - ungrab device so keys flow to OS
