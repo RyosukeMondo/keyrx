@@ -139,6 +139,34 @@ impl ExitCode {
         self as u8 as i32
     }
 
+    /// Try to create an ExitCode from a u8 value.
+    ///
+    /// Returns None if the value doesn't correspond to a valid exit code.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use keyrx_core::cli::ExitCode;
+    ///
+    /// assert_eq!(ExitCode::from_u8(0), Some(ExitCode::Success));
+    /// assert_eq!(ExitCode::from_u8(2), Some(ExitCode::AssertionFailed));
+    /// assert_eq!(ExitCode::from_u8(99), None);
+    /// ```
+    pub const fn from_u8(code: u8) -> Option<ExitCode> {
+        match code {
+            0 => Some(ExitCode::Success),
+            1 => Some(ExitCode::GeneralError),
+            2 => Some(ExitCode::AssertionFailed),
+            3 => Some(ExitCode::Timeout),
+            4 => Some(ExitCode::ValidationFailed),
+            5 => Some(ExitCode::PermissionDenied),
+            6 => Some(ExitCode::DeviceNotFound),
+            7 => Some(ExitCode::ScriptError),
+            101 => Some(ExitCode::Panic),
+            _ => None,
+        }
+    }
+
     /// Convert to std::process::ExitCode for main return.
     ///
     /// # Example
@@ -345,5 +373,19 @@ mod tests {
             "Script execution error"
         );
         assert_eq!(ExitCode::Panic.description(), "Unhandled panic");
+    }
+
+    #[test]
+    fn from_u8_roundtrip() {
+        assert_eq!(ExitCode::from_u8(0), Some(ExitCode::Success));
+        assert_eq!(ExitCode::from_u8(1), Some(ExitCode::GeneralError));
+        assert_eq!(ExitCode::from_u8(2), Some(ExitCode::AssertionFailed));
+        assert_eq!(ExitCode::from_u8(3), Some(ExitCode::Timeout));
+        assert_eq!(ExitCode::from_u8(4), Some(ExitCode::ValidationFailed));
+        assert_eq!(ExitCode::from_u8(5), Some(ExitCode::PermissionDenied));
+        assert_eq!(ExitCode::from_u8(6), Some(ExitCode::DeviceNotFound));
+        assert_eq!(ExitCode::from_u8(7), Some(ExitCode::ScriptError));
+        assert_eq!(ExitCode::from_u8(101), Some(ExitCode::Panic));
+        assert_eq!(ExitCode::from_u8(99), None);
     }
 }

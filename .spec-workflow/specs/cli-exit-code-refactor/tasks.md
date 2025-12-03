@@ -54,7 +54,7 @@
   - _Requirements: 3.1, 3.2_
   - _Prompt: Implement the task for spec cli-exit-code-refactor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with CLI expertise | Task: Create Command trait and CommandContext in core/src/cli/command.rs | Restrictions: Must work with clap, support output formats, be async-compatible if needed | _Leverage: clap derive patterns | Success: Trait compiles, CommandContext has all needed fields, integrates with clap | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Refactor entry point dispatch
+- [-] 6. Refactor entry point dispatch
   - File: `core/src/bin/keyrx.rs`
   - Remove string-based exit code extraction
   - Use CommandResult for all command returns
