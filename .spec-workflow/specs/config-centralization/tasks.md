@@ -43,7 +43,7 @@
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec config-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer | Task: Create `core/src/config/limits.rs` with capacity constants: MAX_PENDING_DECISIONS=32, MIN_COMBO_KEYS=2, MAX_COMBO_KEYS=4, MAX_MODIFIER_ID=255, MAX_TIMEOUT_MS=5000, DEFAULT_EVENT_GAP_US=1000, LATENCY_THRESHOLD_NS=1_000_000, DEFAULT_REGRESSION_THRESHOLD_US=100. Add doc comments explaining each limit's purpose. | Restrictions: Ensure values exactly match current hardcoded values | _Leverage: core/src/engine/decision/pending.rs:86,144, core/src/engine/state/modifiers.rs:68, core/src/scripting/builtins.rs:236_ | Success: All limits extracted with documentation. Mark task [-] in tasks.md before starting, log implementation with log-implementation tool, then mark [x] when complete._
 
-- [ ] 6. Create exit codes constants module
+- [x] 6. Create exit codes constants module
   - File: `core/src/config/exit_codes.rs`
   - Consolidate CLI exit codes into single module
   - Purpose: Centralize all exit code constants for CLI commands
@@ -53,7 +53,7 @@
 
 ## Phase 2: Refactor Rust Code to Use Config Module
 
-- [ ] 7. Refactor timing.rs to use config constants
+- [x] 7. Refactor timing.rs to use config constants
   - File: `core/src/engine/decision/timing.rs`
   - Import and use constants from config module
   - Purpose: Use centralized timing constants
