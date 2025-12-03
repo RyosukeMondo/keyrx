@@ -25,6 +25,7 @@ clap = { version = "4", features = ["derive"] }
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde", "clock"] }
 smallvec = "1"
+rand = "0.9"
 
 # File watching for test --watch mode
 notify = "6.0"

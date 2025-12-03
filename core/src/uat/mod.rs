@@ -17,7 +17,7 @@ mod report;
 mod runner;
 
 pub use coverage::{CoverageMap, CoverageMapper, CoverageReport, RequirementCoverage};
-pub use fuzz::{FuzzEngine, FuzzResult};
+pub use fuzz::{CrashSequence, FuzzConfig, FuzzEngine, FuzzEvent, FuzzResult, FuzzSequence};
 pub use gates::{
     EvaluationContext, GateLoadError, GateResult, GateViolation, QualityGate, QualityGateEnforcer,
 };
