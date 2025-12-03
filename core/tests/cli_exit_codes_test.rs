@@ -3,15 +3,16 @@
 //! These tests verify that the CLI binary returns the correct exit codes
 //! for various scenarios, matching the documentation in ExitCode.
 
-use assert_cmd::Command;
+use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::fs;
 use std::io::Write;
+use std::process::Command;
 use tempfile::{tempdir, NamedTempFile};
 
 /// Helper to create a Command for the keyrx binary.
 fn keyrx_cmd() -> Command {
-    Command::cargo_bin("keyrx").expect("Failed to find keyrx binary")
+    Command::new(env!("CARGO_BIN_EXE_keyrx"))
 }
 
 // =============================================================================
