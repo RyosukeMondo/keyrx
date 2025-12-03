@@ -9,21 +9,21 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems engineer | Task: Create RuntimeContext struct containing Engine, pending_ops Vec, and Registry. Remove RUNTIME_SLOT global from runtime.rs. Pass context as parameter instead of accessing global | Restrictions: ≤200 lines for context.rs; update all callers; maintain thread safety via Arc<Mutex> if needed | _Leverage: runtime.rs | _Requirements: 1 | Success: Tests can run in parallel without #[serial] attribute._
 
-- [ ] 2. Create BypassController to replace global bypass state
+- [x] 2. Create BypassController to replace global bypass state
   - Files: core/src/drivers/bypass.rs (new), core/src/drivers/emergency_exit.rs (modify)
   - Extract bypass mode into injectable component
   - _Leverage: existing emergency_exit.rs_
   - _Requirements: 1_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust systems engineer | Task: Create BypassController struct with AtomicBool and optional callback. Remove BYPASS_MODE and BYPASS_CALLBACK globals. Inject controller into engine | Restrictions: ≤80 lines; maintain atomic operations; backward compatible API | _Leverage: emergency_exit.rs | _Requirements: 1 | Success: Bypass mode testable in isolation._
 
-- [ ] 3. Make FFI callbacks injectable
+- [x] 3. Make FFI callbacks injectable
   - Files: core/src/ffi/exports.rs (modify), core/src/ffi/callbacks.rs (new)
   - Extract callback holders into injectable registry
   - _Leverage: existing exports.rs patterns_
   - _Requirements: 1_
   - _Prompt: Implement the task for spec code-quality-improvement, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust FFI engineer | Task: Create CallbackRegistry struct holding discovery and state callbacks. Replace static OnceLock with injectable registry. Pass registry to FFI init function | Restrictions: ≤100 lines; maintain C ABI compatibility | _Leverage: exports.rs | _Requirements: 1 | Success: FFI callbacks mockable in tests._
 
-- [ ] 4. Add engine dependency traits
+- [x] 4. Add engine dependency traits
   - Files: core/src/traits/state.rs (new), core/src/engine/advanced.rs (modify)
   - Create KeyStateProvider, ModifierProvider, LayerProvider traits
   - _Leverage: existing traits/mod.rs patterns_

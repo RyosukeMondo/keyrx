@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::engine::KeyCode;
+use crate::traits::LayerProvider;
 
 pub type LayerId = u16;
 
@@ -311,6 +312,36 @@ impl LayerStack {
     /// Get active layer IDs in priority order (last = highest).
     pub fn active_layer_ids(&self) -> Vec<u32> {
         self.stack.iter().map(|&id| id as u32).collect()
+    }
+}
+
+impl LayerProvider for LayerStack {
+    fn active_layer(&self) -> LayerId {
+        *self.stack.last().unwrap_or(&self.base)
+    }
+
+    fn active_layer_ids(&self) -> Vec<LayerId> {
+        self.stack.clone()
+    }
+
+    fn push(&mut self, layer_id: LayerId) -> bool {
+        LayerStack::push(self, layer_id)
+    }
+
+    fn pop(&mut self) -> Option<LayerId> {
+        LayerStack::pop(self)
+    }
+
+    fn toggle(&mut self, layer_id: LayerId) -> bool {
+        LayerStack::toggle(self, layer_id)
+    }
+
+    fn is_active(&self, layer_id: LayerId) -> bool {
+        LayerStack::is_active(self, layer_id)
+    }
+
+    fn lookup(&self, key: KeyCode) -> Option<&LayerAction> {
+        LayerStack::lookup(self, key)
     }
 }
 

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::traits::ModifierProvider;
+
 /// Identifies a modifier, either a standard OS modifier or a virtual one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Modifier {
@@ -202,6 +204,28 @@ impl ModifierState {
 
     pub fn virtual_mods(&self) -> VirtualModifiers {
         self.virtual_mods
+    }
+}
+
+impl ModifierProvider for ModifierState {
+    fn is_active(&self, modifier: Modifier) -> bool {
+        ModifierState::is_active(self, modifier)
+    }
+
+    fn activate(&mut self, modifier: Modifier) {
+        ModifierState::activate(self, modifier);
+    }
+
+    fn deactivate(&mut self, modifier: Modifier) {
+        ModifierState::deactivate(self, modifier);
+    }
+
+    fn arm_one_shot(&mut self, modifier: Modifier) {
+        ModifierState::arm_one_shot(self, modifier);
+    }
+
+    fn clear(&mut self) {
+        ModifierState::clear(self);
     }
 }
 

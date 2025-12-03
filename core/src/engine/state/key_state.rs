@@ -1,11 +1,34 @@
 use std::collections::HashMap;
 
 use crate::engine::KeyCode;
+use crate::traits::KeyStateProvider;
 
 /// Tracks which physical keys are currently pressed and when they were first
 /// pressed. Ignores auto-repeat key_down events so state reflects real holds.
 pub struct KeyStateTracker {
     pressed: HashMap<KeyCode, u64>,
+}
+
+impl KeyStateProvider for KeyStateTracker {
+    fn is_pressed(&self, key: KeyCode) -> bool {
+        self.pressed.contains_key(&key)
+    }
+
+    fn press(&mut self, key: KeyCode, timestamp_us: u64, is_repeat: bool) -> bool {
+        self.key_down(key, timestamp_us, is_repeat)
+    }
+
+    fn release(&mut self, key: KeyCode) -> Option<u64> {
+        self.key_up(key)
+    }
+
+    fn press_time(&self, key: KeyCode) -> Option<u64> {
+        self.pressed.get(&key).copied()
+    }
+
+    fn pressed_keys(&self) -> Box<dyn Iterator<Item = KeyCode> + '_> {
+        Box::new(self.pressed.keys().copied())
+    }
 }
 
 impl Default for KeyStateTracker {
