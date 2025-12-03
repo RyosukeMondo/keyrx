@@ -15,8 +15,10 @@
 //!
 //! ## New Architecture Components
 //! - `error`: Standardized FFI error types and result handling
+//! - `context`: Handle-based state management replacing global statics
 
 mod callbacks;
+pub mod context;
 pub mod error;
 mod exports;
 mod exports_analysis;
