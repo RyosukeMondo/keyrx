@@ -373,7 +373,7 @@ impl DiffFlameGraphGenerator {
         y: f64,
         width: f64,
         total: u64,
-        depth: usize,
+        _depth: usize,
     ) {
         if width < self.config.min_width {
             return;
@@ -440,11 +440,11 @@ impl DiffFlameGraphGenerator {
 
         // Sort children by total value for consistent rendering
         let mut children: Vec<_> = node.children.values().collect();
-        children.sort_by(|a, b| b.total_value().cmp(&a.total_value()));
+        children.sort_by_key(|b| std::cmp::Reverse(b.total_value()));
 
         for child in children {
             let child_width = (child.total_value() as f64 / total as f64) * width;
-            self.render_frame(svg, child, child_x, child_y, child_width, total, depth + 1);
+            self.render_frame(svg, child, child_x, child_y, child_width, total, _depth + 1);
             child_x += child_width;
         }
     }

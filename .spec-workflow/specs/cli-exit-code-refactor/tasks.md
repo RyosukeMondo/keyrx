@@ -44,7 +44,7 @@
 
 ## Phase 2: Command Infrastructure
 
-- [ ] 5. Create Command trait
+- [x] 5. Create Command trait
   - File: `core/src/cli/command.rs`
   - Define trait with execute(), name() methods
   - Create CommandContext struct for shared state

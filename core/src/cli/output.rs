@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::io::{self, Write};
 
 /// Output format selection.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum OutputFormat {
     /// Human-readable text output.
     #[default]
@@ -14,6 +14,7 @@ pub enum OutputFormat {
 }
 
 /// Writer for formatted CLI output.
+#[derive(Debug)]
 pub struct OutputWriter {
     format: OutputFormat,
 }
