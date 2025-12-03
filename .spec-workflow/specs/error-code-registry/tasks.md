@@ -120,7 +120,7 @@
   - _Requirements: 1.1, 3.3_
   - _Prompt: Implement the task for spec error-code-registry, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating errors | Task: Replace anyhow! in core with keyrx_err! | Restrictions: Preserve error context, maintain chains | _Leverage: keyrx_err! | Success: Core uses error codes | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 14. Update FFI error exports
+- [x] 14. Update FFI error exports
   - File: `core/src/ffi/exports_*.rs`
   - Export error codes through FFI
   - Purpose: Flutter error access
