@@ -94,7 +94,7 @@
 
 ## Documentation & Integration
 
-- [ ] 13. Update Cargo.toml with release profile optimizations
+- [x] 13. Update Cargo.toml with release profile optimizations
   - Files: core/Cargo.toml (modify)
   - Add release and profiling profiles as specified in tech.md
   - _Leverage: existing Cargo.toml_
