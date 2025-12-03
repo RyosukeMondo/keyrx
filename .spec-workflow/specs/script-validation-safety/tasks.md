@@ -167,7 +167,7 @@
   - _Requirements: REQ-6.1_
   - _Prompt: Implement the task for spec script-validation-safety, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI engineer | Task: Create core/src/ffi/exports_validation.rs with extern "C" functions: keyrx_validate_script(script: *const c_char) -> *mut c_char (JSON result), keyrx_suggest_keys(partial: *const c_char) -> *mut c_char (JSON array). Add to ffi/mod.rs | Restrictions: ≤150 lines; follow existing FFI patterns; free strings properly | Success: FFI exports work from Dart. Mark [-] before, log-implementation after, mark [x] complete._
 
-- [ ] 19. Update Flutter bridge for validation
+- [x] 19. Update Flutter bridge for validation
   - Files: `ui/lib/ffi/bridge.dart` (extend)
   - Add validateScript() method returning ValidationResult
   - Add suggestKeys() for autocomplete
