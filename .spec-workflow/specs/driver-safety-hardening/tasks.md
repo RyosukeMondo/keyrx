@@ -83,7 +83,7 @@
   - _Requirements: 1.2, 4.4_
   - _Prompt: Implement the task for spec driver-safety-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with uinput expertise | Task: Create SafeUinput in safety/uinput.rs | Restrictions: RAII for cleanup, validate events, document SAFETY | _Leverage: uinput crate | Success: Virtual device operations are safe | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Add permission error handling
+- [x] 9. Add permission error handling
   - File: `core/src/drivers/linux/safety/permissions.rs`
   - Check and report permission issues
   - Provide helpful hints (input group, udev rules)

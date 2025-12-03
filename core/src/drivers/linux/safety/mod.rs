@@ -81,5 +81,5 @@
 
 // Module declarations (components will be implemented in subsequent tasks)
 pub mod device;
+pub mod permissions;
 pub mod uinput;
-// pub mod permissions;
