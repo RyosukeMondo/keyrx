@@ -165,7 +165,7 @@
   - _Requirements: Non-functional (reliability)_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create unit tests for metrics | Restrictions: Test accuracy, edge cases | _Leverage: Test fixtures | Success: All metrics accurate | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 18. Create metrics documentation
+- [x] 18. Create metrics documentation
   - File: `docs/metrics.md`
   - Document metric types
   - Explain thresholds and alerts
