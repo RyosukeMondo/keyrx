@@ -125,7 +125,7 @@
   - _Requirements: 4.3, 4.4_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating service | Task: Create ObservabilityService for logs/metrics | Restrictions: Stream updates, efficient polling | _Leverage: FFI exports | Success: Flutter has observability access | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Create LogViewer widget
+- [-] 14. Create LogViewer widget
   - File: `ui/lib/widgets/debug/log_viewer.dart`
   - Display logs with filtering
   - Level and target filters
