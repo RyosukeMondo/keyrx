@@ -68,7 +68,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Replace println in engine with tracing | Restrictions: Structured fields, appropriate levels | _Leverage: Logging macros | Success: Engine uses structured logging | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Replace println in drivers
+- [x] 8. Replace println in drivers
   - Files: `core/src/drivers/*.rs`
   - Replace driver debug output
   - Add platform-specific context
