@@ -78,7 +78,7 @@
   - _Requirements: 3.1, 3.4_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating traits | Task: Create FfiStreamMarshaler for chunked transfer | Restrictions: Fixed chunk size, resumable | _Leverage: Trait patterns | Success: Large data streams efficiently | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Implement streaming for session data
+- [x] 9. Implement streaming for session data
   - File: `core/src/ffi/marshal/impls/session.rs`
   - Stream recording/replay data
   - Efficient chunking

@@ -10,11 +10,7 @@
 //! - [`string`]: String and &str marshaling with null-terminated C strings
 //! - [`array`]: Vec<T> marshaling with length-prefixed arrays
 //! - [`json`]: JSON-based marshaling for complex types
-//!
-//! # Future Modules
-//!
-//! Additional modules will be added for:
-//! - `session`: Streaming marshaling for large session data
+//! - [`session`]: Streaming marshaling for large session data (recording/replay)
 //!
 //! # Usage
 //!
@@ -32,4 +28,5 @@
 pub mod array;
 pub mod json;
 pub mod primitives;
+pub mod session;
 pub mod string;
