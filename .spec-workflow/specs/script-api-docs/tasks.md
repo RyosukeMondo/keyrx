@@ -98,7 +98,7 @@
   - _Requirements: 3.2, 3.3_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating test runner | Task: Create ExampleRunner for doc examples | Restrictions: Run all examples, clear errors | _Leverage: Rhai engine | Success: Examples tested automatically | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 11. Add example tests to CI
+- [x] 11. Add example tests to CI
   - File: CI configuration
   - Run example tests in build
   - Fail on broken examples (warning for now)
