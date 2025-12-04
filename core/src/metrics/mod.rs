@@ -44,12 +44,14 @@ pub mod memory;
 pub mod noop_collector;
 pub mod operation;
 pub mod profile;
+pub mod snapshot;
 
 // Re-export commonly used types
-pub use collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
+pub use collector::{MetricsCollector, ProfileGuard};
 pub use full_collector::FullMetricsCollector;
 pub use latency::LatencyHistogram;
 pub use memory::{MemoryMonitor, MemoryStats};
 pub use noop_collector::NoOpCollector;
 pub use operation::Operation;
 pub use profile::{ProfilePointGuard, ProfilePoints, ProfileStats};
+pub use snapshot::{LatencyStats, MemorySnapshot, MetricsSnapshot, ProfileSnapshot};

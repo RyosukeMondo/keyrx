@@ -16,8 +16,9 @@
 //! In release builds with optimizations enabled, all methods compile to zero
 //! instructions. The null object pattern ensures type safety without runtime cost.
 
-use super::collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
+use super::collector::{MetricsCollector, ProfileGuard};
 use super::operation::Operation;
+use super::snapshot::MetricsSnapshot;
 
 /// Zero-overhead no-op metrics collector.
 ///

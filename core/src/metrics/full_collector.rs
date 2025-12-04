@@ -49,11 +49,12 @@
 //! let snapshot = collector.snapshot();
 //! ```
 
-use super::collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
+use super::collector::{MetricsCollector, ProfileGuard};
 use super::latency::LatencyHistogram;
 use super::memory::MemoryMonitor;
 use super::operation::Operation;
 use super::profile::ProfilePoints;
+use super::snapshot::{LatencyStats, MemorySnapshot, MetricsSnapshot};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -201,9 +202,38 @@ impl MetricsCollector for FullMetricsCollector {
     }
 
     fn snapshot(&self) -> MetricsSnapshot {
-        // Note: This returns the placeholder snapshot for now.
-        // Task 7 will implement the full MetricsSnapshot with all data.
-        MetricsSnapshot::empty()
+        // Collect latency statistics for each operation
+        let mut latencies = HashMap::new();
+        for (operation, histogram) in &self.latency_histograms {
+            let stats = LatencyStats {
+                count: histogram.count(),
+                p50: histogram.percentile(50.0),
+                p95: histogram.percentile(95.0),
+                p99: histogram.percentile(99.0),
+                mean: histogram.mean(),
+                min: histogram.min(),
+                max: histogram.max(),
+            };
+            latencies.insert(operation.name().to_string(), stats);
+        }
+
+        // Collect memory statistics
+        let mem_stats = self.memory_monitor.stats();
+        let memory = MemorySnapshot::new(
+            mem_stats.current,
+            mem_stats.peak,
+            mem_stats.baseline,
+            mem_stats.growth_from_baseline,
+            self.memory_monitor.has_potential_leak(),
+        );
+
+        // Collect profile point statistics
+        let mut profiles = HashMap::new();
+        for (name, stats) in self.profile_points.all_stats() {
+            profiles.insert(name.to_string(), stats.into());
+        }
+
+        MetricsSnapshot::new(latencies, memory, profiles)
     }
 
     fn reset(&self) {

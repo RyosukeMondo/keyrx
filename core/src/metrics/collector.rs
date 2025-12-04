@@ -7,6 +7,7 @@
 use std::time::Instant;
 
 use super::operation::Operation;
+use super::snapshot::MetricsSnapshot;
 
 /// Trait for metrics collection implementations.
 ///
@@ -109,32 +110,6 @@ impl Drop for ProfileGuard<'_> {
     fn drop(&mut self) {
         let elapsed = self.start.elapsed().as_micros() as u64;
         self.collector.record_profile(self.name, elapsed);
-    }
-}
-
-/// Snapshot of metrics at a point in time.
-///
-/// This is a placeholder that will be replaced with the full implementation
-/// in a later task (Task 7: MetricsSnapshot export).
-#[derive(Debug, Clone)]
-pub struct MetricsSnapshot {
-    /// Unix timestamp in milliseconds
-    pub timestamp: u64,
-    /// Placeholder for future implementation
-    pub _placeholder: (),
-}
-
-impl MetricsSnapshot {
-    /// Create an empty snapshot.
-    pub fn empty() -> Self {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        Self {
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64,
-            _placeholder: (),
-        }
     }
 }
 
