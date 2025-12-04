@@ -20,7 +20,7 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with histogram expertise | Task: Implement LatencyHistogram using hdrhistogram | Restrictions: Bounded memory, O(1) percentile, thread-safe | _Leverage: hdrhistogram crate | Success: Accurate percentiles, low overhead | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Implement MemoryMonitor
+- [x] 3. Implement MemoryMonitor
   - File: `core/src/metrics/memory.rs`
   - Track current, peak, and baseline memory
   - Add leak detection heuristics
