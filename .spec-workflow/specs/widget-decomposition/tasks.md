@@ -107,7 +107,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer updating imports | Task: Update EditorPage to use barrel imports | Restrictions: No functionality change, verify all widgets | _Leverage: Barrel exports | Success: EditorPage works with new imports | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Update other pages with extracted widgets
+- [x] 12. Update other pages with extracted widgets
   - Files: All pages using editor widgets
   - Update imports to use common widgets
   - Remove duplicated widget code
