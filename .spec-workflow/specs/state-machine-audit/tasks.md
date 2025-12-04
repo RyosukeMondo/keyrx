@@ -77,7 +77,7 @@
   - _Requirements: 3.1_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing invariants | Task: Implement core state invariants | Restrictions: Cover all critical invariants | _Leverage: Invariant trait | Success: Key invariants enforced | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 9. Create StateValidator
+- [x] 9. Create StateValidator
   - File: `core/src/engine/transitions/validator.rs`
   - Combine invariants
   - Add debug-only extra validation
