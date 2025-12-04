@@ -12,6 +12,8 @@ use crate::config::MAX_TIMEOUT_MS;
 use crate::engine::{
     HoldAction, KeyCode, LayerStack, Modifier, ModifierState, TimingConfig, VirtualModifiers,
 };
+use crate::scripting::sandbox::validation::InputValidator;
+use crate::scripting::sandbox::validators::{LengthValidator, NonEmptyValidator, RangeValidator};
 use crate::scripting::RemapRegistry;
 use rhai::{Array, EvalAltResult, Position};
 use std::collections::HashMap;
@@ -229,46 +231,72 @@ pub fn parse_array_error(index: usize, value_type: &str) -> Box<EvalAltResult> {
 // Validation helpers
 
 /// Validate a timeout value is within acceptable range.
+///
+/// Uses the InputValidator trait system for validation.
 pub fn validate_timeout(
     ms: i64,
     fn_name: &str,
     allow_zero: bool,
 ) -> Result<u32, Box<EvalAltResult>> {
     let min = if allow_zero { 0 } else { 1 };
-    if !(min..=MAX_TIMEOUT_MS).contains(&ms) {
-        return Err(timing_error(
+
+    // Use RangeValidator
+    let validator = RangeValidator::new(min, MAX_TIMEOUT_MS);
+    validator.validate(&ms).map_err(|e| {
+        timing_error(
             fn_name,
-            format!(
-                "{} expects {}..={} ms, got {}",
-                fn_name, min, MAX_TIMEOUT_MS, ms
-            ),
-        ));
-    }
+            format!("{} expects {}..={} ms: {}", fn_name, min, MAX_TIMEOUT_MS, e),
+        )
+    })?;
 
     Ok(ms as u32)
 }
 
 /// Normalize and validate a layer name.
+///
+/// Uses the InputValidator trait system for validation.
 pub fn normalize_layer_name(name: &str, fn_name: &str) -> Result<String, Box<EvalAltResult>> {
     let trimmed = name.trim();
-    if trimmed.is_empty() {
-        return Err(layer_error(fn_name, "layer name cannot be empty"));
-    }
+
+    // Validate non-empty
+    NonEmptyValidator
+        .validate(trimmed)
+        .map_err(|e| layer_error(fn_name, format!("layer name {}", e)))?;
+
+    // Validate no colons (custom validation)
     if trimmed.contains(':') {
         return Err(layer_error(fn_name, "layer name cannot contain ':'"));
     }
+
+    // Validate reasonable length
+    LengthValidator::new(1, 64)
+        .validate(trimmed)
+        .map_err(|e| layer_error(fn_name, format!("layer name {}", e)))?;
+
     Ok(trimmed.to_string())
 }
 
 /// Normalize and validate a modifier name.
+///
+/// Uses the InputValidator trait system for validation.
 pub fn normalize_modifier_name(name: &str, fn_name: &str) -> Result<String, Box<EvalAltResult>> {
     let trimmed = name.trim();
-    if trimmed.is_empty() {
-        return Err(modifier_error(fn_name, "modifier name cannot be empty"));
-    }
+
+    // Validate non-empty
+    NonEmptyValidator
+        .validate(trimmed)
+        .map_err(|e| modifier_error(fn_name, format!("modifier name {}", e)))?;
+
+    // Validate no colons (custom validation)
     if trimmed.contains(':') {
         return Err(modifier_error(fn_name, "modifier name cannot contain ':'"));
     }
+
+    // Validate reasonable length
+    LengthValidator::new(1, 64)
+        .validate(trimmed)
+        .map_err(|e| modifier_error(fn_name, format!("modifier name {}", e)))?;
+
     Ok(trimmed.to_string())
 }
 

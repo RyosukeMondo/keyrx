@@ -14,6 +14,8 @@ use super::builtins::{
 };
 use super::helpers::parse_key_or_error;
 use crate::engine::{HoldAction, LayerAction, VirtualModifiers};
+use crate::scripting::sandbox::validation::InputValidator;
+use crate::scripting::sandbox::validators::RangeValidator;
 use rhai::{Array, Engine, EvalAltResult, Position};
 use std::sync::Arc;
 
@@ -148,17 +150,16 @@ fn register_tap_hold_mod(engine: &mut Engine, pending_ops: &PendingOps) {
             let key_code = parse_key_or_error(key, "tap_hold_mod")?;
             let tap_code = parse_key_or_error(tap, "tap_hold_mod")?;
 
-            let modifier = u8::try_from(modifier_id).map_err(|_| {
+            // Validate modifier_id range using RangeValidator
+            let validator = RangeValidator::new(0i64, VirtualModifiers::MAX_ID as i64);
+            validator.validate(&modifier_id).map_err(|e| {
                 Box::new(EvalAltResult::ErrorRuntime(
-                    format!(
-                        "tap_hold_mod: modifier id '{}' is out of range (0-{})",
-                        modifier_id,
-                        VirtualModifiers::MAX_ID
-                    )
-                    .into(),
+                    format!("tap_hold_mod: modifier id {}", e).into(),
                     rhai::Position::NONE,
                 ))
             })?;
+
+            let modifier = modifier_id as u8;
 
             if let Ok(mut ops) = ops.lock() {
                 ops.push(PendingOp::TapHold {
@@ -180,9 +181,15 @@ fn register_combo(engine: &mut Engine, pending_ops: &PendingOps) {
             let parsed_keys = parse_keys_array(keys)?;
             let action = parse_key_or_error(action_key, "combo")?;
 
-            if !(2..=4).contains(&parsed_keys.len()) {
+            // Validate combo size using range check
+            let len = parsed_keys.len();
+            if !(2..=4).contains(&len) {
                 return Err(Box::new(EvalAltResult::ErrorRuntime(
-                    format!("combo: expected 2-4 keys, got {}", parsed_keys.len()).into(),
+                    format!(
+                        "combo: combo size {} violates constraint: must have 2-4 keys",
+                        len
+                    )
+                    .into(),
                     Position::NONE,
                 )));
             }
