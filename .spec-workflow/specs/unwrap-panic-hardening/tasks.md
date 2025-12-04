@@ -165,7 +165,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer configuring lints | Task: Add clippy lint to deny unwrap in critical paths | Restrictions: Deny in drivers/engine, allow with annotation | _Leverage: Clippy | Success: New unwraps cause build failure | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 18. Document panic handling architecture
+- [x] 18. Document panic handling architecture
   - File: `docs/panic-handling.md`
   - Explain PanicGuard usage
   - Document fallback behavior
