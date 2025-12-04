@@ -7,10 +7,12 @@
 //! - State graph for enforcing valid transitions
 
 pub mod graph;
+pub mod invariant;
 pub mod state_kind;
 pub mod transition;
 
 pub use graph::{InvalidTransition, StateGraph};
+pub use invariant::{Invariant, InvariantViolation};
 pub use state_kind::StateKind;
 pub use transition::{StateTransition, TransitionCategory};
 
