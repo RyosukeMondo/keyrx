@@ -42,6 +42,7 @@ rand = "0.9"
 dashmap = "6.1"
 hdrhistogram = "7.5"
 lru = "0.12"
+blake3 = "1"
 
 # File watching
 notify = "6.0"

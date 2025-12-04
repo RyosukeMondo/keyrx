@@ -15,6 +15,7 @@
 
 mod bindings;
 mod builtins;
+pub mod cache;
 pub mod context;
 pub mod docs;
 pub mod helpers;
