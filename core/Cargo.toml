@@ -26,6 +26,7 @@ async-trait.workspace = true
 chrono.workspace = true
 smallvec.workspace = true
 rand.workspace = true
+dashmap.workspace = true
 notify.workspace = true
 rustyline.workspace = true
 dirs.workspace = true

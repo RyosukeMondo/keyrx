@@ -39,6 +39,7 @@ chrono = { version = "0.4", features = ["serde", "clock"] }
 # Data structures
 smallvec = "1"
 rand = "0.9"
+dashmap = "6.1"
 
 # File watching
 notify = "6.0"

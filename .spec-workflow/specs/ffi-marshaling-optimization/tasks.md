@@ -89,7 +89,7 @@
 
 ## Phase 4: Callback System
 
-- [ ] 10. Create FfiCallback trait
+- [x] 10. Create FfiCallback trait
   - File: `core/src/ffi/marshal/callback.rs`
   - Unified callback interface
   - Type-safe invocation
@@ -98,7 +98,7 @@
   - _Requirements: 4.1, 4.3_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating traits | Task: Create FfiCallback trait | Restrictions: Type-safe, async-compatible | _Leverage: Trait patterns | Success: Callbacks have unified interface | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Create CallbackRegistry
+- [x] 11. Create CallbackRegistry
   - File: `core/src/ffi/marshal/callback.rs`
   - Register/unregister callbacks
   - Thread-safe invocation
@@ -107,7 +107,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating registry | Task: Create CallbackRegistry for FFI callbacks | Restrictions: Thread-safe, ID-based | _Leverage: DashMap | Success: Callbacks managed centrally | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Add callback error handling
+- [x] 12. Add callback error handling
   - File: `core/src/ffi/marshal/callback.rs`
   - Fallback on callback failure
   - Error reporting

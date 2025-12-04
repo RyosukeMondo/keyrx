@@ -50,6 +50,7 @@
 //! }
 //! ```
 
+pub mod callback;
 pub mod error;
 pub mod impls;
 pub mod result;
@@ -57,6 +58,7 @@ pub mod stream;
 pub mod traits;
 
 // Re-export core types
+pub use callback::{CallbackId, CallbackRegistry, FfiCallback};
 pub use error::{MarshalError, MarshalErrorC};
 pub use result::{FfiErrorData, FfiErrorPtr, FfiResult};
 pub use stream::{
