@@ -118,7 +118,7 @@
 
 ## Phase 5: Flutter Display
 
-- [ ] 13. Create MetricsService
+- [x] 13. Create MetricsService
   - File: `ui/lib/services/metrics_service.dart`
   - Fetch metrics from FFI
   - Cache and update handling
