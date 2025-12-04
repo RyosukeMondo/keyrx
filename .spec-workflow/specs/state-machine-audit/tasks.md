@@ -60,7 +60,7 @@
 
 ## Phase 3: Validation
 
-- [-] 7. Create Invariant trait
+- [x] 7. Create Invariant trait
   - File: `core/src/engine/transitions/invariant.rs`
   - Define invariant interface
   - Add InvariantViolation type
