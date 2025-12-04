@@ -129,7 +129,7 @@
 
 ## Phase 6: Flutter Integration
 
-- [ ] 14. Create API docs service
+- [x] 14. Create API docs service
   - File: `ui/lib/services/api_docs_service.dart`
   - Fetch docs from Rust via FFI or file
   - Search and browse support
@@ -138,7 +138,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating service | Task: Create API docs service for Flutter | Restrictions: Fast search, browse by module | _Leverage: JSON docs | Success: Flutter can show docs | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Create docs browser widget
+- [x] 15. Create docs browser widget
   - File: `ui/lib/widgets/scripting/api_browser.dart`
   - Browse and search API docs
   - Syntax highlighting for examples

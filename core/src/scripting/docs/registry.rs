@@ -509,6 +509,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_global_registry_initialization() {
         // Note: This test may interfere with other tests if run in parallel
         // In a real scenario, you'd want to use a test-specific registry
@@ -525,6 +526,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_global_registry_all_functions() {
         initialize();
         clear(); // Clear any previous state
@@ -539,6 +541,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_global_registry_functions_in_module() {
         initialize();
         clear();
