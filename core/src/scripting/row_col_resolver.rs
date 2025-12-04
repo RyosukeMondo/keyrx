@@ -1,0 +1,275 @@
+//! Row-column to KeyCode resolution for position-based remapping.
+//!
+//! This module provides the `RowColResolver` which translates physical
+//! keyboard positions (row, column) into `KeyCode` values by:
+//! 1. Looking up the scan_code from the device profile
+//! 2. Converting scan_code to KeyCode using platform-specific mappings
+
+use crate::discovery::types::DeviceProfile;
+use crate::engine::KeyCode;
+use std::sync::Arc;
+use thiserror::Error;
+
+#[cfg(target_os = "linux")]
+use crate::drivers::keycodes::evdev_to_keycode;
+
+#[cfg(target_os = "windows")]
+use crate::drivers::keycodes::vk_to_keycode;
+
+/// Errors that can occur during row-col resolution.
+#[derive(Debug, Error)]
+pub enum ResolverError {
+    #[error("No device profile loaded. Row-column API requires device discovery.")]
+    NoProfileLoaded,
+
+    #[error(
+        "Position r{row}_c{col} not found in device profile{device_hint}.\n\
+         Hint: Run './scripts/show_key_position.sh all' to see available positions."
+    )]
+    PositionNotFound {
+        row: u8,
+        col: u8,
+        device_hint: String,
+    },
+
+    #[error("scan_code {0} could not be converted to KeyCode")]
+    ScanCodeConversionFailed(u16),
+}
+
+/// Resolves (row, col) positions to KeyCode using device profile.
+///
+/// The resolver performs a two-step translation:
+/// 1. Device Profile Lookup: (row, col) → scan_code
+/// 2. Platform Conversion: scan_code → KeyCode
+///
+/// This is done at script load time, not runtime, so performance is not critical.
+#[derive(Debug, Clone)]
+pub struct RowColResolver {
+    device_profile: Option<Arc<DeviceProfile>>,
+}
+
+impl RowColResolver {
+    /// Create a new resolver with an optional device profile.
+    pub fn new(device_profile: Option<Arc<DeviceProfile>>) -> Self {
+        Self { device_profile }
+    }
+
+    /// Create a resolver without a device profile (will fail on all resolutions).
+    pub fn without_profile() -> Self {
+        Self {
+            device_profile: None,
+        }
+    }
+
+    /// Resolve a (row, col) position to a KeyCode.
+    ///
+    /// # Arguments
+    /// * `row` - 0-based row number
+    /// * `col` - 0-based column number
+    ///
+    /// # Returns
+    /// * `Ok(KeyCode)` - The resolved key code
+    /// * `Err(ResolverError)` - If position not found or no profile loaded
+    ///
+    /// # Example
+    /// ```ignore
+    /// let resolver = RowColResolver::new(Some(profile));
+    /// let key = resolver.resolve(3, 1)?;  // Home row, 2nd key
+    /// assert_eq!(key, KeyCode::A);  // On QWERTY
+    /// ```
+    pub fn resolve(&self, row: u8, col: u8) -> Result<KeyCode, ResolverError> {
+        // Step 1: Lookup scan_code from device profile
+        let scan_code = self.lookup_scan_code(row, col)?;
+
+        // Step 2: Convert scan_code to KeyCode (platform-specific)
+        let key_code = self.scan_code_to_keycode(scan_code)?;
+
+        Ok(key_code)
+    }
+
+    /// Look up the scan_code for a given (row, col) position in the device profile.
+    fn lookup_scan_code(&self, row: u8, col: u8) -> Result<u16, ResolverError> {
+        let profile = self
+            .device_profile
+            .as_ref()
+            .ok_or(ResolverError::NoProfileLoaded)?;
+
+        // Search through keymap for matching row-col position
+        profile
+            .keymap
+            .iter()
+            .find(|(_, physical_key)| physical_key.row == row && physical_key.col == col)
+            .map(|(scan_code, _)| *scan_code)
+            .ok_or_else(|| {
+                let device_hint = profile
+                    .name
+                    .as_ref()
+                    .map(|name| format!(" for {}", name))
+                    .unwrap_or_default();
+
+                ResolverError::PositionNotFound {
+                    row,
+                    col,
+                    device_hint,
+                }
+            })
+    }
+
+    /// Convert a scan_code to KeyCode using platform-specific mappings.
+    ///
+    /// On Linux: Uses evdev codes
+    /// On Windows: Uses Virtual Key codes (note: scan codes and VK codes differ)
+    fn scan_code_to_keycode(&self, scan_code: u16) -> Result<KeyCode, ResolverError> {
+        #[cfg(target_os = "linux")]
+        {
+            // On Linux, scan_code IS the evdev code
+            let key_code = evdev_to_keycode(scan_code);
+            if matches!(key_code, KeyCode::Unknown(_)) {
+                return Err(ResolverError::ScanCodeConversionFailed(scan_code));
+            }
+            Ok(key_code)
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows, we need to handle this differently
+            // Note: Windows device profiles store scan codes differently
+            // For now, we'll use a placeholder. This needs proper Windows implementation.
+            // TODO: Implement proper Windows scan_code → VK → KeyCode conversion
+            let key_code = vk_to_keycode(scan_code as u16);
+            if matches!(key_code, KeyCode::Unknown(_)) {
+                return Err(ResolverError::ScanCodeConversionFailed(scan_code));
+            }
+            Ok(key_code)
+        }
+
+        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+        {
+            Err(ResolverError::ScanCodeConversionFailed(scan_code))
+        }
+    }
+
+    /// Check if a device profile is loaded.
+    pub fn has_profile(&self) -> bool {
+        self.device_profile.is_some()
+    }
+
+    /// Get the device name from the loaded profile, if available.
+    pub fn device_name(&self) -> Option<&str> {
+        self.device_profile.as_ref().and_then(|p| p.name.as_deref())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::discovery::types::{PhysicalKey, ProfileSource};
+    use chrono::Utc;
+    use std::collections::HashMap;
+
+    fn create_test_profile() -> DeviceProfile {
+        let mut keymap = HashMap::new();
+
+        // Add some test keys (matching typical QWERTY layout)
+        // scan_code 1 = Escape at r0_c0
+        keymap.insert(1, PhysicalKey::new(1, 0, 0));
+
+        // scan_code 30 = A at r3_c1 (home row, 2nd position)
+        keymap.insert(30, PhysicalKey::new(30, 3, 1));
+
+        // scan_code 31 = S at r3_c2
+        keymap.insert(31, PhysicalKey::new(31, 3, 2));
+
+        // scan_code 58 = CapsLock at r3_c0
+        keymap.insert(58, PhysicalKey::new(58, 3, 0));
+
+        DeviceProfile {
+            schema_version: 1,
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            name: Some("Test Keyboard".to_string()),
+            discovered_at: Utc::now(),
+            rows: 6,
+            cols_per_row: vec![17, 15, 14, 13, 14, 12],
+            keymap,
+            aliases: HashMap::new(),
+            source: ProfileSource::Discovered,
+        }
+    }
+
+    #[test]
+    fn resolver_without_profile_fails() {
+        let resolver = RowColResolver::without_profile();
+        let result = resolver.resolve(3, 1);
+
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            ResolverError::NoProfileLoaded
+        ));
+    }
+
+    #[test]
+    fn resolver_finds_valid_position() {
+        let profile = create_test_profile();
+        let resolver = RowColResolver::new(Some(Arc::new(profile)));
+
+        // r3_c1 should resolve to scan_code 30 → KeyCode::A
+        let result = resolver.resolve(3, 1);
+        assert!(result.is_ok());
+
+        #[cfg(target_os = "linux")]
+        {
+            use crate::engine::KeyCode;
+            assert_eq!(result.unwrap(), KeyCode::A);
+        }
+    }
+
+    #[test]
+    fn resolver_fails_on_invalid_position() {
+        let profile = create_test_profile();
+        let resolver = RowColResolver::new(Some(Arc::new(profile)));
+
+        // r99_c99 doesn't exist in our test profile
+        let result = resolver.resolve(99, 99);
+        assert!(result.is_err());
+
+        match result.unwrap_err() {
+            ResolverError::PositionNotFound { row, col, .. } => {
+                assert_eq!(row, 99);
+                assert_eq!(col, 99);
+            }
+            _ => panic!("Expected PositionNotFound error"),
+        }
+    }
+
+    #[test]
+    fn resolver_handles_multiple_positions() {
+        let profile = create_test_profile();
+        let resolver = RowColResolver::new(Some(Arc::new(profile)));
+
+        // Test multiple valid positions
+        assert!(resolver.resolve(0, 0).is_ok()); // Escape
+        assert!(resolver.resolve(3, 0).is_ok()); // CapsLock
+        assert!(resolver.resolve(3, 1).is_ok()); // A
+        assert!(resolver.resolve(3, 2).is_ok()); // S
+    }
+
+    #[test]
+    fn resolver_has_profile_check() {
+        let profile = create_test_profile();
+        let resolver_with = RowColResolver::new(Some(Arc::new(profile)));
+        let resolver_without = RowColResolver::without_profile();
+
+        assert!(resolver_with.has_profile());
+        assert!(!resolver_without.has_profile());
+    }
+
+    #[test]
+    fn resolver_device_name() {
+        let profile = create_test_profile();
+        let resolver = RowColResolver::new(Some(Arc::new(profile)));
+
+        assert_eq!(resolver.device_name(), Some("Test Keyboard"));
+    }
+}

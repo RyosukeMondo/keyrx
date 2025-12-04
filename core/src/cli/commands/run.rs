@@ -10,7 +10,7 @@ use crate::drivers::DeviceInfo;
 use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
 use crate::mocks::MockInput;
 use crate::scripting::RhaiRuntime;
-use crate::traits::InputSource;
+use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -129,12 +129,12 @@ impl RunCommand {
 
         self.output.success("Starting KeyRx engine...");
 
-        let runtime = builder.prepare_runtime()?;
-
         if self.use_mock {
+            let runtime = builder.prepare_runtime()?;
             self.run_with_mock(runtime, &builder).await
         } else {
-            self.run_with_platform_driver(runtime, &builder).await
+            // For platform driver, we need to load device profile BEFORE calling on_init
+            self.run_with_platform_driver_deferred_init(&builder).await
         }
     }
 
@@ -253,17 +253,43 @@ impl RunCommand {
     }
 
     #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-    async fn run_with_platform_driver(
+    async fn run_with_platform_driver_deferred_init(
         &self,
-        runtime: RhaiRuntime,
         builder: &RuntimeBuilder<'_>,
     ) -> Result<()> {
         self.output.success("Using Linux input driver");
 
+        // 1. Initialize Linux input driver to get device info
         let mut input = self.initialize_linux_input()?;
         let device_info = input.device_info().clone();
         let profile_entry = self.load_device_profile(&device_info);
         self.report_profile_status(&device_info, &profile_entry);
+
+        // 2. Create runtime and load device profile BEFORE loading script
+        let mut runtime = RhaiRuntime::new()?;
+        let device_id = DeviceId::new(device_info.vendor_id, device_info.product_id);
+        if let Err(e) = runtime.load_device_profile(device_id) {
+            self.output.warning(&format!(
+                "Row-col API unavailable: Could not load device profile ({})",
+                e
+            ));
+        }
+
+        // 3. Now load script and call on_init (device profile is already loaded)
+        if let Some(path) = &self.script_path {
+            self.output
+                .success(&format!("Loading script: {}", path.display()));
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
+            runtime.load_file(path_str)?;
+            runtime.run_script()?;
+
+            if runtime.has_hook("on_init") {
+                runtime.call_hook("on_init")?;
+                self.output.success("Script initialized (on_init called)");
+            }
+        }
 
         let mut registry = runtime.registry().clone();
 

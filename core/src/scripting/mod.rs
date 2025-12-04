@@ -21,6 +21,7 @@ pub mod helpers;
 mod pending_ops;
 mod registry;
 mod registry_sync;
+mod row_col_resolver;
 mod runtime;
 pub mod sandbox;
 pub mod test_discovery;
@@ -35,6 +36,7 @@ pub use context::{
     clear_active_runtime, global_context, set_active_runtime, with_active_runtime, RuntimeContext,
 };
 pub use registry::{RemapRegistry, TapHoldBinding};
+pub use row_col_resolver::{ResolverError, RowColResolver};
 pub use runtime::RhaiRuntime;
 pub use test_discovery::{discover_tests, filter_tests, matches_filter, DiscoveredTest};
 pub use test_harness::{

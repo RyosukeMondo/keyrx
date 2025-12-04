@@ -8,7 +8,10 @@ use super::bindings::register_all_functions;
 use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
 use super::pending_ops::PendingOpsApplier;
 use super::registry_sync::RegistrySyncer;
+use super::row_col_resolver::RowColResolver;
 use super::sandbox::{ResourceConfig, SandboxError, ScriptSandbox};
+use crate::discovery::storage::read_profile;
+use crate::discovery::types::DeviceId;
 use crate::engine::{KeyCode, LayerStack};
 use crate::errors::{runtime::*, KeyrxError};
 use crate::keyrx_err;
@@ -36,6 +39,7 @@ pub struct RhaiRuntime {
     pending_ops: PendingOps,
     syncer: RegistrySyncer,
     sandbox: Arc<ScriptSandbox>,
+    resolver: Arc<RowColResolver>,
 }
 
 impl RhaiRuntime {
@@ -61,8 +65,17 @@ impl RhaiRuntime {
         let layer_view: LayerView = Arc::new(Mutex::new(LayerStack::new()));
         let modifier_view: ModifierView = Arc::new(Mutex::new(ModifierPreview::new()));
 
+        // Row-column resolver (starts without profile, can be loaded later)
+        let resolver = Arc::new(RowColResolver::without_profile());
+
         // Register script functions
-        register_all_functions(&mut engine, &pending_ops, &layer_view, &modifier_view);
+        register_all_functions(
+            &mut engine,
+            &pending_ops,
+            &layer_view,
+            &modifier_view,
+            &resolver,
+        );
 
         let syncer = RegistrySyncer::new(layer_view, modifier_view);
 
@@ -74,7 +87,44 @@ impl RhaiRuntime {
             pending_ops,
             syncer,
             sandbox: Arc::new(sandbox),
+            resolver,
         })
+    }
+
+    /// Load device profile for row-column API support.
+    ///
+    /// This enables the `*_rc()` functions to resolve (row, col) positions to KeyCodes.
+    /// If the profile cannot be loaded, row-column functions will fail with helpful errors.
+    ///
+    /// # Arguments
+    /// * `device_id` - Device identifier (vendor_id, product_id)
+    ///
+    /// # Returns
+    /// * `Ok(())` - Profile loaded successfully
+    /// * `Err(KeyrxError)` - Profile not found or invalid
+    pub fn load_device_profile(&mut self, device_id: DeviceId) -> Result<(), KeyrxError> {
+        let profile = read_profile(device_id)
+            .map_err(|e| keyrx_err!(SCRIPT_COMPILATION_FAILED, error = e.to_string()))?;
+
+        tracing::debug!(
+            service = "keyrx",
+            event = "device_profile_loaded",
+            component = "rhai_runtime",
+            device = ?device_id,
+            name = ?profile.name,
+            rows = profile.rows,
+            "Device profile loaded for row-column API"
+        );
+
+        // Replace resolver with one that has the profile
+        self.resolver = Arc::new(RowColResolver::new(Some(Arc::new(profile))));
+
+        Ok(())
+    }
+
+    /// Get the row-column resolver.
+    pub fn resolver(&self) -> &RowColResolver {
+        &self.resolver
     }
 
     /// Get a reference to the sandbox.
