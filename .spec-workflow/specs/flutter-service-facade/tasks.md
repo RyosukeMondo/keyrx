@@ -76,7 +76,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer implementing device operations | Task: Implement device operations in KeyrxFacadeImpl | Restrictions: Return DeviceInfo models, handle discovery state transitions, proper cancellation | _Leverage: DeviceService in ui/lib/services/device_service.dart | Success: Devices list correctly, discovery works with state updates, cancellation cleans up | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Implement test operations
+- [x] 8. Implement test operations
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Implement runTests() returning TestResults
   - Implement cancelTests()
@@ -86,7 +86,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer implementing test operations | Task: Implement test operations in KeyrxFacadeImpl | Restrictions: Return structured TestResults, handle progress, proper cancellation | _Leverage: TestService in ui/lib/services/test_service.dart | Success: Tests run correctly, results structured properly, cancellation works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Implement state stream aggregation
+- [x] 9. Implement state stream aggregation
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Combine streams from engine, device, validation services
   - Add 100ms debounce for rapid state changes

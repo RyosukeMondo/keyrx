@@ -58,14 +58,60 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   /// combines them into the unified facade state. Updates are debounced
   /// by 100ms to avoid excessive emissions during rapid state changes.
   void _initializeStateAggregation() {
-    // TODO: In task 9, we'll implement proper state stream aggregation
-    // from individual services. For now, we just maintain the initial state.
-    // This will use rxdart's combineLatest and debounce operators to
-    // merge engine, device, validation, and discovery state streams.
+    // Subscribe to engine state stream and map to facade state updates
+    final engineStateSub = _services.engineService.stateStream
+        .debounceTime(const Duration(milliseconds: 100))
+        .listen(
+      (engineSnapshot) {
+        // Map engine snapshot to engine status
+        EngineStatus engineStatus = currentState.engine;
+
+        // If we have active layers or held keys, the engine is actively running
+        if (engineSnapshot.activeLayers.isNotEmpty ||
+            engineSnapshot.heldKeys.isNotEmpty ||
+            engineSnapshot.pendingDecisions.isNotEmpty) {
+          engineStatus = EngineStatus.running;
+        } else if (_services.engineService.isInitialized) {
+          // If initialized but idle, mark as ready
+          if (currentState.engine != EngineStatus.running &&
+              currentState.engine != EngineStatus.loading) {
+            engineStatus = EngineStatus.ready;
+          }
+        }
+
+        // Only update if status changed or we have new event data
+        if (engineStatus != currentState.engine ||
+            engineSnapshot.lastEvent != null) {
+          _updateState(currentState.copyWith(
+            engine: engineStatus,
+            timestamp: engineSnapshot.timestamp,
+          ));
+        }
+      },
+      onError: (error) {
+        // On engine stream error, update state to reflect error
+        _updateState(currentState.withEngineStatus(
+          EngineStatus.error,
+          error: 'Engine stream error: $error',
+        ));
+      },
+    );
+
+    _subscriptions.add(engineStateSub);
+
+    // Note: DeviceService, ValidationStatus, and DiscoveryStatus don't have
+    // their own state streams. These states are managed through the facade's
+    // operation methods (listDevices, validateScript, startDiscovery, etc.)
+    // and are already updated via _updateState() calls in those methods.
+    //
+    // The 100ms debounce on the state subject's stream (applied via the getter)
+    // ensures that rapid manual state updates are also debounced appropriately.
   }
 
   @override
-  Stream<FacadeState> get stateStream => _stateSubject.stream;
+  Stream<FacadeState> get stateStream => _stateSubject.stream
+      .debounceTime(const Duration(milliseconds: 100))
+      .distinct((prev, next) => prev == next);
 
   @override
   FacadeState get currentState => _stateSubject.value;
