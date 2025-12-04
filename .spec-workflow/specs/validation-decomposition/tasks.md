@@ -82,7 +82,7 @@
   - _Requirements: Non-functional (compatibility)_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating components | Task: Update ValidationEngine to use DetectorOrchestrator | Restrictions: Maintain backward compatibility, same public API, same behavior | _Leverage: DetectorOrchestrator, existing engine.rs | Success: Engine uses new detectors, all tests pass, API unchanged | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Extract test helpers
+- [x] 9. Extract test helpers
   - File: `core/src/validation/common/test_helpers.rs`
   - Create operation builders for tests
   - Add assertion helpers for issues
