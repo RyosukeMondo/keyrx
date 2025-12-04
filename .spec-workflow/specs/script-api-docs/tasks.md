@@ -31,7 +31,7 @@
 
 ## Phase 2: Documentation Extraction
 
-- [-] 4. Create rhai_doc attribute macro
+- [x] 4. Create rhai_doc attribute macro
   - File: `core-macros/src/rhai_doc.rs` (new crate if needed)
   - Extract doc comments and signatures
   - Register with DocRegistry
