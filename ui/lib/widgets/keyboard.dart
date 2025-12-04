@@ -5,6 +5,8 @@
 
 import 'package:flutter/material.dart';
 
+import 'editor/key_button.dart';
+
 /// Visual keyboard widget for keymap editing.
 class KeyboardWidget extends StatelessWidget {
   final void Function(String key)? onKeySelected;
@@ -48,55 +50,11 @@ class KeyboardWidget extends StatelessWidget {
 
   Widget _buildKey(String label) {
     final isSelected = selectedKey == label;
-    final width = _getKeyWidth(label);
 
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: Material(
-        color: isSelected ? Colors.blue : Colors.grey[800],
-        borderRadius: BorderRadius.circular(4),
-        child: InkWell(
-          onTap: () => onKeySelected?.call(label),
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: width,
-            height: 40,
-            alignment: Alignment.center,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[300],
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return KeyButton(
+      label: label,
+      isSelected: isSelected,
+      onTap: () => onKeySelected?.call(label),
     );
-  }
-
-  double _getKeyWidth(String label) {
-    switch (label) {
-      case 'Backspace':
-      case 'Tab':
-      case 'CapsLock':
-      case 'Enter':
-        return 70;
-      case 'LShift':
-      case 'RShift':
-        return 90;
-      case 'Space':
-        return 200;
-      case 'LCtrl':
-      case 'RCtrl':
-      case 'LAlt':
-      case 'RAlt':
-      case 'LWin':
-      case 'RWin':
-      case 'Menu':
-        return 50;
-      default:
-        return 40;
-    }
   }
 }

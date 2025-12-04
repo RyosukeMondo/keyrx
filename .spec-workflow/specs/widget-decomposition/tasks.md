@@ -51,7 +51,7 @@
 
 ## Phase 3: Editor Widget Extraction
 
-- [ ] 6. Extract KeyButton widget
+- [-] 6. Extract KeyButton widget
   - File: `ui/lib/widgets/editor/key_button.dart`
   - Extract key button with all states
   - Add size variants
