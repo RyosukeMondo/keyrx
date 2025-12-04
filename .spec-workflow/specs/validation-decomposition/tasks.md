@@ -122,7 +122,7 @@
 
 ## Phase 5: Cleanup
 
-- [-] 13. Remove original conflicts.rs
+- [x] 13. Remove original conflicts.rs
   - Files: `core/src/validation/conflicts.rs` (delete or minimize)
   - Replace with re-exports from new modules
   - Update mod.rs
