@@ -42,7 +42,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer extracting module | Task: Extract ConflictDetector from conflicts.rs into core/src/validation/detectors/conflicts.rs | Restrictions: Preserve existing behavior, implement Detector trait, O(n) complexity | _Leverage: Current conflict detection in conflicts.rs | Success: ConflictDetector works identically, < 300 LOC, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Extract ShadowingDetector
+- [-] 5. Extract ShadowingDetector
   - File: `core/src/validation/detectors/shadowing.rs`
   - Move combo shadowing detection from original conflicts.rs
   - Implement Detector trait with is_skippable() = true
