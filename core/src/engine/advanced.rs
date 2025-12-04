@@ -8,6 +8,7 @@ use crate::engine::processing::{
     apply_decision, trace_event, validate_and_check_safe_mode, DecisionResult,
 };
 use crate::engine::state::EngineState as UnifiedEngineState;
+use crate::engine::transitions::{StateGraph, StateKind, StateTransition};
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
     InputEvent, KeyCode, LayerAction, LayerStack, ModifierState, OutputAction, PendingDecision,
@@ -77,6 +78,10 @@ where
     // Unified state - this is the new approach
     state: UnifiedEngineState,
 
+    // State graph for transition validation
+    state_graph: StateGraph,
+    current_state_kind: StateKind,
+
     // Legacy compatibility layer during migration
     layers_compat: LayerStack, // For layer definitions and lookups
 
@@ -100,6 +105,8 @@ where
         Self {
             _script: script,
             state: UnifiedEngineState::new(timing.clone()),
+            state_graph: StateGraph::new(),
+            current_state_kind: StateKind::Idle,
             layers_compat: LayerStack::new(),
             pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
@@ -120,6 +127,53 @@ where
         &mut self.combos
     }
 
+    /// Get the current state kind.
+    pub fn current_state_kind(&self) -> StateKind {
+        self.current_state_kind
+    }
+
+    /// Validate and apply a state transition.
+    ///
+    /// This checks if the transition is valid from the current state,
+    /// applies it through the state graph, and updates the current state kind.
+    fn validate_transition(&mut self, transition: StateTransition) -> Result<(), String> {
+        // Validate the transition is allowed
+        if !self
+            .state_graph
+            .is_valid(self.current_state_kind, &transition)
+        {
+            return Err(format!(
+                "Invalid transition {:?} from state {}",
+                transition,
+                self.current_state_kind.name()
+            ));
+        }
+
+        // Apply the transition and update state kind
+        match self.state_graph.apply(self.current_state_kind, &transition) {
+            Ok(new_state) => {
+                self.current_state_kind = new_state;
+                Ok(())
+            }
+            Err(e) => Err(format!("Transition validation failed: {}", e)),
+        }
+    }
+
+    /// Update the current state kind based on the actual engine state.
+    ///
+    /// This should be called after state changes that don't have explicit
+    /// transitions (like key releases that may change from Typing to Idle).
+    fn update_state_kind(&mut self) {
+        // Use StateKind::from_engine_state to infer the kind from actual state
+        let inferred = StateKind::from_engine_state(&self.state);
+
+        // Only update if different and the current state is an active input state
+        // Session and system states (Recording, Replaying, etc.) are managed explicitly
+        if inferred != self.current_state_kind && self.current_state_kind.is_active_input() {
+            self.current_state_kind = inferred;
+        }
+    }
+
     /// Process a single event through all layers.
     pub fn process_event(&mut self, event: InputEvent) -> Vec<OutputAction> {
         self.process_event_traced(event, None)
@@ -137,7 +191,26 @@ where
     ) -> Vec<OutputAction> {
         let start_time = std::time::Instant::now();
 
-        // Step 1: Update key state using the unified state's mutation API.
+        // Step 1: Validate the transition through the state graph
+        let transition = if event.pressed {
+            StateTransition::KeyPressed {
+                key: event.key,
+                timestamp: event.timestamp_us,
+            }
+        } else {
+            StateTransition::KeyReleased {
+                key: event.key,
+                timestamp: event.timestamp_us,
+            }
+        };
+
+        // Validate the transition (log errors but continue processing for compatibility)
+        if let Err(e) = self.validate_transition(transition) {
+            #[cfg(debug_assertions)]
+            tracing::warn!("State transition validation warning: {}", e);
+        }
+
+        // Step 2: Update key state using the unified state's mutation API.
         let key_mutation = if event.pressed {
             crate::engine::state::Mutation::KeyDown {
                 key: event.key,
@@ -172,7 +245,10 @@ where
         // Step 4: Apply decision outcomes.
         let result = apply_decision(&event, &mut self.blocked_releases, decision);
 
-        // Step 5: Emit tracing spans.
+        // Step 5: Update state kind based on actual state after processing
+        self.update_state_kind();
+
+        // Step 6: Emit tracing spans.
         trace_event(
             tracer,
             &event,
