@@ -69,7 +69,7 @@
   - _Requirements: 1.1, 3.2_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract KeyGrid to editor/key_grid.dart | Restrictions: Use KeyButton, efficient rebuilds | _Leverage: Existing grid | Success: KeyGrid renders keyboard correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Extract KeyLegend widget
+- [x] 8. Extract KeyLegend widget
   - File: `ui/lib/widgets/editor/key_legend.dart`
   - Extract legend display
   - Support horizontal and vertical layouts
