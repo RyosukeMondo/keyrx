@@ -127,7 +127,7 @@
   - _Requirements: 4.3_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating service | Task: Create MetricsService for FFI metrics access | Restrictions: Efficient updates, caching | _Leverage: Service patterns | Success: Flutter has metrics access | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Create MetricsWidget
+- [x] 14. Create MetricsWidget
   - File: `ui/lib/widgets/metrics/metrics_dashboard.dart`
   - Display latency graphs
   - Show memory usage
