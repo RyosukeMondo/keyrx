@@ -102,9 +102,13 @@ enum Commands {
         #[arg(short, long)]
         debug: bool,
 
-        /// Use mock input instead of real keyboard driver
-        #[arg(short, long)]
-        mock: bool,
+        /// Run without keyboard capture (for CI/daemon mode). Use 'keyrx simulate' for interactive testing.
+        #[arg(long, alias = "mock")]
+        no_capture: bool,
+
+        /// Load and validate script, then exit immediately
+        #[arg(long)]
+        validate_only: bool,
 
         /// Path to keyboard device (e.g., /dev/input/event3). Auto-detects if not specified.
         #[arg(long)]
@@ -572,7 +576,8 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Run {
             script,
             debug,
-            mock,
+            no_capture,
+            validate_only,
             device,
             record,
             trace,
@@ -583,10 +588,11 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             use keyrx_core::cli::Command;
             let mut config = config;
             merge_cli_overrides(&mut config, tap_timeout, combo_timeout, hold_delay);
-            let mut cmd = RunCommand::new(script, debug, mock, device, ctx.output_format())
+            let mut cmd = RunCommand::new(script, debug, no_capture, device, ctx.output_format())
                 .with_record_path(record)
                 .with_trace_path(trace)
-                .with_config(config);
+                .with_config(config)
+                .with_validate_only(validate_only);
             cmd.execute(ctx)
         }
         Commands::State {

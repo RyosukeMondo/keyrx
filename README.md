@@ -58,25 +58,35 @@ Runs diagnostics to verify your system is ready.
 keyrx check scripts/std/example.rhai
 ```
 
-### 3. Run with a script
+### 3. Test your script interactively
+
+Simulate key events to see what your remapping does:
+
+```bash
+keyrx simulate --input "CapsLock,A,B,Insert" --script scripts/std/example.rhai
+```
+
+Or validate that your script loads correctly:
+
+```bash
+keyrx run --script scripts/std/example.rhai --validate-only
+```
+
+### 4. Run with a script
+
+Run the engine with real keyboard capture:
 
 ```bash
 keyrx run --script scripts/std/example.rhai
 ```
 
-Use `--mock` flag to test without real keyboard capture:
+**Advanced**: Run without keyboard capture (for CI/daemon mode):
 
 ```bash
-keyrx run --script scripts/std/example.rhai --mock
+keyrx run --script scripts/std/example.rhai --no-capture
 ```
 
-### 4. Simulate key events
-
-Test your remapping without running the full engine:
-
-```bash
-keyrx simulate --input "CapsLock,A,B,Insert" --script scripts/std/example.rhai
-```
+Note: `--no-capture` (formerly `--mock`) runs the engine without processing input. For interactive testing, use `simulate` instead.
 
 ### 5. Benchmark latency
 

@@ -41,6 +41,8 @@ pub struct RunCommand {
     pub trace_path: Option<PathBuf>,
     /// Runtime configuration loaded from file.
     pub config: Option<Config>,
+    /// Validate script and exit immediately without running engine.
+    pub validate_only: bool,
 }
 
 impl RunCommand {
@@ -61,7 +63,14 @@ impl RunCommand {
             record_path: None,
             trace_path: None,
             config: None,
+            validate_only: false,
         }
+    }
+
+    /// Set validate-only mode (load script, validate, then exit).
+    pub fn with_validate_only(mut self, validate_only: bool) -> Self {
+        self.validate_only = validate_only;
+        self
     }
 
     /// Set the path for session recording.
@@ -110,6 +119,13 @@ impl RunCommand {
     pub async fn run(&self) -> Result<()> {
         let builder = RuntimeBuilder::new(self.script_path.clone(), self.debug, &self.output);
         builder.init_debug_logging()?;
+
+        if self.validate_only {
+            self.output.success("Validating script...");
+            let _runtime = builder.prepare_runtime()?;
+            self.output.success("Script validation successful");
+            return Ok(());
+        }
 
         self.output.success("Starting KeyRx engine...");
 
@@ -163,7 +179,11 @@ impl RunCommand {
         builder: &RuntimeBuilder<'_>,
     ) -> Result<()> {
         self.output
-            .success("Using mock input (no real keyboard interception)");
+            .warning("Mock mode: Engine running without keyboard capture");
+        self.output
+            .warning("No input will be processed. Press Ctrl+C to exit.");
+        self.output
+            .warning("Hint: Use 'keyrx simulate' for interactive testing");
 
         let mut input = MockInput::new();
         let mut registry = runtime.registry().clone();
