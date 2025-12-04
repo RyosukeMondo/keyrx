@@ -97,7 +97,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create TransitionEntry for logging | Restrictions: Complete state capture, serializable | _Leverage: serde | Success: Entries capture all info | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Create TransitionLog
+- [x] 11. Create TransitionLog
   - File: `core/src/engine/transitions/log.rs`
   - Ring buffer implementation
   - Search and export

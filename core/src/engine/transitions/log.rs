@@ -449,3 +449,713 @@ mod tests {
         assert_eq!(keys, 2);
     }
 }
+
+/// A bounded ring buffer for storing transition history.
+///
+/// `TransitionLog` maintains a fixed-size history of state transitions using
+/// a ring buffer. Once the buffer is full, new entries overwrite the oldest ones.
+/// This ensures bounded memory usage while providing recent transition history
+/// for debugging and analysis.
+///
+/// # Features
+///
+/// - **Ring buffer**: Fixed memory footprint, oldest entries are overwritten
+/// - **Search**: Filter entries by category, transition name, or time range
+/// - **Export**: Serialize to JSON for external analysis tools
+/// - **Thread-safe**: Can be shared across threads (with proper synchronization)
+///
+/// # Example
+///
+/// ```no_run
+/// use keyrx_core::engine::transitions::log::{TransitionLog, TransitionEntry};
+/// use keyrx_core::engine::transitions::transition::{StateTransition, TransitionCategory};
+/// use keyrx_core::engine::state::snapshot::StateSnapshot;
+/// use keyrx_core::engine::KeyCode;
+///
+/// // Create a log with capacity for 1000 entries
+/// let mut log = TransitionLog::new(1000);
+///
+/// // Add an entry
+/// let entry = TransitionEntry::new(
+///     StateTransition::KeyPressed { key: KeyCode::A, timestamp: 1000 },
+///     StateSnapshot::empty(),
+///     StateSnapshot::empty(),
+///     1000000,
+///     5000,
+/// );
+/// log.push(entry);
+///
+/// // Search for engine-related transitions
+/// let engine_transitions = log.search_by_category(TransitionCategory::Engine);
+///
+/// // Export to JSON
+/// let json = log.export_json().unwrap();
+/// ```
+#[derive(Debug, Clone)]
+pub struct TransitionLog {
+    /// Ring buffer of transition entries.
+    entries: Vec<TransitionEntry>,
+
+    /// Current write position in the ring buffer.
+    write_pos: usize,
+
+    /// Total number of entries ever added (wraps on overflow).
+    total_count: u64,
+
+    /// Maximum capacity of the log.
+    capacity: usize,
+}
+
+impl TransitionLog {
+    /// Create a new transition log with the specified capacity.
+    ///
+    /// # Arguments
+    ///
+    /// * `capacity` - Maximum number of entries to store (must be > 0)
+    ///
+    /// # Panics
+    ///
+    /// Panics if capacity is 0.
+    pub fn new(capacity: usize) -> Self {
+        assert!(
+            capacity > 0,
+            "TransitionLog capacity must be greater than 0"
+        );
+        Self {
+            entries: Vec::with_capacity(capacity),
+            write_pos: 0,
+            total_count: 0,
+            capacity,
+        }
+    }
+
+    /// Add a new entry to the log.
+    ///
+    /// If the log is full, this will overwrite the oldest entry.
+    pub fn push(&mut self, entry: TransitionEntry) {
+        if self.entries.len() < self.capacity {
+            // Still filling initial capacity
+            self.entries.push(entry);
+            self.write_pos = self.entries.len() % self.capacity;
+        } else {
+            // Ring buffer is full, overwrite oldest
+            self.entries[self.write_pos] = entry;
+            self.write_pos = (self.write_pos + 1) % self.capacity;
+        }
+        self.total_count = self.total_count.wrapping_add(1);
+    }
+
+    /// Get the number of entries currently stored.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Check if the log is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// Get the maximum capacity of the log.
+    #[inline]
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    /// Get the total number of entries ever added.
+    ///
+    /// This count wraps on overflow but provides a sense of total activity.
+    #[inline]
+    pub fn total_count(&self) -> u64 {
+        self.total_count
+    }
+
+    /// Check if the log has wrapped around (overwritten old entries).
+    #[inline]
+    pub fn has_wrapped(&self) -> bool {
+        self.total_count > self.capacity as u64
+    }
+
+    /// Get an iterator over all entries in chronological order.
+    ///
+    /// Returns entries from oldest to newest.
+    pub fn iter(&self) -> Box<dyn Iterator<Item = &TransitionEntry> + '_> {
+        if self.entries.len() < self.capacity {
+            // Not full yet, entries are in order
+            Box::new(self.entries.iter())
+        } else {
+            // Ring buffer wrapped, need to iterate starting from write_pos
+            let (older, newer) = self.entries.split_at(self.write_pos);
+            Box::new(newer.iter().chain(older.iter()))
+        }
+    }
+
+    /// Get the most recent entry, if any.
+    pub fn last(&self) -> Option<&TransitionEntry> {
+        if self.entries.is_empty() {
+            None
+        } else if self.entries.len() < self.capacity {
+            self.entries.last()
+        } else {
+            // Ring buffer wrapped, last entry is before write_pos
+            let last_idx = if self.write_pos == 0 {
+                self.capacity - 1
+            } else {
+                self.write_pos - 1
+            };
+            Some(&self.entries[last_idx])
+        }
+    }
+
+    /// Clear all entries from the log.
+    pub fn clear(&mut self) {
+        self.entries.clear();
+        self.write_pos = 0;
+    }
+
+    /// Search for entries matching a specific transition category.
+    pub fn search_by_category(&self, category: TransitionCategory) -> Vec<&TransitionEntry> {
+        self.iter()
+            .filter(|entry| entry.category() == category)
+            .collect()
+    }
+
+    /// Search for entries matching a specific transition name.
+    pub fn search_by_name(&self, name: &str) -> Vec<&TransitionEntry> {
+        self.iter().filter(|entry| entry.name() == name).collect()
+    }
+
+    /// Search for entries within a wall time range.
+    ///
+    /// # Arguments
+    ///
+    /// * `start_us` - Start of time range (microseconds since epoch), inclusive
+    /// * `end_us` - End of time range (microseconds since epoch), inclusive
+    pub fn search_by_time_range(&self, start_us: u64, end_us: u64) -> Vec<&TransitionEntry> {
+        self.iter()
+            .filter(|entry| entry.wall_time_us >= start_us && entry.wall_time_us <= end_us)
+            .collect()
+    }
+
+    /// Search for entries that changed the state version.
+    pub fn search_version_changes(&self) -> Vec<&TransitionEntry> {
+        self.iter()
+            .filter(|entry| entry.changed_version())
+            .collect()
+    }
+
+    /// Search for entries by custom predicate.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use keyrx_core::engine::transitions::log::TransitionLog;
+    /// # let log = TransitionLog::new(100);
+    /// // Find all slow transitions (> 1ms)
+    /// let slow = log.search(|entry| entry.duration_ns > 1_000_000);
+    /// ```
+    pub fn search<F>(&self, predicate: F) -> Vec<&TransitionEntry>
+    where
+        F: Fn(&TransitionEntry) -> bool,
+    {
+        self.iter().filter(|entry| predicate(entry)).collect()
+    }
+
+    /// Export all entries to JSON.
+    ///
+    /// Returns a JSON string containing all entries in chronological order.
+    pub fn export_json(&self) -> Result<String, serde_json::Error> {
+        let entries: Vec<&TransitionEntry> = self.iter().collect();
+        serde_json::to_string(&entries)
+    }
+
+    /// Export all entries to pretty-printed JSON.
+    ///
+    /// Returns a formatted JSON string with indentation for human readability.
+    pub fn export_json_pretty(&self) -> Result<String, serde_json::Error> {
+        let entries: Vec<&TransitionEntry> = self.iter().collect();
+        serde_json::to_string_pretty(&entries)
+    }
+
+    /// Export filtered entries to JSON.
+    ///
+    /// # Arguments
+    ///
+    /// * `entries` - The entries to export (typically from a search result)
+    pub fn export_entries_json(entries: &[&TransitionEntry]) -> Result<String, serde_json::Error> {
+        serde_json::to_string(entries)
+    }
+
+    /// Export filtered entries to pretty-printed JSON.
+    pub fn export_entries_json_pretty(
+        entries: &[&TransitionEntry],
+    ) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(entries)
+    }
+
+    /// Get statistics about the log contents.
+    ///
+    /// Returns a tuple of:
+    /// - Total entries currently stored
+    /// - Number of unique transition names
+    /// - Total processing time (sum of all durations)
+    /// - Average processing time per entry
+    pub fn statistics(&self) -> (usize, usize, u64, u64) {
+        let total = self.len();
+        if total == 0 {
+            return (0, 0, 0, 0);
+        }
+
+        let mut names = std::collections::HashSet::new();
+        let mut total_duration = 0u64;
+
+        for entry in self.iter() {
+            names.insert(entry.name());
+            total_duration = total_duration.saturating_add(entry.duration_ns);
+        }
+
+        let avg_duration = total_duration / total as u64;
+
+        (total, names.len(), total_duration, avg_duration)
+    }
+}
+
+impl Default for TransitionLog {
+    /// Create a default transition log with capacity for 10,000 entries.
+    fn default() -> Self {
+        Self::new(10_000)
+    }
+}
+
+#[cfg(test)]
+mod transition_log_tests {
+    use super::*;
+    use crate::engine::KeyCode;
+
+    fn create_test_entry(key: KeyCode, timestamp: u64, wall_time_us: u64) -> TransitionEntry {
+        TransitionEntry::new(
+            StateTransition::KeyPressed { key, timestamp },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            wall_time_us,
+            5000,
+        )
+    }
+
+    #[test]
+    fn test_new_log() {
+        let log = TransitionLog::new(100);
+        assert_eq!(log.capacity(), 100);
+        assert_eq!(log.len(), 0);
+        assert!(log.is_empty());
+        assert_eq!(log.total_count(), 0);
+        assert!(!log.has_wrapped());
+    }
+
+    #[test]
+    #[should_panic(expected = "TransitionLog capacity must be greater than 0")]
+    fn test_zero_capacity_panics() {
+        TransitionLog::new(0);
+    }
+
+    #[test]
+    fn test_push_single_entry() {
+        let mut log = TransitionLog::new(10);
+        let entry = create_test_entry(KeyCode::A, 1000, 1000000);
+
+        log.push(entry);
+
+        assert_eq!(log.len(), 1);
+        assert!(!log.is_empty());
+        assert_eq!(log.total_count(), 1);
+        assert!(!log.has_wrapped());
+    }
+
+    #[test]
+    fn test_push_multiple_entries() {
+        let mut log = TransitionLog::new(10);
+
+        for i in 0..5 {
+            let entry = create_test_entry(KeyCode::A, i * 100, i * 100000);
+            log.push(entry);
+        }
+
+        assert_eq!(log.len(), 5);
+        assert_eq!(log.total_count(), 5);
+        assert!(!log.has_wrapped());
+    }
+
+    #[test]
+    fn test_ring_buffer_wrap() {
+        let mut log = TransitionLog::new(3);
+
+        // Add 5 entries to a capacity-3 log
+        for i in 0..5 {
+            let entry = create_test_entry(KeyCode::A, i * 100, i * 100000);
+            log.push(entry);
+        }
+
+        assert_eq!(log.len(), 3); // Still only 3 entries
+        assert_eq!(log.total_count(), 5); // But 5 total added
+        assert!(log.has_wrapped());
+    }
+
+    #[test]
+    fn test_iter_order_before_wrap() {
+        let mut log = TransitionLog::new(10);
+
+        for i in 0..5 {
+            let entry = create_test_entry(KeyCode::A, i * 100, i * 100000);
+            log.push(entry);
+        }
+
+        let entries: Vec<_> = log.iter().collect();
+        assert_eq!(entries.len(), 5);
+
+        // Check chronological order
+        for i in 0..5 {
+            assert_eq!(entries[i].wall_time_us, i as u64 * 100000);
+        }
+    }
+
+    #[test]
+    fn test_iter_order_after_wrap() {
+        let mut log = TransitionLog::new(3);
+
+        // Add 5 entries (indices 0-4)
+        for i in 0..5 {
+            let entry = create_test_entry(KeyCode::A, i * 100, i * 100000);
+            log.push(entry);
+        }
+
+        // Log should contain entries 2, 3, 4 in chronological order
+        let entries: Vec<_> = log.iter().collect();
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].wall_time_us, 200000); // entry 2
+        assert_eq!(entries[1].wall_time_us, 300000); // entry 3
+        assert_eq!(entries[2].wall_time_us, 400000); // entry 4
+    }
+
+    #[test]
+    fn test_last_entry() {
+        let mut log = TransitionLog::new(10);
+
+        assert!(log.last().is_none());
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+        assert_eq!(log.last().unwrap().wall_time_us, 100000);
+
+        log.push(create_test_entry(KeyCode::B, 200, 200000));
+        assert_eq!(log.last().unwrap().wall_time_us, 200000);
+    }
+
+    #[test]
+    fn test_last_entry_after_wrap() {
+        let mut log = TransitionLog::new(3);
+
+        for i in 0..5 {
+            log.push(create_test_entry(KeyCode::A, i * 100, i * 100000));
+        }
+
+        // Last entry should be entry 4
+        assert_eq!(log.last().unwrap().wall_time_us, 400000);
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut log = TransitionLog::new(10);
+
+        for i in 0..5 {
+            log.push(create_test_entry(KeyCode::A, i * 100, i * 100000));
+        }
+
+        log.clear();
+
+        assert_eq!(log.len(), 0);
+        assert!(log.is_empty());
+        assert!(log.last().is_none());
+        // Note: total_count is NOT reset by clear
+    }
+
+    #[test]
+    fn test_search_by_category() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+        log.push(TransitionEntry::new(
+            StateTransition::ConfigReloaded,
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            200000,
+            5000,
+        ));
+        log.push(create_test_entry(KeyCode::B, 300, 300000));
+
+        let engine_entries = log.search_by_category(TransitionCategory::Engine);
+        assert_eq!(engine_entries.len(), 2); // 2 KeyPressed events
+
+        let system_entries = log.search_by_category(TransitionCategory::System);
+        assert_eq!(system_entries.len(), 1); // 1 ConfigReloaded event
+    }
+
+    #[test]
+    fn test_search_by_name() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+        log.push(TransitionEntry::new(
+            StateTransition::ConfigReloaded,
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            200000,
+            5000,
+        ));
+        log.push(create_test_entry(KeyCode::B, 300, 300000));
+
+        let key_pressed = log.search_by_name("KeyPressed");
+        assert_eq!(key_pressed.len(), 2);
+
+        let config_reloaded = log.search_by_name("ConfigReloaded");
+        assert_eq!(config_reloaded.len(), 1);
+    }
+
+    #[test]
+    fn test_search_by_time_range() {
+        let mut log = TransitionLog::new(10);
+
+        for i in 0..5 {
+            log.push(create_test_entry(KeyCode::A, i * 100, i * 100000));
+        }
+
+        // Search for entries between 150000 and 350000
+        let results = log.search_by_time_range(150000, 350000);
+        assert_eq!(results.len(), 2); // entries at 200000 and 300000
+        assert_eq!(results[0].wall_time_us, 200000);
+        assert_eq!(results[1].wall_time_us, 300000);
+    }
+
+    #[test]
+    fn test_search_version_changes() {
+        let mut log = TransitionLog::new(10);
+
+        // Entry with version change
+        let mut state_before1 = StateSnapshot::empty();
+        state_before1.version = 1;
+        let mut state_after1 = StateSnapshot::empty();
+        state_after1.version = 2;
+
+        log.push(TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::A,
+                timestamp: 100,
+            },
+            state_before1,
+            state_after1,
+            100000,
+            5000,
+        ));
+
+        // Entry without version change
+        let state = StateSnapshot::empty();
+        log.push(TransitionEntry::new(
+            StateTransition::EngineReset,
+            state.clone(),
+            state,
+            200000,
+            5000,
+        ));
+
+        let version_changes = log.search_version_changes();
+        assert_eq!(version_changes.len(), 1);
+        assert_eq!(version_changes[0].wall_time_us, 100000);
+    }
+
+    #[test]
+    fn test_search_custom_predicate() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::A,
+                timestamp: 100,
+            },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            100000,
+            500_000, // 0.5ms
+        ));
+
+        log.push(TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::B,
+                timestamp: 200,
+            },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            200000,
+            2_000_000, // 2ms (slow)
+        ));
+
+        // Find slow transitions (> 1ms)
+        let slow = log.search(|entry| entry.duration_ns > 1_000_000);
+        assert_eq!(slow.len(), 1);
+        assert_eq!(slow[0].wall_time_us, 200000);
+    }
+
+    #[test]
+    fn test_export_json() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+        log.push(create_test_entry(KeyCode::B, 200, 200000));
+
+        let json = log.export_json().expect("export failed");
+        assert!(json.contains("KeyPressed"));
+        assert!(json.contains("100000"));
+        assert!(json.contains("200000"));
+
+        // Verify it's valid JSON
+        let parsed: Vec<TransitionEntry> = serde_json::from_str(&json).expect("invalid JSON");
+        assert_eq!(parsed.len(), 2);
+    }
+
+    #[test]
+    fn test_export_json_pretty() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+
+        let json = log.export_json_pretty().expect("export failed");
+        assert!(json.contains('\n')); // Pretty printing adds newlines
+        assert!(json.contains("  ")); // Pretty printing adds indentation
+    }
+
+    #[test]
+    fn test_export_entries_json() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(create_test_entry(KeyCode::A, 100, 100000));
+        log.push(create_test_entry(KeyCode::B, 200, 200000));
+        log.push(create_test_entry(KeyCode::C, 300, 300000));
+
+        // Search for specific entries
+        let filtered = log.search_by_time_range(150000, 300000);
+        assert_eq!(filtered.len(), 2);
+
+        // Export only filtered entries
+        let json = TransitionLog::export_entries_json(&filtered).expect("export failed");
+
+        let parsed: Vec<TransitionEntry> = serde_json::from_str(&json).expect("invalid JSON");
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].wall_time_us, 200000);
+        assert_eq!(parsed[1].wall_time_us, 300000);
+    }
+
+    #[test]
+    fn test_statistics_empty() {
+        let log = TransitionLog::new(10);
+
+        let (total, unique_names, total_duration, avg_duration) = log.statistics();
+        assert_eq!(total, 0);
+        assert_eq!(unique_names, 0);
+        assert_eq!(total_duration, 0);
+        assert_eq!(avg_duration, 0);
+    }
+
+    #[test]
+    fn test_statistics_with_data() {
+        let mut log = TransitionLog::new(10);
+
+        log.push(TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::A,
+                timestamp: 100,
+            },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            100000,
+            1000, // 1000ns
+        ));
+
+        log.push(TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::B,
+                timestamp: 200,
+            },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            200000,
+            3000, // 3000ns
+        ));
+
+        log.push(TransitionEntry::new(
+            StateTransition::LayerPushed { layer: 1 },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            300000,
+            2000, // 2000ns
+        ));
+
+        let (total, unique_names, total_duration, avg_duration) = log.statistics();
+        assert_eq!(total, 3);
+        assert_eq!(unique_names, 2); // KeyPressed and LayerPushed
+        assert_eq!(total_duration, 6000); // 1000 + 3000 + 2000
+        assert_eq!(avg_duration, 2000); // 6000 / 3
+    }
+
+    #[test]
+    fn test_default() {
+        let log = TransitionLog::default();
+        assert_eq!(log.capacity(), 10_000);
+        assert!(log.is_empty());
+    }
+
+    #[test]
+    fn test_ring_buffer_full_cycle() {
+        let mut log = TransitionLog::new(3);
+
+        // Fill the buffer completely
+        for i in 0..3 {
+            log.push(create_test_entry(KeyCode::A, i * 100, i * 100000));
+        }
+
+        assert_eq!(log.len(), 3);
+        assert_eq!(log.total_count(), 3);
+        assert!(!log.has_wrapped());
+
+        // Add one more to trigger wrap
+        log.push(create_test_entry(KeyCode::B, 300, 300000));
+
+        assert_eq!(log.len(), 3);
+        assert_eq!(log.total_count(), 4);
+        assert!(log.has_wrapped());
+
+        // Verify oldest entry was overwritten
+        let entries: Vec<_> = log.iter().collect();
+        assert_eq!(entries[0].wall_time_us, 100000); // entry 1 (entry 0 was overwritten)
+        assert_eq!(entries[1].wall_time_us, 200000); // entry 2
+        assert_eq!(entries[2].wall_time_us, 300000); // entry 3
+    }
+
+    #[test]
+    fn test_multiple_wraps() {
+        let mut log = TransitionLog::new(3);
+
+        // Add many entries (multiple wraps)
+        for i in 0..10 {
+            log.push(create_test_entry(KeyCode::A, i * 100, i * 100000));
+        }
+
+        assert_eq!(log.len(), 3);
+        assert_eq!(log.total_count(), 10);
+        assert!(log.has_wrapped());
+
+        // Should contain the last 3 entries (7, 8, 9)
+        let entries: Vec<_> = log.iter().collect();
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].wall_time_us, 700000);
+        assert_eq!(entries[1].wall_time_us, 800000);
+        assert_eq!(entries[2].wall_time_us, 900000);
+    }
+}
