@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../ffi/bridge.dart';
-import '../services/device_service.dart';
+import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
 import 'run_controls_widgets.dart';
 
@@ -19,12 +19,7 @@ enum EngineRunState { stopped, starting, running, stopping }
 class RunControlsPage extends StatefulWidget {
   const RunControlsPage({
     super.key,
-    required this.deviceService,
-    required this.bridge,
   });
-
-  final DeviceService deviceService;
-  final KeyrxBridge bridge;
 
   @override
   State<RunControlsPage> createState() => _RunControlsPageState();
@@ -51,21 +46,26 @@ class _RunControlsPageState extends State<RunControlsPage> {
       _error = null;
     });
 
-    try {
-      final devices = await widget.deviceService.listDevices();
-      setState(() {
-        _devices = devices;
-        _isLoadingDevices = false;
-        if (devices.isNotEmpty && _selectedDevice == null) {
-          _selectedDevice = devices.first;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoadingDevices = false;
-      });
-    }
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final result = await facade.listDevices();
+
+    result.when(
+      ok: (devices) {
+        setState(() {
+          _devices = devices;
+          _isLoadingDevices = false;
+          if (devices.isNotEmpty && _selectedDevice == null) {
+            _selectedDevice = devices.first;
+          }
+        });
+      },
+      err: (error) {
+        setState(() {
+          _error = error.userMessage;
+          _isLoadingDevices = false;
+        });
+      },
+    );
   }
 
   Future<void> _toggleEngine() async {
@@ -90,40 +90,76 @@ class _RunControlsPageState extends State<RunControlsPage> {
 
     setState(() => _runState = EngineRunState.starting);
 
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+
     // Select the device
-    final result = await widget.deviceService.selectDevice(_selectedDevice!.path);
-    if (!result.success) {
-      setState(() => _runState = EngineRunState.stopped);
-      if (mounted) {
-        _showSnackBar('Failed to select device: ${result.errorMessage}', isError: true);
-      }
-      return;
-    }
+    final selectResult = await facade.selectDevice(_selectedDevice!.path);
+    await selectResult.when(
+      ok: (_) async {
+        // Device selected, now start the engine with the loaded script
+        final scriptPath = appState.loadedScript;
+        if (scriptPath == null) {
+          setState(() => _runState = EngineRunState.stopped);
+          if (mounted) {
+            _showSnackBar('No script loaded', isError: true);
+          }
+          return;
+        }
 
-    // For now, simulate engine start (actual engine run would be via FFI)
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (mounted) {
-      setState(() => _runState = EngineRunState.running);
-      _showSnackBar('Engine started');
-    }
+        final startResult = await facade.startEngine(scriptPath);
+        await startResult.when(
+          ok: (_) {
+            if (mounted) {
+              setState(() => _runState = EngineRunState.running);
+              _showSnackBar('Engine started');
+            }
+          },
+          err: (error) {
+            setState(() => _runState = EngineRunState.stopped);
+            if (mounted) {
+              _showSnackBar('Failed to start engine: ${error.userMessage}',
+                  isError: true);
+            }
+          },
+        );
+      },
+      err: (error) {
+        setState(() => _runState = EngineRunState.stopped);
+        if (mounted) {
+          _showSnackBar('Failed to select device: ${error.userMessage}',
+              isError: true);
+        }
+      },
+    );
   }
 
   Future<void> _stopEngine() async {
     setState(() => _runState = EngineRunState.stopping);
+
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
 
     // Stop recording if active
     if (_isRecording) {
       await _stopRecording();
     }
 
-    // Simulate engine stop
-    await Future.delayed(const Duration(milliseconds: 300));
+    final result = await facade.stopEngine();
 
-    if (mounted) {
-      setState(() => _runState = EngineRunState.stopped);
-      _showSnackBar('Engine stopped');
-    }
+    result.when(
+      ok: (_) {
+        if (mounted) {
+          setState(() => _runState = EngineRunState.stopped);
+          _showSnackBar('Engine stopped');
+        }
+      },
+      err: (error) {
+        if (mounted) {
+          setState(() => _runState = EngineRunState.stopped);
+          _showSnackBar('Failed to stop engine: ${error.userMessage}',
+              isError: true);
+        }
+      },
+    );
   }
 
   Future<void> _toggleRecording() async {
@@ -138,9 +174,12 @@ class _RunControlsPageState extends State<RunControlsPage> {
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
     final path = 'sessions/session_$timestamp.krx';
 
-    final result = widget.bridge.startRecording(path);
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final bridge = facade.services.bridge;
+    final result = bridge.startRecording(path);
     if (result.hasError) {
-      _showSnackBar('Failed to start recording: ${result.errorMessage}', isError: true);
+      _showSnackBar('Failed to start recording: ${result.errorMessage}',
+          isError: true);
       return;
     }
 
@@ -152,9 +191,12 @@ class _RunControlsPageState extends State<RunControlsPage> {
   }
 
   Future<void> _stopRecording() async {
-    final result = widget.bridge.stopRecording();
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final bridge = facade.services.bridge;
+    final result = bridge.stopRecording();
     if (result.hasError) {
-      _showSnackBar('Failed to stop recording: ${result.errorMessage}', isError: true);
+      _showSnackBar('Failed to stop recording: ${result.errorMessage}',
+          isError: true);
       return;
     }
 
