@@ -192,7 +192,7 @@
   - _Requirements: 3.4_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create parallel FFI tests verifying isolated state management | Restrictions: Tests must actually run in parallel, verify no state leakage, use nextest | _Leverage: FfiContext from task 2, existing FFI tests | Success: Parallel tests pass with nextest, no state interference, CI runs them parallel | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 19. Add FFI fuzz tests
+- [x] 19. Add FFI fuzz tests
   - File: `core/src/ffi/tests/fuzz_tests.rs`
   - Use proptest to generate random FFI inputs
   - Verify no panics escape FFI boundary
