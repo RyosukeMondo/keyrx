@@ -134,7 +134,7 @@
   - _Requirements: 4.3_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating widget | Task: Create LogViewer widget with filtering | Restrictions: Level filter, search, auto-scroll | _Leverage: ObservabilityService | Success: Logs visible in UI | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Create MetricsWidget
+- [-] 15. Create MetricsWidget
   - File: `ui/lib/widgets/debug/metrics_widget.dart`
   - Display key metrics
   - Real-time updates

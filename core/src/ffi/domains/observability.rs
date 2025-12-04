@@ -559,6 +559,7 @@ pub extern "C" fn keyrx_metrics_trigger_callback() -> i32 {
 mod tests {
     use super::*;
     use crate::observability::metrics_bridge::NoOpMetricsCollector;
+    use serial_test::serial;
 
     fn cleanup_test_state() {
         // Clear global state without needing FfiContext
@@ -580,6 +581,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_bridge_init() {
         cleanup_test_state();
 
@@ -588,6 +590,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_count_and_clear() {
         cleanup_test_state();
         keyrx_log_bridge_init();
@@ -600,6 +603,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_set_enabled() {
         cleanup_test_state();
         keyrx_log_bridge_init();
@@ -609,6 +613,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_drain() {
         cleanup_test_state();
         keyrx_log_bridge_init();
@@ -625,6 +630,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_callback() {
         cleanup_test_state();
         keyrx_log_bridge_init();
@@ -638,6 +644,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_metrics_bridge_init() {
         cleanup_test_state();
 
@@ -646,6 +653,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_metrics_snapshot() {
         cleanup_test_state();
 
@@ -661,6 +669,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_metrics_snapshot_json() {
         cleanup_test_state();
 
@@ -679,6 +688,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_metrics_callback() {
         cleanup_test_state();
 
@@ -694,6 +704,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_metrics_updates() {
         cleanup_test_state();
 
@@ -706,6 +717,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_cleanup() {
         let collector = Arc::new(NoOpMetricsCollector);
         init_metrics_bridge(collector);
