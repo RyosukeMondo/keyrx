@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure
 
-- [ ] 1. Create StructuredLogger configuration
+- [x] 1. Create StructuredLogger configuration
   - File: `core/src/observability/logger.rs`
   - Configure tracing-subscriber
   - Support JSON and pretty output

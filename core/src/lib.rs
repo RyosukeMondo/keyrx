@@ -22,6 +22,7 @@ pub mod error;
 pub mod errors;
 pub mod ffi;
 pub mod mocks;
+pub mod observability;
 pub mod profiling;
 pub mod scripting;
 pub mod traits;
