@@ -98,15 +98,30 @@ pub async fn capture_session(
 pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> Result<()> {
     match output.format() {
         OutputFormat::Human => {
-            if let Some(next) = progress.next {
-                output.success(&format!(
-                    "Captured {}/{} keys. Next: row {}, col {}",
-                    progress.captured, progress.total, next.row, next.col
-                ));
+            if let Some(current) = progress.current {
+                if let Some(next) = progress.next {
+                    output.success(&format!(
+                        "Captured key at row {}, col {} ({}/{}). Next: row {}, col {}",
+                        current.row + 1,
+                        current.col + 1,
+                        progress.captured,
+                        progress.total,
+                        next.row + 1,
+                        next.col + 1
+                    ));
+                } else {
+                    output.success(&format!(
+                        "Captured key at row {}, col {} ({}/{})",
+                        current.row + 1,
+                        current.col + 1,
+                        progress.captured,
+                        progress.total
+                    ));
+                }
             } else {
                 output.success(&format!(
-                    "Captured {}/{} keys.",
-                    progress.captured, progress.total
+                    "Ready to capture keys (0/{}). Press key at row 1, col 1",
+                    progress.total
                 ));
             }
         }
@@ -131,7 +146,11 @@ pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result
     match output.format() {
         OutputFormat::Human => output.warning(&format!(
             "Duplicate scan code {} (existing r{},c{} attempted r{},c{})",
-            dup.scan_code, dup.existing.row, dup.existing.col, dup.attempted.row, dup.attempted.col
+            dup.scan_code,
+            dup.existing.row + 1,
+            dup.existing.col + 1,
+            dup.attempted.row + 1,
+            dup.attempted.col + 1
         )),
         OutputFormat::Json => {
             let payload = DuplicateJson {

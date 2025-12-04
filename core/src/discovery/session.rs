@@ -28,6 +28,7 @@ pub struct ExpectedPosition {
 pub struct DiscoveryProgress {
     pub captured: usize,
     pub total: usize,
+    pub current: Option<ExpectedPosition>,
     pub next: Option<ExpectedPosition>,
 }
 
@@ -278,6 +279,11 @@ impl DiscoverySession {
         DiscoveryProgress {
             captured: self.cursor,
             total: self.expected_positions.len(),
+            current: if self.cursor > 0 {
+                self.expected_positions.get(self.cursor - 1).copied()
+            } else {
+                None
+            },
             next: self.expected_positions.get(self.cursor).copied(),
         }
     }
@@ -366,6 +372,7 @@ mod tests {
             DiscoveryProgress {
                 captured: 0,
                 total: 2,
+                current: None,
                 next: Some(ExpectedPosition { row: 0, col: 0 })
             }
         );
@@ -381,6 +388,7 @@ mod tests {
             SessionUpdate::Progress(DiscoveryProgress {
                 captured: 1,
                 total: 2,
+                current: Some(ExpectedPosition { row: 0, col: 0 }),
                 next: Some(ExpectedPosition { row: 0, col: 1 })
             })
         );
