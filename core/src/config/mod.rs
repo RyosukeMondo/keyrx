@@ -8,6 +8,7 @@
 //! - [`paths`]: File system paths for config, devices, and scripts
 //! - [`limits`]: Capacity and threshold limits
 //! - [`exit_codes`]: CLI exit code definitions
+//! - [`scripting`]: Script execution security settings
 //! - [`loader`]: Runtime configuration loading from TOML
 
 pub mod exit_codes;
@@ -15,6 +16,7 @@ mod keys;
 mod limits;
 mod loader;
 mod paths;
+pub mod scripting;
 mod timing;
 
 pub use exit_codes::*;
@@ -22,4 +24,5 @@ pub use keys::*;
 pub use limits::*;
 pub use loader::*;
 pub use paths::*;
+pub use scripting::*;
 pub use timing::*;

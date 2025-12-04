@@ -47,6 +47,10 @@ pub struct Config {
     /// Path configuration.
     #[serde(default)]
     pub paths: PathsSection,
+
+    /// Scripting configuration.
+    #[serde(default)]
+    pub scripting: super::scripting::ScriptingSection,
 }
 
 /// Timing configuration section.
@@ -708,5 +712,37 @@ tap_timeout_ms = 222
             Some(val) => env::set_var("HOME", val),
             None => env::remove_var("HOME"),
         }
+    }
+
+    #[test]
+    fn config_includes_scripting_section() {
+        use crate::scripting::sandbox::ScriptMode;
+
+        let config = Config::default();
+        assert_eq!(config.scripting.mode, ScriptMode::Standard);
+    }
+
+    #[test]
+    fn config_scripting_from_toml() {
+        use crate::scripting::sandbox::ScriptMode;
+
+        let toml_str = r#"
+[scripting]
+mode = "Safe"
+"#;
+        let config: Config = toml::from_str(toml_str).expect("parse");
+        assert_eq!(config.scripting.mode, ScriptMode::Safe);
+    }
+
+    #[test]
+    fn config_scripting_partial_toml_uses_defaults() {
+        use crate::scripting::sandbox::ScriptMode;
+
+        let toml_str = r#"
+[timing]
+tap_timeout_ms = 175
+"#;
+        let config: Config = toml::from_str(toml_str).expect("parse");
+        assert_eq!(config.scripting.mode, ScriptMode::Standard);
     }
 }

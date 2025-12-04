@@ -125,7 +125,7 @@
   - _Requirements: 2.2, 2.4_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing modes | Task: Implement ScriptMode enforcement | Restrictions: Strict enforcement, clear errors | _Leverage: ScriptCapability | Success: Modes enforced correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Add safe_mode to config
+- [x] 14. Add safe_mode to config
   - File: `core/src/config/scripting.rs`
   - User-configurable script mode
   - Default to Standard
