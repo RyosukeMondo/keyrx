@@ -140,7 +140,7 @@
   - _Requirements: 6.1_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with state management expertise | Task: Add KeyrxFacade provider in ui/lib/state/providers.dart | Restrictions: Use existing provider pattern, proper disposal, available app-wide | _Leverage: Existing providers in ui/lib/state/ | Success: Provider compiles, facade accessible via context, disposal works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 14. Migrate EditorPage to use facade
+- [x] 14. Migrate EditorPage to use facade
   - File: `ui/lib/pages/editor_page.dart`
   - Replace direct service injections with KeyrxFacade
   - Update state subscriptions to use facade stateStream
