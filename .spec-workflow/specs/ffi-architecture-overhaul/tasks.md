@@ -212,7 +212,7 @@
   - _Requirements: 5.3_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer completing cleanup | Task: Remove deprecated FFI exports after Flutter migration complete | Restrictions: Only remove after all Flutter code migrated, update all imports, update docs | _Leverage: New ffi/domains/ structure | Success: Old exports_*.rs deleted, code compiles, tests pass, docs updated | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 21. Update FFI documentation
+- [-] 21. Update FFI documentation
   - File: `docs/ffi-architecture.md`
   - Document new trait-based architecture
   - Add migration guide for adding new FFI exports
