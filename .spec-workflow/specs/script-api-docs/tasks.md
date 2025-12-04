@@ -109,7 +109,7 @@
 
 ## Phase 5: Build Integration
 
-- [ ] 12. Add doc generation to build
+- [x] 12. Add doc generation to build
   - File: `core/build.rs` or script
   - Generate docs on build
   - Output to docs/ directory

@@ -28,7 +28,7 @@ ui:
     cd ui && flutter run -d linux
 
 # Run all quality checks (fmt, clippy, test, docs, bindings)
-check: fmt-check clippy test docs-errors verify-bindings
+check: fmt-check clippy test docs verify-bindings
     @echo "All checks passed!"
 
 # Format all Rust code
@@ -65,6 +65,15 @@ docs-errors:
     @echo "Generating error documentation..."
     cd core && cargo run --bin generate_error_docs
 
+# Generate API documentation from DocRegistry
+docs-api:
+    @echo "Generating API documentation..."
+    cd core && cargo run --bin generate_api_docs
+
+# Generate all documentation (errors + API)
+docs: docs-errors docs-api
+    @echo "All documentation generated!"
+
 # Generate Dart FFI bindings from Rust exports
 gen-bindings:
     @echo "Generating Dart FFI bindings..."
@@ -87,7 +96,7 @@ ci-check: fmt-check clippy test verify-bindings
     @echo "CI checks passed!"
 
 # Build release binary for current platform
-build: docs-errors gen-bindings
+build: docs gen-bindings
     cd core && cargo build --release
 
 # Build for all supported platforms

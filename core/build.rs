@@ -3,6 +3,7 @@
 //! Handles build-time tasks:
 //! - Tracks error source files to trigger recompilation
 //! - Tracks FFI source files to trigger Dart binding regeneration
+//! - Tracks API documentation source files to trigger doc regeneration
 //!
 //! Note: Documentation generation happens via `just docs-errors` command.
 //! Note: Dart binding generation happens via `just gen-bindings` command.
@@ -35,8 +36,12 @@ fn main() {
     // Track FFI source files for binding generation
     track_ffi_files();
 
-    // Track the doc generator binary
+    // Track API documentation source files
+    track_api_doc_files();
+
+    // Track the doc generator binaries
     println!("cargo:rerun-if-changed=src/bin/generate_error_docs.rs");
+    println!("cargo:rerun-if-changed=src/bin/generate_api_docs.rs");
 }
 
 /// Track FFI source files to trigger binding regeneration when they change
@@ -70,4 +75,50 @@ fn track_ffi_files() {
 
     // Track the binding generator script itself
     println!("cargo:rerun-if-changed=../scripts/generate_dart_bindings.py");
+}
+
+/// Track API documentation source files to trigger doc regeneration when they change
+fn track_api_doc_files() {
+    // Track documentation core files
+    let doc_files = [
+        "src/scripting/docs/mod.rs",
+        "src/scripting/docs/types.rs",
+        "src/scripting/docs/registry.rs",
+        "src/scripting/docs/search.rs",
+        "src/scripting/docs/examples.rs",
+    ];
+
+    for file in &doc_files {
+        println!("cargo:rerun-if-changed={}", file);
+    }
+
+    // Track generator files
+    let generator_dir = Path::new("src/scripting/docs/generators");
+    if generator_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(generator_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.ends_with(".rs") {
+                        println!("cargo:rerun-if-changed=src/scripting/docs/generators/{}", name);
+                    }
+                }
+            }
+        }
+    }
+
+    // Track scripting module files that contain documented functions
+    let scripting_dir = Path::new("src/scripting");
+    if scripting_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(scripting_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.ends_with(".rs") && name != "mod.rs" && !name.starts_with("docs") {
+                        println!("cargo:rerun-if-changed=src/scripting/{}", name);
+                    }
+                }
+            }
+        }
+    }
 }
