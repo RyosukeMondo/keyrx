@@ -60,6 +60,10 @@ predicates.workspace = true
 name = "latency"
 harness = false
 
+[[bench]]
+name = "ffi_bench"
+harness = false
+
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, optional = true }
 

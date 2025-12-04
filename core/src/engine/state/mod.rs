@@ -14,6 +14,8 @@ pub mod snapshot;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+#[cfg(not(debug_assertions))]
+use tracing as log;
 
 use crate::engine::decision::timing::TimingConfig;
 use crate::engine::KeyCode;

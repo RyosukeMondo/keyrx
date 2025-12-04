@@ -156,7 +156,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Migrate remaining FFI exports to FfiMarshaler | Restrictions: All exports, consistent patterns | _Leverage: FfiMarshaler | Success: All FFI uses marshaler | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add FFI benchmarks
+- [x] 17. Add FFI benchmarks
   - File: `core/benches/ffi_bench.rs`
   - Benchmark marshaling overhead
   - Compare JSON vs C struct
