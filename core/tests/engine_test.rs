@@ -13,7 +13,12 @@ fn engine_creation_with_mocks() {
     let runtime = MockRuntime::new();
     let state = MockState::new();
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
     assert!(!engine.is_running());
 }
 
@@ -27,7 +32,12 @@ fn process_event_remap_key_down() {
     // Configure A -> B remap
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::A, 0);
     let output = engine.process_event(&event);
@@ -45,7 +55,12 @@ fn process_event_remap_key_up() {
     // Configure A -> B remap
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_up(KeyCode::A, 0);
     let output = engine.process_event(&event);
@@ -63,7 +78,12 @@ fn process_event_block_key_down() {
     // Configure CapsLock to be blocked
     runtime.registry_mut().block(KeyCode::CapsLock);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::CapsLock, 0);
     let output = engine.process_event(&event);
@@ -81,7 +101,12 @@ fn process_event_block_key_up() {
     // Configure CapsLock to be blocked
     runtime.registry_mut().block(KeyCode::CapsLock);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_up(KeyCode::CapsLock, 0);
     let output = engine.process_event(&event);
@@ -99,7 +124,12 @@ fn process_event_pass_key_down() {
     // Explicitly configure Enter to pass (this is also the default)
     runtime.registry_mut().pass(KeyCode::Enter);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::Enter, 0);
     let output = engine.process_event(&event);
@@ -117,7 +147,12 @@ fn process_event_pass_key_up() {
     // Explicitly configure Enter to pass
     runtime.registry_mut().pass(KeyCode::Enter);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_up(KeyCode::Enter, 0);
     let output = engine.process_event(&event);
@@ -133,7 +168,12 @@ fn process_event_unmapped_key_passes_through() {
     let state = MockState::new();
 
     // No remaps configured
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::Z, 0);
     let output = engine.process_event(&event);
@@ -155,7 +195,12 @@ fn process_event_multiple_remaps() {
         .remap(KeyCode::CapsLock, KeyCode::Escape);
     runtime.registry_mut().block(KeyCode::Insert);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Test A -> B
     let event_a = InputEvent::key_down(KeyCode::A, 0);
@@ -190,7 +235,12 @@ async fn engine_start_stop_lifecycle() {
     let runtime = MockRuntime::new();
     let state = MockState::new();
 
-    let mut engine = Engine::new(input, runtime, state);
+    let mut engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     assert!(!engine.is_running());
 
@@ -208,7 +258,12 @@ fn engine_state_accessor() {
     let runtime = MockRuntime::new();
     let state = MockState::new();
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Just verify we can access state
     let _state = engine.state();
@@ -221,7 +276,12 @@ fn engine_script_accessor() {
     let runtime = MockRuntime::new();
     let state = MockState::new();
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Just verify we can access script runtime
     let _script = engine.script();
@@ -236,7 +296,12 @@ fn process_event_remap_down_then_up() {
 
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Key down
     let down_event = InputEvent::key_down(KeyCode::A, 100);
@@ -261,7 +326,12 @@ fn process_event_remap_modifier_keys() {
         .registry_mut()
         .remap(KeyCode::LeftCtrl, KeyCode::LeftAlt);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::LeftCtrl, 0);
     let output = engine.process_event(&event);
@@ -279,7 +349,12 @@ fn process_event_remap_function_keys() {
     // Remap F1 to F2
     runtime.registry_mut().remap(KeyCode::F1, KeyCode::F2);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     let event = InputEvent::key_down(KeyCode::F1, 0);
     let output = engine.process_event(&event);
@@ -300,7 +375,12 @@ fn process_event_synthetic_event_passes_through() {
     // Configure A -> B remap (should be bypassed for synthetic events)
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Create a synthetic event (simulating an injected key)
     let event = InputEvent::with_metadata(
@@ -328,7 +408,12 @@ fn process_event_synthetic_key_up_passes_through() {
     // Configure A -> B remap
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Create a synthetic key-up event
     let event = InputEvent::with_metadata(
@@ -355,7 +440,12 @@ fn process_event_synthetic_bypasses_block() {
     // Configure CapsLock to be blocked
     runtime.registry_mut().block(KeyCode::CapsLock);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Create a synthetic CapsLock event
     let event = InputEvent::with_metadata(
@@ -383,7 +473,12 @@ fn process_event_non_synthetic_still_remapped() {
     // Configure A -> B remap
     runtime.registry_mut().remap(KeyCode::A, KeyCode::B);
 
-    let engine = Engine::new(input, runtime, state);
+    let engine = Engine::new(
+        input,
+        runtime,
+        state,
+        keyrx_core::metrics::default_noop_collector(),
+    );
 
     // Create a non-synthetic event (is_synthetic = false)
     let event = InputEvent::with_metadata(

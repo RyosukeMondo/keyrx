@@ -125,7 +125,12 @@ impl BenchCommand {
 
         // Create engine with mocks
         let mock_input = MockInput::new();
-        let engine = Engine::new(mock_input, runtime, MockState::new());
+        let engine = Engine::new(
+            mock_input,
+            runtime,
+            MockState::new(),
+            crate::metrics::default_noop_collector(),
+        );
 
         // Create test event
         let test_event = InputEvent::key_down(KeyCode::A, 0);

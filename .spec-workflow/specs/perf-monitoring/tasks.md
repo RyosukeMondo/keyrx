@@ -69,7 +69,7 @@
 
 ## Phase 3: Engine Integration
 
-- [ ] 8. Add metrics to Engine
+- [-] 8. Add metrics to Engine
   - File: `core/src/engine/mod.rs`
   - Inject MetricsCollector
   - Record event processing latency

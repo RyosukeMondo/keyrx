@@ -55,3 +55,13 @@ pub use noop_collector::NoOpCollector;
 pub use operation::Operation;
 pub use profile::{ProfilePointGuard, ProfilePoints, ProfileStats};
 pub use snapshot::{LatencyStats, MemorySnapshot, MetricsSnapshot, ProfileSnapshot};
+
+use std::sync::Arc;
+
+/// Create a default no-op metrics collector for test/non-production use.
+///
+/// This returns a zero-overhead collector wrapped in Arc for easy injection
+/// into components that require metrics but don't need actual tracking.
+pub fn default_noop_collector() -> Arc<dyn MetricsCollector> {
+    Arc::new(NoOpCollector::new())
+}

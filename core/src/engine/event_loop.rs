@@ -4,9 +4,11 @@ use crate::engine::{InputEvent, OutputAction, RemapAction, TimingConfig};
 use crate::errors::KeyrxError;
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
+use crate::metrics::{MetricsCollector, Operation};
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use crate::KeyCode;
 use std::collections::HashSet;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
@@ -23,6 +25,7 @@ where
     input: I,
     script: S,
     state: St,
+    metrics: Arc<dyn MetricsCollector>,
     running: bool,
     held_keys: HashSet<KeyCode>,
 }
@@ -34,11 +37,12 @@ where
     St: StateStore,
 {
     /// Create a new engine with injected dependencies.
-    pub fn new(input: I, script: S, state: St) -> Self {
+    pub fn new(input: I, script: S, state: St, metrics: Arc<dyn MetricsCollector>) -> Self {
         Self {
             input,
             script,
             state,
+            metrics,
             running: false,
             held_keys: HashSet::new(),
         }
@@ -83,6 +87,11 @@ where
         &mut self.script
     }
 
+    /// Get reference to metrics collector.
+    pub fn metrics(&self) -> &Arc<dyn MetricsCollector> {
+        &self.metrics
+    }
+
     /// Process a single input event and return the appropriate output action.
     ///
     /// Queries the script runtime's registry for remapping decisions and
@@ -92,6 +101,8 @@ where
     /// automatically passed through without processing. This prevents infinite
     /// loops when our injected keys are recaptured by the input hook.
     pub fn process_event(&self, event: &InputEvent) -> OutputAction {
+        let _guard = self.metrics.start_profile("process_event");
+
         if event.is_synthetic {
             return Self::handle_synthetic(event);
         }
@@ -174,6 +185,8 @@ where
             let events = self.input.poll_events().await?;
 
             for event in events {
+                let event_start = std::time::Instant::now();
+
                 // Track held keys for UI/state streaming.
                 if event.pressed {
                     self.held_keys.insert(event.key);
@@ -197,6 +210,11 @@ where
 
                 let output = self.process_event(&event);
                 self.input.send_output(output).await?;
+
+                // Record event processing latency
+                let elapsed_micros = event_start.elapsed().as_micros() as u64;
+                self.metrics
+                    .record_latency(Operation::EventProcess, elapsed_micros);
             }
         }
 
