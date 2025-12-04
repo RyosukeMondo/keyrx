@@ -154,7 +154,7 @@
   - _Requirements: 2.3, 4.1_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Benchmark Developer | Task: Create sandbox benchmarks | Restrictions: Test overhead, compare to baseline | _Leverage: criterion | Success: Overhead targets met | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Document sandbox security model
+- [x] 17. Document sandbox security model
   - File: `docs/scripting-security.md`
   - Explain capability tiers
   - Document resource limits
