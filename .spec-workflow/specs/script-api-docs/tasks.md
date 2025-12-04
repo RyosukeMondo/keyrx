@@ -60,7 +60,7 @@
 
 ## Phase 3: Documentation Generation
 
-- [ ] 7. Create Markdown generator
+- [x] 7. Create Markdown generator
   - File: `core/src/scripting/docs/generators/markdown.rs`
   - Generate markdown from DocRegistry
   - Organized by module
