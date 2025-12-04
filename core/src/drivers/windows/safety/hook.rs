@@ -43,6 +43,7 @@
 //! # Ok::<(), keyrx_core::drivers::common::error::DriverError>(())
 //! ```
 
+use crate::drivers::common::cache::LruKeymapCache;
 use crate::drivers::common::error::DriverError;
 use crate::engine::InputEvent;
 use crossbeam_channel::Sender;
@@ -83,6 +84,19 @@ thread_local! {
 /// - Only accessed from the hook callback thread
 thread_local! {
     pub static KEY_STATES: RefCell<std::collections::HashSet<u16>> = RefCell::new(std::collections::HashSet::new());
+}
+
+/// Thread-local storage for the keymap cache used by the hook callback.
+///
+/// The cache stores VK code to KeyCode mappings to avoid repeated lookups.
+///
+/// # Safety Invariants
+///
+/// - Must be initialized before hook installation
+/// - Must be cleared when hook is uninstalled
+/// - Only accessed from the hook thread
+thread_local! {
+    pub static KEYMAP_CACHE: RefCell<Option<Arc<LruKeymapCache>>> = const { RefCell::new(None) };
 }
 
 /// Safe RAII wrapper for Windows keyboard hooks.
@@ -176,10 +190,16 @@ impl SafeHook {
         sender: Sender<InputEvent>,
         running: Arc<AtomicBool>,
         thread_id_store: Arc<AtomicU32>,
+        cache: Arc<LruKeymapCache>,
     ) -> Result<Self, DriverError> {
         // Store the sender in thread-local storage for the callback
         HOOK_SENDER.with(|s| {
             *s.borrow_mut() = Some(sender);
+        });
+
+        // Store the cache in thread-local storage for the callback
+        KEYMAP_CACHE.with(|c| {
+            *c.borrow_mut() = Some(cache);
         });
 
         // SAFETY: We are calling SetWindowsHookExW with valid parameters:
@@ -223,9 +243,12 @@ impl SafeHook {
                     "Failed to install SafeHook"
                 );
 
-                // Clear the sender since installation failed
+                // Clear the sender and cache since installation failed
                 HOOK_SENDER.with(|s| {
                     *s.borrow_mut() = None;
+                });
+                KEYMAP_CACHE.with(|c| {
+                    *c.borrow_mut() = None;
                 });
 
                 Err(DriverError::HookFailed {
@@ -352,11 +375,15 @@ impl SafeHook {
 
     /// Clean up thread-local storage used by the hook.
     ///
-    /// This clears the sender and key states to prevent stale data from
+    /// This clears the sender, cache, and key states to prevent stale data from
     /// being used if the hook is reinstalled later.
     fn cleanup_thread_local_state(&self) {
         HOOK_SENDER.with(|s| {
             *s.borrow_mut() = None;
+        });
+
+        KEYMAP_CACHE.with(|c| {
+            *c.borrow_mut() = None;
         });
 
         KEY_STATES.with(|states| {

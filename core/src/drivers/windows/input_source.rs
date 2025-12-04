@@ -65,6 +65,17 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         self.post_quit_for_stop();
         self.join_hook_thread_for_stop();
         self.drain_events();
+
+        // Invalidate cache entries for Windows device
+        use crate::drivers::common::cache::KeymapCache;
+        self.cache.invalidate_device("windows");
+        tracing::debug!(
+            service = "keyrx",
+            event = "windows_cache_invalidated",
+            component = "windows_input",
+            "Invalidated cache entries"
+        );
+
         self.log_stopped();
         Ok(())
     }

@@ -60,13 +60,23 @@ impl HookManager {
     /// # Arguments
     ///
     /// * `sender` - Channel sender for keyboard events
+    /// * `cache` - LRU cache for VK code to KeyCode mappings
     ///
     /// # Errors
     ///
     /// Returns `DriverError::HookFailed` if the hook cannot be installed.
-    pub fn install(&mut self, sender: Sender<InputEvent>) -> Result<(), DriverError> {
+    pub fn install(
+        &mut self,
+        sender: Sender<InputEvent>,
+        cache: Arc<crate::drivers::common::cache::LruKeymapCache>,
+    ) -> Result<(), DriverError> {
         // Use SafeHook to install the hook with proper RAII semantics
-        let hook = SafeHook::install(sender, self.running.clone(), self.thread_id_store.clone())?;
+        let hook = SafeHook::install(
+            sender,
+            self.running.clone(),
+            self.thread_id_store.clone(),
+            cache,
+        )?;
 
         self.safe_hook = Some(hook);
         Ok(())
@@ -297,7 +307,30 @@ fn map_vk_to_keycode(vk_code: u16, is_extended: bool) -> KeyCode {
         return KeyCode::NumpadEnter;
     }
 
-    vk_to_keycode(vk_code)
+    // Try to get KeyCode from cache first
+    use super::safety::hook::KEYMAP_CACHE;
+    use crate::drivers::common::cache::KeymapCache;
+
+    // Use a fixed device ID for Windows since we don't track individual devices
+    const WINDOWS_DEVICE_ID: &str = "windows";
+
+    KEYMAP_CACHE.with(|cache_cell| {
+        if let Some(cache) = cache_cell.borrow().as_ref() {
+            // Try cache first
+            cache
+                .get(vk_code as u32, WINDOWS_DEVICE_ID)
+                .unwrap_or_else(|| {
+                    // Cache miss - perform actual lookup
+                    let keycode = vk_to_keycode(vk_code);
+                    // Store in cache for future lookups
+                    cache.insert(vk_code as u32, WINDOWS_DEVICE_ID, keycode);
+                    keycode
+                })
+        } else {
+            // No cache available (shouldn't happen in normal operation)
+            vk_to_keycode(vk_code)
+        }
+    })
 }
 
 fn send_event(event: InputEvent) {

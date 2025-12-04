@@ -1,5 +1,6 @@
 use super::hook_thread::spawn_hook_thread;
 use super::injector::SendInputInjector;
+use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};
 use crate::metrics::{MetricsCollector, Operation};
 use crate::{
     drivers::KeyInjector,
@@ -24,6 +25,7 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     panic_error: Arc<AtomicBool>,
     thread_id_store: Arc<AtomicU32>,
     metrics: Arc<dyn MetricsCollector>,
+    cache: Arc<LruKeymapCache>,
 }
 impl WindowsInput {
     pub fn new() -> Result<Self> {
@@ -36,6 +38,13 @@ impl WindowsInput {
         let panic_error = Arc::new(AtomicBool::new(false));
         let thread_id_store = Arc::new(AtomicU32::new(0));
         let injector = SendInputInjector::new();
+
+        // Initialize keymap cache with capacity for 256 entries
+        // This should cover all standard keys with room for device-specific mappings
+        let cache = LruKeymapCache::new(256)
+            .ok_or_else(|| anyhow::anyhow!("Failed to create keymap cache"))?;
+        let cache = Arc::new(cache);
+
         debug!(
             service = "keyrx",
             event = "windows_input_created",
@@ -52,6 +61,7 @@ impl WindowsInput {
             panic_error,
             thread_id_store,
             metrics,
+            cache,
         })
     }
 }
@@ -68,6 +78,13 @@ impl<I: KeyInjector> WindowsInput<I> {
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
         let thread_id_store = Arc::new(AtomicU32::new(0));
+
+        // Initialize keymap cache with capacity for 256 entries
+        // This should cover all standard keys with room for device-specific mappings
+        let cache = LruKeymapCache::new(256)
+            .ok_or_else(|| anyhow::anyhow!("Failed to create keymap cache"))?;
+        let cache = Arc::new(cache);
+
         debug!(
             service = "keyrx",
             event = "windows_input_created",
@@ -84,6 +101,7 @@ impl<I: KeyInjector> WindowsInput<I> {
             panic_error,
             thread_id_store,
             metrics,
+            cache,
         })
     }
     pub fn is_running(&self) -> bool {
@@ -391,7 +409,14 @@ impl<I: KeyInjector> WindowsInput<I> {
         let panic_error = self.panic_error.clone();
         let thread_id_store = self.thread_id_store.clone();
         let tx = self.tx.clone();
-        self.hook_thread = Some(spawn_hook_thread(running, panic_error, thread_id_store, tx));
+        let cache = self.cache.clone();
+        self.hook_thread = Some(spawn_hook_thread(
+            running,
+            panic_error,
+            thread_id_store,
+            tx,
+            cache,
+        ));
     }
 
     pub(crate) fn wait_for_hook_start(&mut self) -> Result<()> {
@@ -487,6 +512,16 @@ impl<I: KeyInjector> Drop for WindowsInput<I> {
         self.post_quit_for_drop();
         self.join_hook_thread_for_drop();
         self.drain_events();
+
+        // Invalidate cache entries for Windows device
+        self.cache.invalidate_device("windows");
+        debug!(
+            service = "keyrx",
+            event = "windows_cache_invalidated_drop",
+            component = "windows_input",
+            "Invalidated cache entries on drop"
+        );
+
         self.log_drop_complete();
     }
 }
