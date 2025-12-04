@@ -6,6 +6,8 @@
 //! - Input validation
 //! - O(1) function lookup
 
+pub mod budget;
 pub mod capability;
 
+pub use budget::{ResourceBudget, ResourceConfig, ResourceExhausted, ResourceUsage};
 pub use capability::{ScriptCapability, ScriptMode};
