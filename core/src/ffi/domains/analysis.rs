@@ -240,26 +240,20 @@ pub fn replay_session(path: &str, verify: bool) -> FfiResult<ReplayResultJson> {
 mod tests {
     use super::*;
     use crate::drivers::keycodes::KeyCode;
+    use crate::engine::state::EngineState;
     use crate::engine::{
-        DecisionType, EngineState, EventRecordBuilder, InputEvent, LayerStack, ModifierState,
-        OutputAction, TimingConfig,
+        DecisionType, EventRecordBuilder, InputEvent, ModifierState, OutputAction, TimingConfig,
     };
 
     fn make_test_session() -> crate::engine::SessionFile {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        let initial_state = EngineState::new(TimingConfig::default());
+        let initial_snapshot = (&initial_state).into();
 
         let mut session = crate::engine::SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
             None,
             TimingConfig::default(),
-            initial_state,
+            initial_snapshot,
         );
 
         // Add test events

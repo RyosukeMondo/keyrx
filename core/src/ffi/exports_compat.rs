@@ -8,8 +8,8 @@
 
 use crate::ffi::context::FfiContext;
 use crate::ffi::domains::{
-    analysis, device, diagnostics, discovery, engine, recording, script, testing, AnalysisFfi,
-    DeviceFfi, DiscoveryFfi, RecordingFfi,
+    analysis, device, diagnostics, discovery, engine, recording, script, testing, DeviceFfi,
+    RecordingFfi,
 };
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
@@ -31,7 +31,7 @@ where
     let mut guard = lock
         .lock()
         .map_err(|_| FfiError::internal("context lock poisoned"))?;
-    f(&mut *guard)
+    f(&mut guard)
 }
 
 fn ensure_domain<D: FfiExportable>(ctx: &mut FfiContext) -> Result<(), FfiError> {
@@ -54,6 +54,9 @@ fn ffi_error(err: FfiError) -> *mut c_char {
     ffi_json::<()>(Err(err))
 }
 
+/// # Safety
+///
+/// The `ptr` must be a valid, nul-terminated C string if non-null.
 unsafe fn cstr_to_str(ptr: *const c_char) -> Result<&'static str, i32> {
     if ptr.is_null() {
         return Err(-1);
@@ -68,6 +71,9 @@ pub extern "C" fn keyrx_list_devices() -> *mut c_char {
     ffi_json(device::list_devices())
 }
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_select_device(path: *const c_char) -> i32 {
     let path = match cstr_to_str(path) {
@@ -99,6 +105,9 @@ pub extern "C" fn keyrx_list_keys() -> *mut c_char {
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
+/// # Safety
+///
+/// Both `device_id` and `cols_per_row_json` must be valid, non-null, nul-terminated C strings.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_start_discovery(
     device_id: *const c_char,
@@ -128,10 +137,7 @@ pub unsafe extern "C" fn keyrx_start_discovery(
 
 #[no_mangle]
 pub extern "C" fn keyrx_cancel_discovery() -> i32 {
-    match discovery::cancel_discovery() {
-        Ok(code) => code,
-        Err(_) => -4,
-    }
+    discovery::cancel_discovery().unwrap_or(-4)
 }
 
 // ── Engine ───────────────────────────────────────────────────────────────────
@@ -148,6 +154,9 @@ pub extern "C" fn keyrx_set_bypass(active: bool) {
 
 // ── Script / Validation ──────────────────────────────────────────────────────
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
     let path = match cstr_to_str(path) {
@@ -160,6 +169,9 @@ pub unsafe extern "C" fn keyrx_load_script(path: *const c_char) -> i32 {
     }
 }
 
+/// # Safety
+///
+/// The `command` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_eval(command: *const c_char) -> *mut c_char {
     let cmd = match cstr_to_str(command) {
@@ -180,6 +192,9 @@ fn validate_script_internal(
     Ok(engine.validate(script, options))
 }
 
+/// # Safety
+///
+/// The `script` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_validate_script(script: *const c_char) -> *mut c_char {
     let script = match cstr_to_str(script) {
@@ -192,6 +207,9 @@ pub unsafe extern "C" fn keyrx_validate_script(script: *const c_char) -> *mut c_
     ffi_json(validate_script_internal(script, ValidationOptions::new()))
 }
 
+/// # Safety
+///
+/// Both `script` and `options_json` must be valid, non-null, nul-terminated C strings.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_validate_script_with_options(
     script: *const c_char,
@@ -223,6 +241,9 @@ pub unsafe extern "C" fn keyrx_validate_script_with_options(
     ffi_json(validate_script_internal(script, options))
 }
 
+/// # Safety
+///
+/// The `partial` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_suggest_keys(partial: *const c_char) -> *mut c_char {
     let partial = match cstr_to_str(partial) {
@@ -246,6 +267,9 @@ pub extern "C" fn keyrx_all_key_names() -> *mut c_char {
     ffi_json(Ok(names))
 }
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_check_script(path: *const c_char) -> *mut c_char {
     let path = match cstr_to_str(path) {
@@ -260,6 +284,9 @@ pub unsafe extern "C" fn keyrx_check_script(path: *const c_char) -> *mut c_char 
 
 // ── Testing / Simulation / Diagnostics ───────────────────────────────────────
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_discover_tests(path: *const c_char) -> *mut c_char {
     let path = match cstr_to_str(path) {
@@ -272,6 +299,10 @@ pub unsafe extern "C" fn keyrx_discover_tests(path: *const c_char) -> *mut c_cha
     ffi_json(testing::discover_tests(path))
 }
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
+/// The `filter` pointer may be null, or a valid nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_run_tests(
     path: *const c_char,
@@ -295,6 +326,10 @@ pub unsafe extern "C" fn keyrx_run_tests(
     ffi_json(testing::run_tests(path, filter))
 }
 
+/// # Safety
+///
+/// The `keys_json` pointer must be a valid, non-null, nul-terminated C string.
+/// The `script_path` pointer may be null, or a valid nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_simulate(
     keys_json: *const c_char,
@@ -319,6 +354,9 @@ pub unsafe extern "C" fn keyrx_simulate(
     ffi_json(testing::simulate(keys_json, script_path, combo_mode))
 }
 
+/// # Safety
+///
+/// The `script_path` pointer may be null, or a valid nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_run_benchmark(
     iterations: u32,
@@ -342,6 +380,9 @@ pub extern "C" fn keyrx_run_doctor() -> *mut c_char {
 
 // ── Recording / Sessions ─────────────────────────────────────────────────────
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_start_recording(path: *const c_char) -> *mut c_char {
     let path = match cstr_to_str(path) {
@@ -365,6 +406,9 @@ pub extern "C" fn keyrx_stop_recording() -> *mut c_char {
     }))
 }
 
+/// # Safety
+///
+/// The `dir_path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_list_sessions(dir_path: *const c_char) -> *mut c_char {
     let dir = match cstr_to_str(dir_path) {
@@ -377,6 +421,9 @@ pub unsafe extern "C" fn keyrx_list_sessions(dir_path: *const c_char) -> *mut c_
     ffi_json(analysis::list_sessions(dir))
 }
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_analyze_session(path: *const c_char) -> *mut c_char {
     let path = match cstr_to_str(path) {
@@ -389,6 +436,9 @@ pub unsafe extern "C" fn keyrx_analyze_session(path: *const c_char) -> *mut c_ch
     ffi_json(analysis::analyze_session(path))
 }
 
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_replay_session(path: *const c_char, verify: bool) -> *mut c_char {
     let path = match cstr_to_str(path) {

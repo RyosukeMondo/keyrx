@@ -146,7 +146,11 @@ impl LinuxInput {
         })
     }
     fn find_first_keyboard() -> Result<DeviceInfo, KeyrxError> {
-        let keyboards = list_keyboards()?;
+        let mut keyboards = list_keyboards()?;
+
+        // Filter out keyrx's own virtual keyboard to prevent self-detection
+        keyboards.retain(|dev| !dev.name.contains("KeyRx Virtual Keyboard"));
+
         if keyboards.is_empty() {
             return Err(keyrx_err!(
                 DRIVER_DEVICE_NOT_FOUND,
@@ -218,7 +222,10 @@ impl InputSource for LinuxInput {
         self.fail_if_reader_panicked()?;
         if self.is_inactive() {
             self.log_poll_when_inactive();
-            return Ok(vec![]);
+            bail_keyrx!(
+                DRIVER_DEVICE_DISCONNECTED,
+                device = "keyboard input (stopped by emergency exit or manual stop)"
+            );
         }
 
         let mut events = Vec::new();

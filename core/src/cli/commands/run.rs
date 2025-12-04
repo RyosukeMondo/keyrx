@@ -276,25 +276,41 @@ impl RunCommand {
         let running = self.setup_signal_handlers()?;
 
         let mut last_timestamp = 0u64;
-        while running.load(Ordering::SeqCst) {
-            let events = input.poll_events().await?;
-            if !events.is_empty() {
-                self.process_events(
-                    &mut engine,
-                    &mut input,
-                    events,
-                    &mut last_timestamp,
-                    &mut recorder,
-                    &mut seq,
-                    tracer.as_ref(),
-                )
-                .await?;
-            } else {
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        let exit_reason = loop {
+            if !running.load(Ordering::SeqCst) {
+                break "signal";
             }
-        }
 
-        self.output.success("Signal received, stopping...");
+            match input.poll_events().await {
+                Ok(events) => {
+                    if !events.is_empty() {
+                        self.process_events(
+                            &mut engine,
+                            &mut input,
+                            events,
+                            &mut last_timestamp,
+                            &mut recorder,
+                            &mut seq,
+                            tracer.as_ref(),
+                        )
+                        .await?;
+                    } else {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                    }
+                }
+                Err(e) if e.code() == "DRIVER_DEVICE_DISCONNECTED" => {
+                    // Input source stopped (emergency exit or intentional stop)
+                    break "emergency_exit";
+                }
+                Err(e) => return Err(e.into()),
+            }
+        };
+
+        if exit_reason == "signal" {
+            self.output.success("Signal received, stopping...");
+        } else {
+            self.output.success("Emergency exit triggered, stopping...");
+        }
         input.stop().await?;
         recording_mgr.finish_recording(recorder)?;
         tracing_mgr.finish_tracing(tracer);
@@ -386,24 +402,41 @@ impl RunCommand {
         Self::spawn_ctrl_c_flag(running.clone());
 
         let mut last_timestamp = 0u64;
-        while running.load(Ordering::SeqCst) {
-            let events = input.poll_events().await?;
-            if !events.is_empty() {
-                self.process_events(
-                    &mut engine,
-                    &mut input,
-                    events,
-                    &mut last_timestamp,
-                    &mut recorder,
-                    &mut seq,
-                    tracer.as_ref(),
-                )
-                .await?;
-            } else {
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        let exit_reason = loop {
+            if !running.load(Ordering::SeqCst) {
+                break "signal";
             }
-        }
 
+            match input.poll_events().await {
+                Ok(events) => {
+                    if !events.is_empty() {
+                        self.process_events(
+                            &mut engine,
+                            &mut input,
+                            events,
+                            &mut last_timestamp,
+                            &mut recorder,
+                            &mut seq,
+                            tracer.as_ref(),
+                        )
+                        .await?;
+                    } else {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                    }
+                }
+                Err(e) if e.code() == "DRIVER_DEVICE_DISCONNECTED" => {
+                    // Input source stopped (emergency exit or intentional stop)
+                    break "emergency_exit";
+                }
+                Err(e) => return Err(e.into()),
+            }
+        };
+
+        if exit_reason == "signal" {
+            self.output.success("Signal received, stopping...");
+        } else {
+            self.output.success("Emergency exit triggered, stopping...");
+        }
         input.stop().await?;
         recording_mgr.finish_recording(recorder)?;
         tracing_mgr.finish_tracing(tracer);
@@ -502,21 +535,15 @@ impl Command for RunCommand {
     }
 
     fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
-        use crate::cli::ExitCode;
-
-        // Create a new runtime for async execution
-        let rt = match tokio::runtime::Runtime::new() {
-            Ok(runtime) => runtime,
-            Err(err) => {
-                return CommandResult::failure(
-                    ExitCode::GeneralError,
-                    format!("Failed to create tokio runtime: {err}"),
-                )
-            }
-        };
+        // We're already inside a tokio runtime from main, so we need to use
+        // block_in_place to move the blocking operation to a dedicated thread
+        let result = tokio::task::block_in_place(|| {
+            let handle = tokio::runtime::Handle::current();
+            handle.block_on(self.run())
+        });
 
         // Run the async logic and convert Result to CommandResult
-        match rt.block_on(self.run()) {
+        match result {
             Ok(()) => CommandResult::success(()),
             Err(err) => {
                 use crate::cli::HasExitCode;

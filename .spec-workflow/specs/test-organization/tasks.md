@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure
 
-- [ ] 1. Create test directory structure
+- [-] 1. Create test directory structure
   - Files: `core/tests/{fixtures,unit,integration,e2e}/mod.rs`
   - Create directory hierarchy as designed
   - Add mod.rs files with documentation

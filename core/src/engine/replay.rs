@@ -297,26 +297,18 @@ impl InputSource for ReplaySession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{
-        DecisionType, EngineState, EventRecordBuilder, KeyCode, LayerStack, ModifierState,
-        TimingConfig,
-    };
+    use crate::engine::state::EngineState;
+    use crate::engine::{DecisionType, EventRecordBuilder, KeyCode, ModifierState, TimingConfig};
 
     fn make_test_session() -> SessionFile {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        let initial_state = EngineState::new(TimingConfig::default());
+        let initial_snapshot = (&initial_state).into();
 
         let mut session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
             Some("/test/script.rhai".to_string()),
             TimingConfig::default(),
-            initial_state,
+            initial_snapshot,
         );
 
         // Add events with increasing timestamps

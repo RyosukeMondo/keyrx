@@ -113,19 +113,12 @@ impl EventRecorder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{
-        DecisionType, EventRecordBuilder, KeyCode, LayerStack, ModifierState, OutputAction,
-    };
+    use crate::engine::decision::timing::TimingConfig;
+    use crate::engine::state::EngineState;
+    use crate::engine::{DecisionType, EventRecordBuilder, KeyCode, ModifierState, OutputAction};
 
     fn make_initial_state() -> EngineState {
-        EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        }
+        EngineState::new(TimingConfig::default())
     }
 
     fn make_input_event(key: KeyCode, timestamp_us: u64) -> crate::engine::InputEvent {

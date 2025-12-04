@@ -238,9 +238,9 @@ where
         };
 
         // Validate the transition (log errors but continue processing for compatibility)
-        if let Err(e) = self.validate_transition(transition) {
+        if let Err(_e) = self.validate_transition(transition) {
             #[cfg(debug_assertions)]
-            tracing::warn!("State transition validation warning: {}", e);
+            tracing::warn!("State transition validation warning: {}", _e);
         }
 
         // Step 2: Update key state using the unified state's mutation API.
@@ -705,7 +705,7 @@ mod tests {
 
         let pending = engine.pending.snapshot();
         let (key, pressed_at) = match pending.first() {
-            Some(PendingDecisionState::TapHold {
+            Some(PendingDecision::TapHold {
                 key, pressed_at, ..
             }) => (*key, *pressed_at),
             other => {

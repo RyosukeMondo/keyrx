@@ -1,8 +1,9 @@
 use super::input::WindowsInput;
 use crate::{
+    bail_keyrx,
     drivers::KeyInjector,
     engine::{InputEvent, OutputAction},
-    errors::KeyrxError,
+    errors::{driver::*, KeyrxError},
     traits::InputSource,
 };
 use async_trait::async_trait;
@@ -14,7 +15,10 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
         self.fail_if_hook_panicked()?;
         if self.is_inactive() {
             self.log_poll_when_inactive();
-            return Ok(vec![]);
+            bail_keyrx!(
+                DRIVER_DEVICE_DISCONNECTED,
+                device = "keyboard hook (stopped by emergency exit or manual stop)"
+            );
         }
 
         let mut events = Vec::new();

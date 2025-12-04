@@ -5,9 +5,9 @@
 //! allowing expensive validation to be compiled out in release builds.
 
 use super::invariant::{Invariant, InvariantViolation};
-use super::invariants::{
-    KeyTimestampsMonotonic, LayerStackNotEmpty, NoOrphanedModifiers, PendingQueueBounds,
-};
+#[cfg(debug_assertions)]
+use super::invariants::KeyTimestampsMonotonic;
+use super::invariants::{LayerStackNotEmpty, NoOrphanedModifiers, PendingQueueBounds};
 use std::sync::Arc;
 
 /// Result of state validation.
@@ -66,20 +66,15 @@ impl StateValidator {
     /// - PendingQueueBounds (release)
     /// - KeyTimestampsMonotonic (debug-only)
     pub fn new() -> Self {
-        let mut release_invariants: Vec<Arc<dyn Invariant>> = Vec::new();
-        #[cfg(debug_assertions)]
-        let mut debug_invariants: Vec<Arc<dyn Invariant>> = Vec::new();
+        let release_invariants: Vec<Arc<dyn Invariant>> = vec![
+            Arc::new(NoOrphanedModifiers),
+            Arc::new(LayerStackNotEmpty),
+            Arc::new(PendingQueueBounds),
+        ];
 
-        // Add release-mode invariants (always checked)
-        release_invariants.push(Arc::new(NoOrphanedModifiers));
-        release_invariants.push(Arc::new(LayerStackNotEmpty));
-        release_invariants.push(Arc::new(PendingQueueBounds));
-
-        // Add debug-only invariants
         #[cfg(debug_assertions)]
-        {
-            debug_invariants.push(Arc::new(KeyTimestampsMonotonic::new()));
-        }
+        let debug_invariants: Vec<Arc<dyn Invariant>> =
+            vec![Arc::new(KeyTimestampsMonotonic::new())];
 
         Self {
             release_invariants,

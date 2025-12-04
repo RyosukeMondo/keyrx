@@ -389,27 +389,21 @@ mod tests {
         DiscoverySummary, DuplicateWarning, ExpectedPosition, SessionStatus,
     };
     use crate::discovery::types::{DeviceId, PhysicalKey};
+    use crate::engine::state::EngineState;
     use crate::engine::{
-        DecisionType, EngineState, EventRecord, InputEvent, KeyCode, LayerStack, ModifierState,
-        OutputAction, TimingConfig,
+        DecisionType, EventRecord, InputEvent, KeyCode, ModifierState, OutputAction, TimingConfig,
     };
     use std::collections::HashMap;
 
     fn make_test_session() -> SessionFile {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        let initial_state = EngineState::new(TimingConfig::default());
+        let initial_snapshot = (&initial_state).into();
 
         let mut session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
             Some("/path/to/script.rhai".to_string()),
             TimingConfig::default(),
-            initial_state,
+            initial_snapshot,
         );
 
         // Add several events to make it more realistic
@@ -537,20 +531,14 @@ mod tests {
     #[test]
     fn test_session_file_streamer_large_data() {
         // Create a session with many events to test chunking
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        let initial_state = EngineState::new(TimingConfig::default());
+        let initial_snapshot = (&initial_state).into();
 
         let mut session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
             None,
             TimingConfig::default(),
-            initial_state,
+            initial_snapshot,
         );
 
         // Add 1000 events (~500KB when serialized)
@@ -627,20 +615,14 @@ mod tests {
 
     #[test]
     fn test_empty_session() {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        let initial_state = EngineState::new(TimingConfig::default());
+        let initial_snapshot = (&initial_state).into();
 
         let session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
             None,
             TimingConfig::default(),
-            initial_state,
+            initial_snapshot,
         );
 
         let streamer = SessionFileStreamer::new(session);

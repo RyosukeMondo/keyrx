@@ -4,7 +4,7 @@ use crate::cli::OutputWriter;
 use crate::engine::{AdvancedEngine, LayerAction, RemapAction};
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use std::path::PathBuf;
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
@@ -44,11 +44,12 @@ impl<'a> RuntimeBuilder<'a> {
             .with_current_span(true)
             .with_span_list(true);
 
-        tracing_subscriber::registry()
+        // Try to initialize, but ignore error if already initialized
+        // (main function may have already set up tracing)
+        let _ = tracing_subscriber::registry()
             .with(env_filter)
             .with(fmt_layer)
-            .try_init()
-            .map_err(|e| anyhow!("failed to initialize tracing subscriber: {e}"))?;
+            .try_init();
 
         debug!(
             service = "keyrx",

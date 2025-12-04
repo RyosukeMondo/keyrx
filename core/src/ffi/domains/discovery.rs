@@ -381,7 +381,7 @@ pub fn cancel_discovery() -> FfiResult<i32> {
 /// Discovery progress result for FFI.
 #[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
 #[ffi(strategy = "json")]
-struct DiscoveryProgressResult {
+pub struct DiscoveryProgressResult {
     captured: usize,
     total: usize,
     #[serde(skip_serializing_if = "Option::is_none")]

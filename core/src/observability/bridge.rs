@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_field_visitor() {
-        let mut visitor = FieldVisitor::new();
+        let visitor = FieldVisitor::new();
 
         // We can't easily test the visitor without a real tracing event,
         // but we can verify it's created correctly
