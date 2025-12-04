@@ -98,7 +98,7 @@
 
 ## Phase 3: Testing Infrastructure
 
-- [ ] 10. Create MockKeyrxFacade
+- [x] 10. Create MockKeyrxFacade
   - File: `ui/test/mocks/mock_keyrx_facade.dart`
   - Implement KeyrxFacade with mockito
   - Add default stubbing for common operations
