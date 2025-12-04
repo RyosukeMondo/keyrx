@@ -116,7 +116,7 @@
 
 ## Phase 5: Safe Mode Enforcement
 
-- [ ] 13. Implement ScriptMode switching
+- [x] 13. Implement ScriptMode switching
   - File: `core/src/scripting/sandbox/mod.rs`
   - Safe/Standard/Full mode switching
   - Enforce tier restrictions
