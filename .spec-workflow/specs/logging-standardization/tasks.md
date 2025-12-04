@@ -59,7 +59,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Replace println in CLI with tracing | Restrictions: User output stays println, rest tracing | _Leverage: Logging macros | Success: CLI uses structured logging | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Replace println in engine
+- [x] 7. Replace println in engine
   - Files: `core/src/engine/*.rs`
   - Replace all debug println with tracing
   - Add structured fields
