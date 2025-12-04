@@ -10,7 +10,7 @@ import '../ffi/bridge.dart';
 import '../models/validation.dart' as validation_models;
 import '../widgets/common/styled_icon_button.dart';
 import '../widgets/common/styled_text_field.dart';
-import '../widgets/layer_panel.dart';
+import '../widgets/editor/layer_panel.dart';
 
 /// Types of key actions available in the editor.
 enum KeyActionType { remap, block, pass }

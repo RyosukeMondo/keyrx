@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/config.dart';
 import '../services/engine_service.dart';
 import '../services/error_translator.dart';
-import '../widgets/layer_panel.dart';
+import '../widgets/editor/layer_panel.dart';
 
 /// Global application state.
 class AppState extends ChangeNotifier {
