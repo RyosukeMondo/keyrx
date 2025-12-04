@@ -41,6 +41,7 @@ pub mod collector;
 pub mod full_collector;
 pub mod latency;
 pub mod memory;
+pub mod noop_collector;
 pub mod operation;
 pub mod profile;
 
@@ -49,5 +50,6 @@ pub use collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
 pub use full_collector::FullMetricsCollector;
 pub use latency::LatencyHistogram;
 pub use memory::{MemoryMonitor, MemoryStats};
+pub use noop_collector::NoOpCollector;
 pub use operation::Operation;
 pub use profile::{ProfilePointGuard, ProfilePoints, ProfileStats};

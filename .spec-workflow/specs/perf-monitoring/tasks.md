@@ -49,7 +49,7 @@
   - _Requirements: 1.1, 2.1, 3.1_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating collector | Task: Implement FullMetricsCollector combining all components | Restrictions: Thread-safe, bounded memory, < 1us overhead | _Leverage: All components | Success: Full metrics work, low overhead | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Implement NoOpCollector
+- [x] 6. Implement NoOpCollector
   - File: `core/src/metrics/noop_collector.rs`
   - Zero-cost implementation for release
   - All methods compile to nothing
