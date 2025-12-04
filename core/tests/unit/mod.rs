@@ -2,5 +2,6 @@
 //!
 //! This module organizes unit tests by component.
 
+pub mod engine;
 pub mod metrics;
 pub mod observability;

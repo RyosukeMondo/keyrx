@@ -155,7 +155,7 @@
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer consolidating | Task: Extract common SessionState for recording/replay | Restrictions: Composition over inheritance | _Leverage: Plan | Success: Shared session state | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add state transition tests
+- [x] 17. Add state transition tests
   - File: `core/tests/unit/engine/state_transitions_test.rs`
   - Test all valid transitions
   - Test invalid transition rejection
