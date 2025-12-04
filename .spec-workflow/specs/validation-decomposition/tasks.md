@@ -139,7 +139,7 @@
   - _Requirements: Non-functional (reliability)_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Developer | Task: Verify all validation behavior preserved through full test suite | Restrictions: No behavior changes, same outputs, same error messages | _Leverage: Full test suite, integration tests | Success: All tests pass, no regressions detected | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Add detector documentation
+- [x] 15. Add detector documentation
   - File: `docs/validation-architecture.md`
   - Document detector pattern
   - Explain how to add new detectors
