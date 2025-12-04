@@ -61,6 +61,7 @@ tempfile.workspace = true
 serial_test.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
+fastrand.workspace = true
 
 [[bench]]
 name = "latency"
@@ -72,6 +73,10 @@ harness = false
 
 [[bench]]
 name = "metrics_bench"
+harness = false
+
+[[bench]]
+name = "keymap_cache_bench"
 harness = false
 
 [target.'cfg(windows)'.dependencies]

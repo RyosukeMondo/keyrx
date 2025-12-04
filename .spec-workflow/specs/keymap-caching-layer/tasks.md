@@ -34,7 +34,7 @@
 
 ## Phase 3: Validation
 
-- [ ] 5. Add cache benchmarks and metrics
+- [x] 5. Add cache benchmarks and metrics
   - File: `core/benches/keymap_cache_bench.rs`
   - Measure hit rate under load
   - Verify latency improvement
