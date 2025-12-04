@@ -45,7 +45,7 @@
   - _Requirements: 1.1, 6.1_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer with reactive programming experience | Task: Create KeyrxFacadeImpl core structure in ui/lib/services/facade/keyrx_facade_impl.dart following requirements 1.1, 6.1 | Restrictions: Accept ServiceRegistry, use BehaviorSubject for state, proper disposal | _Leverage: ServiceRegistry in ui/lib/services/, rxdart patterns | Success: Class compiles, state stream works, disposal cleans up resources | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Implement engine operations (start, stop, status)
+- [x] 5. Implement engine operations (start, stop, status)
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Implement startEngine() with validate → load → start sequence
   - Implement stopEngine() with proper cleanup

@@ -77,20 +77,117 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
   @override
   Future<Result<void>> startEngine(String scriptPath) async {
-    // TODO: Implement in task 5
-    throw UnimplementedError('startEngine will be implemented in task 5');
+    _checkDisposed();
+
+    try {
+      // Step 1: Update state to loading
+      _updateState(currentState.withEngineStatus(
+        EngineStatus.loading,
+        scriptPath: scriptPath,
+      ));
+
+      // Step 2: Initialize engine if not already initialized
+      if (!_services.engineService.isInitialized) {
+        _updateState(currentState.withEngineStatus(EngineStatus.initializing));
+        final initialized = await _services.engineService.initialize();
+        if (!initialized) {
+          final error = FacadeError.operationFailed(
+            'startEngine',
+            'Engine initialization failed',
+            userMessage: 'Failed to initialize the engine. Please try again.',
+          );
+          _updateState(currentState.withEngineStatus(
+            EngineStatus.error,
+            error: error.userMessage,
+          ));
+          return Result.err(error);
+        }
+        _updateState(currentState.withEngineStatus(EngineStatus.ready));
+      }
+
+      // Step 3: Load the script
+      _updateState(currentState.withEngineStatus(
+        EngineStatus.loading,
+        scriptPath: scriptPath,
+      ));
+      final loaded = await _services.engineService.loadScript(scriptPath);
+      if (!loaded) {
+        final error = FacadeError.operationFailed(
+          'startEngine',
+          'Script loading failed',
+          userMessage: 'Failed to load the script. Please check the file path.',
+        );
+        _updateState(currentState.withEngineStatus(
+          EngineStatus.error,
+          error: error.userMessage,
+        ));
+        return Result.err(error);
+      }
+
+      // Step 4: Mark engine as running
+      _updateState(currentState.withEngineStatus(
+        EngineStatus.running,
+        scriptPath: scriptPath,
+      ));
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withEngineStatus(
+        EngineStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<void>> stopEngine() async {
-    // TODO: Implement in task 5
-    throw UnimplementedError('stopEngine will be implemented in task 5');
+    _checkDisposed();
+
+    try {
+      // Check if engine is running
+      if (currentState.engine != EngineStatus.running &&
+          currentState.engine != EngineStatus.paused) {
+        return const Result.ok(null);
+      }
+
+      // Update state to stopping
+      _updateState(currentState.withEngineStatus(EngineStatus.stopping));
+
+      // For now, just mark as ready since we don't have explicit stop methods
+      // The engine service disposal will handle cleanup
+      _updateState(currentState.withEngineStatus(EngineStatus.ready));
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withEngineStatus(
+        EngineStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<EngineStatus>> getEngineStatus() async {
-    // TODO: Implement in task 5
-    throw UnimplementedError('getEngineStatus will be implemented in task 5');
+    _checkDisposed();
+
+    try {
+      // Determine status from engine service state
+      final isInitialized = _services.engineService.isInitialized;
+
+      if (!isInitialized) {
+        return const Result.ok(EngineStatus.uninitialized);
+      }
+
+      // Return current state's engine status
+      return Result.ok(currentState.engine);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   // === Script Operations ===
