@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 52dee57ec4a440dde6e058e913480b25cc0b9d77bde9ef2d085cced9c84b273f # shrinks to config = ResourceConfig { max_instructions: 0, max_recursion: 0, max_memory: 0, timeout: 1ns }, increments = [18446744073709551615, 1]
+cc abd96f8d87bdb35b0592b51140b5c749cba2337fb5ab23a4c1a3be87c042c3eb # shrinks to config = ResourceConfig { max_instructions: 0, max_recursion: 0, max_memory: 0, timeout: 1ns }, thread_count = 2

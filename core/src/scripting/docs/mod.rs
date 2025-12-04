@@ -3,6 +3,7 @@
 //! This module provides automatic documentation extraction and generation
 //! for Rhai functions and types exposed to scripts.
 
+pub mod registry;
 pub mod types;
 
 pub use types::{

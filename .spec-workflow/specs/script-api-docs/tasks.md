@@ -11,7 +11,7 @@
   - _Requirements: 1.1, 2.1_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create documentation types (FunctionDoc, TypeDoc, etc.) | Restrictions: Serializable, comprehensive fields | _Leverage: serde | Success: Types capture all doc info | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create DocRegistry
+- [-] 2. Create DocRegistry
   - File: `core/src/scripting/docs/registry.rs`
   - Static registry for documentation
   - Registration and lookup methods
