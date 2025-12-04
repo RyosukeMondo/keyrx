@@ -7,6 +7,9 @@ pub mod registry;
 pub mod search;
 pub mod types;
 
+#[cfg(test)]
+mod test_example;
+
 pub use types::{
     FunctionDoc, FunctionSignature, ModuleDoc, ParamDoc, PropertyDoc, ReturnDoc, SearchResult,
     SearchResultKind, TypeDoc,
