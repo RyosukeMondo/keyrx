@@ -9,6 +9,7 @@
 pub mod config;
 pub mod conflicts;
 pub mod coverage;
+pub mod detectors;
 pub mod engine;
 pub mod safety;
 pub mod semantic;

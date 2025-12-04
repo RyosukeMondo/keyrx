@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure
 
-- [ ] 1. Create Detector trait and common types
+- [x] 1. Create Detector trait and common types
   - File: `core/src/validation/detectors/mod.rs`
   - Define `Detector` trait with name(), detect(), is_skippable()
   - Create `DetectorContext`, `DetectorResult`, `DetectorStats` types
