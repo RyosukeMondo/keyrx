@@ -136,7 +136,7 @@
   - _Requirements: 4.3_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating widgets | Task: Create MetricsDashboard widget | Restrictions: Efficient rendering, real-time updates | _Leverage: Flutter charts | Success: Metrics displayed visually | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Add metrics to debug page
+- [x] 15. Add metrics to debug page
   - File: `ui/lib/pages/debug_page.dart`
   - Integrate MetricsWidget
   - Add export functionality
