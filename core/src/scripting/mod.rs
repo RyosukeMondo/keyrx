@@ -5,6 +5,7 @@
 //! - `context`: Injectable runtime context replacing global state
 //! - `bindings`: Rhai function registrations (remap, layer, modifier, timing)
 //! - `builtins`: Helper types and utility functions
+//! - `docs`: API documentation types and generation
 //! - `registry`: Remap registry for storing key mappings
 //! - `helpers`: Key parsing and validation utilities
 //! - `test_harness`: Test harness and context for Rhai script testing
@@ -15,6 +16,7 @@
 mod bindings;
 mod builtins;
 pub mod context;
+pub mod docs;
 pub mod helpers;
 mod pending_ops;
 mod registry;

@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create documentation types
+- [x] 1. Create documentation types
   - File: `core/src/scripting/docs/types.rs`
   - Define FunctionDoc, TypeDoc, ParamDoc
   - Add Serialize derives
