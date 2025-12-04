@@ -30,7 +30,7 @@ mixin BridgeTestingMixin {
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = discoverFn(pathPtr);
+      ptr = discoverFn(pathPtr.cast<Char>());
       if (ptr == nullptr) {
         return TestDiscoveryResult.error('discoverTests returned null');
       }
@@ -63,7 +63,7 @@ mixin BridgeTestingMixin {
     final filterPtr = filter?.toNativeUtf8() ?? nullptr;
     Pointer<Char>? ptr;
     try {
-      ptr = runFn(pathPtr, filterPtr);
+      ptr = runFn(pathPtr.cast<Char>(), filterPtr.cast<Char>());
       if (ptr == nullptr) {
         return TestRunResult.error('runTests returned null');
       }
@@ -106,7 +106,7 @@ mixin BridgeTestingMixin {
     final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
     Pointer<Char>? ptr;
     try {
-      ptr = simFn(keysPtr, scriptPtr, comboMode);
+      ptr = simFn(keysPtr.cast<Char>(), scriptPtr.cast<Char>(), comboMode);
       if (ptr == nullptr) {
         return SimulationResult.error('simulate returned null');
       }
@@ -138,7 +138,7 @@ mixin BridgeTestingMixin {
     final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
     Pointer<Char>? ptr;
     try {
-      ptr = benchFn(iterations, scriptPtr);
+      ptr = benchFn(iterations, scriptPtr.cast<Char>());
       if (ptr == nullptr) {
         return BenchmarkResult.error('runBenchmark returned null');
       }

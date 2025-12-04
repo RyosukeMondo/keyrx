@@ -174,7 +174,7 @@ mixin BridgeDiscoveryMixin {
 
     final pathPtr = path.toNativeUtf8();
     try {
-      return selectFn(pathPtr);
+      return selectFn(pathPtr.cast<Char>());
     } finally {
       calloc.free(pathPtr);
     }
@@ -200,7 +200,7 @@ mixin BridgeDiscoveryMixin {
     final colsPtr = colsJson.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = discoveryFn(devicePtr, rows, colsPtr);
+      ptr = discoveryFn(devicePtr.cast<Char>(), rows, colsPtr.cast<Char>());
       if (ptr == nullptr) {
         return DiscoveryStartResult.error('startDiscovery returned null');
       }

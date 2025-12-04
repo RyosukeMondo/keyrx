@@ -36,7 +36,7 @@ mixin BridgeValidationMixin {
     final scriptPtr = script.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = validateFn(scriptPtr);
+      ptr = validateFn(scriptPtr.cast<Char>());
       if (ptr == nullptr) {
         return ValidationResult.error('validateScript returned null');
       }
@@ -68,7 +68,7 @@ mixin BridgeValidationMixin {
     final optionsPtr = optionsJson.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = validateFn(scriptPtr, optionsPtr);
+      ptr = validateFn(scriptPtr.cast<Char>(), optionsPtr.cast<Char>());
       if (ptr == nullptr) {
         return ValidationResult.error(
             'validateScriptWithOptions returned null');
@@ -102,7 +102,7 @@ mixin BridgeValidationMixin {
     final partialPtr = partial.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = suggestFn(partialPtr);
+      ptr = suggestFn(partialPtr.cast<Char>());
       if (ptr == nullptr) {
         return const [];
       }

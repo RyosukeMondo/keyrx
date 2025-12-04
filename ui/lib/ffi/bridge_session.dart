@@ -28,7 +28,7 @@ mixin BridgeSessionMixin {
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = startFn(pathPtr);
+      ptr = startFn(pathPtr.cast<Char>());
       if (ptr == nullptr) {
         return RecordingStartResult.error('startRecording returned null');
       }
@@ -84,7 +84,7 @@ mixin BridgeSessionMixin {
     final dirPtr = dirPath.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = listFn(dirPtr);
+      ptr = listFn(dirPtr.cast<Char>());
       if (ptr == nullptr) {
         return SessionListResult.error('listSessions returned null');
       }
@@ -113,7 +113,7 @@ mixin BridgeSessionMixin {
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = analyzeFn(pathPtr);
+      ptr = analyzeFn(pathPtr.cast<Char>());
       if (ptr == nullptr) {
         return SessionAnalysisResult.error('analyzeSession returned null');
       }
@@ -142,7 +142,7 @@ mixin BridgeSessionMixin {
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = replayFn(pathPtr, verify);
+      ptr = replayFn(pathPtr.cast<Char>(), verify);
       if (ptr == nullptr) {
         return ReplayResult.error('replaySession returned null');
       }

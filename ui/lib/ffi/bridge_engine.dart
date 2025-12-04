@@ -220,7 +220,7 @@ mixin BridgeEngineMixin {
     if (bindings == null) return false;
     final pathPtr = path.toNativeUtf8();
     try {
-      final result = bindings!.loadScript(pathPtr);
+      final result = bindings!.loadScript(pathPtr.cast<Char>());
       return result == 0;
     } finally {
       calloc.free(pathPtr);
@@ -237,7 +237,7 @@ mixin BridgeEngineMixin {
     final cmdPtr = command.toNativeUtf8();
     Pointer<Char>? responsePtr;
     try {
-      responsePtr = evalFn(cmdPtr);
+      responsePtr = evalFn(cmdPtr.cast<Char>());
       if (responsePtr == nullptr) {
         return 'error: eval returned null';
       }
@@ -314,7 +314,7 @@ mixin BridgeEngineMixin {
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
     try {
-      ptr = checkFn(pathPtr);
+      ptr = checkFn(pathPtr.cast<Char>());
       if (ptr == nullptr) {
         return ScriptValidationResult.error('checkScript returned null');
       }
