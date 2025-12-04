@@ -2,7 +2,7 @@
 
 ## Phase 1: Foundation
 
-- [ ] 1. Create Result type and FacadeError
+- [x] 1. Create Result type and FacadeError
   - File: `ui/lib/services/facade/result.dart`
   - Define sealed `Result<T>` class with Ok and Err variants
   - Create `FacadeError` with code, message, userMessage fields

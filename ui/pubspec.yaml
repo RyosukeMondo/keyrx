@@ -50,6 +50,12 @@ dependencies:
   # Charts for trade-off visualization
   fl_chart: ^0.68.0
 
+  # Immutable data models
+  freezed_annotation: ^2.4.1
+
+  # Reactive streams
+  rxdart: ^0.28.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -58,6 +64,11 @@ dev_dependencies:
     sdk: flutter
 
   mocktail: ^1.0.3
+
+  # Code generation for freezed
+  freezed: ^2.5.2
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
