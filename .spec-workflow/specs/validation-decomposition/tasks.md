@@ -11,7 +11,7 @@
   - _Requirements: 1.4, 2.4, 3.4_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with trait design expertise | Task: Create Detector trait and supporting types in core/src/validation/detectors/mod.rs | Restrictions: Trait must be object-safe, support Send+Sync, include timing stats | _Leverage: Rust trait patterns | Success: Trait compiles, types are ergonomic, supports async if needed | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create ValidationIssue and Severity types
+- [x] 2. Create ValidationIssue and Severity types
   - File: `core/src/validation/common/issue.rs`
   - Define `ValidationIssue` with severity, detector, message, locations
   - Create `Severity` enum (Error, Warning, Info)

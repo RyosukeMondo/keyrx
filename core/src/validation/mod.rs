@@ -6,6 +6,7 @@
 //! - Safety analysis (dangerous patterns, emergency exit protection)
 //! - Coverage reporting (which keys are affected)
 
+pub mod common;
 pub mod config;
 pub mod conflicts;
 pub mod coverage;
