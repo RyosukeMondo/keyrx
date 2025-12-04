@@ -31,7 +31,7 @@
 
 ## Phase 2: Macros and Helpers
 
-- [ ] 4. Create logging convenience macros
+- [x] 4. Create logging convenience macros
   - File: `core/src/observability/macros.rs`
   - log_event!, log_error!, timed_span!
   - Purpose: Easy structured logging

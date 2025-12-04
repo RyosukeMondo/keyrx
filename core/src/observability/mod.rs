@@ -6,6 +6,7 @@
 pub mod bridge;
 pub mod entry;
 pub mod logger;
+pub mod macros;
 
 // Re-export commonly used types
 pub use bridge::LogBridge;

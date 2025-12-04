@@ -148,7 +148,10 @@ impl syn::parse::Parse for Strategy {
             "auto" => Ok(Strategy::Auto),
             other => Err(Error::new_spanned(
                 value,
-                format!("unknown strategy '{}', expected 'json', 'c_struct', or 'auto'", other),
+                format!(
+                    "unknown strategy '{}', expected 'json', 'c_struct', or 'auto'",
+                    other
+                ),
             )),
         }
     }
@@ -257,7 +260,8 @@ fn generate_c_struct_strategy(input: &DeriveInput) -> Result<TokenStream> {
                 field_type,
                 "Unsupported field type for c_struct strategy. \
                  Use primitives, String with #[ffi(string_buffer = N)], \
-                 or switch to json strategy".to_string(),
+                 or switch to json strategy"
+                    .to_string(),
             ));
         }
     }
@@ -359,9 +363,19 @@ fn is_primitive_type(ty: &syn::Type) -> bool {
             if let Some(segment) = type_path.path.segments.last() {
                 matches!(
                     segment.ident.to_string().as_str(),
-                    "u8" | "u16" | "u32" | "u64" | "u128" | "usize"
-                        | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"
-                        | "f32" | "f64"
+                    "u8" | "u16"
+                        | "u32"
+                        | "u64"
+                        | "u128"
+                        | "usize"
+                        | "i8"
+                        | "i16"
+                        | "i32"
+                        | "i64"
+                        | "i128"
+                        | "isize"
+                        | "f32"
+                        | "f64"
                         | "bool"
                 )
             } else {
@@ -485,7 +499,9 @@ mod tests {
 
     #[test]
     fn test_is_primitive_type() {
-        let primitives = vec!["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "f32", "f64", "bool"];
+        let primitives = vec![
+            "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "f32", "f64", "bool",
+        ];
 
         for prim in primitives {
             let ty: syn::Type = syn::parse_str(prim).unwrap();
