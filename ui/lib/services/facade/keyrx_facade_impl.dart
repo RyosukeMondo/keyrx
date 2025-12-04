@@ -194,20 +194,133 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
   @override
   Future<Result<ScriptValidationResult>> validateScript(String scriptPath) async {
-    // TODO: Implement in task 6
-    throw UnimplementedError('validateScript will be implemented in task 6');
+    _checkDisposed();
+
+    try {
+      // Update state to validating
+      _updateState(currentState.withValidationStatus(ValidationStatus.validating));
+
+      // Step 1: Load script content
+      final content = await _services.scriptFileService.loadScript(scriptPath);
+      if (content == null) {
+        final error = FacadeError.operationFailed(
+          'validateScript',
+          'Script file not found or cannot be read',
+          userMessage: 'Could not read the script file. Please check the file path.',
+        );
+        _updateState(currentState.withValidationStatus(
+          ValidationStatus.none,
+          error: error.userMessage,
+        ));
+        return Result.err(error);
+      }
+
+      // Step 2: Validate using the bridge
+      final validationResult = _services.bridge.validateScript(content);
+
+      // Step 3: Convert FFI ValidationResult to facade ScriptValidationResult
+      final facadeResult = ScriptValidationResult(
+        isValid: validationResult.isValid,
+        errors: validationResult.errors
+            .map((e) => ValidationIssue(
+                  message: e.message,
+                  line: e.location?.line,
+                  column: e.location?.column,
+                  severity: IssueSeverity.error,
+                ))
+            .toList(),
+        warnings: validationResult.warnings
+            .map((w) => ValidationIssue(
+                  message: w.message,
+                  line: w.location?.line,
+                  column: w.location?.column,
+                  severity: IssueSeverity.warning,
+                ))
+            .toList(),
+        suggestions: validationResult.errors
+            .where((e) => e.hasSuggestions)
+            .expand((e) => e.suggestions)
+            .toList(),
+      );
+
+      // Step 4: Update validation state based on result
+      if (validationResult.isValid) {
+        if (validationResult.hasWarnings) {
+          _updateState(currentState.withValidationStatus(
+            ValidationStatus.validWithWarnings,
+            errorCount: 0,
+            warningCount: validationResult.warnings.length,
+          ));
+        } else {
+          _updateState(currentState.withValidationStatus(
+            ValidationStatus.valid,
+            errorCount: 0,
+            warningCount: 0,
+          ));
+        }
+      } else {
+        _updateState(currentState.withValidationStatus(
+          ValidationStatus.invalid,
+          errorCount: validationResult.errors.length,
+          warningCount: validationResult.warnings.length,
+        ));
+      }
+
+      return Result.ok(facadeResult);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withValidationStatus(
+        ValidationStatus.none,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<String>> loadScriptContent(String path) async {
-    // TODO: Implement in task 6
-    throw UnimplementedError('loadScriptContent will be implemented in task 6');
+    _checkDisposed();
+
+    try {
+      final content = await _services.scriptFileService.loadScript(path);
+
+      if (content == null) {
+        final error = FacadeError.operationFailed(
+          'loadScriptContent',
+          'Script file not found',
+          userMessage: 'Could not find the script file at the specified path.',
+        );
+        return Result.err(error);
+      }
+
+      return Result.ok(content);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<void>> saveScript(String path, String content) async {
-    // TODO: Implement in task 6
-    throw UnimplementedError('saveScript will be implemented in task 6');
+    _checkDisposed();
+
+    try {
+      final result = await _services.scriptFileService.saveScript(path, content);
+
+      if (!result.success) {
+        final error = FacadeError.operationFailed(
+          'saveScript',
+          result.errorMessage ?? 'Unknown error',
+          userMessage: 'Failed to save the script. ${result.errorMessage ?? "Please try again."}',
+        );
+        return Result.err(error);
+      }
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   // === Device Operations ===

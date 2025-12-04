@@ -11,6 +11,7 @@ import 'error_translator.dart';
 import 'error_translator_impl.dart';
 import 'permission_service.dart';
 import 'permission_service_impl.dart';
+import 'script_file_service.dart';
 import 'test_service.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
@@ -22,6 +23,7 @@ class ServiceRegistry {
     required this.engineService,
     required this.mappingRepository,
     required this.deviceService,
+    required this.scriptFileService,
     required this.testService,
     required this.bridge,
   });
@@ -35,6 +37,7 @@ class ServiceRegistry {
     PermissionService? permissionService,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    ScriptFileService? scriptFileService,
     TestService? testService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
@@ -44,6 +47,7 @@ class ServiceRegistry {
     final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
+    final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
     final mappedClassificationSource =
         classificationSource ??
@@ -69,6 +73,7 @@ class ServiceRegistry {
       engineService: engine,
       mappingRepository: mappingRepository ?? MappingRepository(),
       deviceService: device,
+      scriptFileService: scriptFile,
       testService: tests,
       bridge: effectiveBridge,
     );
@@ -82,6 +87,7 @@ class ServiceRegistry {
     required EngineService engineService,
     required MappingRepository mappingRepository,
     required DeviceService deviceService,
+    required ScriptFileService scriptFileService,
     required TestService testService,
     required KeyrxBridge bridge,
   }) {
@@ -92,6 +98,7 @@ class ServiceRegistry {
       engineService: engineService,
       mappingRepository: mappingRepository,
       deviceService: deviceService,
+      scriptFileService: scriptFileService,
       testService: testService,
       bridge: bridge,
     );
@@ -103,6 +110,7 @@ class ServiceRegistry {
   final EngineService engineService;
   final MappingRepository mappingRepository;
   final DeviceService deviceService;
+  final ScriptFileService scriptFileService;
   final TestService testService;
   final KeyrxBridge bridge;
 
@@ -114,6 +122,7 @@ class ServiceRegistry {
     EngineService? engineService,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    ScriptFileService? scriptFileService,
     TestService? testService,
     KeyrxBridge? bridge,
   }) {
@@ -124,6 +133,7 @@ class ServiceRegistry {
       engineService: engineService ?? this.engineService,
       mappingRepository: mappingRepository ?? this.mappingRepository,
       deviceService: deviceService ?? this.deviceService,
+      scriptFileService: scriptFileService ?? this.scriptFileService,
       testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
     );

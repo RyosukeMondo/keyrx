@@ -56,7 +56,7 @@
   - _Requirements: 4.1, 4.2, 4.3_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer implementing engine control | Task: Implement engine operations in KeyrxFacadeImpl following requirements 4.1-4.3 with proper sequencing | Restrictions: Validate before start, update state at each step, handle errors with rollback | _Leverage: EngineService in ui/lib/services/engine_service.dart | Success: Engine starts/stops correctly, state updates properly, errors handled gracefully | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Implement script operations (validate, load, save)
+- [x] 6. Implement script operations (validate, load, save)
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Implement validateScript() returning ValidationResult
   - Implement loadScript() and saveScript()
