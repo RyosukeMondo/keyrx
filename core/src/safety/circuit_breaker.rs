@@ -45,7 +45,7 @@ use crate::errors::critical::CriticalError;
 use crate::safety::panic_telemetry::{record_circuit_breaker_close, record_circuit_breaker_open};
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, RwLock};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// Configuration for circuit breaker behavior.
 #[derive(Debug, Clone)]
@@ -317,9 +317,11 @@ impl CircuitBreaker {
         self.state.store(State::Open as u8, Ordering::Release);
         self.success_count.store(0, Ordering::Release);
 
-        // Record when we opened
-        let now = Instant::now();
-        let nanos = now.elapsed().as_nanos() as u64;
+        // Record when we opened (store current time as nanos since UNIX_EPOCH)
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
         self.opened_at.store(nanos, Ordering::Release);
 
         // Store the error message
@@ -369,10 +371,18 @@ impl CircuitBreaker {
             return;
         }
 
-        // Calculate elapsed time (note: this is a simplification, in production
-        // you'd want to store an actual timestamp)
-        let now = Instant::now();
-        let elapsed = Duration::from_nanos(now.elapsed().as_nanos() as u64 - opened_at);
+        // Calculate elapsed time since circuit opened
+        let now_nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+
+        if now_nanos < opened_at {
+            // Clock went backwards, reset
+            return;
+        }
+
+        let elapsed = Duration::from_nanos(now_nanos - opened_at);
 
         if elapsed >= self.config.timeout {
             // Transition to half-open

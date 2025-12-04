@@ -147,7 +147,7 @@
 
 ## Phase 6: Testing and Verification
 
-- [ ] 16. Add panic injection tests
+- [x] 16. Add panic injection tests
   - File: `core/tests/panic_recovery_test.rs`
   - Inject panics at various points
   - Verify recovery and logging
