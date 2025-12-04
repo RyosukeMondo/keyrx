@@ -11,7 +11,7 @@
   - _Requirements: 1.1, Non-functional (modularity)_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating metrics system | Task: Create metrics module with MetricsCollector trait | Restrictions: Trait must be Send+Sync, zero-cost abstraction | _Leverage: Trait patterns | Success: Trait defined, compiles | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Implement LatencyHistogram
+- [x] 2. Implement LatencyHistogram
   - File: `core/src/metrics/latency.rs`
   - Use hdrhistogram for percentile tracking
   - Add threshold-based warnings

@@ -38,8 +38,10 @@
 //! ```
 
 pub mod collector;
+pub mod latency;
 pub mod operation;
 
 // Re-export commonly used types
 pub use collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
+pub use latency::LatencyHistogram;
 pub use operation::Operation;

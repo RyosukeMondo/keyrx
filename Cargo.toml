@@ -40,6 +40,7 @@ chrono = { version = "0.4", features = ["serde", "clock"] }
 smallvec = "1"
 rand = "0.9"
 dashmap = "6.1"
+hdrhistogram = "7.5"
 
 # File watching
 notify = "6.0"
