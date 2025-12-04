@@ -2,14 +2,14 @@
 
 ## Phase 1: Core Cache
 
-- [ ] 1. Create KeymapCache trait
+- [x] 1. Create KeymapCache trait
   - File: `core/src/drivers/common/cache.rs`
   - Define cache interface with get/insert/invalidate
   - Add CacheStats type
   - Purpose: Platform-agnostic cache interface
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. Implement LruKeymapCache
+- [-] 2. Implement LruKeymapCache
   - File: `core/src/drivers/common/cache.rs`
   - Use lru crate for LRU eviction
   - Thread-safe with Mutex

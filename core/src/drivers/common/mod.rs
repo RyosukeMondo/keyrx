@@ -1,5 +1,6 @@
 //! Common types and utilities shared across platform-specific drivers.
 
+pub mod cache;
 pub mod error;
 pub mod recovery;
 mod types;
