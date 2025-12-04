@@ -8,19 +8,23 @@ import 'package:provider/provider.dart';
 
 import 'helpers/fake_services.dart';
 
+ServiceRegistry _buildRegistry(FakeEngineService engine) {
+  return ServiceRegistry.withOverrides(
+    errorTranslator: FakeErrorTranslator(),
+    engineService: engine,
+    mappingRepository: MappingRepository(),
+    deviceService: FakeDeviceService(),
+    scriptFileService: FakeScriptFileService(),
+    testService: FakeTestService(),
+    bridge: FakeBridge(),
+    apiDocsService: FakeApiDocsService(),
+  );
+}
+
 void main() {
   testWidgets('Debugger renders incoming engine state', (tester) async {
     final fakeEngine = FakeEngineService();
-    final registry = ServiceRegistry.withOverrides(
-      permissionService: FakePermissionService(),
-      audioService: FakeAudioService(),
-      errorTranslator: FakeErrorTranslator(),
-      engineService: fakeEngine,
-      mappingRepository: MappingRepository(),
-      deviceService: FakeDeviceService(),
-      testService: FakeTestService(),
-      bridge: FakeBridge(),
-    );
+    final registry = _buildRegistry(fakeEngine);
 
     await tester.pumpWidget(
       MultiProvider(
@@ -65,16 +69,7 @@ void main() {
 
   testWidgets('Debugger shows timing and pending decisions with latency timeline', (tester) async {
     final fakeEngine = FakeEngineService();
-    final registry = ServiceRegistry.withOverrides(
-      permissionService: FakePermissionService(),
-      audioService: FakeAudioService(),
-      errorTranslator: FakeErrorTranslator(),
-      engineService: fakeEngine,
-      mappingRepository: MappingRepository(),
-      deviceService: FakeDeviceService(),
-      testService: FakeTestService(),
-      bridge: FakeBridge(),
-    );
+    final registry = _buildRegistry(fakeEngine);
 
     await tester.pumpWidget(
       MultiProvider(
@@ -117,16 +112,7 @@ void main() {
   group('State stream subscription', () {
     testWidgets('subscribes to state stream on init', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -161,16 +147,7 @@ void main() {
 
     testWidgets('updates UI on new state snapshots', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -217,16 +194,7 @@ void main() {
   group('Latency meter', () {
     testWidgets('displays latency value correctly', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -255,16 +223,7 @@ void main() {
 
     testWidgets('shows caution for medium latency', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -293,16 +252,7 @@ void main() {
 
     testWidgets('shows warning for high latency', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -331,16 +281,7 @@ void main() {
 
     testWidgets('updates on latency change', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -382,16 +323,7 @@ void main() {
 
     testWidgets('shows waiting state when no latency', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -409,16 +341,7 @@ void main() {
   group('Pending tap-hold countdown', () {
     testWidgets('shows countdown timer for tap-hold decisions', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -451,16 +374,7 @@ void main() {
 
     testWidgets('countdown progress decreases over time', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -503,16 +417,7 @@ void main() {
 
     testWidgets('categorizes taphold and hold keywords correctly', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -543,16 +448,7 @@ void main() {
   group('Combo key highlighting', () {
     testWidgets('extracts and displays combo keys from plus notation', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -584,16 +480,7 @@ void main() {
 
     testWidgets('extracts combo keys from bracket notation', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -623,16 +510,7 @@ void main() {
 
     testWidgets('combo keys have blue styling', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -661,16 +539,7 @@ void main() {
 
     testWidgets('differentiates combo from tap-hold decisions', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -706,16 +575,7 @@ void main() {
   group('Recording controls', () {
     testWidgets('pause button stops recording new events', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
@@ -760,16 +620,7 @@ void main() {
 
     testWidgets('clear button removes all logged events', (tester) async {
       final fakeEngine = FakeEngineService();
-      final registry = ServiceRegistry.withOverrides(
-        permissionService: FakePermissionService(),
-        audioService: FakeAudioService(),
-        errorTranslator: FakeErrorTranslator(),
-        engineService: fakeEngine,
-        mappingRepository: MappingRepository(),
-        deviceService: FakeDeviceService(),
-        testService: FakeTestService(),
-        bridge: FakeBridge(),
-      );
+      final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(

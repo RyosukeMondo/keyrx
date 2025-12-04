@@ -22,17 +22,6 @@ abstract class FfiFunctions {
   /// Free a string allocated by the native library.
   static const freeString = 'keyrx_free_string';
 
-  // Audio functions
-
-  /// Start audio metronome with BPM.
-  static const startAudio = 'keyrx_start_audio';
-
-  /// Stop audio metronome.
-  static const stopAudio = 'keyrx_stop_audio';
-
-  /// Set BPM for audio metronome.
-  static const setBpm = 'keyrx_set_bpm';
-
   // Engine control functions
 
   /// Evaluate a REPL command.
@@ -117,9 +106,6 @@ abstract class FfiFunctions {
 
   /// Register state change callback.
   static const onState = 'keyrx_on_state';
-
-  /// Register classification callback.
-  static const onClassification = 'keyrx_on_classification';
 }
 
 /// JSON response keys used in FFI responses.

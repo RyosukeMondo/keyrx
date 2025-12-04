@@ -9,7 +9,6 @@ import 'pages/console.dart';
 import 'pages/devices_page.dart';
 import 'pages/developer/test_runner_page.dart';
 import 'pages/run_controls_page.dart';
-import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
 import 'services/facade/keyrx_facade.dart';
@@ -61,7 +60,6 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry, KeyrxFacade facade) {
     return [
-      TrainingScreen(audioService: registry.audioService),
       EditorPage(
         facade: facade,
         mappingRepository: registry.mappingRepository,
@@ -75,11 +73,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   final List<NavigationDestination> _destinations = const [
-    NavigationDestination(
-      icon: Icon(Icons.graphic_eq_outlined),
-      selectedIcon: Icon(Icons.graphic_eq),
-      label: 'Training',
-    ),
     NavigationDestination(
       icon: Icon(Icons.edit_outlined),
       selectedIcon: Icon(Icons.edit),

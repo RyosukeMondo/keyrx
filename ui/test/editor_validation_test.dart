@@ -5,10 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/editor_page.dart';
 import 'package:keyrx_ui/pages/editor_widgets.dart';
-import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
-import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
@@ -78,8 +76,6 @@ void main() {
         await bridge.dispose();
       });
       final registry = ServiceRegistry.withOverrides(
-        permissionService: _FakePermissionService(),
-        audioService: _FakeAudioService(),
         errorTranslator: _FakeErrorTranslator(),
         engineService: engine,
         deviceService: FakeDeviceService(),
@@ -87,6 +83,7 @@ void main() {
         bridge: bridge,
         mappingRepository: MappingRepository(),
         scriptFileService: FakeScriptFileService(),
+        apiDocsService: FakeApiDocsService(),
       );
 
       final facade = KeyrxFacade.real(registry);
@@ -181,39 +178,6 @@ class _FakeEngineService implements EngineService {
   Future<void> dispose() async {
     await _stateController.close();
   }
-}
-
-class _FakeAudioService implements AudioService {
-  @override
-  AudioState get state => AudioState.idle;
-
-  @override
-  Stream<ClassificationResult> get classificationStream => const Stream.empty();
-
-  @override
-  Future<AudioOperationResult> start({required int bpm}) async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<AudioOperationResult> stop() async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<AudioOperationResult> setBpm(int bpm) async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<void> dispose() async {}
-}
-
-class _FakePermissionService implements PermissionService {
-  @override
-  Future<PermissionResult> checkMicrophone() async =>
-      const PermissionResult(state: PermissionState.granted);
-
-  @override
-  Future<PermissionResult> requestMicrophone() async =>
-      const PermissionResult(state: PermissionState.granted);
 }
 
 class _FakeErrorTranslator implements ErrorTranslator {

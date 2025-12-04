@@ -9,7 +9,6 @@ import 'dart:ffi';
 import 'dart:typed_data';
 
 import 'bindings.dart';
-import 'bridge_audio.dart';
 import 'bridge_core.dart';
 import 'bridge_discovery.dart';
 import 'bridge_engine.dart';
@@ -20,7 +19,6 @@ import 'event_types.dart';
 import 'generated/bindings_generated.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
-export 'bridge_audio.dart' show BridgeClassification;
 export 'bridge_discovery.dart'
     show DeviceListResult, DiscoveryStartResult, KeyboardDevice;
 export 'event_types.dart' show EventType;
@@ -71,7 +69,6 @@ export 'bridge_validation.dart'
 /// Composes FFI functionality from modular mixins:
 /// - [BridgeCoreMixin]: Initialization, version, disposal
 /// - [BridgeEngineMixin]: Script loading, evaluation, key registry, bypass
-/// - [BridgeAudioMixin]: Audio capture and classification streams
 /// - [BridgeSessionMixin]: Session recording, analysis, replay
 /// - [BridgeDiscoveryMixin]: Device listing and discovery
 /// - [BridgeTestingMixin]: Testing, simulation, benchmarks, diagnostics
@@ -80,7 +77,6 @@ class KeyrxBridge
     with
         BridgeCoreMixin,
         BridgeEngineMixin,
-        BridgeAudioMixin,
         BridgeSessionMixin,
         BridgeDiscoveryMixin,
         BridgeTestingMixin,
@@ -90,7 +86,6 @@ class KeyrxBridge
   KeyrxBindings? _bindings;
   bool _initialized = false;
   Object? _loadFailure;
-  StreamController<BridgeClassification>? _classificationController;
   StreamController<BridgeState>? _stateController;
 
   // Unified event callback handlers
@@ -100,7 +95,7 @@ class KeyrxBridge
       : _bindings = bindings,
         _loadFailure = loadFailure {
     if (_bindings != null) {
-      _setupClassificationStream();
+      _setupStateStream();
     }
     _currentInstance = this;
   }
@@ -132,17 +127,11 @@ class KeyrxBridge
   Object? get loadFailure => _loadFailure;
 
   @override
-  StreamController<BridgeClassification>? get classificationController =>
-      _classificationController;
-
-  @override
   StreamController<BridgeState>? get stateController => _stateController;
 
   /// Close any native resources and stop dispatching callbacks.
   Future<void> dispose() async {
     _currentInstance = null;
-    await _classificationController?.close();
-    _classificationController = null;
     await _stateController?.close();
     _stateController = null;
 
@@ -205,47 +194,17 @@ class KeyrxBridge
     return _eventHandlers.containsKey(eventType);
   }
 
-  void _setupClassificationStream() {
-    if (_bindings?.onClassification == null) {
+  void _setupStateStream() {
+    if (_bindings?.onState == null) {
       return;
     }
 
-    _classificationController ??=
-        StreamController<BridgeClassification>.broadcast();
-
-    _bindings!.onClassification!(
-      Pointer.fromFunction<KeyrxClassificationCallbackNative>(
-        _handleClassification,
+    _stateController ??= StreamController<BridgeState>.broadcast();
+    _bindings!.onState!(
+      Pointer.fromFunction<KeyrxStateCallbackNative>(
+        _handleState,
       ),
     );
-
-    if (_bindings?.onState != null) {
-      _stateController ??= StreamController<BridgeState>.broadcast();
-      _bindings!.onState!(
-        Pointer.fromFunction<KeyrxStateCallbackNative>(
-          _handleState,
-        ),
-      );
-    }
-  }
-
-  static void _handleClassification(Pointer<Uint8> ptr, int length) {
-    final instance = _currentInstance;
-    final controller = instance?._classificationController;
-    if (instance == null || controller == null || controller.isClosed) {
-      return;
-    }
-
-    try {
-      final bytes = ptr.asTypedList(length);
-      final classification =
-          BridgeAudioClassificationParser.parseClassificationPayload(bytes);
-      if (classification != null) {
-        controller.add(classification);
-      }
-    } catch (_) {
-      // Swallow malformed payloads to avoid crashing listeners.
-    }
   }
 
   static void _handleState(Pointer<Uint8> ptr, int length) {

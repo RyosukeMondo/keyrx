@@ -61,10 +61,8 @@ mixin BridgeCoreMixin {
 extension BridgeCoreDispose on BridgeCoreMixin {
   /// Close stream controllers and reset state.
   Future<void> disposeControllers(
-    StreamController<dynamic>? classificationController,
     StreamController<dynamic>? stateController,
   ) async {
-    await classificationController?.close();
     await stateController?.close();
   }
 }

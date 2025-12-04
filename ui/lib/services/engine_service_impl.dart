@@ -10,7 +10,6 @@ class EngineServiceImpl implements EngineService {
   final KeyrxBridge _bridge;
   final StreamController<EngineSnapshot> _stateController =
       StreamController<EngineSnapshot>.broadcast();
-  StreamSubscription<BridgeClassification>? _classificationSub;
   StreamSubscription<BridgeState>? _stateSub;
 
   @override
@@ -25,19 +24,6 @@ class EngineServiceImpl implements EngineService {
       return false;
     }
     final initialized = _bridge.initialize();
-
-    // Hook native streams when available so UI can react to live state.
-    if (initialized && _classificationSub == null) {
-      final stream = _bridge.classificationStream;
-      if (stream != null) {
-        _classificationSub = stream.listen((event) {
-          _emitSnapshot(
-            lastEvent:
-                '${event.label} (${(event.confidence * 100).toStringAsFixed(1)}%)',
-          );
-        });
-      }
-    }
 
     final stateStream = _bridge.stateStream;
     if (initialized && stateStream != null && _stateSub == null) {
@@ -123,7 +109,6 @@ class EngineServiceImpl implements EngineService {
 
   @override
   Future<void> dispose() async {
-    await _classificationSub?.cancel();
     await _stateSub?.cancel();
     await _bridge.dispose();
     await _stateController.close();

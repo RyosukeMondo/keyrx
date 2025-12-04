@@ -23,10 +23,6 @@ void main() {
       expect(TimingConfig.typingTimeLimitSec, equals(30));
     });
 
-    test('trainingAnimationMs has correct value', () {
-      expect(TimingConfig.trainingAnimationMs, equals(400));
-    });
-
     test('tooltipDelayMs has correct value', () {
       expect(TimingConfig.tooltipDelayMs, equals(150));
     });
@@ -37,7 +33,6 @@ void main() {
       expect(TimingConfig.debounceMs, greaterThan(0));
       expect(TimingConfig.keyAnimationMs, greaterThan(0));
       expect(TimingConfig.typingTimeLimitSec, greaterThan(0));
-      expect(TimingConfig.trainingAnimationMs, greaterThan(0));
       expect(TimingConfig.tooltipDelayMs, greaterThan(0));
     });
   });
@@ -96,19 +91,13 @@ void main() {
       expect(StorageKeys.developerModeKey, equals('developer_mode'));
     });
 
-    test('trainingProgressKey has correct value', () {
-      expect(StorageKeys.trainingProgressKey, equals('keyrx_training_progress'));
-    });
-
     test('storage keys are not empty', () {
       expect(StorageKeys.developerModeKey, isNotEmpty);
-      expect(StorageKeys.trainingProgressKey, isNotEmpty);
     });
 
     test('storage keys are unique', () {
       final keys = [
         StorageKeys.developerModeKey,
-        StorageKeys.trainingProgressKey,
       ];
       expect(keys.toSet().length, equals(keys.length));
     });

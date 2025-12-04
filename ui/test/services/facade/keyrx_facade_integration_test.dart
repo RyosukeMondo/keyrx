@@ -69,7 +69,6 @@ void main() {
     when(() => mockBridge.cancelDiscovery()).thenReturn(0);
 
     // Setup stream mocks - return null so services don't try to subscribe
-    when(() => mockBridge.classificationStream).thenReturn(null);
     when(() => mockBridge.stateStream).thenReturn(null);
 
     // Create registry with real services and mock bridge

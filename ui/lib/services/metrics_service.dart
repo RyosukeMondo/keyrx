@@ -328,10 +328,10 @@ class MetricsServiceImpl implements MetricsService {
 
     try {
       final result = bindings.metricsGetThresholds(
-        latencyWarn,
-        latencyError,
-        memoryWarn,
-        memoryError,
+        latencyWarn.cast<Void>(),
+        latencyError.cast<Void>(),
+        memoryWarn.cast<Void>(),
+        memoryError.cast<Void>(),
       );
 
       if (result != 0) {

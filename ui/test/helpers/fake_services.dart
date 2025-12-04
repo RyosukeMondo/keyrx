@@ -5,16 +5,15 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
-import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
-import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 
@@ -60,41 +59,6 @@ class FakeTestService implements TestService {
 
   @override
   Future<void> dispose() async {}
-}
-
-/// Fake AudioService that returns success for all operations.
-class FakeAudioService implements AudioService {
-  @override
-  AudioState get state => AudioState.idle;
-
-  @override
-  Stream<ClassificationResult> get classificationStream => const Stream.empty();
-
-  @override
-  Future<AudioOperationResult> start({required int bpm}) async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<AudioOperationResult> stop() async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<AudioOperationResult> setBpm(int bpm) async =>
-      const AudioOperationResult(success: true);
-
-  @override
-  Future<void> dispose() async {}
-}
-
-/// Fake PermissionService that always grants permissions.
-class FakePermissionService implements PermissionService {
-  @override
-  Future<PermissionResult> checkMicrophone() async =>
-      const PermissionResult(state: PermissionState.granted);
-
-  @override
-  Future<PermissionResult> requestMicrophone() async =>
-      const PermissionResult(state: PermissionState.granted);
 }
 
 /// Fake ErrorTranslator that returns generic error messages.
@@ -148,20 +112,14 @@ class FakeEngineService implements EngineService {
 /// This fake bridge does not load any native library and returns
 /// safe default values for all operations.
 class FakeBridge implements KeyrxBridge {
-  final StreamController<BridgeClassification> _classificationController =
-      StreamController<BridgeClassification>.broadcast();
   final StreamController<BridgeState> _stateController =
       StreamController<BridgeState>.broadcast();
 
   bool _initialized = true;
+  final Map<EventType, void Function(Uint8List)> _eventCallbacks = {};
 
-  // Mixin interface implementations - these are required by the mixins.
   @override
   KeyrxBindings? get bindings => null;
-
-  @override
-  StreamController<BridgeClassification>? get classificationController =>
-      _classificationController;
 
   @override
   StreamController<BridgeState>? get stateController => _stateController;
@@ -185,20 +143,12 @@ class FakeBridge implements KeyrxBridge {
   bool initialize() => true;
 
   @override
-  Stream<BridgeClassification>? get classificationStream =>
-      _classificationController.stream;
-
-  @override
   Stream<BridgeState>? get stateStream => _stateController.stream;
 
-  @override
-  Future<bool> startAudio({required int bpm}) async => true;
-
-  @override
-  Future<bool> stopAudio() async => true;
-
-  @override
-  Future<bool> setBpm(int bpm) async => true;
+  /// Emit a state snapshot to listeners.
+  void emitState(BridgeState state) {
+    _stateController.add(state);
+  }
 
   @override
   bool loadScript(String path) => true;
@@ -231,7 +181,13 @@ class FakeBridge implements KeyrxBridge {
 
   @override
   TestRunResult runTests(String path, {String? filter}) =>
-      const TestRunResult(total: 0, passed: 0, failed: 0, durationMs: 0, results: []);
+      const TestRunResult(
+        total: 0,
+        passed: 0,
+        failed: 0,
+        durationMs: 0,
+        results: [],
+      );
 
   @override
   SimulationResult simulate(
@@ -279,16 +235,6 @@ class FakeBridge implements KeyrxBridge {
   RecordingStopResult stopRecording() =>
       RecordingStopResult.error('Not implemented in fake');
 
-  /// Emit a classification event to listeners.
-  void emitClassification(BridgeClassification classification) {
-    _classificationController.add(classification);
-  }
-
-  /// Emit a state snapshot to listeners.
-  void emitState(BridgeState state) {
-    _stateController.add(state);
-  }
-
   @override
   ValidationResult validateScript(String script, [ValidationOptions? options]) =>
       const ValidationResult(isValid: true, errors: [], warnings: []);
@@ -300,17 +246,24 @@ class FakeBridge implements KeyrxBridge {
   List<String> allKeyNames() => const [];
 
   @override
-  bool get isEventCallbackRegistered => false;
+  bool isEventCallbackRegistered(EventType eventType) =>
+      _eventCallbacks.containsKey(eventType);
 
   @override
-  void registerEventCallback(void Function(String) callback) {}
+  bool registerEventCallback(
+    EventType eventType,
+    void Function(Uint8List jsonPayload) handler,
+  ) {
+    _eventCallbacks[eventType] = handler;
+    return true;
+  }
 
   @override
-  void unregisterEventCallback() {}
+  bool unregisterEventCallback(EventType eventType) =>
+      _eventCallbacks.remove(eventType) != null;
 
   @override
   Future<void> dispose() async {
-    await _classificationController.close();
     await _stateController.close();
   }
 }

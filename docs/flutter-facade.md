@@ -1024,6 +1024,6 @@ result.when(
 - Created KeyrxFacade with unified API over 19+ services
 - Implemented Result type for explicit error handling
 - Added FacadeState for aggregated state observation
-- Migrated 5 pages to use facade (EditorPage, DiscoveryPage, DebuggerPage, TradeOffVisualizerPage, KeyrxTrainingScreen)
+- Migrated 4 pages to use facade (EditorPage, DiscoveryPage, DebuggerPage, TradeOffVisualizerPage)
 - Achieved 90% test coverage
 - Reduced test setup code by 60% through MockKeyrxFacade

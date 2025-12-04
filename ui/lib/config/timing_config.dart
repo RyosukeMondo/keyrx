@@ -38,12 +38,6 @@ abstract final class TimingConfig {
   /// Duration allowed for the typing speed test simulation.
   static const int typingTimeLimitSec = 30;
 
-  /// Training screen animation duration (400ms).
-  ///
-  /// Slightly longer animation for training screen transitions
-  /// to provide a smoother, more deliberate feel.
-  static const int trainingAnimationMs = 400;
-
   /// Tooltip delay before showing (150ms).
   ///
   /// Used for keyboard key tooltips to prevent flickering

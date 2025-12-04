@@ -363,14 +363,16 @@ just ui            # Development mode
 just ui-build      # Production build
 ```
 
-### User Interface (4 Main Screens)
+### User Interface (Main Screens)
 
 | Screen | Description |
 |--------|-------------|
 | **Editor** | Visual script editor with syntax highlighting and validation |
 | **Devices** | Keyboard device selection and profile management |
 | **Run Controls** | Start/stop engine with recording toggle and status indicators |
-| **Training** | Typing pattern analysis for optimal tap-hold timeout |
+| **Debugger** | Real-time state visualization with layers, modifiers, pending decisions, and timing |
+| **Console** | Interactive REPL for Rhai commands |
+| **Timing** | Trade-off visualizer for tap-hold and combo tuning |
 
 ### Developer Tools
 

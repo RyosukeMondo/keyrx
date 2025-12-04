@@ -180,46 +180,67 @@ class _EditorPageState extends State<EditorPage> {
   Widget _buildConfigPanel() {
     final appState = context.watch<AppState>();
     final repo = widget.mappingRepository;
-    return Column(
-      children: [
-        KeyConfigPanel(
-          selectedKey: _selectedKey,
-          selectedAction: _selectedAction,
-          outputController: _outputController,
-          layerController: _layerController,
-          tapOutputController: _tapOutputController,
-          holdOutputController: _holdOutputController,
-          onActionChanged: (value) {
-            if (value == null) return;
-            setState(() => _selectedAction = value);
-          },
-          onApply: _applyMapping,
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: UiConstants.defaultPadding,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final configPanelHeight = availableHeight * 0.4;
+        final comboHeight = availableHeight * 0.3;
+        final listHeight = availableHeight - configPanelHeight - comboHeight;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: configPanelHeight),
+              child: SingleChildScrollView(
+                child: KeyConfigPanel(
+                  selectedKey: _selectedKey,
+                  selectedAction: _selectedAction,
+                  outputController: _outputController,
+                  layerController: _layerController,
+                  tapOutputController: _tapOutputController,
+                  holdOutputController: _holdOutputController,
+                  onActionChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedAction = value);
+                  },
+                  onApply: _applyMapping,
+                ),
+              ),
             ),
-            child: MappingListPanel(
-              mappings: repo.mappings,
-              layers: appState.layers,
-              onRemoveMapping: _removeMapping,
-              onAddLayer: _addLayer,
-              onToggleLayer: _toggleLayer,
+            SizedBox(
+              height: listHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: UiConstants.defaultPadding,
+                ),
+                child: MappingListPanel(
+                  mappings: repo.mappings,
+                  layers: appState.layers,
+                  onRemoveMapping: _removeMapping,
+                  onAddLayer: _addLayer,
+                  onToggleLayer: _toggleLayer,
+                ),
+              ),
             ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(UiConstants.defaultPadding),
-          child: ComboConfigRow(
-            comboKeysController: _comboKeysController,
-            comboOutputController: _comboOutputController,
-            combos: repo.combos,
-            onAddCombo: _addCombo,
-            onRemoveCombo: (index) => repo.removeCombo(index),
-          ),
-        ),
-      ],
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: comboHeight),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(UiConstants.defaultPadding),
+                  child: ComboConfigRow(
+                    comboKeysController: _comboKeysController,
+                    comboOutputController: _comboOutputController,
+                    combos: repo.combos,
+                    onAddCombo: _addCombo,
+                    onRemoveCombo: (index) => repo.removeCombo(index),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
