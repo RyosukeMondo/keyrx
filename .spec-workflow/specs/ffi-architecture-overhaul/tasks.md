@@ -182,7 +182,7 @@
 
 ## Phase 6: Testing & Cleanup
 
-- [ ] 18. Add parallel FFI tests
+- [x] 18. Add parallel FFI tests
   - File: `core/src/ffi/tests/parallel_tests.rs`
   - Create tests that run FFI operations in parallel
   - Verify no state interference between contexts
