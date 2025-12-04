@@ -69,7 +69,7 @@
   - _Requirements: 3.1, 3.2_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating traits | Task: Create Invariant trait for validation | Restrictions: Pluggable, clear errors | _Leverage: Traits | Success: Invariant interface defined | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Implement core invariants
+- [x] 8. Implement core invariants
   - File: `core/src/engine/transitions/invariants/`
   - NoOrphanedModifiers, LayerStackNotEmpty, etc.
   - Purpose: Common validations
