@@ -88,7 +88,7 @@
 
 ## Phase 4: Logging
 
-- [ ] 10. Create TransitionEntry type
+- [-] 10. Create TransitionEntry type
   - File: `core/src/engine/transitions/log.rs`
   - State before/after, transition, timing
   - Serializable for export

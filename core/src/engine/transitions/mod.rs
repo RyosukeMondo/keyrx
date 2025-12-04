@@ -9,6 +9,7 @@
 pub mod graph;
 pub mod invariant;
 pub mod invariants;
+pub mod log;
 pub mod state_kind;
 pub mod transition;
 pub mod validator;
@@ -18,6 +19,7 @@ pub use invariant::{Invariant, InvariantViolation};
 pub use invariants::{
     KeyTimestampsMonotonic, LayerStackNotEmpty, NoOrphanedModifiers, PendingQueueBounds,
 };
+pub use log::TransitionEntry;
 pub use state_kind::StateKind;
 pub use transition::{StateTransition, TransitionCategory};
 pub use validator::{StateValidator, ValidationResult};
