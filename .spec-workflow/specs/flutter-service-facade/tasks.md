@@ -34,7 +34,7 @@
 
 ## Phase 2: Implementation
 
-- [ ] 4. Implement KeyrxFacadeImpl core structure
+- [x] 4. Implement KeyrxFacadeImpl core structure
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Create class implementing KeyrxFacade
   - Accept ServiceRegistry in constructor
