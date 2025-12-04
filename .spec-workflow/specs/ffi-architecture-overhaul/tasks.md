@@ -202,7 +202,7 @@
   - _Requirements: Non-functional (reliability)_
   - _Prompt: Implement the task for spec ffi-architecture-overhaul, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Security/Test Developer | Task: Create FFI fuzz tests using proptest for robustness validation | Restrictions: Must catch all panics, test realistic edge cases, integrate with CI | _Leverage: proptest documentation, FfiError from task 1 | Success: Fuzz tests run, no panics escape, edge cases handled gracefully | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 20. Remove deprecated exports and clean up
+- [x] 20. Remove deprecated exports and clean up
   - Files: Delete `core/src/ffi/exports_*.rs` (old files)
   - Remove backward-compat shims after Flutter migration
   - Update mod.rs to export new structure
