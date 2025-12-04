@@ -13,6 +13,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+use tracing::error;
 
 /// Result of a fuzz testing run.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -286,7 +287,14 @@ impl FuzzEngine {
     fn save_crash_sequence(&self, sequence: &FuzzSequence, error: &str) -> Option<CrashSequence> {
         // Ensure crash directory exists
         if let Err(e) = fs::create_dir_all(&self.config.crash_dir) {
-            eprintln!("Failed to create crash directory: {}", e);
+            error!(
+                service = "keyrx",
+                component = "fuzz",
+                event = "crash_dir_creation_failed",
+                crash_dir = %self.config.crash_dir.display(),
+                error = %e,
+                "Failed to create crash directory"
+            );
             return None;
         }
 
@@ -301,12 +309,25 @@ impl FuzzEngine {
         match serde_json::to_string_pretty(&crash_sequence) {
             Ok(json) => {
                 if let Err(e) = fs::write(&file_path, json) {
-                    eprintln!("Failed to write crash sequence: {}", e);
+                    error!(
+                        service = "keyrx",
+                        component = "fuzz",
+                        event = "crash_write_failed",
+                        file_path = %file_path.display(),
+                        error = %e,
+                        "Failed to write crash sequence"
+                    );
                     return None;
                 }
             }
             Err(e) => {
-                eprintln!("Failed to serialize crash sequence: {}", e);
+                error!(
+                    service = "keyrx",
+                    component = "fuzz",
+                    event = "crash_serialization_failed",
+                    error = %e,
+                    "Failed to serialize crash sequence"
+                );
                 return None;
             }
         }

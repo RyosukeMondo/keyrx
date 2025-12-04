@@ -268,9 +268,7 @@ where
             .unwrap_or_else(|| String::from(""));
 
         // Get the current span name if any
-        let span = ctx
-            .event_span(event)
-            .map(|span| span.name().to_string());
+        let span = ctx.event_span(event).map(|span| span.name().to_string());
 
         // Create log entry
         let mut entry = LogEntry::new(level, target, message);

@@ -86,7 +86,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Replace println in FFI with tracing | Restrictions: No secrets, appropriate levels | _Leverage: Logging macros | Success: FFI uses structured logging | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Replace remaining println calls
+- [x] 10. Replace remaining println calls
   - Files: All remaining Rust files
   - Audit for any remaining println
   - Purpose: Complete migration
