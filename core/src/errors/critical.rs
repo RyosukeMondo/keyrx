@@ -420,9 +420,6 @@ impl CriticalError {
     }
 }
 
-/// Convenience type alias for Results using CriticalError.
-pub type CriticalResult<T> = Result<T, CriticalError>;
-
 #[cfg(test)]
 mod tests {
     use super::*;
