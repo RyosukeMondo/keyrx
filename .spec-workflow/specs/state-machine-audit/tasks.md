@@ -49,7 +49,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create StateKind enum for state categories | Restrictions: Cover all states, clear semantics | _Leverage: Audit | Success: States categorized | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 6. Create StateGraph
+- [x] 6. Create StateGraph
   - File: `core/src/engine/transitions/graph.rs`
   - Define valid transition rules
   - Implement is_valid and apply
