@@ -45,10 +45,11 @@ regex = "1.12.2"
 
 [features]
 # Enable platform drivers by default on their respective platforms
-default = ["windows-driver", "linux-driver"]
+default = ["windows-driver", "linux-driver", "transition-logging"]
 otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
 windows-driver = ["windows"]
 linux-driver = ["evdev", "nix", "signal-hook"]
+transition-logging = []
 
 [dev-dependencies]
 proptest.workspace = true

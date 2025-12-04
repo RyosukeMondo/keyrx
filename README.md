@@ -19,6 +19,29 @@ cargo build --release
 
 The binary will be at `core/target/release/keyrx`.
 
+### Build Features
+
+KeyRx supports optional features that can be enabled or disabled at compile time:
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| `transition-logging` | ✓ | State transition logging for debugging. Disable for zero runtime overhead. |
+| `windows-driver` | ✓ (Windows) | Windows keyboard driver support |
+| `linux-driver` | ✓ (Linux) | Linux evdev/uinput driver support |
+| `otel-tracing` | ✗ | OpenTelemetry tracing integration |
+
+To build without transition logging (for maximum performance):
+
+```bash
+cargo build --release --no-default-features --features linux-driver
+```
+
+To enable OpenTelemetry tracing:
+
+```bash
+cargo build --release --features otel-tracing
+```
+
 ## Quick Start
 
 ### 1. Check your system

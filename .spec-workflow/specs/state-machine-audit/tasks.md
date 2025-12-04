@@ -106,7 +106,7 @@
   - _Requirements: 4.1, 4.2, 4.3_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating logger | Task: Create TransitionLog with ring buffer | Restrictions: Bounded memory, searchable, exportable | _Leverage: Ring buffer | Success: History tracked efficiently | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Add zero-cost disable
+- [x] 12. Add zero-cost disable
   - File: `core/src/engine/transitions/log.rs`
   - Feature flag for logging
   - Compile-time removal when disabled

@@ -6,6 +6,18 @@
 //! - Replay of transition sequences
 //! - Analysis of state evolution
 //! - Export of transition history
+//!
+//! # Feature Flag
+//!
+//! The logging functionality can be disabled at compile time using the
+//! `transition-logging` feature flag. When disabled, all logging code is
+//! removed at compile time with zero runtime overhead.
+//!
+//! To disable transition logging:
+//! ```toml
+//! [dependencies]
+//! keyrx_core = { version = "...", default-features = false, features = [...] }
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -464,6 +476,11 @@ mod tests {
 /// - **Export**: Serialize to JSON for external analysis tools
 /// - **Thread-safe**: Can be shared across threads (with proper synchronization)
 ///
+/// # Feature Flag
+///
+/// This type is only available when the `transition-logging` feature is enabled.
+/// When the feature is disabled, a zero-overhead stub implementation is used.
+///
 /// # Example
 ///
 /// ```no_run
@@ -491,6 +508,7 @@ mod tests {
 /// // Export to JSON
 /// let json = log.export_json().unwrap();
 /// ```
+#[cfg(feature = "transition-logging")]
 #[derive(Debug, Clone)]
 pub struct TransitionLog {
     /// Ring buffer of transition entries.
@@ -506,6 +524,7 @@ pub struct TransitionLog {
     capacity: usize,
 }
 
+#[cfg(feature = "transition-logging")]
 impl TransitionLog {
     /// Create a new transition log with the specified capacity.
     ///
@@ -721,6 +740,7 @@ impl TransitionLog {
     }
 }
 
+#[cfg(feature = "transition-logging")]
 impl Default for TransitionLog {
     /// Create a default transition log with capacity for 10,000 entries.
     fn default() -> Self {
@@ -728,7 +748,229 @@ impl Default for TransitionLog {
     }
 }
 
+// ============================================================================
+// Zero-overhead stub implementation when logging is disabled
+// ============================================================================
+
+/// Zero-overhead stub for TransitionLog when logging is disabled.
+///
+/// When the `transition-logging` feature is disabled, this stub implementation
+/// is used instead. All methods are no-ops and will be optimized away by the
+/// compiler, resulting in zero runtime overhead.
+#[cfg(not(feature = "transition-logging"))]
+#[derive(Debug, Clone, Default)]
+pub struct TransitionLog {
+    // Zero-sized type - no memory overhead
+    _marker: std::marker::PhantomData<()>,
+}
+
+#[cfg(not(feature = "transition-logging"))]
+impl TransitionLog {
+    /// Create a new transition log (no-op when logging is disabled).
+    #[inline(always)]
+    pub fn new(_capacity: usize) -> Self {
+        Self {
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    /// Add a new entry to the log (no-op when logging is disabled).
+    #[inline(always)]
+    pub fn push(&mut self, _entry: TransitionEntry) {
+        // No-op: compiler will optimize this away
+    }
+
+    /// Get the number of entries currently stored (always 0 when disabled).
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        0
+    }
+
+    /// Check if the log is empty (always true when disabled).
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        true
+    }
+
+    /// Get the maximum capacity of the log (always 0 when disabled).
+    #[inline(always)]
+    pub fn capacity(&self) -> usize {
+        0
+    }
+
+    /// Get the total number of entries ever added (always 0 when disabled).
+    #[inline(always)]
+    pub fn total_count(&self) -> u64 {
+        0
+    }
+
+    /// Check if the log has wrapped around (always false when disabled).
+    #[inline(always)]
+    pub fn has_wrapped(&self) -> bool {
+        false
+    }
+
+    /// Get an iterator over all entries (always empty when disabled).
+    #[inline(always)]
+    pub fn iter(&self) -> Box<dyn Iterator<Item = &TransitionEntry> + '_> {
+        Box::new(std::iter::empty())
+    }
+
+    /// Get the most recent entry (always None when disabled).
+    #[inline(always)]
+    pub fn last(&self) -> Option<&TransitionEntry> {
+        None
+    }
+
+    /// Clear all entries from the log (no-op when disabled).
+    #[inline(always)]
+    pub fn clear(&mut self) {
+        // No-op: compiler will optimize this away
+    }
+
+    /// Search for entries matching a specific transition category (always empty when disabled).
+    #[inline(always)]
+    pub fn search_by_category(&self, _category: TransitionCategory) -> Vec<&TransitionEntry> {
+        Vec::new()
+    }
+
+    /// Search for entries matching a specific transition name (always empty when disabled).
+    #[inline(always)]
+    pub fn search_by_name(&self, _name: &str) -> Vec<&TransitionEntry> {
+        Vec::new()
+    }
+
+    /// Search for entries within a wall time range (always empty when disabled).
+    #[inline(always)]
+    pub fn search_by_time_range(&self, _start_us: u64, _end_us: u64) -> Vec<&TransitionEntry> {
+        Vec::new()
+    }
+
+    /// Search for entries that changed the state version (always empty when disabled).
+    #[inline(always)]
+    pub fn search_version_changes(&self) -> Vec<&TransitionEntry> {
+        Vec::new()
+    }
+
+    /// Search for entries by custom predicate (always empty when disabled).
+    #[inline(always)]
+    pub fn search<F>(&self, _predicate: F) -> Vec<&TransitionEntry>
+    where
+        F: Fn(&TransitionEntry) -> bool,
+    {
+        Vec::new()
+    }
+
+    /// Export all entries to JSON (returns empty array when disabled).
+    #[inline(always)]
+    pub fn export_json(&self) -> Result<String, serde_json::Error> {
+        Ok("[]".to_string())
+    }
+
+    /// Export all entries to pretty-printed JSON (returns empty array when disabled).
+    #[inline(always)]
+    pub fn export_json_pretty(&self) -> Result<String, serde_json::Error> {
+        Ok("[]".to_string())
+    }
+
+    /// Export filtered entries to JSON (returns empty array when disabled).
+    #[inline(always)]
+    pub fn export_entries_json(_entries: &[&TransitionEntry]) -> Result<String, serde_json::Error> {
+        Ok("[]".to_string())
+    }
+
+    /// Export filtered entries to pretty-printed JSON (returns empty array when disabled).
+    #[inline(always)]
+    pub fn export_entries_json_pretty(
+        _entries: &[&TransitionEntry],
+    ) -> Result<String, serde_json::Error> {
+        Ok("[]".to_string())
+    }
+
+    /// Get statistics about the log contents (always zeros when disabled).
+    #[inline(always)]
+    pub fn statistics(&self) -> (usize, usize, u64, u64) {
+        (0, 0, 0, 0)
+    }
+}
+
+// ============================================================================
+// Tests for feature flag behavior
+// ============================================================================
+
 #[cfg(test)]
+mod feature_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "transition-logging")]
+    fn test_transition_log_has_storage_when_enabled() {
+        // When feature is enabled, TransitionLog should have actual storage
+        let log = TransitionLog::new(100);
+        assert_eq!(log.capacity(), 100);
+        assert_eq!(log.len(), 0);
+        assert!(std::mem::size_of_val(&log) > 0);
+    }
+
+    #[test]
+    #[cfg(not(feature = "transition-logging"))]
+    fn test_transition_log_is_zero_sized_when_disabled() {
+        // When feature is disabled, TransitionLog should be zero-sized
+        let log = TransitionLog::new(100);
+        assert_eq!(log.capacity(), 0);
+        assert_eq!(log.len(), 0);
+        // PhantomData is zero-sized
+        assert_eq!(std::mem::size_of::<TransitionLog>(), 0);
+    }
+
+    #[test]
+    #[cfg(not(feature = "transition-logging"))]
+    fn test_stub_methods_are_no_ops() {
+        use crate::engine::KeyCode;
+
+        let mut log = TransitionLog::new(100);
+
+        // Push should be a no-op
+        let entry = TransitionEntry::new(
+            StateTransition::KeyPressed {
+                key: KeyCode::A,
+                timestamp: 1000,
+            },
+            StateSnapshot::empty(),
+            StateSnapshot::empty(),
+            1000000,
+            5000,
+        );
+        log.push(entry);
+
+        // Log should remain empty
+        assert!(log.is_empty());
+        assert_eq!(log.len(), 0);
+        assert!(log.last().is_none());
+        assert_eq!(log.total_count(), 0);
+
+        // Search methods should return empty
+        assert!(log
+            .search_by_category(TransitionCategory::Engine)
+            .is_empty());
+        assert!(log.search_by_name("KeyPressed").is_empty());
+        assert!(log.search_by_time_range(0, 1000000).is_empty());
+        assert!(log.search_version_changes().is_empty());
+
+        // Export should return empty array
+        assert_eq!(log.export_json().unwrap(), "[]");
+        assert_eq!(log.export_json_pretty().unwrap(), "[]");
+
+        // Statistics should be all zeros
+        let (total, unique, total_dur, avg_dur) = log.statistics();
+        assert_eq!(total, 0);
+        assert_eq!(unique, 0);
+        assert_eq!(total_dur, 0);
+        assert_eq!(avg_dur, 0);
+    }
+}
+
+#[cfg(all(test, feature = "transition-logging"))]
 mod transition_log_tests {
     use super::*;
     use crate::engine::KeyCode;
