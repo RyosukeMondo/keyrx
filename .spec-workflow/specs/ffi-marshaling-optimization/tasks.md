@@ -147,7 +147,7 @@
   - _Requirements: 1.1, 4.1_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Migrate exports_discovery.rs to FfiMarshaler | Restrictions: Same API, unified callbacks | _Leverage: FfiMarshaler | Success: Discovery exports use marshaler | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Migrate remaining exports
+- [x] 16. Migrate remaining exports
   - Files: `core/src/ffi/exports_*.rs`
   - Use FfiMarshaler throughout
   - Remove duplicate marshaling code
