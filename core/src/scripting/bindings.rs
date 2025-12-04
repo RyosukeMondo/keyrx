@@ -21,12 +21,19 @@ use rhai::{Array, Engine, EvalAltResult, Position};
 use std::sync::Arc;
 
 /// Register all KeyRx functions with the Rhai engine.
+///
+/// This also registers type documentation for the Rhai API.
 pub fn register_all_functions(
     engine: &mut Engine,
     pending_ops: &PendingOps,
     layer_view: &LayerView,
     modifier_view: &ModifierView,
 ) {
+    // Initialize documentation registry and register types
+    super::docs::registry::initialize();
+    super::docs::register_all_types();
+
+    // Register functions
     register_debug(engine);
     register_remap(engine, pending_ops);
     register_block(engine, pending_ops);

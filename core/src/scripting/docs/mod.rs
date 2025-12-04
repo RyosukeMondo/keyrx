@@ -5,6 +5,7 @@
 
 pub mod registry;
 pub mod search;
+pub mod type_registry;
 pub mod types;
 
 #[cfg(test)]
@@ -16,3 +17,4 @@ pub use types::{
 };
 
 pub use search::{search, search_functions, search_in_module, search_types, SearchOptions};
+pub use type_registry::register_all_types;

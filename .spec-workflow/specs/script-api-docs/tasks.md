@@ -49,7 +49,7 @@
   - _Requirements: 1.2, 3.1_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer documenting code | Task: Add doc comments to all Rhai functions | Restrictions: Complete docs, working examples | _Leverage: rhai_doc macro | Success: All functions documented | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Add type documentation
+- [-] 6. Add type documentation
   - Files: `core/src/scripting/types.rs`
   - Document all Rhai-exposed types
   - Include methods and properties
