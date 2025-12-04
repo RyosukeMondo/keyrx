@@ -96,7 +96,7 @@
 
 ## Phase 4: Metrics Bridge
 
-- [ ] 11. Create MetricsBridge
+- [x] 11. Create MetricsBridge
   - File: `core/src/observability/metrics_bridge.rs`
   - Connect to MetricsCollector
   - FFI callback and polling

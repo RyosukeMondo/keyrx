@@ -7,8 +7,13 @@ pub mod bridge;
 pub mod entry;
 pub mod logger;
 pub mod macros;
+pub mod metrics_bridge;
 
 // Re-export commonly used types
 pub use bridge::LogBridge;
 pub use entry::{LogEntry, LogLevel};
 pub use logger::{LogError, OutputFormat, StructuredLogger};
+pub use metrics_bridge::{
+    MetricsBridge, MetricsCollector, MetricsSnapshot, MetricsSnapshotFfi, NoOpMetricsCollector,
+    Operation,
+};
