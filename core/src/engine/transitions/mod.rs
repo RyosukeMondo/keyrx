@@ -6,9 +6,11 @@
 //! - Transition logging for debugging and replay
 //! - State graph for enforcing valid transitions
 
+pub mod graph;
 pub mod state_kind;
 pub mod transition;
 
+pub use graph::{InvalidTransition, StateGraph};
 pub use state_kind::StateKind;
 pub use transition::{StateTransition, TransitionCategory};
 
