@@ -7,23 +7,22 @@ use crate::engine::decision_engine::{
 use crate::engine::processing::{
     apply_decision, trace_event, validate_and_check_safe_mode, DecisionResult,
 };
-use crate::engine::state::EngineState as UnifiedEngineState;
+use crate::engine::state::EngineState;
 use crate::engine::transitions::log::{TransitionEntry, TransitionLog};
 use crate::engine::transitions::{StateGraph, StateKind, StateTransition};
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
     InputEvent, KeyCode, LayerAction, LayerStack, ModifierState, OutputAction, PendingDecision,
-    PendingDecisionState, TimingConfig,
+    TimingConfig,
 };
 use crate::traits::{KeyStateProvider, ScriptRuntime};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 /// View adapter for KeyState that implements KeyStateProvider.
 ///
 /// This provides a read-only view of the unified state's key tracking
 /// that's compatible with code expecting KeyStateTracker.
-pub struct KeyStateView<'a>(&'a UnifiedEngineState);
+pub struct KeyStateView<'a>(&'a EngineState);
 
 impl KeyStateProvider for KeyStateView<'_> {
     fn is_pressed(&self, key: KeyCode) -> bool {
@@ -49,26 +48,6 @@ impl KeyStateProvider for KeyStateView<'_> {
     }
 }
 
-/// Single pressed key with timestamp for snapshots.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PressedKeyState {
-    pub key: KeyCode,
-    pub pressed_at: u64,
-}
-
-/// Serializable snapshot of engine state for GUI/FFI inspection.
-///
-/// Deprecated: This will be replaced by StateSnapshot from the unified state module.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineStateSnapshot {
-    pub pressed_keys: Vec<PressedKeyState>,
-    pub modifiers: ModifierState,
-    pub layers: LayerStack,
-    pub pending: Vec<PendingDecisionState>,
-    pub timing: TimingConfig,
-    pub safe_mode: bool,
-}
-
 /// Extended engine with timing-based decisions.
 pub struct AdvancedEngine<S>
 where
@@ -76,8 +55,8 @@ where
 {
     _script: S,
 
-    // Unified state - this is the new approach
-    state: UnifiedEngineState,
+    // Unified state - this is the canonical approach
+    state: EngineState,
 
     // State graph for transition validation
     state_graph: StateGraph,
@@ -108,7 +87,7 @@ where
     pub fn new(script: S, timing: TimingConfig) -> Self {
         Self {
             _script: script,
-            state: UnifiedEngineState::new(timing.clone()),
+            state: EngineState::new(timing.clone()),
             state_graph: StateGraph::new(),
             current_state_kind: StateKind::Idle,
             transition_log: TransitionLog::default(),
@@ -406,35 +385,10 @@ where
         &self.timing
     }
 
-    /// Serializable snapshot of current engine state.
+    /// Get a serializable snapshot of current engine state.
     ///
-    /// DEPRECATED: This returns the legacy EngineStateSnapshot format.
-    /// New code should use `state_snapshot()` to get the unified StateSnapshot.
-    pub fn snapshot(&self) -> EngineStateSnapshot {
-        let pressed_keys = self
-            .state
-            .pressed_keys()
-            .filter_map(|key| {
-                self.state
-                    .key_press_time(key)
-                    .map(|pressed_at| PressedKeyState { key, pressed_at })
-            })
-            .collect();
-
-        EngineStateSnapshot {
-            pressed_keys,
-            modifiers: *self.state.modifiers(),
-            layers: self.layers_compat.clone(),
-            pending: self.pending.snapshot(),
-            timing: self.timing.clone(),
-            safe_mode: self.safe_mode,
-        }
-    }
-
-    /// Get a state snapshot using the new unified StateSnapshot format.
-    ///
-    /// This is the preferred way to get state snapshots for new code.
-    pub fn state_snapshot(&self) -> crate::engine::state::snapshot::StateSnapshot {
+    /// Returns a StateSnapshot suitable for FFI, debugging, and persistence.
+    pub fn snapshot(&self) -> crate::engine::state::snapshot::StateSnapshot {
         (&self.state).into()
     }
 
@@ -682,13 +636,12 @@ mod tests {
         let _ = engine.process_event(key_down(KeyCode::CapsLock, 100));
 
         let snapshot = engine.snapshot();
-        assert!(!snapshot.safe_mode);
         assert!(snapshot
             .pressed_keys
             .iter()
             .any(|pk| pk.key == KeyCode::CapsLock && pk.pressed_at == 100));
-        assert!(snapshot.layers.is_active(0));
-        assert_eq!(snapshot.pending.len(), 1);
+        assert!(snapshot.is_layer_active(0));
+        assert_eq!(snapshot.pending_count, 1);
 
         serde_json::to_string(&snapshot).expect("engine state serializes");
     }

@@ -3,8 +3,8 @@
 use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::DEFAULT_EVENT_GAP_US;
 use crate::engine::{
-    AdvancedEngine, EngineState, HoldAction, InputEvent, KeyCode, LayerAction, OutputAction,
-    PendingDecisionState, RemapAction, TimingConfig,
+    AdvancedEngine, HoldAction, InputEvent, KeyCode, LayerAction, OutputAction, RemapAction,
+    StateSnapshot, TimingConfig,
 };
 use crate::scripting::{RemapRegistry, RhaiRuntime, TapHoldBinding};
 use crate::traits::ScriptRuntime;
@@ -78,12 +78,12 @@ pub struct SimulationOutput {
     pub blocked: usize,
     /// Number of passed events.
     pub passed: usize,
-    /// Pending decisions after simulation.
-    pub pending: Vec<PendingDecisionState>,
-    /// Active layers (top to bottom).
+    /// Number of pending decisions after simulation.
+    pub pending_count: usize,
+    /// Active layers (bottom to top priority).
     pub active_layers: Vec<String>,
     /// Full engine state snapshot (for debugging).
-    pub state: EngineState,
+    pub state: StateSnapshot,
 }
 
 /// Simulate command for headless testing.
@@ -164,10 +164,9 @@ impl SimulateCommand {
             self.process_events(&mut engine, &events, &tap_hold_info);
         let state = engine.snapshot();
         let active_layers = state
-            .layers
-            .active_layers()
-            .into_iter()
-            .map(str::to_string)
+            .active_layers
+            .iter()
+            .map(|id| id.to_string())
             .collect();
 
         Ok(SimulationOutput {
@@ -176,7 +175,7 @@ impl SimulateCommand {
             remapped,
             blocked,
             passed,
-            pending: state.pending.clone(),
+            pending_count: state.pending_count,
             active_layers,
             state,
         })

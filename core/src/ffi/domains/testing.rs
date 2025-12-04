@@ -265,7 +265,7 @@ pub fn simulate(
         })
         .collect();
 
-    let pending: Vec<String> = output.pending.iter().map(|p| format!("{:?}", p)).collect();
+    let pending = vec![format!("pending_count: {}", output.pending_count)];
 
     Ok(SimFfiResult {
         mappings,

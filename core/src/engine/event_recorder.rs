@@ -4,7 +4,7 @@
 //! event sessions to .krx files.
 
 use super::event_recording::{EventRecord, RecordingError, SessionFile, SESSION_FILE_VERSION};
-use crate::engine::{EngineState, TimingConfig};
+use crate::engine::{StateSnapshot, TimingConfig};
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -27,7 +27,7 @@ pub struct EventRecorder {
     /// Timing configuration.
     timing_config: TimingConfig,
     /// Initial engine state.
-    initial_state: EngineState,
+    initial_state: StateSnapshot,
 }
 
 impl EventRecorder {
@@ -38,7 +38,7 @@ impl EventRecorder {
         path: P,
         script_path: Option<String>,
         timing_config: TimingConfig,
-        initial_state: EngineState,
+        initial_state: StateSnapshot,
     ) -> Result<Self, RecordingError> {
         let path = path.as_ref().to_path_buf();
 

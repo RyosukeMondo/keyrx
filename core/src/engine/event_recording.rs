@@ -3,7 +3,7 @@
 //! This module provides types for recording keyboard event sessions
 //! and replaying them deterministically for debugging and testing.
 
-use crate::engine::{EngineState, InputEvent, ModifierState, OutputAction, TimingConfig};
+use crate::engine::{InputEvent, ModifierState, OutputAction, StateSnapshot, TimingConfig};
 use serde::{Deserialize, Serialize};
 
 /// Version of the session file format.
@@ -152,8 +152,8 @@ pub struct SessionFile {
     pub script_path: Option<String>,
     /// Timing configuration used during recording.
     pub timing_config: TimingConfig,
-    /// Initial engine state before first event.
-    pub initial_state: EngineState,
+    /// Initial engine state snapshot before first event.
+    pub initial_state: StateSnapshot,
     /// Recorded events in chronological order.
     pub events: Vec<EventRecord>,
 }
@@ -164,7 +164,7 @@ impl SessionFile {
         created_at: String,
         script_path: Option<String>,
         timing_config: TimingConfig,
-        initial_state: EngineState,
+        initial_state: StateSnapshot,
     ) -> Self {
         Self {
             version: SESSION_FILE_VERSION,
@@ -293,17 +293,10 @@ pub fn infer_decision_type(input: &InputEvent, output: &[OutputAction]) -> Decis
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{KeyCode, LayerStack};
+    use crate::engine::KeyCode;
 
-    fn make_initial_state() -> EngineState {
-        EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        }
+    fn make_initial_state() -> StateSnapshot {
+        StateSnapshot::empty()
     }
 
     #[test]

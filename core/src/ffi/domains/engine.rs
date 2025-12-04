@@ -53,7 +53,7 @@ pub(crate) fn global_event_registry() -> &'static EventRegistry {
 ///
 /// Returns JSON: `ok:true` or `ok:false`
 // #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
-fn is_bypass_mode_active() -> FfiResult<bool> {
+pub fn is_bypass_mode_active() -> FfiResult<bool> {
     Ok(is_bypass_active())
 }
 
@@ -65,7 +65,7 @@ fn is_bypass_mode_active() -> FfiResult<bool> {
 ///
 /// Returns JSON: `ok:null`
 // #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
-fn set_bypass_mode_state(active: bool) -> FfiResult<()> {
+pub fn set_bypass_mode_state(active: bool) -> FfiResult<()> {
     set_bypass_mode(active);
     Ok(())
 }

@@ -137,7 +137,7 @@
 
 ## Phase 6: Consolidation
 
-- [ ] 15. Merge duplicate EngineState definitions
+- [x] 15. Merge duplicate EngineState definitions
   - Files: `core/src/engine/advanced.rs`, `core/src/engine/mod.rs`
   - Create single canonical definition
   - Update all references

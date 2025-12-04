@@ -5,7 +5,7 @@ use crate::cli::{
     OutputWriter,
 };
 use crate::config::repl_history_path;
-use crate::engine::{AdvancedEngine, EngineState, InputEvent, KeyCode, LayerAction, RemapAction};
+use crate::engine::{AdvancedEngine, InputEvent, KeyCode, LayerAction, RemapAction, StateSnapshot};
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::Context;
@@ -237,36 +237,30 @@ Examples:
             }
             OutputFormat::Human => {
                 println!("Engine State:");
-                println!("  Safe mode: {}", state.safe_mode);
+                println!("  Version: {}", state.version);
                 println!("  Pressed keys: {:?}", state.pressed_keys);
-                println!("  Active layers: {:?}", state.layers.active_layers());
-                println!("  Pending decisions: {}", state.pending.len());
-                if !state.pending.is_empty() {
-                    for p in &state.pending {
-                        println!("    - {:?}", p);
-                    }
-                }
+                println!("  Active layers: {:?}", state.active_layers);
+                println!("  Pending decisions: {}", state.pending_count);
             }
         }
     }
 
     fn cmd_layers(&self, session: &mut ReplSession) {
         let state = session.snapshot();
-        let active = state.layers.active_layers();
+        let active = &state.active_layers;
 
         println!("Active Layers (bottom to top):");
         if active.is_empty() {
             println!("  (none)");
         } else {
-            for name in &active {
-                println!("  - {}", name);
+            for id in active {
+                println!("  - {}", id);
             }
         }
     }
 
     fn cmd_timing(&self, session: &mut ReplSession) {
-        let state = session.snapshot();
-        let timing = &state.timing;
+        let timing = session.engine.timing_config();
 
         println!("Timing Configuration:");
         println!("  tap_timeout_ms:    {}", timing.tap_timeout_ms);
@@ -385,7 +379,7 @@ impl ReplSession {
         Ok(results)
     }
 
-    fn snapshot(&self) -> EngineState {
+    fn snapshot(&self) -> StateSnapshot {
         self.engine.snapshot()
     }
 

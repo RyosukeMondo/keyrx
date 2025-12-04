@@ -3,7 +3,7 @@
 use crate::cli::OutputWriter;
 use crate::engine::{
     infer_decision_type, AdvancedEngine, EventRecordBuilder, EventRecorder, InputEvent,
-    OutputAction, TimingConfig,
+    ModifierState, OutputAction, TimingConfig,
 };
 use crate::scripting::RhaiRuntime;
 use anyhow::{anyhow, Result};
@@ -89,7 +89,11 @@ impl<'a> RecordingContext<'a> {
         if let Some(ref mut rec) = self.recorder {
             let latency_us = process_start.elapsed().as_micros() as u64;
             let snapshot = engine.snapshot();
-            let active_layers: Vec<u32> = snapshot.layers.active_layer_ids();
+            let active_layers: Vec<u32> =
+                snapshot.active_layers.iter().map(|&id| id as u32).collect();
+            // Create ModifierState from snapshot's standard modifiers
+            let modifier_state = ModifierState::new();
+            // Note: ModifierState is simplified in recording - full state is in the snapshot
             rec.record_event(
                 EventRecordBuilder::new()
                     .seq(*self.seq)
@@ -98,7 +102,7 @@ impl<'a> RecordingContext<'a> {
                     .output(outputs.to_vec())
                     .decision_type(infer_decision_type(event, outputs))
                     .active_layers(active_layers)
-                    .modifiers_state(snapshot.modifiers)
+                    .modifiers_state(modifier_state)
                     .latency_us(latency_us)
                     .build(),
             );

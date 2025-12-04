@@ -1,10 +1,7 @@
 //! State inspection command.
 
 use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
-use crate::engine::{
-    AdvancedEngine, EngineState, LayerAction, LayerStack, ModifierState, PendingDecisionState,
-    PressedKeyState, RemapAction, TimingConfig,
-};
+use crate::engine::{AdvancedEngine, LayerAction, PressedKey, RemapAction, StateSnapshot};
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::{anyhow, Context};
@@ -23,31 +20,35 @@ pub struct StateCommand {
 /// Human-oriented view of the engine state with optional sections.
 #[derive(Serialize)]
 struct StateView {
-    pressed_keys: Vec<PressedKeyState>,
+    pressed_keys: Vec<PressedKey>,
+    version: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    layers: Option<LayerStack>,
+    active_layers: Option<Vec<u16>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    modifiers: Option<ModifierState>,
+    base_layer: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pending: Option<Vec<PendingDecisionState>>,
-    timing: TimingConfig,
-    safe_mode: bool,
+    standard_modifiers: Option<crate::engine::state::StandardModifiers>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    virtual_modifiers: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pending_count: Option<usize>,
 }
 
 impl StateView {
     fn from_state(
-        state: EngineState,
+        state: StateSnapshot,
         show_layers: bool,
         show_modifiers: bool,
         show_pending: bool,
     ) -> Self {
         Self {
             pressed_keys: state.pressed_keys,
-            layers: show_layers.then_some(state.layers),
-            modifiers: show_modifiers.then_some(state.modifiers),
-            pending: show_pending.then_some(state.pending),
-            timing: state.timing,
-            safe_mode: state.safe_mode,
+            version: state.version,
+            active_layers: show_layers.then_some(state.active_layers),
+            base_layer: show_layers.then_some(state.base_layer),
+            standard_modifiers: show_modifiers.then_some(state.standard_modifiers),
+            virtual_modifiers: show_modifiers.then_some(state.virtual_modifiers),
+            pending_count: show_pending.then_some(state.pending_count),
         }
     }
 }
@@ -70,7 +71,7 @@ impl StateCommand {
     }
 
     /// Collect the current engine state snapshot.
-    pub fn collect_state(&self) -> anyhow::Result<EngineState> {
+    pub fn collect_state(&self) -> anyhow::Result<StateSnapshot> {
         let runtime = self.prepare_runtime()?;
         let registry = runtime.registry().clone();
         let engine = self.create_engine(&registry, runtime);
@@ -89,7 +90,7 @@ impl StateCommand {
         };
 
         let result = if matches!(self.output.format(), OutputFormat::Json) {
-            // JSON mode returns the full EngineState for programmatic consumption.
+            // JSON mode returns the full StateSnapshot for programmatic consumption.
             self.output.data(&state)
         } else {
             // Human mode can optionally hide sections to reduce noise.

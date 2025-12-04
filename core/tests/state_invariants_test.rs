@@ -7,7 +7,7 @@
 
 use keyrx_core::engine::state::Mutation;
 use keyrx_core::engine::{
-    HoldAction, KeyCode, LayerAction, Modifier, StandardModifier, TimingConfig, UnifiedEngineState,
+    EngineState, HoldAction, KeyCode, LayerAction, Modifier, StandardModifier, TimingConfig,
 };
 use proptest::prelude::*;
 
@@ -129,13 +129,13 @@ fn arb_mutation_sequence() -> impl Strategy<Value = Vec<Mutation>> {
 // === Invariant Checking Functions ===
 
 /// Check that the base layer is always active.
-fn check_base_layer_always_active(state: &UnifiedEngineState) -> bool {
+fn check_base_layer_always_active(state: &EngineState) -> bool {
     let base_layer = state.base_layer();
     state.active_layers().contains(&base_layer)
 }
 
 /// Check that there are no duplicate layers in the active layer stack.
-fn check_no_duplicate_layers(state: &UnifiedEngineState) -> bool {
+fn check_no_duplicate_layers(state: &EngineState) -> bool {
     let layers = state.active_layers();
     let unique_count = layers
         .iter()
@@ -150,34 +150,34 @@ fn check_version_monotonic(old_version: u64, new_version: u64) -> bool {
 }
 
 /// Check that the layer count matches the length of active layers.
-fn check_layer_count_consistent(state: &UnifiedEngineState) -> bool {
+fn check_layer_count_consistent(state: &EngineState) -> bool {
     state.active_layer_count() == state.active_layers().len()
 }
 
 /// Check that if only base layer is active, the layer count is 1.
-fn check_only_base_layer_logic(state: &UnifiedEngineState) -> bool {
+fn check_only_base_layer_logic(state: &EngineState) -> bool {
     state.only_base_layer_active() == (state.active_layer_count() == 1)
 }
 
 /// Check that pressed key count matches the number of pressed keys.
-fn check_key_count_consistent(state: &UnifiedEngineState) -> bool {
+fn check_key_count_consistent(state: &EngineState) -> bool {
     let count = state.pressed_key_count();
     let actual = state.pressed_keys().count();
     count == actual
 }
 
 /// Check that no_keys_pressed is consistent with pressed_key_count.
-fn check_no_keys_pressed_logic(state: &UnifiedEngineState) -> bool {
+fn check_no_keys_pressed_logic(state: &EngineState) -> bool {
     state.no_keys_pressed() == (state.pressed_key_count() == 0)
 }
 
 /// Check that pending count matches no_pending_decisions.
-fn check_pending_count_consistent(state: &UnifiedEngineState) -> bool {
+fn check_pending_count_consistent(state: &EngineState) -> bool {
     state.no_pending_decisions() == (state.pending_count() == 0)
 }
 
 /// Check all invariants for a given state.
-fn check_all_invariants(state: &UnifiedEngineState, prev_version: u64) -> bool {
+fn check_all_invariants(state: &EngineState, prev_version: u64) -> bool {
     check_base_layer_always_active(state)
         && check_no_duplicate_layers(state)
         && check_version_monotonic(prev_version, state.version())
@@ -196,7 +196,7 @@ proptest! {
     /// Test that invariants hold after applying a single random mutation.
     #[test]
     fn invariants_hold_after_single_mutation(mutation in arb_mutation()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let prev_version = state.version();
 
         // Apply mutation (may fail, which is okay)
@@ -209,7 +209,7 @@ proptest! {
     /// Test that invariants hold after applying a sequence of random mutations.
     #[test]
     fn invariants_hold_after_mutation_sequence(mutations in arb_mutation_sequence()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         for mutation in mutations {
             let prev_version = state.version();
@@ -228,7 +228,7 @@ proptest! {
     /// Test that base layer is always in active layers.
     #[test]
     fn base_layer_always_active(mutations in arb_mutation_sequence()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         for mutation in mutations {
             let _ = state.apply(mutation);
@@ -242,7 +242,7 @@ proptest! {
     /// Test that there are never duplicate layers in the stack.
     #[test]
     fn no_duplicate_layers(mutations in arb_mutation_sequence()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         for mutation in mutations {
             let _ = state.apply(mutation);
@@ -256,7 +256,7 @@ proptest! {
     /// Test that version number is monotonically increasing.
     #[test]
     fn version_monotonic(mutations in arb_mutation_sequence()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let mut last_version = state.version();
 
         for mutation in mutations {
@@ -279,7 +279,7 @@ proptest! {
         mutations1 in prop::collection::vec(arb_mutation(), 1..=5),
         mutations2 in prop::collection::vec(arb_mutation(), 1..=5)
     ) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Apply first batch to establish some state
         for mutation in mutations1 {
@@ -319,7 +319,7 @@ proptest! {
     /// Test that cloned state is independent.
     #[test]
     fn cloned_state_independence(mutations in arb_mutation_sequence()) {
-        let mut state1 = UnifiedEngineState::new(TimingConfig::default());
+        let mut state1 = EngineState::new(TimingConfig::default());
 
         // Apply mutations to state1
         for mutation in mutations.iter() {
@@ -352,7 +352,7 @@ proptest! {
         press_time in arb_timestamp(),
         release_time in arb_timestamp()
     ) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Press key
         let press = Mutation::KeyDown {
@@ -383,7 +383,7 @@ proptest! {
     /// Test that modifier activation/deactivation is consistent.
     #[test]
     fn modifier_activation_consistent(modifier_id in arb_modifier_id()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let modifier = Modifier::Virtual(modifier_id);
 
         // Activate modifier
@@ -408,7 +408,7 @@ proptest! {
     /// Test that layer push/pop is consistent.
     #[test]
     fn layer_push_pop_consistent(layer_id in arb_layer_id()) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let initial_count = state.active_layer_count();
 
         // Push layer
@@ -437,7 +437,7 @@ proptest! {
         layer_id in arb_layer_id(),
         timestamp in arb_timestamp()
     ) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Add a pending decision
         let add_pending = Mutation::AddTapHold {
@@ -466,7 +466,7 @@ proptest! {
     /// Test that ClearModifiers clears all modifiers.
     #[test]
     fn clear_modifiers_clears_all(modifier_ids in prop::collection::vec(arb_modifier_id(), 1..=10)) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Activate multiple modifiers
         for modifier_id in &modifier_ids {
@@ -494,7 +494,7 @@ proptest! {
         keys in prop::collection::vec(arb_keycode(), 1..=5),
         timestamps in prop::collection::vec(arb_timestamp(), 1..=5)
     ) {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Add multiple pending decisions
         for (key, timestamp) in keys.iter().zip(timestamps.iter()) {
@@ -529,13 +529,13 @@ mod edge_cases {
 
     #[test]
     fn empty_state_has_valid_invariants() {
-        let state = UnifiedEngineState::new(TimingConfig::default());
+        let state = EngineState::new(TimingConfig::default());
         assert!(check_all_invariants(&state, 0));
     }
 
     #[test]
     fn cannot_pop_base_layer() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let result = state.apply(Mutation::PopLayer);
         assert!(result.is_err());
         assert!(check_all_invariants(&state, 0));
@@ -543,7 +543,7 @@ mod edge_cases {
 
     #[test]
     fn cannot_release_unpressed_key() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let result = state.apply(Mutation::KeyUp {
             key: KeyCode::A,
             timestamp_us: 1000,
@@ -554,7 +554,7 @@ mod edge_cases {
 
     #[test]
     fn cannot_press_already_pressed_key() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         state
             .apply(Mutation::KeyDown {
                 key: KeyCode::A,
@@ -574,7 +574,7 @@ mod edge_cases {
 
     #[test]
     fn modifier_255_is_reserved() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let result = state.apply(Mutation::ActivateModifier { modifier_id: 255 });
         assert!(result.is_err());
         assert!(check_all_invariants(&state, 0));
@@ -582,7 +582,7 @@ mod edge_cases {
 
     #[test]
     fn batch_with_nested_batch_fails() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let batch = vec![
             Mutation::KeyDown {
                 key: KeyCode::A,
@@ -601,7 +601,7 @@ mod edge_cases {
 
     #[test]
     fn empty_batch_fails() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let result = state.apply_batch(vec![]);
         assert!(result.is_err());
         assert!(check_all_invariants(&state, 0));
@@ -609,7 +609,7 @@ mod edge_cases {
 
     #[test]
     fn layer_toggle_maintains_invariants() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Toggle on
         state.apply(Mutation::ToggleLayer { layer_id: 1 }).unwrap();
@@ -624,7 +624,7 @@ mod edge_cases {
 
     #[test]
     fn standard_modifier_queries_work() {
-        let state = UnifiedEngineState::new(TimingConfig::default());
+        let state = EngineState::new(TimingConfig::default());
         assert!(!state.is_modifier_active(Modifier::Standard(StandardModifier::Shift)));
         assert!(!state.is_modifier_active(Modifier::Standard(StandardModifier::Control)));
         assert!(!state.is_modifier_active(Modifier::Standard(StandardModifier::Alt)));
@@ -632,7 +632,7 @@ mod edge_cases {
 
     #[test]
     fn multiple_keys_pressed_simultaneously() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         let keys = vec![KeyCode::A, KeyCode::B, KeyCode::C, KeyCode::D, KeyCode::E];
 
@@ -656,7 +656,7 @@ mod edge_cases {
 
     #[test]
     fn multiple_layers_can_be_active() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
         let initial_count = state.active_layer_count();
 
         for layer_id in 1u16..=5 {
@@ -670,7 +670,7 @@ mod edge_cases {
 
     #[test]
     fn stress_test_many_mutations() {
-        let mut state = UnifiedEngineState::new(TimingConfig::default());
+        let mut state = EngineState::new(TimingConfig::default());
 
         // Apply 1000 random valid mutations
         for i in 0..1000 {

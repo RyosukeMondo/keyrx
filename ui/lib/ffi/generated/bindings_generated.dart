@@ -168,6 +168,103 @@ typedef TransitionLogStatistics =
       Pointer<Void>,
     );
 
+// keyrx_list_devices
+typedef ListDevicesNative = Pointer<Char> Function();
+typedef ListDevices = Pointer<Char> Function();
+
+// keyrx_select_device
+typedef SelectDeviceNative = Int32 Function(Pointer<Char>);
+typedef SelectDevice = int Function(Pointer<Char>);
+
+// keyrx_list_keys
+typedef ListKeysNative = Pointer<Char> Function();
+typedef ListKeys = Pointer<Char> Function();
+
+// keyrx_start_discovery
+typedef StartDiscoveryNative =
+    Pointer<Char> Function(Pointer<Char>, Uint8, Pointer<Char>);
+typedef StartDiscovery =
+    Pointer<Char> Function(Pointer<Char>, int, Pointer<Char>);
+
+// keyrx_cancel_discovery
+typedef CancelDiscoveryNative = Int32 Function();
+typedef CancelDiscovery = int Function();
+
+// keyrx_is_bypass_active
+typedef IsBypassActiveNative = Bool Function();
+typedef IsBypassActive = bool Function();
+
+// keyrx_load_script
+typedef LoadScriptNative = Int32 Function(Pointer<Char>);
+typedef LoadScript = int Function(Pointer<Char>);
+
+// keyrx_eval
+typedef EvalNative = Pointer<Char> Function(Pointer<Char>);
+typedef Eval = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_validate_script
+typedef ValidateScriptNative = Pointer<Char> Function(Pointer<Char>);
+typedef ValidateScript = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_validate_script_with_options
+typedef ValidateScriptWithOptionsNative =
+    Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+typedef ValidateScriptWithOptions =
+    Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+
+// keyrx_suggest_keys
+typedef SuggestKeysNative = Pointer<Char> Function(Pointer<Char>);
+typedef SuggestKeys = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_all_key_names
+typedef AllKeyNamesNative = Pointer<Char> Function();
+typedef AllKeyNames = Pointer<Char> Function();
+
+// keyrx_check_script
+typedef CheckScriptNative = Pointer<Char> Function(Pointer<Char>);
+typedef CheckScript = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_discover_tests
+typedef DiscoverTestsNative = Pointer<Char> Function(Pointer<Char>);
+typedef DiscoverTests = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_run_tests
+typedef RunTestsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+typedef RunTests = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+
+// keyrx_simulate
+typedef SimulateNative =
+    Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool);
+typedef Simulate = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool);
+
+// keyrx_run_benchmark
+typedef RunBenchmarkNative = Pointer<Char> Function(Uint32, Pointer<Char>);
+typedef RunBenchmark = Pointer<Char> Function(int, Pointer<Char>);
+
+// keyrx_run_doctor
+typedef RunDoctorNative = Pointer<Char> Function();
+typedef RunDoctor = Pointer<Char> Function();
+
+// keyrx_start_recording
+typedef StartRecordingNative = Pointer<Char> Function(Pointer<Char>);
+typedef StartRecording = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_stop_recording
+typedef StopRecordingNative = Pointer<Char> Function();
+typedef StopRecording = Pointer<Char> Function();
+
+// keyrx_list_sessions
+typedef ListSessionsNative = Pointer<Char> Function(Pointer<Char>);
+typedef ListSessions = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_analyze_session
+typedef AnalyzeSessionNative = Pointer<Char> Function(Pointer<Char>);
+typedef AnalyzeSession = Pointer<Char> Function(Pointer<Char>);
+
+// keyrx_replay_session
+typedef ReplaySessionNative = Pointer<Char> Function(Pointer<Char>, Bool);
+typedef ReplaySession = Pointer<Char> Function(Pointer<Char>, bool);
+
 // keyrx_log_bridge_init
 /// Initialize the log bridge for FFI access.
 ///
@@ -430,6 +527,92 @@ class KeyrxBindingsGenerated {
   late final TransitionLogStatistics transitionLogStatistics =
       _lookup<NativeFunction<TransitionLogStatisticsNative>>(
         'keyrx_transition_log_statistics',
+      ).asFunction();
+  late final ListDevices listDevices =
+      _lookup<NativeFunction<ListDevicesNative>>(
+        'keyrx_list_devices',
+      ).asFunction();
+  late final SelectDevice selectDevice =
+      _lookup<NativeFunction<SelectDeviceNative>>(
+        'keyrx_select_device',
+      ).asFunction();
+  late final ListKeys listKeys = _lookup<NativeFunction<ListKeysNative>>(
+    'keyrx_list_keys',
+  ).asFunction();
+  late final StartDiscovery startDiscovery =
+      _lookup<NativeFunction<StartDiscoveryNative>>(
+        'keyrx_start_discovery',
+      ).asFunction();
+  late final CancelDiscovery cancelDiscovery =
+      _lookup<NativeFunction<CancelDiscoveryNative>>(
+        'keyrx_cancel_discovery',
+      ).asFunction();
+  late final IsBypassActive isBypassActive =
+      _lookup<NativeFunction<IsBypassActiveNative>>(
+        'keyrx_is_bypass_active',
+      ).asFunction();
+  late final LoadScript loadScript = _lookup<NativeFunction<LoadScriptNative>>(
+    'keyrx_load_script',
+  ).asFunction();
+  late final Eval eval = _lookup<NativeFunction<EvalNative>>(
+    'keyrx_eval',
+  ).asFunction();
+  late final ValidateScript validateScript =
+      _lookup<NativeFunction<ValidateScriptNative>>(
+        'keyrx_validate_script',
+      ).asFunction();
+  late final ValidateScriptWithOptions validateScriptWithOptions =
+      _lookup<NativeFunction<ValidateScriptWithOptionsNative>>(
+        'keyrx_validate_script_with_options',
+      ).asFunction();
+  late final SuggestKeys suggestKeys =
+      _lookup<NativeFunction<SuggestKeysNative>>(
+        'keyrx_suggest_keys',
+      ).asFunction();
+  late final AllKeyNames allKeyNames =
+      _lookup<NativeFunction<AllKeyNamesNative>>(
+        'keyrx_all_key_names',
+      ).asFunction();
+  late final CheckScript checkScript =
+      _lookup<NativeFunction<CheckScriptNative>>(
+        'keyrx_check_script',
+      ).asFunction();
+  late final DiscoverTests discoverTests =
+      _lookup<NativeFunction<DiscoverTestsNative>>(
+        'keyrx_discover_tests',
+      ).asFunction();
+  late final RunTests runTests = _lookup<NativeFunction<RunTestsNative>>(
+    'keyrx_run_tests',
+  ).asFunction();
+  late final Simulate simulate = _lookup<NativeFunction<SimulateNative>>(
+    'keyrx_simulate',
+  ).asFunction();
+  late final RunBenchmark runBenchmark =
+      _lookup<NativeFunction<RunBenchmarkNative>>(
+        'keyrx_run_benchmark',
+      ).asFunction();
+  late final RunDoctor runDoctor = _lookup<NativeFunction<RunDoctorNative>>(
+    'keyrx_run_doctor',
+  ).asFunction();
+  late final StartRecording startRecording =
+      _lookup<NativeFunction<StartRecordingNative>>(
+        'keyrx_start_recording',
+      ).asFunction();
+  late final StopRecording stopRecording =
+      _lookup<NativeFunction<StopRecordingNative>>(
+        'keyrx_stop_recording',
+      ).asFunction();
+  late final ListSessions listSessions =
+      _lookup<NativeFunction<ListSessionsNative>>(
+        'keyrx_list_sessions',
+      ).asFunction();
+  late final AnalyzeSession analyzeSession =
+      _lookup<NativeFunction<AnalyzeSessionNative>>(
+        'keyrx_analyze_session',
+      ).asFunction();
+  late final ReplaySession replaySession =
+      _lookup<NativeFunction<ReplaySessionNative>>(
+        'keyrx_replay_session',
       ).asFunction();
   late final LogBridgeInit logBridgeInit =
       _lookup<NativeFunction<LogBridgeInitNative>>(
