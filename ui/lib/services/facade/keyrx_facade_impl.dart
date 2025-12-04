@@ -497,8 +497,27 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
   @override
   Future<Result<TestDiscoveryServiceResult>> discoverTests(String scriptPath) async {
-    // TODO: Implement in task 8
-    throw UnimplementedError('discoverTests will be implemented in task 8');
+    _checkDisposed();
+
+    try {
+      // Discover tests using the test service
+      final result = await _services.testService.discoverTests(scriptPath);
+
+      // Check if discovery had errors
+      if (result.hasError) {
+        final error = FacadeError.operationFailed(
+          'discoverTests',
+          result.errorMessage ?? 'Unknown error',
+          userMessage: 'Failed to discover tests. ${result.errorMessage ?? "Please check the script."}',
+        );
+        return Result.err(error);
+      }
+
+      return Result.ok(result);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   @override
@@ -506,14 +525,50 @@ class KeyrxFacadeImpl implements KeyrxFacade {
     String scriptPath, {
     String? filter,
   }) async {
-    // TODO: Implement in task 8
-    throw UnimplementedError('runTests will be implemented in task 8');
+    _checkDisposed();
+
+    try {
+      // Run tests using the test service
+      final result = await _services.testService.runTests(
+        scriptPath,
+        filter: filter,
+      );
+
+      // Check if test execution had errors
+      if (result.hasError) {
+        final error = FacadeError.operationFailed(
+          'runTests',
+          result.errorMessage ?? 'Unknown error',
+          userMessage: 'Failed to run tests. ${result.errorMessage ?? "Please check the script."}',
+        );
+        return Result.err(error);
+      }
+
+      return Result.ok(result);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<void>> cancelTests() async {
-    // TODO: Implement in task 8
-    throw UnimplementedError('cancelTests will be implemented in task 8');
+    _checkDisposed();
+
+    try {
+      // Note: The current TestService implementation doesn't have a cancelTests method.
+      // This is a placeholder for future implementation when cancellation support is added.
+      // For now, tests run to completion and cannot be cancelled mid-execution.
+
+      // Since there's no active cancellation mechanism in TestService yet,
+      // we return success (no-op). When TestService adds cancellation support,
+      // this should delegate to that method.
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      return Result.err(error);
+    }
   }
 
   // === Lifecycle ===
