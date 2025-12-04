@@ -11,9 +11,10 @@ use keyrx_core::cli::{
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
 use keyrx_core::config::{load_config, merge_cli_overrides, Config};
+use keyrx_core::observability::StructuredLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use tracing::error;
+use tracing::{debug, error, info};
 
 #[derive(Parser)]
 #[command(name = "keyrx")]
@@ -30,6 +31,15 @@ EXIT CODES:
   6 - Invalid argument
   7 - Configuration error
   101 - Panic (internal error)
+
+LOGGING:
+  Control logging with environment variables:
+    RUST_LOG=<level>           Set log level (trace, debug, info, warn, error)
+    KEYRX_LOG_FORMAT=<format>  Set log format (pretty, json)
+
+  Examples:
+    RUST_LOG=debug keyrx run --script my_config.rhai
+    RUST_LOG=keyrx_core=trace keyrx doctor
 
 For detailed exit code information, run:
   keyrx exit-codes
@@ -403,14 +413,14 @@ fn install_panic_handler() {
             "unknown panic message".to_string()
         };
 
-        // Log panic at error level
+        // Log panic at error level (if logger is initialized)
         error!(
             location = %location,
             message = %message,
             "Panic occurred"
         );
 
-        // Print to stderr as well for visibility when tracing isn't initialized
+        // Print to stderr for visibility (works even if tracing isn't initialized yet)
         eprintln!("Error: Panic at {}: {}", location, message);
         eprintln!("This is a bug. Please report it at: https://github.com/keyrx/keyrx/issues");
 
@@ -427,8 +437,36 @@ async fn main() -> ExitCode {
     let cli = Cli::parse();
     let format = parse_format(&cli.format, cli.json);
 
+    // Initialize structured logger
+    // Use human-readable format for CLI to make debugging easier
+    // Logger level is controlled by RUST_LOG environment variable
+    let log_format = match std::env::var("KEYRX_LOG_FORMAT")
+        .unwrap_or_else(|_| "pretty".to_string())
+        .as_str()
+    {
+        "json" => keyrx_core::observability::OutputFormat::Json,
+        _ => keyrx_core::observability::OutputFormat::Pretty,
+    };
+
+    if let Err(e) = StructuredLogger::new().with_format(log_format).init() {
+        // If logger init fails, print to stderr but continue
+        eprintln!("Warning: Failed to initialize logger: {}", e);
+    }
+
+    debug!(
+        output_format = ?format,
+        config_path = ?cli.config,
+        "CLI initialized"
+    );
+
     // Load configuration from file (or use defaults)
     let config = load_config(cli.config.as_deref());
+
+    info!(
+        tap_timeout_ms = config.timing.tap_timeout_ms,
+        combo_timeout_ms = config.timing.combo_timeout_ms,
+        "Configuration loaded"
+    );
 
     // Create command context
     let ctx = CommandContext::with_config(format, Verbosity::Normal, cli.config);
@@ -438,18 +476,49 @@ async fn main() -> ExitCode {
 
     // Extract exit code and handle errors
     if result.is_success() {
+        debug!("Command completed successfully");
         ExitCode::SUCCESS
     } else {
+        let exit_code = result.exit_code();
+        error!(
+            exit_code = exit_code as u8,
+            message_count = result.messages().len(),
+            "Command failed"
+        );
+
         // Print error messages
         for msg in result.messages() {
             eprintln!("Error: {msg}");
         }
-        result.exit_code().into()
+        exit_code.into()
     }
 }
 
 async fn run_command(command: Commands, ctx: &CommandContext, config: Config) -> CommandResult<()> {
     use keyrx_core::cli::ExitCode;
+
+    // Log command execution start
+    let command_name = match &command {
+        Commands::Check { .. } => "check",
+        Commands::Devices => "devices",
+        Commands::ExitCodes => "exit-codes",
+        Commands::Run { .. } => "run",
+        Commands::State { .. } => "state",
+        Commands::Doctor { .. } => "doctor",
+        Commands::Repl => "repl",
+        Commands::Bench { .. } => "bench",
+        Commands::Simulate { .. } => "simulate",
+        Commands::Discover { .. } => "discover",
+        Commands::Test { .. } => "test",
+        Commands::Replay { .. } => "replay",
+        Commands::Analyze { .. } => "analyze",
+        Commands::Uat { .. } => "uat",
+        Commands::Golden { .. } => "golden",
+        Commands::Regression { .. } => "regression",
+        Commands::CiCheck { .. } => "ci-check",
+    };
+
+    debug!(command = command_name, "Executing command");
 
     // Helper to convert anyhow::Result to CommandResult
     let convert_result = |res: anyhow::Result<()>| -> CommandResult<()> {
