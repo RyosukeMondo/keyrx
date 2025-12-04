@@ -13,7 +13,10 @@ pub fn default_schema_version() -> u8 {
 }
 
 /// Identifier for a physical device, typically USB vendor/product IDs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler,
+)]
+#[ffi(strategy = "json")]
 pub struct DeviceId {
     pub vendor_id: u16,
     pub product_id: u16,
@@ -41,7 +44,10 @@ impl fmt::Display for DeviceId {
 }
 
 /// Origin of the profile (discovered on device, default, or migrated).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, keyrx_ffi_macros::FfiMarshaler,
+)]
+#[ffi(strategy = "json")]
 pub enum ProfileSource {
     Discovered,
     #[default]
@@ -50,7 +56,8 @@ pub enum ProfileSource {
 }
 
 /// Physical key metadata captured during discovery.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct PhysicalKey {
     pub scan_code: u16,
     pub row: u8,

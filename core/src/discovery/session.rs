@@ -14,27 +14,33 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, Mutex, OnceLock};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler,
+)]
+#[ffi(strategy = "json")]
 pub struct ExpectedPosition {
     pub row: u8,
     pub col: u8,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DiscoveryProgress {
     pub captured: usize,
     pub total: usize,
     pub next: Option<ExpectedPosition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DuplicateWarning {
     pub scan_code: u16,
     pub existing: ExpectedPosition,
     pub attempted: ExpectedPosition,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub enum SessionStatus {
     InProgress,
     Completed,
@@ -42,7 +48,8 @@ pub enum SessionStatus {
     Bypassed,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DiscoverySummary {
     pub device_id: DeviceId,
     pub status: SessionStatus,
@@ -58,7 +65,8 @@ pub struct DiscoverySummary {
     pub aliases: HashMap<String, u16>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub enum SessionUpdate {
     Ignored,
     Progress(DiscoveryProgress),
