@@ -31,7 +31,7 @@
 
 ## Phase 2: Capability Registry
 
-- [ ] 4. Create CapabilityRegistry
+- [x] 4. Create CapabilityRegistry
   - File: `core/src/scripting/sandbox/registry.rs`
   - HashMap-based O(1) lookup
   - KeyCode to function mapping
