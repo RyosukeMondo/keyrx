@@ -4,9 +4,12 @@
 //! for Rhai functions and types exposed to scripts.
 
 pub mod registry;
+pub mod search;
 pub mod types;
 
 pub use types::{
     FunctionDoc, FunctionSignature, ModuleDoc, ParamDoc, PropertyDoc, ReturnDoc, SearchResult,
     SearchResultKind, TypeDoc,
 };
+
+pub use search::{search, search_functions, search_in_module, search_types, SearchOptions};

@@ -20,7 +20,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating registry | Task: Create DocRegistry with static storage | Restrictions: Thread-safe, efficient lookup | _Leverage: Static patterns | Success: Registry stores all docs | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create search functionality
+- [x] 3. Create search functionality
   - File: `core/src/scripting/docs/search.rs`
   - Text search over functions and types
   - Relevance scoring
