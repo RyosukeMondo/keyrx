@@ -111,7 +111,7 @@
   - _Requirements: 4.1, 4.3_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Move shadowing tests to core/src/validation/tests/shadowing_tests.rs | Restrictions: All tests must pass, use new test helpers | _Leverage: Existing inline tests | Success: All shadowing tests moved, passing | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Move cycle tests to dedicated file
+- [-] 12. Move cycle tests to dedicated file
   - File: `core/src/validation/tests/cycle_tests.rs`
   - Extract cycle detection tests
   - Add edge cases for complex cycles

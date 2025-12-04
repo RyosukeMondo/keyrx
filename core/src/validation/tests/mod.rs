@@ -7,3 +7,6 @@ mod conflict_tests;
 
 #[cfg(test)]
 mod shadowing_tests;
+
+#[cfg(test)]
+mod cycle_tests;
