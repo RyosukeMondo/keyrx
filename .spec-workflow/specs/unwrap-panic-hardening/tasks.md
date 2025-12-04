@@ -29,7 +29,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with panic handling expertise | Task: Create PanicGuard with backtrace logging | Restrictions: Catch all panics, preserve backtraces | _Leverage: std::panic | Success: Panics caught and logged | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Create CircuitBreaker
+- [x] 4. Create CircuitBreaker
   - File: `core/src/safety/circuit_breaker.rs`
   - Implement state machine (Closed/Open/HalfOpen)
   - Add configurable thresholds and timeouts

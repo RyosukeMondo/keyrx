@@ -4,7 +4,8 @@
 //! and failures in critical paths. It includes:
 //!
 //! - `panic_guard`: Panic catching and backtrace logging
-//! - Future: Circuit breakers for preventing cascading failures
+//! - `circuit_breaker`: Circuit breakers for preventing cascading failures
 //! - Future: Extension traits for safe unwrapping
 
+pub mod circuit_breaker;
 pub mod panic_guard;
