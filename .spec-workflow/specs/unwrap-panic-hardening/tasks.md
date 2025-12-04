@@ -107,7 +107,7 @@
   - _Requirements: 1.1, 4.2_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer fixing discovery | Task: Remove unwraps from discovery module | Restrictions: Handle invalid devices, graceful fallback | _Leverage: CriticalResult | Success: Discovery never panics | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Fix config loading unwraps
+- [x] 12. Fix config loading unwraps
   - Files: `core/src/config/*.rs`
   - Use defaults on parse failure
   - Log errors but continue
