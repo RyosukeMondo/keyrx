@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create FfiMarshaler trait
+- [-] 1. Create FfiMarshaler trait
   - File: `core/src/ffi/marshal/traits.rs`
   - Define trait with CRepr associated type
   - Add streaming support

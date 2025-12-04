@@ -5,6 +5,7 @@
 //! - `context`: Handle-based state management replacing global statics
 //! - `events`: Unified event registry for all FFI callbacks
 //! - `traits`: FFI exportable trait definitions for domain modules
+//! - `marshal`: Unified marshaling layer for FFI data transfer
 //! - `domains`: Domain implementations using FfiExportable trait
 //! - `exports`: Core init/common functions
 
@@ -13,6 +14,7 @@ pub mod domains;
 pub mod error;
 pub mod events;
 mod exports;
+pub mod marshal;
 pub mod traits;
 
 #[cfg(test)]
