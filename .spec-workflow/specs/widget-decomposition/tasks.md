@@ -60,7 +60,7 @@
   - _Requirements: 1.1, 1.4_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract KeyButton to editor/key_button.dart | Restrictions: Support all states, sizes, interactions | _Leverage: Existing key button | Success: KeyButton works in grid | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Extract KeyGrid widget
+- [x] 7. Extract KeyGrid widget
   - File: `ui/lib/widgets/editor/key_grid.dart`
   - Extract keyboard grid layout
   - Use KeyButton for individual keys
