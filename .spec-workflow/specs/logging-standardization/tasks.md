@@ -145,7 +145,7 @@
 
 ## Phase 6: Testing
 
-- [ ] 16. Add logging tests
+- [x] 16. Add logging tests
   - File: `core/tests/unit/observability/`
   - Test log formatting
   - Test FFI bridge
