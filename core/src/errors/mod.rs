@@ -21,6 +21,7 @@
 
 pub mod code;
 pub mod config;
+pub mod critical;
 pub mod definition;
 pub mod doc_generator;
 pub mod driver;
@@ -32,6 +33,7 @@ pub mod runtime;
 pub mod validation;
 
 pub use code::{ErrorCategory, ErrorCode};
+pub use critical::{CriticalError, CriticalResult, FallbackAction};
 pub use definition::{ErrorDef, ErrorSeverity};
 pub use doc_generator::ErrorDocGenerator;
 pub use error::KeyrxError;

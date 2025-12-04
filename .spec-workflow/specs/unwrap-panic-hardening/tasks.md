@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure
 
-- [ ] 1. Create CriticalError type
+- [x] 1. Create CriticalError type
   - File: `core/src/errors/critical.rs`
   - Define error variants with fallback actions
   - Implement is_recoverable and fallback_action
