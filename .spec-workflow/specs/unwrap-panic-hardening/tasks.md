@@ -11,7 +11,7 @@
   - _Requirements: 2.2, 2.3_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating error types | Task: Create CriticalError with fallback actions | Restrictions: All variants have recovery path, serializable | _Leverage: thiserror | Success: Error type covers all critical failures | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create CriticalResult type
+- [x] 2. Create CriticalResult type
   - File: `core/src/errors/critical_result.rs`
   - Implement without panic-inducing methods
   - Add unwrap_or_fallback and similar safe methods
