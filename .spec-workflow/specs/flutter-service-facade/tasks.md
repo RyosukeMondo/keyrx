@@ -12,7 +12,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer with functional programming experience | Task: Create Result<T> and FacadeError types in ui/lib/services/facade/result.dart following requirements 5.1-5.4 | Restrictions: Use freezed for immutability, follow Rust Result semantics, integrate with ErrorTranslator | _Leverage: ErrorTranslator in ui/lib/services/, Rust Result pattern | Success: Result type compiles, error factories work, integrates with existing error translation | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create FacadeState aggregated state model
+- [x] 2. Create FacadeState aggregated state model
   - File: `ui/lib/services/facade/facade_state.dart`
   - Define `FacadeState` with engine, device, validation, discovery status
   - Create status enums: EngineStatus, DeviceStatus, ValidationStatus, DiscoveryStatus
