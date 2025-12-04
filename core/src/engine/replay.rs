@@ -11,7 +11,6 @@ use crate::traits::InputSource;
 use async_trait::async_trait;
 use std::collections::VecDeque;
 use std::path::Path;
-use std::time::Instant;
 
 /// Error types for replay operations.
 #[derive(Debug)]
@@ -82,10 +81,8 @@ pub struct ReplaySession {
     events: VecDeque<EventRecord>,
     /// Original session metadata.
     session: SessionFile,
-    /// Timestamp when replay started.
-    start_time: Option<Instant>,
-    /// Current replay state.
-    state: ReplayState,
+    /// Session state tracking (active/idle/paused/completed).
+    session_state: crate::engine::SessionState,
     /// Speed multiplier (1.0 = realtime, 2.0 = 2x speed, 0 = instant).
     speed_multiplier: f64,
 }
@@ -94,7 +91,7 @@ impl std::fmt::Debug for ReplaySession {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ReplaySession")
             .field("events_remaining", &self.events.len())
-            .field("state", &self.state)
+            .field("session_state", &self.session_state)
             .field("speed_multiplier", &self.speed_multiplier)
             .finish()
     }
@@ -108,8 +105,7 @@ impl ReplaySession {
         Self {
             events,
             session,
-            start_time: None,
-            state: ReplayState::Idle,
+            session_state: crate::engine::SessionState::new(),
             speed_multiplier: 1.0,
         }
     }
@@ -165,12 +161,18 @@ impl ReplaySession {
 
     /// Check if the replay has completed.
     pub fn is_completed(&self) -> bool {
-        self.state == ReplayState::Completed
+        self.session_state.is_completed()
     }
 
     /// Get the current replay state.
     pub fn state(&self) -> ReplayState {
-        self.state
+        use crate::engine::SessionStatus;
+        match self.session_state.status() {
+            SessionStatus::Idle => ReplayState::Idle,
+            SessionStatus::Active => ReplayState::Playing,
+            SessionStatus::Paused => ReplayState::Paused,
+            SessionStatus::Completed => ReplayState::Completed,
+        }
     }
 
     /// Get the number of events remaining to replay.
@@ -204,9 +206,7 @@ impl ReplaySession {
 
     /// Calculate elapsed microseconds since replay start.
     fn elapsed_us(&self) -> u64 {
-        self.start_time
-            .map(|t| t.elapsed().as_micros() as u64)
-            .unwrap_or(0)
+        self.session_state.elapsed_us()
     }
 
     /// Calculate the adjusted timestamp considering speed multiplier.
@@ -226,15 +226,14 @@ impl InputSource for ReplaySession {
     async fn start(&mut self) -> Result<(), KeyrxError> {
         use crate::errors::runtime::SESSION_REPLAY_FAILED;
 
-        if self.state == ReplayState::Playing {
+        if self.session_state.is_active() {
             return Err(keyrx_err!(
                 SESSION_REPLAY_FAILED,
                 reason = "Replay already started".to_string()
             ));
         }
 
-        self.start_time = Some(Instant::now());
-        self.state = ReplayState::Playing;
+        self.session_state.start();
 
         tracing::info!(
             "Starting replay of {} events from session",
@@ -245,12 +244,12 @@ impl InputSource for ReplaySession {
     }
 
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
-        if self.state != ReplayState::Playing {
+        if !self.session_state.is_active() {
             return Ok(vec![]);
         }
 
         if self.events.is_empty() {
-            self.state = ReplayState::Completed;
+            self.session_state.complete();
             tracing::info!("Replay completed");
             return Ok(vec![]);
         }
@@ -273,7 +272,7 @@ impl InputSource for ReplaySession {
         }
 
         if self.events.is_empty() && ready_events.is_empty() {
-            self.state = ReplayState::Completed;
+            self.session_state.complete();
         }
 
         Ok(ready_events)
@@ -286,8 +285,7 @@ impl InputSource for ReplaySession {
     }
 
     async fn stop(&mut self) -> Result<(), KeyrxError> {
-        self.state = ReplayState::Idle;
-        self.start_time = None;
+        self.session_state.stop();
         // Clear remaining events
         self.events.clear();
 

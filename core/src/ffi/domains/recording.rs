@@ -17,8 +17,8 @@ pub struct RecordingFfi;
 /// Recording state for FFI.
 #[derive(Debug, Default)]
 pub struct RecordingState {
-    /// Whether recording is currently active
-    pub is_recording: bool,
+    /// Session state tracking (active/idle/paused/completed)
+    session: crate::engine::SessionState,
     /// Path where the session will be saved
     pub output_path: Option<PathBuf>,
     /// Active recorder (when engine is running)
@@ -47,11 +47,11 @@ impl FfiExportable for RecordingFfi {
         // Stop any active recording before cleanup
         if let Some(mut state_guard) = ctx.get_domain_mut::<RecordingState>(Self::DOMAIN) {
             if let Some(state) = state_guard.downcast_mut::<RecordingState>() {
-                if state.is_recording {
+                if state.session.is_active() {
                     if let Some(recorder) = state.recorder.take() {
                         let _ = recorder.finish();
                     }
-                    state.is_recording = false;
+                    state.session.stop();
                     state.output_path = None;
                 }
             }
@@ -70,7 +70,7 @@ impl RecordingFfi {
                 state_guard
                     .downcast_ref::<RecordingState>()
                     .and_then(|state| {
-                        if state.is_recording && state.recorder.is_none() {
+                        if state.session.is_active() && state.recorder.is_none() {
                             state.output_path.clone()
                         } else {
                             None
@@ -83,7 +83,7 @@ impl RecordingFfi {
     pub fn set_active_recorder(ctx: &mut FfiContext, recorder: crate::engine::EventRecorder) {
         if let Some(mut state_guard) = ctx.get_domain_mut::<RecordingState>(Self::DOMAIN) {
             if let Some(state) = state_guard.downcast_mut::<RecordingState>() {
-                if state.is_recording && state.recorder.is_none() {
+                if state.session.is_active() && state.recorder.is_none() {
                     state.recorder = Some(recorder);
                 }
             }
@@ -154,7 +154,7 @@ pub fn start_recording(ctx: &mut FfiContext, path: &str) -> FfiResult<RecordingS
 
     if let Some(mut state_guard) = ctx.get_domain_mut::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_mut::<RecordingState>() {
-            if state.is_recording {
+            if state.session.is_active() {
                 return Ok(RecordingStartResult {
                     success: false,
                     error: Some("recording already in progress".to_string()),
@@ -162,7 +162,7 @@ pub fn start_recording(ctx: &mut FfiContext, path: &str) -> FfiResult<RecordingS
                 });
             }
 
-            state.is_recording = true;
+            state.session.start();
             state.output_path = Some(output_path.clone());
             state.last_session_path = None;
 
@@ -192,7 +192,7 @@ pub fn start_recording(ctx: &mut FfiContext, path: &str) -> FfiResult<RecordingS
 pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
     if let Some(mut state_guard) = ctx.get_domain_mut::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_mut::<RecordingState>() {
-            if !state.is_recording {
+            if !state.session.is_active() {
                 return Ok(RecordingStopResult {
                     success: false,
                     error: Some("no recording in progress".to_string()),
@@ -219,7 +219,7 @@ pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
                         (path, Some(count))
                     }
                     Err(err) => {
-                        state.is_recording = false;
+                        state.session.stop();
                         state.output_path = None;
                         return Ok(RecordingStopResult {
                             success: false,
@@ -237,7 +237,7 @@ pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
                 )
             };
 
-            state.is_recording = false;
+            state.session.stop();
             state.last_session_path = session_path.clone();
             state.output_path = None;
 
@@ -258,7 +258,7 @@ pub fn stop_recording(ctx: &mut FfiContext) -> FfiResult<RecordingStopResult> {
 pub fn is_recording(ctx: &FfiContext) -> FfiResult<bool> {
     if let Some(state_guard) = ctx.get_domain::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_ref::<RecordingState>() {
-            return Ok(state.is_recording);
+            return Ok(state.session.is_active());
         }
     }
     Ok(false)
@@ -271,7 +271,7 @@ pub fn is_recording(ctx: &FfiContext) -> FfiResult<bool> {
 pub fn get_recording_path(ctx: &FfiContext) -> FfiResult<Option<String>> {
     if let Some(state_guard) = ctx.get_domain::<RecordingState>(RecordingFfi::DOMAIN) {
         if let Some(state) = state_guard.downcast_ref::<RecordingState>() {
-            if state.is_recording {
+            if state.session.is_active() {
                 return Ok(state.output_path.as_ref().map(|p| p.display().to_string()));
             }
         }

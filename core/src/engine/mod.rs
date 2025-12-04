@@ -9,6 +9,7 @@ mod event_recording;
 pub mod layer_actions;
 mod processing;
 pub mod replay;
+mod session_state;
 pub mod state;
 pub mod tracing;
 pub mod transitions;
@@ -26,6 +27,7 @@ pub use event_recording::{
     SessionFile, SESSION_FILE_VERSION,
 };
 pub use replay::{ReplayError, ReplaySession, ReplayState};
+pub use session_state::{SessionState, SessionStatus};
 pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,
     ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,

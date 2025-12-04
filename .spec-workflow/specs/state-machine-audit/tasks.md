@@ -146,7 +146,7 @@
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer consolidating | Task: Merge duplicate EngineState definitions | Restrictions: Single definition, update all refs | _Leverage: Plan | Success: One EngineState definition | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Extract common SessionState
+- [x] 16. Extract common SessionState
   - Files: `core/src/engine/recording.rs`, `core/src/engine/replay.rs`
   - Create shared SessionState base
   - Compose into Recording/ReplayState
