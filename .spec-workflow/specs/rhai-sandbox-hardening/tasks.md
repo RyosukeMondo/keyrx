@@ -145,7 +145,7 @@
   - _Requirements: Non-functional (security)_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Security Developer | Task: Create sandbox fuzz tests | Restrictions: Test all limit types, input validation | _Leverage: Fuzzing | Success: No bypasses found | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Add sandbox benchmarks
+- [x] 16. Add sandbox benchmarks
   - File: `core/benches/sandbox_bench.rs`
   - Benchmark validation overhead
   - Benchmark capability checks
