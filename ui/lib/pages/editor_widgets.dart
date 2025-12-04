@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../ffi/bridge.dart';
 import '../models/validation.dart' as validation_models;
 import '../widgets/common/styled_icon_button.dart';
+import '../widgets/common/styled_text_field.dart';
 import '../widgets/layer_panel.dart';
 
 /// Types of key actions available in the editor.
@@ -188,12 +189,10 @@ class KeyConfigPanel extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: TextField(
+            child: StyledTextField(
               controller: outputController,
-              decoration: InputDecoration(
-                labelText: isRemap ? 'Remap to key' : 'Optional note',
-                hintText: isRemap ? 'e.g., Escape' : 'Leave blank for block/pass',
-              ),
+              labelText: isRemap ? 'Remap to key' : 'Optional note',
+              hintText: isRemap ? 'e.g., Escape' : 'Leave blank for block/pass',
               enabled: isRemap,
             ),
           ),
@@ -204,17 +203,29 @@ class KeyConfigPanel extends StatelessWidget {
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: TextField(controller: layerController,
-              decoration: const InputDecoration(
-                  labelText: 'Layer (optional)', hintText: 'e.g., navigation'))),
+          Expanded(
+            child: StyledTextField(
+              controller: layerController,
+              labelText: 'Layer (optional)',
+              hintText: 'e.g., navigation',
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: TextField(controller: tapOutputController,
-              decoration: const InputDecoration(
-                  labelText: 'Tap output (tap-hold)', hintText: 'e.g., Escape'))),
+          Expanded(
+            child: StyledTextField(
+              controller: tapOutputController,
+              labelText: 'Tap output (tap-hold)',
+              hintText: 'e.g., Escape',
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: TextField(controller: holdOutputController,
-              decoration: const InputDecoration(
-                  labelText: 'Hold output (tap-hold)', hintText: 'e.g., Ctrl'))),
+          Expanded(
+            child: StyledTextField(
+              controller: holdOutputController,
+              labelText: 'Hold output (tap-hold)',
+              hintText: 'e.g., Ctrl',
+            ),
+          ),
         ]),
       ]),
     );
@@ -243,13 +254,21 @@ class ComboConfigRow extends StatelessWidget {
           Text('Combos', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextField(controller: comboKeysController,
-                decoration: const InputDecoration(
-                    labelText: 'Keys (comma-separated)', hintText: 'e.g., A,S'))),
+            Expanded(
+              child: StyledTextField(
+                controller: comboKeysController,
+                labelText: 'Keys (comma-separated)',
+                hintText: 'e.g., A,S',
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: TextField(controller: comboOutputController,
-                decoration: const InputDecoration(
-                    labelText: 'Output', hintText: 'e.g., Ctrl'))),
+            Expanded(
+              child: StyledTextField(
+                controller: comboOutputController,
+                labelText: 'Output',
+                hintText: 'e.g., Ctrl',
+              ),
+            ),
             const SizedBox(width: 12),
             FilledButton.icon(onPressed: onAddCombo, icon: const Icon(Icons.add),
                 label: const Text('Add Combo')),
