@@ -87,7 +87,7 @@
   - _Requirements: 1.1, 3.3_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract LayerPanel to editor/layer_panel.dart | Restrictions: All operations, reorderable | _Leverage: Existing panel | Success: Layer management works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Extract BindingPanel widget
+- [x] 10. Extract BindingPanel widget
   - File: `ui/lib/widgets/editor/binding_panel.dart`
   - Extract binding configuration form
   - Split into sub-components if large
@@ -98,7 +98,7 @@
 
 ## Phase 4: Integration and Cleanup
 
-- [ ] 11. Update EditorPage imports
+- [x] 11. Update EditorPage imports
   - File: `ui/lib/pages/editor_page.dart`
   - Replace editor_widgets import with barrel import
   - Verify all widgets still accessible
