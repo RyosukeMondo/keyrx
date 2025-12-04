@@ -10,6 +10,7 @@ import '../services/rhai_generator.dart';
 import '../services/api_docs_service.dart';
 import '../widgets/visual_keyboard.dart';
 import '../widgets/scripting/api_browser.dart';
+import '../widgets/common/dialogs/dialogs.dart';
 
 export '../services/rhai_generator.dart' show TapHoldConfig;
 export '../widgets/visual_keyboard.dart' show RemapConfig, MappingType;
@@ -341,7 +342,13 @@ class VisualEditorDialogs {
     return showDialog<SyncAction>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved Code Changes'),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber),
+            SizedBox(width: 12),
+            Text('Unsaved Code Changes'),
+          ],
+        ),
         content: const Text(
           'The code has been modified. Do you want to parse it back to visual mode, '
           'or discard changes and regenerate from visual config?',
@@ -351,7 +358,7 @@ class VisualEditorDialogs {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, SyncAction.parse),
             child: const Text('Parse Code'),
           ),
@@ -366,56 +373,22 @@ class VisualEditorDialogs {
 
   /// Show confirmation dialog for clearing config.
   static Future<bool?> showClearConfirmation(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear Configuration'),
-        content: const Text(
-          'Are you sure you want to clear all mappings? This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
+    return DialogHelpers.confirmClear(
+      context,
+      title: 'Clear Configuration',
+      message: 'Are you sure you want to clear all mappings? This cannot be undone.',
+      confirmLabel: 'Clear',
     );
   }
 
   /// Show load script dialog.
   static Future<String?> showLoadDialog(BuildContext context) {
-    final controller = TextEditingController(text: 'scripts/');
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Load Script'),
-        content: SizedBox(
-          width: 400,
-          child: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Script path',
-              hintText: 'scripts/my-config.rhai',
-            ),
-            autofocus: true,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Load'),
-          ),
-        ],
-      ),
+    return DialogHelpers.inputPath(
+      context,
+      title: 'Load Script',
+      message: 'Enter the path to the script to load',
+      initialValue: 'scripts/',
+      hintText: 'scripts/my-config.rhai',
     );
   }
 
@@ -424,44 +397,13 @@ class VisualEditorDialogs {
     BuildContext context,
     String suggestedPath,
   ) {
-    final controller = TextEditingController(text: suggestedPath);
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Save Script'),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: 'Save path',
-                  hintText: 'scripts/my-config.rhai',
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'The script will be saved and can be loaded with:\n'
-                'keyrx run --script <path>',
-                style: Theme.of(ctx).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+    return DialogHelpers.inputPath(
+      context,
+      title: 'Save Script',
+      message: 'Enter the path where the script should be saved.\n'
+          'The script can be loaded with: keyrx run --script <path>',
+      initialValue: suggestedPath,
+      hintText: 'scripts/my-config.rhai',
     );
   }
 }
