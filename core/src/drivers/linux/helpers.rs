@@ -1,6 +1,7 @@
 use super::{EvdevReader, LinuxInput};
 use crate::engine::{InputEvent, KeyCode};
 use crate::errors::{driver::*, runtime::*, KeyrxError};
+use crate::metrics::Operation;
 use crate::{bail_keyrx, keyrx_err};
 use crossbeam_channel::TryRecvError;
 use std::sync::atomic::Ordering;
@@ -35,7 +36,8 @@ impl LinuxInput {
     }
 
     pub(super) fn next_event(&mut self) -> Result<Option<InputEvent>, KeyrxError> {
-        match self.rx.try_recv() {
+        let start = std::time::Instant::now();
+        let result = match self.rx.try_recv() {
             Ok(event) => {
                 trace!(
                     service = "keyrx",
@@ -49,7 +51,16 @@ impl LinuxInput {
             }
             Err(TryRecvError::Empty) => Ok(None),
             Err(TryRecvError::Disconnected) => self.handle_disconnected_channel(),
+        };
+
+        // Only record latency if we actually got an event
+        if matches!(result, Ok(Some(_))) {
+            let elapsed_micros = start.elapsed().as_micros() as u64;
+            self.metrics
+                .record_latency(Operation::DriverRead, elapsed_micros);
         }
+
+        result
     }
 
     fn handle_disconnected_channel(&mut self) -> Result<Option<InputEvent>, KeyrxError> {
@@ -110,7 +121,14 @@ impl LinuxInput {
             pressed = pressed,
             "Sending key action"
         );
-        self.injector.inject(key, pressed)
+
+        let start = std::time::Instant::now();
+        let result = self.injector.inject(key, pressed);
+        let elapsed_micros = start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::DriverWrite, elapsed_micros);
+
+        result
     }
 
     pub(super) fn tap_key(&mut self, key: KeyCode) -> Result<(), KeyrxError> {
@@ -121,8 +139,15 @@ impl LinuxInput {
             key = ?key,
             "Sending key tap"
         );
+
+        let start = std::time::Instant::now();
         self.injector.inject(key, true)?;
-        self.injector.inject(key, false)
+        self.injector.inject(key, false)?;
+        let elapsed_micros = start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::DriverWrite, elapsed_micros);
+
+        Ok(())
     }
 
     pub(super) fn log_block_action(&self) {

@@ -16,6 +16,7 @@ use crate::config::UINPUT_PATH;
 use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};
 use crate::errors::{driver::*, KeyrxError};
+use crate::metrics::MetricsCollector;
 use crate::traits::InputSource;
 use crate::{bail_keyrx, keyrx_err};
 use async_trait::async_trait;
@@ -61,6 +62,7 @@ pub struct LinuxInput {
     device_path: PathBuf,
     device_info: DeviceInfo,
     panic_error: Arc<AtomicBool>,
+    metrics: Arc<dyn MetricsCollector>,
 }
 impl LinuxInput {
     pub fn new(device_path: Option<PathBuf>) -> Result<Self, KeyrxError> {
@@ -68,9 +70,31 @@ impl LinuxInput {
             .map_err(|e| e.with_context("operation", "Failed to create uinput writer"))?;
         Self::new_with_injector(device_path, Box::new(injector))
     }
+
+    pub fn new_with_metrics(
+        device_path: Option<PathBuf>,
+        metrics: Arc<dyn MetricsCollector>,
+    ) -> Result<Self, KeyrxError> {
+        let injector = UinputWriter::new()
+            .map_err(|e| e.with_context("operation", "Failed to create uinput writer"))?;
+        Self::new_with_injector_and_metrics(device_path, Box::new(injector), metrics)
+    }
+
     pub fn new_with_injector(
         device_path: Option<PathBuf>,
         injector: Box<dyn KeyInjector>,
+    ) -> Result<Self, KeyrxError> {
+        Self::new_with_injector_and_metrics(
+            device_path,
+            injector,
+            crate::metrics::default_noop_collector(),
+        )
+    }
+
+    pub fn new_with_injector_and_metrics(
+        device_path: Option<PathBuf>,
+        injector: Box<dyn KeyInjector>,
+        metrics: Arc<dyn MetricsCollector>,
     ) -> Result<Self, KeyrxError> {
         // Determine device path: use provided or auto-detect
         let (device_path, device_info) = match device_path {
@@ -118,6 +142,7 @@ impl LinuxInput {
             device_path,
             device_info,
             panic_error,
+            metrics,
         })
     }
     fn find_first_keyboard() -> Result<DeviceInfo, KeyrxError> {

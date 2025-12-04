@@ -1,5 +1,6 @@
 use super::hook_thread::spawn_hook_thread;
 use super::injector::SendInputInjector;
+use crate::metrics::{MetricsCollector, Operation};
 use crate::{
     drivers::KeyInjector,
     engine::{InputEvent, KeyCode},
@@ -22,9 +23,14 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     injector: I,
     panic_error: Arc<AtomicBool>,
     thread_id_store: Arc<AtomicU32>,
+    metrics: Arc<dyn MetricsCollector>,
 }
 impl WindowsInput {
     pub fn new() -> Result<Self> {
+        Self::new_with_metrics(crate::metrics::default_noop_collector())
+    }
+
+    pub fn new_with_metrics(metrics: Arc<dyn MetricsCollector>) -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
@@ -45,11 +51,19 @@ impl WindowsInput {
             injector,
             panic_error,
             thread_id_store,
+            metrics,
         })
     }
 }
 impl<I: KeyInjector> WindowsInput<I> {
     pub fn new_with_injector(injector: I) -> Result<Self> {
+        Self::new_with_injector_and_metrics(injector, crate::metrics::default_noop_collector())
+    }
+
+    pub fn new_with_injector_and_metrics(
+        injector: I,
+        metrics: Arc<dyn MetricsCollector>,
+    ) -> Result<Self> {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
@@ -69,6 +83,7 @@ impl<I: KeyInjector> WindowsInput<I> {
             injector,
             panic_error,
             thread_id_store,
+            metrics,
         })
     }
     pub fn is_running(&self) -> bool {
@@ -185,7 +200,8 @@ impl<I: KeyInjector> WindowsInput<I> {
     }
 
     pub(crate) fn next_event(&mut self) -> Result<Option<InputEvent>> {
-        match self.rx.try_recv() {
+        let start = std::time::Instant::now();
+        let result = match self.rx.try_recv() {
             Ok(event) => {
                 trace!(
                     service = "keyrx",
@@ -201,7 +217,16 @@ impl<I: KeyInjector> WindowsInput<I> {
             Err(crossbeam_channel::TryRecvError::Disconnected) => {
                 self.handle_disconnected_channel()
             }
+        };
+
+        // Only record latency if we actually got an event
+        if matches!(result, Ok(Some(_))) {
+            let elapsed_micros = start.elapsed().as_micros() as u64;
+            self.metrics
+                .record_latency(Operation::DriverRead, elapsed_micros);
         }
+
+        result
     }
 
     pub(crate) fn log_polled_events(&self, count: usize) {
@@ -239,7 +264,14 @@ impl<I: KeyInjector> WindowsInput<I> {
             pressed = pressed,
             "Sending key action"
         );
-        self.inject_key(key, pressed)
+
+        let start = std::time::Instant::now();
+        let result = self.inject_key(key, pressed);
+        let elapsed_micros = start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::DriverWrite, elapsed_micros);
+
+        result
     }
 
     pub(crate) fn tap_key_action(&mut self, key: KeyCode) -> Result<()> {
@@ -250,8 +282,15 @@ impl<I: KeyInjector> WindowsInput<I> {
             key = ?key,
             "Sending key tap"
         );
+
+        let start = std::time::Instant::now();
         self.inject_key(key, true)?;
-        self.inject_key(key, false)
+        self.inject_key(key, false)?;
+        let elapsed_micros = start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::DriverWrite, elapsed_micros);
+
+        Ok(())
     }
 
     pub(crate) fn log_block_action(&self) {
