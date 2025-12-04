@@ -219,11 +219,11 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDevToolPage(ServiceRegistry registry) {
     switch (_selectedDevTool!) {
       case DeveloperTool.debugger:
-        return DebuggerPage(engineService: registry.engineService);
+        return const DebuggerPage();
       case DeveloperTool.console:
-        return ConsolePage(engineService: registry.engineService);
+        return const ConsolePage();
       case DeveloperTool.testRunner:
-        return TestRunnerPage(testService: registry.testService);
+        return const TestRunnerPage();
       case DeveloperTool.simulator:
       case DeveloperTool.analyzer:
       case DeveloperTool.benchmark:

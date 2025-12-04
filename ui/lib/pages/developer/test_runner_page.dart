@@ -5,14 +5,14 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../services/test_service.dart';
+import '../../services/facade/keyrx_facade.dart';
 
 /// Test Runner page for discovering and executing tests.
 class TestRunnerPage extends StatefulWidget {
-  const TestRunnerPage({super.key, required this.testService});
-
-  final TestService testService;
+  const TestRunnerPage({super.key});
 
   @override
   State<TestRunnerPage> createState() => _TestRunnerPageState();
@@ -53,17 +53,26 @@ class _TestRunnerPageState extends State<TestRunnerPage> {
       _failed = 0;
     });
 
-    final result = await widget.testService.discoverTests(path);
+    final facade = context.read<KeyrxFacade>();
+    final facadeResult = await facade.discoverTests(path);
 
-    setState(() {
-      _isDiscovering = false;
-      if (result.hasError) {
-        _error = result.errorMessage;
-      } else {
-        _discoveredTests = result.tests;
-        _testResults = {for (final t in result.tests) t.name: null};
-      }
-    });
+    if (!mounted) return;
+
+    await facadeResult.when(
+      ok: (result) async {
+        setState(() {
+          _isDiscovering = false;
+          _discoveredTests = result.tests;
+          _testResults = {for (final t in result.tests) t.name: null};
+        });
+      },
+      err: (error) async {
+        setState(() {
+          _isDiscovering = false;
+          _error = error.userMessage;
+        });
+      },
+    );
   }
 
   Future<void> _runAllTests() async {
@@ -79,23 +88,32 @@ class _TestRunnerPageState extends State<TestRunnerPage> {
     });
 
     final filter = _filterController.text.trim();
-    final result = await widget.testService.runTests(
+    final facade = context.read<KeyrxFacade>();
+    final facadeResult = await facade.runTests(
       path,
       filter: filter.isNotEmpty ? filter : null,
     );
 
-    setState(() {
-      _isRunning = false;
-      if (result.hasError) {
-        _error = result.errorMessage;
-      } else {
-        for (final r in result.results) {
-          _testResults[r.name] = r;
-        }
-        _passed = result.passed;
-        _failed = result.failed;
-      }
-    });
+    if (!mounted) return;
+
+    await facadeResult.when(
+      ok: (result) async {
+        setState(() {
+          _isRunning = false;
+          for (final r in result.results) {
+            _testResults[r.name] = r;
+          }
+          _passed = result.passed;
+          _failed = result.failed;
+        });
+      },
+      err: (error) async {
+        setState(() {
+          _isRunning = false;
+          _error = error.userMessage;
+        });
+      },
+    );
   }
 
   Future<void> _runSingleTest(TestCase test) async {
@@ -107,16 +125,28 @@ class _TestRunnerPageState extends State<TestRunnerPage> {
       _isRunning = true;
     });
 
-    final result = await widget.testService.runTests(path, filter: test.name);
+    final facade = context.read<KeyrxFacade>();
+    final facadeResult = await facade.runTests(path, filter: test.name);
 
-    setState(() {
-      _isRunning = false;
-      if (!result.hasError && result.results.isNotEmpty) {
-        _testResults[test.name] = result.results.first;
-        _passed = _testResults.values.where((r) => r?.passed == true).length;
-        _failed = _testResults.values.where((r) => r?.passed == false).length;
-      }
-    });
+    if (!mounted) return;
+
+    await facadeResult.when(
+      ok: (result) async {
+        setState(() {
+          _isRunning = false;
+          if (result.results.isNotEmpty) {
+            _testResults[test.name] = result.results.first;
+            _passed = _testResults.values.where((r) => r?.passed == true).length;
+            _failed = _testResults.values.where((r) => r?.passed == false).length;
+          }
+        });
+      },
+      err: (_) async {
+        setState(() {
+          _isRunning = false;
+        });
+      },
+    );
   }
 
   List<TestCase> get _filteredTests {
