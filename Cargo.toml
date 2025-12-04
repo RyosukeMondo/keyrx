@@ -8,7 +8,7 @@ edition = "2021"
 
 [workspace.dependencies]
 # Async runtime
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal", "sync"] }
 async-trait = "0.1"
 
 # Scripting engine
@@ -56,6 +56,9 @@ strsim = "0.11"
 
 # Stack traces for profiling
 backtrace = "0.3"
+
+# Memory usage tracking
+memory-stats = "1.2"
 
 # OpenTelemetry for tracing
 opentelemetry = "0.27"

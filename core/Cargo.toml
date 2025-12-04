@@ -33,6 +33,7 @@ rustyline.workspace = true
 dirs.workspace = true
 strsim.workspace = true
 backtrace.workspace = true
+memory-stats.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 
 # OpenTelemetry for tracing (optional)

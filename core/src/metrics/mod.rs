@@ -44,6 +44,7 @@ pub mod memory;
 pub mod noop_collector;
 pub mod operation;
 pub mod profile;
+pub mod sampler;
 pub mod snapshot;
 
 // Re-export commonly used types
@@ -54,6 +55,7 @@ pub use memory::{MemoryMonitor, MemoryStats};
 pub use noop_collector::NoOpCollector;
 pub use operation::Operation;
 pub use profile::{ProfilePointGuard, ProfilePoints, ProfileStats};
+pub use sampler::{MemorySampler, DEFAULT_SAMPLE_INTERVAL};
 pub use snapshot::{LatencyStats, MemorySnapshot, MetricsSnapshot, ProfileSnapshot};
 
 use std::sync::Arc;
