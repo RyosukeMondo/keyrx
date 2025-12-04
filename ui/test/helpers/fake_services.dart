@@ -14,6 +14,7 @@ import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
+import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
@@ -310,5 +311,21 @@ class FakeBridge implements KeyrxBridge {
   Future<void> dispose() async {
     await _classificationController.close();
     await _stateController.close();
+  }
+}
+
+/// Fake ScriptFileService that simulates file operations in memory.
+class FakeScriptFileService implements ScriptFileService {
+  final Map<String, String> _scripts = {};
+
+  @override
+  Future<ScriptFileResult> saveScript(String path, String content) async {
+    _scripts[path] = content;
+    return const ScriptFileResult(success: true);
+  }
+
+  @override
+  Future<String?> loadScript(String path) async {
+    return _scripts[path];
   }
 }

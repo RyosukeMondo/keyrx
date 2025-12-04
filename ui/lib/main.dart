@@ -12,6 +12,7 @@ import 'pages/run_controls_page.dart';
 import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
+import 'services/facade/keyrx_facade.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
@@ -58,13 +59,12 @@ class _HomePageState extends State<HomePage> {
   DeveloperTool? _selectedDevTool;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  List<Widget> _buildPages(ServiceRegistry registry) {
+  List<Widget> _buildPages(ServiceRegistry registry, KeyrxFacade facade) {
     return [
       TrainingScreen(audioService: registry.audioService),
       EditorPage(
-        engineService: registry.engineService,
+        facade: facade,
         mappingRepository: registry.mappingRepository,
-        bridge: registry.bridge,
       ),
       DevicesPage(deviceService: registry.deviceService),
       RunControlsPage(
@@ -142,8 +142,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final registry = context.read<ServiceRegistry>();
+    final facade = context.read<KeyrxFacade>();
     final appState = context.watch<AppState>();
-    final pages = _buildPages(registry);
+    final pages = _buildPages(registry, facade);
 
     return Scaffold(
       key: _scaffoldKey,

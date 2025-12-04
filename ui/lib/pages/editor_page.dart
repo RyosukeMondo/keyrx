@@ -9,12 +9,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../ffi/bridge.dart';
 import '../models/validation.dart' as validation_models;
 import '../repositories/mapping_repository.dart';
-import '../services/engine_service.dart';
 import '../services/mapping_validator.dart';
-import '../services/script_file_service.dart';
+import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
 import '../config/config.dart';
 import '../widgets/keyboard.dart';
@@ -24,27 +22,19 @@ import 'editor_widgets.dart';
 class EditorPage extends StatefulWidget {
   const EditorPage({
     super.key,
-    required this.engineService,
+    required this.facade,
     required this.mappingRepository,
-    required this.bridge,
     this.validator = const MappingValidator(),
-    this.scriptFileService = const ScriptFileService(),
   });
 
-  /// The engine service for key registry and script loading.
-  final EngineService engineService;
+  /// The KeyRx facade for all service operations.
+  final KeyrxFacade facade;
 
   /// The shared mapping repository for key mappings.
   final MappingRepository mappingRepository;
 
-  /// The FFI bridge for script validation.
-  final KeyrxBridge bridge;
-
   /// The validator for key mappings and combos.
   final MappingValidator validator;
-
-  /// The service for script file I/O operations.
-  final ScriptFileService scriptFileService;
 
   @override
   State<EditorPage> createState() => _EditorPageState();
@@ -121,8 +111,8 @@ class _EditorPageState extends State<EditorPage> {
 
     final script = repo.generateScript();
     try {
-      // Use full validation with coverage for richer feedback
-      final result = widget.bridge.validateScript(
+      // Use bridge directly for in-memory validation (facade.validateScript requires a file path)
+      final result = widget.facade.services.bridge.validateScript(
         script,
         const validation_models.ValidationOptions(includeCoverage: true),
       );
@@ -311,23 +301,25 @@ class _EditorPageState extends State<EditorPage> {
     setState(() => _isSaving = true);
     final script = repo.generateScript();
 
-    final result = await widget.scriptFileService.saveScript(
+    // Use facade for script operations
+    final saveResult = await widget.facade.saveScript(
       PathConstants.defaultScriptPath,
       script,
     );
 
-    if (!result.success) {
+    if (saveResult.isErr) {
       if (mounted) {
+        final error = saveResult.errOrNull!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save script: ${result.errorMessage}')),
+          SnackBar(content: Text('Failed to save script: ${error.userMessage}')),
         );
         setState(() => _isSaving = false);
       }
       return;
     }
 
-    // Load into engine
-    final engine = widget.engineService;
+    // Load into engine if initialized
+    final engine = widget.facade.services.engineService;
     final loaded = engine.isInitialized
         ? await engine.loadScript(PathConstants.defaultScriptPath)
         : false;
@@ -486,7 +478,8 @@ class _EditorPageState extends State<EditorPage> {
       _registryError = null;
     });
 
-    final result = await widget.engineService.fetchKeyRegistry();
+    // Access engine service through facade for key registry operations
+    final result = await widget.facade.services.engineService.fetchKeyRegistry();
     if (!mounted) return;
 
     final canonical = result.entries

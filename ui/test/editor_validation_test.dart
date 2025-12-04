@@ -10,6 +10,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/permission_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:provider/provider.dart';
@@ -85,12 +86,17 @@ void main() {
         testService: FakeTestService(),
         bridge: bridge,
         mappingRepository: MappingRepository(),
+        scriptFileService: FakeScriptFileService(),
       );
+
+      final facade = KeyrxFacade.real(registry);
+      addTearDown(() => facade.dispose());
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
             Provider<ServiceRegistry>.value(value: registry),
+            Provider<KeyrxFacade>.value(value: facade),
             ChangeNotifierProvider<AppState>(
               create: (_) => AppState(
                 engineService: engine,
@@ -100,9 +106,8 @@ void main() {
           ],
           child: MaterialApp(
             home: EditorPage(
-              engineService: engine,
+              facade: facade,
               mappingRepository: registry.mappingRepository,
-              bridge: bridge,
             ),
           ),
         ),
