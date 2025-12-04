@@ -22,7 +22,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer with state management expertise | Task: Create FacadeState and status enums in ui/lib/services/facade/facade_state.dart following requirements 3.1-3.3 | Restrictions: Use freezed, comprehensive status coverage, initial factory | _Leverage: Existing service state patterns | Success: State model compiles, status enums cover all cases, freezed generates correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create KeyrxFacade abstract interface
+- [x] 3. Create KeyrxFacade abstract interface
   - File: `ui/lib/services/facade/keyrx_facade.dart`
   - Define abstract class with all public methods
   - Add stateStream and currentState getters
