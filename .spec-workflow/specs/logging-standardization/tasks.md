@@ -116,7 +116,7 @@
 
 ## Phase 5: Flutter Integration
 
-- [ ] 13. Create ObservabilityService
+- [x] 13. Create ObservabilityService
   - File: `ui/lib/services/observability_service.dart`
   - Fetch logs and metrics from FFI
   - Stream updates
