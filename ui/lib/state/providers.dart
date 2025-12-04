@@ -6,6 +6,7 @@
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
+import '../services/api_docs_service.dart';
 import '../services/service_registry.dart';
 import '../services/facade/keyrx_facade.dart';
 import 'app_state.dart';
@@ -39,6 +40,14 @@ List<SingleChildWidget> createProviders() {
         return KeyrxFacade.real(registry);
       },
       dispose: (_, facade) => facade.dispose(),
+    ),
+
+    // API documentation service - ChangeNotifier for reactive updates
+    ChangeNotifierProvider<ApiDocsService>(
+      create: (context) {
+        final registry = context.read<ServiceRegistry>();
+        return registry.apiDocsService;
+      },
     ),
 
     // Application state - ChangeNotifier for reactive UI updates

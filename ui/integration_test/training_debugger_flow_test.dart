@@ -121,8 +121,10 @@ void main() {
       engineService: mockEngine,
       mappingRepository: MappingRepository(),
       deviceService: FakeDeviceService(),
+      scriptFileService: FakeScriptFileService(),
       testService: FakeTestService(),
       bridge: FakeBridge(),
+      apiDocsService: FakeApiDocsService(),
     );
 
     return MultiProvider(

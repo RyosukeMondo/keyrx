@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/models/validation.dart';
+import 'package:keyrx_ui/services/api_docs_service.dart';
 import 'package:keyrx_ui/services/audio_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
@@ -328,4 +329,10 @@ class FakeScriptFileService implements ScriptFileService {
   Future<String?> loadScript(String path) async {
     return _scripts[path];
   }
+}
+
+/// Fake ApiDocsService with empty documentation.
+class FakeApiDocsService extends ApiDocsService {
+  @override
+  bool get isLoaded => false;
 }

@@ -4,9 +4,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../services/rhai_generator.dart';
+import '../services/api_docs_service.dart';
 import '../widgets/visual_keyboard.dart';
+import '../widgets/scripting/api_browser.dart';
 
 export '../services/rhai_generator.dart' show TapHoldConfig;
 export '../widgets/visual_keyboard.dart' show RemapConfig, MappingType;
@@ -190,8 +193,8 @@ class MappingPanel extends StatelessWidget {
   }
 }
 
-/// Code editor view with toolbar.
-class CodeEditorView extends StatelessWidget {
+/// Code editor view with toolbar and optional documentation panel.
+class CodeEditorView extends StatefulWidget {
   const CodeEditorView({
     super.key,
     required this.controller,
@@ -206,13 +209,58 @@ class CodeEditorView extends StatelessWidget {
   final VoidCallback onParseToVisual;
 
   @override
+  State<CodeEditorView> createState() => _CodeEditorViewState();
+}
+
+class _CodeEditorViewState extends State<CodeEditorView> {
+  bool _showDocs = false;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildToolbar(context),
-        Expanded(child: _buildEditor(context)),
+        Expanded(child: _buildContent(context)),
       ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    if (!_showDocs) {
+      return _buildEditor(context);
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildEditor(context),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(
+          flex: 1,
+          child: _buildDocsPanel(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDocsPanel(BuildContext context) {
+    final docsService = context.watch<ApiDocsService>();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).dividerColor,
+          ),
+        ),
+      ),
+      child: ApiBrowser(
+        docsService: docsService,
+      ),
     );
   }
 
@@ -230,7 +278,7 @@ class CodeEditorView extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const Spacer(),
-          if (isModified)
+          if (widget.isModified)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Chip(
@@ -245,10 +293,19 @@ class CodeEditorView extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
               ),
             ),
+          IconButton(
+            icon: Icon(_showDocs ? Icons.menu_book : Icons.menu_book_outlined),
+            tooltip: _showDocs ? 'Hide Documentation' : 'Show Documentation',
+            onPressed: () {
+              setState(() {
+                _showDocs = !_showDocs;
+              });
+            },
+          ),
           TextButton.icon(
             icon: const Icon(Icons.sync, size: 18),
             label: const Text('Parse to Visual'),
-            onPressed: isModified ? onParseToVisual : null,
+            onPressed: widget.isModified ? widget.onParseToVisual : null,
           ),
         ],
       ),
@@ -259,7 +316,7 @@ class CodeEditorView extends StatelessWidget {
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainerLowest,
       child: TextField(
-        controller: controller,
+        controller: widget.controller,
         maxLines: null,
         expands: true,
         textAlignVertical: TextAlignVertical.top,
@@ -271,7 +328,7 @@ class CodeEditorView extends StatelessWidget {
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(16),
         ),
-        onChanged: onCodeChanged,
+        onChanged: widget.onCodeChanged,
       ),
     );
   }

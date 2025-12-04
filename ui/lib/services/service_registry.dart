@@ -2,6 +2,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
+import 'api_docs_service.dart';
 import 'audio_service.dart';
 import 'audio_service_impl.dart';
 import 'device_service.dart';
@@ -26,6 +27,7 @@ class ServiceRegistry {
     required this.scriptFileService,
     required this.testService,
     required this.bridge,
+    required this.apiDocsService,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -39,6 +41,7 @@ class ServiceRegistry {
     DeviceService? deviceService,
     ScriptFileService? scriptFileService,
     TestService? testService,
+    ApiDocsService? apiDocsService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final permissions =
@@ -66,6 +69,8 @@ class ServiceRegistry {
       classificationSource: mappedClassificationSource,
     );
 
+    final docs = apiDocsService ?? ApiDocsService();
+
     return ServiceRegistry(
       permissionService: permissions,
       audioService: audio,
@@ -76,6 +81,7 @@ class ServiceRegistry {
       scriptFileService: scriptFile,
       testService: tests,
       bridge: effectiveBridge,
+      apiDocsService: docs,
     );
   }
 
@@ -90,6 +96,7 @@ class ServiceRegistry {
     required ScriptFileService scriptFileService,
     required TestService testService,
     required KeyrxBridge bridge,
+    required ApiDocsService apiDocsService,
   }) {
     return ServiceRegistry(
       permissionService: permissionService,
@@ -101,6 +108,7 @@ class ServiceRegistry {
       scriptFileService: scriptFileService,
       testService: testService,
       bridge: bridge,
+      apiDocsService: apiDocsService,
     );
   }
 
@@ -113,6 +121,7 @@ class ServiceRegistry {
   final ScriptFileService scriptFileService;
   final TestService testService;
   final KeyrxBridge bridge;
+  final ApiDocsService apiDocsService;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -125,6 +134,7 @@ class ServiceRegistry {
     ScriptFileService? scriptFileService,
     TestService? testService,
     KeyrxBridge? bridge,
+    ApiDocsService? apiDocsService,
   }) {
     return ServiceRegistry(
       permissionService: permissionService ?? this.permissionService,
@@ -136,6 +146,7 @@ class ServiceRegistry {
       scriptFileService: scriptFileService ?? this.scriptFileService,
       testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
+      apiDocsService: apiDocsService ?? this.apiDocsService,
     );
   }
 
