@@ -118,7 +118,7 @@
 
 ## Phase 5: Derive Macro
 
-- [ ] 13. Create FfiMarshaler derive macro
+- [x] 13. Create FfiMarshaler derive macro
   - File: `core-macros/src/ffi_marshaler.rs`
   - Auto-generate implementations
   - Strategy attribute (json/c_struct/auto)

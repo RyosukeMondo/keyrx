@@ -1,6 +1,13 @@
 //! Procedural macros for KeyRX FFI exports
 //!
-//! This crate provides the `#[ffi_export]` attribute macro that automatically generates
+//! This crate provides:
+//!
+//! 1. `#[ffi_export]` - Attribute macro for generating C-ABI wrapper functions
+//! 2. `#[derive(FfiMarshaler)]` - Derive macro for automatic FfiMarshaler implementations
+//!
+//! # FFI Export Macro
+//!
+//! The `#[ffi_export]` attribute macro automatically generates
 //! C-ABI wrapper functions from Rust methods. The macro handles:
 //! - Error conversion to FfiResult
 //! - String parameter validation (null checks, UTF-8 validation)
@@ -22,8 +29,15 @@
 //!     }
 //! }
 //! ```
+//!
+//! # FfiMarshaler Derive Macro
+//!
+//! The `#[derive(FfiMarshaler)]` macro automatically implements the FfiMarshaler
+//! trait for structs. See the `ffi_marshaler` module for details.
 
 use proc_macro::TokenStream;
+
+mod ffi_marshaler;
 
 /// Attribute macro to generate C-ABI FFI wrappers for Rust methods
 ///
@@ -372,6 +386,37 @@ fn generate_ffi_wrapper_for_impl_fn(
                 .map_or_else(|_| std::ptr::null_mut(), std::ffi::CString::into_raw)
         }
     })
+}
+
+/// Derive macro for FfiMarshaler trait
+///
+/// Automatically generates FfiMarshaler implementations with configurable strategies.
+///
+/// # Strategy Selection
+///
+/// Use `#[ffi(strategy = "...")]` to choose marshaling strategy:
+///
+/// - `c_struct`: Direct C struct representation (best for simple types)
+/// - `json`: JSON serialization (best for complex types)
+/// - `auto`: Automatically choose based on type (default)
+///
+/// # Example
+///
+/// ```ignore
+/// use keyrx_ffi_macros::FfiMarshaler;
+///
+/// #[derive(FfiMarshaler)]
+/// #[ffi(strategy = "c_struct")]
+/// struct DeviceInfo {
+///     vendor_id: u16,
+///     product_id: u16,
+///     #[ffi(string_buffer = 256)]
+///     name: String,
+/// }
+/// ```
+#[proc_macro_derive(FfiMarshaler, attributes(ffi))]
+pub fn derive_ffi_marshaler(input: TokenStream) -> TokenStream {
+    ffi_marshaler::derive_ffi_marshaler_impl(input.into()).into()
 }
 
 /// Check if a type is a string type (&str, String, etc.)
