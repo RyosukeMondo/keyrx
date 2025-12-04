@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Infrastructure
 
-- [ ] 1. Create metrics module structure
+- [x] 1. Create metrics module structure
   - Files: `core/src/metrics/{mod,collector,operation}.rs`
   - Define MetricsCollector trait
   - Define Operation enum
