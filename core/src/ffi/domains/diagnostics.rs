@@ -10,7 +10,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Diagnostics domain FFI implementation.
@@ -36,7 +36,8 @@ impl FfiExportable for DiagnosticsFfi {
 }
 
 /// Benchmark result for FFI JSON output.
-#[derive(Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct BenchmarkResultJson {
     #[serde(rename = "minNs")]
     min_ns: u64,
@@ -54,7 +55,8 @@ pub struct BenchmarkResultJson {
 }
 
 /// Diagnostic check for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct DiagnosticCheckJson {
     name: String,
     status: String,
@@ -63,7 +65,8 @@ struct DiagnosticCheckJson {
 }
 
 /// Diagnostics result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DiagnosticsResultJson {
     checks: Vec<DiagnosticCheckJson>,
     passed: usize,

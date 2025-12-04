@@ -12,7 +12,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Device domain FFI implementation.
@@ -60,7 +60,8 @@ impl DeviceFfi {
 }
 
 /// Device info with profile status for FFI.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DeviceInfoWithProfile {
     name: String,
     #[serde(rename = "vendorId")]

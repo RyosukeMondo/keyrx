@@ -10,7 +10,7 @@ use crate::ffi::traits::FfiExportable;
 use crate::scripting::with_active_runtime;
 use crate::traits::ScriptRuntime;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Script domain FFI implementation.
@@ -34,7 +34,8 @@ impl FfiExportable for ScriptFfi {
 }
 
 /// Script validation error detail.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct ValidationError {
     pub line: Option<usize>,
     pub column: Option<usize>,
@@ -42,7 +43,8 @@ pub struct ValidationError {
 }
 
 /// Script validation result.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct ValidationResult {
     pub valid: bool,
     pub errors: Vec<ValidationError>,

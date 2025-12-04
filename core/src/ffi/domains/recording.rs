@@ -8,7 +8,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Recording domain FFI implementation.
@@ -105,7 +105,8 @@ impl RecordingFfi {
 }
 
 /// Recording start result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct RecordingStartResult {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -115,7 +116,8 @@ pub struct RecordingStartResult {
 }
 
 /// Recording stop result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct RecordingStopResult {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]

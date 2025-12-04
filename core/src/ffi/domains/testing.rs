@@ -39,7 +39,8 @@ impl FfiExportable for TestingFfi {
 }
 
 /// Discovered test for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DiscoveredTestJson {
     name: String,
     file: String,
@@ -47,7 +48,8 @@ pub struct DiscoveredTestJson {
 }
 
 /// Test result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct TestResultJson {
     name: String,
     passed: bool,
@@ -57,7 +59,8 @@ struct TestResultJson {
 }
 
 /// Test run result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct TestRunResult {
     total: usize,
     passed: usize,
@@ -68,7 +71,8 @@ pub struct TestRunResult {
 }
 
 /// Key input for simulation FFI.
-#[derive(Deserialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct SimKeyInput {
     code: String,
     #[serde(rename = "holdMs", default)]
@@ -76,7 +80,8 @@ struct SimKeyInput {
 }
 
 /// Simulation mapping result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct SimMapping {
     input: String,
     output: String,
@@ -84,7 +89,8 @@ struct SimMapping {
 }
 
 /// Simulation result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct SimFfiResult {
     mappings: Vec<SimMapping>,
     #[serde(rename = "activeLayers")]

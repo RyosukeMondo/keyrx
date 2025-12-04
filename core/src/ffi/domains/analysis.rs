@@ -11,7 +11,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Analysis domain FFI implementation.
@@ -37,7 +37,8 @@ impl FfiExportable for AnalysisFfi {
 }
 
 /// Session info for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct SessionInfo {
     path: String,
     name: String,
@@ -49,7 +50,8 @@ pub struct SessionInfo {
 }
 
 /// Decision breakdown for FFI JSON output.
-#[derive(Serialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct DecisionBreakdownJson {
     #[serde(rename = "passThrough")]
     pass_through: usize,
@@ -63,7 +65,8 @@ struct DecisionBreakdownJson {
 }
 
 /// Analysis result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct AnalysisResultJson {
     #[serde(rename = "sessionPath")]
     session_path: String,
@@ -82,7 +85,8 @@ pub struct AnalysisResultJson {
 }
 
 /// Mismatch detail for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct MismatchJson {
     seq: u64,
     recorded: String,
@@ -90,7 +94,8 @@ struct MismatchJson {
 }
 
 /// Replay verification result for FFI JSON output.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct ReplayResultJson {
     #[serde(rename = "totalEvents")]
     total_events: usize,
