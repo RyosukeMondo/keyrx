@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../config/config.dart';
 import '../services/engine_service.dart';
-import '../services/service_registry.dart';
+import '../services/facade/keyrx_facade.dart';
 import 'trade_off_chart.dart';
 import 'trade_off_widgets.dart';
 import 'typing_simulator.dart';
@@ -48,8 +48,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   @override
   void initState() {
     super.initState();
-    final registry = Provider.of<ServiceRegistry>(context, listen: false);
-    _engine = registry.engineService;
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    _engine = facade.services.engineService;
     _loadCurrentTiming();
   }
 
