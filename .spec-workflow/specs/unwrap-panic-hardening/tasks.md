@@ -136,7 +136,7 @@
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer adding telemetry | Task: Export panic telemetry via FFI | Restrictions: Recovery events, panic counts, backtraces | _Leverage: FFI patterns | Success: Flutter shows recovery notifications | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Verify emergency exit always works
+- [x] 15. Verify emergency exit always works
   - Files: All driver files
   - Test emergency exit in panic scenarios
   - Test in circuit breaker open state
