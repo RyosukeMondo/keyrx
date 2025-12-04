@@ -87,7 +87,7 @@
 
 ## Phase 4: Sandbox Integration
 
-- [ ] 10. Create ScriptSandbox
+- [x] 10. Create ScriptSandbox
   - File: `core/src/scripting/sandbox/mod.rs`
   - Combine capability checks, validation, resources
   - Configure Rhai engine limits
