@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn list_keyboards_returns_system_keyboard() {
-        let keyboards = list_keyboards().unwrap();
+        let keyboards = list_keyboards().expect("list_keyboards should succeed in tests");
         assert_eq!(keyboards.len(), 1);
         assert!(keyboards[0].is_keyboard());
         assert!(keyboards[0].name().contains("System Keyboard"));

@@ -5,6 +5,7 @@
 
 use crate::drivers::common::error::DriverError;
 use crate::engine::{InputEvent, KeyCode};
+use crate::safety::panic_guard::PanicGuard;
 use crossbeam_channel::Sender;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
@@ -188,6 +189,11 @@ impl Drop for HookManager {
 /// This function is called by Windows for every keyboard event. It must complete
 /// quickly (within ~100ms per Windows requirements) or keyboard input will lag.
 ///
+/// The callback is wrapped in PanicGuard to prevent panics from escaping to Windows,
+/// which would cause the entire hook to be uninstalled. The emergency exit check
+/// remains outside PanicGuard to ensure it always works even if the main processing
+/// panics.
+///
 /// # Safety
 ///
 /// This is an unsafe extern function called by Windows. The `lparam` must be
@@ -201,8 +207,8 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
         return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
     }
 
-    // EMERGENCY EXIT CHECK - must be FIRST before any other processing
-    // Check for Ctrl+Alt+Shift+Escape to toggle bypass mode
+    // EMERGENCY EXIT CHECK - must be FIRST and OUTSIDE PanicGuard
+    // This ensures emergency exit always works, even if processing panics
     let kb_struct = &*(lparam.0 as *const KBDLLHOOKSTRUCT);
     let pressed = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
 
@@ -217,9 +223,33 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
         return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
     }
 
+    // Wrap main processing in PanicGuard to prevent panics from uninstalling the hook
+    let result = PanicGuard::new("windows_keyboard_hook")
+        .execute(|| process_keyboard_event(kb_struct, pressed));
+
+    match result {
+        Ok(_) => CallNextHookEx(HHOOK::default(), ncode, wparam, lparam),
+        Err(err) => {
+            // Panic was caught - log it (PanicGuard already logged details)
+            // and pass through the key to maintain keyboard functionality
+            tracing::error!(
+                service = "keyrx",
+                event = "hook_panic_recovered",
+                error = %err,
+                "Hook callback panicked but recovered - passing through key"
+            );
+            CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
+        }
+    }
+}
+
+/// Process a keyboard event - separated for PanicGuard wrapping.
+///
+/// This is the main event processing logic that is wrapped in PanicGuard
+/// to prevent panics from escaping the hook callback.
+fn process_keyboard_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) {
     let event = build_input_event(kb_struct, pressed);
     send_event(event);
-    CallNextHookEx(HHOOK::default(), ncode, wparam, lparam)
 }
 
 /// Check if the emergency exit key combination is active.

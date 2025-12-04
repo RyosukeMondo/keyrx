@@ -468,7 +468,13 @@ impl<I: KeyInjector> WindowsInput<I> {
 
 impl Default for WindowsInput {
     fn default() -> Self {
-        Self::new().expect("WindowsInput::new should not fail")
+        // WindowsInput::new only fails if channel creation fails, which is extremely rare
+        // and would indicate a critical system resource issue. In such cases, panicking
+        // in Default is acceptable as the system cannot continue anyway.
+        // We use expect with a clear message to aid debugging if this ever occurs.
+        Self::new().expect(
+            "WindowsInput creation failed - critical system resource exhaustion (channel creation)",
+        )
     }
 }
 impl<I: KeyInjector> Drop for WindowsInput<I> {
