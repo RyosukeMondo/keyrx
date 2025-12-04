@@ -116,8 +116,8 @@ impl RhaiRuntime {
             "Device profile loaded for row-column API"
         );
 
-        // Replace resolver with one that has the profile
-        self.resolver = Arc::new(RowColResolver::new(Some(Arc::new(profile))));
+        // Load profile into the existing resolver (which is shared with registered functions)
+        self.resolver.load_profile(Arc::new(profile));
 
         Ok(())
     }

@@ -7,7 +7,7 @@
 
 use crate::discovery::types::DeviceProfile;
 use crate::engine::KeyCode;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use thiserror::Error;
 
 #[cfg(target_os = "linux")]
@@ -45,19 +45,29 @@ pub enum ResolverError {
 /// This is done at script load time, not runtime, so performance is not critical.
 #[derive(Debug, Clone)]
 pub struct RowColResolver {
-    device_profile: Option<Arc<DeviceProfile>>,
+    device_profile: Arc<RwLock<Option<Arc<DeviceProfile>>>>,
 }
 
 impl RowColResolver {
     /// Create a new resolver with an optional device profile.
     pub fn new(device_profile: Option<Arc<DeviceProfile>>) -> Self {
-        Self { device_profile }
+        Self {
+            device_profile: Arc::new(RwLock::new(device_profile)),
+        }
     }
 
     /// Create a resolver without a device profile (will fail on all resolutions).
     pub fn without_profile() -> Self {
         Self {
-            device_profile: None,
+            device_profile: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    /// Load a device profile into this resolver.
+    /// This allows updating the profile after the resolver has been created and shared.
+    pub fn load_profile(&self, profile: Arc<DeviceProfile>) {
+        if let Ok(mut guard) = self.device_profile.write() {
+            *guard = Some(profile);
         }
     }
 
@@ -89,8 +99,12 @@ impl RowColResolver {
 
     /// Look up the scan_code for a given (row, col) position in the device profile.
     fn lookup_scan_code(&self, row: u8, col: u8) -> Result<u16, ResolverError> {
-        let profile = self
+        let profile_guard = self
             .device_profile
+            .read()
+            .map_err(|_| ResolverError::NoProfileLoaded)?;
+
+        let profile = profile_guard
             .as_ref()
             .ok_or(ResolverError::NoProfileLoaded)?;
 
@@ -151,12 +165,19 @@ impl RowColResolver {
 
     /// Check if a device profile is loaded.
     pub fn has_profile(&self) -> bool {
-        self.device_profile.is_some()
+        self.device_profile
+            .read()
+            .ok()
+            .and_then(|guard| guard.as_ref().map(|_| true))
+            .unwrap_or(false)
     }
 
     /// Get the device name from the loaded profile, if available.
-    pub fn device_name(&self) -> Option<&str> {
-        self.device_profile.as_ref().and_then(|p| p.name.as_deref())
+    pub fn device_name(&self) -> Option<String> {
+        self.device_profile
+            .read()
+            .ok()
+            .and_then(|guard| guard.as_ref().and_then(|p| p.name.clone()))
     }
 }
 

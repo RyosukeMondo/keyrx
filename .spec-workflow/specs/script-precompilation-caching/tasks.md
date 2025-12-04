@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Cache
 
-- [ ] 1. Create ScriptCache
+- [-] 1. Create ScriptCache
   - File: `core/src/scripting/cache.rs`
   - Content-addressable storage
   - LRU eviction

@@ -12,9 +12,9 @@ fn on_init() {
     tap_hold_rc(3, 1, "A", "LeftCtrl");
     print("✓ Test 2: tap_hold_rc(3, 1, 'A', 'LeftCtrl')");
 
-    // Test 3: Block - Insert key (r1_c13)
-    block_rc(1, 13);
-    print("✓ Test 3: block_rc(1, 13)");
+    // Test 3: Block - Backspace key (r1_c14)
+    block_rc(1, 14);
+    print("✓ Test 3: block_rc(1, 14)");
 
     print("\n🎉 All row-col functions executed successfully!");
     print("📍 Device profile loaded and positions resolved to KeyCodes");
