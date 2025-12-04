@@ -824,28 +824,697 @@ Test doubles follow standard test patterns with isolated ownership.
 
 ---
 
-## 17. Next Steps
+## 17. State Consolidation Plan
 
-Based on this audit, the following tasks are recommended:
+This section provides a detailed roadmap for consolidating duplicate and overlapping state types, with clear migration paths and minimal breaking changes.
+
+### 17.1 Consolidation Overview
+
+**Goals:**
+- Eliminate duplicate state definitions
+- Extract common patterns into shared types
+- Minimize breaking changes through gradual migration
+- Maintain backward compatibility during transition where needed
+- Clear removal timeline for all deprecated code
+
+**Guiding Principles:**
+1. **No backward compatibility required** - Clean breaks preferred over compatibility shims
+2. **Fail fast** - Validate at boundaries, reject invalid states immediately
+3. **Single source of truth** - One canonical definition per concept
+4. **Clear ownership** - Every state has exactly one owner
+5. **Testability** - All changes must be testable
+
+---
+
+### 17.2 Phase 1: Remove Critical Duplicates (IMMEDIATE - Breaking)
+
+#### 17.2.1 Remove EngineStateSnapshot from advanced.rs
+
+**Status:** 🔴 Critical - Immediate action required
+**Impact:** Breaking change - requires FFI and API updates
+**Timeline:** Complete in single atomic commit
+
+**Current State:**
+- Two snapshot types exist: `EngineStateSnapshot` (legacy) and `StateSnapshot` (unified)
+- Legacy format used by `AdvancedEngine::snapshot()`
+- New format used by `EngineState::state_snapshot()`
+
+**Migration Steps:**
+
+1. **Identify all callers** of `AdvancedEngine::snapshot()`
+   - Files: FFI layer, test code, CLI commands
+   - Search pattern: `snapshot\(\)` in context of `AdvancedEngine`
+
+2. **Update FFI layer** (`core/src/ffi/domains/engine.rs`)
+   ```rust
+   // BEFORE
+   pub fn engine_snapshot(handle: EngineHandle) -> EngineStateSnapshot {
+       handle.engine.snapshot()
+   }
+
+   // AFTER
+   pub fn engine_snapshot(handle: EngineHandle) -> StateSnapshot {
+       handle.engine.state().state_snapshot()
+   }
+   ```
+
+3. **Update tests** to use new snapshot format
+   - Replace `engine.snapshot()` with `engine.state().state_snapshot()`
+   - Update test assertions for new field names
+
+4. **Remove legacy type**
+   ```rust
+   // DELETE from core/src/engine/advanced.rs:61
+   pub struct EngineStateSnapshot { ... }
+
+   // DELETE method
+   impl AdvancedEngine {
+       pub fn snapshot(&self) -> EngineStateSnapshot { ... }
+   }
+   ```
+
+5. **Update documentation**
+   - Remove references to legacy snapshot format
+   - Update FFI documentation
+
+**Validation:**
+- [ ] All tests pass with new snapshot format
+- [ ] FFI layer compiles with new type
+- [ ] No references to `EngineStateSnapshot` remain in codebase
+
+**Rollback Plan:** None - breaking change is intentional
+
+---
+
+#### 17.2.2 Remove KeyStateView Adapter
+
+**Status:** ⚠️ Depends on migration completion
+**Impact:** Breaking change - removes compatibility shim
+**Timeline:** After all code uses unified state directly
+
+**Current State:**
+- `KeyStateView` provides `KeyStateProvider` trait compatibility
+- Used during gradual migration to unified state
+- Adapter wraps unified `KeyState` in legacy trait
+
+**Migration Steps:**
+
+1. **Search for KeyStateProvider trait usage**
+   - Find all implementations and consumers
+   - Identify code still using trait-based access
+
+2. **Convert trait users to direct state access**
+   ```rust
+   // BEFORE
+   fn check_key<K: KeyStateProvider>(provider: &K, key: KeyCode) -> bool {
+       provider.is_key_pressed(key)
+   }
+
+   // AFTER
+   fn check_key(state: &EngineState, key: KeyCode) -> bool {
+       state.is_key_pressed(key)
+   }
+   ```
+
+3. **Remove KeyStateProvider trait** if no other implementations exist
+   - Check for external implementations (drivers, tests)
+   - If trait still needed for drivers, keep but remove KeyStateView
+
+4. **Remove KeyStateView adapter**
+   ```rust
+   // DELETE from core/src/engine/advanced.rs:24
+   pub struct KeyStateView { ... }
+   ```
+
+**Validation:**
+- [ ] No references to `KeyStateView` in production code
+- [ ] All key state access uses unified state directly
+- [ ] Tests pass without adapter
+
+---
+
+### 17.3 Phase 2: Extract Common Patterns
+
+#### 17.3.1 Extract SessionState Base Type
+
+**Status:** 🟡 Medium priority - reduces duplication
+**Impact:** Non-breaking - internal refactoring
+**Timeline:** After Phase 1 complete
+
+**Problem:**
+`RecordingState` and `ReplaySession` share common session management patterns:
+- Session metadata (start time, duration, name)
+- Lifecycle tracking (idle/active/paused/completed)
+- Event buffering
+
+**Solution:**
+Create shared `SessionState` base type with composition pattern.
+
+**Design:**
+
+```rust
+// New file: core/src/engine/session/state.rs
+
+/// Session lifecycle states
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SessionLifecycle {
+    Idle,       // Not started
+    Active,     // Running
+    Paused,     // Paused mid-session
+    Completed,  // Finished
+    Failed,     // Error occurred
+}
+
+/// Session metadata shared by recording and replay
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionMetadata {
+    pub name: Option<String>,
+    pub created_at: SystemTime,
+    pub duration: Option<Duration>,
+    pub event_count: usize,
+}
+
+/// Base session state shared by recording and replay
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionState {
+    pub lifecycle: SessionLifecycle,
+    pub metadata: SessionMetadata,
+    pub started_at: Option<Instant>,
+}
+
+impl SessionState {
+    pub fn new() -> Self {
+        Self {
+            lifecycle: SessionLifecycle::Idle,
+            metadata: SessionMetadata {
+                name: None,
+                created_at: SystemTime::now(),
+                duration: None,
+                event_count: 0,
+            },
+            started_at: None,
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.lifecycle = SessionLifecycle::Active;
+        self.started_at = Some(Instant::now());
+    }
+
+    pub fn pause(&mut self) {
+        if self.lifecycle == SessionLifecycle::Active {
+            self.lifecycle = SessionLifecycle::Paused;
+        }
+    }
+
+    pub fn resume(&mut self) {
+        if self.lifecycle == SessionLifecycle::Paused {
+            self.lifecycle = SessionLifecycle::Active;
+        }
+    }
+
+    pub fn complete(&mut self) {
+        self.lifecycle = SessionLifecycle::Completed;
+        if let Some(started) = self.started_at {
+            self.metadata.duration = Some(started.elapsed());
+        }
+    }
+
+    pub fn fail(&mut self) {
+        self.lifecycle = SessionLifecycle::Failed;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.lifecycle == SessionLifecycle::Active
+    }
+}
+```
+
+**Migration Steps:**
+
+1. **Create new SessionState type** as shown above
+   - File: `core/src/engine/session/state.rs`
+   - Add module: `core/src/engine/session/mod.rs`
+
+2. **Refactor RecordingState** to compose SessionState
+   ```rust
+   // core/src/ffi/domains/recording.rs
+
+   // BEFORE
+   pub struct RecordingState {
+       status: RecordingStatus,  // Idle/Recording/Paused
+       start_time: Option<Instant>,
+       events: Vec<RecordedEvent>,
+       // ... other fields
+   }
+
+   // AFTER
+   pub struct RecordingState {
+       session: SessionState,
+       writer: EventWriter,
+       buffer: Vec<RecordedEvent>,
+   }
+
+   impl RecordingState {
+       pub fn start_recording(&mut self) {
+           self.session.start();
+       }
+
+       pub fn is_recording(&self) -> bool {
+           self.session.is_active()
+       }
+   }
+   ```
+
+3. **Refactor ReplaySession** to compose SessionState
+   ```rust
+   // core/src/engine/replay.rs
+
+   // BEFORE
+   pub struct ReplaySession {
+       state: ReplayState,  // Enum with Idle/Playing/Paused/Completed
+       events: Vec<Event>,
+       position: usize,
+       start_time: Option<Instant>,
+       // ... other fields
+   }
+
+   // AFTER
+   pub struct ReplaySession {
+       session: SessionState,
+       reader: EventReader,
+       position: usize,
+   }
+
+   impl ReplaySession {
+       pub fn play(&mut self) {
+           self.session.start();
+       }
+
+       pub fn is_playing(&self) -> bool {
+           self.session.is_active()
+       }
+   }
+   ```
+
+4. **Update callers** to use new API
+   - Search for `.state` field access on `ReplaySession`
+   - Replace with `.session.lifecycle`
+
+5. **Remove old enums**
+   - Remove `ReplayState` enum if fully replaced
+   - Remove `RecordingStatus` enum if fully replaced
+
+**Validation:**
+- [ ] All recording operations use SessionState
+- [ ] All replay operations use SessionState
+- [ ] Tests pass with new composition
+- [ ] No duplicate lifecycle tracking
+
+**Benefits:**
+- Single source of truth for session lifecycle
+- Consistent API across recording and replay
+- Easier to add new session types (e.g., test sessions)
+- Reduces code duplication by ~100 lines
+
+---
+
+### 17.4 Phase 3: Unify Access Patterns
+
+#### 17.4.1 Deprecate Direct `_mut()` Accessors
+
+**Status:** 🟡 Post-migration cleanup
+**Impact:** Breaking change - enforces mutation API
+**Timeline:** After legacy code fully migrated
+
+**Problem:**
+Direct mutable access bypasses:
+- Version tracking
+- Invariant validation
+- Effect generation
+- Transition logging
+
+**Current Unsafe Patterns:**
+```rust
+// UNSAFE: Bypasses mutation API
+engine.state.keys_mut().insert(keycode, timestamp);
+engine.state.modifiers_mut().set_shift(true);
+engine.state.layers_mut().push(layer_id);
+```
+
+**Solution:**
+Force all mutations through `apply()` API.
+
+**Migration Steps:**
+
+1. **Identify all `_mut()` accessor usage**
+   ```bash
+   # Search pattern
+   rg "keys_mut|modifiers_mut|layers_mut|pending_mut"
+   ```
+
+2. **Create helper mutations** for common operations
+   ```rust
+   // Add to core/src/engine/state/mutation.rs
+
+   impl Mutation {
+       /// Convenience: Press key with current timestamp
+       pub fn press_key(key: KeyCode) -> Self {
+           Mutation::Key(KeyMutation::Press {
+               key,
+               timestamp: Instant::now(),
+           })
+       }
+
+       /// Convenience: Set modifier state
+       pub fn set_modifier(modifier: Modifier, active: bool) -> Self {
+           if active {
+               Mutation::Modifier(ModifierMutation::Activate(modifier))
+           } else {
+               Mutation::Modifier(ModifierMutation::Deactivate(modifier))
+           }
+       }
+
+       /// Convenience: Push layer
+       pub fn push_layer(layer: LayerId) -> Self {
+           Mutation::Layer(LayerMutation::Push(layer))
+       }
+   }
+   ```
+
+3. **Convert direct mutations** to use helper methods
+   ```rust
+   // BEFORE
+   state.keys_mut().insert(keycode, timestamp);
+
+   // AFTER
+   state.apply(Mutation::press_key(keycode))?;
+   ```
+
+4. **Remove `_mut()` accessors** from public API
+   ```rust
+   // core/src/engine/state/mod.rs
+
+   impl EngineState {
+       // DELETE these methods
+       // pub fn keys_mut(&mut self) -> &mut KeyState { ... }
+       // pub fn modifiers_mut(&mut self) -> &mut ModifierState { ... }
+       // pub fn layers_mut(&mut self) -> &mut LayerState { ... }
+
+       // KEEP read-only accessors
+       pub fn keys(&self) -> &KeyState { &self.keys }
+       pub fn modifiers(&self) -> &ModifierState { &self.modifiers }
+       pub fn layers(&self) -> &LayerState { &self.layers }
+   }
+   ```
+
+5. **Remove compat layers** from AdvancedEngine
+   ```rust
+   // core/src/engine/advanced.rs
+
+   pub struct AdvancedEngine {
+       state: UnifiedEngineState,  // ✅ Keep
+       // DELETE compat fields
+       // layers_compat: LayerStack,
+       // pending: DecisionQueue,
+       // blocked_releases: HashSet<KeyCode>,
+   }
+   ```
+
+**Validation:**
+- [ ] No `_mut()` accessors remain in public API
+- [ ] All mutations go through `apply()` or `apply_batch()`
+- [ ] Version counter increments on all mutations
+- [ ] Invariants checked on all mutations
+- [ ] All tests pass with enforced mutation API
+
+**Benefits:**
+- Guaranteed invariant checking
+- Complete transition history
+- Easier debugging (all mutations logged)
+- Consistent API surface
+
+---
+
+### 17.5 Phase 4: Move State into Unified State (Advanced)
+
+#### 17.5.1 Move blocked_releases into EngineState
+
+**Status:** 🟢 Nice-to-have
+**Impact:** Breaking change to AdvancedEngine internals
+**Timeline:** After Phase 3
+
+**Problem:**
+`AdvancedEngine.blocked_releases: HashSet<KeyCode>` is state that should be part of unified state.
+
+**Solution:**
+Add `BlockedReleasesState` component to `EngineState`.
+
+**Design:**
+```rust
+// New file: core/src/engine/state/blocked.rs
+
+/// Keys with blocked release events
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BlockedReleasesState {
+    blocked: HashSet<KeyCode>,
+}
+
+impl BlockedReleasesState {
+    pub fn block(&mut self, key: KeyCode) {
+        self.blocked.insert(key);
+    }
+
+    pub fn unblock(&mut self, key: KeyCode) {
+        self.blocked.remove(&key);
+    }
+
+    pub fn is_blocked(&self, key: KeyCode) -> bool {
+        self.blocked.contains(&key)
+    }
+
+    pub fn clear(&mut self) {
+        self.blocked.clear();
+    }
+}
+```
+
+**Migration Steps:**
+
+1. **Add BlockedReleasesState to EngineState**
+   ```rust
+   // core/src/engine/state/mod.rs
+
+   pub struct EngineState {
+       keys: KeyState,
+       layers: LayerState,
+       modifiers: ModifierState,
+       pending: PendingState,
+       blocked: BlockedReleasesState,  // NEW
+       version: u64,
+   }
+   ```
+
+2. **Add mutations for blocked releases**
+   ```rust
+   // core/src/engine/state/mutation.rs
+
+   pub enum BlockedMutation {
+       Block(KeyCode),
+       Unblock(KeyCode),
+       ClearAll,
+   }
+
+   pub enum Mutation {
+       Key(KeyMutation),
+       Layer(LayerMutation),
+       Modifier(ModifierMutation),
+       Pending(PendingMutation),
+       Blocked(BlockedMutation),  // NEW
+   }
+   ```
+
+3. **Migrate AdvancedEngine usage**
+   ```rust
+   // BEFORE
+   self.blocked_releases.insert(keycode);
+
+   // AFTER
+   self.state.apply(Mutation::Blocked(BlockedMutation::Block(keycode)))?;
+   ```
+
+4. **Remove field from AdvancedEngine**
+   ```rust
+   pub struct AdvancedEngine {
+       state: UnifiedEngineState,
+       // DELETE: blocked_releases: HashSet<KeyCode>,
+   }
+   ```
+
+**Validation:**
+- [ ] Blocked releases tracked in unified state
+- [ ] Mutations go through apply API
+- [ ] Tests pass
+
+---
+
+### 17.6 Phase 5: Driver State Isolation (No Changes)
+
+**Decision:** Keep driver state separate from engine state.
+
+**Rationale:**
+- `ModifierStateTracker` (Linux) tracks kernel-level modifier state
+- `ThreadLocalState` (Windows) is thread-local for hooks
+- These are platform integration concerns, not engine state
+- Mixing platform state with engine state violates separation of concerns
+
+**Action:** No changes required - current separation is correct.
+
+---
+
+### 17.7 Phase 6: FFI Domain State Isolation (No Changes)
+
+**Decision:** Keep FFI domain state isolated from engine state.
+
+**Rationale:**
+- FFI domains follow isolated ownership pattern
+- Each domain manages its own lifecycle
+- Domain state does not interact with engine state directly
+- Current architecture follows Domain-Driven Design principles
+
+**Action:** No changes required - current separation is correct.
+
+---
+
+### 17.8 Migration Safety Guidelines
+
+**Before Making Changes:**
+1. Read all affected files
+2. Run existing tests to establish baseline
+3. Search for all usages of types being changed
+4. Document breaking changes
+
+**During Migration:**
+1. Make one atomic change at a time
+2. Commit after each logical change completes
+3. Run tests after each commit
+4. Use clear commit messages describing what changed
+
+**After Changes:**
+1. Verify all tests pass
+2. Check code metrics (file/function size limits)
+3. Run full build to catch compilation errors
+4. Update documentation
+
+**Rollback Strategy:**
+- Each phase is independently revertable
+- Atomic commits allow granular rollback
+- No partial migrations - complete phase or revert
+
+---
+
+### 17.9 Breaking Change Policy
+
+Per project guidelines: **No backward compatibility required unless explicitly requested.**
+
+**What This Means:**
+- We will break existing APIs freely if it improves the codebase
+- No deprecation warnings or transitional shims (except temporary during migration)
+- Users must update code when upgrading
+- Clear migration documentation provided
+
+**Communication:**
+- Document all breaking changes in commit messages
+- Update CHANGELOG with breaking changes
+- Provide migration examples in docs
+
+---
+
+### 17.10 Success Metrics
+
+**Code Quality:**
+- [ ] Zero duplicate state definitions
+- [ ] All files < 500 lines
+- [ ] All functions < 50 lines
+- [ ] 80%+ test coverage maintained
+
+**Architecture:**
+- [ ] Single canonical definition per state concept
+- [ ] All mutations through validated API
+- [ ] Clear ownership boundaries
+- [ ] No cross-boundary state access
+
+**Performance:**
+- [ ] No performance regression in state operations
+- [ ] Mutation API overhead < 1% vs direct access
+- [ ] Memory usage unchanged or reduced
+
+---
+
+### 17.11 Timeline Summary
+
+| Phase | Description | Impact | Dependencies |
+|-------|-------------|--------|--------------|
+| 1.1 | Remove EngineStateSnapshot | Breaking | None |
+| 1.2 | Remove KeyStateView | Breaking | Phase 1.1 |
+| 2.1 | Extract SessionState | Non-breaking | Phase 1 complete |
+| 3.1 | Deprecate `_mut()` | Breaking | Phase 2 complete |
+| 4.1 | Move blocked_releases | Breaking | Phase 3 complete |
+
+**Estimated Effort:**
+- Phase 1: 1 commit (2-3 hours)
+- Phase 2: 1 commit (2-3 hours)
+- Phase 3: 2 commits (4-6 hours)
+- Phase 4: 1 commit (1-2 hours)
+- **Total:** ~12-16 hours of development time
+
+---
+
+### 17.12 Open Questions
+
+1. **Should DecisionQueue be completely wrapped by PendingState?**
+   - Current: PendingState wraps DecisionQueue
+   - Alternative: Merge DecisionQueue logic into PendingState
+   - Recommendation: Keep separate - DecisionQueue is complex and tested
+
+2. **Should StateHistory be part of EngineState or separate?**
+   - Current: Optional separate component
+   - Alternative: Built into EngineState with feature flag
+   - Recommendation: Keep separate - not all users need history
+
+3. **Should we add a feature flag to disable state validation in release builds?**
+   - Current: Always validate
+   - Alternative: Debug-only validation
+   - Recommendation: Always validate - fail fast is better than corrupt state
+
+---
+
+## 18. Next Steps
+
+Based on this audit and consolidation plan, the following tasks are recommended:
 
 1. ✅ **Complete this audit** (DONE)
 2. ✅ **Document state ownership and lifecycle** (DONE)
-3. Create consolidation plan for duplicates
-4. Design StateTransition enum
-5. Design StateKind enum
-6. Implement StateGraph with transition rules
-7. Define Invariant trait for validation
-8. Implement core invariants
-9. Create StateValidator combining invariants
-10. Add transition logging
-11. Integrate StateGraph into Engine
-12. Merge duplicate EngineState definitions
-13. Extract common SessionState
-14. Add comprehensive state transition tests
+3. ✅ **Create consolidation plan for duplicates** (DONE)
+4. **Execute Phase 1.1:** Remove EngineStateSnapshot
+5. **Execute Phase 1.2:** Remove KeyStateView
+6. **Execute Phase 2.1:** Extract SessionState
+7. Design StateTransition enum
+8. Design StateKind enum
+9. Implement StateGraph with transition rules
+10. Define Invariant trait for validation
+11. Implement core invariants
+12. Create StateValidator combining invariants
+13. Add transition logging
+14. Integrate StateGraph into Engine
+15. **Execute Phase 3.1:** Deprecate `_mut()` accessors
+16. **Execute Phase 4.1:** Move blocked_releases into unified state
+17. Add comprehensive state transition tests
 
 ---
 
 **Audit Completed:** 2025-12-04
 **State Ownership Documentation Completed:** 2025-12-04
+**Consolidation Plan Completed:** 2025-12-04
 **Auditor:** AI Assistant (Claude)
-**Version:** 1.1
+**Version:** 1.2
