@@ -11,7 +11,7 @@
   - _Requirements: 1.1, 1.3, 1.4_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer configuring logging | Task: Create StructuredLogger with tracing-subscriber | Restrictions: JSON support, configurable levels | _Leverage: tracing-subscriber | Success: Structured logging configured | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create LogEntry type
+- [x] 2. Create LogEntry type
   - File: `core/src/observability/entry.rs`
   - Structured log entry with fields
   - FFI-compatible representation
