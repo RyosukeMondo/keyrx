@@ -6,9 +6,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/key_mapping.dart';
 import 'package:keyrx_ui/models/validation.dart' as validation_models;
 import 'package:keyrx_ui/pages/editor_page.dart';
-import 'package:keyrx_ui/pages/editor_widgets.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';

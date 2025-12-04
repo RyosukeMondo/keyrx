@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../../pages/editor_widgets.dart';
+import '../../models/key_mapping.dart';
 import '../common/styled_icon_button.dart';
 import '../common/styled_text_field.dart';
 

@@ -116,7 +116,7 @@
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer updating imports | Task: Update all pages to use extracted widgets | Restrictions: Use common widgets, remove duplicates | _Leverage: Common widgets | Success: All pages use shared widgets | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 13. Delete editor_widgets.dart
+- [x] 13. Delete editor_widgets.dart
   - File: `ui/lib/pages/editor_widgets.dart`
   - Remove after all extractions complete
   - Verify no remaining references

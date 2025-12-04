@@ -6,7 +6,8 @@ library;
 
 import 'package:flutter/foundation.dart';
 
-import '../pages/editor_widgets.dart';
+import '../models/key_mapping.dart';
+import '../services/script_generator.dart';
 import '../widgets/visual_keyboard.dart';
 
 /// Single source of truth for all mapping data.

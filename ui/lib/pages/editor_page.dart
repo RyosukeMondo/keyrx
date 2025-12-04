@@ -9,14 +9,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/key_mapping.dart';
 import '../models/validation.dart' as validation_models;
 import '../repositories/mapping_repository.dart';
+import '../services/key_mappings_util.dart';
 import '../services/mapping_validator.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
 import '../config/config.dart';
 import '../widgets/keyboard.dart';
-import 'editor_widgets.dart';
+import '../widgets/editor/editor.dart';
 
 /// Visual keymap editor page.
 class EditorPage extends StatefulWidget {

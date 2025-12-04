@@ -7,13 +7,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/key_mapping.dart';
 import '../models/keyboard_layout.dart';
 import '../repositories/mapping_repository.dart';
 import '../services/rhai_generator.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../services/facade/facade_state.dart';
 import '../widgets/visual_keyboard.dart';
-import 'editor_widgets.dart' show KeyMapping, KeyActionType;
 import 'visual_editor_widgets.dart';
 
 /// Visual editor page combining keyboard, mappings, and code view.
