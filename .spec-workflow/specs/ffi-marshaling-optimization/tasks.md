@@ -31,7 +31,7 @@
 
 ## Phase 2: Common Marshalers
 
-- [-] 4. Implement primitive marshalers
+- [x] 4. Implement primitive marshalers
   - File: `core/src/ffi/marshal/impls/primitives.rs`
   - u8, u16, u32, u64, bool, f32, f64
   - Direct C representation
