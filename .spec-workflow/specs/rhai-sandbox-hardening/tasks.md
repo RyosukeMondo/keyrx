@@ -136,7 +136,7 @@
 
 ## Phase 6: Testing and Documentation
 
-- [-] 15. Add sandbox fuzz tests
+- [x] 15. Add sandbox fuzz tests
   - File: `core/tests/fuzz/sandbox_fuzz.rs`
   - Fuzz script inputs
   - Test resource exhaustion
