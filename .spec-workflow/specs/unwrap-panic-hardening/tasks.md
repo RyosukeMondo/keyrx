@@ -20,7 +20,7 @@
   - _Requirements: 2.1, 2.4_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create CriticalResult without unwrap/expect | Restrictions: No panic methods, must_use, safe fallbacks | _Leverage: Type system | Success: Type prevents panic at compile time | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create PanicGuard
+- [x] 3. Create PanicGuard
   - File: `core/src/safety/panic_guard.rs`
   - Implement catch_unwind wrapper
   - Add backtrace capture and logging

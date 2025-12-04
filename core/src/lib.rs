@@ -25,6 +25,7 @@ pub mod metrics;
 pub mod mocks;
 pub mod observability;
 pub mod profiling;
+pub mod safety;
 pub mod scripting;
 pub mod traits;
 pub mod uat;
