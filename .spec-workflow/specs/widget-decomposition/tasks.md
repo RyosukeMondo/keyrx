@@ -31,7 +31,7 @@
   - _Requirements: 1.1, 2.3_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract IconButton variants to common/styled_icon_button.dart | Restrictions: Support all existing use cases, add documentation | _Leverage: Existing implementations | Success: IconButton works in all contexts | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Extract TextField variants
+- [x] 4. Extract TextField variants
   - File: `ui/lib/widgets/common/styled_text_field.dart`
   - Extract custom text field implementations
   - Unify styling and validation
