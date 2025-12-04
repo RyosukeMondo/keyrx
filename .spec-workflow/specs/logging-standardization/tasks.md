@@ -20,7 +20,7 @@
   - _Requirements: 1.3_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create LogEntry with FFI representation | Restrictions: Serializable, C-compatible FFI | _Leverage: serde | Success: Log entries structured | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create LogBridge for FFI
+- [x] 3. Create LogBridge for FFI
   - File: `core/src/observability/bridge.rs`
   - Implement as tracing Layer
   - Buffer and callback support
