@@ -63,7 +63,7 @@
 
 ## Phase 3: Integration
 
-- [-] 7. Create DetectorOrchestrator
+- [x] 7. Create DetectorOrchestrator
   - File: `core/src/validation/orchestrator.rs`
   - Register and run all detectors in sequence
   - Aggregate results into ValidationReport
@@ -73,7 +73,7 @@
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating orchestrator | Task: Create DetectorOrchestrator in core/src/validation/orchestrator.rs | Restrictions: Run detectors in order, aggregate results, support skip flags | _Leverage: Detector trait, existing ValidationEngine | Success: Orchestrator runs all detectors, aggregates correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Update ValidationEngine to use orchestrator
+- [x] 8. Update ValidationEngine to use orchestrator
   - File: `core/src/validation/engine.rs`
   - Replace inline conflict detection with orchestrator
   - Maintain backward-compatible API
