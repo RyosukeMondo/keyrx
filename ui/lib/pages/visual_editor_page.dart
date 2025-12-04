@@ -10,8 +10,8 @@ import 'package:provider/provider.dart';
 import '../models/keyboard_layout.dart';
 import '../repositories/mapping_repository.dart';
 import '../services/rhai_generator.dart';
-import '../services/script_file_service.dart';
-import '../services/service_registry.dart';
+import '../services/facade/keyrx_facade.dart';
+import '../services/facade/facade_state.dart';
 import '../widgets/visual_keyboard.dart';
 import 'editor_widgets.dart' show KeyMapping, KeyActionType;
 import 'visual_editor_widgets.dart';
@@ -21,14 +21,10 @@ class VisualEditorPage extends StatefulWidget {
   const VisualEditorPage({
     super.key,
     required this.mappingRepository,
-    this.scriptFileService = const ScriptFileService(),
   });
 
   /// The shared mapping repository for key mappings.
   final MappingRepository mappingRepository;
-
-  /// The service for script file I/O operations.
-  final ScriptFileService scriptFileService;
 
   @override
   State<VisualEditorPage> createState() => _VisualEditorPageState();
@@ -279,31 +275,35 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     final path = await VisualEditorDialogs.showLoadDialog(context);
     if (path == null || path.isEmpty || !mounted) return;
 
-    final code = await widget.scriptFileService.loadScript(path);
-    if (code == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File not found: $path')),
-        );
-      }
-      return;
-    }
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final result = await facade.loadScriptContent(path);
 
-    final config = _generator.parseScript(code);
-    widget.mappingRepository.loadFromRemapConfigs(config.mappings);
-    setState(() {
-      _tapHoldConfigs = config.tapHoldConfigs;
-      _hasAdvancedFeatures = config.hasAdvancedFeatures;
-      _codeController.text = code;
-      _codeModified = false;
-      _lastSavedPath = path;
-      _fileNameController.text = path.split('/').last;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Loaded: $path')),
-      );
-    }
+    result.when(
+      ok: (code) {
+        final config = _generator.parseScript(code);
+        widget.mappingRepository.loadFromRemapConfigs(config.mappings);
+        setState(() {
+          _tapHoldConfigs = config.tapHoldConfigs;
+          _hasAdvancedFeatures = config.hasAdvancedFeatures;
+          _codeController.text = code;
+          _codeModified = false;
+          _lastSavedPath = path;
+          _fileNameController.text = path.split('/').last;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Loaded: $path')),
+          );
+        }
+      },
+      err: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.userMessage)),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _saveScript() async {
@@ -318,39 +318,52 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         ? _codeController.text
         : _generator.generateScript(_visualConfig);
 
-    final saveResult = await widget.scriptFileService.saveScript(path, code);
-    if (!saveResult.success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed to save: ${saveResult.errorMessage}')),
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final saveResult = await facade.saveScript(path, code);
+
+    await saveResult.when(
+      ok: (_) async {
+        _lastSavedPath = path;
+        _fileNameController.text = path.split('/').last;
+
+        // Try to load script into engine if it's initialized
+        var loaded = false;
+        final engineStatus = await facade.getEngineStatus();
+        await engineStatus.when(
+          ok: (status) async {
+            if (status == EngineStatus.running || status == EngineStatus.ready) {
+              // Engine is initialized, try to load the script
+              final loadResult = await facade.services.engineService.loadScript(path);
+              loaded = loadResult;
+            }
+          },
+          err: (_) {
+            // Engine not initialized, skip loading
+          },
         );
-        setState(() => _isSaving = false);
-      }
-      return;
-    }
 
-    _lastSavedPath = path;
-    _fileNameController.text = path.split('/').last;
-
-    var loaded = false;
-    if (mounted) {
-      final registry = Provider.of<ServiceRegistry>(context, listen: false);
-      final engine = registry.engineService;
-      loaded = engine.isInitialized ? await engine.loadScript(path) : false;
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loaded
-              ? 'Script saved and loaded: $path'
-              : 'Script saved: $path'),
-        ),
-      );
-      setState(() {
-        _codeModified = false;
-        _isSaving = false;
-      });
-    }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loaded
+                  ? 'Script saved and loaded: $path'
+                  : 'Script saved: $path'),
+            ),
+          );
+          setState(() {
+            _codeModified = false;
+            _isSaving = false;
+          });
+        }
+      },
+      err: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save: ${error.userMessage}')),
+          );
+          setState(() => _isSaving = false);
+        }
+      },
+    );
   }
 }
