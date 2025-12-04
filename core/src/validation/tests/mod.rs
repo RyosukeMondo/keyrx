@@ -4,3 +4,6 @@
 
 #[cfg(test)]
 mod conflict_tests;
+
+#[cfg(test)]
+mod shadowing_tests;
