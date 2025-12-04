@@ -12,7 +12,7 @@ use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::events::{EventRegistry, EventType};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
 /// Engine domain FFI implementation.
@@ -73,7 +73,8 @@ fn set_bypass_mode_state(active: bool) -> FfiResult<()> {
 // ─── State Event Publishing API ────────────────────────────────────────────
 
 /// FFI state event containing a snapshot and optional metadata.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct StateEvent {
     /// State snapshot at this point in time.
     #[serde(flatten)]
@@ -85,7 +86,8 @@ struct StateEvent {
 }
 
 /// FFI change event containing a state change.
-#[derive(Serialize)]
+#[derive(Clone, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 struct ChangeEvent {
     /// The state change that occurred.
     #[serde(flatten)]

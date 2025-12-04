@@ -35,7 +35,8 @@ use super::EngineState;
 /// let json = serde_json::to_string(&snapshot).unwrap();
 /// println!("State: {}", json);
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 #[allow(dead_code)] // Will be used in tasks 13-16 for history, persistence, and FFI
 pub struct StateSnapshot {
     /// State version counter.
@@ -61,7 +62,10 @@ pub struct StateSnapshot {
 }
 
 /// A pressed key with its press timestamp.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler,
+)]
+#[ffi(strategy = "json")]
 #[allow(dead_code)] // Will be used in tasks 13-16 for history, persistence, and FFI
 pub struct PressedKey {
     /// The key code.

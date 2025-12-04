@@ -18,7 +18,8 @@ use serde::{Deserialize, Serialize};
 /// - The state version after the change
 /// - Any secondary effects triggered by the mutation
 /// - Timestamp of when the change occurred
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 #[allow(dead_code)] // Will be used when EngineState is implemented
 pub struct StateChange {
     /// The mutation that was applied.

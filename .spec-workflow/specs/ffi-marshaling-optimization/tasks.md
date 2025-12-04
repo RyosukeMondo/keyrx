@@ -129,7 +129,7 @@
 
 ## Phase 6: Migration
 
-- [ ] 14. Migrate exports_engine.rs
+- [-] 14. Migrate exports_engine.rs
   - File: `core/src/ffi/exports_engine.rs`
   - Use FfiMarshaler for all exports
   - Consolidate error handling

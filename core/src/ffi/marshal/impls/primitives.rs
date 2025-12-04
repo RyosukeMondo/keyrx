@@ -12,6 +12,7 @@
 //! - **Signed integers**: `i8`, `i16`, `i32`, `i64`
 //! - **Floating point**: `f32`, `f64`
 //! - **Boolean**: `bool` (represented as `u8` in C: 0=false, 1=true)
+//! - **Unit type**: `()` (zero-sized type for void results)
 //!
 //! # Zero-Copy Guarantees
 //!
@@ -66,6 +67,7 @@ impl CRepr for i64 {}
 impl CRepr for f32 {}
 impl CRepr for f64 {}
 impl CRepr for bool {}
+impl CRepr for () {}
 
 // Macro to implement FfiMarshaler for primitive types with identity marshaling
 macro_rules! impl_primitive_marshaler {
@@ -109,6 +111,9 @@ impl_primitive_marshaler!(f64);
 
 // Implement for bool
 impl_primitive_marshaler!(bool);
+
+// Implement for unit type
+impl_primitive_marshaler!(());
 
 #[cfg(test)]
 mod tests {
@@ -272,6 +277,16 @@ mod tests {
         assert_eq!(bool::from_c(false.to_c().unwrap()).unwrap(), false);
     }
 
+    // Test unit type
+    #[test]
+    fn test_unit_marshaler() {
+        let value = ();
+        let c_repr = value.to_c().unwrap();
+        assert_eq!(c_repr, ());
+        assert_eq!(<()>::from_c(c_repr).unwrap(), ());
+        assert_eq!(value.estimated_size(), 0);
+    }
+
     // Test that primitives don't use streaming (they're too small)
     #[test]
     fn test_no_streaming_for_primitives() {
@@ -283,5 +298,6 @@ mod tests {
         assert!(!3.14f32.use_streaming());
         assert!(!2.718f64.use_streaming());
         assert!(!true.use_streaming());
+        assert!(!().use_streaming());
     }
 }

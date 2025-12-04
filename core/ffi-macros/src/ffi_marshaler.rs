@@ -161,15 +161,15 @@ fn generate_json_strategy(input: &DeriveInput) -> Result<TokenStream> {
 
     Ok(quote! {
         impl #impl_generics crate::ffi::marshal::traits::FfiMarshaler for #name #ty_generics #where_clause {
-            type CRepr = crate::ffi::marshal::impls::json::JsonWrapperC;
+            type CRepr = crate::ffi::marshal::impls::json::FfiJson;
 
             fn to_c(&self) -> crate::ffi::error::FfiResult<Self::CRepr> {
-                crate::ffi::marshal::impls::json::JsonWrapper(self.clone()).to_c()
+                crate::ffi::marshal::impls::json::JsonWrapper::new(self.clone()).to_c()
             }
 
             fn from_c(c: Self::CRepr) -> crate::ffi::error::FfiResult<Self> {
                 let wrapper = crate::ffi::marshal::impls::json::JsonWrapper::<Self>::from_c(c)?;
-                Ok(wrapper.0)
+                Ok(wrapper.into_inner())
             }
 
             fn estimated_size(&self) -> usize {
