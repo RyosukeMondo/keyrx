@@ -156,7 +156,7 @@
   - _Requirements: Non-functional (performance)_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Benchmark Developer | Task: Create benchmarks for metrics overhead | Restrictions: Verify < 1us, test all operations | _Leverage: criterion | Success: Overhead targets met | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add metrics tests
+- [x] 17. Add metrics tests
   - File: `core/tests/unit/metrics/`
   - Test histogram accuracy
   - Test memory tracking
