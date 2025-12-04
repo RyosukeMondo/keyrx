@@ -11,8 +11,12 @@ use rhai::Engine;
 use crate::scripting::{LayerMapAction, PendingOp, TimingUpdate};
 
 use super::config::ValidationConfig;
-use super::conflicts::{detect_circular_remaps, detect_combo_shadowing, detect_remap_conflicts};
 use super::coverage::{analyze_coverage, render_ascii_keyboard};
+use super::detectors::conflicts::ConflictDetector;
+use super::detectors::cycles::CycleDetector;
+use super::detectors::shadowing::ShadowingDetector;
+use super::detectors::DetectorContext;
+use super::orchestrator::DetectorOrchestrator;
 use super::safety::analyze_safety;
 use super::semantic::SemanticValidator;
 use super::types::{
@@ -87,6 +91,7 @@ type PendingOps = Arc<Mutex<Vec<PendingOp>>>;
 /// conflict, safety, and coverage validation.
 pub struct ValidationEngine {
     config: ValidationConfig,
+    orchestrator: DetectorOrchestrator,
 }
 
 /// Result of parsing a script, containing operations and context.
@@ -101,14 +106,22 @@ pub struct ParsedScript {
 impl ValidationEngine {
     /// Create a new validation engine with default config.
     pub fn new() -> Self {
-        Self {
-            config: ValidationConfig::load(),
-        }
+        Self::with_config(ValidationConfig::load())
     }
 
     /// Create a validation engine with a specific config.
     pub fn with_config(config: ValidationConfig) -> Self {
-        Self { config }
+        let mut orchestrator = DetectorOrchestrator::new();
+
+        // Register all detectors in order
+        orchestrator.register(Box::new(ConflictDetector::new()));
+        orchestrator.register(Box::new(ShadowingDetector::new()));
+        orchestrator.register(Box::new(CycleDetector));
+
+        Self {
+            config,
+            orchestrator,
+        }
     }
 
     /// Get the current configuration.
@@ -248,11 +261,18 @@ impl ValidationEngine {
 
     /// Run conflict detection on operations.
     fn run_conflict_detection(&self, ops: &[PendingOp]) -> Vec<ValidationWarning> {
-        let mut warnings = Vec::new();
-        warnings.extend(detect_remap_conflicts(ops));
-        warnings.extend(detect_combo_shadowing(ops));
-        warnings.extend(detect_circular_remaps(ops, &self.config));
-        warnings
+        // Create detector context
+        let ctx = DetectorContext::new(self.config.clone());
+
+        // Run all detectors through the orchestrator
+        let report = self.orchestrator.run(ops, &ctx);
+
+        // Convert ValidationIssues to ValidationWarnings for backward compatibility
+        report
+            .issues
+            .iter()
+            .map(|issue| issue.to_warning())
+            .collect()
     }
 }
 
