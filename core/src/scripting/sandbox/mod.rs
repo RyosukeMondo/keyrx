@@ -11,6 +11,7 @@ pub mod capability;
 pub mod function_capabilities;
 pub mod registry;
 pub mod validation;
+pub mod validators;
 
 pub use budget::{ResourceBudget, ResourceConfig, ResourceExhausted, ResourceUsage};
 pub use capability::{ScriptCapability, ScriptMode};

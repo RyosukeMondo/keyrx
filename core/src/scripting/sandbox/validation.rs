@@ -132,7 +132,7 @@ impl ValidationError {
 /// assert!(validator.validate(&5).is_ok());
 /// assert!(validator.validate(&-5).is_err());
 /// ```
-pub trait InputValidator<T> {
+pub trait InputValidator<T: ?Sized> {
     /// Validate the input value.
     ///
     /// Returns `Ok(())` if validation passes, or a `ValidationError` describing
@@ -143,7 +143,10 @@ pub trait InputValidator<T> {
     ///
     /// This is a convenience method that validates and returns the value,
     /// useful for chaining validators.
-    fn validate_and_return(&self, value: T) -> ValidationResult<T> {
+    fn validate_and_return(&self, value: T) -> ValidationResult<T>
+    where
+        T: Sized,
+    {
         self.validate(&value)?;
         Ok(value)
     }
