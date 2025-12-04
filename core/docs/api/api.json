@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "modules": {},
+  "autocomplete": {
+    "functions": [],
+    "types": [],
+    "keywords": [
+      "let",
+      "const",
+      "fn",
+      "if",
+      "else",
+      "for",
+      "while",
+      "loop",
+      "break",
+      "continue",
+      "return",
+      "true",
+      "false",
+      "null",
+      "import",
+      "export",
+      "as",
+      "private"
+    ]
+  }
+}

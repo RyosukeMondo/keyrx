@@ -100,7 +100,10 @@ fn track_api_doc_files() {
                 let path = entry.path();
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                     if name.ends_with(".rs") {
-                        println!("cargo:rerun-if-changed=src/scripting/docs/generators/{}", name);
+                        println!(
+                            "cargo:rerun-if-changed=src/scripting/docs/generators/{}",
+                            name
+                        );
                     }
                 }
             }

@@ -118,7 +118,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Build Developer | Task: Add doc generation to build process | Restrictions: Fast, only on changes | _Leverage: DocGenerator | Success: Docs auto-generate | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 13. Create doc generation CLI command
+- [x] 13. Create doc generation CLI command
   - File: CLI module
   - `keyrx docs generate` command
   - Format and output options

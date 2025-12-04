@@ -8,9 +8,9 @@ use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DevicesCommand,
-        DiscoverCommand, DoctorCommand, ExitCodesCommand, GoldenCommand, GoldenSubcommand,
-        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand,
-        TestCommand, UatCommand,
+        DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
+        GoldenSubcommand, RegressionCommand, ReplCommand, ReplayCommand, RunCommand,
+        SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -18,6 +18,7 @@ use keyrx_core::config::{load_config, merge_cli_overrides, Config};
 use keyrx_core::observability::StructuredLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::str::FromStr;
 use tracing::{debug, error, info};
 
 #[derive(Parser)]
@@ -79,6 +80,17 @@ enum Commands {
 
     /// Show all exit codes with descriptions
     ExitCodes,
+
+    /// Generate API documentation
+    Docs {
+        /// Output format (markdown, html, json)
+        #[arg(short, long, default_value = "markdown")]
+        format: String,
+
+        /// Output directory (default: ./docs)
+        #[arg(short, long, default_value = "docs")]
+        output: PathBuf,
+    },
 
     /// Run the engine in headless mode
     Run {
@@ -506,6 +518,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Check { .. } => "check",
         Commands::Devices => "devices",
         Commands::ExitCodes => "exit-codes",
+        Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
         Commands::State { .. } => "state",
         Commands::Doctor { .. } => "doctor",
@@ -546,6 +559,14 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         }
         Commands::ExitCodes => {
             let mut cmd = ExitCodesCommand::new();
+            cmd.execute(ctx)
+        }
+        Commands::Docs { format, output } => {
+            let doc_format = DocFormat::from_str(&format).unwrap_or_else(|_| {
+                eprintln!("Warning: Unknown format '{}', using markdown", format);
+                DocFormat::Markdown
+            });
+            let mut cmd = DocsCommand::new(doc_format, output, ctx.output_format());
             cmd.execute(ctx)
         }
         Commands::Run {
