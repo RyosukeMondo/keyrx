@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/config.dart';
 import '../services/engine_service.dart';
-import '../services/service_registry.dart';
+import '../services/facade/keyrx_facade.dart';
 import 'training_lessons.dart';
 
 /// Keyboard remapping training screen with lesson framework.
@@ -48,8 +48,8 @@ class _KeyrxTrainingScreenState extends State<KeyrxTrainingScreen>
     super.initState();
     _lessons = buildTrainingLessons();
     _loadProgress();
-    final registry = Provider.of<ServiceRegistry>(context, listen: false);
-    _engine = registry.engineService;
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    _engine = facade.services.engineService;
     _subscribeToStateStream();
     _feedbackAnimController = AnimationController(
       vsync: this,
