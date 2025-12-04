@@ -69,7 +69,7 @@
   - _Requirements: 4.2_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating generator | Task: Create Markdown documentation generator | Restrictions: Clean formatting, module organization | _Leverage: DocRegistry | Success: Markdown docs generated | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Create HTML generator
+- [x] 8. Create HTML generator
   - File: `core/src/scripting/docs/generators/html.rs`
   - Generate searchable HTML docs
   - Include syntax highlighting
