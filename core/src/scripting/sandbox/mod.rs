@@ -10,8 +10,10 @@ pub mod budget;
 pub mod capability;
 pub mod function_capabilities;
 pub mod registry;
+pub mod validation;
 
 pub use budget::{ResourceBudget, ResourceConfig, ResourceExhausted, ResourceUsage};
 pub use capability::{ScriptCapability, ScriptMode};
 pub use function_capabilities::build_function_registry;
 pub use registry::{CapabilityRegistry, FunctionCapability};
+pub use validation::{InputValidator, ValidationError, ValidationResult};

@@ -60,7 +60,7 @@
 
 ## Phase 3: Input Validation
 
-- [ ] 7. Create InputValidator trait
+- [x] 7. Create InputValidator trait
   - File: `core/src/scripting/sandbox/validation.rs`
   - Define validation interface
   - Add ValidationError type
