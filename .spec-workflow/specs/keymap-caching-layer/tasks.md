@@ -25,7 +25,7 @@
   - Purpose: Linux keymap caching
   - _Requirements: 3.1_
 
-- [-] 4. Add cache to Windows keymap
+- [x] 4. Add cache to Windows keymap
   - File: `core/src/drivers/windows/keymap.rs`
   - Cache scan-to-vk conversions
   - Memoize MapVirtualKey calls
