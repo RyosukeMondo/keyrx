@@ -8,6 +8,7 @@ use super::bindings::register_all_functions;
 use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
 use super::pending_ops::PendingOpsApplier;
 use super::registry_sync::RegistrySyncer;
+use super::sandbox::{ResourceConfig, ScriptSandbox};
 use crate::engine::{KeyCode, LayerStack};
 use crate::errors::{runtime::*, KeyrxError};
 use crate::keyrx_err;
@@ -34,11 +35,20 @@ pub struct RhaiRuntime {
 impl RhaiRuntime {
     /// Create a new Rhai runtime.
     pub fn new() -> Result<Self, KeyrxError> {
+        Self::with_config(ResourceConfig::default())
+    }
+
+    /// Create a new Rhai runtime with custom resource limits.
+    pub fn with_config(config: ResourceConfig) -> Result<Self, KeyrxError> {
         let mut engine = Engine::new();
 
-        // Sandbox: disable dangerous operations
-        engine.set_max_expr_depths(64, 64);
-        engine.set_max_operations(100_000);
+        // Configure engine limits via sandbox
+        let sandbox = ScriptSandbox::default();
+        sandbox.configure_engine(&mut engine);
+
+        // Apply custom resource limits
+        engine.set_max_operations(config.max_instructions);
+        engine.set_max_call_levels(config.max_recursion as usize);
 
         // Shared pending operations storage
         let pending_ops: PendingOps = Arc::new(Mutex::new(Vec::new()));

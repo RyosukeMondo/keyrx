@@ -96,7 +96,7 @@
   - _Requirements: 1.1, 2.2, 3.1_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating sandbox | Task: Create ScriptSandbox combining all safety | Restrictions: All checks, configurable | _Leverage: All components | Success: Unified sandbox works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Configure Rhai engine limits
+- [x] 11. Configure Rhai engine limits
   - File: `core/src/scripting/runtime.rs`
   - Set max_operations, max_call_stack_depth
   - Configure memory limits
