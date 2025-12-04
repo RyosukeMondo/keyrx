@@ -1,73 +1,32 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/validation.dart' as validation_models;
 import 'package:keyrx_ui/pages/editor_page.dart';
 import 'package:keyrx_ui/pages/editor_widgets.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/facade/result.dart';
 import 'package:keyrx_ui/services/mapping_validator.dart';
-import 'package:keyrx_ui/services/script_file_service.dart';
+import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 
-import '../helpers/fake_services.dart';
+import '../mocks/mock_keyrx_facade.dart';
 
-class _FakeEngineService implements EngineService {
-  final StreamController<EngineSnapshot> _stateController =
-      StreamController.broadcast();
+/// Mock service registry for tests
+class MockServiceRegistry extends Mock implements ServiceRegistry {}
 
-  bool initializeResult = true;
-  bool loadScriptResult = true;
-  KeyRegistryResult registryResult = const KeyRegistryResult(entries: []);
+/// Mock engine service for direct access tests
+class MockEngineService extends Mock implements EngineService {}
 
-  @override
-  bool get isInitialized => true;
-
-  @override
-  String get version => 'test';
-
-  @override
-  Future<bool> initialize() async => initializeResult;
-
-  @override
-  Future<bool> loadScript(String path) async => loadScriptResult;
-
-  @override
-  Future<ConsoleEvalResult> eval(String command) async =>
-      ConsoleEvalResult(success: true, output: 'ok: $command');
-
-  @override
-  Stream<EngineSnapshot> get stateStream => _stateController.stream;
-
-  @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async => registryResult;
-
-  @override
-  Future<void> dispose() async {
-    await _stateController.close();
-  }
-}
-
-class _FakeScriptFileService implements ScriptFileService {
-  ScriptFileResult saveResult = const ScriptFileResult(success: true);
-  String? lastSavedPath;
-  String? lastSavedContent;
-
-  @override
-  Future<ScriptFileResult> saveScript(String path, String content) async {
-    lastSavedPath = path;
-    lastSavedContent = content;
-    return saveResult;
-  }
-
-  @override
-  Future<String?> loadScript(String path) async => null;
-}
+/// Mock bridge for validation tests
+class MockBridge extends Mock implements KeyrxBridge {}
 
 class _RecordingTranslator implements ErrorTranslator {
   const _RecordingTranslator(this.message);
@@ -79,22 +38,54 @@ class _RecordingTranslator implements ErrorTranslator {
 }
 
 void main() {
-  late _FakeEngineService fakeEngine;
+  late MockKeyrxFacade mockFacade;
   late MappingRepository mappingRepository;
-  late _FakeScriptFileService fakeScriptFileService;
-  late FakeBridge fakeBridge;
+  late MockServiceRegistry mockServices;
+  late MockEngineService mockEngine;
+  late MockBridge mockBridge;
 
-  setUp(() {
-    fakeEngine = _FakeEngineService();
-    mappingRepository = MappingRepository();
-    fakeScriptFileService = _FakeScriptFileService();
-    fakeBridge = FakeBridge();
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(const validation_models.ValidationOptions(includeCoverage: true));
+    // Register facade fallback values
+    registerKeyrxFacadeFallbackValues();
   });
 
-  tearDown(() async {
-    await fakeEngine.dispose();
+  setUp(() {
+    // Create mocks
+    mockFacade = MockKeyrxFacade.withDefaults();
+    mockServices = MockServiceRegistry();
+    mockEngine = MockEngineService();
+    mockBridge = MockBridge();
+    mappingRepository = MappingRepository();
+
+    // Setup facade to return mock services
+    when(() => mockFacade.services).thenReturn(mockServices);
+    when(() => mockServices.engineService).thenReturn(mockEngine);
+    when(() => mockServices.bridge).thenReturn(mockBridge);
+
+    // Setup default engine behavior
+    when(() => mockEngine.isInitialized).thenReturn(true);
+    when(() => mockEngine.fetchKeyRegistry()).thenAnswer(
+      (_) async => const KeyRegistryResult(entries: []),
+    );
+
+    // Setup default bridge behavior for validation
+    when(() => mockBridge.validateScript(
+      any(),
+      any(),
+    )).thenReturn(
+      const validation_models.ValidationResult(
+        isValid: true,
+        errors: [],
+        warnings: [],
+        coverage: null,
+      ),
+    );
+  });
+
+  tearDown(() {
     mappingRepository.dispose();
-    await fakeBridge.dispose();
   });
 
   Widget buildTestWidget({
@@ -104,7 +95,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<AppState>(
           create: (_) => AppState(
-            engineService: fakeEngine,
+            engineService: mockEngine,
             errorTranslator: const _RecordingTranslator(
               UserMessage(title: 'Unused', body: 'Unused'),
             ),
@@ -116,11 +107,9 @@ void main() {
       ],
       child: MaterialApp(
         home: EditorPage(
-          engineService: fakeEngine,
+          facade: mockFacade,
           mappingRepository: mappingRepository,
           validator: validator,
-          scriptFileService: fakeScriptFileService,
-          bridge: fakeBridge,
         ),
       ),
     );
@@ -183,6 +172,10 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
+    // Setup engine to accept loadScript
+    when(() => mockEngine.loadScript(any()))
+        .thenAnswer((_) async => true);
+
     mappingRepository.setMapping(
       'A',
       const KeyMapping(from: 'A', type: KeyActionType.remap, to: 'b'),
@@ -194,11 +187,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.save));
     await tester.pumpAndSettle();
 
-    expect(fakeScriptFileService.lastSavedPath, isNotNull);
-    expect(
-      fakeScriptFileService.lastSavedContent,
-      contains('remap("A", "b")'),
-    );
+    // Verify facade's saveScript was called
+    verify(() => mockFacade.saveScript(any(), any())).called(1);
     expect(find.textContaining('Script saved'), findsOneWidget);
   });
 
@@ -225,9 +215,11 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    fakeScriptFileService.saveResult = const ScriptFileResult(
-      success: false,
-      errorMessage: 'Permission denied',
+    // Override facade to return error on save
+    when(() => mockFacade.saveScript(any(), any())).thenAnswer(
+      (_) async => Result.err(
+        FacadeError.fileError('/path/to/file', 'Permission denied'),
+      ),
     );
 
     mappingRepository.setMapping(

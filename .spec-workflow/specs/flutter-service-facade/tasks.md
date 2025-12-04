@@ -150,7 +150,7 @@
   - _Requirements: 1.1, 6.3_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer migrating pages | Task: Migrate EditorPage to use KeyrxFacade instead of direct service injection | Restrictions: Maintain same functionality, use facade for operations, keep services accessible for edge cases | _Leverage: Current editor_page.dart, KeyrxFacade | Success: EditorPage uses facade, functionality unchanged, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Update EditorPage tests
+- [x] 15. Update EditorPage tests
   - File: `ui/test/pages/editor_page_test.dart`
   - Replace service mocks with MockKeyrxFacade
   - Simplify test setup
