@@ -98,7 +98,7 @@
 
 ## Phase 4: Discovery and Config
 
-- [ ] 11. Fix discovery module unwraps
+- [x] 11. Fix discovery module unwraps
   - Files: `core/src/discovery/*.rs`
   - Replace device parsing unwraps
   - Handle missing/invalid devices gracefully
