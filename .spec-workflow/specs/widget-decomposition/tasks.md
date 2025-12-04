@@ -127,7 +127,7 @@
 
 ## Phase 5: Testing
 
-- [ ] 14. Add widget unit tests
+- [x] 14. Add widget unit tests
   - Files: `ui/test/widgets/`
   - Create tests for each extracted widget
   - Test states and interactions
