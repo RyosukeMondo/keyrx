@@ -89,7 +89,7 @@
 
 ## Phase 4: Example Testing
 
-- [-] 10. Create ExampleRunner
+- [x] 10. Create ExampleRunner
   - File: `core/src/scripting/docs/examples.rs`
   - Run Rhai examples as tests
   - Capture and report errors
