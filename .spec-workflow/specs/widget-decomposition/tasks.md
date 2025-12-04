@@ -40,7 +40,7 @@
   - _Requirements: 1.1, 2.3_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract TextField variants to common/styled_text_field.dart | Restrictions: Preserve validation, unify styling | _Leverage: Existing implementations | Success: TextField works everywhere | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Extract Dialog widgets
+- [x] 5. Extract Dialog widgets
   - File: `ui/lib/widgets/common/dialogs/`
   - Extract confirmation, input, and selection dialogs
   - Create dialog builder helpers
