@@ -63,7 +63,7 @@
 
 ## Phase 3: Integration
 
-- [ ] 7. Create DetectorOrchestrator
+- [-] 7. Create DetectorOrchestrator
   - File: `core/src/validation/orchestrator.rs`
   - Register and run all detectors in sequence
   - Aggregate results into ValidationReport

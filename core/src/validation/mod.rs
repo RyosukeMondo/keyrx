@@ -12,6 +12,7 @@ pub mod conflicts;
 pub mod coverage;
 pub mod detectors;
 pub mod engine;
+pub mod orchestrator;
 pub mod safety;
 pub mod semantic;
 pub mod suggestions;
@@ -24,6 +25,7 @@ pub use engine::{
     collect_definitions, find_operation_line, LocatedOp, ParsedScript, ScriptContext,
     ValidationEngine,
 };
+pub use orchestrator::{DetectorOrchestrator, NamedDetectorStats, ValidationReport};
 pub use safety::{analyze_safety, SafetyAnalyzer};
 pub use semantic::{validate_operations, validate_timing, SemanticValidator};
 pub use suggestions::suggest_similar_keys;

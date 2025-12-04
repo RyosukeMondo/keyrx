@@ -301,6 +301,23 @@ impl std::fmt::Display for Severity {
     }
 }
 
+impl Severity {
+    /// Returns whether this is an error-level severity.
+    pub fn is_error(&self) -> bool {
+        matches!(self, Severity::Error)
+    }
+
+    /// Returns whether this is a warning-level severity.
+    pub fn is_warning(&self) -> bool {
+        matches!(self, Severity::Warning)
+    }
+
+    /// Returns whether this is an info-level severity.
+    pub fn is_info(&self) -> bool {
+        matches!(self, Severity::Info)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
