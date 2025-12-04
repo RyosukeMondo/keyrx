@@ -11,6 +11,7 @@ pub mod invariant;
 pub mod invariants;
 pub mod state_kind;
 pub mod transition;
+pub mod validator;
 
 pub use graph::{InvalidTransition, StateGraph};
 pub use invariant::{Invariant, InvariantViolation};
@@ -19,6 +20,7 @@ pub use invariants::{
 };
 pub use state_kind::StateKind;
 pub use transition::{StateTransition, TransitionCategory};
+pub use validator::{StateValidator, ValidationResult};
 
 // Re-export decision types with different names to avoid conflicts
 pub use transition::{
