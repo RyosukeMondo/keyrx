@@ -66,6 +66,10 @@ harness = false
 name = "ffi_bench"
 harness = false
 
+[[bench]]
+name = "metrics_bench"
+harness = false
+
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, optional = true }
 

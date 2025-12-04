@@ -147,7 +147,7 @@
 
 ## Phase 6: Testing and Documentation
 
-- [ ] 16. Add metrics benchmarks
+- [x] 16. Add metrics benchmarks
   - File: `core/benches/metrics_bench.rs`
   - Benchmark recording overhead
   - Verify < 1 microsecond target
