@@ -9,12 +9,11 @@ use crate::config::{
     EVDEV_KEY_ESC, EVDEV_KEY_LEFTALT, EVDEV_KEY_LEFTCTRL, EVDEV_KEY_LEFTSHIFT, EVDEV_KEY_RIGHTALT,
     EVDEV_KEY_RIGHTCTRL, EVDEV_KEY_RIGHTSHIFT,
 };
-use crate::drivers::common::extract_panic_message;
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
 use crate::errors::KeyrxError;
+use crate::safety::panic_guard::PanicGuard;
 use crossbeam_channel::Sender;
-use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -34,9 +33,9 @@ use tracing::{debug, error, trace, warn};
 ///
 /// # Panic Recovery
 ///
-/// The reader thread is wrapped in `catch_unwind` to handle panics gracefully.
-/// If a panic occurs, the `panic_error` flag is set and the keyboard device is
-/// automatically ungrabbed via SafeDevice's Drop implementation.
+/// The reader thread is wrapped in `PanicGuard` to handle panics gracefully.
+/// If a panic occurs, the `panic_error` flag is set, backtrace is captured,
+/// and the keyboard device is automatically ungrabbed via SafeDevice's Drop implementation.
 pub struct EvdevReader {
     /// Safe wrapper around the evdev device with RAII cleanup.
     device: SafeDevice,
@@ -228,11 +227,11 @@ impl EvdevReader {
     ///
     /// # Panic Recovery
     ///
-    /// The thread code is wrapped in `catch_unwind` to handle panics gracefully.
+    /// The thread code is wrapped in `PanicGuard` to handle panics gracefully.
     /// If a panic occurs:
     /// - The `panic_error` flag is set to `true`
     /// - The keyboard device is ungrabbed
-    /// - The error is logged
+    /// - The error is logged with backtrace
     /// - The thread exits cleanly
     pub fn spawn(mut self) -> JoinHandle<()> {
         let device_path = self.device_path.clone();
@@ -248,14 +247,14 @@ impl EvdevReader {
                 "EvdevReader thread started"
             );
 
-            // Wrap the main loop in catch_unwind for panic recovery
-            let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            // Wrap the main loop in PanicGuard for panic recovery with backtrace logging
+            let result = PanicGuard::new("linux_evdev_reader").execute(|| {
                 self.run_loop();
-            }));
+            });
 
             // Handle panic recovery
-            if let Err(panic_info) = result {
-                self.handle_panic(&device_path, panic_error, running, &*panic_info);
+            if let Err(panic_error_info) = result {
+                self.handle_panic(&device_path, panic_error, running, panic_error_info);
                 return;
             }
 
@@ -383,20 +382,19 @@ impl EvdevReader {
         device_path: &Path,
         panic_error: Arc<AtomicBool>,
         running: Arc<AtomicBool>,
-        panic_info: &(dyn std::any::Any + Send),
+        critical_error: crate::errors::critical::CriticalError,
     ) {
         // Set the panic error flag so main thread can detect it
         panic_error.store(true, Ordering::SeqCst);
         running.store(false, Ordering::Relaxed);
 
-        // Log the panic
-        let panic_msg = extract_panic_message(panic_info);
+        // Log the panic (PanicGuard already logged with backtrace)
         error!(
             service = "keyrx",
             event = "evdev_reader_panic",
             component = "linux_reader",
             path = %device_path.display(),
-            error = %panic_msg,
+            error = %critical_error,
             "EvdevReader thread panicked"
         );
 
