@@ -1,7 +1,10 @@
 //! Keymap cache trait and implementations for performance optimization.
 
 use crate::drivers::keycodes::KeyCode;
+use lru::LruCache;
+use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
 /// Statistics tracked by the keymap cache.
 #[derive(Debug, Clone)]
@@ -102,6 +105,127 @@ pub trait KeymapCache: Send + Sync {
     fn stats(&self) -> CacheStats;
 }
 
+/// LRU-based keymap cache implementation.
+///
+/// Uses a least-recently-used eviction policy to keep memory usage bounded.
+/// Thread-safe via internal Mutex.
+pub struct LruKeymapCache {
+    cache: Mutex<LruCache<(u32, String), KeyCode>>,
+    stats: CacheStatsTracker,
+    capacity: NonZeroUsize,
+}
+
+impl LruKeymapCache {
+    /// Create a new LRU cache with the specified capacity.
+    ///
+    /// # Arguments
+    /// * `capacity` - Maximum number of entries to cache
+    ///
+    /// # Returns
+    /// * `Some(cache)` if capacity > 0
+    /// * `None` if capacity is 0
+    pub fn new(capacity: usize) -> Option<Self> {
+        let capacity = NonZeroUsize::new(capacity)?;
+        Some(Self {
+            cache: Mutex::new(LruCache::new(capacity)),
+            stats: CacheStatsTracker::new(),
+            capacity,
+        })
+    }
+}
+
+impl KeymapCache for LruKeymapCache {
+    fn get(&self, scan_code: u32, device_id: &str) -> Option<KeyCode> {
+        let key = (scan_code, device_id.to_string());
+
+        // Handle poisoned mutex by clearing cache and returning None
+        let mut cache = match self.cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                // Cache corrupted - clear and rebuild
+                let mut guard = poisoned.into_inner();
+                guard.clear();
+                guard
+            }
+        };
+
+        match cache.get(&key) {
+            Some(&keycode) => {
+                self.stats.record_hit();
+                Some(keycode)
+            }
+            None => {
+                self.stats.record_miss();
+                None
+            }
+        }
+    }
+
+    fn insert(&self, scan_code: u32, device_id: &str, key: KeyCode) {
+        let cache_key = (scan_code, device_id.to_string());
+
+        let mut cache = match self.cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                let mut guard = poisoned.into_inner();
+                guard.clear();
+                guard
+            }
+        };
+
+        cache.put(cache_key, key);
+    }
+
+    fn invalidate_device(&self, device_id: &str) {
+        let mut cache = match self.cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                let mut guard = poisoned.into_inner();
+                guard.clear();
+                guard
+            }
+        };
+
+        // Collect keys to remove (can't modify while iterating)
+        let keys_to_remove: Vec<_> = cache
+            .iter()
+            .filter_map(|(key, _)| {
+                if key.1 == device_id {
+                    Some(key.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Remove all matching entries
+        for key in keys_to_remove {
+            cache.pop(&key);
+        }
+    }
+
+    fn clear(&self) {
+        let mut cache = match self.cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        cache.clear();
+    }
+
+    fn stats(&self) -> CacheStats {
+        let cache = match self.cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        let size = cache.len();
+        drop(cache);
+
+        self.stats.snapshot(size, self.capacity.get())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -140,5 +264,118 @@ mod tests {
         assert_eq!(stats.misses, 1);
         assert_eq!(stats.size, 10);
         assert_eq!(stats.capacity, 100);
+    }
+
+    #[test]
+    fn lru_cache_basic_operations() {
+        let cache = LruKeymapCache::new(10).unwrap();
+
+        // Initially empty
+        assert_eq!(cache.get(30, "dev0"), None);
+        let stats = cache.stats();
+        assert_eq!(stats.size, 0);
+        assert_eq!(stats.misses, 1);
+        assert_eq!(stats.hits, 0);
+
+        // Insert and retrieve
+        cache.insert(30, "dev0", KeyCode::A);
+        assert_eq!(cache.get(30, "dev0"), Some(KeyCode::A));
+
+        let stats = cache.stats();
+        assert_eq!(stats.size, 1);
+        assert_eq!(stats.hits, 1);
+    }
+
+    #[test]
+    fn lru_cache_eviction() {
+        let cache = LruKeymapCache::new(3).unwrap();
+
+        // Fill cache to capacity
+        cache.insert(1, "dev0", KeyCode::A);
+        cache.insert(2, "dev0", KeyCode::B);
+        cache.insert(3, "dev0", KeyCode::C);
+        assert_eq!(cache.stats().size, 3);
+
+        // Add one more - should evict LRU (key 1)
+        cache.insert(4, "dev0", KeyCode::D);
+        assert_eq!(cache.stats().size, 3);
+
+        // Key 1 should be evicted
+        assert_eq!(cache.get(1, "dev0"), None);
+        // Keys 2, 3, 4 should still be present
+        assert_eq!(cache.get(2, "dev0"), Some(KeyCode::B));
+        assert_eq!(cache.get(3, "dev0"), Some(KeyCode::C));
+        assert_eq!(cache.get(4, "dev0"), Some(KeyCode::D));
+    }
+
+    #[test]
+    fn lru_cache_device_invalidation() {
+        let cache = LruKeymapCache::new(10).unwrap();
+
+        // Add entries for multiple devices
+        cache.insert(1, "dev0", KeyCode::A);
+        cache.insert(2, "dev0", KeyCode::B);
+        cache.insert(1, "dev1", KeyCode::C);
+        cache.insert(2, "dev1", KeyCode::D);
+
+        assert_eq!(cache.stats().size, 4);
+
+        // Invalidate dev0
+        cache.invalidate_device("dev0");
+
+        // dev0 entries should be gone
+        assert_eq!(cache.get(1, "dev0"), None);
+        assert_eq!(cache.get(2, "dev0"), None);
+
+        // dev1 entries should remain
+        assert_eq!(cache.get(1, "dev1"), Some(KeyCode::C));
+        assert_eq!(cache.get(2, "dev1"), Some(KeyCode::D));
+
+        assert_eq!(cache.stats().size, 2);
+    }
+
+    #[test]
+    fn lru_cache_clear() {
+        let cache = LruKeymapCache::new(10).unwrap();
+
+        cache.insert(1, "dev0", KeyCode::A);
+        cache.insert(2, "dev0", KeyCode::B);
+        assert_eq!(cache.stats().size, 2);
+
+        cache.clear();
+
+        assert_eq!(cache.stats().size, 0);
+        assert_eq!(cache.get(1, "dev0"), None);
+        assert_eq!(cache.get(2, "dev0"), None);
+    }
+
+    #[test]
+    fn lru_cache_hit_rate() {
+        let cache = LruKeymapCache::new(10).unwrap();
+
+        // 10 inserts
+        for i in 0..10 {
+            cache.insert(i, "dev0", KeyCode::A);
+        }
+
+        // 10 hits
+        for i in 0..10 {
+            cache.get(i, "dev0");
+        }
+
+        // 5 misses
+        for i in 10..15 {
+            cache.get(i, "dev0");
+        }
+
+        let stats = cache.stats();
+        assert_eq!(stats.hits, 10);
+        assert_eq!(stats.misses, 5);
+        assert_eq!(stats.hit_rate(), 200.0 / 3.0); // 10/15 * 100 = 66.666...
+    }
+
+    #[test]
+    fn lru_cache_zero_capacity_returns_none() {
+        assert!(LruKeymapCache::new(0).is_none());
     }
 }

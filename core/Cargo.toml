@@ -28,6 +28,7 @@ smallvec.workspace = true
 rand.workspace = true
 dashmap.workspace = true
 hdrhistogram.workspace = true
+lru.workspace = true
 notify.workspace = true
 rustyline.workspace = true
 dirs.workspace = true
