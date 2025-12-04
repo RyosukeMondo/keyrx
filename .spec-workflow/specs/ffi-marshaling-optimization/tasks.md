@@ -40,7 +40,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing traits | Task: Implement FfiMarshaler for primitives | Restrictions: Zero-copy where possible | _Leverage: FfiMarshaler | Success: Primitives marshal efficiently | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Implement string marshaler
+- [x] 5. Implement string marshaler
   - File: `core/src/ffi/marshal/impls/string.rs`
   - String and &str support
   - Null-terminated C strings
