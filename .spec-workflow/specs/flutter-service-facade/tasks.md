@@ -199,7 +199,7 @@
   - _Requirements: Non-functional (usability)_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer with documentation expertise | Task: Add comprehensive dartdoc to all facade files | Restrictions: Follow Dart conventions, include examples, all public APIs documented | _Leverage: Dart documentation conventions | Success: All public APIs have dartdoc, examples compile, IDE shows docs | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 20. Clean up deprecated direct service usage
+- [x] 20. Clean up deprecated direct service usage
   - Files: Review all pages
   - Remove unused direct service injections
   - Update ServiceRegistry if methods no longer needed publicly
