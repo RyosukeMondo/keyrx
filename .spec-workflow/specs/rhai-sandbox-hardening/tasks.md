@@ -49,7 +49,7 @@
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer categorizing | Task: Assign capability tiers to all functions | Restrictions: Conservative tiers, document rationale | _Leverage: ScriptCapability | Success: All functions categorized | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Migrate registry to HashMap
+- [x] 6. Migrate registry to HashMap
   - File: `core/src/scripting/registry.rs`
   - Replace O(n) lookup with HashMap
   - Add KeyCode indexing

@@ -2,11 +2,14 @@
 //!
 //! This module categorizes all script-exposed functions by their security tier.
 //! Each function is assigned a ScriptCapability tier based on its security impact.
+//!
+//! This is a factory function that builds a CapabilityRegistry with all functions
+//! registered with HashMap-based O(1) lookup.
 
 use super::capability::ScriptCapability;
-use std::collections::HashMap;
+use super::registry::{CapabilityRegistry, FunctionCapability};
 
-/// Capability categorization for all script functions.
+/// Build a complete capability registry with all script functions categorized.
 ///
 /// # Tier Assignment Rationale
 ///
@@ -58,90 +61,145 @@ use std::collections::HashMap;
 ///
 /// Future functions that interact with clipboard, filesystem, network, or
 /// execute external commands would require Advanced tier.
-pub struct FunctionCapabilities {
-    capabilities: HashMap<&'static str, ScriptCapability>,
-}
+///
+/// # Performance
+///
+/// The registry uses HashMap for O(1) lookup by function name and by KeyCode.
+/// This meets the requirement in Requirement 4: Registry Optimization.
+pub fn build_function_registry() -> CapabilityRegistry {
+    let mut registry = CapabilityRegistry::with_capacity(24);
 
-impl FunctionCapabilities {
-    /// Create a new function capabilities registry with all functions categorized.
-    pub fn new() -> Self {
-        let mut capabilities = HashMap::new();
+    // Debug functions - Standard (logging only, no dangerous side effects)
+    registry.register(FunctionCapability::new(
+        "print_debug",
+        ScriptCapability::Standard,
+        "Print debug message to log",
+    ));
 
-        // Debug functions - Standard (logging only, no dangerous side effects)
-        capabilities.insert("print_debug", ScriptCapability::Standard);
+    // Remapping functions - Standard (core keyboard functionality)
+    registry.register(FunctionCapability::new(
+        "remap",
+        ScriptCapability::Standard,
+        "Remap a key to another key",
+    ));
+    registry.register(FunctionCapability::new(
+        "block",
+        ScriptCapability::Standard,
+        "Block a key event",
+    ));
+    registry.register(FunctionCapability::new(
+        "pass",
+        ScriptCapability::Standard,
+        "Pass a key event through unchanged",
+    ));
+    registry.register(FunctionCapability::new(
+        "tap_hold",
+        ScriptCapability::Standard,
+        "Register tap-hold behavior for a key",
+    ));
+    registry.register(FunctionCapability::new(
+        "tap_hold_mod",
+        ScriptCapability::Standard,
+        "Register tap-hold behavior with modifier",
+    ));
+    registry.register(FunctionCapability::new(
+        "combo",
+        ScriptCapability::Standard,
+        "Register a key combination",
+    ));
 
-        // Remapping functions - Standard (core keyboard functionality)
-        capabilities.insert("remap", ScriptCapability::Standard);
-        capabilities.insert("block", ScriptCapability::Standard);
-        capabilities.insert("pass", ScriptCapability::Standard);
-        capabilities.insert("tap_hold", ScriptCapability::Standard);
-        capabilities.insert("tap_hold_mod", ScriptCapability::Standard);
-        capabilities.insert("combo", ScriptCapability::Standard);
+    // Layer functions - Standard (core keyboard functionality)
+    registry.register(FunctionCapability::new(
+        "layer_define",
+        ScriptCapability::Standard,
+        "Define a new layer",
+    ));
+    registry.register(FunctionCapability::new(
+        "layer_map",
+        ScriptCapability::Standard,
+        "Map a key in a layer",
+    ));
+    registry.register(FunctionCapability::new(
+        "layer_push",
+        ScriptCapability::Standard,
+        "Push a layer onto the stack",
+    ));
+    registry.register(FunctionCapability::new(
+        "layer_pop",
+        ScriptCapability::Standard,
+        "Pop the top layer from the stack",
+    ));
+    registry.register(FunctionCapability::new(
+        "layer_toggle",
+        ScriptCapability::Standard,
+        "Toggle a layer on/off",
+    ));
+    registry.register(FunctionCapability::new(
+        "is_layer_active",
+        ScriptCapability::Standard,
+        "Check if a layer is active",
+    ));
 
-        // Layer functions - Standard (core keyboard functionality)
-        capabilities.insert("layer_define", ScriptCapability::Standard);
-        capabilities.insert("layer_map", ScriptCapability::Standard);
-        capabilities.insert("layer_push", ScriptCapability::Standard);
-        capabilities.insert("layer_pop", ScriptCapability::Standard);
-        capabilities.insert("layer_toggle", ScriptCapability::Standard);
-        capabilities.insert("is_layer_active", ScriptCapability::Standard);
+    // Modifier functions - Standard (core keyboard functionality)
+    registry.register(FunctionCapability::new(
+        "define_modifier",
+        ScriptCapability::Standard,
+        "Define a virtual modifier",
+    ));
+    registry.register(FunctionCapability::new(
+        "modifier_on",
+        ScriptCapability::Standard,
+        "Activate a modifier",
+    ));
+    registry.register(FunctionCapability::new(
+        "modifier_off",
+        ScriptCapability::Standard,
+        "Deactivate a modifier",
+    ));
+    registry.register(FunctionCapability::new(
+        "one_shot",
+        ScriptCapability::Standard,
+        "Arm a one-shot modifier",
+    ));
+    registry.register(FunctionCapability::new(
+        "is_modifier_active",
+        ScriptCapability::Standard,
+        "Check if a modifier is active",
+    ));
 
-        // Modifier functions - Standard (core keyboard functionality)
-        capabilities.insert("define_modifier", ScriptCapability::Standard);
-        capabilities.insert("modifier_on", ScriptCapability::Standard);
-        capabilities.insert("modifier_off", ScriptCapability::Standard);
-        capabilities.insert("one_shot", ScriptCapability::Standard);
-        capabilities.insert("is_modifier_active", ScriptCapability::Standard);
+    // Timing functions - Standard (configuration, affects timing behavior)
+    registry.register(FunctionCapability::new(
+        "set_tap_timeout",
+        ScriptCapability::Standard,
+        "Set tap timeout duration",
+    ));
+    registry.register(FunctionCapability::new(
+        "set_combo_timeout",
+        ScriptCapability::Standard,
+        "Set combo timeout duration",
+    ));
+    registry.register(FunctionCapability::new(
+        "set_hold_delay",
+        ScriptCapability::Standard,
+        "Set hold delay duration",
+    ));
+    registry.register(FunctionCapability::new(
+        "set_eager_tap",
+        ScriptCapability::Standard,
+        "Configure eager tap mode",
+    ));
+    registry.register(FunctionCapability::new(
+        "set_permissive_hold",
+        ScriptCapability::Standard,
+        "Configure permissive hold mode",
+    ));
+    registry.register(FunctionCapability::new(
+        "set_retro_tap",
+        ScriptCapability::Standard,
+        "Configure retro tap mode",
+    ));
 
-        // Timing functions - Standard (configuration, affects timing behavior)
-        capabilities.insert("set_tap_timeout", ScriptCapability::Standard);
-        capabilities.insert("set_combo_timeout", ScriptCapability::Standard);
-        capabilities.insert("set_hold_delay", ScriptCapability::Standard);
-        capabilities.insert("set_eager_tap", ScriptCapability::Standard);
-        capabilities.insert("set_permissive_hold", ScriptCapability::Standard);
-        capabilities.insert("set_retro_tap", ScriptCapability::Standard);
-
-        Self { capabilities }
-    }
-
-    /// Get the capability tier for a function.
-    ///
-    /// Returns `None` if the function is not registered.
-    pub fn get(&self, function_name: &str) -> Option<ScriptCapability> {
-        self.capabilities.get(function_name).copied()
-    }
-
-    /// Get all function names categorized by capability tier.
-    pub fn by_capability(&self, capability: ScriptCapability) -> Vec<&'static str> {
-        self.capabilities
-            .iter()
-            .filter_map(|(name, cap)| {
-                if *cap == capability {
-                    Some(*name)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    /// Get all registered functions with their capability tiers.
-    pub fn all(&self) -> &HashMap<&'static str, ScriptCapability> {
-        &self.capabilities
-    }
-
-    /// Check if a function is allowed in the given mode.
-    pub fn is_allowed(&self, function_name: &str, mode: super::capability::ScriptMode) -> bool {
-        self.get(function_name)
-            .map(|cap| cap.is_allowed_in(mode))
-            .unwrap_or(false)
-    }
-}
-
-impl Default for FunctionCapabilities {
-    fn default() -> Self {
-        Self::new()
-    }
+    registry
 }
 
 #[cfg(test)]
@@ -151,91 +209,99 @@ mod tests {
 
     #[test]
     fn test_all_functions_categorized() {
-        let caps = FunctionCapabilities::new();
+        let registry = build_function_registry();
 
         // Debug
-        assert!(caps.get("print_debug").is_some());
+        assert!(registry.get("print_debug").is_some());
 
         // Remapping
-        assert!(caps.get("remap").is_some());
-        assert!(caps.get("block").is_some());
-        assert!(caps.get("pass").is_some());
-        assert!(caps.get("tap_hold").is_some());
-        assert!(caps.get("tap_hold_mod").is_some());
-        assert!(caps.get("combo").is_some());
+        assert!(registry.get("remap").is_some());
+        assert!(registry.get("block").is_some());
+        assert!(registry.get("pass").is_some());
+        assert!(registry.get("tap_hold").is_some());
+        assert!(registry.get("tap_hold_mod").is_some());
+        assert!(registry.get("combo").is_some());
 
         // Layers
-        assert!(caps.get("layer_define").is_some());
-        assert!(caps.get("layer_map").is_some());
-        assert!(caps.get("layer_push").is_some());
-        assert!(caps.get("layer_pop").is_some());
-        assert!(caps.get("layer_toggle").is_some());
-        assert!(caps.get("is_layer_active").is_some());
+        assert!(registry.get("layer_define").is_some());
+        assert!(registry.get("layer_map").is_some());
+        assert!(registry.get("layer_push").is_some());
+        assert!(registry.get("layer_pop").is_some());
+        assert!(registry.get("layer_toggle").is_some());
+        assert!(registry.get("is_layer_active").is_some());
 
         // Modifiers
-        assert!(caps.get("define_modifier").is_some());
-        assert!(caps.get("modifier_on").is_some());
-        assert!(caps.get("modifier_off").is_some());
-        assert!(caps.get("one_shot").is_some());
-        assert!(caps.get("is_modifier_active").is_some());
+        assert!(registry.get("define_modifier").is_some());
+        assert!(registry.get("modifier_on").is_some());
+        assert!(registry.get("modifier_off").is_some());
+        assert!(registry.get("one_shot").is_some());
+        assert!(registry.get("is_modifier_active").is_some());
 
         // Timing
-        assert!(caps.get("set_tap_timeout").is_some());
-        assert!(caps.get("set_combo_timeout").is_some());
-        assert!(caps.get("set_hold_delay").is_some());
-        assert!(caps.get("set_eager_tap").is_some());
-        assert!(caps.get("set_permissive_hold").is_some());
-        assert!(caps.get("set_retro_tap").is_some());
+        assert!(registry.get("set_tap_timeout").is_some());
+        assert!(registry.get("set_combo_timeout").is_some());
+        assert!(registry.get("set_hold_delay").is_some());
+        assert!(registry.get("set_eager_tap").is_some());
+        assert!(registry.get("set_permissive_hold").is_some());
+        assert!(registry.get("set_retro_tap").is_some());
     }
 
     #[test]
     fn test_standard_tier_functions() {
-        let caps = FunctionCapabilities::new();
-        let standard_funcs = caps.by_capability(ScriptCapability::Standard);
+        let registry = build_function_registry();
+        let standard_funcs = registry.by_tier(ScriptCapability::Standard);
 
         // All current functions should be Standard tier
         // 1 debug + 6 remapping + 6 layer + 5 modifier + 6 timing = 24 total
         assert_eq!(standard_funcs.len(), 24);
-        assert!(standard_funcs.contains(&"remap"));
-        assert!(standard_funcs.contains(&"layer_define"));
-        assert!(standard_funcs.contains(&"define_modifier"));
+        let names: Vec<_> = standard_funcs.iter().map(|f| f.name.as_str()).collect();
+        assert!(names.contains(&"remap"));
+        assert!(names.contains(&"layer_define"));
+        assert!(names.contains(&"define_modifier"));
     }
 
     #[test]
     fn test_functions_allowed_in_standard_mode() {
-        let caps = FunctionCapabilities::new();
+        let registry = build_function_registry();
 
         // All current functions should be allowed in Standard mode
-        assert!(caps.is_allowed("remap", ScriptMode::Standard));
-        assert!(caps.is_allowed("layer_define", ScriptMode::Standard));
-        assert!(caps.is_allowed("define_modifier", ScriptMode::Standard));
-        assert!(caps.is_allowed("print_debug", ScriptMode::Standard));
+        assert!(registry.is_allowed("remap", ScriptMode::Standard));
+        assert!(registry.is_allowed("layer_define", ScriptMode::Standard));
+        assert!(registry.is_allowed("define_modifier", ScriptMode::Standard));
+        assert!(registry.is_allowed("print_debug", ScriptMode::Standard));
     }
 
     #[test]
     fn test_functions_not_allowed_in_safe_mode() {
-        let caps = FunctionCapabilities::new();
+        let registry = build_function_registry();
 
         // Standard functions should not be allowed in Safe mode
-        assert!(!caps.is_allowed("remap", ScriptMode::Safe));
-        assert!(!caps.is_allowed("layer_define", ScriptMode::Safe));
-        assert!(!caps.is_allowed("define_modifier", ScriptMode::Safe));
+        assert!(!registry.is_allowed("remap", ScriptMode::Safe));
+        assert!(!registry.is_allowed("layer_define", ScriptMode::Safe));
+        assert!(!registry.is_allowed("define_modifier", ScriptMode::Safe));
     }
 
     #[test]
     fn test_functions_allowed_in_full_mode() {
-        let caps = FunctionCapabilities::new();
+        let registry = build_function_registry();
 
         // All Standard functions should be allowed in Full mode
-        assert!(caps.is_allowed("remap", ScriptMode::Full));
-        assert!(caps.is_allowed("layer_define", ScriptMode::Full));
-        assert!(caps.is_allowed("define_modifier", ScriptMode::Full));
+        assert!(registry.is_allowed("remap", ScriptMode::Full));
+        assert!(registry.is_allowed("layer_define", ScriptMode::Full));
+        assert!(registry.is_allowed("define_modifier", ScriptMode::Full));
     }
 
     #[test]
     fn test_unknown_function() {
-        let caps = FunctionCapabilities::new();
-        assert!(caps.get("nonexistent_function").is_none());
-        assert!(!caps.is_allowed("nonexistent_function", ScriptMode::Full));
+        let registry = build_function_registry();
+        assert!(registry.get("nonexistent_function").is_none());
+        assert!(!registry.is_allowed("nonexistent_function", ScriptMode::Full));
+    }
+
+    #[test]
+    fn test_registry_size() {
+        let registry = build_function_registry();
+        assert_eq!(registry.len(), 24);
+        assert!(!registry.is_empty());
     }
 }

@@ -13,5 +13,5 @@ pub mod registry;
 
 pub use budget::{ResourceBudget, ResourceConfig, ResourceExhausted, ResourceUsage};
 pub use capability::{ScriptCapability, ScriptMode};
-pub use function_capabilities::FunctionCapabilities;
+pub use function_capabilities::build_function_registry;
 pub use registry::{CapabilityRegistry, FunctionCapability};
