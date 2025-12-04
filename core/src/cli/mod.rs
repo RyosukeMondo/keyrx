@@ -1,4 +1,8 @@
 //! CLI command definitions and output formatting.
+//!
+//! This module uses println! and eprintln! for user-facing output,
+//! which is intentional and distinct from internal logging.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 
 mod command;
 pub mod commands;

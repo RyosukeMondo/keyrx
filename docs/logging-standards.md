@@ -574,17 +574,27 @@ fn test_logs_error() {
 
 ### Linting
 
-A Clippy lint warns against `println!` in non-CLI code:
+Clippy lints warn against `println!` and `eprintln!` usage throughout the codebase:
 
 ```toml
-# .cargo/config.toml or clippy.toml
-[lints]
-disallowed-methods = [
-    { path = "std::println", reason = "Use tracing instead" },
-    { path = "std::eprintln", reason = "Use tracing instead" },
-    { path = "std::dbg", reason = "Use tracing::debug! instead" },
-]
+# Cargo.toml - workspace lints
+[workspace.lints.clippy]
+print_stdout = "warn"
+print_stderr = "warn"
 ```
+
+These lints are enabled globally and will warn on any use of `println!` or `eprintln!`. For legitimate user-facing output in CLI code, use module-level allow attributes:
+
+```rust
+//! CLI module - uses println! for user output
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+```
+
+This approach:
+- Catches accidental debug `println!` in library code
+- Allows intentional use in CLI for user-facing output
+- Provides clear warnings during development
+- Is enforced in CI via `cargo clippy`
 
 ### Code Review
 

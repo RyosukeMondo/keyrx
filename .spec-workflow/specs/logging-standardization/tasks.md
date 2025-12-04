@@ -154,7 +154,7 @@
   - _Requirements: Non-functional (reliability)_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create logging unit tests | Restrictions: Test formatting, bridge, levels | _Leverage: Test fixtures | Success: Logging verified | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add lint to prevent println
+- [x] 17. Add lint to prevent println
   - File: `.cargo/config.toml` or clippy.toml
   - Warn on println in non-CLI code
   - Purpose: Prevent regression

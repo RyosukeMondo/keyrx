@@ -90,6 +90,9 @@ unsafe_code = "warn"
 unwrap_used = "warn"
 expect_used = "warn"
 panic = "warn"
+# Warn on println/eprintln to enforce structured logging
+print_stdout = "warn"
+print_stderr = "warn"
 
 [profile.dev]
 opt-level = 0

@@ -2,6 +2,9 @@
 //!
 //! This tool reads the error registry and generates markdown documentation
 //! files for all error categories.
+//!
+//! This binary uses println! for user-facing output.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use keyrx_core::errors::{ErrorCategory, ErrorDocGenerator};
 use std::fs;

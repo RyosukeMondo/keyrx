@@ -1,4 +1,8 @@
 //! KeyRx CLI entry point.
+//!
+//! This binary uses println! and eprintln! for user-facing output,
+//! which is intentional and distinct from internal logging.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use clap::{Parser, Subcommand};
 use keyrx_core::cli::{
