@@ -40,7 +40,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create StateTransition enum with all variants | Restrictions: Cover all transitions, serializable | _Leverage: Audit | Success: All transitions enumerated | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Create StateKind enum
+- [x] 5. Create StateKind enum
   - File: `core/src/engine/transitions/state_kind.rs`
   - Define high-level state categories
   - Map to transition validity

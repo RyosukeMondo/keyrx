@@ -6,8 +6,10 @@
 //! - Transition logging for debugging and replay
 //! - State graph for enforcing valid transitions
 
+pub mod state_kind;
 pub mod transition;
 
+pub use state_kind::StateKind;
 pub use transition::{StateTransition, TransitionCategory};
 
 // Re-export decision types with different names to avoid conflicts
