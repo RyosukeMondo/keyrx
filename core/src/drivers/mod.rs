@@ -9,10 +9,13 @@ pub mod common;
 pub mod emergency_exit;
 mod injector;
 pub mod keycodes;
+mod resilient;
 
 pub use bypass::BypassController;
 
 pub use injector::{InjectedKey, KeyInjector, MockKeyInjector};
+
+pub use resilient::ResilientDriver;
 
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
 pub mod windows;
