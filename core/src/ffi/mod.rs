@@ -40,6 +40,9 @@ mod exports_testing;
 mod exports_validation;
 pub mod traits;
 
+#[cfg(test)]
+mod tests;
+
 pub use callbacks::{
     callback_registry, CallbackRegistry, DiscoveryEventCallback, IsolatedRegistry,
     StateEventCallback,
