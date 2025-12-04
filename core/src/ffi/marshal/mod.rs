@@ -53,9 +53,13 @@
 pub mod error;
 pub mod impls;
 pub mod result;
+pub mod stream;
 pub mod traits;
 
 // Re-export core types
 pub use error::{MarshalError, MarshalErrorC};
 pub use result::{FfiErrorData, FfiErrorPtr, FfiResult};
+pub use stream::{
+    ChunkCollector, ChunkIterator, StreamContext, DEFAULT_CHUNK_SIZE, MAX_CHUNK_SIZE,
+};
 pub use traits::{CRepr, FfiMarshaler, FfiStreamMarshaler, STREAMING_THRESHOLD};
