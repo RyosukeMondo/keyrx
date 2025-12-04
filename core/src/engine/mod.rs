@@ -1,6 +1,7 @@
 //! Core engine module for event processing.
 
 mod advanced;
+pub mod coalescing;
 mod decision;
 pub mod decision_engine;
 mod event_loop;
@@ -17,6 +18,7 @@ pub mod transitions;
 mod types;
 
 pub use advanced::AdvancedEngine;
+pub use coalescing::{CoalescingConfig, EventBuffer};
 pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
     PendingDecisionState, TimingConfig,

@@ -2,14 +2,14 @@
 
 ## Phase 1: Core Buffer
 
-- [ ] 1. Create EventBuffer
+- [x] 1. Create EventBuffer
   - File: `core/src/engine/coalescing/buffer.rs`
   - Implement time-based and size-based flushing
   - Add coalescing rules for repeats
   - Purpose: Event batching buffer
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. Create CoalescingConfig
+- [x] 2. Create CoalescingConfig
   - File: `core/src/engine/coalescing/config.rs`
   - Configurable batch size and timeout
   - Sensible defaults
