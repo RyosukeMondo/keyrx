@@ -147,7 +147,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer creating widget | Task: Create API browser widget | Restrictions: Search, browse, syntax highlight | _Leverage: API docs service | Success: Users can browse docs in app | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Integrate docs into script editor
+- [x] 16. Integrate docs into script editor
   - File: `ui/lib/pages/script_editor_page.dart`
   - Add documentation panel
   - Autocomplete from docs
