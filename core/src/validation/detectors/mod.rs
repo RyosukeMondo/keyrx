@@ -3,6 +3,8 @@
 //! This module defines the common interface that all validation detectors must implement,
 //! along with supporting types for context, results, and statistics.
 
+pub mod conflicts;
+
 use crate::scripting::PendingOp;
 use crate::validation::config::ValidationConfig;
 use crate::validation::types::{SourceLocation, ValidationWarning};

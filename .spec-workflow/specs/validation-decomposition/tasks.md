@@ -32,7 +32,7 @@
 
 ## Phase 2: Detector Extraction
 
-- [ ] 4. Extract ConflictDetector
+- [x] 4. Extract ConflictDetector
   - File: `core/src/validation/detectors/conflicts.rs`
   - Move remap/block conflict detection from original conflicts.rs
   - Implement Detector trait
