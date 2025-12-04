@@ -13,26 +13,13 @@ import 'pages/training_screen.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
+import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
 
 void main() {
   runApp(
     MultiProvider(
-      providers: [
-        Provider<ServiceRegistry>(
-          create: (_) => ServiceRegistry.real(),
-          dispose: (_, registry) => registry.dispose(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) {
-            final registry = context.read<ServiceRegistry>();
-            return AppState(
-              engineService: registry.engineService,
-              errorTranslator: registry.errorTranslator,
-            );
-          },
-        ),
-      ],
+      providers: createProviders(),
       child: const KeyrxApp(),
     ),
   );

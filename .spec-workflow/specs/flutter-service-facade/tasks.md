@@ -130,7 +130,7 @@
 
 ## Phase 4: Migration
 
-- [ ] 13. Add KeyrxFacade Provider
+- [x] 13. Add KeyrxFacade Provider
   - File: `ui/lib/state/providers.dart`
   - Add KeyrxFacade provider using ServiceRegistry
   - Configure proper disposal
