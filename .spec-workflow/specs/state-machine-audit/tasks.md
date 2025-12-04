@@ -31,7 +31,7 @@
 
 ## Phase 2: Core Types
 
-- [ ] 4. Create StateTransition enum
+- [x] 4. Create StateTransition enum
   - File: `core/src/engine/transitions/transition.rs`
   - Define all valid transitions
   - Add metadata (timestamp, category)

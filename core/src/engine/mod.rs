@@ -11,6 +11,7 @@ mod processing;
 pub mod replay;
 pub mod state;
 pub mod tracing;
+pub mod transitions;
 mod types;
 
 // Backward compatibility: EngineState is the old snapshot type
@@ -35,4 +36,5 @@ pub use state::{
 // For backward compatibility, EngineState refers to the old snapshot type (now EngineStateSnapshot)
 pub use state::EngineState as UnifiedEngineState;
 pub use tracing::{EngineTracer, SpanGuard, TracingError, TracingResult};
+pub use transitions::{StateTransition, TransitionCategory};
 pub use types::{InputEvent, KeyCode, OutputAction, RemapAction};

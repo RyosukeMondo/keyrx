@@ -33,7 +33,7 @@ pub fn extract_panic_message(panic_info: &(dyn Any + Send)) -> String {
 ///
 /// This struct provides a platform-agnostic representation of keyboard devices
 /// that can be used for device discovery and selection.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct DeviceInfo {
     /// Path to the device (e.g., `/dev/input/event0` on Linux).
     pub path: PathBuf,

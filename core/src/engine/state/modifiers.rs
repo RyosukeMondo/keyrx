@@ -4,7 +4,7 @@ use crate::config::MAX_MODIFIER_ID;
 use crate::traits::ModifierProvider;
 
 /// Identifies a modifier, either a standard OS modifier or a virtual one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Modifier {
     Standard(StandardModifier),
     Virtual(u8),
