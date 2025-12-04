@@ -105,7 +105,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer configuring Rhai | Task: Configure Rhai engine resource limits | Restrictions: Use Rhai built-in limits | _Leverage: Rhai config | Success: Engine limits configured | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Integrate sandbox into engine
+- [x] 12. Integrate sandbox into engine
   - File: `core/src/engine/scripting.rs`
   - Use ScriptSandbox for all script execution
   - Handle sandbox errors
