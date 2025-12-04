@@ -78,7 +78,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating metrics | Task: Add MetricsCollector to Engine, record latencies | Restrictions: Minimal code change, use RAII guards | _Leverage: MetricsCollector | Success: Engine latency tracked | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 9. Add metrics to Drivers
+- [x] 9. Add metrics to Drivers
   - Files: `core/src/drivers/{windows,linux}/mod.rs`
   - Record driver read/write latencies
   - Track driver-specific operations
