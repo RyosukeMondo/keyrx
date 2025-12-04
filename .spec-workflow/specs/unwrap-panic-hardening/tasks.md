@@ -60,7 +60,7 @@
 
 ## Phase 3: Critical Path Audit
 
-- [-] 7. Audit and fix driver unwraps (Windows)
+- [x] 7. Audit and fix driver unwraps (Windows)
   - Files: `core/src/drivers/windows/*.rs`
   - Replace unwrap/expect with error handling
   - Wrap hook callback in PanicGuard
