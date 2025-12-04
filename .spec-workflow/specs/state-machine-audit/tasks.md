@@ -117,7 +117,7 @@
 
 ## Phase 5: Integration
 
-- [ ] 13. Integrate StateGraph into Engine
+- [x] 13. Integrate StateGraph into Engine
   - Files: `core/src/engine/mod.rs`
   - Route all changes through graph
   - Add validation on transitions
