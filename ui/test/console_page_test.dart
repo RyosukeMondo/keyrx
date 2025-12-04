@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/console.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
+import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:provider/provider.dart';
 
 class _FakeEngineService implements EngineService {
   final StreamController<EngineSnapshot> _stateController =
@@ -44,12 +47,41 @@ class _FakeEngineService implements EngineService {
   }
 }
 
+class _FakeServiceRegistry implements ServiceRegistry {
+  _FakeServiceRegistry(this._engineService);
+
+  final EngineService _engineService;
+
+  @override
+  EngineService get engineService => _engineService;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _FakeFacade implements KeyrxFacade {
+  _FakeFacade(this._registry);
+
+  final ServiceRegistry _registry;
+
+  @override
+  ServiceRegistry get services => _registry;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 void main() {
   testWidgets('Console executes commands via EngineService', (tester) async {
     final fakeEngine = _FakeEngineService();
+    final registry = _FakeServiceRegistry(fakeEngine);
+    final facade = _FakeFacade(registry);
 
     await tester.pumpWidget(
-      MaterialApp(home: ConsolePage(engineService: fakeEngine)),
+      Provider<KeyrxFacade>.value(
+        value: facade,
+        child: const MaterialApp(home: ConsolePage()),
+      ),
     );
 
     await tester.enterText(find.byType(TextField), 'print("hi")');
@@ -67,9 +99,14 @@ void main() {
             success: false,
             output: 'error: engine unavailable',
           );
+    final registry = _FakeServiceRegistry(fakeEngine);
+    final facade = _FakeFacade(registry);
 
     await tester.pumpWidget(
-      MaterialApp(home: ConsolePage(engineService: fakeEngine)),
+      Provider<KeyrxFacade>.value(
+        value: facade,
+        child: const MaterialApp(home: ConsolePage()),
+      ),
     );
 
     await tester.enterText(find.byType(TextField), 'status');
