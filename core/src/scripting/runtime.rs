@@ -8,7 +8,7 @@ use super::bindings::register_all_functions;
 use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
 use super::pending_ops::PendingOpsApplier;
 use super::registry_sync::RegistrySyncer;
-use super::sandbox::{ResourceConfig, ScriptSandbox};
+use super::sandbox::{ResourceConfig, SandboxError, ScriptSandbox};
 use crate::engine::{KeyCode, LayerStack};
 use crate::errors::{runtime::*, KeyrxError};
 use crate::keyrx_err;
@@ -23,6 +23,11 @@ use std::sync::{Arc, Mutex};
 /// Uses a pending operations pattern to avoid `Rc<RefCell>`:
 /// - Script functions push operations to a shared `Arc<Mutex<Vec>>`
 /// - After script execution, operations are applied to the owned registry
+///
+/// The runtime integrates with ScriptSandbox to enforce:
+/// - Capability-based function access control
+/// - Resource limits (CPU, memory, recursion)
+/// - Input validation
 pub struct RhaiRuntime {
     engine: Engine,
     ast: Option<AST>,
@@ -30,6 +35,7 @@ pub struct RhaiRuntime {
     registry: RemapRegistry,
     pending_ops: PendingOps,
     syncer: RegistrySyncer,
+    sandbox: Arc<ScriptSandbox>,
 }
 
 impl RhaiRuntime {
@@ -42,7 +48,7 @@ impl RhaiRuntime {
     pub fn with_config(config: ResourceConfig) -> Result<Self, KeyrxError> {
         let mut engine = Engine::new();
 
-        // Configure engine limits via sandbox
+        // Create sandbox with custom configuration
         let sandbox = ScriptSandbox::default();
         sandbox.configure_engine(&mut engine);
 
@@ -67,7 +73,20 @@ impl RhaiRuntime {
             registry: RemapRegistry::new(),
             pending_ops,
             syncer,
+            sandbox: Arc::new(sandbox),
         })
+    }
+
+    /// Get a reference to the sandbox.
+    pub fn sandbox(&self) -> &ScriptSandbox {
+        &self.sandbox
+    }
+
+    /// Check if a function is allowed in the current sandbox mode.
+    ///
+    /// This can be used to pre-validate function calls before execution.
+    pub fn check_function_allowed(&self, function_name: &str) -> Result<(), SandboxError> {
+        self.sandbox.check_function_allowed(function_name)
     }
 
     /// Check if a function is defined in the loaded script.
@@ -102,6 +121,11 @@ impl RhaiRuntime {
 
 impl ScriptRuntime for RhaiRuntime {
     fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
+        // Check resources before execution
+        self.sandbox
+            .check_resources()
+            .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
+
         self.engine
             .run(script)
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
@@ -111,6 +135,11 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError> {
+        // Check resources before execution
+        self.sandbox
+            .check_resources()
+            .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
+
         let ast = self
             .ast
             .as_ref()
@@ -141,6 +170,11 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn run_script(&mut self) -> Result<(), KeyrxError> {
+        // Check resources before execution
+        self.sandbox
+            .check_resources()
+            .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
+
         let ast = self
             .ast
             .as_ref()
