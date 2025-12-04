@@ -4,9 +4,11 @@
 //! and failures in critical paths. It includes:
 //!
 //! - `panic_guard`: Panic catching and backtrace logging
+//! - `panic_telemetry`: Telemetry for tracking panics and recoveries
 //! - `circuit_breaker`: Circuit breakers for preventing cascading failures
 //! - `extensions`: Extension traits for safe unwrapping and error conversion
 
 pub mod circuit_breaker;
 pub mod extensions;
 pub mod panic_guard;
+pub mod panic_telemetry;

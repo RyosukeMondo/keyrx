@@ -127,7 +127,7 @@
   - _Requirements: 3.4, 4.1_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating safety | Task: Add CircuitBreaker to driver operations | Restrictions: Auto-fallback on repeated failures | _Leverage: CircuitBreaker | Success: Drivers recover automatically | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Add panic telemetry to FFI
+- [x] 14. Add panic telemetry to FFI
   - File: `core/src/ffi/exports_telemetry.rs`
   - Export panic counts and recovery events
   - Enable Flutter to show recovery notifications

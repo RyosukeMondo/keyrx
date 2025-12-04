@@ -34,6 +34,7 @@
 //! ```
 
 use crate::errors::critical::CriticalError;
+use crate::safety::panic_telemetry::{record_panic, record_recovery};
 use std::any::Any;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -94,7 +95,11 @@ impl PanicGuard {
         let backtrace = std::backtrace::Backtrace::capture();
 
         match catch_unwind(AssertUnwindSafe(f)) {
-            Ok(result) => Ok(result),
+            Ok(result) => {
+                // Record successful execution (recovery from previous panic)
+                record_recovery();
+                Ok(result)
+            }
             Err(panic_info) => {
                 let panic_message = extract_panic_message(&panic_info);
 
@@ -103,6 +108,9 @@ impl PanicGuard {
                     std::backtrace::BacktraceStatus::Captured => Some(format!("{}", backtrace)),
                     _ => None,
                 };
+
+                // Record panic in telemetry
+                record_panic(&self.context, &panic_message, backtrace_str.clone());
 
                 // Log the panic with context
                 tracing::error!(

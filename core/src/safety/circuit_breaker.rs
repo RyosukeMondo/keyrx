@@ -42,6 +42,7 @@
 //! ```
 
 use crate::errors::critical::CriticalError;
+use crate::safety::panic_telemetry::{record_circuit_breaker_close, record_circuit_breaker_open};
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
@@ -326,9 +327,14 @@ impl CircuitBreaker {
             *guard = Some(error.to_string());
         }
 
+        let failure_count = self.failure_count.load(Ordering::Relaxed) as usize;
+
+        // Record in telemetry
+        record_circuit_breaker_open(&self.context, failure_count);
+
         tracing::error!(
             context = %self.context,
-            failure_count = self.failure_count.load(Ordering::Relaxed),
+            failure_count = failure_count,
             error = %error,
             "Circuit breaker opened"
         );
@@ -339,6 +345,9 @@ impl CircuitBreaker {
         self.state.store(State::Closed as u8, Ordering::Release);
         self.failure_count.store(0, Ordering::Release);
         self.success_count.store(0, Ordering::Release);
+
+        // Record in telemetry
+        record_circuit_breaker_close(&self.context);
 
         tracing::info!(
             context = %self.context,
