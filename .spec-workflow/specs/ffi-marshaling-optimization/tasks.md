@@ -11,7 +11,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating traits | Task: Create FfiMarshaler trait with CRepr | Restrictions: Generic, streaming-aware, type-safe | _Leverage: Trait patterns | Success: Trait defines marshaling contract | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create FfiResult type
+- [x] 2. Create FfiResult type
   - File: `core/src/ffi/marshal/result.rs`
   - C-compatible result representation
   - Error pointer management

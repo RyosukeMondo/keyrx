@@ -50,7 +50,9 @@
 //! }
 //! ```
 
+pub mod result;
 pub mod traits;
 
 // Re-export core types
+pub use result::{FfiErrorData, FfiErrorPtr, FfiResult};
 pub use traits::{CRepr, FfiMarshaler, FfiStreamMarshaler, STREAMING_THRESHOLD};
