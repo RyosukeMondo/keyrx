@@ -2,21 +2,21 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create StateChange enum
+- [x] 1. Create StateChange enum
   - File: `core/src/engine/state/delta.rs`
   - Define all change types
   - Add serialization
   - Purpose: Change representation
   - _Requirements: 1.1_
 
-- [ ] 2. Create StateDelta type
+- [x] 2. Create StateDelta type
   - File: `core/src/engine/state/delta.rs`
   - Version tracking
   - Change collection
   - Purpose: Delta container
   - _Requirements: 1.1, 2.1, 2.2_
 
-- [ ] 3. Create DeltaTracker
+- [x] 3. Create DeltaTracker
   - File: `core/src/engine/state/tracker.rs`
   - Record changes as they occur
   - Generate deltas on request

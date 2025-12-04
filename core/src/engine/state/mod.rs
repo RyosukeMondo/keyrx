@@ -1,6 +1,7 @@
 //! Layer and modifier state management.
 
 pub mod change;
+pub mod delta;
 mod error;
 pub mod history;
 mod key_state;
@@ -11,6 +12,7 @@ mod mutation;
 mod pending;
 pub mod persistence;
 pub mod snapshot;
+pub mod tracker;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -24,6 +26,7 @@ use crate::engine::KeyCode;
 pub use change::{
     AutoReleaseReason, Effect, HoldOutcome, PendingDecisionType, PendingResolution, StateChange,
 };
+pub use delta::{DeltaChange, StateDelta};
 #[allow(unused_imports)] // Will be used in tasks 9-11 for apply() and apply_batch()
 pub use error::{StateError, StateResult};
 #[allow(unused_imports)] // Will be used in tasks 14+ for state persistence and debugging
@@ -37,6 +40,7 @@ pub use modifiers::{
 };
 pub use mutation::Mutation;
 pub use pending::PendingState;
+pub use tracker::DeltaTracker;
 
 /// A set of active modifiers (both physical and virtual).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
