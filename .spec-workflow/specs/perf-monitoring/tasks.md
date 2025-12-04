@@ -107,7 +107,7 @@
   - _Requirements: 4.2, 4.3_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating FFI | Task: Create FFI exports for metrics | Restrictions: C-compatible, efficient serialization | _Leverage: FFI patterns | Success: Flutter can access metrics | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Add metrics event callback
+- [x] 12. Add metrics event callback
   - File: `core/src/ffi/exports_metrics.rs`
   - Callback for threshold violations
   - Real-time alerts to Flutter

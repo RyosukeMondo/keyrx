@@ -17,6 +17,11 @@
 //! - `keyrx_metrics_stop_updates()` - Stop background updates
 //! - `keyrx_metrics_trigger_callback()` - Trigger immediate update
 //!
+//! ## Threshold API (Alerts)
+//! - `keyrx_metrics_set_threshold_callback()` - Register callback for threshold violations
+//! - `keyrx_metrics_set_thresholds()` - Configure threshold values
+//! - `keyrx_metrics_get_thresholds()` - Get current threshold values
+//!
 //! # Example Usage
 //!
 //! ## Polling Approach (Recommended)
@@ -56,6 +61,44 @@
 //! }
 //! ```
 //!
+//! ## Threshold Callback Approach
+//!
+//! ```c
+//! void on_threshold_violation(const ThresholdViolation* violation) {
+//!     switch (violation->violation_type) {
+//!         case 0: // LatencyWarning
+//!             printf("Warning: Latency %llu us exceeds %llu us\n",
+//!                    violation->actual_value, violation->threshold_value);
+//!             break;
+//!         case 1: // LatencyError
+//!             printf("Error: Latency %llu us exceeds %llu us\n",
+//!                    violation->actual_value, violation->threshold_value);
+//!             break;
+//!         case 2: // MemoryWarning
+//!             printf("Warning: Memory %llu bytes exceeds %llu bytes\n",
+//!                    violation->actual_value, violation->threshold_value);
+//!             break;
+//!         case 3: // MemoryError
+//!             printf("Error: Memory %llu bytes exceeds %llu bytes\n",
+//!                    violation->actual_value, violation->threshold_value);
+//!             break;
+//!     }
+//! }
+//!
+//! // Configure thresholds (50us warn, 100us error, 100MB warn, 500MB error)
+//! keyrx_metrics_set_thresholds(50, 100, 104857600, 524288000);
+//!
+//! // Register callback
+//! keyrx_metrics_set_threshold_callback(on_threshold_violation);
+//!
+//! // Start updates - thresholds checked automatically
+//! keyrx_metrics_start_updates();
+//!
+//! // ... later ...
+//! keyrx_metrics_stop_updates();
+//! keyrx_metrics_set_threshold_callback(NULL);  // Unregister
+//! ```
+//!
 //! # Metrics Data
 //!
 //! The snapshot contains:
@@ -66,6 +109,14 @@
 //! - `events_processed` - Total number of events processed
 //! - `errors_count` - Total number of errors encountered
 //! - `memory_used` - Current memory usage (bytes)
+//!
+//! # Threshold Violations
+//!
+//! Threshold violations contain:
+//! - `timestamp` - Unix timestamp in milliseconds
+//! - `violation_type` - Type of violation (0=LatencyWarning, 1=LatencyError, 2=MemoryWarning, 3=MemoryError)
+//! - `actual_value` - The actual value that exceeded the threshold
+//! - `threshold_value` - The threshold that was exceeded
 //!
 //! # Thread Safety
 //!
@@ -84,12 +135,15 @@
 // in the domain modules.
 
 pub use crate::ffi::domains::observability::{
-    keyrx_metrics_set_callback, keyrx_metrics_snapshot, keyrx_metrics_snapshot_json,
+    keyrx_metrics_get_thresholds, keyrx_metrics_set_callback, keyrx_metrics_set_threshold_callback,
+    keyrx_metrics_set_thresholds, keyrx_metrics_snapshot, keyrx_metrics_snapshot_json,
     keyrx_metrics_start_updates, keyrx_metrics_stop_updates, keyrx_metrics_trigger_callback,
 };
 
 // Re-export types
-pub use crate::observability::metrics_bridge::MetricsSnapshotFfi;
+pub use crate::observability::metrics_bridge::{
+    MetricsSnapshotFfi, ThresholdViolation, ViolationType,
+};
 
 #[cfg(test)]
 mod tests {
@@ -154,5 +208,57 @@ mod tests {
 
         // Unregister
         assert_eq!(keyrx_metrics_set_callback(None), 0);
+    }
+
+    #[test]
+    #[serial]
+    fn test_threshold_callback_exports() {
+        init_test_metrics();
+
+        extern "C" fn test_threshold_callback(_violation: *const ThresholdViolation) {}
+
+        // Set threshold callback
+        assert_eq!(
+            keyrx_metrics_set_threshold_callback(Some(test_threshold_callback)),
+            0
+        );
+
+        // Unregister
+        assert_eq!(keyrx_metrics_set_threshold_callback(None), 0);
+    }
+
+    #[test]
+    #[serial]
+    fn test_threshold_configuration() {
+        init_test_metrics();
+
+        // Set thresholds
+        assert_eq!(
+            keyrx_metrics_set_thresholds(50, 100, 1024 * 1024, 5 * 1024 * 1024),
+            0
+        );
+
+        // Get thresholds
+        let mut latency_warn = 0u64;
+        let mut latency_error = 0u64;
+        let mut memory_warn = 0u64;
+        let mut memory_error = 0u64;
+
+        unsafe {
+            assert_eq!(
+                keyrx_metrics_get_thresholds(
+                    &mut latency_warn,
+                    &mut latency_error,
+                    &mut memory_warn,
+                    &mut memory_error
+                ),
+                0
+            );
+        }
+
+        assert_eq!(latency_warn, 50);
+        assert_eq!(latency_error, 100);
+        assert_eq!(memory_warn, 1024 * 1024);
+        assert_eq!(memory_error, 5 * 1024 * 1024);
     }
 }

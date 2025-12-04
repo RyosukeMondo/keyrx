@@ -11,7 +11,11 @@ use crate::ffi::error::FfiError;
 use crate::ffi::traits::FfiExportable;
 use crate::observability::bridge::LogBridge;
 use crate::observability::entry::CLogEntry;
-use crate::observability::metrics_bridge::{MetricsBridge, MetricsSnapshotFfi};
+#[cfg(test)]
+use crate::observability::metrics_bridge::ThresholdViolation;
+use crate::observability::metrics_bridge::{
+    MetricsBridge, MetricsSnapshotFfi, MetricsThresholds, ThresholdCallback,
+};
 use std::ffi::{c_char, CString};
 use std::sync::{Arc, RwLock};
 
@@ -555,6 +559,145 @@ pub extern "C" fn keyrx_metrics_trigger_callback() -> i32 {
     }
 }
 
+/// Register a callback for threshold violations.
+///
+/// The callback will be invoked when metrics exceed configured thresholds.
+/// Pass NULL to unregister the callback.
+///
+/// # Arguments
+/// * `callback` - Function pointer to call on threshold violations, or NULL to unregister
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed to acquire bridge lock
+///
+/// # Safety
+/// The callback function must be valid for the lifetime of the registration.
+/// The callback receives a pointer to ThresholdViolation that is only valid
+/// during the callback invocation - it must not be retained.
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_set_threshold_callback(callback: Option<ThresholdCallback>) -> i32 {
+    if let Some(bridge) = get_metrics_bridge() {
+        if let Some(cb) = callback {
+            bridge.set_threshold_callback(cb);
+            tracing::debug!(
+                service = "keyrx",
+                event = "threshold_callback_set",
+                component = "ffi_observability",
+                "Threshold callback registered"
+            );
+        } else {
+            bridge.clear_threshold_callback();
+            tracing::debug!(
+                service = "keyrx",
+                event = "threshold_callback_cleared",
+                component = "ffi_observability",
+                "Threshold callback unregistered"
+            );
+        }
+        0
+    } else {
+        tracing::error!(
+            service = "keyrx",
+            event = "threshold_callback_failed",
+            component = "ffi_observability",
+            error = "bridge_unavailable",
+            "Failed to access metrics bridge"
+        );
+        -1
+    }
+}
+
+/// Set threshold values for violation detection.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Latency warning threshold in microseconds
+/// * `latency_error_micros` - Latency error threshold in microseconds
+/// * `memory_warn_bytes` - Memory warning threshold in bytes
+/// * `memory_error_bytes` - Memory error threshold in bytes
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Bridge unavailable
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_set_thresholds(
+    latency_warn_micros: u64,
+    latency_error_micros: u64,
+    memory_warn_bytes: u64,
+    memory_error_bytes: u64,
+) -> i32 {
+    if let Some(bridge) = get_metrics_bridge() {
+        let thresholds = MetricsThresholds {
+            latency_warn_micros,
+            latency_error_micros,
+            memory_warn_bytes,
+            memory_error_bytes,
+        };
+        bridge.set_thresholds(thresholds);
+        tracing::debug!(
+            service = "keyrx",
+            event = "thresholds_set",
+            component = "ffi_observability",
+            latency_warn_micros,
+            latency_error_micros,
+            memory_warn_bytes,
+            memory_error_bytes,
+            "Metrics thresholds updated"
+        );
+        0
+    } else {
+        -1
+    }
+}
+
+/// Get current threshold values.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Output: Latency warning threshold in microseconds
+/// * `latency_error_micros` - Output: Latency error threshold in microseconds
+/// * `memory_warn_bytes` - Output: Memory warning threshold in bytes
+/// * `memory_error_bytes` - Output: Memory error threshold in bytes
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Bridge unavailable or null pointers provided
+///
+/// # Safety
+/// All output pointers must be valid and non-null.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_metrics_get_thresholds(
+    latency_warn_micros: *mut u64,
+    latency_error_micros: *mut u64,
+    memory_warn_bytes: *mut u64,
+    memory_error_bytes: *mut u64,
+) -> i32 {
+    if latency_warn_micros.is_null()
+        || latency_error_micros.is_null()
+        || memory_warn_bytes.is_null()
+        || memory_error_bytes.is_null()
+    {
+        tracing::error!(
+            service = "keyrx",
+            event = "get_thresholds_failed",
+            component = "ffi_observability",
+            error = "null_pointer",
+            "Null pointer provided to get_thresholds"
+        );
+        return -1;
+    }
+
+    if let Some(bridge) = get_metrics_bridge() {
+        let thresholds = bridge.get_thresholds();
+        *latency_warn_micros = thresholds.latency_warn_micros;
+        *latency_error_micros = thresholds.latency_error_micros;
+        *memory_warn_bytes = thresholds.memory_warn_bytes;
+        *memory_error_bytes = thresholds.memory_error_bytes;
+        0
+    } else {
+        -1
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -714,6 +857,63 @@ mod tests {
         assert_eq!(keyrx_metrics_start_updates(), 0);
         assert_eq!(keyrx_metrics_trigger_callback(), 0);
         assert_eq!(keyrx_metrics_stop_updates(), 0);
+    }
+
+    #[test]
+    #[serial]
+    fn test_threshold_callback() {
+        cleanup_test_state();
+
+        let collector = Arc::new(NoOpMetricsCollector);
+        init_metrics_bridge(collector);
+
+        extern "C" fn test_threshold_callback(_violation: *const ThresholdViolation) {
+            // Test callback
+        }
+
+        assert_eq!(
+            keyrx_metrics_set_threshold_callback(Some(test_threshold_callback)),
+            0
+        );
+        assert_eq!(keyrx_metrics_set_threshold_callback(None), 0);
+    }
+
+    #[test]
+    #[serial]
+    fn test_thresholds() {
+        cleanup_test_state();
+
+        let collector = Arc::new(NoOpMetricsCollector);
+        init_metrics_bridge(collector);
+
+        // Set thresholds
+        assert_eq!(
+            keyrx_metrics_set_thresholds(50, 100, 1024 * 1024, 5 * 1024 * 1024),
+            0
+        );
+
+        // Get thresholds
+        let mut latency_warn = 0u64;
+        let mut latency_error = 0u64;
+        let mut memory_warn = 0u64;
+        let mut memory_error = 0u64;
+
+        unsafe {
+            assert_eq!(
+                keyrx_metrics_get_thresholds(
+                    &mut latency_warn,
+                    &mut latency_error,
+                    &mut memory_warn,
+                    &mut memory_error
+                ),
+                0
+            );
+        }
+
+        assert_eq!(latency_warn, 50);
+        assert_eq!(latency_error, 100);
+        assert_eq!(memory_warn, 1024 * 1024);
+        assert_eq!(memory_error, 5 * 1024 * 1024);
     }
 
     #[test]

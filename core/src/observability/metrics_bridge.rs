@@ -13,6 +13,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// This is invoked periodically when metrics are updated.
 pub type MetricsCallback = extern "C" fn(*const MetricsSnapshotFfi);
 
+/// Callback function for threshold violations.
+///
+/// This is invoked when metrics exceed configured thresholds.
+pub type ThresholdCallback = extern "C" fn(*const ThresholdViolation);
+
 /// Operations that can be profiled.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Operation {
@@ -26,6 +31,60 @@ pub enum Operation {
     DriverRead,
     /// Driver write latency
     DriverWrite,
+}
+
+/// Type of threshold violation.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ViolationType {
+    /// Latency exceeded warning threshold
+    LatencyWarning = 0,
+    /// Latency exceeded error threshold
+    LatencyError = 1,
+    /// Memory exceeded warning threshold
+    MemoryWarning = 2,
+    /// Memory exceeded error threshold
+    MemoryError = 3,
+}
+
+/// Threshold violation event for FFI.
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ThresholdViolation {
+    /// Unix timestamp in milliseconds
+    pub timestamp: u64,
+    /// Type of violation
+    pub violation_type: ViolationType,
+    /// Actual value that triggered the violation
+    pub actual_value: u64,
+    /// Threshold that was exceeded
+    pub threshold_value: u64,
+}
+
+/// Configurable thresholds for metrics.
+#[derive(Debug, Clone)]
+pub struct MetricsThresholds {
+    /// Latency warning threshold (microseconds)
+    pub latency_warn_micros: u64,
+    /// Latency error threshold (microseconds)
+    pub latency_error_micros: u64,
+    /// Memory warning threshold (bytes)
+    pub memory_warn_bytes: u64,
+    /// Memory error threshold (bytes)
+    pub memory_error_bytes: u64,
+}
+
+impl Default for MetricsThresholds {
+    fn default() -> Self {
+        Self {
+            // Default latency thresholds based on tech.md requirement
+            latency_warn_micros: 50,   // Warn at 50us
+            latency_error_micros: 100, // Error at 100us (tech.md limit)
+            // Default memory thresholds (100MB warn, 500MB error)
+            memory_warn_bytes: 100 * 1024 * 1024,
+            memory_error_bytes: 500 * 1024 * 1024,
+        }
+    }
 }
 
 /// Trait for metrics collection implementations.
@@ -127,6 +186,10 @@ pub struct MetricsBridge {
     collector: Arc<dyn MetricsCollector>,
     /// Optional callback for metrics updates
     callback: RwLock<Option<MetricsCallback>>,
+    /// Optional callback for threshold violations
+    threshold_callback: RwLock<Option<ThresholdCallback>>,
+    /// Configured thresholds
+    thresholds: RwLock<MetricsThresholds>,
     /// Update interval for callbacks (if enabled)
     update_interval: RwLock<Duration>,
     /// Flag to control background updates
@@ -139,6 +202,8 @@ impl MetricsBridge {
         Self {
             collector,
             callback: RwLock::new(None),
+            threshold_callback: RwLock::new(None),
+            thresholds: RwLock::new(MetricsThresholds::default()),
             update_interval: RwLock::new(Duration::from_secs(1)),
             updates_enabled: Mutex::new(false),
         }
@@ -161,6 +226,149 @@ impl MetricsBridge {
             *guard = None;
         } else {
             tracing::error!("Failed to acquire callback lock");
+        }
+    }
+
+    /// Set the callback for threshold violations.
+    ///
+    /// The callback will be invoked when metrics exceed configured thresholds.
+    pub fn set_threshold_callback(&self, callback: ThresholdCallback) {
+        if let Ok(mut guard) = self.threshold_callback.write() {
+            *guard = Some(callback);
+        } else {
+            tracing::error!("Failed to acquire threshold callback lock");
+        }
+    }
+
+    /// Clear the threshold callback.
+    pub fn clear_threshold_callback(&self) {
+        if let Ok(mut guard) = self.threshold_callback.write() {
+            *guard = None;
+        } else {
+            tracing::error!("Failed to acquire threshold callback lock");
+        }
+    }
+
+    /// Set threshold values.
+    ///
+    /// # Arguments
+    /// * `thresholds` - New threshold configuration
+    pub fn set_thresholds(&self, thresholds: MetricsThresholds) {
+        if let Ok(mut guard) = self.thresholds.write() {
+            *guard = thresholds;
+        } else {
+            tracing::error!("Failed to acquire thresholds lock");
+        }
+    }
+
+    /// Get current threshold values.
+    pub fn get_thresholds(&self) -> MetricsThresholds {
+        if let Ok(guard) = self.thresholds.read() {
+            guard.clone()
+        } else {
+            tracing::error!("Failed to acquire thresholds lock");
+            MetricsThresholds::default()
+        }
+    }
+
+    /// Check a snapshot for threshold violations and trigger callbacks.
+    ///
+    /// This is called automatically during metrics updates but can also
+    /// be called manually for immediate checking.
+    pub fn check_thresholds(&self, snapshot: &MetricsSnapshot) {
+        let thresholds = if let Ok(guard) = self.thresholds.read() {
+            guard.clone()
+        } else {
+            return;
+        };
+
+        let callback = if let Ok(guard) = self.threshold_callback.read() {
+            *guard
+        } else {
+            return;
+        };
+
+        if let Some(cb) = callback {
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64;
+
+            // Check latency thresholds (using p99 as representative)
+            let latency = snapshot.event_latency_p99;
+            if latency >= thresholds.latency_error_micros {
+                let violation = ThresholdViolation {
+                    timestamp,
+                    violation_type: ViolationType::LatencyError,
+                    actual_value: latency,
+                    threshold_value: thresholds.latency_error_micros,
+                };
+                cb(&violation as *const ThresholdViolation);
+                tracing::warn!(
+                    service = "keyrx",
+                    event = "threshold_violation",
+                    component = "metrics_bridge",
+                    violation_type = "latency_error",
+                    actual = latency,
+                    threshold = thresholds.latency_error_micros,
+                    "Latency exceeded error threshold"
+                );
+            } else if latency >= thresholds.latency_warn_micros {
+                let violation = ThresholdViolation {
+                    timestamp,
+                    violation_type: ViolationType::LatencyWarning,
+                    actual_value: latency,
+                    threshold_value: thresholds.latency_warn_micros,
+                };
+                cb(&violation as *const ThresholdViolation);
+                tracing::warn!(
+                    service = "keyrx",
+                    event = "threshold_violation",
+                    component = "metrics_bridge",
+                    violation_type = "latency_warning",
+                    actual = latency,
+                    threshold = thresholds.latency_warn_micros,
+                    "Latency exceeded warning threshold"
+                );
+            }
+
+            // Check memory thresholds
+            let memory = snapshot.memory_used;
+            if memory >= thresholds.memory_error_bytes {
+                let violation = ThresholdViolation {
+                    timestamp,
+                    violation_type: ViolationType::MemoryError,
+                    actual_value: memory,
+                    threshold_value: thresholds.memory_error_bytes,
+                };
+                cb(&violation as *const ThresholdViolation);
+                tracing::warn!(
+                    service = "keyrx",
+                    event = "threshold_violation",
+                    component = "metrics_bridge",
+                    violation_type = "memory_error",
+                    actual = memory,
+                    threshold = thresholds.memory_error_bytes,
+                    "Memory exceeded error threshold"
+                );
+            } else if memory >= thresholds.memory_warn_bytes {
+                let violation = ThresholdViolation {
+                    timestamp,
+                    violation_type: ViolationType::MemoryWarning,
+                    actual_value: memory,
+                    threshold_value: thresholds.memory_warn_bytes,
+                };
+                cb(&violation as *const ThresholdViolation);
+                tracing::warn!(
+                    service = "keyrx",
+                    event = "threshold_violation",
+                    component = "metrics_bridge",
+                    violation_type = "memory_warning",
+                    actual = memory,
+                    threshold = thresholds.memory_warn_bytes,
+                    "Memory exceeded warning threshold"
+                );
+            }
         }
     }
 
@@ -219,10 +427,16 @@ impl MetricsBridge {
     /// Trigger an immediate callback with current metrics.
     ///
     /// This can be used for on-demand updates without waiting for the interval.
+    /// This also checks thresholds and triggers threshold callbacks if needed.
     pub fn trigger_callback(&self) {
+        let snapshot = self.snapshot();
+
+        // Check thresholds first
+        self.check_thresholds(&snapshot);
+
+        // Then trigger the regular metrics callback if set
         if let Ok(guard) = self.callback.read() {
             if let Some(callback) = *guard {
-                let snapshot = self.snapshot();
                 let ffi_snapshot = MetricsSnapshotFfi::from(snapshot);
                 callback(&ffi_snapshot as *const MetricsSnapshotFfi);
             }
