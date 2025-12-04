@@ -39,6 +39,12 @@ import 'result.dart';
 /// await facade.dispose();
 /// ```
 class KeyrxFacadeImpl implements KeyrxFacade {
+  /// Create a new facade implementation wrapping the given service registry.
+  ///
+  /// Initializes the state stream with [FacadeState.initial] and sets up
+  /// subscriptions to underlying service streams for state aggregation.
+  ///
+  /// Remember to call [dispose] when the facade is no longer needed.
   KeyrxFacadeImpl(this._services)
       : _stateSubject = BehaviorSubject<FacadeState>.seeded(
           FacadeState.initial(),
@@ -638,6 +644,11 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   }
 
   /// Update the current state and emit to stream.
+  ///
+  /// This method is called internally whenever an operation changes the facade state.
+  /// The new state is emitted to [stateStream] where widgets can observe it.
+  ///
+  /// Does nothing if the facade has been disposed.
   void _updateState(FacadeState newState) {
     if (!_disposed) {
       _stateSubject.add(newState);
@@ -645,6 +656,9 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   }
 
   /// Check if facade has been disposed.
+  ///
+  /// Throws a [StateError] if the facade has been disposed.
+  /// All public methods call this to ensure the facade is still usable.
   void _checkDisposed() {
     if (_disposed) {
       throw StateError('KeyrxFacade has been disposed');

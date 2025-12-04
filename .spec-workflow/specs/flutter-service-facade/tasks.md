@@ -190,7 +190,7 @@
   - _Requirements: Non-functional (usability)_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with Flutter expertise | Task: Create facade documentation with usage patterns and migration guide | Restrictions: Cover all facade methods, include examples, migration steps | _Leverage: Implementation details from all previous tasks | Success: Documentation complete, examples work, migration path clear | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 19. Add code comments and dartdoc
+- [x] 19. Add code comments and dartdoc
   - Files: `ui/lib/services/facade/*.dart`
   - Add comprehensive dartdoc to all public APIs
   - Include usage examples in doc comments
