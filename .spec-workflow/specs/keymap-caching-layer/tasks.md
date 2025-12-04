@@ -18,7 +18,7 @@
 
 ## Phase 2: Platform Integration
 
-- [ ] 3. Add cache to Linux keymap
+- [x] 3. Add cache to Linux keymap
   - File: `core/src/drivers/linux/keymap.rs`
   - Cache evdev scan code lookups
   - Invalidate on device changes

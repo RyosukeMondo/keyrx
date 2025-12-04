@@ -183,6 +183,7 @@ impl LinuxInput {
             self.tx.clone(),
             self.running.clone(),
             self.panic_error.clone(),
+            self.cache.clone(),
         )
         .map_err(|e| keyrx_err!(DRIVER_INIT_FAILED, reason = e.to_string()))
     }

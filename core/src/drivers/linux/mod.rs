@@ -13,6 +13,7 @@ mod writer;
 /// Contains safe abstractions over evdev and uinput operations.
 pub mod safety;
 use crate::config::UINPUT_PATH;
+use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};
 use crate::drivers::{DeviceInfo, KeyInjector};
 use crate::engine::{InputEvent, OutputAction};
 use crate::errors::{driver::*, KeyrxError};
@@ -63,6 +64,7 @@ pub struct LinuxInput {
     device_info: DeviceInfo,
     panic_error: Arc<AtomicBool>,
     metrics: Arc<dyn MetricsCollector>,
+    cache: Arc<LruKeymapCache>,
 }
 impl LinuxInput {
     pub fn new(device_path: Option<PathBuf>) -> Result<Self, KeyrxError> {
@@ -126,6 +128,20 @@ impl LinuxInput {
         let (tx, rx) = crossbeam_channel::unbounded();
         let running = Arc::new(AtomicBool::new(false));
         let panic_error = Arc::new(AtomicBool::new(false));
+
+        // Initialize keymap cache with capacity for 256 entries
+        // This should cover all standard keys with room for device-specific mappings
+        let cache = match LruKeymapCache::new(256) {
+            Some(cache) => Arc::new(cache),
+            None => {
+                // This should never happen with a non-zero capacity
+                bail_keyrx!(
+                    DRIVER_INIT_FAILED,
+                    reason = "Failed to create keymap cache".to_string()
+                );
+            }
+        };
+
         debug!(
             service = "keyrx",
             event = "linux_input_created",
@@ -143,6 +159,7 @@ impl LinuxInput {
             device_info,
             panic_error,
             metrics,
+            cache,
         })
     }
     fn find_first_keyboard() -> Result<DeviceInfo, KeyrxError> {
@@ -276,6 +293,18 @@ impl InputSource for LinuxInput {
         self.running.store(false, Ordering::Relaxed);
         self.join_reader_thread();
         self.drain_events();
+
+        // Invalidate cache entries for this device
+        let device_id = self.device_path.to_string_lossy();
+        self.cache.invalidate_device(&device_id);
+        debug!(
+            service = "keyrx",
+            event = "linux_cache_invalidated",
+            component = "linux_input",
+            device_id = %device_id,
+            "Invalidated cache entries for device"
+        );
+
         self.log_stopped();
         Ok(())
     }
@@ -320,6 +349,11 @@ impl Drop for LinuxInput {
             }
             // Drain any remaining events
             while self.rx.try_recv().is_ok() {}
+
+            // Invalidate cache entries for this device
+            let device_id = self.device_path.to_string_lossy();
+            self.cache.invalidate_device(&device_id);
+
             debug!(
                 service = "keyrx",
                 event = "linux_drop_complete",

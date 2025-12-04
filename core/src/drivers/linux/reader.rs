@@ -9,6 +9,7 @@ use crate::config::{
     EVDEV_KEY_ESC, EVDEV_KEY_LEFTALT, EVDEV_KEY_LEFTCTRL, EVDEV_KEY_LEFTSHIFT, EVDEV_KEY_RIGHTALT,
     EVDEV_KEY_RIGHTCTRL, EVDEV_KEY_RIGHTSHIFT,
 };
+use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
 use crate::errors::KeyrxError;
@@ -51,6 +52,8 @@ pub struct EvdevReader {
     device_id: String,
     /// Modifier state tracking for emergency exit detection.
     modifier_state: ModifierStateTracker,
+    /// LRU cache for evdev scan code to KeyCode mappings.
+    cache: Arc<LruKeymapCache>,
 }
 
 /// Tracks modifier key state for emergency exit combo detection.
@@ -88,6 +91,7 @@ impl EvdevReader {
     /// * `tx` - Channel sender for forwarding input events
     /// * `running` - Shared flag for controlling the read loop
     /// * `panic_error` - Shared flag set to true if the reader thread panics
+    /// * `cache` - Shared LRU cache for keymap lookups
     ///
     /// # Errors
     ///
@@ -100,6 +104,7 @@ impl EvdevReader {
         tx: Sender<InputEvent>,
         running: Arc<AtomicBool>,
         panic_error: Arc<AtomicBool>,
+        cache: Arc<LruKeymapCache>,
     ) -> Result<Self, KeyrxError> {
         // Use SafeDevice wrapper which provides better error messages and RAII cleanup
         let device = SafeDevice::open(&device_path)?;
@@ -124,6 +129,7 @@ impl EvdevReader {
             panic_error,
             device_id,
             modifier_state: ModifierStateTracker::default(),
+            cache,
         })
     }
 
@@ -366,7 +372,7 @@ impl EvdevReader {
 
     /// Convert an evdev event to an InputEvent.
     fn convert_event(&self, event: &evdev::InputEvent) -> InputEvent {
-        build_input_event(&self.device_id, event)
+        build_input_event(&self.device_id, event, &self.cache)
     }
 
     /// Handle a read error from the evdev device.
@@ -449,17 +455,30 @@ impl EvdevReader {
     }
 }
 
-fn build_input_event(device_id: &str, event: &evdev::InputEvent) -> InputEvent {
+fn build_input_event(
+    device_id: &str,
+    event: &evdev::InputEvent,
+    cache: &Arc<LruKeymapCache>,
+) -> InputEvent {
     let value = event.value();
     let is_repeat = value == 2;
     let pressed = value == 1 || is_repeat;
-    let key_code = evdev_to_keycode(event.code());
+    let scan_code = event.code();
+
+    // Try to get KeyCode from cache first
+    let key_code = cache.get(scan_code as u32, device_id).unwrap_or_else(|| {
+        // Cache miss - perform actual lookup
+        let keycode = evdev_to_keycode(scan_code);
+        // Store in cache for future lookups
+        cache.insert(scan_code as u32, device_id, keycode);
+        keycode
+    });
+
     let timestamp_us = event
         .timestamp()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_micros() as u64)
         .unwrap_or(0);
-    let scan_code = event.code();
 
     InputEvent {
         key: key_code,
