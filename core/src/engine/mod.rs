@@ -6,6 +6,7 @@ pub mod decision_engine;
 mod event_loop;
 mod event_recorder;
 mod event_recording;
+pub mod fallback;
 pub mod layer_actions;
 mod processing;
 pub mod replay;
@@ -26,6 +27,7 @@ pub use event_recording::{
     infer_decision_type, DecisionType, EventRecord, EventRecordBuilder, RecordingError,
     SessionFile, SESSION_FILE_VERSION,
 };
+pub use fallback::{FallbackEngine, FallbackReason};
 pub use replay::{ReplayError, ReplaySession, ReplayState};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{

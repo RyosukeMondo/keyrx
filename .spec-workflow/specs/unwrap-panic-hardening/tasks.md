@@ -40,7 +40,7 @@
 
 ## Phase 2: Fallback Infrastructure
 
-- [ ] 5. Create FallbackEngine
+- [x] 5. Create FallbackEngine
   - File: `core/src/engine/fallback.rs`
   - Implement minimal passthrough engine
   - Add activation/deactivation with reason tracking
