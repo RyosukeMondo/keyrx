@@ -138,7 +138,7 @@
   - _Requirements: 1.1, 2.1_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer migrating code | Task: Migrate exports_engine.rs to FfiMarshaler | Restrictions: Same API surface, better internals | _Leverage: FfiMarshaler | Success: Engine exports use marshaler | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Migrate exports_discovery.rs
+- [x] 15. Migrate exports_discovery.rs
   - File: `core/src/ffi/exports_discovery.rs`
   - Use FfiMarshaler for device data
   - Consolidate callbacks
