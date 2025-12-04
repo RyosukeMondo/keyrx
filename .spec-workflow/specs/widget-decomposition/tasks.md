@@ -2,7 +2,7 @@
 
 ## Phase 1: Directory Structure
 
-- [ ] 1. Create widget directory hierarchy
+- [x] 1. Create widget directory hierarchy
   - Files: `ui/lib/widgets/{common,editor,preview,settings}/`
   - Create directories for each feature area
   - Add barrel export files
