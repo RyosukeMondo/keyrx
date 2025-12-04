@@ -66,7 +66,7 @@
   - _Requirements: 1.2_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Developer implementing script operations | Task: Implement script operations in KeyrxFacadeImpl | Restrictions: Return structured ValidationResult, handle file errors, update validation state | _Leverage: ScriptFileService, validation FFI bindings | Success: Scripts load/save/validate correctly, validation state reflects results | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Implement device operations (list, discovery)
+- [x] 7. Implement device operations (list, discovery)
   - File: `ui/lib/services/facade/keyrx_facade_impl.dart`
   - Implement listDevices() returning DeviceInfo list
   - Implement startDiscovery() and cancelDiscovery()

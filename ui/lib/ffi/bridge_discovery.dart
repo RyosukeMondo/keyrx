@@ -219,4 +219,18 @@ mixin BridgeDiscoveryMixin {
       }
     }
   }
+
+  /// Cancel the active discovery session.
+  ///
+  /// Returns 0 on success, -1 if no discovery is active.
+  int cancelDiscovery() {
+    final cancelFn = bindings?.cancelDiscovery;
+    if (cancelFn == null) return -1;
+
+    try {
+      return cancelFn();
+    } catch (e) {
+      return -1;
+    }
+  }
 }

@@ -169,6 +169,9 @@ class _FakeBridge implements KeyrxBridge {
       DiscoveryStartResult.error('not implemented');
 
   @override
+  int cancelDiscovery() => 0;
+
+  @override
   RecordingStartResult startRecording(String path) =>
       RecordingStartResult.error('not implemented');
 
@@ -185,6 +188,15 @@ class _FakeBridge implements KeyrxBridge {
 
   @override
   List<String> allKeyNames() => const [];
+
+  @override
+  bool get isEventCallbackRegistered => false;
+
+  @override
+  void registerEventCallback(void Function(String) callback) {}
+
+  @override
+  void unregisterEventCallback() {}
 }
 
 void main() {

@@ -327,14 +327,75 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
   @override
   Future<Result<List<KeyboardDevice>>> listDevices() async {
-    // TODO: Implement in task 7
-    throw UnimplementedError('listDevices will be implemented in task 7');
+    _checkDisposed();
+
+    try {
+      // Update state to scanning
+      _updateState(currentState.withDeviceStatus(DeviceStatus.scanning));
+
+      // List devices from device service
+      final devices = await _services.deviceService.listDevices();
+
+      // Update state based on result
+      if (devices.isEmpty) {
+        _updateState(currentState.withDeviceStatus(DeviceStatus.none));
+      } else {
+        _updateState(currentState.withDeviceStatus(DeviceStatus.available));
+      }
+
+      return Result.ok(devices);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withDeviceStatus(
+        DeviceStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<void>> selectDevice(String devicePath) async {
-    // TODO: Implement in task 7
-    throw UnimplementedError('selectDevice will be implemented in task 7');
+    _checkDisposed();
+
+    try {
+      // Update state to selected
+      _updateState(currentState.withDeviceStatus(
+        DeviceStatus.selected,
+        devicePath: devicePath,
+      ));
+
+      // Select the device using device service
+      final result = await _services.deviceService.selectDevice(devicePath);
+
+      if (!result.success) {
+        final error = FacadeError.operationFailed(
+          'selectDevice',
+          result.errorMessage ?? 'Unknown error',
+          userMessage: 'Failed to select device. ${result.errorMessage ?? "Please try again."}',
+        );
+        _updateState(currentState.withDeviceStatus(
+          DeviceStatus.error,
+          error: error.userMessage,
+        ));
+        return Result.err(error);
+      }
+
+      // Update state to connected
+      _updateState(currentState.withDeviceStatus(
+        DeviceStatus.connected,
+        devicePath: devicePath,
+      ));
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withDeviceStatus(
+        DeviceStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
@@ -343,14 +404,93 @@ class KeyrxFacadeImpl implements KeyrxFacade {
     required int rows,
     required List<int> colsPerRow,
   }) async {
-    // TODO: Implement in task 7
-    throw UnimplementedError('startDiscovery will be implemented in task 7');
+    _checkDisposed();
+
+    try {
+      // Update state to starting
+      _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.starting));
+
+      // Build device ID from vendorId:productId in hex format
+      final deviceId = '${device.vendorId.toRadixString(16)}:${device.productId.toRadixString(16)}';
+
+      // Start discovery using the bridge
+      final result = _services.bridge.startDiscovery(deviceId, rows, colsPerRow);
+
+      if (result.hasError) {
+        final error = FacadeError.operationFailed(
+          'startDiscovery',
+          result.errorMessage ?? 'Unknown error',
+          userMessage: 'Failed to start discovery. ${result.errorMessage ?? "Please try again."}',
+        );
+        _updateState(currentState.withDiscoveryStatus(
+          DiscoveryStatus.error,
+          error: error.userMessage,
+        ));
+        return Result.err(error);
+      }
+
+      // Update state to active
+      _updateState(currentState.withDiscoveryStatus(
+        DiscoveryStatus.active,
+        deviceCount: result.totalKeys,
+      ));
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withDiscoveryStatus(
+        DiscoveryStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   @override
   Future<Result<void>> cancelDiscovery() async {
-    // TODO: Implement in task 7
-    throw UnimplementedError('cancelDiscovery will be implemented in task 7');
+    _checkDisposed();
+
+    try {
+      // Check if discovery is active
+      if (!currentState.isDiscovering) {
+        // No discovery active, nothing to cancel
+        return const Result.ok(null);
+      }
+
+      // Cancel discovery using the bridge
+      final result = _services.bridge.cancelDiscovery();
+
+      if (result == -1) {
+        // No active discovery session (shouldn't happen due to state check)
+        _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.idle));
+        return const Result.ok(null);
+      }
+
+      if (result != 0) {
+        final error = FacadeError.operationFailed(
+          'cancelDiscovery',
+          'Discovery cancellation returned error code: $result',
+          userMessage: 'Failed to cancel discovery. Please try again.',
+        );
+        _updateState(currentState.withDiscoveryStatus(
+          DiscoveryStatus.error,
+          error: error.userMessage,
+        ));
+        return Result.err(error);
+      }
+
+      // Update state to cancelled
+      _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.cancelled));
+
+      return const Result.ok(null);
+    } catch (e) {
+      final error = FacadeError.from(e, _services.errorTranslator);
+      _updateState(currentState.withDiscoveryStatus(
+        DiscoveryStatus.error,
+        error: error.userMessage,
+      ));
+      return Result.err(error);
+    }
   }
 
   // === Testing Operations ===
