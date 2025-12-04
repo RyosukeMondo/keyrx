@@ -69,7 +69,7 @@
 
 ## Phase 3: Large Data Support
 
-- [ ] 8. Create FfiStreamMarshaler trait
+- [x] 8. Create FfiStreamMarshaler trait
   - File: `core/src/ffi/marshal/stream.rs`
   - Chunked transfer for large data
   - Iterator-based API
