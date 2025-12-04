@@ -39,7 +39,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating macros | Task: Create logging convenience macros | Restrictions: Ergonomic, consistent fields | _Leverage: tracing | Success: Easy to log structured data | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Document logging standards
+- [x] 5. Document logging standards
   - File: `docs/logging-standards.md`
   - Define when to use each level
   - Document required fields
