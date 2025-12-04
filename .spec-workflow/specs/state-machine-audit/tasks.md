@@ -11,7 +11,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer auditing code | Task: Catalog all state types in codebase | Restrictions: Document location, purpose, overlaps | _Leverage: Code search | Success: Complete state inventory | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Document state ownership
+- [x] 2. Document state ownership
   - File: `docs/state-audit.md`
   - Map state types to owning components
   - Document lifecycle of each state
