@@ -136,7 +136,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Test Developer | Task: Create unit tests for extracted widgets | Restrictions: Test all states, mock dependencies | _Leverage: Flutter testing | Success: High test coverage for widgets | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Add golden tests for visual widgets
+- [-] 15. Add golden tests for visual widgets
   - Files: `ui/test/widgets/golden/`
   - Create screenshot tests for key widgets
   - Test different themes and sizes
