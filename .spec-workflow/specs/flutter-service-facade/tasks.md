@@ -118,7 +118,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Test Developer | Task: Create comprehensive unit tests for KeyrxFacadeImpl | Restrictions: Mock ServiceRegistry, test all operations, verify state transitions | _Leverage: test utilities, MockKeyrxFacade | Success: All facade methods tested, state transitions verified, error handling covered | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Add integration tests
+- [x] 12. Add integration tests
   - File: `ui/test/services/facade/keyrx_facade_integration_test.dart`
   - Test with real ServiceRegistry (mock FFI)
   - Test multi-step operations end-to-end
