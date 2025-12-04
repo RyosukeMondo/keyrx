@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../ffi/bridge.dart';
 import '../models/validation.dart' as validation_models;
+import '../widgets/common/styled_icon_button.dart';
 import '../widgets/layer_panel.dart';
 
 /// Types of key actions available in the editor.
@@ -258,8 +259,11 @@ class ComboConfigRow extends StatelessWidget {
           else ...combos.asMap().entries.map((e) => ListTile(
             dense: true, leading: const Icon(Icons.merge_type),
             title: Text('${e.value.keys.join(" + ")} → ${e.value.output}'),
-            trailing: IconButton(icon: const Icon(Icons.delete),
-                onPressed: () => onRemoveCombo(e.key)),
+            trailing: StyledIconButton(
+              icon: Icons.delete,
+              onPressed: () => onRemoveCombo(e.key),
+              tooltip: 'Delete combo',
+            ),
           )),
         ]),
       ),
@@ -302,8 +306,11 @@ class MappingListPanel extends StatelessWidget {
                     isValid: KeyMappings.isKnownKey(m.to!)),
             ]),
           ]),
-          trailing: IconButton(icon: const Icon(Icons.delete),
-              onPressed: () => onRemoveMapping(m.from)),
+          trailing: StyledIconButton(
+            icon: Icons.delete,
+            onPressed: () => onRemoveMapping(m.from),
+            tooltip: 'Delete mapping',
+          ),
         )).toList(),
       )),
       const SizedBox(width: 12),
@@ -368,8 +375,11 @@ class KeyRegistryBanner extends StatelessWidget {
             const SizedBox(width: 16, height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2))
           else
-            IconButton(icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh key registry', onPressed: onRefresh),
+            StyledIconButton(
+              icon: Icons.refresh,
+              onPressed: onRefresh,
+              tooltip: 'Refresh key registry',
+            ),
         ]),
       ),
     );

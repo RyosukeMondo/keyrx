@@ -22,7 +22,7 @@
 
 ## Phase 2: Common Widget Extraction
 
-- [ ] 3. Extract IconButton variants
+- [x] 3. Extract IconButton variants
   - File: `ui/lib/widgets/common/styled_icon_button.dart`
   - Extract custom icon button implementations
   - Add hover and press states
