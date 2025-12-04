@@ -11,7 +11,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create ScriptCapability enum with tiers | Restrictions: Clear tier semantics, ordered | _Leverage: Enum patterns | Success: Capabilities defined clearly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create ResourceBudget
+- [x] 2. Create ResourceBudget
   - File: `core/src/scripting/sandbox/budget.rs`
   - Track instructions, recursion, memory, timeout
   - Atomic counters for thread safety
@@ -20,7 +20,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating resource tracker | Task: Create ResourceBudget with limits | Restrictions: Thread-safe, low overhead, configurable | _Leverage: Atomics | Success: Resources tracked and limited | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create ResourceConfig
+- [x] 3. Create ResourceConfig
   - File: `core/src/scripting/sandbox/budget.rs`
   - Configurable limits with sensible defaults
   - Serializable for config file
