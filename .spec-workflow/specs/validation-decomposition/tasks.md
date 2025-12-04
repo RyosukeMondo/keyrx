@@ -131,7 +131,7 @@
   - _Requirements: Non-functional (cleanup)_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer completing cleanup | Task: Remove or minimize original conflicts.rs, update module structure | Restrictions: All imports must resolve, no dead code, clean module tree | _Leverage: New detector modules | Success: Old file removed, imports work, no warnings | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Verify all existing behavior preserved
+- [x] 14. Verify all existing behavior preserved
   - Files: Run full test suite, integration tests
   - Compare validation output before/after
   - Purpose: Regression verification
