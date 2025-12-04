@@ -98,7 +98,7 @@
 
 ## Phase 4: FFI Export
 
-- [ ] 11. Create FFI metrics export
+- [x] 11. Create FFI metrics export
   - File: `core/src/ffi/exports_metrics.rs`
   - Export snapshot to FFI
   - Real-time update support

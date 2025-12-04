@@ -14,6 +14,7 @@ pub mod domains;
 pub mod error;
 pub mod events;
 mod exports;
+mod exports_metrics;
 pub mod marshal;
 pub mod traits;
 
@@ -21,6 +22,7 @@ pub mod traits;
 mod tests;
 
 pub use exports::*;
+pub use exports_metrics::*;
 pub use traits::{FfiDomain, FfiExportable};
 
 // Re-export domain-specific public functions
