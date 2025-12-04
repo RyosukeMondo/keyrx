@@ -21,7 +21,9 @@ mod tests;
 pub mod types;
 
 pub use config::ValidationConfig;
-pub use conflicts::{detect_remap_conflicts, ConflictDetector};
+pub use conflicts::{
+    detect_circular_remaps, detect_combo_shadowing, detect_remap_conflicts, ConflictDetector,
+};
 pub use coverage::{analyze_coverage, render_ascii_keyboard, CoverageAnalyzer};
 pub use engine::{
     collect_definitions, find_operation_line, LocatedOp, ParsedScript, ScriptContext,
