@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
         facade: facade,
         mappingRepository: registry.mappingRepository,
       ),
-      DevicesPage(deviceService: registry.deviceService),
+      DevicesPage(facade: facade),
       RunControlsPage(
         deviceService: registry.deviceService,
         bridge: registry.bridge,

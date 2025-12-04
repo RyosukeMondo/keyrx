@@ -160,7 +160,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Test Developer | Task: Update EditorPage tests to use MockKeyrxFacade | Restrictions: Maintain same test coverage, simplify setup, measure code reduction | _Leverage: MockKeyrxFacade, current editor_page_test.dart | Success: Tests pass with facade mock, setup simpler, coverage maintained | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Migrate DiscoveryPage to use facade
+- [x] 16. Migrate DiscoveryPage to use facade
   - File: `ui/lib/pages/discovery_page.dart`
   - Replace direct service usage with facade methods
   - Use facade state for discovery progress

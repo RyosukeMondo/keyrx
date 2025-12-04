@@ -7,16 +7,16 @@ library;
 import 'package:flutter/material.dart';
 
 import '../ffi/bridge.dart';
-import '../services/device_service.dart';
+import '../services/facade/keyrx_facade.dart';
 
 /// Page for listing and selecting keyboard devices.
 class DevicesPage extends StatefulWidget {
   const DevicesPage({
     super.key,
-    required this.deviceService,
+    required this.facade,
   });
 
-  final DeviceService deviceService;
+  final KeyrxFacade facade;
 
   @override
   State<DevicesPage> createState() => _DevicesPageState();
@@ -40,18 +40,24 @@ class _DevicesPageState extends State<DevicesPage> {
       _error = null;
     });
 
-    try {
-      final devices = await widget.deviceService.listDevices();
-      setState(() {
-        _devices = devices;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+    final result = await widget.facade.listDevices();
+
+    if (!mounted) return;
+
+    result.when(
+      ok: (devices) {
+        setState(() {
+          _devices = devices;
+          _isLoading = false;
+        });
+      },
+      err: (error) {
+        setState(() {
+          _error = error.userMessage;
+          _isLoading = false;
+        });
+      },
+    );
   }
 
   Future<void> _refreshDevices() async {
@@ -59,41 +65,50 @@ class _DevicesPageState extends State<DevicesPage> {
       _error = null;
     });
 
-    try {
-      final devices = await widget.deviceService.refresh();
-      setState(() {
-        _devices = devices;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    }
-  }
-
-  Future<void> _selectDevice(KeyboardDevice device) async {
-    final result = await widget.deviceService.selectDevice(device.path);
+    final result = await widget.facade.listDevices();
 
     if (!mounted) return;
 
-    if (result.success) {
-      setState(() {
-        _selectedPath = device.path;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Selected: ${device.name}'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to select device: ${result.errorMessage}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    result.when(
+      ok: (devices) {
+        setState(() {
+          _devices = devices;
+        });
+      },
+      err: (error) {
+        setState(() {
+          _error = error.userMessage;
+        });
+      },
+    );
+  }
+
+  Future<void> _selectDevice(KeyboardDevice device) async {
+    final result = await widget.facade.selectDevice(device.path);
+
+    if (!mounted) return;
+
+    result.when(
+      ok: (_) {
+        setState(() {
+          _selectedPath = device.path;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected: ${device.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      },
+      err: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to select device: ${error.userMessage}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+    );
   }
 
   @override
