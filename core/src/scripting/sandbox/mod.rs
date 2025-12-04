@@ -8,8 +8,10 @@
 
 pub mod budget;
 pub mod capability;
+pub mod function_capabilities;
 pub mod registry;
 
 pub use budget::{ResourceBudget, ResourceConfig, ResourceExhausted, ResourceUsage};
 pub use capability::{ScriptCapability, ScriptMode};
+pub use function_capabilities::FunctionCapabilities;
 pub use registry::{CapabilityRegistry, FunctionCapability};

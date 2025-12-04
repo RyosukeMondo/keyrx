@@ -40,7 +40,7 @@
   - _Requirements: 2.3, 4.1, 4.2_
   - _Prompt: Implement the task for spec rhai-sandbox-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating registry | Task: Create CapabilityRegistry with O(1) lookup | Restrictions: HashMap-based, KeyCode mapping | _Leverage: HashMap | Success: Lookup is O(1) | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Categorize existing functions
+- [x] 5. Categorize existing functions
   - Files: `core/src/scripting/bindings.rs`, `builtins.rs`
   - Assign capability tier to each function
   - Document tier rationale
