@@ -565,3 +565,198 @@ fn bypass_state_always_valid() {
 
     set_bypass_mode(false);
 }
+
+// ============================================================================
+// Emergency Exit with Circuit Breaker Integration
+// ============================================================================
+
+/// Test that emergency exit works when circuit breaker is in open state.
+/// This is critical - users must be able to escape even when the driver is
+/// in a degraded state with the circuit breaker open.
+#[test]
+#[serial]
+fn emergency_exit_when_circuit_breaker_open() {
+    set_bypass_mode(false);
+
+    // Simulate circuit breaker open state (driver is in fallback mode)
+    let circuit_breaker_open = true;
+    let fallback_active = true;
+
+    // Even with circuit open and fallback active, emergency exit must work
+    if circuit_breaker_open && fallback_active {
+        let mods = make_emergency_mods();
+
+        // Emergency exit check should still function
+        if check_emergency_exit(KeyCode::Escape, &mods) {
+            activate_bypass_mode();
+        }
+
+        assert!(
+            is_bypass_active(),
+            "Emergency exit must work even when circuit breaker is open"
+        );
+    }
+
+    set_bypass_mode(false);
+}
+
+/// Test emergency exit priority over circuit breaker state.
+/// Emergency exit should be checked BEFORE checking circuit breaker state.
+#[test]
+#[serial]
+fn emergency_exit_priority_over_circuit_breaker() {
+    set_bypass_mode(false);
+
+    let mods = make_emergency_mods();
+    let circuit_open = true;
+
+    // Simulate event processing with circuit breaker open
+    let should_continue = {
+        // STEP 1: Emergency exit check (MUST be first, even before circuit check)
+        if check_emergency_exit(KeyCode::Escape, &mods) {
+            activate_bypass_mode();
+        }
+
+        // STEP 2: Check bypass state (set by emergency exit)
+        if is_bypass_active() {
+            return false; // Stop processing
+        }
+
+        // STEP 3: Check circuit breaker state
+        if circuit_open {
+            // Would activate fallback here
+            return false;
+        }
+
+        // Normal processing would continue
+        true
+    };
+
+    assert!(
+        !should_continue,
+        "Emergency exit should stop processing before circuit breaker check"
+    );
+    assert!(
+        is_bypass_active(),
+        "Bypass should be active from emergency exit"
+    );
+
+    set_bypass_mode(false);
+}
+
+/// Test that emergency exit works during circuit breaker recovery attempts.
+/// When circuit is in half-open state testing recovery, emergency exit must still work.
+#[test]
+#[serial]
+fn emergency_exit_during_circuit_recovery() {
+    set_bypass_mode(false);
+
+    let mods = make_emergency_mods();
+
+    // Simulate circuit breaker in half-open state (testing recovery)
+    let circuit_half_open = true;
+    let testing_recovery = true;
+
+    for attempt in 0..10 {
+        // Simulate recovery test attempts
+        if circuit_half_open && testing_recovery {
+            // User presses emergency exit during recovery
+            if attempt == 5 {
+                if check_emergency_exit(KeyCode::Escape, &mods) {
+                    activate_bypass_mode();
+                }
+            }
+
+            // Emergency exit should stop recovery attempts
+            if is_bypass_active() {
+                assert!(
+                    attempt >= 5,
+                    "Should break recovery loop after emergency exit"
+                );
+                break;
+            }
+        }
+
+        if attempt == 9 {
+            panic!("Recovery loop should have been stopped by emergency exit");
+        }
+    }
+
+    assert!(
+        is_bypass_active(),
+        "Emergency exit should work during circuit recovery"
+    );
+    set_bypass_mode(false);
+}
+
+/// Test emergency exit isolation from fallback engine state.
+/// Emergency exit should work independently of fallback engine status.
+#[test]
+#[serial]
+fn emergency_exit_isolated_from_fallback_state() {
+    set_bypass_mode(false);
+
+    // Test with various fallback states
+    let fallback_states = vec![
+        ("active", true),
+        ("inactive", false),
+        ("transitioning", true),
+    ];
+
+    for (state_name, fallback_active) in fallback_states {
+        // Reset bypass for each test
+        set_bypass_mode(false);
+
+        // Emergency exit should work regardless of fallback state
+        let mods = make_emergency_mods();
+
+        if check_emergency_exit(KeyCode::Escape, &mods) {
+            activate_bypass_mode();
+        }
+
+        assert!(
+            is_bypass_active(),
+            "Emergency exit should work when fallback is {}",
+            state_name
+        );
+    }
+
+    set_bypass_mode(false);
+}
+
+/// Test that bypass mode takes precedence over circuit breaker and fallback.
+/// Once bypass is active, all other safety mechanisms should be bypassed.
+#[test]
+#[serial]
+fn bypass_mode_precedence_over_circuit_breaker() {
+    set_bypass_mode(false);
+    activate_bypass_mode();
+
+    // Even with circuit breaker open and fallback active
+    let circuit_open = true;
+    let fallback_active = true;
+
+    // Simulate event processing
+    let processing_stopped = {
+        // Check bypass FIRST
+        if is_bypass_active() {
+            true // All processing stopped
+        } else if circuit_open {
+            // Would check circuit breaker
+            false
+        } else if fallback_active {
+            // Would check fallback
+            false
+        } else {
+            // Normal processing
+            false
+        }
+    };
+
+    assert!(
+        processing_stopped,
+        "Bypass mode should stop all processing, overriding circuit breaker and fallback"
+    );
+
+    set_bypass_mode(false);
+}

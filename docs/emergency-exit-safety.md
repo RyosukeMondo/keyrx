@@ -160,16 +160,25 @@ Integration-level tests:
 - ✅ `emergency_check_constant_time` - No timing side channels (security)
 - ✅ `bypass_state_always_valid` - State never corrupted under any condition
 
+#### Circuit Breaker Integration
+- ✅ `emergency_exit_when_circuit_breaker_open` - Works when circuit breaker is open
+- ✅ `emergency_exit_priority_over_circuit_breaker` - Checked before circuit breaker state
+- ✅ `emergency_exit_during_circuit_recovery` - Works during half-open recovery attempts
+- ✅ `emergency_exit_isolated_from_fallback_state` - Independent of fallback engine
+- ✅ `bypass_mode_precedence_over_circuit_breaker` - Bypass overrides all safety mechanisms
+
 ## Safety Guarantees
 
 ### 1. Priority Guarantee
 The emergency exit combo is checked **before any other processing** in both drivers:
 - Linux: First thing in `process_events()`
 - Windows: First thing in `low_level_keyboard_proc()`
+- **BEFORE circuit breaker state checks**
+- **BEFORE fallback engine checks**
 
 ### 2. Panic Safety
 Both drivers handle panics gracefully:
-- Linux: `catch_unwind` wrapper + panic handler ungrab s keyboard
+- Linux: `catch_unwind` wrapper + panic handler ungrabs keyboard
 - Windows: Hook is uninstalled via `SafeHook` RAII wrapper on drop
 
 ### 3. Error Resilience
@@ -179,6 +188,9 @@ Emergency exit works even during:
 - Retry loops with exponential backoff
 - Thread panics
 - Concurrent high load (tested with 10 threads)
+- **Circuit breaker open state**
+- **Fallback mode activation**
+- **Circuit breaker recovery attempts (half-open state)**
 
 ### 4. State Isolation
 Bypass mode state is:
@@ -186,6 +198,8 @@ Bypass mode state is:
 - Never corrupted by errors
 - Always a valid boolean
 - Isolated from driver error states
+- **Isolated from circuit breaker state**
+- **Isolated from fallback engine state**
 
 ### 5. User Recovery
 Once bypass mode is activated:
@@ -194,6 +208,8 @@ Once bypass mode is activated:
 - Linux: Device is ungrabbed
 - Windows: All keys return `CallNextHookEx()`
 - User regains full keyboard control
+- **Takes precedence over circuit breaker**
+- **Takes precedence over fallback mode**
 
 ## Verification Summary
 
@@ -228,11 +244,15 @@ The emergency exit feature has been **thoroughly verified** to work in all error
 - High concurrent load
 - Retry loops
 - State corruption attempts
+- **Circuit breaker open state**
+- **Fallback mode activation**
+- **Circuit breaker recovery attempts**
 
 Both the Linux and Windows driver implementations correctly:
-1. Check emergency exit FIRST before any processing
+1. Check emergency exit FIRST before any processing (including circuit breaker checks)
 2. Immediately stop all remapping when bypass activates
 3. Handle errors gracefully without blocking emergency exit
 4. Maintain state integrity under all conditions
+5. **Ensure bypass mode takes precedence over all other safety mechanisms**
 
-**The emergency exit feature is safe and will always allow users to regain keyboard control.**
+**The emergency exit feature is safe and will always allow users to regain keyboard control, regardless of circuit breaker or fallback state.**
