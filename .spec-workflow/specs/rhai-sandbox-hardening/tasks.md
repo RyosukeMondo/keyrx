@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Types
 
-- [ ] 1. Create ScriptCapability enum
+- [x] 1. Create ScriptCapability enum
   - File: `core/src/scripting/sandbox/capability.rs`
   - Define Safe, Standard, Advanced, Internal tiers
   - Add is_allowed_in method

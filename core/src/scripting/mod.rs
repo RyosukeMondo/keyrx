@@ -20,6 +20,7 @@ mod pending_ops;
 mod registry;
 mod registry_sync;
 mod runtime;
+pub mod sandbox;
 pub mod test_discovery;
 pub mod test_harness;
 mod test_primitives;
