@@ -5,20 +5,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../services/console_parser.dart';
-import '../services/engine_service.dart';
+import '../services/facade/keyrx_facade.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
   const ConsolePage({
     super.key,
-    required this.engineService,
     this.parser = const ConsoleParser(),
   });
-
-  /// The engine service for evaluating Rhai commands.
-  final EngineService engineService;
 
   /// The parser for classifying console output.
   final ConsoleParser parser;
@@ -244,7 +241,9 @@ class _ConsolePageState extends State<ConsolePage> {
       _isBusy = true;
     });
 
-    final result = await widget.engineService.eval(command);
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final engineService = facade.services.engineService;
+    final result = await engineService.eval(command);
 
     setState(() {
       _history.add(ConsoleEntry(result.output, isError: result.isError));
@@ -273,7 +272,9 @@ class _ConsolePageState extends State<ConsolePage> {
 
   Future<void> _initializeEngine() async {
     setState(() => _isBusy = true);
-    final success = await widget.engineService.initialize();
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final engineService = facade.services.engineService;
+    final success = await engineService.initialize();
     setState(() {
       _history.add(ConsoleEntry(
         success ? 'ok: Engine initialized.' : 'error: Initialization failed.',
