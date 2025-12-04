@@ -69,7 +69,7 @@
   - _Requirements: 1.1, 1.3, 3.1_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Windows expertise | Task: Remove unwraps from Windows driver, add PanicGuard | Restrictions: Zero unwraps in hook callback, panic recovery | _Leverage: PanicGuard | Success: Windows driver panic-safe | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 8. Audit and fix driver unwraps (Linux)
+- [x] 8. Audit and fix driver unwraps (Linux)
   - Files: `core/src/drivers/linux/*.rs`
   - Replace unwrap/expect with error handling
   - Ensure existing catch_unwind is comprehensive
