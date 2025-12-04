@@ -78,7 +78,7 @@
   - _Requirements: 1.1, 1.3, 3.1_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Linux expertise | Task: Remove unwraps from Linux driver | Restrictions: Zero unwraps in reader loop, complete catch_unwind | _Leverage: PanicGuard | Success: Linux driver panic-safe | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Audit and fix engine unwraps
+- [x] 9. Audit and fix engine unwraps
   - Files: `core/src/engine/*.rs`
   - Replace unwrap/expect with CriticalResult
   - Add state recovery on errors
