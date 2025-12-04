@@ -41,9 +41,11 @@ pub mod collector;
 pub mod latency;
 pub mod memory;
 pub mod operation;
+pub mod profile;
 
 // Re-export commonly used types
 pub use collector::{MetricsCollector, MetricsSnapshot, ProfileGuard};
 pub use latency::LatencyHistogram;
 pub use memory::{MemoryMonitor, MemoryStats};
 pub use operation::Operation;
+pub use profile::{ProfilePointGuard, ProfilePoints, ProfileStats};

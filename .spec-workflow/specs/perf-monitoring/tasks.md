@@ -29,7 +29,7 @@
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with system programming | Task: Implement MemoryMonitor with leak detection | Restrictions: Bounded sampling, atomic operations | _Leverage: System APIs | Success: Accurate tracking, leak detection works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Implement ProfilePoints
+- [x] 4. Implement ProfilePoints
   - File: `core/src/metrics/profile.rs`
   - Function-level timing with RAII guards
   - Hot spot identification
