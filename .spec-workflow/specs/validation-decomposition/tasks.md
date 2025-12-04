@@ -21,7 +21,7 @@
   - _Requirements: 1.3, 2.2, 3.2_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating error types | Task: Create ValidationIssue and Severity in core/src/validation/common/issue.rs | Restrictions: Serde serializable, include source locations, clear Display impl | _Leverage: Existing validation error patterns | Success: Types compile, serialize correctly, Display is informative | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create OperationVisitor utility
+- [x] 3. Create OperationVisitor utility
   - File: `core/src/validation/common/visitor.rs`
   - Define `OperationVisitor` trait
   - Implement `visit_all()` helper function
