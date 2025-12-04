@@ -78,7 +78,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating generator | Task: Create HTML documentation generator | Restrictions: Searchable, syntax highlighting | _Leverage: Templates | Success: HTML docs generated with search | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Create JSON schema generator
+- [x] 9. Create JSON schema generator
   - File: `core/src/scripting/docs/generators/json.rs`
   - Generate JSON for IDE integration
   - Include autocomplete data
