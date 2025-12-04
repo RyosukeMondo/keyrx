@@ -108,7 +108,7 @@
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart Test Developer | Task: Create MockKeyrxFacade with sensible defaults for widget testing | Restrictions: Use mockito, provide default stubs, mock state stream | _Leverage: mockito patterns, KeyrxFacade interface | Success: Mock can be used in widget tests, stubs are easy to override | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 11. Add KeyrxFacade unit tests
+- [x] 11. Add KeyrxFacade unit tests
   - File: `ui/test/services/facade/keyrx_facade_test.dart`
   - Test each operation with mocked ServiceRegistry
   - Verify state transitions
