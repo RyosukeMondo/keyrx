@@ -78,7 +78,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec widget-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer extracting widgets | Task: Extract KeyLegend to editor/key_legend.dart | Restrictions: Both orientations, themeable | _Leverage: Existing legend | Success: Legend displays correctly | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Extract LayerPanel widget
+- [x] 9. Extract LayerPanel widget
   - File: `ui/lib/widgets/editor/layer_panel.dart`
   - Extract layer selection panel
   - Include add/delete/reorder
