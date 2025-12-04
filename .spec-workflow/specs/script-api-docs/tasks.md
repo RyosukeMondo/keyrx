@@ -40,7 +40,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec script-api-docs, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Macro Developer | Task: Create rhai_doc attribute macro | Restrictions: Extract doc comments, signatures, examples | _Leverage: proc-macro | Success: Macro extracts documentation | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 5. Add documentation to existing Rhai functions
+- [x] 5. Add documentation to existing Rhai functions
   - Files: `core/src/scripting/*.rs`
   - Add doc comments to all registered functions
   - Include parameter descriptions and examples
