@@ -58,6 +58,22 @@ jobs:
         run: cargo nextest run --all-features --profile ci
         working-directory: ./core
 
+  test-doc-examples:
+    name: Test Documentation Examples
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: doc-examples
+          cache-on-failure: true
+      - name: Run documentation example tests
+        run: cargo test --test doc_examples_test -- --nocapture
+        working-directory: ./core
+
   uat:
     name: UAT Tests
     needs: test
