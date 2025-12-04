@@ -105,7 +105,7 @@
   - _Requirements: 3.1, 3.4, 4.1_
   - _Prompt: Implement the task for spec logging-standardization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating bridge | Task: Create MetricsBridge for FFI export | Restrictions: Callback and polling, non-blocking | _Leverage: MetricsCollector | Success: Metrics available via FFI | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Create FFI observability exports
+- [-] 12. Create FFI observability exports
   - File: `core/src/ffi/exports_observability.rs`
   - Export log and metrics functions
   - Callback registration
