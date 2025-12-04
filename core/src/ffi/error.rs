@@ -100,6 +100,30 @@ impl FfiError {
             format!("invalid UTF-8 in parameter: {param}"),
         )
     }
+
+    /// Create a serialization failed error.
+    ///
+    /// # Example
+    /// ```
+    /// # use keyrx_core::ffi::error::FfiError;
+    /// let err = FfiError::serialization_failed("Failed to serialize data");
+    /// assert_eq!(err.code, "SERIALIZATION_FAILED");
+    /// ```
+    pub fn serialization_failed(msg: impl Into<String>) -> Self {
+        Self::new("SERIALIZATION_FAILED", msg)
+    }
+
+    /// Create a deserialization failed error.
+    ///
+    /// # Example
+    /// ```
+    /// # use keyrx_core::ffi::error::FfiError;
+    /// let err = FfiError::deserialization_failed("Failed to deserialize data");
+    /// assert_eq!(err.code, "DESERIALIZATION_FAILED");
+    /// ```
+    pub fn deserialization_failed(msg: impl Into<String>) -> Self {
+        Self::new("DESERIALIZATION_FAILED", msg)
+    }
 }
 
 impl fmt::Display for FfiError {

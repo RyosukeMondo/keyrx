@@ -58,7 +58,7 @@
   - _Requirements: 1.1, 3.3_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer implementing marshalers | Task: Implement FfiMarshaler for Vec<T> | Restrictions: Length-prefixed, batch encoding | _Leverage: FfiMarshaler | Success: Arrays marshal efficiently | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Implement JSON marshaler
+- [x] 7. Implement JSON marshaler
   - File: `core/src/ffi/marshal/impls/json.rs`
   - JsonWrapper<T> for complex types
   - Fallback for non-C-compatible types
