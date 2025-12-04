@@ -16,6 +16,8 @@ pub mod orchestrator;
 pub mod safety;
 pub mod semantic;
 pub mod suggestions;
+#[cfg(test)]
+mod tests;
 pub mod types;
 
 pub use config::ValidationConfig;

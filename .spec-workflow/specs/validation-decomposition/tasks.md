@@ -93,7 +93,7 @@
 
 ## Phase 4: Test Migration
 
-- [ ] 10. Move conflict tests to dedicated file
+- [x] 10. Move conflict tests to dedicated file
   - File: `core/src/validation/tests/conflict_tests.rs`
   - Extract ~150 conflict-related tests from conflicts.rs
   - Use test helpers
