@@ -5,20 +5,14 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../ffi/bridge.dart';
-import '../../services/device_service.dart';
+import '../../services/facade/keyrx_facade.dart';
 
 /// Discovery page for creating device profiles through guided wizard.
 class DiscoveryPage extends StatefulWidget {
-  const DiscoveryPage({
-    super.key,
-    required this.bridge,
-    required this.deviceService,
-  });
-
-  final KeyrxBridge bridge;
-  final DeviceService deviceService;
+  const DiscoveryPage({super.key});
 
   @override
   State<DiscoveryPage> createState() => _DiscoveryPageState();
@@ -53,42 +47,51 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       _error = null;
     });
 
-    try {
-      final devices = await widget.deviceService.listDevices();
-      setState(() {
-        _isLoading = false;
-        _devices = devices;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
+    final facade = context.read<KeyrxFacade>();
+    final result = await facade.listDevices();
+
+    if (!mounted) return;
+
+    await result.when(
+      ok: (devices) async {
+        setState(() {
+          _isLoading = false;
+          _devices = devices;
+        });
+      },
+      err: (error) async {
+        setState(() {
+          _isLoading = false;
+          _error = error.userMessage;
+        });
+      },
+    );
   }
 
-  void _startDiscovery() {
+  Future<void> _startDiscovery() async {
     if (_selectedDevice == null) return;
 
-    final deviceId =
-        '${_selectedDevice!.vendorId.toRadixString(16)}:${_selectedDevice!.productId.toRadixString(16)}';
-
-    final result = widget.bridge.startDiscovery(
-      deviceId,
-      _rows,
-      _colsPerRow.take(_rows).toList(),
+    final facade = context.read<KeyrxFacade>();
+    final result = await facade.startDiscovery(
+      device: _selectedDevice!,
+      rows: _rows,
+      colsPerRow: _colsPerRow.take(_rows).toList(),
     );
 
-    if (result.hasError) {
-      setState(() => _error = result.errorMessage);
-      return;
-    }
+    if (!mounted) return;
 
-    setState(() {
-      _currentStep = _DiscoveryStep.discovering;
-      _totalKeys = result.totalKeys ?? _colsPerRow.take(_rows).fold(0, (a, b) => a + b);
-      _discoveredKeys = 0;
-    });
+    await result.when(
+      ok: (_) async {
+        setState(() {
+          _currentStep = _DiscoveryStep.discovering;
+          _totalKeys = _colsPerRow.take(_rows).fold(0, (a, b) => a + b);
+          _discoveredKeys = 0;
+        });
+      },
+      err: (error) async {
+        setState(() => _error = error.userMessage);
+      },
+    );
   }
 
   void _completeDiscovery() {
