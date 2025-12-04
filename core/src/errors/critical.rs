@@ -155,9 +155,7 @@ pub enum CriticalError {
 
     /// Device disconnected during operation.
     #[error("Device disconnected: {device}")]
-    DeviceDisconnected {
-        device: String,
-    },
+    DeviceDisconnected { device: String },
 
     /// Configuration load failed.
     #[error("Configuration load failed: {path}")]
@@ -169,10 +167,7 @@ pub enum CriticalError {
 
     /// FFI boundary error.
     #[error("FFI error: {operation}")]
-    FfiBoundaryError {
-        operation: String,
-        details: String,
-    },
+    FfiBoundaryError { operation: String, details: String },
 
     /// Callback panic was caught.
     #[error("Callback panicked: {panic_message}")]
@@ -183,9 +178,7 @@ pub enum CriticalError {
 
     /// Thread communication failed.
     #[error("Channel error: {details}")]
-    ChannelError {
-        details: String,
-    },
+    ChannelError { details: String },
 
     /// Circuit breaker opened due to repeated failures.
     #[error("Circuit breaker opened after {failure_count} failures")]
@@ -212,17 +205,11 @@ pub enum CriticalError {
 
     /// Invalid state transition attempted.
     #[error("Invalid state transition: {from} -> {to}")]
-    InvalidStateTransition {
-        from: String,
-        to: String,
-    },
+    InvalidStateTransition { from: String, to: String },
 
     /// Platform-specific I/O error.
     #[error("Platform I/O error: {message}")]
-    PlatformIo {
-        message: String,
-        kind: String,
-    },
+    PlatformIo { message: String, kind: String },
 }
 
 impl CriticalError {
@@ -290,11 +277,9 @@ impl CriticalError {
 
             CriticalError::HookInstallFailed { .. } => FallbackAction::EnterSafeMode,
 
-            CriticalError::DeviceGrabFailed { device, .. } => {
-                FallbackAction::DisconnectDevice {
-                    device: device.clone(),
-                }
-            }
+            CriticalError::DeviceGrabFailed { device, .. } => FallbackAction::DisconnectDevice {
+                device: device.clone(),
+            },
 
             CriticalError::InjectionFailed { .. } => FallbackAction::RetryAfter {
                 delay: Duration::from_millis(50),
@@ -349,21 +334,18 @@ impl CriticalError {
                 cause: None,
             },
 
-            DriverError::PermissionDenied { resource, hint } => {
-                CriticalError::DriverInitFailed {
-                    reason: format!("Permission denied: {} ({})", resource, hint),
-                    cause: None,
-                }
-            }
+            DriverError::PermissionDenied { resource, hint } => CriticalError::DriverInitFailed {
+                reason: format!("Permission denied: {} ({})", resource, hint),
+                cause: None,
+            },
 
             DriverError::DeviceDisconnected { device } => {
                 CriticalError::DeviceDisconnected { device }
             }
 
-            DriverError::HookFailed { code } => CriticalError::HookInstallFailed {
-                code,
-                cause: None,
-            },
+            DriverError::HookFailed { code } => {
+                CriticalError::HookInstallFailed { code, cause: None }
+            }
 
             DriverError::GrabFailed { reason } => CriticalError::DeviceGrabFailed {
                 device: "unknown".to_string(),
