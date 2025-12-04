@@ -32,10 +32,7 @@ struct ReturnInfo {
 }
 
 /// Generate the rhai_doc macro expansion
-pub fn generate_rhai_doc(
-    attr_tokens: TokenStream,
-    func: &ItemFn,
-) -> syn::Result<TokenStream> {
+pub fn generate_rhai_doc(attr_tokens: TokenStream, func: &ItemFn) -> syn::Result<TokenStream> {
     // Parse attributes
     let attr_map = parse_attr_tokens(attr_tokens)?;
 
@@ -138,11 +135,11 @@ fn extract_doc_comments(attrs: &[Attribute]) -> Vec<String> {
 
 /// Parsed documentation sections from doc comments
 type ParsedDocs = (
-    String,                 // description
-    Vec<(String, String)>,  // parameters: (name, description)
-    Option<String>,         // returns
-    Vec<String>,            // examples
-    Option<String>,         // notes
+    String,                // description
+    Vec<(String, String)>, // parameters: (name, description)
+    Option<String>,        // returns
+    Vec<String>,           // examples
+    Option<String>,        // notes
 );
 
 /// Parse doc comments into structured sections
@@ -453,8 +450,10 @@ fn generate_registration_code(doc_info: &DocInfo) -> TokenStream {
 
 /// Parse attribute tokens into key-value pairs
 /// Expects format: module = "value", since = "value"
-fn parse_attr_tokens(tokens: TokenStream) -> syn::Result<std::collections::HashMap<String, String>> {
-    use syn::{Token, parse::Parse, parse::ParseStream};
+fn parse_attr_tokens(
+    tokens: TokenStream,
+) -> syn::Result<std::collections::HashMap<String, String>> {
+    use syn::{parse::Parse, parse::ParseStream, Token};
 
     struct AttrArgs {
         args: std::collections::HashMap<String, String>,

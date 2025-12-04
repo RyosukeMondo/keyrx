@@ -3,6 +3,7 @@
 //! This module provides automatic documentation extraction and generation
 //! for Rhai functions and types exposed to scripts.
 
+pub mod examples;
 pub mod generators;
 pub mod registry;
 pub mod search;
@@ -17,5 +18,6 @@ pub use types::{
     SearchResultKind, TypeDoc,
 };
 
+pub use examples::{ExampleResult, ExampleRunner, ExampleSummary};
 pub use search::{search, search_functions, search_in_module, search_types, SearchOptions};
 pub use type_registry::register_all_types;
