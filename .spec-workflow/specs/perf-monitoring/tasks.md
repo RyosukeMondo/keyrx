@@ -87,7 +87,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec perf-monitoring, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating metrics | Task: Add metrics recording to drivers | Restrictions: Minimal overhead, platform-specific ops | _Leverage: MetricsCollector | Success: Driver latency tracked | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [-] 10. Add memory tracking
+- [x] 10. Add memory tracking
   - File: `core/src/metrics/memory.rs`
   - Periodic memory sampling
   - Integration with global allocator (optional)
