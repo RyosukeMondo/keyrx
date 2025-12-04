@@ -69,7 +69,7 @@ class ServiceRegistry {
       classificationSource: mappedClassificationSource,
     );
 
-    final docs = apiDocsService ?? ApiDocsService();
+    final docs = apiDocsService ?? ApiDocsServiceImpl();
 
     return ServiceRegistry(
       permissionService: permissions,

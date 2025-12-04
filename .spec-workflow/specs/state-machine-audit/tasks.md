@@ -126,7 +126,7 @@
   - _Requirements: 2.4, 3.1_
   - _Prompt: Implement the task for spec state-machine-audit, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer integrating | Task: Integrate StateGraph into Engine | Restrictions: All changes through graph, validate | _Leverage: StateGraph | Success: Engine uses state graph | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 14. Add transition logging
+- [x] 14. Add transition logging
   - Files: `core/src/engine/mod.rs`
   - Log all transitions when enabled
   - Add FFI export for log

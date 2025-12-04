@@ -42,8 +42,8 @@ List<SingleChildWidget> createProviders() {
       dispose: (_, facade) => facade.dispose(),
     ),
 
-    // API documentation service - ChangeNotifier for reactive updates
-    ChangeNotifierProvider<ApiDocsService>(
+    // API documentation service
+    Provider<ApiDocsService>(
       create: (context) {
         final registry = context.read<ServiceRegistry>();
         return registry.apiDocsService;

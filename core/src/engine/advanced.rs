@@ -8,6 +8,7 @@ use crate::engine::processing::{
     apply_decision, trace_event, validate_and_check_safe_mode, DecisionResult,
 };
 use crate::engine::state::EngineState as UnifiedEngineState;
+use crate::engine::transitions::log::{TransitionEntry, TransitionLog};
 use crate::engine::transitions::{StateGraph, StateKind, StateTransition};
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
@@ -82,6 +83,9 @@ where
     state_graph: StateGraph,
     current_state_kind: StateKind,
 
+    // Transition logging for debugging
+    transition_log: TransitionLog,
+
     // Legacy compatibility layer during migration
     layers_compat: LayerStack, // For layer definitions and lookups
 
@@ -107,6 +111,7 @@ where
             state: UnifiedEngineState::new(timing.clone()),
             state_graph: StateGraph::new(),
             current_state_kind: StateKind::Idle,
+            transition_log: TransitionLog::default(),
             layers_compat: LayerStack::new(),
             pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
@@ -132,11 +137,38 @@ where
         self.current_state_kind
     }
 
+    /// Get a reference to the transition log.
+    ///
+    /// The transition log records all state transitions with before/after
+    /// state snapshots, timing information, and metadata. This is useful
+    /// for debugging, replay, and analysis.
+    ///
+    /// When the `transition-logging` feature is disabled, this returns
+    /// a zero-sized stub that has no overhead.
+    pub fn transition_log(&self) -> &TransitionLog {
+        &self.transition_log
+    }
+
+    /// Get a mutable reference to the transition log.
+    ///
+    /// This allows clearing the log or adjusting its configuration.
+    pub fn transition_log_mut(&mut self) -> &mut TransitionLog {
+        &mut self.transition_log
+    }
+
     /// Validate and apply a state transition.
     ///
     /// This checks if the transition is valid from the current state,
     /// applies it through the state graph, and updates the current state kind.
+    /// When transition logging is enabled, this also captures before/after
+    /// state snapshots and records the transition.
     fn validate_transition(&mut self, transition: StateTransition) -> Result<(), String> {
+        // Capture state before transition (for logging)
+        #[cfg(feature = "transition-logging")]
+        let state_before = (&self.state).into();
+        #[cfg(feature = "transition-logging")]
+        let start = std::time::Instant::now();
+
         // Validate the transition is allowed
         if !self
             .state_graph
@@ -150,13 +182,35 @@ where
         }
 
         // Apply the transition and update state kind
-        match self.state_graph.apply(self.current_state_kind, &transition) {
+        let result = match self.state_graph.apply(self.current_state_kind, &transition) {
             Ok(new_state) => {
                 self.current_state_kind = new_state;
                 Ok(())
             }
             Err(e) => Err(format!("Transition validation failed: {}", e)),
+        };
+
+        // Log the transition when enabled
+        #[cfg(feature = "transition-logging")]
+        if result.is_ok() {
+            let state_after = (&self.state).into();
+            let duration_ns = start.elapsed().as_nanos() as u64;
+            let wall_time_us = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros() as u64;
+
+            let entry = TransitionEntry::new(
+                transition,
+                state_before,
+                state_after,
+                wall_time_us,
+                duration_ns,
+            );
+            self.transition_log.push(entry);
         }
+
+        result
     }
 
     /// Update the current state kind based on the actual engine state.

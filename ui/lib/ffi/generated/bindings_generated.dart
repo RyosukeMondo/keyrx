@@ -75,6 +75,99 @@ typedef RegisterEventCallbackNative =
 typedef RegisterEventCallback =
     int Function(int, Pointer<NativeFunction<EventCallbackNative>>);
 
+// keyrx_transition_log_export_json
+/// Export all transition log entries as JSON.
+///
+/// Returns a JSON array containing all transitions in chronological order.
+/// Each entry includes the transition type, state before/after snapshots,
+/// timing information, and metadata.
+///
+/// # Arguments
+///
+/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
+///
+/// # Returns
+///
+/// Pointer to a null-terminated JSON string, or null on error.
+/// The caller must free the returned string with `keyrx_free_string()`.
+///
+/// # Safety
+///
+/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+typedef TransitionLogExportJsonNative = Pointer<Char> Function(Pointer<Void>);
+typedef TransitionLogExportJson = Pointer<Char> Function(Pointer<Void>);
+
+// keyrx_transition_log_len
+/// Get the number of transition log entries currently stored.
+///
+/// # Arguments
+///
+/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
+///
+/// # Returns
+///
+/// Number of entries in the log.
+///
+/// # Safety
+///
+/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+typedef TransitionLogLenNative = Size Function(Pointer<Void>);
+typedef TransitionLogLen = int Function(Pointer<Void>);
+
+// keyrx_transition_log_capacity
+/// Get the maximum capacity of the transition log.
+///
+/// # Arguments
+///
+/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
+///
+/// # Returns
+///
+/// Maximum number of entries the log can hold.
+///
+/// # Safety
+///
+/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+typedef TransitionLogCapacityNative = Size Function(Pointer<Void>);
+typedef TransitionLogCapacity = int Function(Pointer<Void>);
+
+// keyrx_transition_log_statistics
+/// Get statistics about the transition log.
+///
+/// Returns a tuple of statistics via output parameters:
+/// - `total`: Total entries currently stored
+/// - `unique_names`: Number of unique transition names
+/// - `total_duration`: Sum of all transition processing durations (nanoseconds)
+/// - `avg_duration`: Average processing duration per entry (nanoseconds)
+///
+/// # Arguments
+///
+/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
+/// * `total` - Output: Total entries
+/// * `unique_names` - Output: Number of unique transition names
+/// * `total_duration` - Output: Total processing time (nanoseconds)
+/// * `avg_duration` - Output: Average processing time (nanoseconds)
+///
+/// # Safety
+///
+/// All pointers must be valid. `engine_ptr` must point to an AdvancedEngine instance.
+typedef TransitionLogStatisticsNative =
+    Void Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+    );
+typedef TransitionLogStatistics =
+    void Function(
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+      Pointer<Void>,
+    );
+
 // keyrx_log_bridge_init
 /// Initialize the log bridge for FFI access.
 ///
@@ -193,6 +286,62 @@ typedef MetricsStopUpdates = int Function();
 typedef MetricsTriggerCallbackNative = Int32 Function();
 typedef MetricsTriggerCallback = int Function();
 
+// keyrx_metrics_set_threshold_callback
+/// Register a callback for threshold violations.
+///
+/// The callback will be invoked when metrics exceed configured thresholds.
+/// Pass NULL to unregister the callback.
+///
+/// # Arguments
+/// * `callback` - Function pointer to call on threshold violations, or NULL to unregister
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed to acquire bridge lock
+///
+/// # Safety
+/// The callback function must be valid for the lifetime of the registration.
+/// The callback receives a pointer to ThresholdViolation that is only valid
+/// during the callback invocation - it must not be retained.
+typedef MetricsSetThresholdCallbackNative = Int32 Function(Pointer<Void>);
+typedef MetricsSetThresholdCallback = int Function(Pointer<Void>);
+
+// keyrx_metrics_set_thresholds
+/// Set threshold values for violation detection.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Latency warning threshold in microseconds
+/// * `latency_error_micros` - Latency error threshold in microseconds
+/// * `memory_warn_bytes` - Memory warning threshold in bytes
+/// * `memory_error_bytes` - Memory error threshold in bytes
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Bridge unavailable
+typedef MetricsSetThresholdsNative =
+    Int32 Function(Uint64, Uint64, Uint64, Uint64);
+typedef MetricsSetThresholds = int Function(int, int, int, int);
+
+// keyrx_metrics_get_thresholds
+/// Get current threshold values.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Output: Latency warning threshold in microseconds
+/// * `latency_error_micros` - Output: Latency error threshold in microseconds
+/// * `memory_warn_bytes` - Output: Memory warning threshold in bytes
+/// * `memory_error_bytes` - Output: Memory error threshold in bytes
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Bridge unavailable or null pointers provided
+///
+/// # Safety
+/// All output pointers must be valid and non-null.
+typedef MetricsGetThresholdsNative =
+    Int32 Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
+typedef MetricsGetThresholds =
+    int Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
+
 // keyrx_log_set_callback
 /// Register a callback for real-time log notifications.
 ///
@@ -266,6 +415,22 @@ class KeyrxBindingsGenerated {
       _lookup<NativeFunction<RegisterEventCallbackNative>>(
         'keyrx_register_event_callback',
       ).asFunction();
+  late final TransitionLogExportJson transitionLogExportJson =
+      _lookup<NativeFunction<TransitionLogExportJsonNative>>(
+        'keyrx_transition_log_export_json',
+      ).asFunction();
+  late final TransitionLogLen transitionLogLen =
+      _lookup<NativeFunction<TransitionLogLenNative>>(
+        'keyrx_transition_log_len',
+      ).asFunction();
+  late final TransitionLogCapacity transitionLogCapacity =
+      _lookup<NativeFunction<TransitionLogCapacityNative>>(
+        'keyrx_transition_log_capacity',
+      ).asFunction();
+  late final TransitionLogStatistics transitionLogStatistics =
+      _lookup<NativeFunction<TransitionLogStatisticsNative>>(
+        'keyrx_transition_log_statistics',
+      ).asFunction();
   late final LogBridgeInit logBridgeInit =
       _lookup<NativeFunction<LogBridgeInitNative>>(
         'keyrx_log_bridge_init',
@@ -302,6 +467,18 @@ class KeyrxBindingsGenerated {
   late final MetricsTriggerCallback metricsTriggerCallback =
       _lookup<NativeFunction<MetricsTriggerCallbackNative>>(
         'keyrx_metrics_trigger_callback',
+      ).asFunction();
+  late final MetricsSetThresholdCallback metricsSetThresholdCallback =
+      _lookup<NativeFunction<MetricsSetThresholdCallbackNative>>(
+        'keyrx_metrics_set_threshold_callback',
+      ).asFunction();
+  late final MetricsSetThresholds metricsSetThresholds =
+      _lookup<NativeFunction<MetricsSetThresholdsNative>>(
+        'keyrx_metrics_set_thresholds',
+      ).asFunction();
+  late final MetricsGetThresholds metricsGetThresholds =
+      _lookup<NativeFunction<MetricsGetThresholdsNative>>(
+        'keyrx_metrics_get_thresholds',
       ).asFunction();
   late final LogSetCallback logSetCallback =
       _lookup<NativeFunction<LogSetCallbackNative>>(
