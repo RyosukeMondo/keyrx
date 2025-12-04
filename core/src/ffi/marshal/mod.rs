@@ -11,9 +11,9 @@
 //! The marshaling system is organized into:
 //!
 //! - [`traits`]: Core traits ([`FfiMarshaler`], [`FfiStreamMarshaler`])
+//! - [`error`]: Comprehensive error types with hint and context
+//! - [`result`]: FFI result types
 //! - `impls`: Implementations for common types (primitives, strings, arrays, JSON)
-//! - `result`: FFI result types
-//! - `error`: FFI error types
 //!
 //! # Usage
 //!
@@ -50,9 +50,11 @@
 //! }
 //! ```
 
+pub mod error;
 pub mod result;
 pub mod traits;
 
 // Re-export core types
+pub use error::{MarshalError, MarshalErrorC};
 pub use result::{FfiErrorData, FfiErrorPtr, FfiResult};
 pub use traits::{CRepr, FfiMarshaler, FfiStreamMarshaler, STREAMING_THRESHOLD};

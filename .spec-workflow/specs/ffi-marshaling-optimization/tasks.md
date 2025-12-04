@@ -20,7 +20,7 @@
   - _Requirements: 1.3, 2.1_
   - _Prompt: Implement the task for spec ffi-marshaling-optimization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating types | Task: Create FfiResult with C ABI | Restrictions: repr(C), memory-safe, error support | _Leverage: C ABI | Success: Results cross FFI safely | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create FfiError type
+- [x] 3. Create FfiError type
   - File: `core/src/ffi/marshal/error.rs`
   - Error with code, message, hint, context
   - C-compatible allocation
