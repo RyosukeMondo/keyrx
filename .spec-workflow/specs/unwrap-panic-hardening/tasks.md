@@ -87,7 +87,7 @@
   - _Requirements: 1.1, 1.2, 2.1_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer auditing code | Task: Remove unwraps from engine core | Restrictions: Zero unwraps in process path, state recovery | _Leverage: CriticalResult | Success: Engine handles all errors | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 10. Audit and fix FFI boundary unwraps
+- [x] 10. Audit and fix FFI boundary unwraps
   - Files: `core/src/ffi/exports_*.rs`
   - Replace unwrap/expect with error returns
   - Never panic across FFI boundary
