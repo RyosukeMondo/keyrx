@@ -169,7 +169,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec flutter-service-facade, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer migrating pages | Task: Migrate DiscoveryPage to use KeyrxFacade | Restrictions: Maintain same functionality, use facade for all operations | _Leverage: Current discovery page, KeyrxFacade | Success: DiscoveryPage uses facade, functionality unchanged, tests pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Migrate remaining pages
+- [x] 17. Migrate remaining pages
   - Files: `ui/lib/pages/*.dart`
   - Apply facade pattern to TestPage, SettingsPage, etc.
   - Update corresponding tests
