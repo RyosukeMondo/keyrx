@@ -49,7 +49,7 @@
   - _Requirements: 4.1, 4.3_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating fallback | Task: Create FallbackEngine for passthrough mode | Restrictions: Minimal, always works, no dependencies | _Leverage: Null object pattern | Success: Fallback passes keys through | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Create extension traits for safe unwrapping
+- [x] 6. Create extension traits for safe unwrapping
   - File: `core/src/safety/extensions.rs`
   - OptionExt with unwrap_or_log
   - ResultExt with map_critical

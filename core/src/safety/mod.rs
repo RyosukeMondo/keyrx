@@ -5,7 +5,8 @@
 //!
 //! - `panic_guard`: Panic catching and backtrace logging
 //! - `circuit_breaker`: Circuit breakers for preventing cascading failures
-//! - Future: Extension traits for safe unwrapping
+//! - `extensions`: Extension traits for safe unwrapping and error conversion
 
 pub mod circuit_breaker;
+pub mod extensions;
 pub mod panic_guard;
