@@ -8,11 +8,11 @@
 //!
 //! - [`primitives`]: Zero-copy marshaling for primitive types (u8, u16, u32, u64, bool, f32, f64, etc.)
 //! - [`string`]: String and &str marshaling with null-terminated C strings
+//! - [`array`]: Vec<T> marshaling with length-prefixed arrays
 //!
 //! # Future Modules
 //!
 //! Additional modules will be added for:
-//! - `array`: Vec<T> marshaling with length-prefixed arrays
 //! - `json`: JSON-based marshaling for complex types
 //! - `session`: Streaming marshaling for large session data
 //!
@@ -29,5 +29,6 @@
 //! assert_eq!(c_value, 42);
 //! ```
 
+pub mod array;
 pub mod primitives;
 pub mod string;
