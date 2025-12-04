@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
       ),
       DevicesPage(facade: facade),
       const RunControlsPage(),
-      DebuggerPage(engineService: registry.engineService),
+      const DebuggerPage(),
       ConsolePage(engineService: registry.engineService),
       const TradeOffVisualizerPage(),
     ];

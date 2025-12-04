@@ -4,10 +4,12 @@
 // held modifiers, and why keys were blocked.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/config.dart';
 import '../mixins/stream_subscriber.dart';
 import '../services/engine_service.dart';
+import '../services/facade/keyrx_facade.dart';
 import 'debugger_meters.dart';
 import 'debugger_widgets.dart';
 
@@ -15,11 +17,7 @@ import 'debugger_widgets.dart';
 class DebuggerPage extends StatefulWidget {
   const DebuggerPage({
     super.key,
-    required this.engineService,
   });
-
-  /// The engine service for state stream access.
-  final EngineService engineService;
 
   @override
   State<DebuggerPage> createState() => _DebuggerPageState();
@@ -63,8 +61,10 @@ class _DebuggerPageState extends State<DebuggerPage>
 
   void _subscribeToStateStream() {
     cancelAllSubscriptions();
+    final facade = Provider.of<KeyrxFacade>(context, listen: false);
+    final engineService = facade.services.engineService;
     subscribe<EngineSnapshot>(
-      widget.engineService.stateStream,
+      engineService.stateStream,
       onData: (snapshot) {
         if (!_isRecording) return;
 
