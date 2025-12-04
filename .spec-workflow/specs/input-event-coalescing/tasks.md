@@ -18,7 +18,7 @@
 
 ## Phase 2: Integration
 
-- [ ] 3. Create CoalescingEngine wrapper
+- [x] 3. Create CoalescingEngine wrapper
   - File: `core/src/engine/coalescing/mod.rs`
   - Wrap engine with coalescing layer
   - Preserve timing semantics

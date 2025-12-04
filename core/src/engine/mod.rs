@@ -18,7 +18,7 @@ pub mod transitions;
 mod types;
 
 pub use advanced::AdvancedEngine;
-pub use coalescing::{CoalescingConfig, EventBuffer};
+pub use coalescing::{CoalescingConfig, CoalescingEngine, EventBuffer};
 pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
     PendingDecisionState, TimingConfig,

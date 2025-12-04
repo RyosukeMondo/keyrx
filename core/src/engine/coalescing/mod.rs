@@ -6,6 +6,8 @@
 
 mod buffer;
 mod config;
+mod engine;
 
 pub use buffer::EventBuffer;
 pub use config::CoalescingConfig;
+pub use engine::{CoalescingEngine, ProcessEvent};
