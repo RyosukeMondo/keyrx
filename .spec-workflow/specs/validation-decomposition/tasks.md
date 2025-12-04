@@ -51,7 +51,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
   - _Prompt: Implement the task for spec validation-decomposition, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer extracting module | Task: Extract ShadowingDetector from conflicts.rs into core/src/validation/detectors/shadowing.rs | Restrictions: Preserve existing behavior, mark as skippable, handle key ordering | _Leverage: Current shadowing detection | Success: ShadowingDetector works identically, skippable flag works | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Extract CycleDetector
+- [x] 6. Extract CycleDetector
   - File: `core/src/validation/detectors/cycles.rs`
   - Move circular dependency detection from original conflicts.rs
   - Implement DFS-based cycle detection

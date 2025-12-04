@@ -4,6 +4,7 @@
 //! along with supporting types for context, results, and statistics.
 
 pub mod conflicts;
+pub mod cycles;
 pub mod shadowing;
 
 use crate::scripting::PendingOp;
