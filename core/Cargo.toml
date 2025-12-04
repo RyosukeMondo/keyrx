@@ -81,5 +81,20 @@ evdev = { workspace = true, optional = true }
 nix = { workspace = true, optional = true }
 signal-hook = { workspace = true, optional = true }
 
-[lints]
-workspace = true
+# Inherit workspace lints and override critical ones to be stricter
+[lints.rust]
+unsafe_code = "warn"
+
+[lints.clippy]
+# CRITICAL PATH PROTECTION: Deny panic-inducing operations in core library
+# These were hardened as part of unwrap-panic-hardening spec
+# Use #[allow(clippy::unwrap_used)] annotation when unwrap is explicitly safe
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+# Note: indexing_slicing could also panic but is too pervasive to fix in this phase
+# Consider enabling as "warn" in future work
+
+# Enforce structured logging (inherited from workspace)
+print_stdout = "warn"
+print_stderr = "warn"

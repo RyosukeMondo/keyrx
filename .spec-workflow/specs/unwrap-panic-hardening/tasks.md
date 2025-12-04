@@ -156,7 +156,7 @@
   - _Requirements: 3.1, 3.2_
   - _Prompt: Implement the task for spec unwrap-panic-hardening, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Test Developer | Task: Create panic injection tests | Restrictions: Test all critical paths, verify recovery | _Leverage: Test fixtures | Success: All panics recovered | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 17. Add lint to prevent new unwraps
+- [-] 17. Add lint to prevent new unwraps
   - File: `.cargo/config.toml` or clippy.toml
   - Deny unwrap/expect in critical modules
   - Allow only with explicit annotation
