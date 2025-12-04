@@ -25,7 +25,7 @@
   - Purpose: Engine integration
   - _Requirements: 2.2, 2.4_
 
-- [ ] 4. Add coalescing to event loop
+- [x] 4. Add coalescing to event loop
   - File: `core/src/engine/event_loop.rs`
   - Integrate buffer into main loop
   - Handle flush triggers
