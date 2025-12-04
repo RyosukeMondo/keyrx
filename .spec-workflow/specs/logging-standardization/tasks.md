@@ -50,7 +50,7 @@
 
 ## Phase 3: Migration
 
-- [ ] 6. Replace println in CLI
+- [x] 6. Replace println in CLI
   - Files: `core/src/bin/keyrx.rs`, `core/src/cli/*.rs`
   - Replace println/eprintln with tracing
   - Keep user-facing output as println
