@@ -31,7 +31,9 @@ pub use event_recording::{
     SessionFile, SESSION_FILE_VERSION,
 };
 pub use fallback::{FallbackEngine, FallbackReason};
-pub use limits::{ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceUsageSnapshot};
+pub use limits::{
+    ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceLimits, ResourceUsageSnapshot,
+};
 pub use replay::{ReplayError, ReplaySession, ReplayState};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{

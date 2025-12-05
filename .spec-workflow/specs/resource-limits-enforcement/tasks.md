@@ -9,7 +9,7 @@
   - Purpose: Resource monitoring
   - _Requirements: 1.1, 2.1, 3.1_
 
-- [ ] 2. Create ResourceLimits config
+- [x] 2. Create ResourceLimits config
   - File: `core/src/engine/limits/config.rs`
   - Configurable limits with defaults
   - Serialize/deserialize support

@@ -3,6 +3,7 @@
 //! Provides atomic tracking for execution timeout, memory usage, and queue
 //! depth. Designed to be lightweight and reusable across the engine.
 
+use super::config::ResourceLimits;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use thiserror::Error;
@@ -45,11 +46,11 @@ pub struct ResourceEnforcer {
 
 impl ResourceEnforcer {
     /// Create a new enforcer with explicit limits.
-    pub fn new(timeout: Duration, memory_limit: usize, queue_limit: usize) -> Self {
+    pub fn new(config: ResourceLimits) -> Self {
         Self {
-            timeout,
-            memory_limit,
-            queue_limit,
+            timeout: config.execution_timeout,
+            memory_limit: config.memory_limit,
+            queue_limit: config.queue_limit,
             current_memory: AtomicUsize::new(0),
             queue_depth: AtomicUsize::new(0),
         }
@@ -193,12 +194,14 @@ impl Drop for ExecutionGuard<'_> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::config::ResourceLimits;
     use super::*;
     use std::time::Duration;
 
     #[test]
     fn memory_enforcement_reverts_on_overflow() {
-        let enforcer = ResourceEnforcer::new(Duration::from_millis(10), 100, 10);
+        let enforcer =
+            ResourceEnforcer::new(ResourceLimits::new(Duration::from_millis(10), 100, 10));
 
         assert!(enforcer.record_allocation(60).is_ok());
         assert!(matches!(
@@ -214,7 +217,8 @@ mod tests {
 
     #[test]
     fn queue_enforcement_caps_depth() {
-        let enforcer = ResourceEnforcer::new(Duration::from_millis(10), 100, 1);
+        let enforcer =
+            ResourceEnforcer::new(ResourceLimits::new(Duration::from_millis(10), 100, 1));
 
         assert!(enforcer.increment_queue().is_ok());
         assert!(matches!(
@@ -228,7 +232,8 @@ mod tests {
 
     #[test]
     fn timeout_check_triggers() {
-        let enforcer = ResourceEnforcer::new(Duration::from_millis(1), 100, 10);
+        let enforcer =
+            ResourceEnforcer::new(ResourceLimits::new(Duration::from_millis(1), 100, 10));
 
         let guard = enforcer.start_execution();
         std::thread::sleep(Duration::from_millis(3));
@@ -240,7 +245,7 @@ mod tests {
 
     #[test]
     fn snapshot_reports_usage() {
-        let enforcer = ResourceEnforcer::new(Duration::from_millis(5), 200, 5);
+        let enforcer = ResourceEnforcer::new(ResourceLimits::new(Duration::from_millis(5), 200, 5));
 
         enforcer.record_allocation(40).unwrap();
         enforcer.increment_queue().unwrap();
