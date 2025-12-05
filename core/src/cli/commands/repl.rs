@@ -235,7 +235,7 @@ Examples:
                     println!("Error formatting state: {}", e);
                 }
             }
-            OutputFormat::Human => {
+            _ => {
                 println!("Engine State:");
                 println!("  Version: {}", state.version);
                 println!("  Pressed keys: {:?}", state.pressed_keys);

@@ -16,7 +16,7 @@
   - Purpose: JSON format
   - _Requirements: 1.2_
 
-- [ ] 3. Implement Table formatter
+- [x] 3. Implement Table formatter
   - File: `core/src/cli/output/table.rs`
   - Aligned columns
   - Handle variable widths

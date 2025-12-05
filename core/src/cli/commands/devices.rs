@@ -43,7 +43,10 @@ impl DevicesCommand {
     fn render_devices(&self, devices: &[drivers::DeviceInfo]) -> CommandResult<()> {
         if devices.is_empty() {
             match self.output.format() {
-                OutputFormat::Human => {
+                OutputFormat::Json => {
+                    println!("[]");
+                }
+                _ => {
                     println!("No keyboard devices found.");
                     println!();
                     #[cfg(target_os = "linux")]
@@ -62,15 +65,20 @@ impl DevicesCommand {
                         println!("  - Try running as Administrator");
                     }
                 }
-                OutputFormat::Json => {
-                    println!("[]");
-                }
             }
             return CommandResult::success(());
         }
 
         match self.output.format() {
-            OutputFormat::Human => {
+            OutputFormat::Json => {
+                if let Err(e) = self.output.data(devices) {
+                    return CommandResult::failure(
+                        ExitCode::GeneralError,
+                        format!("Failed to output device list: {}", e),
+                    );
+                }
+            }
+            _ => {
                 println!("Found {} keyboard device(s):\n", devices.len());
                 for device in devices {
                     println!(
@@ -79,14 +87,6 @@ impl DevicesCommand {
                     );
                     println!("    Path: {}", device.path.display());
                     println!();
-                }
-            }
-            OutputFormat::Json => {
-                if let Err(e) = self.output.data(devices) {
-                    return CommandResult::failure(
-                        ExitCode::GeneralError,
-                        format!("Failed to output device list: {}", e),
-                    );
                 }
             }
         }

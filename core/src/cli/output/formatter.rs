@@ -10,6 +10,8 @@ pub enum OutputFormat {
     Human,
     /// JSON output for programmatic parsing.
     Json,
+    /// Aligned table output for human readability.
+    Table,
 }
 
 /// Common interface for rendering CLI output across formats.

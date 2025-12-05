@@ -97,7 +97,19 @@ pub async fn capture_session(
 /// Report discovery progress to the output.
 pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> Result<()> {
     match output.format() {
-        OutputFormat::Human => {
+        OutputFormat::Json => {
+            let payload = ProgressJson {
+                status: "progress",
+                captured: progress.captured,
+                total: progress.total,
+                next: progress
+                    .next
+                    .as_ref()
+                    .and_then(|pos| serde_json::to_value(pos).ok()),
+            };
+            output.data(&payload)?;
+        }
+        _ => {
             if let Some(current) = progress.current {
                 if let Some(next) = progress.next {
                     output.success(&format!(
@@ -125,18 +137,6 @@ pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> R
                 ));
             }
         }
-        OutputFormat::Json => {
-            let payload = ProgressJson {
-                status: "progress",
-                captured: progress.captured,
-                total: progress.total,
-                next: progress
-                    .next
-                    .as_ref()
-                    .and_then(|pos| serde_json::to_value(pos).ok()),
-            };
-            output.data(&payload)?;
-        }
     }
     Ok(())
 }
@@ -144,14 +144,6 @@ pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> R
 /// Report a duplicate scan code warning.
 pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result<()> {
     match output.format() {
-        OutputFormat::Human => output.warning(&format!(
-            "Duplicate scan code {} (existing r{},c{} attempted r{},c{})",
-            dup.scan_code,
-            dup.existing.row + 1,
-            dup.existing.col + 1,
-            dup.attempted.row + 1,
-            dup.attempted.col + 1
-        )),
         OutputFormat::Json => {
             let payload = DuplicateJson {
                 status: "duplicate",
@@ -161,6 +153,14 @@ pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result
             };
             output.data(&payload)?;
         }
+        _ => output.warning(&format!(
+            "Duplicate scan code {} (existing r{},c{} attempted r{},c{})",
+            dup.scan_code,
+            dup.existing.row + 1,
+            dup.existing.col + 1,
+            dup.attempted.row + 1,
+            dup.attempted.col + 1
+        )),
     }
     Ok(())
 }
@@ -168,7 +168,14 @@ pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result
 /// Report the final discovery summary.
 pub fn report_summary(output: &OutputWriter, summary: &DiscoverySummary) -> Result<()> {
     match output.format() {
-        OutputFormat::Human => {
+        OutputFormat::Json => {
+            let payload = SummaryJson {
+                status: "summary",
+                summary,
+            };
+            output.data(&payload)?;
+        }
+        _ => {
             let headline = match summary.status {
                 SessionStatus::Completed => "Discovery completed",
                 SessionStatus::Cancelled => "Discovery cancelled",
@@ -186,13 +193,6 @@ pub fn report_summary(output: &OutputWriter, summary: &DiscoverySummary) -> Resu
             if let Some(msg) = &summary.message {
                 output.warning(msg);
             }
-        }
-        OutputFormat::Json => {
-            let payload = SummaryJson {
-                status: "summary",
-                summary,
-            };
-            output.data(&payload)?;
         }
     }
     Ok(())

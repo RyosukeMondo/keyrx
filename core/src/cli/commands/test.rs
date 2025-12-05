@@ -256,7 +256,7 @@ impl TestCommand {
                 };
                 let _ = self.output.data(&json_output);
             }
-            OutputFormat::Human => {
+            _ => {
                 self.output_human_results(results, &summary);
             }
         }

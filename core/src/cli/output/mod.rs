@@ -2,11 +2,13 @@
 
 pub mod formatter;
 pub mod json;
+pub mod table;
 
 pub use formatter::{OutputFormat, OutputFormatter};
 use json::JsonFormatter;
 use serde::Serialize;
 use std::io::{self, Write};
+use table::TableFormatter;
 
 /// Writer for formatted CLI output.
 #[derive(Debug)]
@@ -48,8 +50,8 @@ impl OutputWriter {
 
     /// Write structured data.
     pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
-        let json = OutputFormatter::format_data(self, data).map_err(io::Error::other)?;
-        println!("{json}");
+        let rendered = OutputFormatter::format_data(self, data).map_err(io::Error::other)?;
+        println!("{rendered}");
         io::stdout().flush()
     }
 }
@@ -59,6 +61,7 @@ impl OutputFormatter for OutputWriter {
         match self.format {
             OutputFormat::Human => format!("[OK] {}", message),
             OutputFormat::Json => JsonFormatter.format_success(message),
+            OutputFormat::Table => TableFormatter.format_success(message),
         }
     }
 
@@ -66,6 +69,7 @@ impl OutputFormatter for OutputWriter {
         match self.format {
             OutputFormat::Human => format!("[ERROR] {}", message),
             OutputFormat::Json => JsonFormatter.format_error(message),
+            OutputFormat::Table => TableFormatter.format_error(message),
         }
     }
 
@@ -73,6 +77,7 @@ impl OutputFormatter for OutputWriter {
         match self.format {
             OutputFormat::Human => format!("[WARN] {}", message),
             OutputFormat::Json => JsonFormatter.format_warning(message),
+            OutputFormat::Table => TableFormatter.format_warning(message),
         }
     }
 
@@ -80,6 +85,7 @@ impl OutputFormatter for OutputWriter {
         match self.format {
             OutputFormat::Human => serde_json::to_string_pretty(data),
             OutputFormat::Json => JsonFormatter.format_data(data),
+            OutputFormat::Table => TableFormatter.format_data(data),
         }
     }
 }
@@ -138,5 +144,13 @@ mod tests {
             .format_data(&sample)
             .expect("json data write should succeed");
         assert_eq!(compact, "{\n  \"name\": \"alpha\",\n  \"count\": 3\n}");
+
+        let table = OutputWriter::new(OutputFormat::Table)
+            .format_data(&sample)
+            .expect("table data write should succeed");
+        assert_eq!(
+            table,
+            "key   | value\n------+------\ncount | 3    \nname  | alpha"
+        );
     }
 }

@@ -106,7 +106,7 @@ impl DocsCommand {
                     println!("{}", json);
                 }
             }
-            OutputFormat::Human => {
+            _ => {
                 println!(
                     "Documentation generated successfully: {}",
                     output_file.display()

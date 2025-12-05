@@ -255,7 +255,10 @@ impl DoctorCommand {
 
     fn print_results(&self, checks: &[DiagnosticCheck]) -> anyhow::Result<()> {
         match self.output.format() {
-            OutputFormat::Human => {
+            OutputFormat::Json => {
+                self.output.data(checks)?;
+            }
+            _ => {
                 println!("KeyRx Diagnostics\n");
                 for check in checks {
                     let status_str = match check.status {
@@ -288,9 +291,6 @@ impl DoctorCommand {
                     "\nSummary: {} passed, {} failed, {} warnings",
                     pass_count, fail_count, warn_count
                 );
-            }
-            OutputFormat::Json => {
-                self.output.data(checks)?;
             }
         }
         Ok(())

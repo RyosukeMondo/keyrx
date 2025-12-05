@@ -128,7 +128,7 @@ impl CheckCommand {
             OutputFormat::Json => {
                 self.output.data(config)?;
             }
-            OutputFormat::Human => {
+            _ => {
                 println!("ValidationConfig:");
                 println!("  max_errors: {}", config.max_errors);
                 println!("  max_suggestions: {}", config.max_suggestions);
@@ -160,7 +160,7 @@ impl CheckCommand {
             OutputFormat::Json => {
                 self.output.data(result)?;
             }
-            OutputFormat::Human => {
+            _ => {
                 self.print_human_result(result, engine)?;
             }
         }

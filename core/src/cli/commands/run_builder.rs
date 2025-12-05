@@ -118,7 +118,7 @@ impl<'a> RuntimeBuilder<'a> {
                         .warning(&format!("Failed to write cache metrics: {error}"));
                 }
             }
-            OutputFormat::Human => {
+            _ => {
                 self.output.success(&format!(
                     "Script cache: {:.1}% hit rate (hits: {}, misses: {}), entries: {}, size: {} / {} bytes, startup saved: {:.2}ms",
                     stats.hit_rate(),

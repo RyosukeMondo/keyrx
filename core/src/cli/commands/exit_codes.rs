@@ -56,7 +56,7 @@ impl Command for ExitCodesCommand {
                 let output = ExitCodesOutput { exit_codes };
                 ctx.output().data(&output).ok();
             }
-            crate::cli::OutputFormat::Human => {
+            _ => {
                 println!("\nKeyRx Exit Codes");
                 println!("================\n");
                 println!("Exit codes used by all KeyRx CLI commands:\n");

@@ -186,7 +186,6 @@ impl DiscoverCommand {
         );
 
         match self.output.format() {
-            OutputFormat::Human => self.output.success(&message),
             OutputFormat::Json => {
                 let payload = ExistingProfileJson {
                     status: "ready",
@@ -196,6 +195,7 @@ impl DiscoverCommand {
                 };
                 self.output.data(&payload)?;
             }
+            _ => self.output.success(&message),
         }
         Ok(())
     }
