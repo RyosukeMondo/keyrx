@@ -40,7 +40,8 @@ pub use discovery::{
     SessionError, SessionStatus, SessionUpdate, WatcherResult, SCHEMA_VERSION,
 };
 pub use engine::{
-    Engine, HotplugAction, HotplugSession, InputEvent, KeyCode, Layer, ModifierSet, OutputAction,
+    CoordinationAction, Engine, HotplugAction, HotplugSession, InputEvent, KeyCode, Layer,
+    ModifierSet, MultiDeviceCoordinator, OutputAction,
 };
 pub use error::KeyRxError;
 pub use mocks::{MockInput, MockRuntime, MockState};

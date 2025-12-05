@@ -10,6 +10,7 @@ mod event_recording;
 pub mod fallback;
 pub mod layer_actions;
 pub mod limits;
+mod multi_device;
 mod output;
 mod processing;
 pub mod replay;
@@ -36,6 +37,7 @@ pub use fallback::{FallbackEngine, FallbackReason};
 pub use limits::{
     ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceLimits, ResourceUsageSnapshot,
 };
+pub use multi_device::{CoordinationAction, MultiDeviceCoordinator};
 pub use output::OutputQueue;
 pub use replay::{ReplayError, ReplaySession, ReplayState};
 pub use session::{HotplugAction, HotplugSession};
