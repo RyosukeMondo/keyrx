@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Data Structures & Device Identity (2 weeks)
 
-- [ ] 1.1. Create DeviceIdentity types
+- [x] 1.1. Create DeviceIdentity types
   - Files: `core/src/identity/types.rs`, `core/src/identity/mod.rs`
   - Define DeviceIdentity struct with vendor_id, product_id, serial_number, user_label
   - Implement to_key() and from_key() methods

@@ -21,6 +21,7 @@ pub mod engine;
 pub mod error;
 pub mod errors;
 pub mod ffi;
+pub mod identity;
 pub mod metrics;
 pub mod mocks;
 pub mod observability;
@@ -44,6 +45,7 @@ pub use engine::{
     ModifierSet, MultiDeviceCoordinator, OutputAction,
 };
 pub use error::KeyRxError;
+pub use identity::DeviceIdentity;
 pub use mocks::{MockInput, MockRuntime, MockState};
 pub use scripting::RhaiRuntime;
 pub use traits::{InputSource, ScriptRuntime, StateStore};
