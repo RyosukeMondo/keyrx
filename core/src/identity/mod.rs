@@ -13,5 +13,5 @@ pub use types::DeviceIdentity;
 #[cfg(windows)]
 pub mod windows;
 
-// Linux serial extraction will be added in future tasks:
-// - linux.rs: Linux serial extraction via evdev EVIOCGUNIQ ioctl and udev
+#[cfg(target_os = "linux")]
+pub mod linux;

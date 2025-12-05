@@ -22,7 +22,7 @@
   - _Requirements: 8_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Windows Systems Developer with expertise in Win32 API and USB/HID protocols | Task: Implement Windows serial number extraction following requirement 8, using Raw Input API device paths and HID descriptors | Restrictions: Must use windows-rs crate only, handle all error cases gracefully, conditional compile with #[cfg(windows)], never panic on invalid paths | _Leverage: Existing windows driver patterns from core/src/drivers/windows/, windows-rs integration patterns | Success: Extracts serial from devices with iSerial, falls back to InstanceID correctly, handles malformed paths, all unit tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including detailed artifacts (functions created, Win32 APIs used, error handling patterns), then mark as [x]._
 
-- [ ] 1.3. Implement Linux serial extraction
+- [x] 1.3. Implement Linux serial extraction
   - Files: `core/src/identity/linux.rs`, `core/src/identity/mod.rs`
   - Implement extract_serial_number(device_path: &Path) -> Result<String>
   - Implement read_udev_serial() helper for sysfs reading
