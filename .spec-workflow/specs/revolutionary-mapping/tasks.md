@@ -117,7 +117,7 @@
 
 ## Phase 2: Device Definitions & Pipeline Integration (2 weeks)
 
-- [ ] 2.1. Define DeviceDefinition data model
+- [x] 2.1. Define DeviceDefinition data model
   - Files: `core/src/definitions/types.rs`, `core/src/definitions/mod.rs`
   - Define DeviceDefinition struct matching TOML schema
   - Define LayoutDefinition, VisualMetadata structs
