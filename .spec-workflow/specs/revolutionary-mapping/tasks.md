@@ -247,7 +247,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Developer with expertise in read-only data exposure | Task: Implement device_definitions FFI domain following requirement 7, exposing device definitions to Flutter | Restrictions: Must return read-only data, handle missing definitions, use panic guards | _Leverage: FFI panic guards, existing definition library | Success: FFI functions return definitions correctly, handle unknowns, tested from Dart. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.4. Write FFI tests
+- [x] 3.4. Write FFI tests
   - Files: `core/tests/ffi_tests.rs`
   - Test all FFI functions with valid/invalid inputs
   - Test panic safety
