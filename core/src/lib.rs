@@ -39,7 +39,9 @@ pub use discovery::{
     DuplicateWarning, ExpectedPosition, PhysicalKey, ProfileSource, RegistryEntry, RegistryStatus,
     SessionError, SessionStatus, SessionUpdate, WatcherResult, SCHEMA_VERSION,
 };
-pub use engine::{Engine, InputEvent, KeyCode, Layer, ModifierSet, OutputAction};
+pub use engine::{
+    Engine, HotplugAction, HotplugSession, InputEvent, KeyCode, Layer, ModifierSet, OutputAction,
+};
 pub use error::KeyRxError;
 pub use mocks::{MockInput, MockRuntime, MockState};
 pub use scripting::RhaiRuntime;

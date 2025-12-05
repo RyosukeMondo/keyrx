@@ -13,6 +13,7 @@ pub mod limits;
 mod output;
 mod processing;
 pub mod replay;
+mod session;
 mod session_state;
 pub mod state;
 pub mod tracing;
@@ -37,6 +38,7 @@ pub use limits::{
 };
 pub use output::OutputQueue;
 pub use replay::{ReplayError, ReplaySession, ReplayState};
+pub use session::{HotplugAction, HotplugSession};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{
     HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,

@@ -25,7 +25,7 @@
 
 ## Phase 2: State Management
 
-- [ ] 4. Add session pause/resume
+- [x] 4. Add session pause/resume
   - File: `core/src/engine/session.rs`
   - Pause on device removal
   - Resume on reconnection
