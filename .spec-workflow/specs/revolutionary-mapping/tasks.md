@@ -105,7 +105,7 @@
   - _Requirements: 1, 8, 9_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Engineer with expertise in unit testing and property-based testing | Task: Write comprehensive tests for identity module covering requirements 1, 8, 9, using property-based testing for robustness | Restrictions: Must test all edge cases, use proptest for fuzzing, platform-specific tests with #[cfg], mock OS calls | _Leverage: Existing test patterns from core/tests/ | Success: All identity functions tested, property tests pass, platform tests work, coverage >90%. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 1.11. Write registry module tests
+- [x] 1.11. Write registry module tests
   - Files: `core/tests/registry_tests.rs`
   - Test DeviceRegistry CRUD and concurrent access
   - Test ProfileRegistry save/load/validation
