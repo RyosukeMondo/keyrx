@@ -18,7 +18,7 @@
 
 ## Phase 2: Recording
 
-- [ ] 3. Update SessionRecorder
+- [x] 3. Update SessionRecorder
   - File: `core/src/engine/recording/recorder.rs`
   - Block-based recording
   - Index generation
