@@ -29,7 +29,7 @@
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating test utilities | Task: Create script fixtures in core/tests/fixtures/scripts.rs | Restrictions: Cover common scenarios, valid and invalid scripts | _Leverage: Existing test scripts | Success: Fixtures cover testing needs, scripts are valid Rhai | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 4. Create TestEngine fixture
+- [x] 4. Create TestEngine fixture
   - File: `core/tests/fixtures/engine.rs`
   - Wrapper for testing engine with mock dependencies
   - Methods: new(), with_script(), process()
