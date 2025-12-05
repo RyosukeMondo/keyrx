@@ -392,6 +392,7 @@ pub fn search_types(query: &str) -> Vec<SearchResult> {
 mod tests {
     use super::*;
     use crate::scripting::docs::types::{FunctionSignature, ParamDoc, PropertyDoc, ReturnDoc};
+    use serial_test::serial;
 
     fn create_test_function(name: &str, module: &str, description: &str) -> FunctionDoc {
         FunctionDoc {
@@ -473,6 +474,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_exact_match() {
         setup_test_registry();
 
@@ -483,6 +485,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_partial_match() {
         setup_test_registry();
 
@@ -500,6 +503,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_case_insensitive() {
         setup_test_registry();
 
@@ -511,6 +515,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_case_sensitive() {
         setup_test_registry();
 
@@ -524,6 +529,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_description() {
         setup_test_registry();
 
@@ -540,6 +546,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_functions_only() {
         setup_test_registry();
 
@@ -553,6 +560,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_types_only() {
         setup_test_registry();
 
@@ -566,6 +574,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_in_module() {
         setup_test_registry();
 
@@ -579,6 +588,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_in_module_with_query() {
         setup_test_registry();
 
@@ -589,6 +599,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_max_results() {
         setup_test_registry();
 
@@ -602,6 +613,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_min_score() {
         setup_test_registry();
 
@@ -620,6 +632,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_empty_query() {
         setup_test_registry();
 
@@ -628,6 +641,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_no_matches() {
         setup_test_registry();
 
@@ -636,6 +650,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_scoring_order() {
         setup_test_registry();
 
@@ -649,6 +664,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_search_with_deprecated() {
         registry::initialize();
         registry::clear();

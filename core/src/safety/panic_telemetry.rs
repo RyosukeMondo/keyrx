@@ -281,6 +281,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[serial_test::serial]
     fn test_record_panic() {
         reset_telemetry();
 
@@ -295,6 +296,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_record_recovery() {
         reset_telemetry();
 
@@ -309,6 +311,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_circuit_breaker_telemetry() {
         reset_telemetry();
 
@@ -343,6 +346,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_multiple_panics() {
         reset_telemetry();
 
@@ -359,6 +363,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_reset_telemetry() {
         record_panic("test", "panic", None);
         record_recovery();
