@@ -144,9 +144,43 @@ jobs:
           cache-on-failure: true
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Generate coverage
-        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+      - name: Generate coverage report
+        run: |
+          cargo llvm-cov --all-features --lcov --output-path lcov.info
+          cargo llvm-cov --all-features --html
+          cargo llvm-cov --all-features --text | tee coverage-summary.txt
         working-directory: ./core
+      - name: Check coverage threshold
+        run: cargo llvm-cov --all-features --fail-under-lines 80
+        working-directory: ./core
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: core/target/llvm-cov/html/
+          retention-days: 30
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-summary
+          path: core/coverage-summary.txt
+          retention-days: 30
+      - name: Comment PR with coverage report
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('core/coverage-summary.txt', 'utf8');
+            const body = `## Coverage Report\n\n\`\`\`\n${summary}\n\`\`\`\n\n📊 [Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
