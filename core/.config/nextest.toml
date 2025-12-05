@@ -10,3 +10,19 @@ fail-fast = true
 retries = 2
 fail-fast = false
 slow-timeout = "120s"
+
+# Test category profiles for parallel execution
+[profile.ci-unit]
+retries = 2
+fail-fast = false
+slow-timeout = "60s"
+
+[profile.ci-integration]
+retries = 2
+fail-fast = false
+slow-timeout = "180s"
+
+[profile.ci-e2e]
+retries = 2
+fail-fast = false
+slow-timeout = "300s"

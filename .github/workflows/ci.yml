@@ -35,8 +35,8 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: ./core
 
-  test:
-    name: Test (${{ matrix.os }})
+  test-unit:
+    name: Unit Tests (${{ matrix.os }})
     needs: check
     runs-on: ${{ matrix.os }}
     strategy:
@@ -49,13 +49,52 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core -> target
-          # Use OS-specific cache key for cross-platform testing
-          shared-key: test-${{ matrix.os }}
+          shared-key: test-unit-${{ matrix.os }}
           cache-on-failure: true
       - name: Install nextest
         uses: taiki-e/install-action@nextest
-      - name: Run tests
-        run: cargo nextest run --all-features --profile ci
+      - name: Run unit tests
+        run: cargo nextest run --all-features --profile ci-unit --filter-expr 'test(unit)'
+        working-directory: ./core
+
+  test-integration:
+    name: Integration Tests (${{ matrix.os }})
+    needs: check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: test-integration-${{ matrix.os }}
+          cache-on-failure: true
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Run integration tests
+        run: cargo nextest run --all-features --profile ci-integration --filter-expr 'test(integration)'
+        working-directory: ./core
+
+  test-e2e:
+    name: E2E Tests
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: test-e2e
+          cache-on-failure: true
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Run e2e tests
+        run: cargo nextest run --all-features --profile ci-e2e --filter-expr 'test(e2e)'
         working-directory: ./core
 
   test-doc-examples:
@@ -76,7 +115,7 @@ jobs:
 
   uat:
     name: UAT Tests
-    needs: test
+    needs: [test-unit, test-integration, test-e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
