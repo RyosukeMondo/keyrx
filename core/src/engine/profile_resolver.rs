@@ -6,6 +6,7 @@
 
 use crate::registry::profile::{Profile, ProfileId, ProfileRegistry, ProfileRegistryError};
 use std::sync::Arc;
+#[cfg(debug_assertions)]
 use std::time::Instant;
 use thiserror::Error;
 
