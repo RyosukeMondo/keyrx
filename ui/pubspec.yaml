@@ -53,6 +53,9 @@ dependencies:
   # Reactive streams
   rxdart: ^0.28.0
 
+  # UUID generation
+  uuid: ^4.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

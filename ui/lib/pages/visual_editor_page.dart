@@ -1,418 +1,399 @@
-/// Visual keymap editor page with drag-and-drop mapping and code view.
+/// Visual keymap editor page with profile-based mapping.
 ///
-/// Provides a no-code interface for creating key mappings with the ability
-/// to "eject to code" and see/edit the generated Rhai script.
+/// Provides a visual interface for creating and editing key mapping profiles
+/// using the DragDropMapper widget with dynamic layout rendering.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
-import '../models/key_mapping.dart';
-import '../models/keyboard_layout.dart';
-import '../repositories/mapping_repository.dart';
-import '../services/rhai_generator.dart';
-import '../services/facade/keyrx_facade.dart';
-import '../services/facade/facade_state.dart';
-import '../widgets/visual_keyboard.dart';
-import 'visual_editor_widgets.dart';
+import '../models/layout_type.dart';
+import '../models/profile.dart';
+import '../services/profile_registry_service.dart';
+import '../widgets/drag_drop_mapper.dart';
+import '../widgets/layout_grid.dart';
 
-/// Visual editor page combining keyboard, mappings, and code view.
+const _uuid = Uuid();
+
+/// Visual editor page for profile-based key mapping.
 class VisualEditorPage extends StatefulWidget {
-  const VisualEditorPage({
-    super.key,
-    required this.mappingRepository,
-  });
-
-  /// The shared mapping repository for key mappings.
-  final MappingRepository mappingRepository;
+  const VisualEditorPage({super.key});
 
   @override
   State<VisualEditorPage> createState() => _VisualEditorPageState();
 }
 
 class _VisualEditorPageState extends State<VisualEditorPage> {
-  final _generator = RhaiGenerator();
-  final _codeController = TextEditingController();
-  final _fileNameController = TextEditingController(text: 'config.rhai');
+  String? _selectedProfileId;
+  Profile? _currentProfile;
+  List<String> _profileIds = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  List<TapHoldConfig> _tapHoldConfigs = [];
-  bool _showCode = false;
-  bool _codeModified = false;
-  bool _hasAdvancedFeatures = false;
-  bool _isSaving = false;
-  bool _compactMode = false;
-  bool _keyboardVisible = true;
-  String? _selectedKeyId;
-  String? _lastSavedPath;
-
-  /// Get mappings from the shared repository.
-  List<RemapConfig> get _mappings => widget.mappingRepository.toRemapConfigs();
-
-  VisualConfig get _visualConfig => VisualConfig(
-        mappings: _mappings,
-        tapHoldConfigs: _tapHoldConfigs,
-      );
+  ProfileRegistryService get _profileService =>
+      Provider.of<ProfileRegistryService>(context, listen: false);
 
   @override
   void initState() {
     super.initState();
-    widget.mappingRepository.addListener(_onMappingsChanged);
+    _loadProfiles();
   }
 
-  @override
-  void dispose() {
-    widget.mappingRepository.removeListener(_onMappingsChanged);
-    _codeController.dispose();
-    _fileNameController.dispose();
-    super.dispose();
+  Future<void> _loadProfiles() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final profileIds = await _profileService.listProfiles();
+      setState(() {
+        _profileIds = profileIds;
+        _isLoading = false;
+      });
+
+      // Auto-select first profile if available
+      if (_profileIds.isNotEmpty && _selectedProfileId == null) {
+        await _loadProfile(_profileIds.first);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load profiles: $e';
+      });
+    }
   }
 
-  void _onMappingsChanged() {
-    if (mounted) setState(() {});
+  Future<void> _loadProfile(String profileId) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final profile = await _profileService.getProfile(profileId);
+      setState(() {
+        _selectedProfileId = profileId;
+        _currentProfile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load profile: $e';
+      });
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          if (_hasAdvancedFeatures)
-            AdvancedFeaturesWarning(
-              onViewCode: () => setState(() => _showCode = true),
-            ),
-          Expanded(
-            child: _showCode ? _buildCodeView() : _buildVisualView(context),
+  Future<void> _createNewProfile() async {
+    final name = await _showCreateProfileDialog();
+    if (name == null || name.isEmpty) return;
+
+    final layoutType = await _showLayoutTypeSelector();
+    if (layoutType == null) return;
+
+    final now = DateTime.now().toIso8601String();
+    final newProfile = Profile(
+      id: _uuid.v4(),
+      name: name,
+      layoutType: layoutType,
+      mappings: const {},
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final result = await _profileService.saveProfile(newProfile);
+
+    if (result.success) {
+      await _loadProfiles();
+      await _loadProfile(newProfile.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile "${newProfile.name}" created')),
+        );
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = result.errorMessage ?? 'Failed to create profile';
+      });
+    }
+  }
+
+  Future<String?> _showCreateProfileDialog() async {
+    final controller = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Profile'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Profile Name',
+            hintText: 'Enter a name for this profile',
+          ),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Create'),
           ),
         ],
       ),
     );
   }
 
-  AppBar _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Visual Editor'),
-      actions: [
-        IconButton(
-          icon: Icon(_showCode ? Icons.grid_view : Icons.code),
-          tooltip: _showCode ? 'Visual View' : 'Show Code',
-          onPressed: _toggleCodeView,
-        ),
-        IconButton(
-          icon: const Icon(Icons.add),
-          tooltip: 'New Configuration',
-          onPressed: _confirmClear,
-        ),
-        IconButton(
-          icon: const Icon(Icons.folder_open),
-          tooltip: 'Load Script',
-          onPressed: _loadScript,
-        ),
-        IconButton(
-          icon: const Icon(Icons.save),
-          tooltip: 'Save Script',
-          onPressed: _isSaving ? null : _saveScript,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVisualView(BuildContext context) {
-    return Column(
-      children: [
-        // Keyboard Toolbar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: Row(
-            children: [
-              const Icon(Icons.keyboard_alt_outlined, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Keyboard Layout',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const Spacer(),
-              IconButton(
-                icon: Icon(_compactMode ? Icons.zoom_out_map : Icons.zoom_in_map),
-                tooltip: _compactMode ? 'Standard Mode' : 'Compact Mode',
-                onPressed: () => setState(() => _compactMode = !_compactMode),
-                iconSize: 20,
-              ),
-              IconButton(
-                icon: Icon(_keyboardVisible
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down),
-                tooltip: _keyboardVisible ? 'Collapse Keyboard' : 'Expand Keyboard',
-                onPressed: () =>
-                    setState(() => _keyboardVisible = !_keyboardVisible),
-                iconSize: 20,
-              ),
-            ],
-          ),
-        ),
-        // Collapsible Keyboard Area
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          height: _keyboardVisible ? (_compactMode ? 220 : 320) : 0,
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              height: _compactMode ? 220 : 320,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Drag from one key to another to create a mapping',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: VisualKeyboard(
-                        layout: _compactMode
-                            ? KeyboardLayout.compact()
-                            : KeyboardLayout.ansi104(),
-                        mappings: _mappings,
-                        selectedKeys:
-                            _selectedKeyId != null ? {_selectedKeyId!} : {},
-                        mappedKeys: _getMappedKeys(),
-                        onKeyTap: _handleKeyTap,
-                        onMappingCreated: _handleMappingCreated,
-                        onMappingDeleted: _handleMappingDeleted,
-                        showSecondaryLabels: !_compactMode,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+  Future<LayoutType?> _showLayoutTypeSelector() async {
+    return showDialog<LayoutType>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Layout Type'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.grid_3x3),
+              title: const Text('Matrix'),
+              subtitle: const Text('For macro pads and button grids'),
+              onTap: () => Navigator.of(context).pop(LayoutType.matrix),
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.keyboard),
+              title: const Text('Standard'),
+              subtitle: const Text('For full-size keyboards'),
+              onTap: () => Navigator.of(context).pop(LayoutType.standard),
+            ),
+            ListTile(
+              leading: const Icon(Icons.keyboard_alt),
+              title: const Text('Split'),
+              subtitle: const Text('For split keyboards'),
+              onTap: () => Navigator.of(context).pop(LayoutType.split),
+            ),
+          ],
         ),
-        const Divider(height: 1),
-        // Mapping Panel (Bottom)
-        Expanded(
-          child: MappingPanel(
-            mappings: _mappings,
-            tapHoldConfigs: _tapHoldConfigs,
-            onMappingDeleted: _handleMappingDeleted,
-            onTapHoldDeleted: (i) {
-              setState(() {
-                _tapHoldConfigs = List.from(_tapHoldConfigs)..removeAt(i);
-              });
-            },
-            onMappingSelected: (keyId) => setState(() => _selectedKeyId = keyId),
-            onClearAll: _confirmClear,
-            selectedKeyId: _selectedKeyId,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCodeView() {
-    return CodeEditorView(
-      controller: _codeController,
-      isModified: _codeModified,
-      onCodeChanged: (value) {
-        if (!_codeModified) setState(() => _codeModified = true);
-      },
-      onParseToVisual: _parseCodeToVisual,
-    );
-  }
-
-  Set<String> _getMappedKeys() {
-    final keys = <String>{};
-    for (final mapping in _mappings) {
-      keys.add(mapping.sourceKeyId);
-    }
-    for (final tapHold in _tapHoldConfigs) {
-      keys.add(tapHold.triggerKey);
-    }
-    return keys;
-  }
-
-  void _handleKeyTap(KeyDefinition key) {
-    setState(() {
-      _selectedKeyId = _selectedKeyId == key.id ? null : key.id;
-    });
-  }
-
-  void _handleMappingCreated(String sourceKeyId, String targetKeyId) {
-    // Use repository to store mapping (bridges to KeyMapping internally)
-    widget.mappingRepository.setMapping(
-      sourceKeyId,
-      KeyMapping(
-        from: sourceKeyId,
-        type: KeyActionType.remap,
-        to: targetKeyId,
+        ],
       ),
     );
-    _updateCodeFromVisual();
   }
 
-  void _handleMappingDeleted(int index) {
-    final mappings = _mappings;
-    if (index >= 0 && index < mappings.length) {
-      widget.mappingRepository.removeMapping(mappings[index].sourceKeyId);
-      _updateCodeFromVisual();
-    }
-  }
-
-  void _toggleCodeView() async {
-    if (_showCode && _codeModified) {
-      final action = await VisualEditorDialogs.showSyncWarning(context);
-      if (!mounted || action == null) return;
-      if (action == SyncAction.parse) {
-        _parseCodeToVisual();
-      }
-      setState(() {
-        _showCode = false;
-        _codeModified = false;
-      });
-    } else {
-      setState(() {
-        _showCode = !_showCode;
-        if (_showCode) _updateCodeFromVisual();
-      });
-    }
-  }
-
-  void _updateCodeFromVisual() {
-    _codeController.text = _generator.generateScript(_visualConfig);
-    _codeModified = false;
-  }
-
-  void _parseCodeToVisual() {
-    final config = _generator.parseScript(_codeController.text);
-    // Load mappings into repository
-    widget.mappingRepository.loadFromRemapConfigs(config.mappings);
+  void _handleProfileUpdated(Profile updatedProfile) {
     setState(() {
-      _tapHoldConfigs = config.tapHoldConfigs;
-      _hasAdvancedFeatures = config.hasAdvancedFeatures;
-      _codeModified = false;
+      _currentProfile = updatedProfile;
     });
-    if (config.hasAdvancedFeatures) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Some advanced features cannot be shown in visual mode.'),
+  }
+
+  void _handleSaveError(String errorMessage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Visual Editor'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Profiles',
+            onPressed: _loadProfiles,
+          ),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Profile selector toolbar
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Row(
+              children: [
+                const Icon(Icons.person_outline),
+                const SizedBox(width: 12),
+                const Text(
+                  'Profile:',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: _selectedProfileId,
+                    hint: const Text('Select a profile'),
+                    isExpanded: true,
+                    items: _profileIds.map((id) {
+                      return DropdownMenuItem(
+                        value: id,
+                        child: FutureBuilder<Profile?>(
+                          future: _profileService.getProfile(id),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data != null) {
+                              return Text(snapshot.data!.name);
+                            }
+                            return Text(id);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _loadProfile(value);
+                            }
+                          },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _createNewProfile,
+                  icon: const Icon(Icons.add),
+                  label: const Text('New Profile'),
+                ),
+              ],
+            ),
+          ),
+
+          // Error message
+          if (_errorMessage != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _errorMessage = null),
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ],
+              ),
+            ),
+
+          // Main content
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading...'),
+          ],
         ),
       );
     }
-  }
 
-  Future<void> _confirmClear() async {
-    if (_mappings.isEmpty && _tapHoldConfigs.isEmpty) return;
-    final confirmed = await VisualEditorDialogs.showClearConfirmation(context);
-    if (confirmed != true || !mounted) return;
-    widget.mappingRepository.clear();
-    setState(() {
-      _tapHoldConfigs = [];
-      _hasAdvancedFeatures = false;
-      _codeModified = false;
-      _updateCodeFromVisual();
-    });
-  }
-
-  Future<void> _loadScript() async {
-    final path = await VisualEditorDialogs.showLoadDialog(context);
-    if (path == null || path.isEmpty || !mounted) return;
-
-    final facade = Provider.of<KeyrxFacade>(context, listen: false);
-    final result = await facade.loadScriptContent(path);
-
-    result.when(
-      ok: (code) {
-        final config = _generator.parseScript(code);
-        widget.mappingRepository.loadFromRemapConfigs(config.mappings);
-        setState(() {
-          _tapHoldConfigs = config.tapHoldConfigs;
-          _hasAdvancedFeatures = config.hasAdvancedFeatures;
-          _codeController.text = code;
-          _codeModified = false;
-          _lastSavedPath = path;
-          _fileNameController.text = path.split('/').last;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Loaded: $path')),
-          );
-        }
-      },
-      err: (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.userMessage)),
-          );
-        }
-      },
-    );
-  }
-
-  Future<void> _saveScript() async {
-    final suggestedPath =
-        _lastSavedPath ?? 'scripts/${_fileNameController.text}';
-    final path =
-        await VisualEditorDialogs.showSaveDialog(context, suggestedPath);
-    if (path == null || path.isEmpty || !mounted) return;
-
-    setState(() => _isSaving = true);
-    final code = _showCode && _codeModified
-        ? _codeController.text
-        : _generator.generateScript(_visualConfig);
-
-    final facade = Provider.of<KeyrxFacade>(context, listen: false);
-    final saveResult = await facade.saveScript(path, code);
-
-    await saveResult.when(
-      ok: (_) async {
-        _lastSavedPath = path;
-        _fileNameController.text = path.split('/').last;
-
-        // Try to load script into engine if it's initialized
-        var loaded = false;
-        final engineStatus = await facade.getEngineStatus();
-        await engineStatus.when(
-          ok: (status) async {
-            if (status == EngineStatus.running || status == EngineStatus.ready) {
-              // Engine is initialized, try to load the script
-              final loadResult = await facade.services.engineService.loadScript(path);
-              loaded = loadResult;
-            }
-          },
-          err: (_) {
-            // Engine not initialized, skip loading
-          },
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(loaded
-                  ? 'Script saved and loaded: $path'
-                  : 'Script saved: $path'),
+    if (_currentProfile == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.description_outlined,
+              size: 64,
+              color: Theme.of(context).disabledColor,
             ),
-          );
-          setState(() {
-            _codeModified = false;
-            _isSaving = false;
-          });
-        }
-      },
-      err: (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save: ${error.userMessage}')),
-          );
-          setState(() => _isSaving = false);
-        }
-      },
+            const SizedBox(height: 16),
+            Text(
+              'No profile selected',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).disabledColor,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _profileIds.isEmpty
+                  ? 'Create a new profile to get started'
+                  : 'Select a profile from the dropdown above',
+              style: TextStyle(color: Theme.of(context).disabledColor),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _createNewProfile,
+              icon: const Icon(Icons.add),
+              label: const Text('Create New Profile'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Determine layout info from profile
+    final layoutInfo = _getLayoutInfoForProfile(_currentProfile!);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: DragDropMapper(
+        layoutInfo: layoutInfo,
+        profile: _currentProfile!,
+        profileRegistryService: _profileService,
+        onProfileUpdated: _handleProfileUpdated,
+        onSaveError: _handleSaveError,
+      ),
     );
+  }
+
+  /// Get layout info for a profile based on its layout type.
+  ///
+  /// TODO: This should eventually come from device definitions or be
+  /// configurable when creating profiles.
+  LayoutInfo _getLayoutInfoForProfile(Profile profile) {
+    switch (profile.layoutType) {
+      case LayoutType.matrix:
+        // Default to 5x5 matrix for now
+        return const LayoutInfo(rows: 5, cols: 5, type: LayoutType.matrix);
+      case LayoutType.standard:
+        // Standard keyboard layout (simplified)
+        return const LayoutInfo(rows: 6, cols: 15, type: LayoutType.standard);
+      case LayoutType.split:
+        // Split keyboard layout
+        return const LayoutInfo(rows: 5, cols: 14, type: LayoutType.split);
+    }
   }
 }
