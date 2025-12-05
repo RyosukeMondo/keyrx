@@ -76,7 +76,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer splitting tests | Task: Extract Phase 1 tests from phase_1_3_integration_test.rs | Restrictions: Keep tests passing, < 600 LOC per file | _Leverage: Fixtures, existing tests | Success: Phase 1 tests organized, passing | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 9. Split phase_1_3_integration_test.rs - Phase 2 tests
+- [x] 9. Split phase_1_3_integration_test.rs - Phase 2 tests
   - Files: `core/tests/integration/phases/phase2_{layer,modifier}_tests.rs`
   - Extract Phase 2 functionality tests
   - Purpose: Continue phase split
