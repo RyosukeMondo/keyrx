@@ -464,6 +464,183 @@ class KeyboardLayout {
     // Uses the same ANSI layout but with smaller unit size
     return ansi104(unitSize: unitSize, keySpacing: keySpacing);
   }
+
+  /// Full keyboard layout with Numpad, Navigation cluster, and Japanese keys.
+  static KeyboardLayout full({
+    double unitSize = 40.0,
+    double keySpacing = 3.0,
+  }) {
+    return KeyboardLayout(
+      name: 'Full 100% + JP',
+      unitSize: unitSize,
+      keySpacing: keySpacing,
+      rows: [
+        // Row 0: F-Row + Nav + Numpad top
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'Escape', label: 'Esc', row: 0, column: 0),
+            // F1-F4
+            KeyDefinition(id: 'F1', label: 'F1', row: 0, column: 2),
+            KeyDefinition(id: 'F2', label: 'F2', row: 0, column: 3),
+            KeyDefinition(id: 'F3', label: 'F3', row: 0, column: 4),
+            KeyDefinition(id: 'F4', label: 'F4', row: 0, column: 5),
+            // F5-F8
+            KeyDefinition(id: 'F5', label: 'F5', row: 0, column: 6.5),
+            KeyDefinition(id: 'F6', label: 'F6', row: 0, column: 7.5),
+            KeyDefinition(id: 'F7', label: 'F7', row: 0, column: 8.5),
+            KeyDefinition(id: 'F8', label: 'F8', row: 0, column: 9.5),
+            // F9-F12
+            KeyDefinition(id: 'F9', label: 'F9', row: 0, column: 11),
+            KeyDefinition(id: 'F10', label: 'F10', row: 0, column: 12),
+            KeyDefinition(id: 'F11', label: 'F11', row: 0, column: 13),
+            KeyDefinition(id: 'F12', label: 'F12', row: 0, column: 14),
+            // System
+            KeyDefinition(id: 'PrintScreen', label: 'PrtSc', row: 0, column: 15.5),
+            KeyDefinition(id: 'ScrollLock', label: 'ScrLk', row: 0, column: 16.5),
+            KeyDefinition(id: 'Pause', label: 'Pause', row: 0, column: 17.5),
+          ],
+        ),
+        // Row 1: Numbers + Nav + Numpad
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'Grave', label: '`', row: 1, column: 0),
+            KeyDefinition(id: 'Key1', label: '1', row: 1, column: 1),
+            KeyDefinition(id: 'Key2', label: '2', row: 1, column: 2),
+            KeyDefinition(id: 'Key3', label: '3', row: 1, column: 3),
+            KeyDefinition(id: 'Key4', label: '4', row: 1, column: 4),
+            KeyDefinition(id: 'Key5', label: '5', row: 1, column: 5),
+            KeyDefinition(id: 'Key6', label: '6', row: 1, column: 6),
+            KeyDefinition(id: 'Key7', label: '7', row: 1, column: 7),
+            KeyDefinition(id: 'Key8', label: '8', row: 1, column: 8),
+            KeyDefinition(id: 'Key9', label: '9', row: 1, column: 9),
+            KeyDefinition(id: 'Key0', label: '0', row: 1, column: 10),
+            KeyDefinition(id: 'Minus', label: '-', row: 1, column: 11),
+            KeyDefinition(id: 'Equal', label: '=', row: 1, column: 12),
+            KeyDefinition(id: 'IntlYen', label: '¥', row: 1, column: 13),
+            KeyDefinition(id: 'Backspace', label: 'Bksp', row: 1, column: 14), // 1u backspace to fit Yen? Or just standard width
+
+            // Nav
+            KeyDefinition(id: 'Insert', label: 'Ins', row: 1, column: 15.5),
+            KeyDefinition(id: 'Home', label: 'Home', row: 1, column: 16.5),
+            KeyDefinition(id: 'PageUp', label: 'PgUp', row: 1, column: 17.5),
+
+            // Numpad
+            KeyDefinition(id: 'NumLock', label: 'Num', row: 1, column: 19),
+            KeyDefinition(id: 'NumpadDivide', label: '/', row: 1, column: 20),
+            KeyDefinition(id: 'NumpadMultiply', label: '*', row: 1, column: 21),
+            KeyDefinition(id: 'NumpadSubtract', label: '-', row: 1, column: 22),
+          ],
+        ),
+        // Row 2: QWERTY
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'Tab', label: 'Tab', width: 1.5, row: 2, column: 0),
+            KeyDefinition(id: 'KeyQ', label: 'Q', row: 2, column: 1.5),
+            KeyDefinition(id: 'KeyW', label: 'W', row: 2, column: 2.5),
+            KeyDefinition(id: 'KeyE', label: 'E', row: 2, column: 3.5),
+            KeyDefinition(id: 'KeyR', label: 'R', row: 2, column: 4.5),
+            KeyDefinition(id: 'KeyT', label: 'T', row: 2, column: 5.5),
+            KeyDefinition(id: 'KeyY', label: 'Y', row: 2, column: 6.5),
+            KeyDefinition(id: 'KeyU', label: 'U', row: 2, column: 7.5),
+            KeyDefinition(id: 'KeyI', label: 'I', row: 2, column: 8.5),
+            KeyDefinition(id: 'KeyO', label: 'O', row: 2, column: 9.5),
+            KeyDefinition(id: 'KeyP', label: 'P', row: 2, column: 10.5),
+            KeyDefinition(id: 'BracketLeft', label: '[', row: 2, column: 11.5),
+            KeyDefinition(id: 'BracketRight', label: ']', row: 2, column: 12.5),
+            KeyDefinition(id: 'Backslash', label: '\\', width: 1.0, row: 2, column: 13.5), // Narrower for ISO/JIS feel?
+
+            // Nav
+            KeyDefinition(id: 'Delete', label: 'Del', row: 2, column: 15.5),
+            KeyDefinition(id: 'End', label: 'End', row: 2, column: 16.5),
+            KeyDefinition(id: 'PageDown', label: 'PgDn', row: 2, column: 17.5),
+
+            // Numpad
+            KeyDefinition(id: 'Numpad7', label: '7', row: 2, column: 19),
+            KeyDefinition(id: 'Numpad8', label: '8', row: 2, column: 20),
+            KeyDefinition(id: 'Numpad9', label: '9', row: 2, column: 21),
+            KeyDefinition(id: 'NumpadAdd', label: '+', height: 2.0, row: 2, column: 22),
+          ],
+        ),
+        // Row 3: ASDF
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'CapsLock', label: 'Caps', width: 1.75, row: 3, column: 0),
+            KeyDefinition(id: 'KeyA', label: 'A', row: 3, column: 1.75),
+            KeyDefinition(id: 'KeyS', label: 'S', row: 3, column: 2.75),
+            KeyDefinition(id: 'KeyD', label: 'D', row: 3, column: 3.75),
+            KeyDefinition(id: 'KeyF', label: 'F', row: 3, column: 4.75),
+            KeyDefinition(id: 'KeyG', label: 'G', row: 3, column: 5.75),
+            KeyDefinition(id: 'KeyH', label: 'H', row: 3, column: 6.75),
+            KeyDefinition(id: 'KeyJ', label: 'J', row: 3, column: 7.75),
+            KeyDefinition(id: 'KeyK', label: 'K', row: 3, column: 8.75),
+            KeyDefinition(id: 'KeyL', label: 'L', row: 3, column: 9.75),
+            KeyDefinition(id: 'Semicolon', label: ';', row: 3, column: 10.75),
+            KeyDefinition(id: 'Quote', label: "'", row: 3, column: 11.75),
+            KeyDefinition(id: 'Enter', label: 'Enter', width: 2.25, row: 3, column: 12.75),
+
+            // Numpad
+            KeyDefinition(id: 'Numpad4', label: '4', row: 3, column: 19),
+            KeyDefinition(id: 'Numpad5', label: '5', row: 3, column: 20),
+            KeyDefinition(id: 'Numpad6', label: '6', row: 3, column: 21),
+          ],
+        ),
+        // Row 4: ZXCV
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'ShiftLeft', label: 'Shift', width: 2.25, row: 4, column: 0),
+            KeyDefinition(id: 'KeyZ', label: 'Z', row: 4, column: 2.25),
+            KeyDefinition(id: 'KeyX', label: 'X', row: 4, column: 3.25),
+            KeyDefinition(id: 'KeyC', label: 'C', row: 4, column: 4.25),
+            KeyDefinition(id: 'KeyV', label: 'V', row: 4, column: 5.25),
+            KeyDefinition(id: 'KeyB', label: 'B', row: 4, column: 6.25),
+            KeyDefinition(id: 'KeyN', label: 'N', row: 4, column: 7.25),
+            KeyDefinition(id: 'KeyM', label: 'M', row: 4, column: 8.25),
+            KeyDefinition(id: 'Comma', label: ',', row: 4, column: 9.25),
+            KeyDefinition(id: 'Period', label: '.', row: 4, column: 10.25),
+            KeyDefinition(id: 'Slash', label: '/', row: 4, column: 11.25),
+            KeyDefinition(id: 'IntlRo', label: '_', row: 4, column: 12.25), // JP Ro
+            KeyDefinition(id: 'ShiftRight', label: 'Shift', width: 1.75, row: 4, column: 13.25),
+
+            // Arrows
+            KeyDefinition(id: 'ArrowUp', label: '↑', row: 4, column: 16.5),
+
+            // Numpad
+            KeyDefinition(id: 'Numpad1', label: '1', row: 4, column: 19),
+            KeyDefinition(id: 'Numpad2', label: '2', row: 4, column: 20),
+            KeyDefinition(id: 'Numpad3', label: '3', row: 4, column: 21),
+            KeyDefinition(id: 'NumpadEnter', label: 'Ent', height: 2.0, row: 4, column: 22),
+          ],
+        ),
+        // Row 5: Bottom
+        const KeyboardRow(
+          keys: [
+            KeyDefinition(id: 'ControlLeft', label: 'Ctrl', width: 1.25, row: 5, column: 0),
+            KeyDefinition(id: 'MetaLeft', label: 'Win', width: 1.25, row: 5, column: 1.25),
+            KeyDefinition(id: 'AltLeft', label: 'Alt', width: 1.25, row: 5, column: 2.5),
+            // JP Special
+            KeyDefinition(id: 'NonConvert', label: '無変換', width: 1.0, row: 5, column: 3.75),
+            KeyDefinition(id: 'Space', label: 'Space', width: 3.0, row: 5, column: 4.75),
+            KeyDefinition(id: 'Convert', label: '変換', width: 1.0, row: 5, column: 7.75),
+            KeyDefinition(id: 'KanaMode', label: 'かな', width: 1.0, row: 5, column: 8.75),
+
+            KeyDefinition(id: 'AltRight', label: 'Alt', width: 1.25, row: 5, column: 9.75),
+            KeyDefinition(id: 'MetaRight', label: 'Win', width: 1.25, row: 5, column: 11.0),
+            KeyDefinition(id: 'ContextMenu', label: 'Menu', width: 1.25, row: 5, column: 12.25),
+            KeyDefinition(id: 'ControlRight', label: 'Ctrl', width: 1.5, row: 5, column: 13.5),
+
+            // Arrows
+            KeyDefinition(id: 'ArrowLeft', label: '←', row: 5, column: 15.5),
+            KeyDefinition(id: 'ArrowDown', label: '↓', row: 5, column: 16.5),
+            KeyDefinition(id: 'ArrowRight', label: '→', row: 5, column: 17.5),
+
+            // Numpad
+            KeyDefinition(id: 'Numpad0', label: '0', width: 2.0, row: 5, column: 19),
+            KeyDefinition(id: 'NumpadDecimal', label: '.', row: 5, column: 21),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 /// Extension methods for working with keyboard layouts.

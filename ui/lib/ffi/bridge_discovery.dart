@@ -220,7 +220,40 @@ mixin BridgeDiscoveryMixin {
     }
   }
 
-  /// Cancel the active discovery session.
+  /// Skip the current key in the discovery session.
+  ///
+  /// Returns true if successful.
+  bool skipDiscoveryKey() {
+    try {
+      final skipFn = bindings?.skipDiscoveryKey;
+      if (skipFn == null) return false;
+
+      final result = skipFn();
+      // 0 = success, 1 = completed (also success), -1 = no session
+      return result >= 0;
+    } catch (e) {
+      // Symbol lookup failed (outdated DLL)
+      return false;
+    }
+  }
+
+  /// Undo the last mapped key in the discovery session.
+  ///
+  /// Returns true if successful.
+  bool undoDiscoveryMapping() {
+    try {
+      final undoFn = bindings?.undoDiscoveryMapping;
+      if (undoFn == null) return false;
+
+      final result = undoFn();
+      return result >= 0;
+    } catch (e) {
+      // Symbol lookup failed (outdated DLL)
+      return false;
+    }
+  }
+
+  /// Cancel an ongoing discovery session.
   ///
   /// Returns 0 on success, -1 if no discovery is active.
   int cancelDiscovery() {

@@ -165,9 +165,17 @@ typedef ProcessDiscoveryEventNative =
     Pointer<Char> Function(Uint16, Bool, Uint64);
 typedef ProcessDiscoveryEvent = Pointer<Char> Function(int, bool, int);
 
+// keyrx_undo_discovery_mapping
+typedef UndoDiscoveryMappingNative = Int32 Function();
+typedef UndoDiscoveryMapping = int Function();
+
 // keyrx_cancel_discovery
 typedef CancelDiscoveryNative = Int32 Function();
 typedef CancelDiscovery = int Function();
+
+// keyrx_skip_discovery_key
+typedef SkipDiscoveryKeyNative = Int32 Function();
+typedef SkipDiscoveryKey = int Function();
 
 // keyrx_is_bypass_active
 typedef IsBypassActiveNative = Bool Function();
@@ -740,9 +748,17 @@ class KeyrxBindingsGenerated {
       _lookup<NativeFunction<ProcessDiscoveryEventNative>>(
         'keyrx_process_discovery_event',
       ).asFunction();
+  late final UndoDiscoveryMapping undoDiscoveryMapping =
+      _lookup<NativeFunction<UndoDiscoveryMappingNative>>(
+        'keyrx_undo_discovery_mapping',
+      ).asFunction();
   late final CancelDiscovery cancelDiscovery =
       _lookup<NativeFunction<CancelDiscoveryNative>>(
         'keyrx_cancel_discovery',
+      ).asFunction();
+  late final SkipDiscoveryKey skipDiscoveryKey =
+      _lookup<NativeFunction<SkipDiscoveryKeyNative>>(
+        'keyrx_skip_discovery_key',
       ).asFunction();
   late final IsBypassActive isBypassActive =
       _lookup<NativeFunction<IsBypassActiveNative>>(
