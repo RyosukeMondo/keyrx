@@ -11,7 +11,7 @@
   - _Requirements: 2.1, 2.2, 2.4_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer setting up test infrastructure | Task: Create test directory structure in core/tests/ with unit/integration/e2e/fixtures subdirectories | Restrictions: Follow Rust conventions, add mod.rs with docs | _Leverage: Rust test organization patterns | Success: Directory structure created, mod.rs files present, cargo test discovers structure | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 2. Create OperationBuilder fixture
+- [x] 2. Create OperationBuilder fixture
   - File: `core/tests/fixtures/operations.rs`
   - Builder for creating PendingOp instances
   - Methods: remap(), block(), combo(), pass(), build()
