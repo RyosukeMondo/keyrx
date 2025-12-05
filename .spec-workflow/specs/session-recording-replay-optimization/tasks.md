@@ -27,7 +27,6 @@
 
 ## Phase 3: Replay
 
-- [-] 4. Implement streaming replay
 - [x] 4. Implement streaming replay
   - File: `core/src/engine/replay.rs`
   - Streaming decompression
