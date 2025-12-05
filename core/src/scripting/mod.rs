@@ -30,8 +30,11 @@ pub mod test_harness;
 mod test_primitives;
 pub mod test_runner;
 
-// Re-export types needed by validation module
-pub use builtins::{LayerMapAction, PendingOp, TimingUpdate};
+// Re-export types needed by validation module and tests
+pub use builtins::{
+    normalize_layer_name, normalize_modifier_name, validate_timeout, LayerMapAction,
+    ModifierPreview, PendingOp, TimingUpdate,
+};
 
 pub use context::{
     clear_active_runtime, global_context, set_active_runtime, with_active_runtime, RuntimeContext,
@@ -39,6 +42,8 @@ pub use context::{
 pub use registry::{RemapRegistry, TapHoldBinding};
 pub use row_col_resolver::{ResolverError, RowColResolver};
 pub use runtime::RhaiRuntime;
+// Re-export from engine for test convenience
+pub use crate::engine::{ResourceEnforcer, ResourceLimits};
 pub use test_discovery::{discover_tests, filter_tests, matches_filter, DiscoveredTest};
 pub use test_harness::{
     get_pending_inputs, get_test_context, record_input, record_output, reset_test_context,

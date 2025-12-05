@@ -5,4 +5,5 @@
 pub mod engine;
 pub mod metrics;
 pub mod observability;
+pub mod scripting;
 pub mod validation;

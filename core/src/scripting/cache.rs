@@ -23,13 +23,13 @@ pub const DEFAULT_MAX_SIZE_BYTES: usize = 10 * 1024 * 1024;
 pub const DEFAULT_MAX_ENTRIES: usize = 256;
 
 /// Cache format version for persisted ASTs.
-const CACHE_FORMAT_VERSION: u32 = 1;
+pub const CACHE_FORMAT_VERSION: u32 = 1;
 
 /// File extension used for persisted AST cache entries.
-const CACHE_FILE_EXTENSION: &str = "rhaiast";
+pub const CACHE_FILE_EXTENSION: &str = "rhaiast";
 
 /// Version of the core crate used to ensure cache compatibility across releases.
-const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Cache statistics snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -128,13 +128,13 @@ impl CacheIndex {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PersistedAst {
-    format_version: u32,
-    core_version: String,
-    hash: String,
-    script: String,
+pub struct PersistedAst {
+    pub format_version: u32,
+    pub core_version: String,
+    pub hash: String,
+    pub script: String,
     #[serde(default)]
-    compile_micros: Option<u64>,
+    pub compile_micros: Option<u64>,
 }
 
 /// Content-addressable AST cache with LRU eviction.
@@ -395,7 +395,7 @@ fn estimated_entry_size(script: &str, _ast: &AST) -> usize {
     script.len()
 }
 
-fn serialize_entry(
+pub fn serialize_entry(
     hash: &str,
     script: &str,
     _ast: &AST,
@@ -410,248 +410,4 @@ fn serialize_entry(
     };
 
     serde_json::to_vec(&entry)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rhai::Engine;
-    use std::fs;
-    use std::time::Instant;
-    use tempfile::tempdir;
-
-    fn make_cache(max_size_bytes: usize) -> (ScriptCache, tempfile::TempDir) {
-        let dir = tempdir().expect("tempdir");
-        let cache = ScriptCache::with_limits(dir.path().to_path_buf(), max_size_bytes, 8);
-        (cache, dir)
-    }
-
-    fn compile_ast_with_time(script: &str) -> (AST, u64) {
-        let start = Instant::now();
-        let ast = Engine::new().compile(script).expect("compile");
-        let micros = start.elapsed().as_micros() as u64;
-        (ast, micros)
-    }
-
-    fn compile_ast(script: &str) -> AST {
-        compile_ast_with_time(script).0
-    }
-
-    fn serialized_len(script: &str, ast: &AST) -> usize {
-        serialize_entry(&cache_key(script), script, ast, Some(0))
-            .expect("serialize")
-            .len()
-    }
-
-    #[test]
-    fn cache_hit_returns_ast() {
-        let (cache, _dir) = make_cache(1024);
-        let script = "let a = 1; a + 1;";
-        let (ast, compile_micros) = compile_ast_with_time(script);
-
-        cache.put(script, &ast, Some(compile_micros));
-
-        assert!(cache.get(script).is_some());
-
-        let stats = cache.stats();
-        assert_eq!(stats.hits, 1);
-        assert_eq!(stats.misses, 0);
-        assert_eq!(stats.entries, 1);
-    }
-
-    #[test]
-    fn cache_tracks_startup_savings() {
-        let (cache, _dir) = make_cache(2048);
-        let script = "let a = 1 + 2;";
-        let (ast, _compile_micros) = compile_ast_with_time(script);
-
-        cache.put(script, &ast, Some(50_000));
-        assert!(cache.get(script).is_some());
-
-        let stats = cache.stats();
-        assert_eq!(stats.hits, 1);
-        assert!(stats.startup_micros_saved > 0);
-    }
-
-    #[test]
-    fn cache_miss_records_stat() {
-        let (cache, _dir) = make_cache(1024);
-        assert!(cache.get("not cached").is_none());
-
-        let stats = cache.stats();
-        assert_eq!(stats.hits, 0);
-        assert_eq!(stats.misses, 1);
-    }
-
-    #[test]
-    fn lru_eviction_respects_byte_budget() {
-        let script_a = "let a = 11;";
-        let script_b = "let b = 22;";
-        let script_c = "let c = 33;";
-
-        let (ast_a, micros_a) = compile_ast_with_time(script_a);
-        let (ast_b, micros_b) = compile_ast_with_time(script_b);
-        let (ast_c, micros_c) = compile_ast_with_time(script_c);
-
-        let size_a = serialized_len(script_a, &ast_a);
-        let size_b = serialized_len(script_b, &ast_b);
-        let budget = size_a + size_b;
-        let (cache, _dir) = make_cache(budget);
-
-        cache.put(script_a, &ast_a, Some(micros_a));
-        cache.put(script_b, &ast_b, Some(micros_b));
-        cache.put(script_c, &ast_c, Some(micros_c));
-
-        let hash_a = cache_key(script_a);
-        let hash_b = cache_key(script_b);
-        let hash_c = cache_key(script_c);
-
-        let index = cache.index.lock().expect("index lock");
-        let present = usize::from(index.entries.contains(&hash_a))
-            + usize::from(index.entries.contains(&hash_b))
-            + usize::from(index.entries.contains(&hash_c));
-        assert!(present <= 2);
-        assert!(index.evictions >= 1);
-        assert!(index.size_bytes <= budget);
-    }
-
-    #[test]
-    fn cache_updates_recency_on_get() {
-        let script_a = "let a = 100;";
-        let script_b = "let b = 200;";
-        let script_c = "let c = 300;";
-
-        let (ast_a, micros_a) = compile_ast_with_time(script_a);
-        let (ast_b, micros_b) = compile_ast_with_time(script_b);
-        let (ast_c, micros_c) = compile_ast_with_time(script_c);
-        let large_script = "let really_big_value = 1234567890;";
-        let (large_ast, large_micros) = compile_ast_with_time(large_script);
-
-        let budget = serialized_len(script_a, &ast_a)
-            + serialized_len(script_b, &ast_b)
-            + serialized_len(large_script, &large_ast) / 2;
-
-        let (cache, _dir) = make_cache(budget);
-
-        cache.put(script_a, &ast_a, Some(micros_a));
-        cache.put(script_b, &ast_b, Some(micros_b));
-        cache.put(script_c, &ast_c, Some(micros_c));
-
-        // Access A to make it most recent
-        assert!(cache.get(script_a).is_some());
-
-        // Force eviction by exceeding byte budget with a larger script
-        cache.put(large_script, &large_ast, Some(large_micros));
-
-        let hash_a = cache_key(script_a);
-        let hash_b = cache_key(script_b);
-        let hash_c = cache_key(script_c);
-
-        let index = cache.index.lock().expect("index lock");
-        let present = usize::from(index.entries.contains(&hash_a))
-            + usize::from(index.entries.contains(&hash_b))
-            + usize::from(index.entries.contains(&hash_c));
-
-        assert!(index.entries.contains(&hash_a));
-        assert!(present <= 2);
-        assert!(index.evictions >= 1);
-    }
-
-    #[test]
-    fn cache_clear_resets_state() {
-        let (cache, dir) = make_cache(256);
-        let script = "let x = 42;";
-        let (ast, compile_micros) = compile_ast_with_time(script);
-        cache.put(script, &ast, Some(compile_micros));
-        assert!(cache.get(script).is_some());
-
-        cache.clear();
-        assert!(cache.get(script).is_none());
-
-        let stats = cache.stats();
-        assert_eq!(stats.entries, 0);
-        assert_eq!(stats.hits, 0);
-        assert_eq!(stats.misses, 1); // miss after clear
-        assert!(!dir
-            .path()
-            .join(format!("{}.{}", cache_key(script), CACHE_FILE_EXTENSION))
-            .exists());
-    }
-
-    #[test]
-    fn cache_key_is_content_addressable() {
-        let script_a1 = "let x = 1 + 2;";
-        let script_a2 = "let x = 1 + 2;";
-        let script_b = "let x = 3 + 4;";
-
-        let hash_a1 = cache_key(script_a1);
-        let hash_a2 = cache_key(script_a2);
-        let hash_b = cache_key(script_b);
-
-        assert_eq!(hash_a1, hash_a2);
-        assert_ne!(hash_a1, hash_b);
-    }
-
-    #[test]
-    fn cache_survives_poisoning() {
-        let (cache, _dir) = make_cache(256);
-        let script = "let x = 1;";
-        let (ast, compile_micros) = compile_ast_with_time(script);
-        cache.put(script, &ast, Some(compile_micros));
-
-        // Intentionally poison the mutex in the same thread to avoid Send requirements
-        let _ = std::panic::catch_unwind(|| {
-            if let Ok(_guard) = cache.index.lock() {
-                panic!("intentional poison");
-            }
-        });
-
-        let (ast, compile_micros) = compile_ast_with_time(script);
-        cache.put(script, &ast, Some(compile_micros));
-        assert!(cache.get(script).is_some());
-    }
-
-    #[test]
-    fn cache_persists_ast_to_disk() {
-        let dir = tempdir().expect("tempdir");
-        let script = "let load_me = 10 + 5;";
-        let (ast, compile_micros) = compile_ast_with_time(script);
-
-        let cache = ScriptCache::with_limits(dir.path().to_path_buf(), 4096, 8);
-        cache.put(script, &ast, Some(compile_micros));
-
-        let reloaded = ScriptCache::with_limits(dir.path().to_path_buf(), 4096, 8);
-        let retrieved = reloaded.get(script);
-        assert!(retrieved.is_some());
-
-        let stats = reloaded.stats();
-        assert_eq!(stats.hits, 1);
-        assert_eq!(stats.misses, 0);
-    }
-
-    #[test]
-    fn incompatible_cache_version_is_ignored() {
-        let dir = tempdir().expect("tempdir");
-        let script = "let stale = 99;";
-
-        let entry = PersistedAst {
-            format_version: CACHE_FORMAT_VERSION + 1,
-            core_version: CORE_VERSION.to_string(),
-            hash: cache_key(script),
-            script: script.to_string(),
-            compile_micros: None,
-        };
-
-        let encoded = serde_json::to_vec(&entry).expect("encode");
-        let path = dir
-            .path()
-            .join(format!("{}.{}", cache_key(script), CACHE_FILE_EXTENSION));
-        fs::create_dir_all(dir.path()).expect("mkdirs");
-        fs::write(&path, encoded).expect("write");
-
-        let cache = ScriptCache::with_limits(dir.path().to_path_buf(), 4096, 8);
-        assert!(cache.get(script).is_none());
-        assert_eq!(cache.stats().misses, 1);
-        assert!(!path.exists());
-    }
 }
