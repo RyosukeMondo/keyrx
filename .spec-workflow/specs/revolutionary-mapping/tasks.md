@@ -203,7 +203,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Engineer with expertise in parsing and validation testing | Task: Write tests for definition library covering requirement 7, including TOML parsing and validation | Restrictions: Must test valid and invalid TOML, verify all validation rules, test directory recursion | _Leverage: Existing test utilities | Success: All definition loading tested, validation tested, lookup tested, coverage >90%. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.10. Write pipeline integration tests
+- [x] 2.10. Write pipeline integration tests
   - Files: `core/tests/pipeline_integration_tests.rs`
   - Test full pipeline: raw event → output
   - Test passthrough mode
