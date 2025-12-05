@@ -2,11 +2,13 @@ import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import 'api_docs_service.dart';
 import 'device_profile_service.dart';
+import 'device_registry_service.dart';
 import 'device_service.dart';
 import 'engine_service.dart';
 import 'engine_service_impl.dart';
 import 'error_translator.dart';
 import 'error_translator_impl.dart';
+import 'profile_registry_service.dart';
 import 'script_file_service.dart';
 import 'test_service.dart';
 
@@ -18,6 +20,8 @@ class ServiceRegistry {
     required this.mappingRepository,
     required this.deviceService,
     required this.deviceProfileService,
+    required this.deviceRegistryService,
+    required this.profileRegistryService,
     required this.scriptFileService,
     required this.testService,
     required this.bridge,
@@ -31,6 +35,8 @@ class ServiceRegistry {
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
+    DeviceRegistryService? deviceRegistryService,
+    ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,
     ApiDocsService? apiDocsService,
@@ -41,6 +47,10 @@ class ServiceRegistry {
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
     final deviceProfile =
         deviceProfileService ?? DeviceProfileServiceImpl(bridge: effectiveBridge);
+    final deviceRegistry =
+        deviceRegistryService ?? DeviceRegistryServiceImpl(bridge: effectiveBridge);
+    final profileRegistry =
+        profileRegistryService ?? ProfileRegistryServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 
@@ -52,6 +62,8 @@ class ServiceRegistry {
       mappingRepository: mappingRepository ?? MappingRepository(),
       deviceService: device,
       deviceProfileService: deviceProfile,
+      deviceRegistryService: deviceRegistry,
+      profileRegistryService: profileRegistry,
       scriptFileService: scriptFile,
       testService: tests,
       bridge: effectiveBridge,
@@ -66,6 +78,8 @@ class ServiceRegistry {
     required MappingRepository mappingRepository,
     required DeviceService deviceService,
     required DeviceProfileService deviceProfileService,
+    required DeviceRegistryService deviceRegistryService,
+    required ProfileRegistryService profileRegistryService,
     required ScriptFileService scriptFileService,
     required TestService testService,
     required KeyrxBridge bridge,
@@ -77,6 +91,8 @@ class ServiceRegistry {
       mappingRepository: mappingRepository,
       deviceService: deviceService,
       deviceProfileService: deviceProfileService,
+      deviceRegistryService: deviceRegistryService,
+      profileRegistryService: profileRegistryService,
       scriptFileService: scriptFileService,
       testService: testService,
       bridge: bridge,
@@ -89,6 +105,8 @@ class ServiceRegistry {
   final MappingRepository mappingRepository;
   final DeviceService deviceService;
   final DeviceProfileService deviceProfileService;
+  final DeviceRegistryService deviceRegistryService;
+  final ProfileRegistryService profileRegistryService;
   final ScriptFileService scriptFileService;
   final TestService testService;
   final KeyrxBridge bridge;
@@ -101,6 +119,8 @@ class ServiceRegistry {
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
+    DeviceRegistryService? deviceRegistryService,
+    ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,
     KeyrxBridge? bridge,
@@ -112,6 +132,8 @@ class ServiceRegistry {
       mappingRepository: mappingRepository ?? this.mappingRepository,
       deviceService: deviceService ?? this.deviceService,
       deviceProfileService: deviceProfileService ?? this.deviceProfileService,
+      deviceRegistryService: deviceRegistryService ?? this.deviceRegistryService,
+      profileRegistryService: profileRegistryService ?? this.profileRegistryService,
       scriptFileService: scriptFileService ?? this.scriptFileService,
       testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
@@ -124,6 +146,8 @@ class ServiceRegistry {
     await engineService.dispose();
     await deviceService.dispose();
     await deviceProfileService.dispose();
+    await deviceRegistryService.dispose();
+    await profileRegistryService.dispose();
     await testService.dispose();
     await bridge.dispose();
   }

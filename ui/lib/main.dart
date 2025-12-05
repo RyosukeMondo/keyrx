@@ -63,7 +63,10 @@ class _HomePageState extends State<HomePage> {
       VisualEditorPage(
         mappingRepository: registry.mappingRepository,
       ),
-      DevicesPage(facade: facade, services: registry),
+      DevicesPage(
+        deviceService: registry.deviceRegistryService,
+        profileService: registry.profileRegistryService,
+      ),
       const RunControlsPage(),
       const DebuggerPage(),
       const ConsolePage(),

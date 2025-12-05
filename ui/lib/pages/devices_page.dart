@@ -1,147 +1,39 @@
-/// Device selection page for listing and selecting keyboard devices.
+/// Device management page for revolutionary mapping.
 ///
-/// Shows available devices with name, path, and profile status.
-/// Supports selection, refresh, and troubleshooting guidance.
+/// Displays all connected devices with their remap status, assigned profiles,
+/// and provides controls for managing device configuration.
 library;
 
 import 'package:flutter/material.dart';
+import '../models/device_state.dart';
+import '../services/device_registry_service.dart';
+import '../services/profile_registry_service.dart';
+import '../widgets/device_card.dart';
 
-import '../ffi/bridge.dart';
-import '../services/facade/keyrx_facade.dart';
-import '../services/service_registry.dart';
-import 'device_discovery_page.dart';
-import 'device_profiles_page.dart';
-
-/// Page for listing and selecting keyboard devices.
+/// Page for managing connected devices with revolutionary mapping.
+///
+/// Displays a list of all registered devices, allowing users to:
+/// - Toggle remap enabled/disabled per device
+/// - Assign profiles to devices
+/// - Set user labels for easier identification
+/// - Refresh the device list
 class DevicesPage extends StatefulWidget {
   const DevicesPage({
     super.key,
-    required this.facade,
-    required this.services,
+    required this.deviceService,
+    required this.profileService,
   });
 
-  final KeyrxFacade facade;
-  final ServiceRegistry services;
+  final DeviceRegistryService deviceService;
+  final ProfileRegistryService profileService;
 
   @override
   State<DevicesPage> createState() => _DevicesPageState();
 }
 
 class _DevicesPageState extends State<DevicesPage> {
-  List<KeyboardDevice> _devices = [];
-  String? _selectedPath;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDevices();
-  }
-
-  Future<void> _loadDevices() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    final result = await widget.facade.listDevices();
-
-    if (!mounted) return;
-
-    result.when(
-      ok: (devices) {
-        setState(() {
-          _devices = devices;
-          _isLoading = false;
-        });
-      },
-      err: (error) {
-        setState(() {
-          _error = error.userMessage;
-          _isLoading = false;
-        });
-      },
-    );
-  }
-
-  Future<void> _refreshDevices() async {
-    setState(() {
-      _error = null;
-    });
-
-    final result = await widget.facade.listDevices();
-
-    if (!mounted) return;
-
-    result.when(
-      ok: (devices) {
-        setState(() {
-          _devices = devices;
-        });
-      },
-      err: (error) {
-        setState(() {
-          _error = error.userMessage;
-        });
-      },
-    );
-  }
-
-  Future<void> _selectDevice(KeyboardDevice device) async {
-    final result = await widget.facade.selectDevice(device.path);
-
-    if (!mounted) return;
-
-    result.when(
-      ok: (_) {
-        setState(() {
-          _selectedPath = device.path;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Selected: ${device.name}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      },
-      err: (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to select device: ${error.userMessage}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      },
-    );
-  }
-
-  void _manageProfiles(KeyboardDevice device) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => DeviceProfilesPage(
-          vendorId: device.vendorId,
-          productId: device.productId,
-          deviceName: device.name,
-          devicePath: device.path,
-          facade: widget.facade,
-          services: widget.services,
-        ),
-      ),
-    ).then((_) => _loadDevices()); // Reload in case profiles changed/active status changed
-  }
-
-  void _startDiscovery(KeyboardDevice device) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => DeviceDiscoveryPage(
-          device: device,
-          facade: widget.facade,
-          services: widget.services,
-        ),
-      ),
-    ).then((_) => _loadDevices());
-  }
+  // Key used to trigger FutureBuilder refresh
+  int _refreshKey = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -157,29 +49,44 @@ class _DevicesPageState extends State<DevicesPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshDevices,
-        child: _buildBody(),
+        onRefresh: () async {
+          _refreshDevices();
+        },
+        child: FutureBuilder<List<DeviceState>>(
+          key: ValueKey(_refreshKey),
+          future: widget.deviceService.getDevices(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return _buildErrorState(snapshot.error.toString());
+            }
+
+            final devices = snapshot.data ?? [];
+
+            if (devices.isEmpty) {
+              return _buildEmptyState();
+            }
+
+            return _buildDeviceList(devices);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return _buildErrorState();
-    }
-
-    if (_devices.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return _buildDeviceList();
+  /// Refresh the device list by incrementing the key
+  void _refreshDevices() {
+    setState(() {
+      _refreshKey++;
+    });
+    widget.deviceService.refresh();
   }
 
-  Widget _buildErrorState() {
+  /// Build error state UI
+  Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -194,13 +101,13 @@ class _DevicesPageState extends State<DevicesPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              _error ?? 'Unknown error',
+              error,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: _loadDevices,
+              onPressed: _refreshDevices,
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
@@ -210,6 +117,7 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
+  /// Build empty state UI
   Widget _buildEmptyState() {
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -224,7 +132,7 @@ class _DevicesPageState extends State<DevicesPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Make sure your keyboard is connected and you have the necessary permissions.',
+          'Connect a keyboard or other input device to get started.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -234,6 +142,7 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
+  /// Build troubleshooting card for empty state
   Widget _buildTroubleshootingCard() {
     return Card(
       child: Padding(
@@ -254,7 +163,7 @@ class _DevicesPageState extends State<DevicesPage> {
             const SizedBox(height: 12),
             const _TroubleshootingStep(
               number: '1',
-              text: 'Check that your keyboard is connected via USB',
+              text: 'Check that your device is connected via USB',
             ),
             const _TroubleshootingStep(
               number: '2',
@@ -274,108 +183,116 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  Widget _buildDeviceList() {
+  /// Build list of device cards
+  Widget _buildDeviceList(List<DeviceState> devices) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _devices.length,
+      itemCount: devices.length,
       itemBuilder: (context, index) {
-        final device = _devices[index];
-        final isSelected = device.path == _selectedPath;
-
-        return _DeviceListTile(
-          device: device,
-          isSelected: isSelected,
-          onTap: () => _selectDevice(device),
-          onManageProfiles: device.hasProfile
-              ? () => _manageProfiles(device)
-              : null,
-          onStartDiscovery: !device.hasProfile
-              ? () => _startDiscovery(device)
-              : null,
+        final device = devices[index];
+        return DeviceCard(
+          deviceState: device,
+          deviceService: widget.deviceService,
+          profileService: widget.profileService,
+          onEditLabel: () => _showEditLabelDialog(device),
+          onManageProfiles: () => _showManageProfilesDialog(device),
         );
       },
     );
   }
-}
 
-class _DeviceListTile extends StatelessWidget {
-  const _DeviceListTile({
-    required this.device,
-    required this.isSelected,
-    required this.onTap,
-    this.onManageProfiles,
-    this.onStartDiscovery,
-  });
+  /// Show dialog to edit device label
+  Future<void> _showEditLabelDialog(DeviceState device) async {
+    final controller = TextEditingController(
+      text: device.identity.userLabel ?? '',
+    );
 
-  final KeyboardDevice device;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback? onManageProfiles;
-  final VoidCallback? onStartDiscovery;
-
-  @override
-  Widget build(BuildContext context) {
-    final vendorId = device.vendorId.toRadixString(16).padLeft(4, '0');
-    final productId = device.productId.toRadixString(16).padLeft(4, '0');
-
-    return ListTile(
-      leading: Icon(
-        Icons.keyboard,
-        color: isSelected ? Theme.of(context).colorScheme.primary : null,
-      ),
-      title: Text(
-        device.name,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Device Label'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Label',
+            hintText: 'e.g., "Main Keyboard", "Gaming Keypad"',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => Navigator.of(context).pop(value),
         ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('$vendorId:$productId'),
-          Text(
-            device.path,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                  fontFamily: 'monospace',
-                ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Clear'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
           ),
         ],
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (onManageProfiles != null)
-            FilledButton.tonalIcon(
-              onPressed: onManageProfiles,
-              icon: const Icon(Icons.settings_applications, size: 16),
-              label: const Text('Profiles'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
+    );
+
+    if (result != null) {
+      // User either submitted or pressed Save
+      final label = result.isEmpty ? null : result;
+      final opResult = await widget.deviceService.setUserLabel(
+        device.identity.toKey(),
+        label,
+      );
+
+      if (!mounted) return;
+
+      if (opResult.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              label == null ? 'Label cleared' : 'Label updated to "$label"',
             ),
-          if (onStartDiscovery != null)
-            FilledButton.tonalIcon(
-              onPressed: onStartDiscovery,
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Create Profile'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _refreshDevices();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update label: ${opResult.errorMessage}',
             ),
-          if (isSelected) ...[
-            const SizedBox(width: 8),
-            const Icon(Icons.check, color: Colors.green),
-          ],
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show dialog for managing profiles (placeholder for now)
+  Future<void> _showManageProfilesDialog(DeviceState device) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manage Profiles'),
+        content: Text(
+          'Profile management for ${device.identity.displayName} will be available soon.\n\n'
+          'For now, use the profile selector in the device card to assign profiles.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
         ],
       ),
-      selected: isSelected,
-      onTap: onTap,
-      isThreeLine: true,
     );
   }
 }
 
+/// Troubleshooting step widget
 class _TroubleshootingStep extends StatelessWidget {
   const _TroubleshootingStep({
     required this.number,

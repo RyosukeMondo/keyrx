@@ -9,11 +9,17 @@ import 'dart:typed_data';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/device_state.dart';
+import 'package:keyrx_ui/models/layout_type.dart';
+import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
+import 'package:keyrx_ui/services/device_profile_service.dart';
+import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 
@@ -288,4 +294,70 @@ class FakeScriptFileService implements ScriptFileService {
 class FakeApiDocsService extends ApiDocsService {
   @override
   bool get isLoaded => false;
+}
+
+/// Fake DeviceProfileService that returns empty results.
+class FakeDeviceProfileService implements DeviceProfileService {
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Fake DeviceRegistryService that returns empty device lists.
+class FakeDeviceRegistryService implements DeviceRegistryService {
+  @override
+  Future<List<DeviceState>> getDevices() async => const [];
+
+  @override
+  Future<DeviceRegistryOperationResult> toggleRemap(
+    String deviceKey,
+    bool enabled,
+  ) async =>
+      DeviceRegistryOperationResult.success();
+
+  @override
+  Future<DeviceRegistryOperationResult> assignProfile(
+    String deviceKey,
+    String profileId,
+  ) async =>
+      DeviceRegistryOperationResult.success();
+
+  @override
+  Future<DeviceRegistryOperationResult> setUserLabel(
+    String deviceKey,
+    String? label,
+  ) async =>
+      DeviceRegistryOperationResult.success();
+
+  @override
+  Future<List<DeviceState>> refresh() async => const [];
+
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Fake ProfileRegistryService that returns empty profile lists.
+class FakeProfileRegistryService implements ProfileRegistryService {
+  @override
+  Future<List<String>> listProfiles() async => const [];
+
+  @override
+  Future<Profile?> getProfile(String profileId) async => null;
+
+  @override
+  Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async =>
+      ProfileRegistryOperationResult.success();
+
+  @override
+  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async =>
+      ProfileRegistryOperationResult.success();
+
+  @override
+  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async =>
+      const [];
+
+  @override
+  Future<List<String>> refresh() async => const [];
+
+  @override
+  Future<void> dispose() async {}
 }
