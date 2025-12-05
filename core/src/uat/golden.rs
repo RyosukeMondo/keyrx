@@ -260,6 +260,8 @@ impl GoldenSessionManager {
                 is_synthetic: true,
                 scan_code: 0,
                 serial_number: None,
+                vendor_id: None,
+                product_id: None,
             };
             record_input(input);
         }

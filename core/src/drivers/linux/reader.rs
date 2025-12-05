@@ -520,6 +520,8 @@ fn build_input_event(
         is_synthetic: false,
         scan_code,
         serial_number: serial_number.clone(),
+        vendor_id: None,  // TODO: Extract from udev in phase 2
+        product_id: None, // TODO: Extract from udev in phase 2
     }
 }
 

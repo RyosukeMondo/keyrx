@@ -143,6 +143,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 30,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
         let _g1 = tracer.span_input_received(&event);
 
@@ -175,6 +177,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 57,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
         let _guard = tracer.span_input_received(&event);
 
@@ -188,6 +192,8 @@ mod tests {
             is_synthetic: true,
             scan_code: 28,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
         let _guard2 = tracer.span_input_received(&event_no_device);
     }

@@ -156,7 +156,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: USB/HID Developer with knowledge of Elgato Stream Deck protocols | Task: Create Stream Deck device definitions following requirement 7, documenting matrix layouts and HID usage mappings | Restrictions: Must use correct VID:PID, map all buttons to (row, col), include visual metadata (button size/spacing) | _Leverage: Stream Deck SDK documentation if available | Success: Definitions parse correctly, all buttons mapped, visual metadata accurate, tested with real devices if available. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.5. Implement DeviceResolver
+- [x] 2.5. Implement DeviceResolver
   - Files: `core/src/engine/device_resolver.rs`, `core/src/engine/mod.rs`
   - Create DeviceResolver with Arc<RwLock<DeviceRegistry>>
   - Implement resolve(device_handle) -> Result<Option<DeviceState>>

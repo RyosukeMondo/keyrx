@@ -65,6 +65,18 @@ pub struct InputEvent {
     /// **Windows**: Extracted via HidD_GetSerialNumberString or Instance ID from device path.
     /// Used with vendor_id:product_id to create unique DeviceIdentity for per-device configuration.
     pub serial_number: Option<String>,
+    /// USB Vendor ID for device identification.
+    ///
+    /// **Linux**: Extracted from udev properties.
+    /// **Windows**: Parsed from device instance path.
+    /// Used with product_id and serial_number to create unique DeviceIdentity.
+    pub vendor_id: Option<u16>,
+    /// USB Product ID for device identification.
+    ///
+    /// **Linux**: Extracted from udev properties.
+    /// **Windows**: Parsed from device instance path.
+    /// Used with vendor_id and serial_number to create unique DeviceIdentity.
+    pub product_id: Option<u16>,
 }
 
 /// Output action to send to OS.
@@ -93,6 +105,8 @@ impl Default for InputEvent {
             is_synthetic: false,
             scan_code: 0,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         }
     }
 }
@@ -143,6 +157,36 @@ impl InputEvent {
             is_synthetic,
             scan_code,
             serial_number,
+            vendor_id: None,
+            product_id: None,
+        }
+    }
+
+    /// Create a new event with complete identity metadata.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_full_identity(
+        key: KeyCode,
+        pressed: bool,
+        timestamp_us: u64,
+        device_id: Option<String>,
+        is_repeat: bool,
+        is_synthetic: bool,
+        scan_code: u16,
+        serial_number: Option<String>,
+        vendor_id: Option<u16>,
+        product_id: Option<u16>,
+    ) -> Self {
+        Self {
+            key,
+            pressed,
+            timestamp_us,
+            device_id,
+            is_repeat,
+            is_synthetic,
+            scan_code,
+            serial_number,
+            vendor_id,
+            product_id,
         }
     }
 

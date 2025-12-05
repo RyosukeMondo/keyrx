@@ -4,6 +4,7 @@ mod advanced;
 pub mod coalescing;
 mod decision;
 pub mod decision_engine;
+mod device_resolver;
 mod event_loop;
 mod event_recorder;
 mod event_recording;
@@ -28,6 +29,7 @@ pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
     PendingDecisionState, TimingConfig,
 };
+pub use device_resolver::{DeviceResolver, DeviceResolverError};
 pub use event_loop::Engine;
 pub use event_recorder::EventRecorder;
 pub use event_recording::{

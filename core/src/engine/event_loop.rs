@@ -376,6 +376,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 0,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         }
     }
 
