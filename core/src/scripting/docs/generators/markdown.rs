@@ -298,6 +298,7 @@ fn format_signature(sig: &FunctionSignature) -> String {
 mod tests {
     use super::*;
     use crate::scripting::docs::{FunctionSignature, ReturnDoc};
+    use serial_test::serial;
 
     #[test]
     fn test_format_signature_with_params_and_return() {
@@ -336,6 +337,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_markdown_empty_registry() {
         registry::initialize();
         registry::clear();
@@ -347,6 +349,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_markdown_with_function() {
         registry::initialize();
         registry::clear();
@@ -388,6 +391,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_markdown_with_type() {
         registry::initialize();
         registry::clear();
@@ -454,6 +458,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_deprecated_function_warning() {
         registry::initialize();
         registry::clear();

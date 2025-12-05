@@ -138,7 +138,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Developer with expertise in file I/O and data indexing | Task: Implement DeviceDefinitionLibrary following requirement 7, loading and indexing TOML device definitions | Restrictions: Must recursively search directories, validate all definitions on load, skip invalid files with warnings, O(1) lookup by VID:PID | _Leverage: walkdir crate, toml parsing patterns | Success: Loads all .toml files recursively, VID:PID lookup works, validation catches errors, unit tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [-] 2.3. Create standard device definitions
+- [x] 2.3. Create standard device definitions
   - Files: `device_definitions/standard/ansi-104.toml`, `device_definitions/standard/iso-105.toml`, `device_definitions/README.md`
   - Create ANSI 104-key keyboard definition with full scancode map
   - Create ISO 105-key keyboard definition

@@ -200,8 +200,10 @@ mod tests {
     use super::*;
     use crate::scripting::docs::registry;
     use crate::scripting::docs::search::{search, SearchOptions};
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_register_all_types() {
         // Initialize registry first
         registry::initialize();
@@ -218,6 +220,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_keycode_type_has_examples() {
         registry::initialize();
         register_key_code_type();
@@ -227,6 +230,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_layer_name_type_searchable() {
         registry::initialize();
         register_layer_name_type();
@@ -235,6 +239,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_modifier_types_in_correct_module() {
         registry::initialize();
         register_modifier_name_type();
@@ -248,6 +253,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_layer_action_type_has_comprehensive_examples() {
         registry::initialize();
         register_layer_action_type();

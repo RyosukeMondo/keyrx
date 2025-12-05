@@ -6,8 +6,10 @@ mod tests {
         generators::markdown::generate_markdown, registry, FunctionDoc, FunctionSignature,
         ParamDoc, ReturnDoc, TypeDoc,
     };
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_generate_markdown_integration() {
         // Initialize and populate registry
         registry::initialize();
@@ -79,6 +81,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_generate_markdown_multiple_modules() {
         registry::initialize();
         registry::clear();
