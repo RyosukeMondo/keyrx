@@ -11,3 +11,6 @@ export 'settings/settings.dart';
 export 'debug/debug.dart';
 export 'metrics/metrics.dart';
 export 'scripting/scripting.dart';
+
+// Revolutionary mapping widgets
+export 'remap_toggle.dart';

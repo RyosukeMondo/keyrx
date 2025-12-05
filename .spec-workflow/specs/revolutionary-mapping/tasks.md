@@ -305,7 +305,7 @@
 
 ## Phase 4: UI Implementation - Devices Tab (1.5 weeks)
 
-- [ ] 4.1. Create RemapToggle widget
+- [x] 4.1. Create RemapToggle widget
   - Files: `ui/lib/widgets/remap_toggle.dart`
   - Create stateless widget with Switch
   - Show ON/OFF label with colors
