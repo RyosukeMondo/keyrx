@@ -193,7 +193,7 @@
   - _Requirements: 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Architect with expertise in event processing pipelines | Task: Integrate revolutionary mapping pipeline into engine following requirement 10, maintaining <1ms total latency | Restrictions: Must preserve existing functionality, handle all error cases, passthrough mode must be fast, no breaking changes | _Leverage: Existing engine/core.rs event processing | Success: Pipeline integrated, latency target met, passthrough works, all existing tests still pass, integration tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (pipeline stages, integration points), then mark as [x]._
 
-- [ ] 2.9. Write definition library tests
+- [x] 2.9. Write definition library tests
   - Files: `core/tests/definition_tests.rs`
   - Test TOML parsing with sample definitions
   - Test validation catches errors
