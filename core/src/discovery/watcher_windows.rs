@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{self, JoinHandle};
 use std::time::Instant;
-use tracing::{debug, error, warn};
+use tracing::{error, warn};
 use windows::core::w;
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Threading::GetCurrentThreadId;
@@ -89,6 +89,7 @@ impl WindowsDeviceWatcher {
         Ok(())
     }
 
+    #[allow(unsafe_code)]
     fn message_loop(
         devices: Arc<RwLock<HashMap<PathBuf, (DeviceInfo, DeviceState)>>>,
         subscribers: Arc<Mutex<Vec<Sender<DeviceEvent>>>>,
@@ -164,7 +165,7 @@ impl WindowsDeviceWatcher {
                 DispatchMessageW(&msg);
             }
 
-            DestroyWindow(hwnd);
+            let _ = DestroyWindow(hwnd);
             let _ = UnregisterClassW(class_name, HINSTANCE::default());
             thread_id_store.store(0, Ordering::SeqCst);
         }
@@ -298,10 +299,12 @@ impl WindowsDeviceWatcher {
         }
     }
 
+    #[allow(dead_code)]
     fn broadcast(&self, event: DeviceEvent) {
         Self::broadcast_static(&self.subscribers, event);
     }
 
+    #[allow(unsafe_code)]
     unsafe extern "system" fn wnd_proc(
         hwnd: HWND,
         msg: u32,
@@ -333,6 +336,7 @@ impl DeviceWatcher for WindowsDeviceWatcher {
         Ok(())
     }
 
+    #[allow(unsafe_code)]
     fn stop(&self) {
         self.running.store(false, Ordering::SeqCst);
         let thread_id = self.thread_id_store.load(Ordering::SeqCst);

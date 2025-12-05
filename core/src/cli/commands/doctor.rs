@@ -217,6 +217,7 @@ impl DoctorCommand {
     }
 
     #[cfg(target_os = "windows")]
+    #[allow(unsafe_code)]
     fn check_keyboard_hook_api(&self) -> DiagnosticCheck {
         // On Windows, the low-level keyboard hook API (SetWindowsHookExW) is always
         // available if we're running on Windows. The only requirement is that the
