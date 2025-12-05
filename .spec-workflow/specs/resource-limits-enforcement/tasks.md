@@ -25,7 +25,7 @@
   - Purpose: Timeout enforcement
   - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 4. Add memory tracking
+- [x] 4. Add memory tracking
   - File: `core/src/scripting/runtime.rs`
   - Track allocations in scripts
   - Terminate on limit

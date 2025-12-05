@@ -5,6 +5,7 @@
 //! types are in `builtins.rs`.
 
 use super::bindings::register_all_functions;
+use super::builtins::PendingOp;
 use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
 use super::cache::ScriptCache;
 use super::pending_ops::PendingOpsApplier;
@@ -14,14 +15,20 @@ use super::sandbox::{ResourceConfig, SandboxError, ScriptSandbox};
 use crate::config::script_cache_dir;
 use crate::discovery::storage::read_profile;
 use crate::discovery::types::DeviceId;
-use crate::engine::{KeyCode, LayerStack};
+use crate::engine::{
+    KeyCode, LayerAction, LayerStack, ModifierState, RemapAction, ResourceEnforcer,
+    ResourceLimitError, ResourceLimits, TimingConfig,
+};
 use crate::errors::{runtime::*, KeyrxError};
 use crate::keyrx_err;
+use crate::scripting::registry::TapHoldBinding;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use rhai::{Engine, Scope, AST};
+use smallvec::SmallVec;
 use std::collections::HashSet;
 use std::fs;
+use std::mem::size_of;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
@@ -45,6 +52,7 @@ pub struct RhaiRuntime {
     syncer: RegistrySyncer,
     sandbox: Arc<ScriptSandbox>,
     resolver: Arc<RowColResolver>,
+    resource_enforcer: Arc<ResourceEnforcer>,
 }
 
 impl RhaiRuntime {
@@ -116,6 +124,7 @@ impl RhaiRuntime {
             syncer,
             sandbox: Arc::new(sandbox),
             resolver,
+            resource_enforcer: Arc::new(ResourceEnforcer::new(ResourceLimits::default())),
         })
     }
 
@@ -173,6 +182,11 @@ impl RhaiRuntime {
         &self.resolver
     }
 
+    /// Replace the shared resource enforcer (used by the engine for unified limits).
+    pub fn set_resource_enforcer(&mut self, enforcer: Arc<ResourceEnforcer>) {
+        self.resource_enforcer = enforcer;
+    }
+
     /// Get a reference to the sandbox.
     pub fn sandbox(&self) -> &ScriptSandbox {
         &self.sandbox
@@ -196,9 +210,123 @@ impl RhaiRuntime {
     }
 
     /// Apply pending operations to the registry and sync views.
-    fn apply_pending_ops(&mut self) {
+    fn apply_pending_ops(&mut self) -> Result<(), KeyrxError> {
+        // Take a snapshot of pending ops for memory estimation before draining.
+        let pending_snapshot = {
+            let guard = self.pending_ops.lock().map_err(|_| {
+                keyrx_err!(SCRIPT_EXECUTION_FAILED, error = "pending ops lock poisoned")
+            });
+
+            match guard {
+                Ok(ops) => ops.clone(),
+                Err(err) => {
+                    // Propagate as script execution failure to align with other runtime errors.
+                    return Err(err);
+                }
+            }
+        };
+
+        // Enforce memory limits before mutating registry.
+        self.enforce_memory_limit(&pending_snapshot)?;
+
         let mut applier = PendingOpsApplier::new(&mut self.registry);
         applier.apply_all(&self.pending_ops, &mut self.syncer);
+        self.synchronize_memory_accounting()?;
+        Ok(())
+    }
+
+    fn enforce_memory_limit(&self, pending_ops: &[PendingOp]) -> Result<(), KeyrxError> {
+        let current_usage = Self::estimate_registry_usage(&self.registry);
+        let projected_usage =
+            current_usage.saturating_add(Self::estimate_pending_ops_memory(pending_ops));
+        let snapshot = self.resource_enforcer.snapshot();
+
+        if projected_usage > snapshot.memory_limit {
+            let error = ResourceLimitError::Memory {
+                used: projected_usage,
+                limit: snapshot.memory_limit,
+            };
+            return Err(keyrx_err!(
+                SCRIPT_EXECUTION_FAILED,
+                error = error.to_string()
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn synchronize_memory_accounting(&self) -> Result<(), KeyrxError> {
+        let actual_usage = Self::estimate_registry_usage(&self.registry);
+        let snapshot = self.resource_enforcer.snapshot();
+
+        if actual_usage > snapshot.memory_used {
+            self.resource_enforcer
+                .record_allocation(actual_usage - snapshot.memory_used)
+                .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))
+        } else {
+            self.resource_enforcer
+                .record_deallocation(snapshot.memory_used.saturating_sub(actual_usage));
+            Ok(())
+        }
+    }
+
+    fn estimate_pending_ops_memory(ops: &[PendingOp]) -> usize {
+        ops.iter()
+            .map(|op| match op {
+                PendingOp::Remap { .. }
+                | PendingOp::Block { .. }
+                | PendingOp::Pass { .. }
+                | PendingOp::LayerPop
+                | PendingOp::SetTiming(_) => size_of::<PendingOp>(),
+                PendingOp::TapHold { .. } => size_of::<PendingOp>(),
+                PendingOp::Combo { keys, .. } => {
+                    size_of::<PendingOp>()
+                        + keys.len() * size_of::<KeyCode>()
+                        + size_of::<LayerAction>()
+                }
+                PendingOp::LayerDefine { name, .. }
+                | PendingOp::LayerPush { name }
+                | PendingOp::LayerToggle { name }
+                | PendingOp::DefineModifier { name, .. }
+                | PendingOp::ModifierActivate { name, .. }
+                | PendingOp::ModifierDeactivate { name, .. }
+                | PendingOp::ModifierOneShot { name, .. } => {
+                    size_of::<PendingOp>() + name.len() + size_of::<usize>()
+                }
+                PendingOp::LayerMap { layer, .. } => {
+                    size_of::<PendingOp>() + layer.len() + size_of::<LayerAction>()
+                }
+            })
+            .sum()
+    }
+
+    fn estimate_registry_usage(registry: &RemapRegistry) -> usize {
+        let mapping_bytes = registry.mappings().count() * size_of::<(KeyCode, RemapAction)>();
+
+        let tap_hold_bytes = registry.tap_holds().count() * size_of::<(KeyCode, TapHoldBinding)>();
+
+        let combo_bytes = registry
+            .combos()
+            .all()
+            .map(|def| {
+                size_of::<SmallVec<[KeyCode; 4]>>()
+                    + def.keys.len() * size_of::<KeyCode>()
+                    + size_of::<LayerAction>()
+            })
+            .sum::<usize>();
+
+        let modifier_bytes = registry
+            .modifier_names()
+            .keys()
+            .map(|name| size_of::<String>() + name.len() + size_of::<u8>())
+            .sum::<usize>()
+            + size_of::<ModifierState>();
+
+        let timing_bytes = size_of::<TimingConfig>();
+        let layer_bytes = size_of::<LayerStack>()
+            + registry.layers().active_layers().len() * size_of::<LayerAction>();
+
+        mapping_bytes + tap_hold_bytes + combo_bytes + modifier_bytes + timing_bytes + layer_bytes
     }
 
     /// Get a reference to the remap registry.
@@ -230,7 +358,7 @@ impl ScriptRuntime for RhaiRuntime {
             .run(script)
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
 
-        self.apply_pending_ops();
+        self.apply_pending_ops()?;
         Ok(())
     }
 
@@ -254,7 +382,7 @@ impl ScriptRuntime for RhaiRuntime {
                 )
             })?;
 
-        self.apply_pending_ops();
+        self.apply_pending_ops()?;
         Ok(())
     }
 
@@ -303,7 +431,7 @@ impl ScriptRuntime for RhaiRuntime {
             .run_ast(ast)
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
 
-        self.apply_pending_ops();
+        self.apply_pending_ops()?;
         Ok(())
     }
 
@@ -321,12 +449,43 @@ mod tests {
     use super::*;
     use crate::engine::{HoldAction, LayerAction, Modifier, RemapAction, TimingConfig};
     use std::fs;
+    use std::time::Duration;
     use tempfile::tempdir;
 
     #[test]
     fn new_runtime_has_empty_registry() {
         let runtime = RhaiRuntime::new().unwrap();
         assert_eq!(runtime.lookup_remap(KeyCode::A), RemapAction::Pass);
+    }
+
+    #[test]
+    fn apply_pending_ops_respects_memory_limit() {
+        let mut runtime = RhaiRuntime::new().unwrap();
+        runtime.set_resource_enforcer(Arc::new(ResourceEnforcer::new(ResourceLimits::new(
+            Duration::from_millis(1),
+            1,
+            1,
+        ))));
+
+        {
+            let mut ops = runtime.pending_ops.lock().unwrap();
+            // Each layer definition carries a name allocation to quickly exceed the small limit.
+            for i in 0..4 {
+                ops.push(PendingOp::LayerDefine {
+                    name: format!("layer-{i}"),
+                    transparent: false,
+                });
+            }
+        }
+
+        let result = runtime.apply_pending_ops();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Memory limit exceeded"));
+        // Registry should remain unchanged when enforcement fails.
+        assert_eq!(runtime.registry.layers().len(), 1);
     }
 
     #[test]
