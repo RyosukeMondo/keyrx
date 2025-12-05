@@ -23,7 +23,7 @@
 
 ## Phase 2: Validation
 
-- [ ] 4. Add validation to config loader
+- [x] 4. Add validation to config loader
   - File: `core/src/config/loader.rs`
   - Validate against schema before parsing
   - Clear error messages

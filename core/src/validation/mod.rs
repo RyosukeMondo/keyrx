@@ -32,7 +32,10 @@ pub use engine::{
 };
 pub use orchestrator::{DetectorOrchestrator, NamedDetectorStats, ValidationReport};
 pub use safety::{analyze_safety, SafetyAnalyzer};
-pub use schema::{SchemaRegistry, CONFIG_SCHEMA_NAME, DEVICE_PROFILE_SCHEMA_NAME};
+pub use schema::{
+    SchemaError, SchemaRegistry, ValidationFailure, ValidationIssue, CONFIG_SCHEMA_NAME,
+    DEVICE_PROFILE_SCHEMA_NAME,
+};
 pub use semantic::{validate_operations, validate_timing, SemanticValidator};
 pub use suggestions::suggest_similar_keys;
 pub use types::{

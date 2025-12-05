@@ -18,6 +18,7 @@
 use super::limits::{DEFAULT_EVENT_GAP_US, DEFAULT_REGRESSION_THRESHOLD_US, LATENCY_THRESHOLD_NS};
 use super::paths::config_dir;
 use super::timing::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
+use crate::validation::{SchemaError, SchemaRegistry, ValidationFailure, CONFIG_SCHEMA_NAME};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -276,30 +277,54 @@ pub fn load_config(path: Option<&Path>) -> Config {
         .unwrap_or_else(|| config_dir().join("config.toml"));
 
     match fs::read_to_string(&config_path) {
-        Ok(content) => match toml::from_str::<Config>(&content) {
-            Ok(mut config) => {
-                validate_and_clamp(&mut config);
-                tracing::debug!(
-                    service = "keyrx",
-                    event = "config_loaded",
-                    component = "config",
-                    path = %config_path.display(),
-                    "Configuration loaded from file"
-                );
-                config
+        Ok(content) => {
+            let toml_value = match toml::from_str::<toml::Value>(&content) {
+                Ok(value) => value,
+                Err(e) => {
+                    tracing::warn!(
+                        service = "keyrx",
+                        event = "config_parse_error",
+                        component = "config",
+                        path = %config_path.display(),
+                        error = %e,
+                        "Failed to parse config file, using defaults"
+                    );
+                    return Config::default();
+                }
+            };
+
+            if let Err(err) = validate_config_schema(&config_path, &toml_value) {
+                log_config_validation_error(&config_path, &err);
+                if should_abort_load(&err) {
+                    return Config::default();
+                }
             }
-            Err(e) => {
-                tracing::warn!(
-                    service = "keyrx",
-                    event = "config_parse_error",
-                    component = "config",
-                    path = %config_path.display(),
-                    error = %e,
-                    "Failed to parse config file, using defaults"
-                );
-                Config::default()
+
+            match toml_value.try_into::<Config>() {
+                Ok(mut config) => {
+                    validate_and_clamp(&mut config);
+                    tracing::debug!(
+                        service = "keyrx",
+                        event = "config_loaded",
+                        component = "config",
+                        path = %config_path.display(),
+                        "Configuration loaded from file"
+                    );
+                    config
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        service = "keyrx",
+                        event = "config_parse_error",
+                        component = "config",
+                        path = %config_path.display(),
+                        error = %e,
+                        "Failed to parse config file, using defaults"
+                    );
+                    Config::default()
+                }
             }
-        },
+        }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             tracing::debug!(
                 service = "keyrx",
@@ -322,6 +347,89 @@ pub fn load_config(path: Option<&Path>) -> Config {
             Config::default()
         }
     }
+}
+
+fn validate_config_schema(
+    config_path: &Path,
+    toml_value: &toml::Value,
+) -> Result<(), ValidationFailure> {
+    let instance = serde_json::to_value(toml_value).map_err(|source| {
+        ValidationFailure::Schema(SchemaError::Serialize {
+            name: CONFIG_SCHEMA_NAME.to_string(),
+            source,
+        })
+    })?;
+
+    tracing::debug!(
+        service = "keyrx",
+        event = "config_schema_validation_started",
+        component = "config",
+        path = %config_path.display(),
+        "Validating config against schema"
+    );
+
+    SchemaRegistry::global().validate(CONFIG_SCHEMA_NAME, &instance)
+}
+
+fn log_config_validation_error(path: &Path, error: &ValidationFailure) {
+    match error {
+        ValidationFailure::Invalid { issues, .. } => {
+            tracing::error!(
+                service = "keyrx",
+                event = "config_schema_invalid",
+                component = "config",
+                path = %path.display(),
+                issue_count = issues.len(),
+                "Config schema validation failed"
+            );
+
+            for issue in issues {
+                tracing::error!(
+                    service = "keyrx",
+                    event = "config_schema_issue",
+                    component = "config",
+                    path = %path.display(),
+                    instance_path = %issue.instance_path,
+                    schema_path = %issue.schema_path,
+                    message = %issue.message,
+                    "Schema validation error"
+                );
+            }
+        }
+        ValidationFailure::Schema(SchemaError::Missing { .. }) => {
+            tracing::warn!(
+                service = "keyrx",
+                event = "config_schema_missing",
+                component = "config",
+                path = %path.display(),
+                "Config schema not found, skipping schema validation"
+            );
+        }
+        ValidationFailure::Schema(SchemaError::Serialize { source, .. }) => {
+            tracing::warn!(
+                service = "keyrx",
+                event = "config_schema_serialize_error",
+                component = "config",
+                path = %path.display(),
+                error = %source,
+                "Failed to serialize config schema for validation, continuing without schema check"
+            );
+        }
+        ValidationFailure::Schema(SchemaError::Compile { message, .. }) => {
+            tracing::error!(
+                service = "keyrx",
+                event = "config_schema_compile_error",
+                component = "config",
+                path = %path.display(),
+                error = %message,
+                "Failed to compile config schema, continuing without schema check"
+            );
+        }
+    }
+}
+
+fn should_abort_load(error: &ValidationFailure) -> bool {
+    matches!(error, ValidationFailure::Invalid { .. })
 }
 
 // =============================================================================
@@ -574,6 +682,22 @@ latency_caution_us = 12000
         fs::write(&config_path, "this is not valid [toml").unwrap();
 
         let config = load_config(Some(&config_path));
+        assert_eq!(config, Config::default());
+    }
+
+    #[test]
+    fn load_config_schema_validation_failure_uses_default() {
+        let temp = tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        let toml_content = r#"
+[timing]
+tap_timeout_ms = "fast"
+"#;
+        fs::write(&config_path, toml_content).unwrap();
+
+        let config = load_config(Some(&config_path));
+
         assert_eq!(config, Config::default());
     }
 

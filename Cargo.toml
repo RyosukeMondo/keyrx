@@ -61,6 +61,8 @@ backtrace = "0.3"
 
 # JSON Schema generation
 schemars = { version = "0.8", features = ["chrono"] }
+# JSON Schema validation
+jsonschema = "0.18"
 
 # Memory usage tracking
 memory-stats = "1.2"
