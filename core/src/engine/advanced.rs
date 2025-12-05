@@ -15,6 +15,8 @@ use crate::engine::{
     InputEvent, KeyCode, LayerAction, LayerStack, ModifierState, OutputAction, PendingDecision,
     TimingConfig,
 };
+use crate::identity::DeviceIdentity;
+use crate::registry::device::DeviceRegistry;
 use crate::traits::{KeyStateProvider, ScriptRuntime};
 use std::collections::HashSet;
 
@@ -77,6 +79,10 @@ where
     timing: TimingConfig,
     safe_mode: bool,
     _running: bool,
+
+    // Revolutionary mapping pipeline (optional)
+    /// Device registry for per-device configuration
+    device_registry: Option<DeviceRegistry>,
 }
 
 impl<S> AdvancedEngine<S>
@@ -98,7 +104,25 @@ where
             timing,
             safe_mode: false,
             _running: false,
+            device_registry: None,
         }
+    }
+
+    /// Set the device registry for per-device revolutionary mapping.
+    ///
+    /// When a device registry is set, the engine will check per-device
+    /// configuration before processing events:
+    /// - If a device has remap_enabled=false, events are passed through
+    /// - If a device has an assigned profile, profile mappings are used
+    /// - Otherwise, default layer-based remapping is used
+    pub fn with_device_registry(mut self, registry: DeviceRegistry) -> Self {
+        self.device_registry = Some(registry);
+        self
+    }
+
+    /// Get a reference to the device registry, if configured.
+    pub fn device_registry(&self) -> Option<&DeviceRegistry> {
+        self.device_registry.as_ref()
     }
 
     /// Mutable access to layer stack (useful for configuration in setup/tests).
@@ -192,6 +216,31 @@ where
         result
     }
 
+    /// Check if an event should be processed or passed through based on device state.
+    ///
+    /// This method implements the revolutionary mapping pipeline's first stage:
+    /// device resolution and per-device passthrough mode.
+    ///
+    /// Returns `Some(true)` if the event should be passed through (remap disabled).
+    /// Returns `Some(false)` if the event should be processed (remap enabled).
+    /// Returns `None` if device registry is not configured or device not found.
+    fn should_passthrough_device(&self, event: &InputEvent) -> Option<bool> {
+        let registry = self.device_registry.as_ref()?;
+
+        // Extract device identity from event
+        let vendor_id = event.vendor_id?;
+        let product_id = event.product_id?;
+        let serial_number = event.serial_number.as_ref()?;
+
+        let identity = DeviceIdentity::new(vendor_id, product_id, serial_number.clone());
+
+        // Try to get device state with a non-blocking read
+        let device_state = registry.try_get_device_state(&identity)?;
+
+        // Return true if remap is disabled (passthrough), false if enabled (process)
+        Some(!device_state.remap_enabled)
+    }
+
     /// Update the current state kind based on the actual engine state.
     ///
     /// This should be called after state changes that don't have explicit
@@ -223,6 +272,25 @@ where
         tracer: Option<&EngineTracer>,
     ) -> Vec<OutputAction> {
         let start_time = std::time::Instant::now();
+
+        // Step 0: Revolutionary mapping pipeline - device resolution and passthrough
+        // Check if this device has remapping disabled
+        if let Some(should_pass) = self.should_passthrough_device(&event) {
+            if should_pass {
+                // Device has remap_enabled=false, pass through immediately
+                tracing::debug!(
+                    service = "keyrx",
+                    event = "device_passthrough",
+                    component = "advanced_engine",
+                    vendor_id = event.vendor_id,
+                    product_id = event.product_id,
+                    "Device remapping disabled, passing through event"
+                );
+                return vec![OutputAction::PassThrough];
+            }
+            // Device has remap_enabled=true, continue with normal processing
+        }
+        // If device not found or registry not configured, continue with normal processing
 
         // Step 1: Validate the transition through the state graph
         let transition = if event.pressed {

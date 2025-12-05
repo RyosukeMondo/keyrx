@@ -269,6 +269,20 @@ impl DeviceRegistry {
         devices.get(identity).cloned()
     }
 
+    /// Try to get device state synchronously (non-blocking).
+    ///
+    /// This method uses try_read() which returns immediately if the lock cannot
+    /// be acquired. This is useful in hot paths like event processing where
+    /// blocking is not acceptable.
+    ///
+    /// Returns None if:
+    /// - The device is not registered
+    /// - The lock cannot be acquired immediately
+    pub fn try_get_device_state(&self, identity: &DeviceIdentity) -> Option<DeviceState> {
+        let devices = self.devices.try_read().ok()?;
+        devices.get(identity).cloned()
+    }
+
     /// List all registered devices
     ///
     /// Returns a vector of all device states, sorted by connection time.

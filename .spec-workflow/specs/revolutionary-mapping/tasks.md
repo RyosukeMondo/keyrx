@@ -183,7 +183,7 @@
   - _Requirements: 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Input Processing Developer with expertise in low-latency transformations | Task: Implement CoordinateTranslator following requirement 10, translating scancodes to (row, col) in <20μs | Restrictions: Must cache translation maps, meet latency target, handle unmapped scancodes gracefully | _Leverage: DeviceDefinitionLibrary, HashMap for O(1) lookup | Success: Translation is fast (<20μs), cache works, handles unknowns, tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.8. Integrate pipeline into engine
+- [x] 2.8. Integrate pipeline into engine
   - Files: `core/src/engine/core.rs`
   - Add DeviceResolver, ProfileResolver, CoordinateTranslator to engine
   - Update process_input_event() to use new pipeline stages
