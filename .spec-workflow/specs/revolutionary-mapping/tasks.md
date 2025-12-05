@@ -455,7 +455,7 @@
   - _Requirements: 15_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test Engineer | Task: Write migration tests following requirement 15, ensuring safe data transformation | Restrictions: Must test all scenarios, verify backups, test errors, idempotency critical | _Leverage: Test utilities, temp dirs | Success: Migration tested thoroughly, backups verified, errors handled, idempotent, coverage good. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 6.5. Write end-to-end integration tests
+- [x] 6.5. Write end-to-end integration tests
   - Files: `core/tests/e2e_revolutionary_mapping.rs`
   - Test: Connect 2 identical devices → assign different profiles → verify isolation
   - Test: Swap profile on device → verify behavior changes
