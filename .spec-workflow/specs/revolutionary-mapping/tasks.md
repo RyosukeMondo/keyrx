@@ -127,7 +127,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Data Modeling Developer with expertise in TOML and schema design | Task: Define DeviceDefinition data model following requirement 7, matching TOML schema for device specifications | Restrictions: Must use TOML-compatible types, validate all required fields, support optional visual metadata | _Leverage: toml crate patterns | Success: Structs deserialize from TOML correctly, validation catches errors, all fields accessible. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.2. Implement DeviceDefinitionLibrary
+- [x] 2.2. Implement DeviceDefinitionLibrary
   - Files: `core/src/definitions/library.rs`, `core/src/definitions/mod.rs`
   - Create DeviceDefinitionLibrary with HashMap<(u16, u16), DeviceDefinition>
   - Implement load_from_directory() using walkdir

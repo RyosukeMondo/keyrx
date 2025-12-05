@@ -50,6 +50,9 @@ flate2 = "1.1"
 # File watching
 notify = "6.0"
 
+# Directory walking
+walkdir = "2"
+
 # REPL readline support
 rustyline = "14.0"
 

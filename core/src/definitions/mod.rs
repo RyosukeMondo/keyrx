@@ -4,7 +4,9 @@
 //! device layout definitions from TOML files. Device definitions describe the
 //! physical layout of input devices, enabling layout-aware key remapping.
 
+pub mod library;
 pub mod types;
 
 // Re-export commonly used types
+pub use library::{DeviceDefinitionLibrary, LibraryError};
 pub use types::{DeviceDefinition, LayoutDefinition, VisualMetadata};

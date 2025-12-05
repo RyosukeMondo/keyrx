@@ -5,7 +5,7 @@
 //! physical positions (row, col) for layout-aware remapping.
 
 use crate::registry::PhysicalPosition;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -25,11 +25,7 @@ pub enum DeviceDefinitionError {
     InvalidLayoutType(String),
 
     #[error("Matrix map contains invalid position: scancode={scancode}, position=({row}, {col})")]
-    InvalidMatrixPosition {
-        scancode: u16,
-        row: u8,
-        col: u8,
-    },
+    InvalidMatrixPosition { scancode: u16, row: u8, col: u8 },
 
     #[error("Matrix map is empty (at least one scancode mapping required)")]
     EmptyMatrixMap,
@@ -65,6 +61,7 @@ pub struct DeviceDefinition {
 
     /// Scancode to physical position mapping
     /// Key: scancode/HID usage ID, Value: (row, col) position
+    #[serde(deserialize_with = "deserialize_matrix_map")]
     pub matrix_map: HashMap<u16, PhysicalPosition>,
 
     /// Optional visual metadata for UI rendering
@@ -283,6 +280,25 @@ impl VisualMetadata {
             key_spacing,
         }
     }
+}
+
+/// Custom deserializer for matrix_map to handle string keys in TOML
+fn deserialize_matrix_map<'de, D>(
+    deserializer: D,
+) -> Result<HashMap<u16, PhysicalPosition>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let string_map: HashMap<String, PhysicalPosition> = HashMap::deserialize(deserializer)?;
+
+    string_map
+        .into_iter()
+        .map(|(k, v)| {
+            k.parse::<u16>().map(|scancode| (scancode, v)).map_err(|_| {
+                serde::de::Error::custom(format!("Invalid scancode in matrix_map: {}", k))
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
