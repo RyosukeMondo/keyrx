@@ -58,4 +58,16 @@ extension LayoutTypeExtension on LayoutType {
   bool isCompatibleWith(LayoutType other) {
     return this == other;
   }
+
+  /// Convert to JSON string representation
+  String toJsonString() {
+    switch (this) {
+      case LayoutType.standard:
+        return 'standard';
+      case LayoutType.matrix:
+        return 'matrix';
+      case LayoutType.split:
+        return 'split';
+    }
+  }
 }

@@ -57,6 +57,32 @@ typedef KeyrxDeviceRegistrySetUserLabel = Pointer<Char> Function(
     Pointer<Char>, Pointer<Char>);
 
 // ────────────────────────────────────────────────────────────────
+// Profile Registry FFI Types (Revolutionary Mapping)
+// ────────────────────────────────────────────────────────────────
+
+typedef KeyrxProfileRegistryListProfilesNative = Pointer<Char> Function();
+typedef KeyrxProfileRegistryListProfiles = Pointer<Char> Function();
+
+typedef KeyrxProfileRegistryGetProfileNative = Pointer<Char> Function(
+    Pointer<Char>);
+typedef KeyrxProfileRegistryGetProfile = Pointer<Char> Function(Pointer<Char>);
+
+typedef KeyrxProfileRegistrySaveProfileNative = Pointer<Char> Function(
+    Pointer<Char>);
+typedef KeyrxProfileRegistrySaveProfile = Pointer<Char> Function(
+    Pointer<Char>);
+
+typedef KeyrxProfileRegistryDeleteProfileNative = Pointer<Char> Function(
+    Pointer<Char>);
+typedef KeyrxProfileRegistryDeleteProfile = Pointer<Char> Function(
+    Pointer<Char>);
+
+typedef KeyrxProfileRegistryFindCompatibleProfilesNative = Pointer<Char>
+    Function(Pointer<Char>);
+typedef KeyrxProfileRegistryFindCompatibleProfiles = Pointer<Char> Function(
+    Pointer<Char>);
+
+// ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
 
@@ -83,6 +109,14 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxDeviceRegistryAssignProfile? deviceRegistryAssignProfile;
   late final KeyrxDeviceRegistrySetUserLabel? deviceRegistrySetUserLabel;
 
+  // Profile Registry FFI functions (revolutionary mapping)
+  late final KeyrxProfileRegistryListProfiles? profileRegistryListProfiles;
+  late final KeyrxProfileRegistryGetProfile? profileRegistryGetProfile;
+  late final KeyrxProfileRegistrySaveProfile? profileRegistrySaveProfile;
+  late final KeyrxProfileRegistryDeleteProfile? profileRegistryDeleteProfile;
+  late final KeyrxProfileRegistryFindCompatibleProfiles?
+      profileRegistryFindCompatibleProfiles;
+
   KeyrxBindings(this._lib) : super(_lib) {
     // Required functions
     freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
@@ -98,6 +132,14 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     deviceRegistrySetRemapEnabled = _tryLookupDeviceRegistrySetRemapEnabled();
     deviceRegistryAssignProfile = _tryLookupDeviceRegistryAssignProfile();
     deviceRegistrySetUserLabel = _tryLookupDeviceRegistrySetUserLabel();
+
+    // Revolutionary mapping profile registry functions
+    profileRegistryListProfiles = _tryLookupProfileRegistryListProfiles();
+    profileRegistryGetProfile = _tryLookupProfileRegistryGetProfile();
+    profileRegistrySaveProfile = _tryLookupProfileRegistrySaveProfile();
+    profileRegistryDeleteProfile = _tryLookupProfileRegistryDeleteProfile();
+    profileRegistryFindCompatibleProfiles =
+        _tryLookupProfileRegistryFindCompatibleProfiles();
   }
 
   KeyrxSetBypass? _tryLookupSetBypass() {
@@ -159,6 +201,63 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
       return _lib.lookupFunction<KeyrxDeviceRegistrySetUserLabelNative,
           KeyrxDeviceRegistrySetUserLabel>(
         'keyrx_device_registry_set_user_label',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxProfileRegistryListProfiles? _tryLookupProfileRegistryListProfiles() {
+    try {
+      return _lib.lookupFunction<KeyrxProfileRegistryListProfilesNative,
+          KeyrxProfileRegistryListProfiles>(
+        'keyrx_profile_registry_list_profiles',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxProfileRegistryGetProfile? _tryLookupProfileRegistryGetProfile() {
+    try {
+      return _lib.lookupFunction<KeyrxProfileRegistryGetProfileNative,
+          KeyrxProfileRegistryGetProfile>(
+        'keyrx_profile_registry_get_profile',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxProfileRegistrySaveProfile? _tryLookupProfileRegistrySaveProfile() {
+    try {
+      return _lib.lookupFunction<KeyrxProfileRegistrySaveProfileNative,
+          KeyrxProfileRegistrySaveProfile>(
+        'keyrx_profile_registry_save_profile',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxProfileRegistryDeleteProfile? _tryLookupProfileRegistryDeleteProfile() {
+    try {
+      return _lib.lookupFunction<KeyrxProfileRegistryDeleteProfileNative,
+          KeyrxProfileRegistryDeleteProfile>(
+        'keyrx_profile_registry_delete_profile',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxProfileRegistryFindCompatibleProfiles?
+      _tryLookupProfileRegistryFindCompatibleProfiles() {
+    try {
+      return _lib.lookupFunction<
+          KeyrxProfileRegistryFindCompatibleProfilesNative,
+          KeyrxProfileRegistryFindCompatibleProfiles>(
+        'keyrx_profile_registry_find_compatible_profiles',
       );
     } on ArgumentError {
       return null;

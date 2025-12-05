@@ -276,7 +276,7 @@
   - _Requirements: 16_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart FFI Developer with expertise in native bindings | Task: Create DeviceRegistryFFI Dart bindings following requirement 16, wrapping Rust FFI functions | Restrictions: Must use dart:ffi correctly, free C strings, handle errors, type-safe API | _Leverage: Existing FFI binding patterns from ffi/ | Success: All FFI functions wrapped, memory managed correctly, errors handled, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.7. Create ProfileRegistryFFI bindings
+- [x] 3.7. Create ProfileRegistryFFI bindings
   - Files: `ui/lib/ffi/profile_registry_ffi.dart`
   - Lookup FFI functions
   - Create Dart wrappers with type safety
