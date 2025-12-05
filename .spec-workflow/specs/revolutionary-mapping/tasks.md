@@ -84,7 +84,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Storage Systems Developer with expertise in atomic I/O and caching strategies | Task: Implement ProfileRegistry following requirement 3, managing persistent profile storage with in-memory cache | Restrictions: Must use atomic writes (temp + rename), validate profiles before save, cache for performance, handle corrupt files gracefully | _Leverage: Atomic write pattern from discovery/storage.rs, config paths from config/paths.rs | Success: All CRUD operations work, atomic writes prevent corruption, cache improves performance, validation catches errors, integration tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (registry struct, storage methods, validation functions), then mark as [x]._
 
-- [ ] 1.9. Implement DeviceBindings persistence
+- [x] 1.9. Implement DeviceBindings persistence
   - Files: `core/src/registry/bindings.rs`, `core/src/registry/mod.rs`
   - Create DeviceBindings struct with HashMap<DeviceIdentity, DeviceBinding>
   - Implement load() from device_bindings.json
