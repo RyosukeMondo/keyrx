@@ -166,9 +166,7 @@ pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *
 pub unsafe extern "C" fn keyrx_save_device_profile(profile_json: *const c_char) -> *mut c_char {
     let json = match cstr_to_str(profile_json) {
         Ok(s) => s,
-        Err(code) => {
-            return ffi_error(FfiError::invalid_utf8(format!("profile_json ({code})")))
-        }
+        Err(code) => return ffi_error(FfiError::invalid_utf8(format!("profile_json ({code})"))),
     };
     ffi_json(device::save_device_profile(json))
 }

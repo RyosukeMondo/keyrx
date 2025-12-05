@@ -332,7 +332,9 @@ impl DiscoverySession {
         let position = self.expected_positions[self.cursor];
 
         // Inefficient search but acceptable for discovery session sizes
-        let scan_code_to_remove = self.keymap.iter()
+        let scan_code_to_remove = self
+            .keymap
+            .iter()
             .find(|(_, k)| k.row == position.row && k.col == position.col)
             .map(|(s, _)| *s);
 
@@ -493,12 +495,18 @@ mod tests {
     #[test]
     fn detects_duplicates_and_recovers() {
         let mut session =
-            DiscoverySession::new(DeviceId::new(0xA, 0xB), 1, vec![2]).expect("valid layout");
+            DiscoverySession::new(DeviceId::new(0xA, 0xB), 1, vec![3]).expect("valid layout");
 
+        // First key press
         let first = session.handle_event(&event_for(10, None, true, 1));
         assert!(matches!(first, SessionUpdate::Progress(_)));
 
-        let duplicate = session.handle_event(&event_for(10, None, true, 2));
+        // Second key press (different scan code)
+        let second = session.handle_event(&event_for(11, None, true, 2));
+        assert!(matches!(second, SessionUpdate::Progress(_)));
+
+        // Third press with scan code 10 again - should be duplicate since it's not the immediately preceding position
+        let duplicate = session.handle_event(&event_for(10, None, true, 3));
         let dup = match duplicate {
             SessionUpdate::Duplicate(dup) => dup,
             other => {
@@ -507,9 +515,10 @@ mod tests {
         };
         assert_eq!(dup.scan_code, 10);
         assert_eq!(dup.existing, ExpectedPosition { row: 0, col: 0 });
-        assert_eq!(dup.attempted, ExpectedPosition { row: 0, col: 1 });
+        assert_eq!(dup.attempted, ExpectedPosition { row: 0, col: 2 });
 
-        let finished = session.handle_event(&event_for(11, None, true, 3));
+        // Fourth key (new scan code) should complete the session
+        let finished = session.handle_event(&event_for(12, None, true, 4));
         assert!(matches!(
             finished,
             SessionUpdate::Finished(DiscoverySummary {
@@ -518,7 +527,7 @@ mod tests {
             })
         ));
         assert_eq!(session.duplicates.len(), 1);
-        assert_eq!(session.keymap.len(), 2);
+        assert_eq!(session.keymap.len(), 3);
     }
 
     #[test]

@@ -10,9 +10,7 @@ use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use tracing::{debug, error};
 use windows::core::{w, PCWSTR};
-use windows::Win32::Foundation::{
-    GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM,
-};
+use windows::Win32::Foundation::{GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::{
@@ -115,7 +113,8 @@ impl WindowsRawInput {
                 };
 
                 unsafe {
-                    if RegisterRawInputDevices(&[rid], size_of::<RAWINPUTDEVICE>() as u32).is_err() {
+                    if RegisterRawInputDevices(&[rid], size_of::<RAWINPUTDEVICE>() as u32).is_err()
+                    {
                         error!("Failed to register raw input devices: {:?}", GetLastError());
                         let _ = DestroyWindow(hwnd);
                         return;
@@ -161,7 +160,12 @@ thread_local! {
     static CONTEXT: RefCell<Option<ThreadContext>> = RefCell::new(None);
 }
 
-unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+unsafe extern "system" fn wnd_proc(
+    hwnd: HWND,
+    msg: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
     match msg {
         WM_INPUT => {
             let mut size = 0u32;
@@ -173,9 +177,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
                     RID_INPUT,
                     None,
                     &mut size,
-                    size_of::<RAWINPUTHEADER>() as u32
+                    size_of::<RAWINPUTHEADER>() as u32,
                 )
-            } == 0 {
+            } == 0
+            {
                 let mut buffer = vec![0u8; size as usize];
                 if unsafe {
                     GetRawInputData(
@@ -183,9 +188,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
                         RID_INPUT,
                         Some(buffer.as_mut_ptr() as _),
                         &mut size,
-                        size_of::<RAWINPUTHEADER>() as u32
+                        size_of::<RAWINPUTHEADER>() as u32,
                     )
-                } == size {
+                } == size
+                {
                     let raw = unsafe { &*(buffer.as_ptr() as *const RAWINPUT) };
                     if raw.header.dwType == RIM_TYPEKEYBOARD.0 {
                         process_raw_input(raw);
@@ -215,8 +221,9 @@ fn process_raw_input(raw: &RAWINPUT) {
                 h_device,
                 RIDI_DEVICENAME,
                 Some(name_buffer.as_mut_ptr() as _),
-                &mut name_len
-            ) > 0 {
+                &mut name_len,
+            ) > 0
+            {
                 String::from_utf16_lossy(&name_buffer)
                     .trim_matches(char::from(0))
                     .to_string()
@@ -234,7 +241,7 @@ fn process_raw_input(raw: &RAWINPUT) {
     let scan_code = keyboard.MakeCode;
 
     let pressed = (flags & 1) == 0; // RI_KEY_BREAK = 1 (key up), 0 (key down)
-    // E0 prefix
+                                    // E0 prefix
     let is_e0 = (flags & 2) != 0; // RI_KEY_E0 = 2
 
     use super::keymap::vk_to_keycode;
@@ -242,7 +249,8 @@ fn process_raw_input(raw: &RAWINPUT) {
     // Handle extended keys
     let mut key_code = vk_to_keycode(vkey);
     if is_e0 {
-        if vkey == 0x0D { // VK_RETURN
+        if vkey == 0x0D {
+            // VK_RETURN
             key_code = KeyCode::NumpadEnter;
         }
     }
@@ -270,7 +278,8 @@ impl InputSource for WindowsRawInput {
         if self.running.swap(true, Ordering::Relaxed) {
             return Ok(());
         }
-        self.spawn_thread().map_err(|e| KeyrxError::from(anyhow::anyhow!(e)))?;
+        self.spawn_thread()
+            .map_err(|e| KeyrxError::from(anyhow::anyhow!(e)))?;
         Ok(())
     }
 

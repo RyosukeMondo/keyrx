@@ -12,15 +12,15 @@ use crate::drivers::DeviceInfo;
 use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
 use crate::mocks::MockInput;
 use crate::scripting::RhaiRuntime;
-use crate::traits::InputSource;
+use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{info, instrument};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use tracing::{debug, warn};
+use tracing::{info, instrument};
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::LinuxInput;

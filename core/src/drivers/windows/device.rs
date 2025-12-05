@@ -29,8 +29,11 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
     let mut device_count = 0;
     // First call to get the number of devices
     unsafe {
-        if GetRawInputDeviceList(None, &mut device_count, size_of::<RAWINPUTDEVICELIST>() as u32)
-            == u32::MAX
+        if GetRawInputDeviceList(
+            None,
+            &mut device_count,
+            size_of::<RAWINPUTDEVICELIST>() as u32,
+        ) == u32::MAX
         {
             return Err(KeyrxError::from(anyhow::anyhow!(
                 "Failed to get raw input device list count"

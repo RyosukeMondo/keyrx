@@ -35,3 +35,9 @@ Thumbs.db
 
 # Spec workflow temp files
 .spec-workflow/approvals/
+
+# BFG Repo-Cleaner reports
+..bfg-report/
+
+# Application cache
+core/.keyrx_cache/
