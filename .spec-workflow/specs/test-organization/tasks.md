@@ -129,7 +129,7 @@
   - _Requirements: 5.1, 5.2, 5.4_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Create test README in core/tests/README.md | Restrictions: Cover organization, naming, where to add tests | _Leverage: New test structure | Success: README is helpful, developers can find right location | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 15. Update CI to run test categories
+- [x] 15. Update CI to run test categories
   - File: `.github/workflows/ci.yml`
   - Add separate jobs for unit/integration/e2e
   - Configure parallel execution
