@@ -332,7 +332,7 @@
   - _Requirements: 12_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Component Developer | Task: Create DeviceCard widget following requirement 12, composing device controls into card layout | Restrictions: Must show all device info clearly, compose sub-widgets, handle callbacks, responsive layout | _Leverage: Material Card, existing widgets | Success: Card displays beautifully, all controls work, layout responsive, widget tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widget, layout structure), then mark as [x]._
 
-- [ ] 4.4. Rebuild DevicesPage
+- [x] 4.4. Rebuild DevicesPage
   - Files: `ui/lib/pages/devices_page.dart`
   - Use FutureBuilder to load devices from DeviceRegistryService
   - Display list of DeviceCard widgets
