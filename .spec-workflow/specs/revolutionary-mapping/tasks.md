@@ -373,7 +373,7 @@
   - _Requirements: 13_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Layout Developer with custom rendering expertise | Task: Create LayoutGrid widget following requirement 13, dynamically rendering device layouts | Restrictions: Must support Matrix/Standard/Split layouts, show mappings, clickable keys, responsive | _Leverage: GridView for Matrix, existing keyboard layout concepts | Success: All layout types render correctly, mappings shown, clicks work, widget tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widget, layout rendering logic), then mark as [x]._
 
-- [ ] 5.2. Create SoftKeyboard widget
+- [x] 5.2. Create SoftKeyboard widget
   - Files: `ui/lib/widgets/soft_keyboard.dart`
   - Create palette showing all KeyCode values
   - Add search/filter functionality
