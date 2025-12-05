@@ -13,6 +13,7 @@ use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 use crate::engine::InputEvent;
 use crate::errors::KeyrxError;
+use crate::identity;
 use crate::safety::panic_guard::PanicGuard;
 use crossbeam_channel::Sender;
 use std::path::{Path, PathBuf};
@@ -50,6 +51,8 @@ pub struct EvdevReader {
     panic_error: Arc<AtomicBool>,
     /// Device ID string for event metadata (derived from device_path).
     device_id: String,
+    /// Serial number extracted from the device for unique identification.
+    serial_number: Option<String>,
     /// Modifier state tracking for emergency exit detection.
     modifier_state: ModifierStateTracker,
     /// LRU cache for evdev scan code to KeyCode mappings.
@@ -121,6 +124,32 @@ impl EvdevReader {
         // Create device_id from path for event metadata
         let device_id = device_path.to_string_lossy().to_string();
 
+        // Extract serial number for device identification
+        let serial_number = match identity::linux::extract_serial_number(&device_path) {
+            Ok(serial) => {
+                debug!(
+                    service = "keyrx",
+                    event = "serial_extracted",
+                    component = "linux_reader",
+                    path = %device_path.display(),
+                    serial = %serial,
+                    "Successfully extracted device serial number"
+                );
+                Some(serial)
+            }
+            Err(e) => {
+                warn!(
+                    service = "keyrx",
+                    event = "serial_extraction_failed",
+                    component = "linux_reader",
+                    path = %device_path.display(),
+                    error = %e,
+                    "Failed to extract serial number, device events will not include serial"
+                );
+                None
+            }
+        };
+
         Ok(Self {
             device,
             tx,
@@ -128,6 +157,7 @@ impl EvdevReader {
             device_path,
             panic_error,
             device_id,
+            serial_number,
             modifier_state: ModifierStateTracker::default(),
             cache,
         })
@@ -372,7 +402,7 @@ impl EvdevReader {
 
     /// Convert an evdev event to an InputEvent.
     fn convert_event(&self, event: &evdev::InputEvent) -> InputEvent {
-        build_input_event(&self.device_id, event, &self.cache)
+        build_input_event(&self.device_id, &self.serial_number, event, &self.cache)
     }
 
     /// Handle a read error from the evdev device.
@@ -457,6 +487,7 @@ impl EvdevReader {
 
 fn build_input_event(
     device_id: &str,
+    serial_number: &Option<String>,
     event: &evdev::InputEvent,
     cache: &Arc<LruKeymapCache>,
 ) -> InputEvent {
@@ -488,7 +519,7 @@ fn build_input_event(
         is_repeat,
         is_synthetic: false,
         scan_code,
-        serial_number: None, // TODO: Extract from Linux device in task 1.5
+        serial_number: serial_number.clone(),
     }
 }
 

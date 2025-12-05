@@ -41,7 +41,7 @@
   - _Requirements: 8_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Windows Driver Developer with expertise in Raw Input API integration | Task: Integrate serial extraction into Windows driver following requirement 8, calling identity::windows::extract_serial_number() on device events | Restrictions: Must maintain existing driver performance (<50μs overhead), handle extraction failures gracefully, log warnings for port-bound devices | _Leverage: Existing device detection in raw_input.rs | Success: Serial number extracted on device connection, included in events, no performance regression, all integration tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (modified functions, integration points), then mark as [x]._
 
-- [ ] 1.5. Add serial extraction to Linux driver
+- [x] 1.5. Add serial extraction to Linux driver
   - Files: `core/src/drivers/linux/evdev_input.rs`
   - Call identity::linux::extract_serial_number() on device open
   - Include serial_number in InputEvent metadata
