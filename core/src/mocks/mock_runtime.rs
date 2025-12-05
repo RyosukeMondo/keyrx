@@ -6,6 +6,7 @@ use crate::keyrx_err;
 use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use std::collections::HashSet;
+use std::time::Duration;
 
 /// Represents a recorded method call on MockRuntime.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +35,8 @@ pub struct MockRuntime {
     registry: RemapRegistry,
     /// History of all method calls for verification.
     call_history: Vec<MockRuntimeCall>,
+    /// Optional delay to simulate slow lookups.
+    lookup_delay: Duration,
 }
 
 impl MockRuntime {
@@ -44,6 +47,7 @@ impl MockRuntime {
             hooks_succeed: true,
             registry: RemapRegistry::new(),
             call_history: Vec::new(),
+            lookup_delay: Duration::ZERO,
         }
     }
 
@@ -86,6 +90,12 @@ impl MockRuntime {
     /// Define a hook (mutable version).
     pub fn define_hook(&mut self, hook: &str) {
         self.defined_hooks.insert(hook.to_string());
+    }
+
+    /// Configure a simulated delay for remap lookups.
+    pub fn with_lookup_delay(mut self, delay: Duration) -> Self {
+        self.lookup_delay = delay;
+        self
     }
 
     /// Set whether hook calls should succeed.
@@ -160,6 +170,9 @@ impl ScriptRuntime for MockRuntime {
     fn lookup_remap(&self, key: KeyCode) -> RemapAction {
         // Note: lookup_remap is &self, so we can't record it in call_history
         // without interior mutability. For simplicity, we skip recording this.
+        if !self.lookup_delay.is_zero() {
+            std::thread::sleep(self.lookup_delay);
+        }
         self.registry.lookup(key)
     }
 }

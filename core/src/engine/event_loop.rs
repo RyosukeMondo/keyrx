@@ -1,7 +1,9 @@
 //! Main engine event loop.
 
 use crate::engine::coalescing::{CoalescingConfig, EventBuffer, ProcessEvent};
-use crate::engine::{InputEvent, OutputAction, RemapAction, TimingConfig};
+use crate::engine::{
+    InputEvent, OutputAction, RemapAction, ResourceEnforcer, ResourceLimits, TimingConfig,
+};
 use crate::errors::KeyrxError;
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
@@ -30,6 +32,7 @@ where
     running: bool,
     held_keys: HashSet<KeyCode>,
     buffer: Option<EventBuffer>,
+    resource_enforcer: Arc<ResourceEnforcer>,
 }
 
 impl<I, S, St> Engine<I, S, St>
@@ -48,7 +51,24 @@ where
             running: false,
             held_keys: HashSet::new(),
             buffer: None,
+            resource_enforcer: Arc::new(ResourceEnforcer::new(ResourceLimits::default())),
         }
+    }
+
+    /// Configure resource enforcement limits.
+    pub fn with_resource_limits(mut self, limits: ResourceLimits) -> Self {
+        self.resource_enforcer = Arc::new(ResourceEnforcer::new(limits));
+        self
+    }
+
+    /// Update resource enforcement limits after construction.
+    pub fn set_resource_limits(&mut self, limits: ResourceLimits) {
+        self.resource_enforcer = Arc::new(ResourceEnforcer::new(limits));
+    }
+
+    /// Shared resource enforcer for timeout, memory, and queue tracking.
+    pub fn resource_enforcer(&self) -> Arc<ResourceEnforcer> {
+        Arc::clone(&self.resource_enforcer)
     }
 
     /// Enable event coalescing with the given configuration.
@@ -124,7 +144,14 @@ where
             return Self::handle_synthetic(event);
         }
 
-        match self.script.lookup_remap(event.key) {
+        let execution_guard = self.resource_enforcer.start_execution();
+        let action = self.script.lookup_remap(event.key);
+
+        if execution_guard.check_timeout().is_err() {
+            return OutputAction::PassThrough;
+        }
+
+        match action {
             RemapAction::Remap(target_key) => Self::handle_remap(event, target_key),
             RemapAction::Block => Self::handle_block(event),
             RemapAction::Pass => Self::handle_pass(event),
@@ -325,6 +352,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::ResourceLimits;
     use crate::metrics::NoOpCollector;
     use crate::mocks::{MockInput, MockRuntime, MockState};
     use std::time::Duration;
@@ -431,5 +459,28 @@ mod tests {
 
         // Should return a Vec with one output
         assert_eq!(outputs.len(), 1);
+    }
+
+    #[test]
+    fn process_event_passes_through_on_timeout() {
+        let input = MockInput::new();
+        let script = MockRuntime::new()
+            .with_remap(KeyCode::CapsLock, KeyCode::Escape)
+            .with_lookup_delay(Duration::from_millis(5));
+        let state = MockState::new();
+        let metrics = Arc::new(NoOpCollector::new());
+
+        let mut engine = Engine::new(input, script, state, metrics);
+        engine.set_resource_limits(ResourceLimits::new(
+            Duration::from_millis(1),
+            10 * 1024 * 1024,
+            1000,
+        ));
+
+        let event = make_event(KeyCode::CapsLock, true);
+        let outputs = ProcessEvent::process_event(&mut engine, event);
+
+        assert_eq!(outputs.len(), 1);
+        assert_eq!(outputs[0], OutputAction::PassThrough);
     }
 }

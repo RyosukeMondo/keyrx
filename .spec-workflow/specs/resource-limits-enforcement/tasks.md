@@ -18,7 +18,7 @@
 
 ## Phase 2: Integration
 
-- [ ] 3. Add timeout enforcement
+- [x] 3. Add timeout enforcement
   - File: `core/src/engine/event_loop.rs`
   - ExecutionGuard for script calls
   - Async interrupt on timeout
