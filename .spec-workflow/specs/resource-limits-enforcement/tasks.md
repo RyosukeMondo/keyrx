@@ -32,7 +32,7 @@
   - Purpose: Memory enforcement
   - _Requirements: 2.1, 2.2, 2.4_
 
-- [ ] 5. Add queue limits
+- [x] 5. Add queue limits
   - File: `core/src/engine/output.rs`
   - Bound output queue
   - Drop oldest on overflow

@@ -2,7 +2,8 @@
 
 use crate::engine::coalescing::{CoalescingConfig, EventBuffer, ProcessEvent};
 use crate::engine::{
-    InputEvent, OutputAction, RemapAction, ResourceEnforcer, ResourceLimits, TimingConfig,
+    InputEvent, OutputAction, OutputQueue, RemapAction, ResourceEnforcer, ResourceLimits,
+    TimingConfig,
 };
 use crate::errors::KeyrxError;
 #[allow(deprecated)]
@@ -33,6 +34,7 @@ where
     held_keys: HashSet<KeyCode>,
     buffer: Option<EventBuffer>,
     resource_enforcer: Arc<ResourceEnforcer>,
+    output_queue: OutputQueue,
 }
 
 impl<I, S, St> Engine<I, S, St>
@@ -43,6 +45,7 @@ where
 {
     /// Create a new engine with injected dependencies.
     pub fn new(input: I, script: S, state: St, metrics: Arc<dyn MetricsCollector>) -> Self {
+        let resource_enforcer = Arc::new(ResourceEnforcer::new(ResourceLimits::default()));
         Self {
             input,
             script,
@@ -51,19 +54,24 @@ where
             running: false,
             held_keys: HashSet::new(),
             buffer: None,
-            resource_enforcer: Arc::new(ResourceEnforcer::new(ResourceLimits::default())),
+            output_queue: OutputQueue::new(Arc::clone(&resource_enforcer)),
+            resource_enforcer,
         }
     }
 
     /// Configure resource enforcement limits.
     pub fn with_resource_limits(mut self, limits: ResourceLimits) -> Self {
         self.resource_enforcer = Arc::new(ResourceEnforcer::new(limits));
+        self.output_queue
+            .replace_enforcer(Arc::clone(&self.resource_enforcer));
         self
     }
 
     /// Update resource enforcement limits after construction.
     pub fn set_resource_limits(&mut self, limits: ResourceLimits) {
         self.resource_enforcer = Arc::new(ResourceEnforcer::new(limits));
+        self.output_queue
+            .replace_enforcer(Arc::clone(&self.resource_enforcer));
     }
 
     /// Shared resource enforcer for timeout, memory, and queue tracking.
@@ -265,7 +273,8 @@ where
                 } else {
                     // No coalescing: process immediately
                     let output = Engine::process_event(self, &event);
-                    self.input.send_output(output).await?;
+                    self.output_queue.enqueue(output);
+                    self.output_queue.flush(&mut self.input).await?;
                 }
 
                 // Record event processing latency
@@ -302,9 +311,9 @@ where
     async fn process_batch(&mut self, events: Vec<InputEvent>) -> Result<(), KeyrxError> {
         for event in events {
             let output = Engine::process_event(self, &event);
-            self.input.send_output(output).await?;
+            self.output_queue.enqueue(output);
         }
-        Ok(())
+        self.output_queue.flush(&mut self.input).await
     }
 
     #[allow(deprecated)]
