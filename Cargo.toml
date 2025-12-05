@@ -60,7 +60,7 @@ strsim = "0.11"
 backtrace = "0.3"
 
 # JSON Schema generation
-schemars = "0.8"
+schemars = { version = "0.8", features = ["chrono"] }
 
 # Memory usage tracking
 memory-stats = "1.2"

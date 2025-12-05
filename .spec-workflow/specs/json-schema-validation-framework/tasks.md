@@ -8,7 +8,7 @@
   - Purpose: Schema generation
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. Add schemars derives to profile types
+- [x] 2. Add schemars derives to profile types
   - Files: `core/src/discovery/types.rs`
   - Add JsonSchema derive to profile types
   - Purpose: Profile schema generation

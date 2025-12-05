@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -14,7 +15,16 @@ pub fn default_schema_version() -> u8 {
 
 /// Identifier for a physical device, typically USB vendor/product IDs.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    keyrx_ffi_macros::FfiMarshaler,
 )]
 #[ffi(strategy = "json")]
 pub struct DeviceId {
@@ -45,7 +55,15 @@ impl fmt::Display for DeviceId {
 
 /// Origin of the profile (discovered on device, default, or migrated).
 #[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, keyrx_ffi_macros::FfiMarshaler,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Default,
+    JsonSchema,
+    keyrx_ffi_macros::FfiMarshaler,
 )]
 #[ffi(strategy = "json")]
 pub enum ProfileSource {
@@ -56,7 +74,9 @@ pub enum ProfileSource {
 }
 
 /// Physical key metadata captured during discovery.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, keyrx_ffi_macros::FfiMarshaler,
+)]
 #[ffi(strategy = "json")]
 pub struct PhysicalKey {
     pub scan_code: u16,
@@ -78,7 +98,9 @@ impl PhysicalKey {
 }
 
 /// Per-device profile describing the physical layout and aliases.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[derive(
+    Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, keyrx_ffi_macros::FfiMarshaler,
+)]
 #[ffi(strategy = "json")]
 pub struct DeviceProfile {
     #[serde(default = "default_schema_version")]
