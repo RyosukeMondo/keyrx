@@ -40,7 +40,7 @@ pub use limits::{
 };
 pub use multi_device::{CoordinationAction, MultiDeviceCoordinator};
 pub use output::OutputQueue;
-pub use replay::{ReplayError, ReplaySession, ReplayState};
+pub use replay::{ReplayError, ReplayManifest, ReplaySession, ReplayState};
 pub use session::{HotplugAction, HotplugSession};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{

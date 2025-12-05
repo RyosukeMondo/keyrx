@@ -5,7 +5,7 @@
 
 use crate::cli::{OutputFormat, OutputWriter};
 use crate::engine::{
-    replay::{ReplaySession, ReplayState},
+    replay::{ReplayManifest, ReplaySession, ReplayState},
     AdvancedEngine, OutputAction, SessionFile, TimingConfig,
 };
 use crate::scripting::{RemapRegistry, RhaiRuntime};
@@ -89,17 +89,18 @@ impl ReplayCommand {
 
         replay.set_speed(self.speed);
 
-        let session = replay.session().clone();
-        self.report_session_info(&session);
+        let manifest = replay.manifest().clone();
+        let session_file = replay.session().cloned();
+        self.report_session_info(&manifest, session_file.as_ref());
 
         // Load script if recorded
-        let runtime = self.prepare_runtime(&session)?;
+        let runtime = self.prepare_runtime(manifest.script_path.as_deref())?;
         let registry = runtime.registry().clone();
-        let mut engine = self.build_engine(runtime, &registry, &session.timing_config);
+        let mut engine = self.build_engine(runtime, &registry, &manifest.timing_config);
 
         self.output.success(&format!(
             "Replaying {} events{}...",
-            session.event_count(),
+            manifest.total_events,
             if self.verify {
                 " with verification"
             } else {
@@ -107,30 +108,34 @@ impl ReplayCommand {
             }
         ));
 
-        let result = self.run_replay(&mut replay, &mut engine, &session).await?;
+        let result = self.run_replay(&mut replay, &mut engine, &manifest).await?;
 
         self.report_result(&result);
 
         Ok(result)
     }
 
-    fn report_session_info(&self, session: &SessionFile) {
+    fn report_session_info(&self, manifest: &ReplayManifest, session: Option<&SessionFile>) {
+        let duration_ms = manifest.duration_us / 1000;
         self.output.success(&format!(
-            "Session: {} events, {}ms duration, avg latency {}µs",
-            session.event_count(),
-            session.duration_us() / 1000,
-            session.avg_latency_us()
+            "Session: {} events, {}ms duration",
+            manifest.total_events, duration_ms
         ));
 
-        if let Some(ref script) = session.script_path {
+        if let Some(avg_latency) = session.map(|s| s.avg_latency_us()) {
+            self.output
+                .success(&format!("Avg latency: {}µs", avg_latency));
+        }
+
+        if let Some(ref script) = manifest.script_path {
             self.output.success(&format!("Script: {}", script));
         }
     }
 
-    fn prepare_runtime(&self, session: &SessionFile) -> Result<RhaiRuntime> {
+    fn prepare_runtime(&self, script_path: Option<&str>) -> Result<RhaiRuntime> {
         let mut runtime = RhaiRuntime::new()?;
 
-        if let Some(ref script_path) = session.script_path {
+        if let Some(script_path) = script_path {
             // Check if the script still exists
             if std::path::Path::new(script_path).exists() {
                 self.output
@@ -205,22 +210,22 @@ impl ReplayCommand {
         &self,
         replay: &mut ReplaySession,
         engine: &mut AdvancedEngine<RhaiRuntime>,
-        session: &SessionFile,
+        manifest: &ReplayManifest,
     ) -> Result<VerificationResult> {
         let mut result = VerificationResult {
-            total_events: session.event_count(),
+            total_events: manifest.total_events,
             ..Default::default()
         };
 
         replay.start().await?;
 
-        let mut event_idx = 0usize;
         let mut last_timestamp = 0u64;
 
         while replay.state() == ReplayState::Playing {
             let events = replay.poll_events().await?;
+            let recorded = replay.take_emitted_records();
 
-            for input_event in events {
+            for (input_event, recorded_event) in events.into_iter().zip(recorded.into_iter()) {
                 // Process tick for pending actions
                 if input_event.timestamp_us > last_timestamp {
                     let _tick_outputs = engine.tick(input_event.timestamp_us);
@@ -231,22 +236,18 @@ impl ReplayCommand {
                 let outputs = engine.process_event(input_event);
 
                 // Verify if requested
-                if self.verify && event_idx < session.events.len() {
-                    let recorded = &session.events[event_idx];
-
-                    if outputs != recorded.output {
+                if self.verify {
+                    if outputs != recorded_event.output {
                         result.mismatched += 1;
                         result.mismatches.push(MismatchDetail {
-                            seq: recorded.seq,
-                            recorded: recorded.output.clone(),
+                            seq: recorded_event.seq,
+                            recorded: recorded_event.output.clone(),
                             actual: outputs.clone(),
                         });
                     } else {
                         result.matched += 1;
                     }
                 }
-
-                event_idx += 1;
             }
 
             // Small delay to prevent busy loop (only for realtime mode)

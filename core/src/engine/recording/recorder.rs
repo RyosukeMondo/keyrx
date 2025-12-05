@@ -10,7 +10,7 @@ use std::io::{self, BufWriter, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::engine::event_recording::EventRecord;
@@ -24,7 +24,7 @@ use super::format::{
 pub const MAX_BLOCK_UNCOMPRESSED: usize = 10 * 1024 * 1024;
 
 /// Metadata stored in the metadata segment ahead of the block payloads.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecordingMetadata {
     /// Recording format version.
     pub format_version: u32,

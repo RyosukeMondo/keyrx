@@ -139,7 +139,7 @@ async fn record_100_events_and_replay_matches() {
     assert!(replay.is_completed());
 
     // Verify recorded outputs match through session accessor
-    let session_ref = replay.session();
+    let session_ref = replay.session().expect("legacy session available");
     for (seq, (_, expected_output)) in events.iter().enumerate() {
         let recorded_output = session_ref
             .events
