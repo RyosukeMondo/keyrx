@@ -87,8 +87,9 @@ pub const PERF_BASELINE_FILE: &str = "target/perf-baseline.json";
 ///
 /// Preference order:
 /// 1. `$XDG_CONFIG_HOME/keyrx`
-/// 2. `$HOME/.config/keyrx`
-/// 3. `.config/keyrx` relative to CWD (last-resort fallback)
+/// 2. Platform-specific config dir (e.g. `%APPDATA%` on Windows, `~/.config` on Linux)
+/// 3. `$HOME/.config/keyrx` (Legacy fallback)
+/// 4. `.config/keyrx` relative to CWD (last-resort fallback)
 ///
 /// # Returns
 ///
@@ -105,6 +106,11 @@ pub const PERF_BASELINE_FILE: &str = "target/perf-baseline.json";
 pub fn config_dir() -> PathBuf {
     if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
         return PathBuf::from(xdg).join("keyrx");
+    }
+
+    // Use dirs crate for robust platform-standard paths
+    if let Some(config_dir) = dirs::config_dir() {
+        return config_dir.join("keyrx");
     }
 
     if let Ok(home) = env::var("HOME") {

@@ -126,11 +126,17 @@ pub struct DeviceProfile {
 ///
 /// Preference order:
 /// 1. `$XDG_CONFIG_HOME/keyrx/devices`
-/// 2. `$HOME/.config/keyrx/devices`
-/// 3. `.config/keyrx/devices` relative to CWD (last-resort fallback)
+/// 2. Platform-specific config dir (e.g. `%APPDATA%` on Windows, `~/.config` on Linux)
+/// 3. `$HOME/.config/keyrx/devices` (Legacy fallback)
+/// 4. `.config/keyrx/devices` relative to CWD (Last resort)
 pub fn device_profiles_dir() -> PathBuf {
     if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
         return PathBuf::from(xdg).join("keyrx").join("devices");
+    }
+
+    // Use dirs crate for robust platform-standard paths
+    if let Some(config_dir) = dirs::config_dir() {
+        return config_dir.join("keyrx").join("devices");
     }
 
     if let Ok(home) = env::var("HOME") {
