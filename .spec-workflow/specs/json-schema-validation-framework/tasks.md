@@ -14,7 +14,7 @@
   - Purpose: Profile schema generation
   - _Requirements: 1.1_
 
-- [ ] 3. Create SchemaRegistry
+- [x] 3. Create SchemaRegistry
   - File: `core/src/validation/schema.rs`
   - Embed generated schemas
   - Provide lookup by name
