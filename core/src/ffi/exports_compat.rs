@@ -103,6 +103,61 @@ pub extern "C" fn keyrx_list_keys() -> *mut c_char {
     ffi_json(device::list_keys())
 }
 
+/// Get device profile for a specific device.
+///
+/// Returns JSON containing the complete device profile including:
+/// - Keyboard layout (rows, cols_per_row)
+/// - Keymap (scan_code -> row/col/alias mapping)
+/// - Discovery metadata
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `ok:<json>` on success with DeviceProfile JSON
+/// * `error:<message>` if profile not found
+///
+/// # Example JSON Response
+/// ```json
+/// {
+///   "schema_version": 1,
+///   "vendor_id": 1234,
+///   "product_id": 5678,
+///   "name": "My Keyboard",
+///   "discovered_at": "2024-01-15T10:30:00Z",
+///   "rows": 6,
+///   "cols_per_row": [15, 15, 15, 13, 11, 8],
+///   "keymap": {
+///     "1": {"scan_code": 1, "row": 0, "col": 0, "alias": "Esc"},
+///     "2": {"scan_code": 2, "row": 0, "col": 1, "alias": "1"}
+///   },
+///   "aliases": {
+///     "Esc": 1,
+///     "1": 2
+///   },
+///   "source": "Discovered"
+/// }
+/// ```
+#[no_mangle]
+pub extern "C" fn keyrx_get_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
+    ffi_json(device::get_device_profile(vendor_id, product_id))
+}
+
+/// Check if a device profile exists.
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `ok:true` if profile exists
+/// * `ok:false` if profile does not exist
+#[no_mangle]
+pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
+    ffi_json(device::has_device_profile(vendor_id, product_id))
+}
+
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
 /// # Safety

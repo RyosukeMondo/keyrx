@@ -138,6 +138,52 @@ pub fn list_keys() -> FfiResult<Vec<serde_json::Value>> {
     json_keys.map_err(|e| FfiError::internal(format!("Failed to serialize key definitions: {}", e)))
 }
 
+/// Get device profile for a specific device by vendor and product ID.
+///
+/// Returns the complete device profile including keymap, layout configuration,
+/// and discovery metadata.
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `Ok(DeviceProfile)` if profile exists
+/// * `Err(FfiError)` if profile not found or cannot be loaded
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+pub fn get_device_profile(
+    vendor_id: u16,
+    product_id: u16,
+) -> FfiResult<crate::discovery::types::DeviceProfile> {
+    use crate::discovery::storage;
+    use crate::discovery::types::DeviceId;
+
+    let device_id = DeviceId::new(vendor_id, product_id);
+    let profile = storage::read_profile(device_id).map_err(|e| {
+        FfiError::not_found(format!("Device profile not found for {}: {}", device_id, e))
+    })?;
+
+    Ok(profile)
+}
+
+/// Check if a device profile exists for given vendor and product ID.
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `Ok(true)` if profile exists
+/// * `Ok(false)` if profile does not exist
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+pub fn has_device_profile(vendor_id: u16, product_id: u16) -> FfiResult<bool> {
+    use crate::discovery::storage::profile_path;
+    use crate::discovery::types::DeviceId;
+
+    let device_id = DeviceId::new(vendor_id, product_id);
+    Ok(profile_path(device_id).exists())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

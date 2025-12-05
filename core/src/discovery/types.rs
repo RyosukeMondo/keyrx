@@ -78,7 +78,8 @@ impl PhysicalKey {
 }
 
 /// Per-device profile describing the physical layout and aliases.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, keyrx_ffi_macros::FfiMarshaler)]
+#[ffi(strategy = "json")]
 pub struct DeviceProfile {
     #[serde(default = "default_schema_version")]
     pub schema_version: u8,
