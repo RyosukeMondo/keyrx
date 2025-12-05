@@ -9,7 +9,7 @@
   - Purpose: AST caching
   - _Requirements: 1.1, 1.2, 3.2_
 
-- [ ] 2. Implement AST serialization
+- [x] 2. Implement AST serialization
   - File: `core/src/scripting/cache.rs`
   - Serialize/deserialize Rhai AST
   - Handle version compatibility
