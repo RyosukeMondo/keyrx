@@ -43,7 +43,7 @@ impl CiCheckCommand {
     pub fn new(format: OutputFormat) -> Self {
         Self {
             gate: None,
-            json: matches!(format, OutputFormat::Json),
+            json: matches!(format, OutputFormat::Json | OutputFormat::Yaml),
             skip_unit: false,
             skip_integration: false,
             skip_uat: false,

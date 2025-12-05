@@ -3,12 +3,14 @@
 pub mod formatter;
 pub mod json;
 pub mod table;
+pub mod yaml;
 
 pub use formatter::{OutputFormat, OutputFormatter};
 use json::JsonFormatter;
 use serde::Serialize;
 use std::io::{self, Write};
 use table::TableFormatter;
+use yaml::YamlFormatter;
 
 /// Writer for formatted CLI output.
 #[derive(Debug)]
@@ -62,6 +64,7 @@ impl OutputFormatter for OutputWriter {
             OutputFormat::Human => format!("[OK] {}", message),
             OutputFormat::Json => JsonFormatter.format_success(message),
             OutputFormat::Table => TableFormatter.format_success(message),
+            OutputFormat::Yaml => YamlFormatter.format_success(message),
         }
     }
 
@@ -70,6 +73,7 @@ impl OutputFormatter for OutputWriter {
             OutputFormat::Human => format!("[ERROR] {}", message),
             OutputFormat::Json => JsonFormatter.format_error(message),
             OutputFormat::Table => TableFormatter.format_error(message),
+            OutputFormat::Yaml => YamlFormatter.format_error(message),
         }
     }
 
@@ -78,6 +82,7 @@ impl OutputFormatter for OutputWriter {
             OutputFormat::Human => format!("[WARN] {}", message),
             OutputFormat::Json => JsonFormatter.format_warning(message),
             OutputFormat::Table => TableFormatter.format_warning(message),
+            OutputFormat::Yaml => YamlFormatter.format_warning(message),
         }
     }
 
@@ -86,6 +91,7 @@ impl OutputFormatter for OutputWriter {
             OutputFormat::Human => serde_json::to_string_pretty(data),
             OutputFormat::Json => JsonFormatter.format_data(data),
             OutputFormat::Table => TableFormatter.format_data(data),
+            OutputFormat::Yaml => YamlFormatter.format_data(data),
         }
     }
 }
@@ -122,6 +128,18 @@ mod tests {
         );
     }
 
+    #[test]
+    fn formats_yaml_messages() {
+        let writer = OutputWriter::new(OutputFormat::Yaml);
+
+        assert_eq!(writer.format_success("ok"), "status: success\nmessage: ok");
+        assert_eq!(
+            writer.format_warning("watch"),
+            "status: warning\nmessage: watch"
+        );
+        assert_eq!(writer.format_error("fail"), "status: error\nmessage: fail");
+    }
+
     #[derive(Serialize)]
     struct SampleData<'a> {
         name: &'a str,
@@ -144,6 +162,11 @@ mod tests {
             .format_data(&sample)
             .expect("json data write should succeed");
         assert_eq!(compact, "{\n  \"name\": \"alpha\",\n  \"count\": 3\n}");
+
+        let yaml = OutputWriter::new(OutputFormat::Yaml)
+            .format_data(&sample)
+            .expect("yaml data write should succeed");
+        assert_eq!(yaml, "name: alpha\ncount: 3");
 
         let table = OutputWriter::new(OutputFormat::Table)
             .format_data(&sample)

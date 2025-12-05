@@ -169,7 +169,12 @@ impl DiscoverCommand {
             return Ok((entry.profile.rows, entry.profile.cols_per_row.clone()));
         }
 
-        if self.assume_yes || matches!(self.output.format(), OutputFormat::Json) {
+        if self.assume_yes
+            || matches!(
+                self.output.format(),
+                OutputFormat::Json | OutputFormat::Yaml
+            )
+        {
             let (rows, cols) = default_layout();
             return Ok((rows, cols));
         }
@@ -186,7 +191,7 @@ impl DiscoverCommand {
         );
 
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 let payload = ExistingProfileJson {
                     status: "ready",
                     path: entry.path.display().to_string(),

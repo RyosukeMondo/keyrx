@@ -255,7 +255,7 @@ impl DoctorCommand {
 
     fn print_results(&self, checks: &[DiagnosticCheck]) -> anyhow::Result<()> {
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 self.output.data(checks)?;
             }
             _ => {

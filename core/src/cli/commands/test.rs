@@ -246,7 +246,7 @@ impl TestCommand {
         let summary = TestSummary::from_results(results);
 
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 let json_output = TestSummaryJson {
                     total: summary.total,
                     passed: summary.passed,

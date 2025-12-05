@@ -43,7 +43,7 @@ impl DevicesCommand {
     fn render_devices(&self, devices: &[drivers::DeviceInfo]) -> CommandResult<()> {
         if devices.is_empty() {
             match self.output.format() {
-                OutputFormat::Json => {
+                OutputFormat::Json | OutputFormat::Yaml => {
                     println!("[]");
                 }
                 _ => {
@@ -70,7 +70,7 @@ impl DevicesCommand {
         }
 
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 if let Err(e) = self.output.data(devices) {
                     return CommandResult::failure(
                         ExitCode::GeneralError,

@@ -12,6 +12,8 @@ pub enum OutputFormat {
     Json,
     /// Aligned table output for human readability.
     Table,
+    /// YAML output for programmatic parsing.
+    Yaml,
 }
 
 /// Common interface for rendering CLI output across formats.

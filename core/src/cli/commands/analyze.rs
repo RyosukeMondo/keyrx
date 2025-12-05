@@ -111,7 +111,10 @@ impl AnalyzeCommand {
 
         self.print_summary(&result);
 
-        if matches!(self.output.format(), OutputFormat::Json) {
+        if matches!(
+            self.output.format(),
+            OutputFormat::Json | OutputFormat::Yaml
+        ) {
             if let Err(e) = self.output.data(&result) {
                 return CommandResult::failure(
                     ExitCode::GeneralError,

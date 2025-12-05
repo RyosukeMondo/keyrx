@@ -89,7 +89,10 @@ impl StateCommand {
             }
         };
 
-        let result = if matches!(self.output.format(), OutputFormat::Json) {
+        let result = if matches!(
+            self.output.format(),
+            OutputFormat::Json | OutputFormat::Yaml
+        ) {
             // JSON mode returns the full StateSnapshot for programmatic consumption.
             self.output.data(&state)
         } else {

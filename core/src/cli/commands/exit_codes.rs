@@ -52,7 +52,7 @@ impl Command for ExitCodesCommand {
         ];
 
         match ctx.output_format() {
-            crate::cli::OutputFormat::Json => {
+            crate::cli::OutputFormat::Json | crate::cli::OutputFormat::Yaml => {
                 let output = ExitCodesOutput { exit_codes };
                 ctx.output().data(&output).ok();
             }

@@ -107,7 +107,7 @@ impl RegressionCommand {
             update_all: false,
             script: None,
             golden_dir: None,
-            json: matches!(format, OutputFormat::Json),
+            json: matches!(format, OutputFormat::Json | OutputFormat::Yaml),
             output: OutputWriter::new(format),
         }
     }

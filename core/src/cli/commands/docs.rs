@@ -106,6 +106,16 @@ impl DocsCommand {
                     println!("{}", json);
                 }
             }
+            OutputFormat::Yaml => {
+                let output_data = serde_json::json!({
+                    "success": true,
+                    "format": format!("{:?}", self.format).to_lowercase(),
+                    "output_file": output_file.display().to_string(),
+                });
+                if let Ok(yaml) = serde_yaml::to_string(&output_data) {
+                    println!("{}", yaml.trim_end_matches('\n'));
+                }
+            }
             _ => {
                 println!(
                     "Documentation generated successfully: {}",

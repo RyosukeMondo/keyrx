@@ -51,7 +51,7 @@ For detailed exit code information, run:
   keyrx exit-codes --json
 ")]
 struct Cli {
-    /// Output format (human or json)
+    /// Output format (human, json, or yaml)
     #[arg(long, default_value = "human", conflicts_with = "json")]
     format: String,
 
@@ -412,6 +412,7 @@ fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
 
     match s.to_lowercase().as_str() {
         "json" => OutputFormat::Json,
+        "yaml" | "yml" => OutputFormat::Yaml,
         _ => OutputFormat::Human,
     }
 }

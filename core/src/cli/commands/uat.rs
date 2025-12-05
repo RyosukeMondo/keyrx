@@ -59,7 +59,7 @@ impl UatCommand {
         Self {
             categories: Vec::new(),
             priorities: Vec::new(),
-            json: matches!(format, OutputFormat::Json),
+            json: matches!(format, OutputFormat::Json | OutputFormat::Yaml),
             fail_fast: false,
             perf: false,
             fuzz: false,

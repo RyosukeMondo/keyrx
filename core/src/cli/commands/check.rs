@@ -125,7 +125,7 @@ impl CheckCommand {
 
     fn print_config(&self, config: &ValidationConfig) -> Result<()> {
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 self.output.data(config)?;
             }
             _ => {
@@ -157,7 +157,7 @@ impl CheckCommand {
 
     fn print_result(&self, result: &ValidationResult, engine: &ValidationEngine) -> Result<()> {
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 self.output.data(result)?;
             }
             _ => {

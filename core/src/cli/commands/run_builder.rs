@@ -101,7 +101,7 @@ impl<'a> RuntimeBuilder<'a> {
 
         let saved_ms = stats.startup_micros_saved as f64 / 1000.0;
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 let summary = CacheMetricsOutput {
                     hits: stats.hits,
                     misses: stats.misses,

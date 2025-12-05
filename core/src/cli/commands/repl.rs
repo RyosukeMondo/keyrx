@@ -230,7 +230,7 @@ Examples:
     fn cmd_state(&self, session: &mut ReplSession) {
         let state = session.snapshot();
         match self.output.format() {
-            OutputFormat::Json => {
+            OutputFormat::Json | OutputFormat::Yaml => {
                 if let Err(e) = self.output.data(&state) {
                     println!("Error formatting state: {}", e);
                 }

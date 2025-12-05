@@ -97,7 +97,7 @@ pub async fn capture_session(
 /// Report discovery progress to the output.
 pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> Result<()> {
     match output.format() {
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             let payload = ProgressJson {
                 status: "progress",
                 captured: progress.captured,
@@ -144,7 +144,7 @@ pub fn report_progress(output: &OutputWriter, progress: &DiscoveryProgress) -> R
 /// Report a duplicate scan code warning.
 pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result<()> {
     match output.format() {
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             let payload = DuplicateJson {
                 status: "duplicate",
                 scan_code: dup.scan_code,
@@ -168,7 +168,7 @@ pub fn report_duplicate(output: &OutputWriter, dup: &DuplicateWarning) -> Result
 /// Report the final discovery summary.
 pub fn report_summary(output: &OutputWriter, summary: &DiscoverySummary) -> Result<()> {
     match output.format() {
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             let payload = SummaryJson {
                 status: "summary",
                 summary,
@@ -211,7 +211,7 @@ pub fn handle_summary(
     match summary.status {
         SessionStatus::Completed => {
             if !assume_yes
-                && !matches!(output.format(), OutputFormat::Json)
+                && !matches!(output.format(), OutputFormat::Json | OutputFormat::Yaml)
                 && !confirm("Save discovered profile? [y/N]: ")?
             {
                 return Err(DiscoverExit::Cancelled.into());
@@ -232,7 +232,7 @@ pub fn handle_summary(
             let path = registry.save_profile(profile)?;
             output.success(&format!("Saved profile to {}", path.display()));
 
-            if matches!(output.format(), OutputFormat::Json) {
+            if matches!(output.format(), OutputFormat::Json | OutputFormat::Yaml) {
                 let payload = DiscoverResultJson {
                     status: "saved",
                     path: path.display().to_string(),

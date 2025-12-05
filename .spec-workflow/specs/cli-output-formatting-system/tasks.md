@@ -23,7 +23,7 @@
   - Purpose: Table format
   - _Requirements: 1.3_
 
-- [ ] 4. Implement YAML formatter
+- [x] 4. Implement YAML formatter
   - File: `core/src/cli/output/yaml.rs`
   - Valid YAML output
   - Purpose: YAML format
