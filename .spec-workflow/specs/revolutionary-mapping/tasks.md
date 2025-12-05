@@ -383,7 +383,7 @@
   - _Requirements: 14_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Widget Developer | Task: Create SoftKeyboard palette widget following requirement 14, showing all output keys with search | Restrictions: Must show all keycodes, search works, keys selectable, performant with many keys | _Leverage: GridView, TextField for search | Success: Palette shows all keys, search filters correctly, selection works, tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 5.3. Create DragDropMapper widget
+- [x] 5.3. Create DragDropMapper widget
   - Files: `ui/lib/widgets/drag_drop_mapper.dart`
   - Compose LayoutGrid and SoftKeyboard in split view
   - Implement mapping workflow (select physical → select output)
