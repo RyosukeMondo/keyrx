@@ -1,17 +1,10 @@
 //! Output formatting for CLI commands.
 
+pub mod formatter;
+
+pub use formatter::{OutputFormat, OutputFormatter};
 use serde::Serialize;
 use std::io::{self, Write};
-
-/// Output format selection.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum OutputFormat {
-    /// Human-readable text output.
-    #[default]
-    Human,
-    /// JSON output for programmatic parsing.
-    Json,
-}
 
 /// Writer for formatted CLI output.
 #[derive(Debug)]
@@ -32,32 +25,34 @@ impl OutputWriter {
 
     /// Write a success message.
     pub fn success(&self, message: &str) {
-        let line = self.format_success(message);
+        let line = OutputFormatter::format_success(self, message);
         println!("{line}");
         let _ = io::stdout().flush();
     }
 
     /// Write an error message.
     pub fn error(&self, message: &str) {
-        let line = self.format_error(message);
+        let line = OutputFormatter::format_error(self, message);
         eprintln!("{line}");
         let _ = io::stderr().flush();
     }
 
     /// Write a warning message.
     pub fn warning(&self, message: &str) {
-        let line = self.format_warning(message);
+        let line = OutputFormatter::format_warning(self, message);
         println!("{line}");
         let _ = io::stdout().flush();
     }
 
     /// Write structured data.
     pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
-        let json = self.format_data(data)?;
+        let json = OutputFormatter::format_data(self, data)?;
         println!("{json}");
         io::stdout().flush()
     }
+}
 
+impl OutputFormatter for OutputWriter {
     fn format_success(&self, message: &str) -> String {
         match self.format {
             OutputFormat::Human => format!("[OK] {}", message),

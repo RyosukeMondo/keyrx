@@ -15,6 +15,6 @@ mod traits;
 pub use command::{Command, CommandContext, Verbosity};
 pub use error::CommandError;
 pub use exit_codes::ExitCode;
-pub use output::{OutputFormat, OutputWriter};
+pub use output::{OutputFormat, OutputFormatter, OutputWriter};
 pub use result::CommandResult;
 pub use traits::HasExitCode;
