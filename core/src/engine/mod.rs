@@ -2,6 +2,7 @@
 
 mod advanced;
 pub mod coalescing;
+mod coordinate_translator;
 mod decision;
 pub mod decision_engine;
 mod device_resolver;
@@ -26,6 +27,7 @@ mod types;
 
 pub use advanced::AdvancedEngine;
 pub use coalescing::{CoalescingConfig, CoalescingEngine, EventBuffer};
+pub use coordinate_translator::{CoordinateTranslator, CoordinateTranslatorError};
 pub use decision::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, PendingDecision,
     PendingDecisionState, TimingConfig,

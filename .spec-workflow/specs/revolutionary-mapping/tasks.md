@@ -174,7 +174,7 @@
   - _Requirements: 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Engineer with expertise in caching strategies | Task: Implement ProfileResolver following requirement 10, caching profiles for <100μs lookup | Restrictions: Must use Arc<Profile> for zero-copy, RwLock for thread-safe cache, invalidate on update | _Leverage: Standard caching patterns | Success: Cache improves performance, cold load <10ms, warm load <100μs, invalidation works, tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.7. Implement CoordinateTranslator
+- [x] 2.7. Implement CoordinateTranslator
   - Files: `core/src/engine/coordinate_translator.rs`, `core/src/engine/mod.rs`
   - Create CoordinateTranslator with DeviceDefinitionLibrary + cache
   - Implement translate(device_identity, scancode) -> Result<PhysicalPosition>
