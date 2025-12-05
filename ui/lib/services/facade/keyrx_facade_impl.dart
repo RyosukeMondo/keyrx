@@ -409,7 +409,9 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       _updateState(currentState.withDeviceStatus(DeviceStatus.scanning));
 
       // List devices from device service
-      final devices = await _services.deviceService.listDevices();
+      // We call refresh() to ensure we get the latest list of devices from the OS,
+      // rather than a cached list. This is critical for the "Reload" button in UI.
+      final devices = await _services.deviceService.refresh();
 
       // Update state based on result
       if (devices.isEmpty) {

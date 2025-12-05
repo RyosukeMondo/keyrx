@@ -462,7 +462,7 @@ void main() {
         ),
       ];
 
-      when(() => mockDevice.listDevices()).thenAnswer((_) async => devices);
+      when(() => mockDevice.refresh()).thenAnswer((_) async => devices);
 
       final result = await facade.listDevices();
 
@@ -476,7 +476,7 @@ void main() {
     test('listDevices: success with no devices', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockDevice.listDevices()).thenAnswer((_) async => []);
+      when(() => mockDevice.refresh()).thenAnswer((_) async => []);
 
       final result = await facade.listDevices();
 
@@ -490,7 +490,7 @@ void main() {
     test('listDevices: handles exceptions', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockDevice.listDevices()).thenThrow(Exception('USB error'));
+      when(() => mockDevice.refresh()).thenThrow(Exception('USB error'));
 
       final result = await facade.listDevices();
 
