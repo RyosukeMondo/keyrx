@@ -16,3 +16,4 @@ export 'scripting/scripting.dart';
 export 'remap_toggle.dart';
 export 'profile_selector.dart';
 export 'device_card.dart';
+export 'layout_grid.dart';
