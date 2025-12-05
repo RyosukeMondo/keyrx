@@ -8,8 +8,8 @@
 use keyrx_core::cli::commands::{AnalyzeCommand, ReplayCommand, TestCommand};
 use keyrx_core::cli::OutputFormat;
 use keyrx_core::engine::{
-    DecisionType, EngineState, EventRecordBuilder, EventRecorder, InputEvent, KeyCode, LayerStack,
-    ModifierState, OutputAction, ReplaySession, SessionFile, TimingConfig,
+    DecisionType, EventRecordBuilder, EventRecorder, InputEvent, KeyCode, ModifierState,
+    OutputAction, ReplaySession, SessionFile, StateSnapshot, TimingConfig,
 };
 use keyrx_core::scripting::test_discovery::discover_tests;
 use keyrx_core::scripting::test_runner::{TestRunner, TestSummary};
@@ -19,15 +19,12 @@ use std::fs;
 use tempfile::TempDir;
 
 /// Create a default engine state for testing.
-fn make_initial_state() -> EngineState {
-    EngineState {
-        pressed_keys: vec![],
-        modifiers: ModifierState::default(),
-        layers: LayerStack::new(),
-        pending: vec![],
-        timing: TimingConfig::default(),
-        safe_mode: false,
-    }
+fn make_initial_state() -> StateSnapshot {
+    let engine = keyrx_core::engine::AdvancedEngine::new(
+        keyrx_core::scripting::RhaiRuntime::new().unwrap(),
+        TimingConfig::default(),
+    );
+    engine.snapshot()
 }
 
 // =============================================================================
@@ -382,7 +379,7 @@ fn analyze_outputs_timing_diagram() {
     // Run analyze command
     let cmd = AnalyzeCommand::new(session_path, OutputFormat::Human).with_diagram(true);
 
-    let result = cmd.run().expect("analyze should succeed");
+    let result = cmd.run().into_result().expect("analyze should succeed");
 
     // Verify statistics
     assert_eq!(result.event_count, 5);
@@ -433,7 +430,7 @@ fn analyze_json_output() {
     fs::write(&session_path, content).expect("write file");
 
     let cmd = AnalyzeCommand::new(session_path, OutputFormat::Json);
-    let result = cmd.run().expect("analyze json");
+    let result = cmd.run().into_result().expect("analyze json");
 
     assert_eq!(result.event_count, 3);
     assert_eq!(result.decision_breakdown.pass_through, 3);
@@ -536,7 +533,7 @@ async fn full_feature_chain_integration() {
     // Step 4: Analyze the session
     let analyze_cmd = AnalyzeCommand::new(session_path, OutputFormat::Human).with_diagram(true);
 
-    let analysis = analyze_cmd.run().expect("analyze");
+    let analysis = analyze_cmd.run().into_result().expect("analyze");
     assert_eq!(analysis.event_count, 4);
     assert_eq!(analysis.decision_breakdown.remap, 2); // CapsLock down + up
     assert_eq!(analysis.decision_breakdown.pass_through, 2); // A down + up
@@ -558,7 +555,7 @@ fn error_handling_chain() {
 
     let analyze_cmd = AnalyzeCommand::new(bad_session, OutputFormat::Human);
     let result = analyze_cmd.run();
-    assert!(result.is_err(), "Should fail for invalid JSON");
+    assert!(result.is_failure(), "Should fail for invalid JSON");
 }
 
 /// Test empty session handling.
@@ -586,7 +583,7 @@ async fn empty_session_chain() {
 
     // Analyze empty session
     let analyze_cmd = AnalyzeCommand::new(session_path, OutputFormat::Human);
-    let result = analyze_cmd.run().expect("analyze empty");
+    let result = analyze_cmd.run().into_result().expect("analyze empty");
     assert_eq!(result.event_count, 0);
 }
 

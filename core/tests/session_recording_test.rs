@@ -4,23 +4,20 @@
 //! and proper handling of corrupted/empty session files.
 
 use keyrx_core::engine::{
-    DecisionType, EngineState, EventRecordBuilder, EventRecorder, InputEvent, KeyCode, LayerStack,
-    ModifierState, OutputAction, ReplaySession, ReplayState, SessionFile, TimingConfig,
+    DecisionType, EventRecordBuilder, EventRecorder, InputEvent, KeyCode, ModifierState,
+    OutputAction, ReplaySession, ReplayState, SessionFile, StateSnapshot, TimingConfig,
     SESSION_FILE_VERSION,
 };
 use keyrx_core::traits::InputSource;
 use tempfile::TempDir;
 
 /// Create a default engine state for testing.
-fn make_initial_state() -> EngineState {
-    EngineState {
-        pressed_keys: vec![],
-        modifiers: ModifierState::default(),
-        layers: LayerStack::new(),
-        pending: vec![],
-        timing: TimingConfig::default(),
-        safe_mode: false,
-    }
+fn make_initial_state() -> StateSnapshot {
+    let engine = keyrx_core::engine::AdvancedEngine::new(
+        keyrx_core::scripting::RhaiRuntime::new().unwrap(),
+        TimingConfig::default(),
+    );
+    engine.snapshot()
 }
 
 /// Generate a sequence of test events simulating key presses.

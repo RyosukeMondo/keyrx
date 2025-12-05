@@ -619,17 +619,15 @@ fn emergency_exit_priority_over_circuit_breaker() {
 
         // STEP 2: Check bypass state (set by emergency exit)
         if is_bypass_active() {
-            return false; // Stop processing
-        }
-
-        // STEP 3: Check circuit breaker state
-        if circuit_open {
+            false // Stop processing
+        } else if circuit_open {
+            // STEP 3: Check circuit breaker state
             // Would activate fallback here
-            return false;
+            false
+        } else {
+            // Normal processing would continue
+            true
         }
-
-        // Normal processing would continue
-        true
     };
 
     assert!(

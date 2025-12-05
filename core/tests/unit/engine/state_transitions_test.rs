@@ -6,7 +6,8 @@
 use keyrx_core::drivers::common::DeviceInfo;
 use keyrx_core::drivers::keycodes::KeyCode;
 use keyrx_core::engine::transitions::{
-    DecisionKind, DecisionResolution, StateGraph, StateKind, StateTransition, TransitionCategory,
+    StateGraph, StateKind, StateTransition, TransitionCategory,
+    TransitionDecisionKind as DecisionKind, TransitionDecisionResolution as DecisionResolution,
 };
 use keyrx_core::engine::{LayerId, Modifier};
 use std::path::PathBuf;
@@ -397,7 +398,7 @@ fn test_decision_resolved() {
     let graph = StateGraph::new();
     let transition = StateTransition::DecisionResolved {
         id: 1,
-        resolution: DecisionResolution::Tapped,
+        resolution: DecisionResolution::Tap,
     };
 
     // From Pending → Idle
