@@ -18,3 +18,5 @@
 //!     .remap(KeyCode::A, KeyCode::B)
 //!     .build();
 //! ```
+
+pub mod operations;
