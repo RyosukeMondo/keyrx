@@ -294,7 +294,7 @@
   - _Requirements: 16_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Service Layer Developer | Task: Create DeviceRegistryService following requirement 16, wrapping FFI with high-level API | Restrictions: Must provide async API, convert errors to user-friendly messages, follow service patterns | _Leverage: Existing service patterns from services/ | Success: Service API is clean, async methods work, errors are user-friendly, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [-] 3.9. Create ProfileRegistryService
+- [x] 3.9. Create ProfileRegistryService
   - Files: `ui/lib/services/profile_registry_service.dart`
   - Wrap ProfileRegistryFFI with async API
   - Implement listProfiles(), getProfile(), saveProfile(), deleteProfile()
