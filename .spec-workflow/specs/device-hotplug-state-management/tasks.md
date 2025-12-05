@@ -16,7 +16,7 @@
   - Purpose: Linux hotplug support
   - _Requirements: 1.1_
 
-- [ ] 3. Implement Windows device watcher
+- [x] 3. Implement Windows device watcher
   - File: `core/src/discovery/watcher_windows.rs`
   - Handle WM_DEVICECHANGE
   - Detect HID changes

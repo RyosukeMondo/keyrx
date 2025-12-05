@@ -11,6 +11,8 @@ pub mod types;
 pub mod watcher;
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub mod watcher_linux;
+#[cfg(all(windows, feature = "windows-driver"))]
+pub mod watcher_windows;
 
 pub use registry::{DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 pub use session::{
@@ -30,6 +32,8 @@ pub use watcher::{
 };
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub use watcher_linux::LinuxDeviceWatcher;
+#[cfg(all(windows, feature = "windows-driver"))]
+pub use watcher_windows::WindowsDeviceWatcher;
 
 #[cfg(test)]
 pub(crate) mod test_utils {
