@@ -14,3 +14,4 @@ export 'scripting/scripting.dart';
 
 // Revolutionary mapping widgets
 export 'remap_toggle.dart';
+export 'profile_selector.dart';

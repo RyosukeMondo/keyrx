@@ -314,7 +314,7 @@
   - _Requirements: 12_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Widget Developer | Task: Create RemapToggle widget following requirement 12, providing visual remap state control | Restrictions: Must use Material Switch, show clear ON/OFF state, accessible, responsive | _Leverage: Material widgets | Success: Widget displays correctly, toggle works, accessible, widget tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widget class, props), then mark as [x]._
 
-- [ ] 4.2. Create ProfileSelector widget
+- [x] 4.2. Create ProfileSelector widget
   - Files: `ui/lib/widgets/profile_selector.dart`
   - Create DropdownButton with FutureBuilder
   - Load profiles from ProfileRegistryService

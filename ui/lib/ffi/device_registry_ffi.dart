@@ -99,7 +99,7 @@ mixin DeviceRegistryFFIMixin {
   /// List all registered devices.
   ///
   /// Returns a list of DeviceState objects or an error.
-  DeviceRegistryResult<List<DeviceState>> listDevices() {
+  DeviceRegistryResult<List<DeviceState>> listRegisteredDevices() {
     final listFn = bindings?.deviceRegistryListDevices;
     if (listFn == null) {
       return DeviceRegistryResult.error('deviceRegistryListDevices not available');
@@ -109,7 +109,7 @@ mixin DeviceRegistryFFIMixin {
     try {
       ptr = listFn();
       if (ptr == nullptr) {
-        return DeviceRegistryResult.error('listDevices returned null');
+        return DeviceRegistryResult.error('listRegisteredDevices returned null');
       }
 
       final raw = ptr.cast<Utf8>().toDartString();
@@ -129,7 +129,7 @@ mixin DeviceRegistryFFIMixin {
 
       return DeviceRegistryResult.success(devices);
     } catch (e) {
-      return DeviceRegistryResult.error('listDevices exception: $e');
+      return DeviceRegistryResult.error('listRegisteredDevices exception: $e');
     } finally {
       if (ptr != null && ptr != nullptr) {
         _freeString(ptr);

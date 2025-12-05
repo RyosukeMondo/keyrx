@@ -170,7 +170,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
       return const [];
     }
 
-    final result = _bridge.listDevices();
+    final result = _bridge.listRegisteredDevices();
 
     if (result.hasError) {
       _cachedDevices = const [];
