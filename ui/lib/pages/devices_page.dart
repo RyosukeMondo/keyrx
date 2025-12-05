@@ -8,15 +8,19 @@ import 'package:flutter/material.dart';
 
 import '../ffi/bridge.dart';
 import '../services/facade/keyrx_facade.dart';
+import '../services/service_registry.dart';
+import 'device_profile_page.dart';
 
 /// Page for listing and selecting keyboard devices.
 class DevicesPage extends StatefulWidget {
   const DevicesPage({
     super.key,
     required this.facade,
+    required this.services,
   });
 
   final KeyrxFacade facade;
+  final ServiceRegistry services;
 
   @override
   State<DevicesPage> createState() => _DevicesPageState();
@@ -108,6 +112,19 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
         );
       },
+    );
+  }
+
+  void _viewProfile(KeyboardDevice device) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DeviceProfilePage(
+          vendorId: device.vendorId,
+          productId: device.productId,
+          deviceName: device.name,
+          services: widget.services,
+        ),
+      ),
     );
   }
 
@@ -254,6 +271,9 @@ class _DevicesPageState extends State<DevicesPage> {
           device: device,
           isSelected: isSelected,
           onTap: () => _selectDevice(device),
+          onViewProfile: device.hasProfile
+              ? () => _viewProfile(device)
+              : null,
         );
       },
     );
@@ -265,11 +285,13 @@ class _DeviceListTile extends StatelessWidget {
     required this.device,
     required this.isSelected,
     required this.onTap,
+    this.onViewProfile,
   });
 
   final KeyboardDevice device;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onViewProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -303,26 +325,13 @@ class _DeviceListTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (device.hasProfile)
-            Tooltip(
-              message: 'Profile available',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle, size: 16, color: Colors.green),
-                    SizedBox(width: 4),
-                    Text(
-                      'Profile',
-                      style: TextStyle(fontSize: 12, color: Colors.green),
-                    ),
-                  ],
-                ),
+          if (device.hasProfile && onViewProfile != null)
+            TextButton.icon(
+              onPressed: onViewProfile,
+              icon: const Icon(Icons.visibility, size: 16),
+              label: const Text('View'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
               ),
             ),
           if (isSelected) ...[

@@ -173,6 +173,9 @@ typedef ListDevicesNative = Pointer<Char> Function();
 typedef ListDevices = Pointer<Char> Function();
 
 // keyrx_select_device
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef SelectDeviceNative = Int32 Function(Pointer<Char>);
 typedef SelectDevice = int Function(Pointer<Char>);
 
@@ -180,7 +183,63 @@ typedef SelectDevice = int Function(Pointer<Char>);
 typedef ListKeysNative = Pointer<Char> Function();
 typedef ListKeys = Pointer<Char> Function();
 
+// keyrx_get_device_profile
+/// Get device profile for a specific device.
+///
+/// Returns JSON containing the complete device profile including:
+/// - Keyboard layout (rows, cols_per_row)
+/// - Keymap (scan_code -> row/col/alias mapping)
+/// - Discovery metadata
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `ok:<json>` on success with DeviceProfile JSON
+/// * `error:<message>` if profile not found
+///
+/// # Example JSON Response
+/// ```json
+/// {
+/// "schema_version": 1,
+/// "vendor_id": 1234,
+/// "product_id": 5678,
+/// "name": "My Keyboard",
+/// "discovered_at": "2024-01-15T10:30:00Z",
+/// "rows": 6,
+/// "cols_per_row": [15, 15, 15, 13, 11, 8],
+/// "keymap": {
+/// "1": {"scan_code": 1, "row": 0, "col": 0, "alias": "Esc"},
+/// "2": {"scan_code": 2, "row": 0, "col": 1, "alias": "1"}
+/// },
+/// "aliases": {
+/// "Esc": 1,
+/// "1": 2
+/// },
+/// "source": "Discovered"
+/// }
+/// ```
+typedef GetDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16);
+typedef GetDeviceProfile = Pointer<Char> Function(int, int);
+
+// keyrx_has_device_profile
+/// Check if a device profile exists.
+///
+/// # Arguments
+/// * `vendor_id` - USB vendor ID
+/// * `product_id` - USB product ID
+///
+/// # Returns
+/// * `ok:true` if profile exists
+/// * `ok:false` if profile does not exist
+typedef HasDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16);
+typedef HasDeviceProfile = Pointer<Char> Function(int, int);
+
 // keyrx_start_discovery
+/// # Safety
+///
+/// Both `device_id` and `cols_per_row_json` must be valid, non-null, nul-terminated C strings.
 typedef StartDiscoveryNative =
     Pointer<Char> Function(Pointer<Char>, Uint8, Pointer<Char>);
 typedef StartDiscovery =
@@ -195,24 +254,39 @@ typedef IsBypassActiveNative = Bool Function();
 typedef IsBypassActive = bool Function();
 
 // keyrx_load_script
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef LoadScriptNative = Int32 Function(Pointer<Char>);
 typedef LoadScript = int Function(Pointer<Char>);
 
 // keyrx_eval
+/// # Safety
+///
+/// The `command` pointer must be a valid, non-null, nul-terminated C string.
 typedef EvalNative = Pointer<Char> Function(Pointer<Char>);
 typedef Eval = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_validate_script
+/// # Safety
+///
+/// The `script` pointer must be a valid, non-null, nul-terminated C string.
 typedef ValidateScriptNative = Pointer<Char> Function(Pointer<Char>);
 typedef ValidateScript = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_validate_script_with_options
+/// # Safety
+///
+/// Both `script` and `options_json` must be valid, non-null, nul-terminated C strings.
 typedef ValidateScriptWithOptionsNative =
     Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
 typedef ValidateScriptWithOptions =
     Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
 
 // keyrx_suggest_keys
+/// # Safety
+///
+/// The `partial` pointer must be a valid, non-null, nul-terminated C string.
 typedef SuggestKeysNative = Pointer<Char> Function(Pointer<Char>);
 typedef SuggestKeys = Pointer<Char> Function(Pointer<Char>);
 
@@ -221,23 +295,40 @@ typedef AllKeyNamesNative = Pointer<Char> Function();
 typedef AllKeyNames = Pointer<Char> Function();
 
 // keyrx_check_script
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef CheckScriptNative = Pointer<Char> Function(Pointer<Char>);
 typedef CheckScript = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_discover_tests
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef DiscoverTestsNative = Pointer<Char> Function(Pointer<Char>);
 typedef DiscoverTests = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_run_tests
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
+/// The `filter` pointer may be null, or a valid nul-terminated C string.
 typedef RunTestsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
 typedef RunTests = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
 
 // keyrx_simulate
+/// # Safety
+///
+/// The `keys_json` pointer must be a valid, non-null, nul-terminated C string.
+/// The `script_path` pointer may be null, or a valid nul-terminated C string.
 typedef SimulateNative =
     Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool);
 typedef Simulate = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool);
 
 // keyrx_run_benchmark
+/// # Safety
+///
+/// The `script_path` pointer may be null, or a valid nul-terminated C string.
 typedef RunBenchmarkNative = Pointer<Char> Function(Uint32, Pointer<Char>);
 typedef RunBenchmark = Pointer<Char> Function(int, Pointer<Char>);
 
@@ -246,6 +337,9 @@ typedef RunDoctorNative = Pointer<Char> Function();
 typedef RunDoctor = Pointer<Char> Function();
 
 // keyrx_start_recording
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef StartRecordingNative = Pointer<Char> Function(Pointer<Char>);
 typedef StartRecording = Pointer<Char> Function(Pointer<Char>);
 
@@ -254,16 +348,106 @@ typedef StopRecordingNative = Pointer<Char> Function();
 typedef StopRecording = Pointer<Char> Function();
 
 // keyrx_list_sessions
+/// # Safety
+///
+/// The `dir_path` pointer must be a valid, non-null, nul-terminated C string.
 typedef ListSessionsNative = Pointer<Char> Function(Pointer<Char>);
 typedef ListSessions = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_analyze_session
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef AnalyzeSessionNative = Pointer<Char> Function(Pointer<Char>);
 typedef AnalyzeSession = Pointer<Char> Function(Pointer<Char>);
 
 // keyrx_replay_session
+/// # Safety
+///
+/// The `path` pointer must be a valid, non-null, nul-terminated C string.
 typedef ReplaySessionNative = Pointer<Char> Function(Pointer<Char>, Bool);
 typedef ReplaySession = Pointer<Char> Function(Pointer<Char>, bool);
+
+// keyrx_telemetry_snapshot_json
+/// Gets panic telemetry as a JSON string.
+///
+/// Returns a null-terminated JSON string that must be freed with `keyrx_free_string()`.
+/// Returns NULL on error.
+///
+/// # Safety
+///
+/// The returned pointer must be freed with `keyrx_free_string()` to avoid memory leaks.
+///
+/// # Example
+///
+/// ```c
+/// char* json = keyrx_telemetry_snapshot_json();
+/// if (json) {
+/// printf("%s\n", json);
+/// keyrx_free_string(json);
+/// }
+/// ```
+typedef TelemetrySnapshotJsonNative = Pointer<Char> Function();
+typedef TelemetrySnapshotJson = Pointer<Char> Function();
+
+// keyrx_telemetry_snapshot
+/// Gets panic telemetry as an FFI struct.
+///
+/// Returns a pointer to `PanicTelemetryFfi` that must be freed with
+/// `keyrx_telemetry_free_snapshot()`. Returns NULL on error.
+///
+/// # Safety
+///
+/// The returned pointer must be freed with `keyrx_telemetry_free_snapshot()`
+/// to avoid memory leaks.
+///
+/// # Example
+///
+/// ```c
+/// PanicTelemetryFfi* telemetry = keyrx_telemetry_snapshot();
+/// if (telemetry) {
+/// printf("Panics: %llu\n", telemetry->total_panics);
+/// keyrx_telemetry_free_snapshot(telemetry);
+/// }
+/// ```
+typedef TelemetrySnapshotNative = Pointer<Void> Function();
+typedef TelemetrySnapshot = Pointer<Void> Function();
+
+// keyrx_telemetry_reset
+/// Resets all panic telemetry counters and clears events.
+///
+/// This is primarily for testing. In production, counters should accumulate.
+///
+/// Returns 0 on success, -1 on error.
+///
+/// # Example
+///
+/// ```c
+/// keyrx_telemetry_reset();  // Start fresh
+/// ```
+typedef TelemetryResetNative = Int32 Function();
+typedef TelemetryReset = int Function();
+
+// keyrx_telemetry_free_snapshot
+/// Frees a panic telemetry snapshot.
+///
+/// # Safety
+///
+/// - `telemetry` must be a valid pointer returned by `keyrx_telemetry_snapshot()`
+/// - `telemetry` must not be used after this call
+/// - `telemetry` must not be NULL
+///
+/// # Example
+///
+/// ```c
+/// PanicTelemetryFfi* telemetry = keyrx_telemetry_snapshot();
+/// if (telemetry) {
+/// // Use telemetry...
+/// keyrx_telemetry_free_snapshot(telemetry);
+/// }
+/// ```
+typedef TelemetryFreeSnapshotNative = Void Function(Pointer<Void>);
+typedef TelemetryFreeSnapshot = void Function(Pointer<Void>);
 
 // keyrx_log_bridge_init
 /// Initialize the log bridge for FFI access.
@@ -539,6 +723,14 @@ class KeyrxBindingsGenerated {
   late final ListKeys listKeys = _lookup<NativeFunction<ListKeysNative>>(
     'keyrx_list_keys',
   ).asFunction();
+  late final GetDeviceProfile getDeviceProfile =
+      _lookup<NativeFunction<GetDeviceProfileNative>>(
+        'keyrx_get_device_profile',
+      ).asFunction();
+  late final HasDeviceProfile hasDeviceProfile =
+      _lookup<NativeFunction<HasDeviceProfileNative>>(
+        'keyrx_has_device_profile',
+      ).asFunction();
   late final StartDiscovery startDiscovery =
       _lookup<NativeFunction<StartDiscoveryNative>>(
         'keyrx_start_discovery',
@@ -613,6 +805,22 @@ class KeyrxBindingsGenerated {
   late final ReplaySession replaySession =
       _lookup<NativeFunction<ReplaySessionNative>>(
         'keyrx_replay_session',
+      ).asFunction();
+  late final TelemetrySnapshotJson telemetrySnapshotJson =
+      _lookup<NativeFunction<TelemetrySnapshotJsonNative>>(
+        'keyrx_telemetry_snapshot_json',
+      ).asFunction();
+  late final TelemetrySnapshot telemetrySnapshot =
+      _lookup<NativeFunction<TelemetrySnapshotNative>>(
+        'keyrx_telemetry_snapshot',
+      ).asFunction();
+  late final TelemetryReset telemetryReset =
+      _lookup<NativeFunction<TelemetryResetNative>>(
+        'keyrx_telemetry_reset',
+      ).asFunction();
+  late final TelemetryFreeSnapshot telemetryFreeSnapshot =
+      _lookup<NativeFunction<TelemetryFreeSnapshotNative>>(
+        'keyrx_telemetry_free_snapshot',
       ).asFunction();
   late final LogBridgeInit logBridgeInit =
       _lookup<NativeFunction<LogBridgeInitNative>>(

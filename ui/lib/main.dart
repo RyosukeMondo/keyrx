@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
         facade: facade,
         mappingRepository: registry.mappingRepository,
       ),
-      DevicesPage(facade: facade),
+      DevicesPage(facade: facade, services: registry),
       const RunControlsPage(),
       const DebuggerPage(),
       const ConsolePage(),

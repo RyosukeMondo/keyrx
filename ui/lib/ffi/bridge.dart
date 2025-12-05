@@ -10,6 +10,7 @@ import 'dart:typed_data';
 
 import 'bindings.dart';
 import 'bridge_core.dart';
+import 'bridge_device_profile.dart';
 import 'bridge_discovery.dart';
 import 'bridge_engine.dart';
 import 'bridge_session.dart';
@@ -19,6 +20,8 @@ import 'event_types.dart';
 import 'generated/bindings_generated.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
+export 'bridge_device_profile.dart'
+    show DeviceProfile, DeviceProfileResult, PhysicalKey, ProfileSource;
 export 'bridge_discovery.dart'
     show DeviceListResult, DiscoveryStartResult, KeyboardDevice;
 export 'event_types.dart' show EventType;
@@ -70,6 +73,7 @@ export 'bridge_validation.dart'
 /// - [BridgeCoreMixin]: Initialization, version, disposal
 /// - [BridgeEngineMixin]: Script loading, evaluation, key registry, bypass
 /// - [BridgeSessionMixin]: Session recording, analysis, replay
+/// - [BridgeDeviceProfileMixin]: Device profile access
 /// - [BridgeDiscoveryMixin]: Device listing and discovery
 /// - [BridgeTestingMixin]: Testing, simulation, benchmarks, diagnostics
 /// - [BridgeValidationMixin]: Script validation and key suggestions
@@ -78,6 +82,7 @@ class KeyrxBridge
         BridgeCoreMixin,
         BridgeEngineMixin,
         BridgeSessionMixin,
+        BridgeDeviceProfileMixin,
         BridgeDiscoveryMixin,
         BridgeTestingMixin,
         BridgeValidationMixin {

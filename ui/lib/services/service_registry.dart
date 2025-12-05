@@ -1,6 +1,7 @@
 import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import 'api_docs_service.dart';
+import 'device_profile_service.dart';
 import 'device_service.dart';
 import 'engine_service.dart';
 import 'engine_service_impl.dart';
@@ -16,6 +17,7 @@ class ServiceRegistry {
     required this.engineService,
     required this.mappingRepository,
     required this.deviceService,
+    required this.deviceProfileService,
     required this.scriptFileService,
     required this.testService,
     required this.bridge,
@@ -28,6 +30,7 @@ class ServiceRegistry {
     ErrorTranslator? errorTranslator,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    DeviceProfileService? deviceProfileService,
     ScriptFileService? scriptFileService,
     TestService? testService,
     ApiDocsService? apiDocsService,
@@ -36,6 +39,8 @@ class ServiceRegistry {
     final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
+    final deviceProfile =
+        deviceProfileService ?? DeviceProfileServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 
@@ -46,6 +51,7 @@ class ServiceRegistry {
       engineService: engine,
       mappingRepository: mappingRepository ?? MappingRepository(),
       deviceService: device,
+      deviceProfileService: deviceProfile,
       scriptFileService: scriptFile,
       testService: tests,
       bridge: effectiveBridge,
@@ -59,6 +65,7 @@ class ServiceRegistry {
     required EngineService engineService,
     required MappingRepository mappingRepository,
     required DeviceService deviceService,
+    required DeviceProfileService deviceProfileService,
     required ScriptFileService scriptFileService,
     required TestService testService,
     required KeyrxBridge bridge,
@@ -69,6 +76,7 @@ class ServiceRegistry {
       engineService: engineService,
       mappingRepository: mappingRepository,
       deviceService: deviceService,
+      deviceProfileService: deviceProfileService,
       scriptFileService: scriptFileService,
       testService: testService,
       bridge: bridge,
@@ -80,6 +88,7 @@ class ServiceRegistry {
   final EngineService engineService;
   final MappingRepository mappingRepository;
   final DeviceService deviceService;
+  final DeviceProfileService deviceProfileService;
   final ScriptFileService scriptFileService;
   final TestService testService;
   final KeyrxBridge bridge;
@@ -91,6 +100,7 @@ class ServiceRegistry {
     EngineService? engineService,
     MappingRepository? mappingRepository,
     DeviceService? deviceService,
+    DeviceProfileService? deviceProfileService,
     ScriptFileService? scriptFileService,
     TestService? testService,
     KeyrxBridge? bridge,
@@ -101,6 +111,7 @@ class ServiceRegistry {
       engineService: engineService ?? this.engineService,
       mappingRepository: mappingRepository ?? this.mappingRepository,
       deviceService: deviceService ?? this.deviceService,
+      deviceProfileService: deviceProfileService ?? this.deviceProfileService,
       scriptFileService: scriptFileService ?? this.scriptFileService,
       testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
@@ -112,6 +123,7 @@ class ServiceRegistry {
   Future<void> dispose() async {
     await engineService.dispose();
     await deviceService.dispose();
+    await deviceProfileService.dispose();
     await testService.dispose();
     await bridge.dispose();
   }
