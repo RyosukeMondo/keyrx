@@ -83,6 +83,8 @@ windows = { version = "0.52", features = [
     "Win32_UI_Input",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_Devices_HumanInterfaceDevice",
+    "Win32_Storage_FileSystem",
 ] }
 
 # Platform-specific: Linux

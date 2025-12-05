@@ -9,6 +9,9 @@ mod types;
 
 pub use types::DeviceIdentity;
 
-// Platform-specific serial extraction will be added in future tasks:
-// - windows.rs: Windows serial extraction via Raw Input API and HID descriptors
+// Platform-specific serial extraction modules
+#[cfg(windows)]
+pub mod windows;
+
+// Linux serial extraction will be added in future tasks:
 // - linux.rs: Linux serial extraction via evdev EVIOCGUNIQ ioctl and udev

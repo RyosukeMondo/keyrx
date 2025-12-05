@@ -12,7 +12,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Systems Developer specializing in type systems and serialization | Task: Create comprehensive DeviceIdentity type system following requirement 1, implementing Hash/Eq for HashMap usage and Serialize/Deserialize for JSON persistence | Restrictions: Must use standard library types only (no dependencies except serde), maintain zero-copy where possible, ensure hash collision resistance | _Leverage: Existing serde patterns from config/ module | Success: DeviceIdentity compiles, all traits implemented correctly, can be used as HashMap key, serializes to/from JSON correctly. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including detailed artifacts (structs, methods, traits implemented), then mark as [x] when fully tested._
 
-- [ ] 1.2. Implement Windows serial extraction
+- [x] 1.2. Implement Windows serial extraction
   - Files: `core/src/identity/windows.rs`, `core/src/identity/mod.rs`
   - Implement extract_serial_number(device_path: &str) -> Result<String>
   - Implement parse_instance_id_from_path() helper
