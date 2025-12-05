@@ -56,20 +56,20 @@ pub type HookSender = Sender<InputEvent>;
 /// Type alias for the key state tracking set.
 pub type KeyStates = HashSet<u16>;
 
-/// Thread-local storage for the event sender.
-///
-/// This stores the channel sender used to communicate keyboard events from the
-/// hook callback to the main event processing loop.
 thread_local! {
+    /// Thread-local storage for the event sender.
+    ///
+    /// This stores the channel sender used to communicate keyboard events from the
+    /// hook callback to the main event processing loop.
     static HOOK_SENDER: RefCell<Option<HookSender>> = const { RefCell::new(None) };
 }
 
-/// Thread-local storage for key press state tracking.
-///
-/// Maps virtual key codes (u16) to their current pressed state. Used to detect
-/// key repeat events by checking if a key-down event is received for a key that's
-/// already marked as pressed.
 thread_local! {
+    /// Thread-local storage for key press state tracking.
+    ///
+    /// Maps virtual key codes (u16) to their current pressed state. Used to detect
+    /// key repeat events by checking if a key-down event is received for a key that's
+    /// already marked as pressed.
     static KEY_STATES: RefCell<KeyStates> = RefCell::new(HashSet::new());
 }
 

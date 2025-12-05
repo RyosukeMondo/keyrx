@@ -218,11 +218,23 @@ fn default_input_builder(_device: &DeviceInfo) -> Result<DiscoverInput> {
 
     #[cfg(all(target_os = "windows", feature = "windows-driver"))]
     {
-        use crate::drivers::WindowsInput;
-        let input = WindowsInput::new()?;
-        Ok(DiscoverInput {
-            input: Box::new(input),
-        })
+        use crate::drivers::{WindowsInput, WindowsRawInput};
+        let path_str = _device.path.to_string_lossy();
+
+        // If we are targeting a specific HID device, use Raw Input driver
+        // which can distinguish between devices.
+        if !path_str.contains("System#Keyboard") && !path_str.contains("Global Hook") {
+            let input = WindowsRawInput::new(Some(path_str.to_string()))?;
+            Ok(DiscoverInput {
+                input: Box::new(input),
+            })
+        } else {
+            // Fallback to Global Hook for system keyboard or if generic
+            let input = WindowsInput::new()?;
+            Ok(DiscoverInput {
+                input: Box::new(input),
+            })
+        }
     }
 
     #[cfg(not(any(

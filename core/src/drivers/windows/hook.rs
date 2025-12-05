@@ -3,6 +3,8 @@
 //! This module provides the `HookManager` for managing the lifecycle of a Windows
 //! keyboard hook, and the `low_level_keyboard_proc` callback function.
 
+#![allow(unsafe_code)]
+
 use crate::drivers::common::error::DriverError;
 use crate::engine::{InputEvent, KeyCode};
 use crate::safety::panic_guard::PanicGuard;
@@ -94,6 +96,7 @@ impl HookManager {
     }
 
     /// Check if the hook is currently installed.
+    #[allow(dead_code)]
     pub fn is_installed(&self) -> bool {
         self.safe_hook
             .as_ref()
@@ -102,6 +105,7 @@ impl HookManager {
     }
 
     /// Get the running flag.
+    #[allow(dead_code)]
     pub fn running(&self) -> &Arc<AtomicBool> {
         &self.running
     }

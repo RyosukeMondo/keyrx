@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 //! Safe RAII wrapper for Windows keyboard hooks.
 //!
 //! This module provides `SafeHook`, a wrapper around Windows low-level keyboard hooks
@@ -48,7 +49,7 @@ use crate::drivers::common::error::DriverError;
 use crate::engine::InputEvent;
 use crossbeam_channel::Sender;
 use std::cell::RefCell;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Arc;
 use tracing::{debug, error, warn};
 use windows::Win32::Foundation::HINSTANCE;
@@ -58,44 +59,44 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 use super::super::hook::low_level_keyboard_proc;
 
-/// Thread-local storage for the event sender used by the hook callback.
-///
-/// This is necessary because the hook callback is a C-style function pointer
-/// that cannot capture any context. We store the sender in thread-local storage
-/// and access it from within the callback.
-///
-/// # Safety Invariants
-///
-/// - Must be initialized before hook installation
-/// - Must be cleared when hook is uninstalled
-/// - Only accessed from the hook thread
 thread_local! {
+    /// Thread-local storage for the event sender used by the hook callback.
+    ///
+    /// This is necessary because the hook callback is a C-style function pointer
+    /// that cannot capture any context. We store the sender in thread-local storage
+    /// and access it from within the callback.
+    ///
+    /// # Safety Invariants
+    ///
+    /// - Must be initialized before hook installation
+    /// - Must be cleared when hook is uninstalled
+    /// - Only accessed from the hook thread
     pub static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
 }
 
-/// Thread-local storage for tracking key press states (for is_repeat detection).
-///
-/// Maps virtual key codes to their current pressed state. When we receive a key down
-/// event for a key that's already marked as pressed, it's a repeat event.
-///
-/// # Safety Invariants
-///
-/// - Cleared on hook uninstall to prevent state leakage
-/// - Only accessed from the hook callback thread
 thread_local! {
+    /// Thread-local storage for tracking key press states (for is_repeat detection).
+    ///
+    /// Maps virtual key codes to their current pressed state. When we receive a key down
+    /// event for a key that's already marked as pressed, it's a repeat event.
+    ///
+    /// # Safety Invariants
+    ///
+    /// - Cleared on hook uninstall to prevent state leakage
+    /// - Only accessed from the hook callback thread
     pub static KEY_STATES: RefCell<std::collections::HashSet<u16>> = RefCell::new(std::collections::HashSet::new());
 }
 
-/// Thread-local storage for the keymap cache used by the hook callback.
-///
-/// The cache stores VK code to KeyCode mappings to avoid repeated lookups.
-///
-/// # Safety Invariants
-///
-/// - Must be initialized before hook installation
-/// - Must be cleared when hook is uninstalled
-/// - Only accessed from the hook thread
 thread_local! {
+    /// Thread-local storage for the keymap cache used by the hook callback.
+    ///
+    /// The cache stores VK code to KeyCode mappings to avoid repeated lookups.
+    ///
+    /// # Safety Invariants
+    ///
+    /// - Must be initialized before hook installation
+    /// - Must be cleared when hook is uninstalled
+    /// - Only accessed from the hook thread
     pub static KEYMAP_CACHE: RefCell<Option<Arc<LruKeymapCache>>> = const { RefCell::new(None) };
 }
 
@@ -413,6 +414,7 @@ impl Drop for SafeHook {
 mod tests {
     use super::*;
     use crossbeam_channel::unbounded;
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn safe_hook_not_installed_after_drop() {

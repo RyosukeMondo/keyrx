@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use super::hook_thread::spawn_hook_thread;
 use super::injector::SendInputInjector;
 use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};

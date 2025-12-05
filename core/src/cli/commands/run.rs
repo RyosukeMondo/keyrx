@@ -5,18 +5,22 @@ use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;
 use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::Config;
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::DeviceInfo;
 use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
 use crate::mocks::MockInput;
 use crate::scripting::RhaiRuntime;
-use crate::traits::{InputSource, ScriptRuntime};
+use crate::traits::InputSource;
 use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, info, instrument, warn};
+use tracing::{info, instrument};
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use tracing::{debug, warn};
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::LinuxInput;
@@ -161,11 +165,13 @@ impl RunCommand {
         }
     }
 
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     fn load_device_profile(&self, device_info: &DeviceInfo) -> RegistryEntry {
         let mut registry = DeviceRegistry::new();
         registry.load_or_default(DeviceId::new(device_info.vendor_id, device_info.product_id))
     }
 
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     fn report_profile_status(&self, device_info: &DeviceInfo, entry: &RegistryEntry) {
         match &entry.status {
             RegistryStatus::Ready => {
@@ -623,6 +629,7 @@ impl Command for RunCommand {
     }
 }
 
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
 fn describe_reason(reason: &DiscoveryReason) -> String {
     match reason {
         DiscoveryReason::MissingProfile => "no profile found on disk".to_string(),

@@ -24,3 +24,12 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
+
+# Automatically build Rust library before linking
+add_custom_command(
+  TARGET ${BINARY_NAME} PRE_BUILD
+  COMMAND cargo build -p keyrx_core --lib
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/../.."
+  COMMENT "Building Rust core library"
+  VERBATIM
+)

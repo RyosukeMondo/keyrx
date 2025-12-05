@@ -28,6 +28,9 @@ pub use common::DeviceInfo;
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
 pub use windows::WindowsInput;
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
+pub use windows::WindowsRawInput;
+
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 pub use linux::LinuxInput;
 

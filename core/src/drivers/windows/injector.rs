@@ -4,6 +4,8 @@
 //! Injected events are marked with the LLKHF_INJECTED flag, allowing them to be
 //! distinguished from real physical input.
 
+#![allow(unsafe_code)]
+
 use crate::drivers::KeyInjector;
 use crate::engine::KeyCode;
 use crate::error::WindowsDriverError;
