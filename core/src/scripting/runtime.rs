@@ -6,10 +6,12 @@
 
 use super::bindings::register_all_functions;
 use super::builtins::{LayerView, ModifierPreview, ModifierView, PendingOps};
+use super::cache::ScriptCache;
 use super::pending_ops::PendingOpsApplier;
 use super::registry_sync::RegistrySyncer;
 use super::row_col_resolver::RowColResolver;
 use super::sandbox::{ResourceConfig, SandboxError, ScriptSandbox};
+use crate::config::script_cache_dir;
 use crate::discovery::storage::read_profile;
 use crate::discovery::types::DeviceId;
 use crate::engine::{KeyCode, LayerStack};
@@ -19,6 +21,7 @@ use crate::scripting::RemapRegistry;
 use crate::traits::ScriptRuntime;
 use rhai::{Engine, Scope, AST};
 use std::collections::HashSet;
+use std::fs;
 use std::sync::{Arc, Mutex};
 
 /// Production Rhai script runtime.
@@ -34,6 +37,7 @@ use std::sync::{Arc, Mutex};
 pub struct RhaiRuntime {
     engine: Engine,
     ast: Option<AST>,
+    cache: Option<ScriptCache>,
     defined_hooks: HashSet<String>,
     registry: RemapRegistry,
     pending_ops: PendingOps,
@@ -50,6 +54,28 @@ impl RhaiRuntime {
 
     /// Create a new Rhai runtime with custom resource limits.
     pub fn with_config(config: ResourceConfig) -> Result<Self, KeyrxError> {
+        Self::with_config_and_cache(config, Some(default_cache()))
+    }
+
+    /// Create a new Rhai runtime with a provided cache.
+    pub fn with_cache(cache: ScriptCache) -> Result<Self, KeyrxError> {
+        Self::with_config_and_cache(ResourceConfig::default(), Some(cache))
+    }
+
+    /// Disable script caching for this runtime.
+    pub fn disable_cache(&mut self) {
+        self.cache = None;
+    }
+
+    /// Access the script cache if enabled.
+    pub fn script_cache(&self) -> Option<&ScriptCache> {
+        self.cache.as_ref()
+    }
+
+    fn with_config_and_cache(
+        config: ResourceConfig,
+        cache: Option<ScriptCache>,
+    ) -> Result<Self, KeyrxError> {
         let mut engine = Engine::new();
 
         // Create sandbox with custom configuration
@@ -82,6 +108,7 @@ impl RhaiRuntime {
         Ok(Self {
             engine,
             ast: None,
+            cache,
             defined_hooks: HashSet::new(),
             registry: RemapRegistry::new(),
             pending_ops,
@@ -89,6 +116,24 @@ impl RhaiRuntime {
             sandbox: Arc::new(sandbox),
             resolver,
         })
+    }
+
+    fn load_script_from_cache(&mut self, script: &str) -> bool {
+        if let Some(cache) = &self.cache {
+            if let Some(ast) = cache.get(script) {
+                tracing::debug!(
+                    service = "keyrx",
+                    event = "script_cache_hit",
+                    component = "rhai_runtime",
+                    "Loaded script from cache"
+                );
+                self.ast = Some(ast);
+                self.scan_for_hooks();
+                return true;
+            }
+        }
+
+        false
     }
 
     /// Load device profile for row-column API support.
@@ -169,6 +214,10 @@ impl RhaiRuntime {
     }
 }
 
+fn default_cache() -> ScriptCache {
+    ScriptCache::new(script_cache_dir())
+}
+
 impl ScriptRuntime for RhaiRuntime {
     fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
         // Check resources before execution
@@ -209,10 +258,27 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn load_file(&mut self, path: &str) -> Result<(), KeyrxError> {
-        let ast = self
-            .engine
-            .compile_file(path.into())
-            .map_err(|e| keyrx_err!(SCRIPT_COMPILATION_FAILED, error = format!("{}", e)))?;
+        let script = fs::read_to_string(path).map_err(|e| {
+            keyrx_err!(
+                SCRIPT_COMPILATION_FAILED,
+                error = format!("{} ({})", e, path)
+            )
+        })?;
+
+        if self.load_script_from_cache(&script) {
+            return Ok(());
+        }
+
+        let ast = self.engine.compile(&script).map_err(|e| {
+            keyrx_err!(
+                SCRIPT_COMPILATION_FAILED,
+                error = format!("{} ({})", e, path)
+            )
+        })?;
+
+        if let Some(cache) = &self.cache {
+            cache.put(&script, &ast);
+        }
 
         self.ast = Some(ast);
         self.scan_for_hooks();
@@ -251,11 +317,46 @@ impl ScriptRuntime for RhaiRuntime {
 mod tests {
     use super::*;
     use crate::engine::{HoldAction, LayerAction, Modifier, RemapAction, TimingConfig};
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn new_runtime_has_empty_registry() {
         let runtime = RhaiRuntime::new().unwrap();
         assert_eq!(runtime.lookup_remap(KeyCode::A), RemapAction::Pass);
+    }
+
+    #[test]
+    fn load_file_hits_cache_on_second_load() {
+        let script_dir = tempdir().unwrap();
+        let cache_dir = tempdir().unwrap();
+        let script_path = script_dir.path().join("script.rhai");
+
+        fs::write(
+            &script_path,
+            r#"
+remap("A", "B");
+"#,
+        )
+        .unwrap();
+
+        let mut runtime =
+            RhaiRuntime::with_cache(ScriptCache::new(cache_dir.path().to_path_buf())).unwrap();
+
+        runtime
+            .load_file(script_path.to_str().expect("utf-8 path"))
+            .unwrap();
+        let first_stats = runtime.script_cache().unwrap().stats();
+        assert_eq!(first_stats.misses, 1);
+        assert_eq!(first_stats.hits, 0);
+        assert_eq!(first_stats.entries, 1);
+
+        runtime
+            .load_file(script_path.to_str().expect("utf-8 path"))
+            .unwrap();
+        let second_stats = runtime.script_cache().unwrap().stats();
+        assert_eq!(second_stats.hits, 1);
+        assert_eq!(second_stats.entries, 1);
     }
 
     #[test]

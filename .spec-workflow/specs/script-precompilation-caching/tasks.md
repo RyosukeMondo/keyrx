@@ -18,7 +18,7 @@
 
 ## Phase 2: Integration
 
-- [ ] 3. Integrate cache into runtime
+- [x] 3. Integrate cache into runtime
   - File: `core/src/scripting/runtime.rs`
   - Check cache before compile
   - Store compiled AST

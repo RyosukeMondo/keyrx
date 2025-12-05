@@ -57,6 +57,12 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 /// Scripts are loaded from `{config_dir}/scripts/` by default.
 pub const SCRIPTS_DIR: &str = "scripts";
 
+/// Default directory name for runtime caches.
+pub const CACHE_DIR_NAME: &str = ".keyrx_cache";
+
+/// Subdirectory for compiled script caches.
+pub const SCRIPT_CACHE_DIR: &str = "scripts";
+
 // =============================================================================
 // History and Temporary Files
 // =============================================================================
@@ -133,6 +139,24 @@ pub fn device_profiles_dir() -> PathBuf {
 /// Path to the scripts directory.
 pub fn scripts_dir() -> PathBuf {
     config_dir().join(SCRIPTS_DIR)
+}
+
+/// Resolve the cache root directory.
+///
+/// Returns `$HOME/.keyrx_cache` when a home directory exists, otherwise
+/// falls back to a relative `.keyrx_cache` path.
+fn cache_dir() -> PathBuf {
+    home_dir()
+        .map(|h| h.join(CACHE_DIR_NAME))
+        .unwrap_or_else(|| PathBuf::from(CACHE_DIR_NAME))
+}
+
+/// Resolve the cache directory for compiled scripts.
+///
+/// Returns `$HOME/.keyrx_cache/scripts` when a home directory exists,
+/// otherwise falls back to a relative `.keyrx_cache/scripts` path.
+pub fn script_cache_dir() -> PathBuf {
+    cache_dir().join(SCRIPT_CACHE_DIR)
 }
 
 /// Get the user's home directory.
@@ -272,6 +296,27 @@ mod tests {
 
     #[test]
     #[serial]
+    fn script_cache_dir_uses_home_when_available() {
+        let temp = tempdir().unwrap();
+        let prev_home = env::var("HOME").ok();
+
+        env::set_var("HOME", temp.path());
+
+        let path = script_cache_dir();
+        assert!(path.ends_with(PathBuf::from(CACHE_DIR_NAME).join(SCRIPT_CACHE_DIR)));
+        assert_eq!(
+            path.parent().and_then(|p| p.file_name()),
+            Some(std::ffi::OsStr::new(CACHE_DIR_NAME))
+        );
+
+        match prev_home {
+            Some(val) => env::set_var("HOME", val),
+            None => env::remove_var("HOME"),
+        }
+    }
+
+    #[test]
+    #[serial]
     fn home_dir_returns_home() {
         let temp = tempdir().unwrap();
         let prev_home = env::var("HOME").ok();
@@ -312,6 +357,8 @@ mod tests {
     fn constants_have_expected_values() {
         assert_eq!(CONFIG_FILE_NAME, "config.toml");
         assert_eq!(SCRIPTS_DIR, "scripts");
+        assert_eq!(CACHE_DIR_NAME, ".keyrx_cache");
+        assert_eq!(SCRIPT_CACHE_DIR, "scripts");
         assert_eq!(REPL_HISTORY_FILE, ".keyrx_repl_history");
         assert_eq!(PERF_BASELINE_FILE, "target/perf-baseline.json");
     }
