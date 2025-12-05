@@ -215,7 +215,7 @@
 
 ## Phase 3: FFI Layer & Flutter Integration (1.5 weeks)
 
-- [ ] 3.1. Implement device_registry FFI domain
+- [-] 3.1. Implement device_registry FFI domain
   - Files: `core/src/ffi/domains/device_registry.rs`, `core/src/ffi/domains/mod.rs`
   - Implement krx_device_registry_list_devices() -> JSON
   - Implement krx_device_registry_set_remap_enabled()
