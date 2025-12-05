@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Enforcement
 
-- [ ] 1. Create ResourceEnforcer
+- [x] 1. Create ResourceEnforcer
   - File: `core/src/engine/limits/enforcer.rs`
   - Timeout, memory, queue tracking
   - Atomic counters for thread safety

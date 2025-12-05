@@ -9,6 +9,7 @@ mod event_recorder;
 mod event_recording;
 pub mod fallback;
 pub mod layer_actions;
+pub mod limits;
 mod processing;
 pub mod replay;
 mod session_state;
@@ -30,6 +31,7 @@ pub use event_recording::{
     SessionFile, SESSION_FILE_VERSION,
 };
 pub use fallback::{FallbackEngine, FallbackReason};
+pub use limits::{ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceUsageSnapshot};
 pub use replay::{ReplayError, ReplaySession, ReplayState};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{
