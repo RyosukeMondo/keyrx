@@ -9,8 +9,8 @@ use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, RegressionCommand, ReplCommand, ReplayCommand, RunCommand,
-        SimulateCommand, StateCommand, TestCommand, UatCommand,
+        GoldenSubcommand, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand,
+        RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -369,6 +369,17 @@ enum Commands {
         #[arg(long)]
         skip_perf: bool,
     },
+
+    /// Migrate profiles from old version to new version
+    Migrate {
+        /// Source version to migrate from (only 'v1' is supported)
+        #[arg(long, default_value = "v1")]
+        from: String,
+
+        /// Create backup of old profiles before migration
+        #[arg(long)]
+        backup: bool,
+    },
 }
 
 /// Golden session subcommands.
@@ -589,6 +600,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Golden { .. } => "golden",
         Commands::Regression { .. } => "regression",
         Commands::CiCheck { .. } => "ci-check",
+        Commands::Migrate { .. } => "migrate",
     };
 
     debug!(command = command_name, "Executing command");
@@ -842,5 +854,9 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             ),
             Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
         },
+        Commands::Migrate { from, backup } => {
+            let cmd = MigrateCommand::new(ctx.output_format(), from, backup);
+            cmd.run().await
+        }
     }
 }

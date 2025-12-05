@@ -425,7 +425,7 @@
   - _Requirements: 15_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Migration Engineer with expertise in data transformation | Task: Implement migration from old to new system following requirement 15, converting profiles safely | Restrictions: Must create backups, handle errors gracefully, partial migration allowed, report results | _Leverage: Old DeviceProfile from discovery/types.rs | Success: Migration converts profiles correctly, backups created, errors handled, report accurate, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (migration struct, conversion logic), then mark as [x]._
 
-- [ ] 6.2. Add migration CLI command
+- [x] 6.2. Add migration CLI command
   - Files: `core/src/bin/keyrx.rs`
   - Add `keyrx migrate --from v1 --backup` command
   - Call migration module
