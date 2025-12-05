@@ -402,7 +402,7 @@
   - _Requirements: 13_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Page Developer | Task: Rebuild VisualEditorPage following requirement 13, enabling profile-based editing with dynamic layouts | Restrictions: Must load profiles correctly, create new profiles, save works, profile selector functional | _Leverage: DragDropMapper widget, ProfileRegistryService | Success: Editor loads profiles, dynamic layouts render, editing works, save persists, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (page structure, profile management), then mark as [x]._
 
-- [-] 5.5. Write Visual Editor tests
+- [x] 5.5. Write Visual Editor tests
   - Files: `ui/test/pages/visual_editor_page_test.dart`, `ui/test/widgets/layout_grid_test.dart`, `ui/test/widgets/soft_keyboard_test.dart`
   - Test LayoutGrid rendering for different layouts
   - Test SoftKeyboard filtering and selection
