@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../ffi/bridge.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../services/service_registry.dart';
+import 'device_discovery_page.dart';
 import 'device_profile_page.dart';
 
 /// Page for listing and selecting keyboard devices.
@@ -122,6 +123,18 @@ class _DevicesPageState extends State<DevicesPage> {
           vendorId: device.vendorId,
           productId: device.productId,
           deviceName: device.name,
+          services: widget.services,
+        ),
+      ),
+    );
+  }
+
+  void _startDiscovery(KeyboardDevice device) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DeviceDiscoveryPage(
+          device: device,
+          facade: widget.facade,
           services: widget.services,
         ),
       ),
@@ -274,6 +287,9 @@ class _DevicesPageState extends State<DevicesPage> {
           onViewProfile: device.hasProfile
               ? () => _viewProfile(device)
               : null,
+          onStartDiscovery: !device.hasProfile
+              ? () => _startDiscovery(device)
+              : null,
         );
       },
     );
@@ -286,12 +302,14 @@ class _DeviceListTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.onViewProfile,
+    this.onStartDiscovery,
   });
 
   final KeyboardDevice device;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback? onViewProfile;
+  final VoidCallback? onStartDiscovery;
 
   @override
   Widget build(BuildContext context) {
@@ -325,12 +343,21 @@ class _DeviceListTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (device.hasProfile && onViewProfile != null)
+          if (onViewProfile != null)
             TextButton.icon(
               onPressed: onViewProfile,
               icon: const Icon(Icons.visibility, size: 16),
               label: const Text('View'),
               style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          if (onStartDiscovery != null)
+            FilledButton.tonalIcon(
+              onPressed: onStartDiscovery,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Create Profile'),
+              style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
               ),
             ),

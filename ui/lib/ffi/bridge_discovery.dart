@@ -233,4 +233,34 @@ mixin BridgeDiscoveryMixin {
       return -1;
     }
   }
+
+  /// Process a discovery event.
+  ///
+  /// Returns:
+  /// - 0: Success
+  /// - 1: Discovery complete
+  /// - -1: No active session
+  /// - -2: Cancelled
+  int processDiscoveryEvent(int scanCode, bool pressed, int timestampUs) {
+    final processFn = bindings?.processDiscoveryEvent;
+    if (processFn == null) return -1;
+
+    try {
+      Pointer<Char>? resultPtr = processFn(scanCode, pressed, timestampUs);
+      if (resultPtr == nullptr) return -1;
+
+      final resultStr = resultPtr.cast<Utf8>().toDartString();
+      try {
+        bindings?.freeString(resultPtr);
+      } catch (_) {}
+
+      if (resultStr.startsWith('ok:')) {
+        final payload = resultStr.substring(3).trim();
+        return int.tryParse(payload) ?? 0;
+      }
+      return -1;
+    } catch (e) {
+      return -1;
+    }
+  }
 }

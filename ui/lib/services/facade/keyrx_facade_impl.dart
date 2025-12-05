@@ -5,8 +5,11 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:rxdart/rxdart.dart';
 
+import '../../models/discovery_progress.dart';
 import '../service_registry.dart';
 import '../test_service.dart';
 import '../../ffi/bridge.dart' hide ScriptValidationResult;
@@ -48,12 +51,14 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   KeyrxFacadeImpl(this._services)
       : _stateSubject = BehaviorSubject<FacadeState>.seeded(
           FacadeState.initial(),
-        ) {
+        ),
+        _discoverySubject = BehaviorSubject<DiscoveryProgress>() {
     _initializeStateAggregation();
   }
 
   final ServiceRegistry _services;
   final BehaviorSubject<FacadeState> _stateSubject;
+  final BehaviorSubject<DiscoveryProgress> _discoverySubject;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   bool _disposed = false;
@@ -105,6 +110,21 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
     _subscriptions.add(engineStateSub);
 
+    // Register for discovery progress events
+    _services.bridge.registerEventCallback(
+      EventType.discoveryProgress,
+      (Uint8List payload) {
+        try {
+          final jsonStr = utf8.decode(payload);
+          final jsonMap = json.decode(jsonStr) as Map<String, dynamic>;
+          final progress = DiscoveryProgress.fromJson(jsonMap);
+          _discoverySubject.add(progress);
+        } catch (e) {
+          // Ignore parse errors for now
+        }
+      },
+    );
+
     // Note: DeviceService, ValidationStatus, and DiscoveryStatus don't have
     // their own state streams. These states are managed through the facade's
     // operation methods (listDevices, validateScript, startDiscovery, etc.)
@@ -118,6 +138,9 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   Stream<FacadeState> get stateStream => _stateSubject.stream
       .debounceTime(const Duration(milliseconds: 100))
       .distinct((prev, next) => prev == next);
+
+  @override
+  Stream<DiscoveryProgress> get discoveryProgress => _discoverySubject.stream;
 
   @override
   FacadeState get currentState => _stateSubject.value;

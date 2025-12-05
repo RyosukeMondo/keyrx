@@ -158,6 +158,21 @@ pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *
     ffi_json(device::has_device_profile(vendor_id, product_id))
 }
 
+/// Save a device profile.
+///
+/// # Safety
+/// `profile_json` must be a valid, non-null, nul-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_save_device_profile(profile_json: *const c_char) -> *mut c_char {
+    let json = match cstr_to_str(profile_json) {
+        Ok(s) => s,
+        Err(code) => {
+            return ffi_error(FfiError::invalid_utf8(format!("profile_json ({code})")))
+        }
+    };
+    ffi_json(device::save_device_profile(json))
+}
+
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
 /// # Safety
@@ -188,6 +203,19 @@ pub unsafe extern "C" fn keyrx_start_discovery(
         }
     };
     ffi_json(discovery::start_discovery(device_id, rows, cols_json))
+}
+
+#[no_mangle]
+pub extern "C" fn keyrx_process_discovery_event(
+    scan_code: u16,
+    pressed: bool,
+    timestamp_us: u64,
+) -> *mut c_char {
+    ffi_json(discovery::process_discovery_event(
+        scan_code,
+        pressed,
+        timestamp_us,
+    ))
 }
 
 #[no_mangle]

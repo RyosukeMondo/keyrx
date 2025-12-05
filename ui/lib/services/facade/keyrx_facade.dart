@@ -25,6 +25,7 @@
 /// ```
 library;
 
+import '../../models/discovery_progress.dart';
 import '../service_registry.dart';
 import '../test_service.dart';
 import '../../ffi/bridge.dart';
@@ -68,6 +69,12 @@ abstract class KeyrxFacade {
   /// Subscribe to this stream to observe the entire application state
   /// through a single subscription.
   Stream<FacadeState> get stateStream;
+
+  /// Stream of detailed discovery progress updates.
+  ///
+  /// Emits [DiscoveryProgress] events during an active discovery session.
+  /// This provides real-time feedback on which keys have been mapped.
+  Stream<DiscoveryProgress> get discoveryProgress;
 
   /// Current aggregated state snapshot.
   ///

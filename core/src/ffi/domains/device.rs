@@ -111,6 +111,11 @@ pub fn list_devices() -> FfiResult<Vec<DeviceInfoWithProfile>> {
 // #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn select_device(ctx: &mut FfiContext, path: &str) -> FfiResult<()> {
     let device_path = PathBuf::from(path);
+
+    // On Linux, device paths are files in /dev/input/, so we can check if they exist.
+    // On Windows, device paths are interface strings (\\?\HID...) which are not
+    // valid filesystem paths for std::fs::metadata, so exists() fails.
+    #[cfg(not(target_os = "windows"))]
     if !device_path.exists() {
         return Err(FfiError::not_found(format!(
             "Device path does not exist: {}",
@@ -182,6 +187,25 @@ pub fn has_device_profile(vendor_id: u16, product_id: u16) -> FfiResult<bool> {
 
     let device_id = DeviceId::new(vendor_id, product_id);
     Ok(profile_path(device_id).exists())
+}
+
+/// Save a device profile to disk.
+///
+/// # Arguments
+/// * `profile_json` - JSON representation of the DeviceProfile
+///
+/// # Returns
+/// * `Ok(())` on success
+/// * `Err(FfiError)` if JSON is invalid or write fails
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+pub fn save_device_profile(profile_json: &str) -> FfiResult<()> {
+    let profile: crate::discovery::types::DeviceProfile = serde_json::from_str(profile_json)
+        .map_err(|e| FfiError::invalid_input(format!("invalid profile json: {}", e)))?;
+
+    crate::discovery::storage::write_profile(&profile)
+        .map_err(|e| FfiError::internal(format!("failed to write profile: {}", e)))?;
+
+    Ok(())
 }
 
 #[cfg(test)]

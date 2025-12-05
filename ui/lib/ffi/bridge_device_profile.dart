@@ -242,4 +242,39 @@ mixin BridgeDeviceProfileMixin {
       }
     }
   }
+
+  /// Save a device profile to disk.
+  ///
+  /// [profileJson] - JSON representation of the DeviceProfile.
+  ///
+  /// Returns true if successful.
+  bool saveDeviceProfile(String profileJson) {
+    final saveFn = bindings?.saveDeviceProfile;
+    if (saveFn == null) return false;
+
+    final jsonPtr = profileJson.toNativeUtf8();
+    Pointer<Char>? ptr;
+    try {
+      ptr = saveFn(jsonPtr.cast<Char>());
+      if (ptr == nullptr) return false;
+
+      final raw = ptr.cast<Utf8>().toDartString();
+      final trimmed = raw.trim();
+
+      // Parse "ok:" response (or empty ok for void result)
+      if (trimmed.toLowerCase().startsWith('ok:')) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    } finally {
+      calloc.free(jsonPtr);
+      if (ptr != null && ptr != nullptr) {
+        try {
+          bindings?.freeString(ptr);
+        } catch (_) {}
+      }
+    }
+  }
 }
