@@ -8,6 +8,7 @@ import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
 import 'pages/developer/test_runner_page.dart';
+import 'pages/migration_prompt_page.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
@@ -15,6 +16,7 @@ import 'services/facade/keyrx_facade.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
+import 'widgets/migration_wrapper.dart';
 
 void main() {
   runApp(
@@ -40,7 +42,36 @@ class KeyrxApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const HomePage(),
+      home: MigrationWrapper(
+        onCheckMigrationNeeded: _checkMigrationNeeded,
+        onRunMigration: _runMigration,
+        child: const HomePage(),
+      ),
+    );
+  }
+
+  /// Check if migration is needed by checking for old profiles directory.
+  ///
+  /// For now, this is a stub that always returns false.
+  /// In a full implementation, this would call the FFI to check
+  /// if ~/.config/keyrx/device_profiles exists and contains JSON files.
+  Future<bool> _checkMigrationNeeded() async {
+    // TODO: Implement FFI call to keyrx_migration_check_needed
+    // For now, return false to avoid showing migration prompt
+    return false;
+  }
+
+  /// Run the migration process.
+  ///
+  /// For now, this is a stub that returns an empty report.
+  /// In a full implementation, this would call the FFI to run the migration.
+  Future<MigrationReport> _runMigration() async {
+    // TODO: Implement FFI call to keyrx_migration_run
+    // For now, return a success report
+    return MigrationReport(
+      totalCount: 0,
+      migratedCount: 0,
+      failedCount: 0,
     );
   }
 }

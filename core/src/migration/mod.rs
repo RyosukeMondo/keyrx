@@ -38,7 +38,7 @@ pub enum MigrationError {
 }
 
 /// Result of a migration operation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MigrationReport {
     /// Number of profiles successfully migrated
     pub migrated_count: usize,
@@ -57,7 +57,7 @@ pub struct MigrationReport {
 }
 
 /// Details of a failed migration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MigrationFailure {
     /// Path to the profile that failed
     pub path: PathBuf,

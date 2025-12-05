@@ -434,7 +434,7 @@
   - _Requirements: 15_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI Developer | Task: Add migration CLI command following requirement 15, exposing migration to users | Restrictions: Must show progress, display report, handle errors, support --backup flag | _Leverage: Existing clap CLI from bin/keyrx.rs | Success: Command works, migration runs, report shows, tested manually. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 6.3. Create migration prompt UI
+- [x] 6.3. Create migration prompt UI
   - Files: `ui/lib/pages/migration_prompt_page.dart`
   - Show migration dialog on first run with new version
   - Explain what migration does
