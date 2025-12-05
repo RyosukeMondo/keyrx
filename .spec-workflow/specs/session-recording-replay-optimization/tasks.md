@@ -2,7 +2,7 @@
 
 ## Phase 1: Format
 
-- [ ] 1. Design optimized file format
+- [x] 1. Design optimized file format
   - File: `core/src/engine/recording/format.rs`
   - Header with index, compressed blocks
   - Version for future compatibility

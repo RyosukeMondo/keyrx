@@ -13,6 +13,7 @@ pub mod limits;
 mod multi_device;
 mod output;
 mod processing;
+pub mod recording;
 pub mod replay;
 mod session;
 mod session_state;
