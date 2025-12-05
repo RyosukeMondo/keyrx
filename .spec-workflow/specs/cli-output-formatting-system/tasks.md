@@ -9,7 +9,7 @@
   - Purpose: Format abstraction
   - _Requirements: 1.1_
 
-- [ ] 2. Implement JSON formatter
+- [x] 2. Implement JSON formatter
   - File: `core/src/cli/output/json.rs`
   - Pretty-printed JSON output
   - Handle all types

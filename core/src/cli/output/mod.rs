@@ -1,8 +1,10 @@
 //! Output formatting for CLI commands.
 
 pub mod formatter;
+pub mod json;
 
 pub use formatter::{OutputFormat, OutputFormatter};
+use json::JsonFormatter;
 use serde::Serialize;
 use std::io::{self, Write};
 
@@ -46,7 +48,7 @@ impl OutputWriter {
 
     /// Write structured data.
     pub fn data<T: Serialize + ?Sized>(&self, data: &T) -> io::Result<()> {
-        let json = OutputFormatter::format_data(self, data)?;
+        let json = OutputFormatter::format_data(self, data).map_err(io::Error::other)?;
         println!("{json}");
         io::stdout().flush()
     }
@@ -56,28 +58,28 @@ impl OutputFormatter for OutputWriter {
     fn format_success(&self, message: &str) -> String {
         match self.format {
             OutputFormat::Human => format!("[OK] {}", message),
-            OutputFormat::Json => format!(r#"{{"status":"success","message":"{}"}}"#, message),
+            OutputFormat::Json => JsonFormatter.format_success(message),
         }
     }
 
     fn format_error(&self, message: &str) -> String {
         match self.format {
             OutputFormat::Human => format!("[ERROR] {}", message),
-            OutputFormat::Json => format!(r#"{{"status":"error","message":"{}"}}"#, message),
+            OutputFormat::Json => JsonFormatter.format_error(message),
         }
     }
 
     fn format_warning(&self, message: &str) -> String {
         match self.format {
             OutputFormat::Human => format!("[WARN] {}", message),
-            OutputFormat::Json => format!(r#"{{"status":"warning","message":"{}"}}"#, message),
+            OutputFormat::Json => JsonFormatter.format_warning(message),
         }
     }
 
     fn format_data<T: Serialize + ?Sized>(&self, data: &T) -> serde_json::Result<String> {
         match self.format {
             OutputFormat::Human => serde_json::to_string_pretty(data),
-            OutputFormat::Json => serde_json::to_string(data),
+            OutputFormat::Json => JsonFormatter.format_data(data),
         }
     }
 }
@@ -102,15 +104,15 @@ mod tests {
 
         assert_eq!(
             writer.format_success("ok"),
-            r#"{"status":"success","message":"ok"}"#
+            "{\n  \"message\": \"ok\",\n  \"status\": \"success\"\n}"
         );
         assert_eq!(
             writer.format_warning("watch"),
-            r#"{"status":"warning","message":"watch"}"#
+            "{\n  \"message\": \"watch\",\n  \"status\": \"warning\"\n}"
         );
         assert_eq!(
             writer.format_error("fail"),
-            r#"{"status":"error","message":"fail"}"#
+            "{\n  \"message\": \"fail\",\n  \"status\": \"error\"\n}"
         );
     }
 
@@ -135,6 +137,6 @@ mod tests {
         let compact = OutputWriter::new(OutputFormat::Json)
             .format_data(&sample)
             .expect("json data write should succeed");
-        assert_eq!(compact, "{\"name\":\"alpha\",\"count\":3}");
+        assert_eq!(compact, "{\n  \"name\": \"alpha\",\n  \"count\": 3\n}");
     }
 }

@@ -19,11 +19,9 @@ pub fn register_all_types() {
     register_layer_action_type();
 }
 
-/// Register KeyCode type documentation.
-///
 /// KeyCode represents a keyboard key identifier, passed as a String.
-fn register_key_code_type() {
-    let type_doc = TypeDoc {
+fn key_code_type_doc() -> TypeDoc {
+    TypeDoc {
         name: "KeyCode".to_string(),
         description: "Represents a keyboard key identifier. Keys can be specified by their \
                       physical key name (e.g., 'A', 'Space', 'Enter') or by special key names \
@@ -52,16 +50,17 @@ remap("F13", "AudioMute");
 remap("F14", "AudioVolumeDown");"#
                 .to_string(),
         ],
-    };
-
-    register_type(type_doc);
+    }
 }
 
-/// Register LayerName type documentation.
-///
+/// Register KeyCode type documentation.
+fn register_key_code_type() {
+    register_type(key_code_type_doc());
+}
+
 /// LayerName represents a layer identifier, passed as a String.
-fn register_layer_name_type() {
-    let type_doc = TypeDoc {
+fn layer_name_type_doc() -> TypeDoc {
+    TypeDoc {
         name: "LayerName".to_string(),
         description: "Represents a layer identifier used to organize and activate different \
                       key mappings. Layer names are case-insensitive strings that uniquely \
@@ -86,16 +85,17 @@ layer_map("Nav", "H", "Left");
 layer_map("Nav", "J", "Down");"#
                 .to_string(),
         ],
-    };
-
-    register_type(type_doc);
+    }
 }
 
-/// Register ModifierName type documentation.
-///
+/// Register LayerName type documentation.
+fn register_layer_name_type() {
+    register_type(layer_name_type_doc());
+}
+
 /// ModifierName represents a virtual modifier identifier, passed as a String.
-fn register_modifier_name_type() {
-    let type_doc = TypeDoc {
+fn modifier_name_type_doc() -> TypeDoc {
+    TypeDoc {
         name: "ModifierName".to_string(),
         description: "Represents a virtual modifier identifier. Virtual modifiers are custom \
                       modifier keys you define and control in your scripts. Names are \
@@ -119,16 +119,17 @@ modifier_off("Hyper");"#
 tap_hold_mod("CapsLock", "Esc", hyper);"#
                 .to_string(),
         ],
-    };
-
-    register_type(type_doc);
+    }
 }
 
-/// Register ModifierId type documentation.
-///
+/// Register ModifierName type documentation.
+fn register_modifier_name_type() {
+    register_type(modifier_name_type_doc());
+}
+
 /// ModifierId represents a unique identifier for a virtual modifier, as an integer (0-255).
-fn register_modifier_id_type() {
-    let type_doc = TypeDoc {
+fn modifier_id_type_doc() -> TypeDoc {
+    TypeDoc {
         name: "ModifierId".to_string(),
         description: "Represents a unique identifier for a virtual modifier. This is an integer \
                       value (0-255) returned by define_modifier() and used with tap_hold_mod(). \
@@ -149,16 +150,17 @@ let hyper = define_modifier("Hyper");
 tap_hold_mod("CapsLock", "Esc", hyper);"#
                 .to_string(),
         ],
-    };
-
-    register_type(type_doc);
+    }
 }
 
-/// Register LayerAction type documentation.
-///
+/// Register ModifierId type documentation.
+fn register_modifier_id_type() {
+    register_type(modifier_id_type_doc());
+}
+
 /// LayerAction represents an action string used in layer mappings.
-fn register_layer_action_type() {
-    let type_doc = TypeDoc {
+fn layer_action_type_doc() -> TypeDoc {
+    TypeDoc {
         name: "LayerAction".to_string(),
         description: "Represents an action that can be performed on a layer mapping. Layer \
                       actions are specified as strings and can be either simple key remaps or \
@@ -185,9 +187,12 @@ layer_map("Base", "F1", "toggle:Nav");"#
 layer_map("Symbols", "Esc", "pop:");"#
                 .to_string(),
         ],
-    };
+    }
+}
 
-    register_type(type_doc);
+/// Register LayerAction type documentation.
+fn register_layer_action_type() {
+    register_type(layer_action_type_doc());
 }
 
 #[cfg(test)]
@@ -259,18 +264,14 @@ mod tests {
 
     #[test]
     fn test_all_types_have_since_version() {
-        registry::initialize();
-        register_all_types();
-
-        for type_name in &[
-            "KeyCode",
-            "LayerName",
-            "ModifierName",
-            "ModifierId",
-            "LayerAction",
+        for doc in [
+            key_code_type_doc(),
+            layer_name_type_doc(),
+            modifier_name_type_doc(),
+            modifier_id_type_doc(),
+            layer_action_type_doc(),
         ] {
-            let type_doc = registry::get_type(type_name).unwrap();
-            assert!(type_doc.since.is_some(), "{} should have since", type_name);
+            assert!(doc.since.is_some(), "{} should have since", doc.name);
         }
     }
 }
