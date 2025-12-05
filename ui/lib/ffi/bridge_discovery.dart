@@ -148,14 +148,14 @@ mixin BridgeDiscoveryMixin {
         return DeviceListResult.error('listDevices returned null');
       }
 
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = ptr!.cast<Utf8>().toDartString();
       return DeviceListResult.parse(raw);
     } catch (e) {
       return DeviceListResult.error('$e');
     } finally {
       if (ptr != null && ptr != nullptr) {
         try {
-          bindings?.freeString(ptr);
+          bindings?.freeString(ptr!);
         } catch (_) {}
       }
     }
@@ -205,7 +205,7 @@ mixin BridgeDiscoveryMixin {
         return DiscoveryStartResult.error('startDiscovery returned null');
       }
 
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = ptr!.cast<Utf8>().toDartString();
       return DiscoveryStartResult.parse(raw);
     } catch (e) {
       return DiscoveryStartResult.error('$e');
@@ -214,7 +214,7 @@ mixin BridgeDiscoveryMixin {
       calloc.free(colsPtr);
       if (ptr != null && ptr != nullptr) {
         try {
-          bindings?.freeString(ptr);
+          bindings?.freeString(ptr!);
         } catch (_) {}
       }
     }
@@ -249,9 +249,9 @@ mixin BridgeDiscoveryMixin {
       Pointer<Char>? resultPtr = processFn(scanCode, pressed, timestampUs);
       if (resultPtr == nullptr) return -1;
 
-      final resultStr = resultPtr.cast<Utf8>().toDartString();
+      final resultStr = resultPtr!.cast<Utf8>().toDartString();
       try {
-        bindings?.freeString(resultPtr);
+        bindings?.freeString(resultPtr!);
       } catch (_) {}
 
       if (resultStr.startsWith('ok:')) {
