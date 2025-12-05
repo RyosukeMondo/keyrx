@@ -40,6 +40,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   bool _codeModified = false;
   bool _hasAdvancedFeatures = false;
   bool _isSaving = false;
+  bool _compactMode = false;
+  bool _keyboardVisible = true;
   String? _selectedKeyId;
   String? _lastSavedPath;
 
@@ -116,39 +118,85 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   }
 
   Widget _buildVisualView(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          flex: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Drag from one key to another to create a mapping',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        // Keyboard Toolbar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Row(
+            children: [
+              const Icon(Icons.keyboard_alt_outlined, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Keyboard Layout',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(_compactMode ? Icons.zoom_out_map : Icons.zoom_in_map),
+                tooltip: _compactMode ? 'Standard Mode' : 'Compact Mode',
+                onPressed: () => setState(() => _compactMode = !_compactMode),
+                iconSize: 20,
+              ),
+              IconButton(
+                icon: Icon(_keyboardVisible
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down),
+                tooltip: _keyboardVisible ? 'Collapse Keyboard' : 'Expand Keyboard',
+                onPressed: () =>
+                    setState(() => _keyboardVisible = !_keyboardVisible),
+                iconSize: 20,
+              ),
+            ],
+          ),
+        ),
+        // Collapsible Keyboard Area
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          height: _keyboardVisible ? (_compactMode ? 220 : 320) : 0,
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: SizedBox(
+              height: _compactMode ? 220 : 320,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Drag from one key to another to create a mapping',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: VisualKeyboard(
+                        layout: _compactMode
+                            ? KeyboardLayout.compact()
+                            : KeyboardLayout.ansi104(),
+                        mappings: _mappings,
+                        selectedKeys:
+                            _selectedKeyId != null ? {_selectedKeyId!} : {},
+                        mappedKeys: _getMappedKeys(),
+                        onKeyTap: _handleKeyTap,
+                        onMappingCreated: _handleMappingCreated,
+                        onMappingDeleted: _handleMappingDeleted,
+                        showSecondaryLabels: !_compactMode,
                       ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: VisualKeyboard(
-                    mappings: _mappings,
-                    selectedKeys:
-                        _selectedKeyId != null ? {_selectedKeyId!} : {},
-                    mappedKeys: _getMappedKeys(),
-                    onKeyTap: _handleKeyTap,
-                    onMappingCreated: _handleMappingCreated,
-                    onMappingDeleted: _handleMappingDeleted,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
-        SizedBox(
-          width: 280,
+        const Divider(height: 1),
+        // Mapping Panel (Bottom)
+        Expanded(
           child: MappingPanel(
             mappings: _mappings,
             tapHoldConfigs: _tapHoldConfigs,
@@ -160,6 +208,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
             },
             onMappingSelected: (keyId) => setState(() => _selectedKeyId = keyId),
             onClearAll: _confirmClear,
+            selectedKeyId: _selectedKeyId,
           ),
         ),
       ],

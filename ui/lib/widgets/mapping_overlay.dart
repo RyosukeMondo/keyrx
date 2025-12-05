@@ -87,21 +87,31 @@ class MappingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _MappingPainter(
-        mappings: mappings,
-        layout: layout,
-        selectedIndex: selectedMappingIndex,
-        dragStartKey: dragStartKey,
-        dragCurrentPosition: dragCurrentPosition,
-        colorScheme: Theme.of(context).colorScheme,
-      ),
-      child: Stack(
-        children: [
-          for (int i = 0; i < mappings.length; i++)
-            _buildDeleteButton(context, i),
-        ],
-      ),
+    return Stack(
+      children: [
+        // Visuals layer (arrows) - Ignore pointer events so keys below can be clicked
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              painter: _MappingPainter(
+                mappings: mappings,
+                layout: layout,
+                selectedIndex: selectedMappingIndex,
+                dragStartKey: dragStartKey,
+                dragCurrentPosition: dragCurrentPosition,
+                colorScheme: Theme.of(context).colorScheme,
+              ),
+            ),
+          ),
+        ),
+        // Interactive layer (delete buttons)
+        Stack(
+          children: [
+            for (int i = 0; i < mappings.length; i++)
+              _buildDeleteButton(context, i),
+          ],
+        ),
+      ],
     );
   }
 

@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pages/editor_page.dart';
+import 'pages/visual_editor_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
@@ -60,8 +60,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry, KeyrxFacade facade) {
     return [
-      EditorPage(
-        facade: facade,
+      VisualEditorPage(
         mappingRepository: registry.mappingRepository,
       ),
       DevicesPage(facade: facade, services: registry),

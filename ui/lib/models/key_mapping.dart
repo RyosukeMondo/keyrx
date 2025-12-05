@@ -43,8 +43,3 @@ class ComboMapping {
   final List<String> keys;
   final String output;
 }
-
-/// Backward compatibility alias.
-/// @deprecated Use [BindingPanel] from widgets/editor/binding_panel.dart instead.
-@Deprecated('Use BindingPanel from widgets/editor/binding_panel.dart instead')
-typedef KeyConfigPanel = Object;

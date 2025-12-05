@@ -63,6 +63,7 @@ class MappingPanel extends StatelessWidget {
     required this.onTapHoldDeleted,
     required this.onMappingSelected,
     required this.onClearAll,
+    this.selectedKeyId,
   });
 
   final List<RemapConfig> mappings;
@@ -71,48 +72,88 @@ class MappingPanel extends StatelessWidget {
   final void Function(int index) onTapHoldDeleted;
   final void Function(String keyId) onMappingSelected;
   final VoidCallback onClearAll;
+  final String? selectedKeyId;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          left: BorderSide(
+          top: BorderSide(
             color: Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(context),
-          Expanded(child: _buildMappingList(context)),
-          if (tapHoldConfigs.isNotEmpty) ...[
-            _buildTapHoldHeader(context),
-            ...List.generate(
-                tapHoldConfigs.length, (i) => _buildTapHoldTile(context, i)),
-          ],
+          // Remaps Column
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context, 'Mappings', mappings.length,
+                    showClear: true),
+                Expanded(child: _buildMappingList(context)),
+              ],
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          // Tap-Hold / Combos Column
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context, 'Tap-Hold & Combos', tapHoldConfigs.length),
+                Expanded(
+                  child: tapHoldConfigs.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No advanced configs',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: tapHoldConfigs.length,
+                          itemBuilder: (context, index) =>
+                              _buildTapHoldTile(context, index),
+                        ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String title, int count,
+      {bool showClear = false}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Mappings (${mappings.length})',
+            '$title ($count)',
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep, size: 20),
-            tooltip: 'Clear All',
-            onPressed: mappings.isEmpty ? null : onClearAll,
-          ),
+          if (showClear)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, size: 20),
+              tooltip: 'Clear All',
+              onPressed: mappings.isEmpty ? null : onClearAll,
+            ),
         ],
       ),
     );
@@ -141,11 +182,17 @@ class MappingPanel extends StatelessWidget {
 
   Widget _buildMappingTile(BuildContext context, int index) {
     final mapping = mappings[index];
+    final isSelected = mapping.sourceKeyId == selectedKeyId;
+
     return ListTile(
       dense: true,
+      selected: isSelected,
+      selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
       leading: Icon(
         Icons.keyboard_arrow_right,
-        color: Theme.of(context).colorScheme.primary,
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimaryContainer
+            : Theme.of(context).colorScheme.primary,
       ),
       title: Text('${mapping.sourceKeyId} → ${mapping.targetKeyId}'),
       subtitle: Text(_getMappingTypeLabel(mapping.type)),
@@ -154,17 +201,6 @@ class MappingPanel extends StatelessWidget {
         onPressed: () => onMappingDeleted(index),
       ),
       onTap: () => onMappingSelected(mapping.sourceKeyId),
-    );
-  }
-
-  Widget _buildTapHoldHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Text(
-        'Tap-Hold (${tapHoldConfigs.length})',
-        style: Theme.of(context).textTheme.titleSmall,
-      ),
     );
   }
 
