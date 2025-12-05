@@ -1,15 +1,29 @@
 //! Runtime and engine building for the run command.
 
-use crate::cli::OutputWriter;
+use crate::cli::{OutputFormat, OutputWriter};
 use crate::config::script_cache_dir;
 use crate::engine::{AdvancedEngine, LayerAction, RemapAction};
 use crate::scripting::cache::ScriptCache;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::Result;
+use serde::Serialize;
 use std::path::PathBuf;
 use tracing::{debug, info};
 use tracing_subscriber::{fmt, prelude::*, util::SubscriberInitExt, EnvFilter};
+
+#[derive(Debug, Serialize)]
+struct CacheMetricsOutput {
+    hits: u64,
+    misses: u64,
+    hit_rate: f64,
+    evictions: u64,
+    entries: usize,
+    size_bytes: usize,
+    max_size_bytes: usize,
+    startup_micros_saved: u64,
+    startup_ms_saved: f64,
+}
 
 /// Builder for preparing script runtime and engine.
 pub struct RuntimeBuilder<'a> {
@@ -75,6 +89,50 @@ impl<'a> RuntimeBuilder<'a> {
         Ok(())
     }
 
+    fn report_cache_metrics(&self, runtime: &RhaiRuntime) {
+        let Some(cache) = runtime.script_cache() else {
+            return;
+        };
+
+        let stats = cache.stats();
+        if stats.hits + stats.misses == 0 {
+            return;
+        }
+
+        let saved_ms = stats.startup_micros_saved as f64 / 1000.0;
+        match self.output.format() {
+            OutputFormat::Json => {
+                let summary = CacheMetricsOutput {
+                    hits: stats.hits,
+                    misses: stats.misses,
+                    hit_rate: stats.hit_rate(),
+                    evictions: stats.evictions,
+                    entries: stats.entries,
+                    size_bytes: stats.size_bytes,
+                    max_size_bytes: stats.max_size_bytes,
+                    startup_micros_saved: stats.startup_micros_saved,
+                    startup_ms_saved: saved_ms,
+                };
+                if let Err(error) = self.output.data(&summary) {
+                    self.output
+                        .warning(&format!("Failed to write cache metrics: {error}"));
+                }
+            }
+            OutputFormat::Human => {
+                self.output.success(&format!(
+                    "Script cache: {:.1}% hit rate (hits: {}, misses: {}), entries: {}, size: {} / {} bytes, startup saved: {:.2}ms",
+                    stats.hit_rate(),
+                    stats.hits,
+                    stats.misses,
+                    stats.entries,
+                    stats.size_bytes,
+                    stats.max_size_bytes,
+                    saved_ms
+                ));
+            }
+        }
+    }
+
     /// Prepare the script runtime by loading script and calling on_init hook.
     pub fn prepare_runtime(&self) -> Result<RhaiRuntime> {
         if self.clear_cache {
@@ -118,6 +176,8 @@ impl<'a> RuntimeBuilder<'a> {
                 self.output.success("Script initialized (on_init called)");
             }
         }
+
+        self.report_cache_metrics(&runtime);
 
         Ok(runtime)
     }

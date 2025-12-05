@@ -23,6 +23,7 @@ use rhai::{Engine, Scope, AST};
 use std::collections::HashSet;
 use std::fs;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 /// Production Rhai script runtime.
 ///
@@ -269,15 +270,17 @@ impl ScriptRuntime for RhaiRuntime {
             return Ok(());
         }
 
+        let compile_start = Instant::now();
         let ast = self.engine.compile(&script).map_err(|e| {
             keyrx_err!(
                 SCRIPT_COMPILATION_FAILED,
                 error = format!("{} ({})", e, path)
             )
         })?;
+        let compile_micros = compile_start.elapsed().as_micros() as u64;
 
         if let Some(cache) = &self.cache {
-            cache.put(&script, &ast);
+            cache.put(&script, &ast, Some(compile_micros));
         }
 
         self.ast = Some(ast);

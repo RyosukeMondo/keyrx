@@ -31,7 +31,7 @@
   - Purpose: User control
   - _Requirements: 3.3, 3.4_
 
-- [-] 5. Add cache metrics
+- [x] 5. Add cache metrics
   - File: `core/src/scripting/cache.rs`
   - Track hit rate, size, startup improvement
   - Purpose: Performance validation
