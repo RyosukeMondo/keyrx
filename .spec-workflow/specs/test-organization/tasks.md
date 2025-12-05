@@ -20,7 +20,7 @@
   - _Requirements: 4.1, 4.3_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer creating test utilities | Task: Create OperationBuilder in core/tests/fixtures/operations.rs | Restrictions: Builder pattern, chainable methods, clear API | _Leverage: PendingOp types | Success: Builder works for all operation types, reduces test LOC | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 3. Create script fixtures
+- [x] 3. Create script fixtures
   - File: `core/tests/fixtures/scripts.rs`
   - Common Rhai script snippets for testing
   - Functions: minimal_script(), layer_script(), error_script()
