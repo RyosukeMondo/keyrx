@@ -94,7 +94,7 @@
 
 ## Phase 4: Inline Test Extraction
 
-- [-] 11. Extract inline tests from validation modules
+- [x] 11. Extract inline tests from validation modules
   - Files: Move tests from `validation/*.rs` to `tests/unit/validation/`
   - Add #[cfg(test)] helpers as needed
   - Purpose: Clean source files
