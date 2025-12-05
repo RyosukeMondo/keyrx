@@ -61,7 +61,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in data modeling and type design | Task: Create Profile data model following requirement 3, defining all layout types and key actions | Restrictions: Must be platform-agnostic, maintain type safety, use existing KeyCode enum | _Leverage: Existing KeyCode from drivers/keycodes/definitions.rs, PhysicalKey concept from discovery/types.rs | Success: All types compile, serialize correctly, HashMap<PhysicalPosition, KeyAction> works, unit tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (all structs/enums created), then mark as [x]._
 
-- [ ] 1.7. Implement DeviceRegistry
+- [-] 1.7. Implement DeviceRegistry
   - Files: `core/src/registry/device.rs`, `core/src/registry/mod.rs`
   - Create DeviceRegistry struct with Arc<RwLock<HashMap<DeviceIdentity, DeviceState>>>
   - Implement register_device(), unregister_device()
