@@ -133,6 +133,14 @@ enum Commands {
         /// Override hold delay in milliseconds (valid: 0-500)
         #[arg(long)]
         hold_delay: Option<u32>,
+
+        /// Disable compiled script caching for this run
+        #[arg(long)]
+        no_cache: bool,
+
+        /// Clear the compiled script cache before running
+        #[arg(long)]
+        clear_cache: bool,
     },
 
     /// Inspect current engine state
@@ -584,6 +592,8 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             tap_timeout,
             combo_timeout,
             hold_delay,
+            no_cache,
+            clear_cache,
         } => {
             use keyrx_core::cli::Command;
             let mut config = config;
@@ -592,7 +602,8 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
                 .with_record_path(record)
                 .with_trace_path(trace)
                 .with_config(config)
-                .with_validate_only(validate_only);
+                .with_validate_only(validate_only)
+                .with_cache_options(no_cache, clear_cache);
             cmd.execute(ctx)
         }
         Commands::State {

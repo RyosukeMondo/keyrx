@@ -1,7 +1,9 @@
 //! Runtime and engine building for the run command.
 
 use crate::cli::OutputWriter;
+use crate::config::script_cache_dir;
 use crate::engine::{AdvancedEngine, LayerAction, RemapAction};
+use crate::scripting::cache::ScriptCache;
 use crate::scripting::{RemapRegistry, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 use anyhow::Result;
@@ -14,6 +16,8 @@ pub struct RuntimeBuilder<'a> {
     script_path: Option<PathBuf>,
     debug: bool,
     output: &'a OutputWriter,
+    disable_cache: bool,
+    clear_cache: bool,
 }
 
 impl<'a> RuntimeBuilder<'a> {
@@ -23,7 +27,16 @@ impl<'a> RuntimeBuilder<'a> {
             script_path,
             debug,
             output,
+            disable_cache: false,
+            clear_cache: false,
         }
+    }
+
+    /// Configure caching behavior for the runtime.
+    pub fn with_cache_control(mut self, disable_cache: bool, clear_cache: bool) -> Self {
+        self.disable_cache = disable_cache;
+        self.clear_cache = clear_cache;
+        self
     }
 
     /// Initialize debug logging if enabled.
@@ -64,7 +77,17 @@ impl<'a> RuntimeBuilder<'a> {
 
     /// Prepare the script runtime by loading script and calling on_init hook.
     pub fn prepare_runtime(&self) -> Result<RhaiRuntime> {
+        if self.clear_cache {
+            ScriptCache::new(script_cache_dir()).clear();
+            self.output.success("Cleared script cache");
+        }
+
         let mut runtime = RhaiRuntime::new()?;
+
+        if self.disable_cache {
+            runtime.disable_cache();
+            self.output.warning("Script cache disabled for this run");
+        }
 
         if let Some(path) = &self.script_path {
             self.output
@@ -209,6 +232,15 @@ fn on_init() {
 
         let result = builder.prepare_runtime();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn prepare_runtime_disables_cache_when_requested() {
+        let output = OutputWriter::new(OutputFormat::Human);
+        let builder = RuntimeBuilder::new(None, false, &output).with_cache_control(true, false);
+
+        let runtime = builder.prepare_runtime().expect("runtime should build");
+        assert!(runtime.script_cache().is_none());
     }
 
     #[test]

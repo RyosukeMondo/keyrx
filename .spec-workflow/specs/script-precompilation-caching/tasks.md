@@ -25,7 +25,7 @@
   - Purpose: Runtime integration
   - _Requirements: 1.1, 1.4_
 
-- [ ] 4. Add CLI cache options
+- [x] 4. Add CLI cache options
   - File: `core/src/cli/commands/run.rs`
   - Add `--no-cache` and `--clear-cache`
   - Purpose: User control

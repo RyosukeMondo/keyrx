@@ -43,6 +43,10 @@ pub struct RunCommand {
     pub config: Option<Config>,
     /// Validate script and exit immediately without running engine.
     pub validate_only: bool,
+    /// Disable script cache for this run.
+    pub disable_cache: bool,
+    /// Clear script cache before running.
+    pub clear_cache: bool,
 }
 
 impl RunCommand {
@@ -64,6 +68,8 @@ impl RunCommand {
             trace_path: None,
             config: None,
             validate_only: false,
+            disable_cache: false,
+            clear_cache: false,
         }
     }
 
@@ -82,6 +88,13 @@ impl RunCommand {
     /// Set the path for OpenTelemetry trace export.
     pub fn with_trace_path(mut self, path: Option<PathBuf>) -> Self {
         self.trace_path = path;
+        self
+    }
+
+    /// Configure cache handling behavior.
+    pub fn with_cache_options(mut self, disable_cache: bool, clear_cache: bool) -> Self {
+        self.disable_cache = disable_cache;
+        self.clear_cache = clear_cache;
         self
     }
 
@@ -117,7 +130,8 @@ impl RunCommand {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let builder = RuntimeBuilder::new(self.script_path.clone(), self.debug, &self.output);
+        let builder = RuntimeBuilder::new(self.script_path.clone(), self.debug, &self.output)
+            .with_cache_control(self.disable_cache, self.clear_cache);
         builder.init_debug_logging()?;
 
         if self.validate_only {
