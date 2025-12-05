@@ -49,7 +49,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer splitting tests | Task: Extract conflict tests from validation_integration.rs to conflict_integration_tests.rs | Restrictions: Keep tests passing, use fixtures, < 500 LOC | _Leverage: OperationBuilder, existing tests | Success: Tests pass, file < 500 LOC, coverage maintained | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 6. Split validation_integration.rs - cycle tests
+- [x] 6. Split validation_integration.rs - cycle tests
   - File: `core/tests/integration/validation/cycle_integration_tests.rs`
   - Extract cycle detection tests
   - Purpose: Continue validation split

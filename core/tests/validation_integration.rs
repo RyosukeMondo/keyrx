@@ -335,27 +335,6 @@ mod config_driven {
     }
 
     #[test]
-    fn respects_custom_cycle_depth() {
-        let mut config = ValidationConfig::default();
-        config.max_cycle_depth = 3;
-
-        // This creates a 2-step cycle which should be detected
-        let script = r#"
-            remap("A", "B");
-            remap("B", "A");
-        "#;
-
-        let engine = ValidationEngine::with_config(config);
-        let result = engine.validate(script, ValidationOptions::new());
-
-        assert!(result.has_warnings());
-        assert!(result
-            .warnings
-            .iter()
-            .any(|w| w.category == WarningCategory::Conflict));
-    }
-
-    #[test]
     fn loads_config_from_file() {
         let dir = tempfile::tempdir().unwrap();
         let config_path = dir.path().join("validation.toml");
