@@ -226,7 +226,7 @@
   - _Requirements: 16_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Developer with expertise in C ABI and panic safety | Task: Implement device_registry FFI domain following requirement 16, exposing device registry to Flutter | Restrictions: Must use panic guards, validate all pointers, return errors as strings, free memory correctly | _Leverage: Existing FFI patterns from ffi/domains/device.rs, ffi/utils.rs panic guards | Success: All FFI functions work, no panics, memory safety verified, tested from Dart. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (all FFI functions, error handling), then mark as [x]._
 
-- [ ] 3.2. Implement profile_registry FFI domain
+- [x] 3.2. Implement profile_registry FFI domain
   - Files: `core/src/ffi/domains/profile_registry.rs`, `core/src/ffi/domains/mod.rs`
   - Implement krx_profile_registry_list_profiles()
   - Implement krx_profile_registry_get_profile()

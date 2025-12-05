@@ -10,6 +10,7 @@ pub mod diagnostics;
 pub mod discovery;
 pub mod engine;
 pub mod observability;
+pub mod profile_registry;
 pub mod recording;
 pub mod script;
 pub mod testing;
