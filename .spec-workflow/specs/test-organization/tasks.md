@@ -102,7 +102,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer extracting tests | Task: Move inline tests from validation modules to tests/unit/validation/ | Restrictions: Expose helpers if needed, maintain coverage, keep < 100 LOC inline | _Leverage: cfg(test) patterns | Success: Source files cleaner, tests still pass | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 12. Extract inline tests from engine modules
+- [x] 12. Extract inline tests from engine modules
   - Files: Move tests from `engine/*.rs` to `tests/unit/engine/`
   - Preserve internal behavior tests inline
   - Purpose: Clean source files
