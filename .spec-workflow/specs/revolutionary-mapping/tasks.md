@@ -445,7 +445,7 @@
   - _Requirements: 15_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI Developer | Task: Create migration prompt UI following requirement 15, guiding users through migration | Restrictions: Must show clear explanation, progress indicator, results summary, allow skip | _Leverage: Material dialogs, version detection | Success: Dialog appears on first run, migration works, results shown, UX clear, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 6.4. Write migration tests
+- [x] 6.4. Write migration tests
   - Files: `core/tests/migration_tests.rs`
   - Test migration with sample old data
   - Test backup creation
