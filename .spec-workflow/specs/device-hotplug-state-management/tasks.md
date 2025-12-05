@@ -9,7 +9,7 @@
   - Purpose: Platform-agnostic interface
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. Implement Linux device watcher
+- [x] 2. Implement Linux device watcher
   - File: `core/src/discovery/watcher_linux.rs`
   - Use inotify on /dev/input
   - Detect add/remove events
