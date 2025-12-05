@@ -466,7 +466,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Test Engineer | Task: Write end-to-end tests covering all requirements, simulating real user scenarios | Restrictions: Must test complete workflows, use mock devices, verify all requirements, realistic scenarios | _Leverage: Test harness, mock devices | Success: All E2E scenarios pass, requirements verified, realistic tests, good coverage. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [-] 6.6. Performance benchmarking
+- [x] 6.6. Performance benchmarking
   - Files: `core/benches/revolutionary_mapping_bench.rs`
   - Benchmark device resolution (<50μs target)
   - Benchmark profile lookup (<100μs cached target)
