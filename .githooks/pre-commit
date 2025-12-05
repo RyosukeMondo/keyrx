@@ -38,7 +38,7 @@ echo "║                   Pre-commit Checks                        ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
-TOTAL_CHECKS=3
+TOTAL_CHECKS=4
 PASSED_CHECKS=0
 
 # Step 1: Format check
@@ -104,6 +104,26 @@ PASSED_CHECKS=$((PASSED_CHECKS + 1))
 echo "    ✓ Tests OK"
 echo ""
 
+# Step 4: Verify FFI bindings
+echo "[4/$TOTAL_CHECKS] Verifying FFI bindings..."
+if ! python3 "$REPO_ROOT/scripts/verify_bindings.py"; then
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: FFI Bindings Verification                      ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  Dart FFI bindings are out of sync with Rust exports.      ║"
+    echo "║                                                            ║"
+    echo "║  To fix, run:                                              ║"
+    echo "║    just gen-bindings                                       ║"
+    echo "║                                                            ║"
+    echo "║  Then add the updated files to your commit.                ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    exit 1
+fi
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+echo "    ✓ Bindings OK"
+echo ""
+
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  ✅ All $PASSED_CHECKS/$TOTAL_CHECKS pre-commit checks passed!                       ║"
 echo "║                                                            ║"
@@ -111,5 +131,6 @@ echo "║  Checks completed:                                         ║"
 echo "║    • cargo fmt --check                                     ║"
 echo "║    • cargo clippy -- -D warnings                           ║"
 echo "║    • cargo test --lib                                      ║"
+echo "║    • python3 scripts/verify_bindings.py                    ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
