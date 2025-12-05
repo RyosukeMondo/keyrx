@@ -6,3 +6,5 @@
 //! - Session analysis and reporting
 
 mod script_testing_tests;
+mod session_recording_tests;
+mod session_replay_tests;
