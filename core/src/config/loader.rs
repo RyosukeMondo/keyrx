@@ -16,6 +16,7 @@
 //! ```
 
 use super::limits::{DEFAULT_EVENT_GAP_US, DEFAULT_REGRESSION_THRESHOLD_US, LATENCY_THRESHOLD_NS};
+use super::migration::{migrate_config_file, CURRENT_CONFIG_VERSION};
 use super::paths::config_dir;
 use super::timing::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
 use crate::validation::{SchemaError, SchemaRegistry, ValidationFailure, CONFIG_SCHEMA_NAME};
@@ -32,8 +33,12 @@ use std::path::Path;
 ///
 /// This contains all configurable settings for KeyRx, organized into
 /// logical sections.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Config {
+    /// Config format version for migration support.
+    #[serde(default = "default_config_version")]
+    pub version: u32,
+
     /// Timing configuration for tap-hold detection and combos.
     #[serde(default)]
     pub timing: TimingSection,
@@ -53,6 +58,23 @@ pub struct Config {
     /// Scripting configuration.
     #[serde(default)]
     pub scripting: super::scripting::ScriptingSection,
+}
+
+fn default_config_version() -> u32 {
+    CURRENT_CONFIG_VERSION
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            version: default_config_version(),
+            timing: TimingSection::default(),
+            ui: UiSection::default(),
+            performance: PerformanceSection::default(),
+            paths: PathsSection::default(),
+            scripting: super::scripting::ScriptingSection::default(),
+        }
+    }
 }
 
 /// Timing configuration section.
@@ -278,7 +300,7 @@ pub fn load_config(path: Option<&Path>) -> Config {
 
     match fs::read_to_string(&config_path) {
         Ok(content) => {
-            let toml_value = match toml::from_str::<toml::Value>(&content) {
+            let mut toml_value = match toml::from_str::<toml::Value>(&content) {
                 Ok(value) => value,
                 Err(e) => {
                     tracing::warn!(
@@ -292,6 +314,38 @@ pub fn load_config(path: Option<&Path>) -> Config {
                     return Config::default();
                 }
             };
+
+            let migration_result = match migrate_config_file(&config_path, &mut toml_value) {
+                Ok(result) => result,
+                Err(e) => {
+                    tracing::error!(
+                        service = "keyrx",
+                        event = "config_migration_failed",
+                        component = "config",
+                        path = %config_path.display(),
+                        error = %e,
+                        "Failed to migrate config, using defaults"
+                    );
+                    return Config::default();
+                }
+            };
+
+            if let Some(outcome) = migration_result {
+                tracing::info!(
+                    service = "keyrx",
+                    event = "config_migrated",
+                    component = "config",
+                    path = %config_path.display(),
+                    from_version = outcome.from,
+                    to_version = outcome.to,
+                    backup = outcome
+                        .backup_path
+                        .as_ref()
+                        .map(|p| p.display().to_string())
+                        .unwrap_or_default(),
+                    "Config migrated to current version"
+                );
+            }
 
             if let Err(err) = validate_config_schema(&config_path, &toml_value) {
                 log_config_validation_error(&config_path, &err);
@@ -580,6 +634,7 @@ mod tests {
     fn config_default_matches_constants() {
         let config = Config::default();
 
+        assert_eq!(config.version, CURRENT_CONFIG_VERSION);
         assert_eq!(config.timing.tap_timeout_ms, DEFAULT_TAP_TIMEOUT_MS);
         assert_eq!(config.timing.combo_timeout_ms, DEFAULT_COMBO_TIMEOUT_MS);
         assert_eq!(config.timing.hold_delay_ms, DEFAULT_HOLD_DELAY_MS);
@@ -672,6 +727,27 @@ latency_caution_us = 12000
         assert_eq!(config.timing.hold_delay_ms, DEFAULT_HOLD_DELAY_MS);
         assert_eq!(config.performance.latency_warning_us, 25000);
         assert_eq!(config.performance.latency_caution_us, 12000);
+    }
+
+    #[test]
+    fn load_config_migrates_unversioned_file() {
+        let temp = tempdir().unwrap();
+        let config_path = temp.path().join("config.toml");
+
+        let toml_content = r#"
+[timing]
+tap_timeout_ms = 180
+"#;
+        fs::write(&config_path, toml_content).unwrap();
+
+        let config = load_config(Some(&config_path));
+        assert_eq!(config.version, CURRENT_CONFIG_VERSION);
+
+        let rewritten = fs::read_to_string(&config_path).unwrap();
+        assert!(
+            rewritten.contains("version"),
+            "version field should be written during migration"
+        );
     }
 
     #[test]

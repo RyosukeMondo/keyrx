@@ -36,7 +36,7 @@
   - Purpose: Profile validation
   - _Requirements: 2.3_
 
-- [ ] 6. Create migration framework
+- [x] 6. Create migration framework
   - File: `core/src/config/migration.rs`
   - Version-based migration functions
   - Backup before migration
