@@ -4,10 +4,15 @@
 //! key mapping profiles. Profiles are layout-aware and can be assigned to
 //! specific devices based on their physical layout.
 
+use crate::config::config_dir;
 use crate::drivers::keycodes::KeyCode;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::fmt;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use thiserror::Error;
+use tokio::sync::RwLock;
 
 /// Unique identifier for a profile (UUID v4)
 pub type ProfileId = String;
@@ -404,5 +409,510 @@ mod tests {
         assert_eq!(profile.name, deserialized.name);
         assert_eq!(profile.layout_type, deserialized.layout_type);
         assert_eq!(profile.mappings, deserialized.mappings);
+    }
+}
+
+// =============================================================================
+// ProfileRegistry
+// =============================================================================
+
+/// Errors that can occur during ProfileRegistry operations
+#[derive(Debug, Error)]
+pub enum ProfileRegistryError {
+    #[error("IO error at {path}: {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("Failed to serialize/deserialize profile at {path}: {source}")]
+    Serialization {
+        path: PathBuf,
+        #[source]
+        source: serde_json::Error,
+    },
+
+    #[error("Profile not found: {0}")]
+    NotFound(ProfileId),
+
+    #[error("Invalid profile: {0}")]
+    Validation(String),
+
+    #[error("Profile name already exists: {0}")]
+    DuplicateName(String),
+}
+
+/// ProfileRegistry manages persistent storage and in-memory caching of profiles
+///
+/// Provides CRUD operations for profiles with:
+/// - In-memory cache for fast access
+/// - Atomic writes to prevent corruption
+/// - Validation before save
+/// - Thread-safe concurrent access
+pub struct ProfileRegistry {
+    /// Path to the profiles directory
+    profiles_dir: PathBuf,
+    /// In-memory cache of loaded profiles (profile_id -> Profile)
+    cache: Arc<RwLock<HashMap<ProfileId, Arc<Profile>>>>,
+}
+
+impl ProfileRegistry {
+    /// Create a new ProfileRegistry with default storage location
+    pub fn new() -> Self {
+        Self::with_directory(Self::default_profiles_dir())
+    }
+
+    /// Create a new ProfileRegistry with a custom storage directory
+    pub fn with_directory(profiles_dir: PathBuf) -> Self {
+        Self {
+            profiles_dir,
+            cache: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    /// Get the default profiles directory
+    fn default_profiles_dir() -> PathBuf {
+        config_dir().join("profiles")
+    }
+
+    /// Initialize the registry by loading all profiles from disk
+    pub async fn load_all_profiles(&self) -> Result<usize, ProfileRegistryError> {
+        // Ensure directory exists
+        std::fs::create_dir_all(&self.profiles_dir).map_err(|source| ProfileRegistryError::Io {
+            path: self.profiles_dir.clone(),
+            source,
+        })?;
+
+        let mut count = 0;
+        let entries =
+            std::fs::read_dir(&self.profiles_dir).map_err(|source| ProfileRegistryError::Io {
+                path: self.profiles_dir.clone(),
+                source,
+            })?;
+
+        for entry in entries {
+            let entry = entry.map_err(|source| ProfileRegistryError::Io {
+                path: self.profiles_dir.clone(),
+                source,
+            })?;
+
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                match self.load_profile_from_file(&path) {
+                    Ok(profile) => {
+                        let mut cache = self.cache.write().await;
+                        cache.insert(profile.id.clone(), Arc::new(profile));
+                        count += 1;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            service = "keyrx",
+                            event = "profile_load_failed",
+                            component = "registry",
+                            path = %path.display(),
+                            error = %e,
+                            "Failed to load profile, skipping"
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(count)
+    }
+
+    /// Load a profile from a file
+    fn load_profile_from_file(&self, path: &Path) -> Result<Profile, ProfileRegistryError> {
+        let data = std::fs::read_to_string(path).map_err(|source| ProfileRegistryError::Io {
+            path: path.to_path_buf(),
+            source,
+        })?;
+
+        let profile: Profile =
+            serde_json::from_str(&data).map_err(|source| ProfileRegistryError::Serialization {
+                path: path.to_path_buf(),
+                source,
+            })?;
+
+        self.validate_profile(&profile)?;
+        Ok(profile)
+    }
+
+    /// Save a profile to persistent storage with atomic write
+    pub async fn save_profile(&self, profile: &Profile) -> Result<(), ProfileRegistryError> {
+        self.validate_profile(profile)?;
+
+        // Ensure directory exists
+        std::fs::create_dir_all(&self.profiles_dir).map_err(|source| ProfileRegistryError::Io {
+            path: self.profiles_dir.clone(),
+            source,
+        })?;
+
+        let path = self.profile_file_path(&profile.id);
+
+        // Serialize to JSON
+        let serialized = serde_json::to_vec_pretty(profile).map_err(|source| {
+            ProfileRegistryError::Serialization {
+                path: path.clone(),
+                source,
+            }
+        })?;
+
+        // Atomic write: temp file + rename
+        let tmp_path = path.with_extension("json.tmp");
+        std::fs::write(&tmp_path, serialized).map_err(|source| ProfileRegistryError::Io {
+            path: tmp_path.clone(),
+            source,
+        })?;
+
+        std::fs::rename(&tmp_path, &path).map_err(|source| {
+            // Best-effort cleanup of temp file
+            let _ = std::fs::remove_file(&tmp_path);
+            ProfileRegistryError::Io {
+                path: path.clone(),
+                source,
+            }
+        })?;
+
+        // Update cache
+        let mut cache = self.cache.write().await;
+        cache.insert(profile.id.clone(), Arc::new(profile.clone()));
+
+        tracing::info!(
+            service = "keyrx",
+            event = "profile_saved",
+            component = "registry",
+            profile_id = %profile.id,
+            profile_name = %profile.name,
+            "Profile saved successfully"
+        );
+
+        Ok(())
+    }
+
+    /// Get a profile by ID (returns Arc for zero-copy sharing)
+    pub async fn get_profile(
+        &self,
+        profile_id: &str,
+    ) -> Result<Arc<Profile>, ProfileRegistryError> {
+        // Try cache first
+        {
+            let cache = self.cache.read().await;
+            if let Some(profile) = cache.get(profile_id) {
+                return Ok(Arc::clone(profile));
+            }
+        }
+
+        // Not in cache, try loading from disk
+        let path = self.profile_file_path(profile_id);
+        if !path.exists() {
+            return Err(ProfileRegistryError::NotFound(profile_id.to_string()));
+        }
+
+        let profile = self.load_profile_from_file(&path)?;
+        let arc_profile = Arc::new(profile);
+
+        // Update cache
+        let mut cache = self.cache.write().await;
+        cache.insert(profile_id.to_string(), Arc::clone(&arc_profile));
+
+        Ok(arc_profile)
+    }
+
+    /// Delete a profile
+    pub async fn delete_profile(&self, profile_id: &str) -> Result<(), ProfileRegistryError> {
+        let path = self.profile_file_path(profile_id);
+
+        if !path.exists() {
+            return Err(ProfileRegistryError::NotFound(profile_id.to_string()));
+        }
+
+        std::fs::remove_file(&path).map_err(|source| ProfileRegistryError::Io {
+            path: path.clone(),
+            source,
+        })?;
+
+        // Remove from cache
+        let mut cache = self.cache.write().await;
+        cache.remove(profile_id);
+
+        tracing::info!(
+            service = "keyrx",
+            event = "profile_deleted",
+            component = "registry",
+            profile_id = %profile_id,
+            "Profile deleted successfully"
+        );
+
+        Ok(())
+    }
+
+    /// List all profile IDs
+    pub async fn list_profiles(&self) -> Vec<ProfileId> {
+        let cache = self.cache.read().await;
+        cache.keys().cloned().collect()
+    }
+
+    /// Find profiles compatible with a given layout type
+    pub async fn find_compatible_profiles(&self, layout_type: &LayoutType) -> Vec<Arc<Profile>> {
+        let cache = self.cache.read().await;
+        cache
+            .values()
+            .filter(|profile| profile.is_compatible_with(layout_type))
+            .map(Arc::clone)
+            .collect()
+    }
+
+    /// Validate a profile before saving
+    fn validate_profile(&self, profile: &Profile) -> Result<(), ProfileRegistryError> {
+        // Check name is not empty
+        if profile.name.trim().is_empty() {
+            return Err(ProfileRegistryError::Validation(
+                "Profile name cannot be empty".to_string(),
+            ));
+        }
+
+        // Check ID is valid UUID format
+        if uuid::Uuid::parse_str(&profile.id).is_err() {
+            return Err(ProfileRegistryError::Validation(
+                "Profile ID must be a valid UUID".to_string(),
+            ));
+        }
+
+        // Validate timestamps are valid ISO 8601
+        if chrono::DateTime::parse_from_rfc3339(&profile.created_at).is_err() {
+            return Err(ProfileRegistryError::Validation(
+                "Invalid created_at timestamp".to_string(),
+            ));
+        }
+
+        if chrono::DateTime::parse_from_rfc3339(&profile.updated_at).is_err() {
+            return Err(ProfileRegistryError::Validation(
+                "Invalid updated_at timestamp".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Get the file path for a profile
+    fn profile_file_path(&self, profile_id: &str) -> PathBuf {
+        self.profiles_dir.join(format!("{}.json", profile_id))
+    }
+
+    /// Invalidate the cache for a specific profile (useful after external modifications)
+    pub async fn invalidate_cache(&self, profile_id: &str) {
+        let mut cache = self.cache.write().await;
+        cache.remove(profile_id);
+    }
+
+    /// Clear the entire cache
+    pub async fn clear_cache(&self) {
+        let mut cache = self.cache.write().await;
+        cache.clear();
+    }
+
+    /// Get the number of profiles in cache
+    pub async fn cache_size(&self) -> usize {
+        let cache = self.cache.read().await;
+        cache.len()
+    }
+}
+
+impl Default for ProfileRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod registry_tests {
+    use super::*;
+    use serial_test::serial;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    #[serial]
+    async fn test_save_and_get_profile() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let mut profile = Profile::new("Test Profile", LayoutType::Matrix);
+        profile.set_action(PhysicalPosition::new(0, 0), KeyAction::key(KeyCode::A));
+
+        // Save profile
+        registry.save_profile(&profile).await.unwrap();
+
+        // Get profile back
+        let loaded = registry.get_profile(&profile.id).await.unwrap();
+        assert_eq!(loaded.id, profile.id);
+        assert_eq!(loaded.name, profile.name);
+        assert_eq!(loaded.layout_type, profile.layout_type);
+        assert_eq!(loaded.mappings.len(), 1);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_delete_profile() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let profile = Profile::new("Test Profile", LayoutType::Standard);
+        registry.save_profile(&profile).await.unwrap();
+
+        // Verify it exists
+        assert!(registry.get_profile(&profile.id).await.is_ok());
+
+        // Delete it
+        registry.delete_profile(&profile.id).await.unwrap();
+
+        // Verify it's gone
+        assert!(matches!(
+            registry.get_profile(&profile.id).await,
+            Err(ProfileRegistryError::NotFound(_))
+        ));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_list_profiles() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let profile1 = Profile::new("Profile 1", LayoutType::Matrix);
+        let profile2 = Profile::new("Profile 2", LayoutType::Standard);
+
+        registry.save_profile(&profile1).await.unwrap();
+        registry.save_profile(&profile2).await.unwrap();
+
+        let list = registry.list_profiles().await;
+        assert_eq!(list.len(), 2);
+        assert!(list.contains(&profile1.id));
+        assert!(list.contains(&profile2.id));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_find_compatible_profiles() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let matrix_profile = Profile::new("Matrix Profile", LayoutType::Matrix);
+        let standard_profile = Profile::new("Standard Profile", LayoutType::Standard);
+
+        registry.save_profile(&matrix_profile).await.unwrap();
+        registry.save_profile(&standard_profile).await.unwrap();
+
+        let compatible = registry.find_compatible_profiles(&LayoutType::Matrix).await;
+        assert_eq!(compatible.len(), 1);
+        assert_eq!(compatible[0].id, matrix_profile.id);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_load_all_profiles() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        // Save some profiles
+        let profile1 = Profile::new("Profile 1", LayoutType::Matrix);
+        let profile2 = Profile::new("Profile 2", LayoutType::Standard);
+
+        registry.save_profile(&profile1).await.unwrap();
+        registry.save_profile(&profile2).await.unwrap();
+
+        // Clear cache
+        registry.clear_cache().await;
+        assert_eq!(registry.cache_size().await, 0);
+
+        // Load all profiles
+        let count = registry.load_all_profiles().await.unwrap();
+        assert_eq!(count, 2);
+        assert_eq!(registry.cache_size().await, 2);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_atomic_write() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let profile = Profile::new("Test", LayoutType::Matrix);
+        let profile_path = registry.profile_file_path(&profile.id);
+        let tmp_path = profile_path.with_extension("json.tmp");
+
+        registry.save_profile(&profile).await.unwrap();
+
+        // Verify final file exists and temp file is cleaned up
+        assert!(profile_path.exists());
+        assert!(!tmp_path.exists());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_validation_empty_name() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let mut profile = Profile::new("Test", LayoutType::Matrix);
+        profile.name = "".to_string();
+
+        let result = registry.save_profile(&profile).await;
+        assert!(matches!(result, Err(ProfileRegistryError::Validation(_))));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_cache_invalidation() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let profile = Profile::new("Test", LayoutType::Matrix);
+        registry.save_profile(&profile).await.unwrap();
+
+        // Profile should be in cache
+        assert_eq!(registry.cache_size().await, 1);
+
+        // Invalidate cache
+        registry.invalidate_cache(&profile.id).await;
+        assert_eq!(registry.cache_size().await, 0);
+
+        // Should still be able to load from disk
+        let loaded = registry.get_profile(&profile.id).await.unwrap();
+        assert_eq!(loaded.id, profile.id);
+        assert_eq!(registry.cache_size().await, 1);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_corrupted_file_handling() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        // Create a corrupted file
+        let corrupted_path = temp.path().join("corrupted.json");
+        std::fs::write(&corrupted_path, "not valid json").unwrap();
+
+        // load_all_profiles should skip corrupted files and continue
+        let count = registry.load_all_profiles().await.unwrap();
+        assert_eq!(count, 0); // No valid profiles loaded
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_arc_sharing() {
+        let temp = tempdir().unwrap();
+        let registry = ProfileRegistry::with_directory(temp.path().to_path_buf());
+
+        let profile = Profile::new("Test", LayoutType::Matrix);
+        registry.save_profile(&profile).await.unwrap();
+
+        // Get the same profile multiple times
+        let arc1 = registry.get_profile(&profile.id).await.unwrap();
+        let arc2 = registry.get_profile(&profile.id).await.unwrap();
+
+        // They should point to the same allocation (Arc::ptr_eq)
+        assert!(Arc::ptr_eq(&arc1, &arc2));
     }
 }

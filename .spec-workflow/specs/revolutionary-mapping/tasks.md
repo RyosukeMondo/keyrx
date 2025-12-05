@@ -72,7 +72,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Concurrent Systems Developer with expertise in async Rust and thread-safe data structures | Task: Implement DeviceRegistry following requirement 2, managing runtime device state with thread-safe concurrent access | Restrictions: Must use RwLock for shared access, minimize lock hold time, emit events on all state changes | _Leverage: Existing event channel pattern from engine/multi_device.rs | Success: All CRUD operations work, concurrent access is safe, events emitted correctly, unit tests with concurrency scenarios pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (struct, all methods, event types), then mark as [x]._
 
-- [ ] 1.8. Implement ProfileRegistry
+- [x] 1.8. Implement ProfileRegistry
   - Files: `core/src/registry/profile.rs` (extend from 1.6)
   - Create ProfileRegistry struct with in-memory cache + disk storage
   - Implement save_profile() with atomic write (temp file + rename)

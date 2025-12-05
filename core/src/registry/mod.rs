@@ -8,4 +8,7 @@ pub mod profile;
 
 // Re-export commonly used types
 pub use device::{DeviceEvent, DeviceRegistry, DeviceRegistryError, DeviceState};
-pub use profile::{KeyAction, LayoutType, PhysicalPosition, Profile, ProfileId};
+pub use profile::{
+    KeyAction, LayoutType, PhysicalPosition, Profile, ProfileId, ProfileRegistry,
+    ProfileRegistryError,
+};
