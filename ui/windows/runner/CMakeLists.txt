@@ -36,6 +36,15 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+# Automatically build Rust library before linking
+add_custom_command(
+  TARGET ${BINARY_NAME} PRE_BUILD
+  COMMAND cargo build -p keyrx_core --lib
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/../../"
+  COMMENT "Building Rust core library"
+  VERBATIM
+)
+
 # Copy the Rust DLL to the build directory
 add_custom_command(
   TARGET ${BINARY_NAME} POST_BUILD
