@@ -323,7 +323,7 @@
   - _Requirements: 12_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Widget Developer with async UI expertise | Task: Create ProfileSelector widget following requirement 12, showing profile dropdown with async loading | Restrictions: Must handle loading state, show selected profile, call service correctly | _Leverage: FutureBuilder pattern, ProfileRegistryService | Success: Dropdown loads profiles, shows selection, works correctly, widget tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 4.3. Create DeviceCard widget
+- [-] 4.3. Create DeviceCard widget
   - Files: `ui/lib/widgets/device_card.dart`
   - Create Card widget showing device info (VID:PID:Serial, label)
   - Include ProfileSelector and RemapToggle
