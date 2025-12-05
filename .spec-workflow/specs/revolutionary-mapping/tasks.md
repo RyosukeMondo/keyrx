@@ -50,7 +50,7 @@
   - _Requirements: 9_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Linux Driver Developer with expertise in evdev integration | Task: Integrate serial extraction into Linux driver following requirement 9, calling identity::linux::extract_serial_number() on device open | Restrictions: Must maintain driver performance, handle extraction failures, conditional compilation | _Leverage: Existing evdev_input.rs device opening | Success: Serial number extracted on device open, included in events, no performance regression, integration tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 1.6. Define Profile data model
+- [x] 1.6. Define Profile data model
   - Files: `core/src/registry/profile.rs`, `core/src/registry/mod.rs`
   - Define Profile struct with id, name, layout_type, mappings, timestamps
   - Define LayoutType enum (Standard, Matrix, Split)

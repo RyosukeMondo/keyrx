@@ -25,6 +25,7 @@ crossbeam-channel.workspace = true
 clap.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
+uuid.workspace = true
 smallvec.workspace = true
 rand.workspace = true
 dashmap.workspace = true
