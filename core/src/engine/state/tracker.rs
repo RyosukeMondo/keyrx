@@ -91,8 +91,11 @@ impl DeltaTracker {
     /// Increment the version counter and return the new version.
     ///
     /// This should be called whenever the state changes.
+    /// Wraps around at u64::MAX.
     pub fn increment_version(&self) -> u64 {
-        self.current_version.fetch_add(1, Ordering::SeqCst) + 1
+        self.current_version
+            .fetch_add(1, Ordering::SeqCst)
+            .wrapping_add(1)
     }
 
     /// Get the current version without incrementing.

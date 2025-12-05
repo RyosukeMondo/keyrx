@@ -371,7 +371,9 @@ mod tests {
         let stats = cache.stats();
         assert_eq!(stats.hits, 10);
         assert_eq!(stats.misses, 5);
-        assert_eq!(stats.hit_rate(), 200.0 / 3.0); // 10/15 * 100 = 66.666...
+        // Use approximate comparison for floating point
+        let expected = 200.0 / 3.0; // 10/15 * 100 = 66.666...
+        assert!((stats.hit_rate() - expected).abs() < 0.0001);
     }
 
     #[test]

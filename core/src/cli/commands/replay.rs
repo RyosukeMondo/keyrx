@@ -306,20 +306,16 @@ pub mod exit_codes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{
-        DecisionType, EngineState, EventRecordBuilder, KeyCode, LayerStack, ModifierState,
-    };
+    use crate::engine::{DecisionType, EventRecordBuilder, KeyCode, ModifierState};
     use tempfile::TempDir;
 
     fn make_test_session() -> SessionFile {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        // Create engine state with new API and convert to snapshot
+        let engine = crate::engine::AdvancedEngine::new(
+            crate::scripting::RhaiRuntime::new().unwrap(),
+            TimingConfig::default(),
+        );
+        let initial_state = engine.snapshot();
 
         let mut session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),

@@ -272,20 +272,17 @@ fn format_output(output: &[crate::engine::OutputAction]) -> String {
 mod tests {
     use super::*;
     use crate::engine::{
-        EngineState, EventRecordBuilder, InputEvent, KeyCode, LayerStack, ModifierState,
-        OutputAction, TimingConfig,
+        EventRecordBuilder, InputEvent, KeyCode, ModifierState, OutputAction, TimingConfig,
     };
     use tempfile::TempDir;
 
     fn make_test_session() -> SessionFile {
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        // Create engine state with new API and convert to snapshot
+        let engine = crate::engine::AdvancedEngine::new(
+            crate::scripting::RhaiRuntime::new().unwrap(),
+            TimingConfig::default(),
+        );
+        let initial_state = engine.snapshot();
 
         let mut session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),
@@ -444,14 +441,12 @@ mod tests {
     fn empty_session_handles_gracefully() {
         let dir = TempDir::new().expect("create temp dir");
 
-        let initial_state = EngineState {
-            pressed_keys: vec![],
-            modifiers: ModifierState::default(),
-            layers: LayerStack::new(),
-            pending: vec![],
-            timing: TimingConfig::default(),
-            safe_mode: false,
-        };
+        // Create engine state with new API and convert to snapshot
+        let engine = crate::engine::AdvancedEngine::new(
+            crate::scripting::RhaiRuntime::new().unwrap(),
+            TimingConfig::default(),
+        );
+        let initial_state = engine.snapshot();
 
         let session = SessionFile::new(
             "2024-01-15T10:30:00Z".to_string(),

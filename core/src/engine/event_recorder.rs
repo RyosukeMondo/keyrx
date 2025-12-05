@@ -114,11 +114,15 @@ impl EventRecorder {
 mod tests {
     use super::*;
     use crate::engine::decision::timing::TimingConfig;
-    use crate::engine::state::EngineState;
     use crate::engine::{DecisionType, EventRecordBuilder, KeyCode, ModifierState, OutputAction};
 
-    fn make_initial_state() -> EngineState {
-        EngineState::new(TimingConfig::default())
+    fn make_initial_state() -> StateSnapshot {
+        // Create engine state with new API and convert to snapshot
+        let engine = crate::engine::AdvancedEngine::new(
+            crate::scripting::RhaiRuntime::new().unwrap(),
+            TimingConfig::default(),
+        );
+        engine.snapshot()
     }
 
     fn make_input_event(key: KeyCode, timestamp_us: u64) -> crate::engine::InputEvent {

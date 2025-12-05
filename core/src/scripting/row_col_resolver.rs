@@ -291,6 +291,6 @@ mod tests {
         let profile = create_test_profile();
         let resolver = RowColResolver::new(Some(Arc::new(profile)));
 
-        assert_eq!(resolver.device_name(), Some("Test Keyboard"));
+        assert_eq!(resolver.device_name(), Some("Test Keyboard".to_string()));
     }
 }
