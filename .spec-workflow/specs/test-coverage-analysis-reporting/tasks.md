@@ -2,7 +2,7 @@
 
 ## Phase 1: Setup
 
-- [ ] 1. Choose and configure coverage tool
+- [-] 1. Choose and configure coverage tool
   - File: Project configuration
   - Evaluate tarpaulin vs llvm-cov
   - Configure exclusions

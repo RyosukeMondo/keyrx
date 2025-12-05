@@ -149,3 +149,14 @@ strip = false
 inherits = "release"
 debug = true
 strip = false
+
+[workspace.metadata.cargo-llvm-cov]
+workspace = true
+all-features = true
+# Focus coverage on shipping crates; ignore macro helpers and test-only targets.
+exclude-files = [
+    "**/tests/**",
+    "**/benches/**",
+    "core/ffi-macros/**",
+    "core/core-macros/**",
+]
