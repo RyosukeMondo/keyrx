@@ -147,8 +147,17 @@ impl RunCommand {
             let runtime = builder.prepare_runtime()?;
             self.run_with_mock(runtime, &builder).await
         } else {
-            // For platform driver, we need to load device profile BEFORE calling on_init
-            self.run_with_platform_driver_deferred_init(&builder).await
+            #[cfg(all(target_os = "linux", feature = "linux-driver"))]
+            {
+                // For Linux, we need to load device profile BEFORE calling on_init
+                self.run_with_platform_driver_deferred_init(&builder).await
+            }
+            #[cfg(not(all(target_os = "linux", feature = "linux-driver")))]
+            {
+                // For Windows and others, use standard init
+                let runtime = builder.prepare_runtime()?;
+                self.run_with_platform_driver(runtime, &builder).await
+            }
         }
     }
 

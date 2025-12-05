@@ -21,7 +21,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use super::keymap::vk_to_keycode;
 use super::safety::hook::SafeHook;
 use super::safety::thread_local::ThreadLocalState;
-use crate::config::keys::{VK_CONTROL, VK_ESCAPE, VK_MENU, VK_SHIFT};
+use crate::config::{VK_CONTROL, VK_ESCAPE, VK_MENU, VK_SHIFT};
 use crate::drivers::emergency_exit::{is_bypass_active, toggle_bypass_mode};
 
 /// Low-level keyboard hook manager.

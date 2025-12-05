@@ -261,6 +261,41 @@ impl From<crate::drivers::common::error::DriverError> for KeyrxError {
     }
 }
 
+/// Convert from anyhow::Error to KeyrxError.
+///
+/// This is a convenience for errors coming from dependencies or internal
+/// helpers that use anyhow.
+impl From<anyhow::Error> for KeyrxError {
+    fn from(err: anyhow::Error) -> Self {
+        let context = vec![("error".to_string(), err.to_string())];
+
+        Self {
+            definition: None,
+            code: "KRX-I9002".to_string(),
+            message: format!("Internal error: {}", err),
+            context: context.into_iter().collect(),
+            hint: Some("This indicates an internal logic error".to_string()),
+            severity: "Error".to_string(),
+            source: None,
+        }
+    }
+}
+
+#[cfg(windows)]
+impl From<crate::error::WindowsDriverError> for KeyrxError {
+    fn from(err: crate::error::WindowsDriverError) -> Self {
+        Self {
+            definition: None,
+            code: "KRX-D3998".to_string(),
+            message: format!("Windows driver error: {}", err),
+            context: Default::default(),
+            hint: None,
+            severity: "Error".to_string(),
+            source: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -117,7 +117,11 @@ impl<I: KeyInjector> WindowsInput<I> {
         &mut self.injector
     }
     pub(crate) fn inject_key(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
-        self.injector.inject(key, pressed)
+        Ok(self.injector.inject(key, pressed)?)
+    }
+
+    pub fn invalidate_cache(&self, device_id: &str) {
+        self.cache.invalidate_device(device_id);
     }
 
     fn log_drop_start(&self) {

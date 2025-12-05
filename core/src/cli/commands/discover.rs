@@ -206,11 +206,11 @@ impl DiscoverCommand {
     }
 }
 
-fn default_input_builder(device: &DeviceInfo) -> Result<DiscoverInput> {
+fn default_input_builder(_device: &DeviceInfo) -> Result<DiscoverInput> {
     #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     {
         use crate::drivers::LinuxInput;
-        let input = LinuxInput::new(Some(device.path.clone()))?;
+        let input = LinuxInput::new(Some(_device.path.clone()))?;
         Ok(DiscoverInput {
             input: Box::new(input),
         })

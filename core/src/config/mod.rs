@@ -12,7 +12,7 @@
 //! - [`loader`]: Runtime configuration loading from TOML
 
 pub mod exit_codes;
-mod keys;
+pub mod keys;
 mod limits;
 mod loader;
 mod migration;

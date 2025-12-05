@@ -195,7 +195,7 @@ class _EditorPageState extends State<EditorPage> {
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: configPanelHeight),
               child: SingleChildScrollView(
-                child: KeyConfigPanel(
+                child: BindingPanel(
                   selectedKey: _selectedKey,
                   selectedAction: _selectedAction,
                   outputController: _outputController,
