@@ -16,6 +16,7 @@ import 'bridge_engine.dart';
 import 'bridge_session.dart';
 import 'bridge_testing.dart';
 import 'bridge_validation.dart';
+import 'device_registry_ffi.dart';
 import 'event_types.dart';
 import 'generated/bindings_generated.dart';
 
@@ -77,6 +78,7 @@ export 'bridge_validation.dart'
 /// - [BridgeDiscoveryMixin]: Device listing and discovery
 /// - [BridgeTestingMixin]: Testing, simulation, benchmarks, diagnostics
 /// - [BridgeValidationMixin]: Script validation and key suggestions
+/// - [DeviceRegistryFFIMixin]: Device registry for revolutionary mapping
 class KeyrxBridge
     with
         BridgeCoreMixin,
@@ -85,7 +87,8 @@ class KeyrxBridge
         BridgeDeviceProfileMixin,
         BridgeDiscoveryMixin,
         BridgeTestingMixin,
-        BridgeValidationMixin {
+        BridgeValidationMixin,
+        DeviceRegistryFFIMixin {
   static KeyrxBridge? _currentInstance;
 
   KeyrxBindings? _bindings;

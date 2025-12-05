@@ -285,7 +285,7 @@
   - _Requirements: 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart FFI Developer | Task: Create ProfileRegistryFFI bindings following requirement 17, wrapping profile operations | Restrictions: Must handle JSON correctly, free memory, error handling, type safety | _Leverage: FFI patterns from 3.6 | Success: All functions wrapped, JSON parsing works, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.8. Create DeviceRegistryService
+- [x] 3.8. Create DeviceRegistryService
   - Files: `ui/lib/services/device_registry_service.dart`
   - Wrap DeviceRegistryFFI with high-level async API
   - Implement getDevices(), toggleRemap(), assignProfile(), setUserLabel()
