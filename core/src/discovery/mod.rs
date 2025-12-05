@@ -8,6 +8,7 @@ pub mod registry;
 pub mod session;
 pub mod storage;
 pub mod types;
+pub mod watcher;
 
 pub use registry::{DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
 pub use session::{
@@ -20,6 +21,10 @@ pub use storage::{
 pub use types::{
     default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, PhysicalKey,
     ProfileSource, SCHEMA_VERSION,
+};
+pub use watcher::{
+    DeviceEvent, DeviceEventReceiver, DeviceEventSender, DeviceState, DeviceWatchError,
+    DeviceWatcher, WatcherResult,
 };
 
 #[cfg(test)]

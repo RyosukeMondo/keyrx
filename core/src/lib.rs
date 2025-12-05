@@ -33,10 +33,11 @@ pub mod validation;
 
 // Re-export commonly used types
 pub use discovery::{
-    default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, DeviceRegistry,
-    DiscoveryProgress, DiscoveryReason, DiscoverySession, DiscoverySummary, DuplicateWarning,
-    ExpectedPosition, PhysicalKey, ProfileSource, RegistryEntry, RegistryStatus, SessionError,
-    SessionStatus, SessionUpdate, SCHEMA_VERSION,
+    default_schema_version, device_profiles_dir, DeviceEvent, DeviceEventReceiver,
+    DeviceEventSender, DeviceId, DeviceProfile, DeviceRegistry, DeviceState, DeviceWatchError,
+    DeviceWatcher, DiscoveryProgress, DiscoveryReason, DiscoverySession, DiscoverySummary,
+    DuplicateWarning, ExpectedPosition, PhysicalKey, ProfileSource, RegistryEntry, RegistryStatus,
+    SessionError, SessionStatus, SessionUpdate, WatcherResult, SCHEMA_VERSION,
 };
 pub use engine::{Engine, InputEvent, KeyCode, Layer, ModifierSet, OutputAction};
 pub use error::KeyRxError;

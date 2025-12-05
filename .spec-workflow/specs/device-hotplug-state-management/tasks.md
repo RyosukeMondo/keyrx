@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Watcher
 
-- [ ] 1. Create DeviceWatcher trait
+- [x] 1. Create DeviceWatcher trait
   - File: `core/src/discovery/watcher.rs`
   - Define device event interface
   - Add DeviceState enum
