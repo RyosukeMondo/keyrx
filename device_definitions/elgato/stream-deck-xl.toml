@@ -1,0 +1,54 @@
+# Elgato Stream Deck XL Device Definition
+# 32-key macro pad with LCD buttons arranged in a 4×8 grid
+
+name = "Elgato Stream Deck XL"
+vendor_id = 0x0fd9
+product_id = 0x006c
+manufacturer = "Elgato"
+
+[layout]
+layout_type = "matrix"
+rows = 4
+cols = 8
+
+[visual]
+key_width = 72
+key_height = 72
+key_spacing = 18
+
+# Matrix map: scancode -> [row, col]
+# Stream Deck uses custom HID protocol with button indices 0-31
+# Mapping button indices to physical positions
+[matrix_map]
+"0" = [0, 0]    # Button 1 (top-left)
+"1" = [0, 1]    # Button 2
+"2" = [0, 2]    # Button 3
+"3" = [0, 3]    # Button 4
+"4" = [0, 4]    # Button 5
+"5" = [0, 5]    # Button 6
+"6" = [0, 6]    # Button 7
+"7" = [0, 7]    # Button 8 (top-right)
+"8" = [1, 0]    # Button 9
+"9" = [1, 1]    # Button 10
+"10" = [1, 2]   # Button 11
+"11" = [1, 3]   # Button 12
+"12" = [1, 4]   # Button 13
+"13" = [1, 5]   # Button 14
+"14" = [1, 6]   # Button 15
+"15" = [1, 7]   # Button 16
+"16" = [2, 0]   # Button 17
+"17" = [2, 1]   # Button 18
+"18" = [2, 2]   # Button 19
+"19" = [2, 3]   # Button 20
+"20" = [2, 4]   # Button 21
+"21" = [2, 5]   # Button 22
+"22" = [2, 6]   # Button 23
+"23" = [2, 7]   # Button 24
+"24" = [3, 0]   # Button 25 (bottom-left)
+"25" = [3, 1]   # Button 26
+"26" = [3, 2]   # Button 27
+"27" = [3, 3]   # Button 28
+"28" = [3, 4]   # Button 29
+"29" = [3, 5]   # Button 30
+"30" = [3, 6]   # Button 31
+"31" = [3, 7]   # Button 32 (bottom-right)

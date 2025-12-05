@@ -1,0 +1,28 @@
+# Elgato Stream Deck Mini Device Definition
+# 6-key compact macro pad with LCD buttons arranged in a 2×3 grid
+
+name = "Elgato Stream Deck Mini"
+vendor_id = 0x0fd9
+product_id = 0x0063
+manufacturer = "Elgato"
+
+[layout]
+layout_type = "matrix"
+rows = 2
+cols = 3
+
+[visual]
+key_width = 80
+key_height = 80
+key_spacing = 24
+
+# Matrix map: scancode -> [row, col]
+# Stream Deck uses custom HID protocol with button indices 0-5
+# Mapping button indices to physical positions
+[matrix_map]
+"0" = [0, 0]    # Button 1 (top-left)
+"1" = [0, 1]    # Button 2 (top-center)
+"2" = [0, 2]    # Button 3 (top-right)
+"3" = [1, 0]    # Button 4 (bottom-left)
+"4" = [1, 1]    # Button 5 (bottom-center)
+"5" = [1, 2]    # Button 6 (bottom-right)

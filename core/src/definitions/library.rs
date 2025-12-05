@@ -483,4 +483,43 @@ cols = 2
         assert_eq!(count, 0);
         assert!(library.is_empty());
     }
+
+    #[test]
+    fn test_stream_deck_definitions() {
+        use std::path::PathBuf;
+        let device_defs_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("device_definitions");
+
+        let mut library = DeviceDefinitionLibrary::new();
+        let result = library.load_from_directory(&device_defs_path);
+
+        assert!(
+            result.is_ok(),
+            "Failed to load definitions: {:?}",
+            result.err()
+        );
+        let count = result.unwrap();
+        assert!(
+            count >= 5,
+            "Expected at least 5 definitions (ANSI, ISO, 3x Stream Deck), got {}",
+            count
+        );
+
+        // Verify Stream Deck MK.2
+        let mk2 = library.find_definition(0x0fd9, 0x0080);
+        assert!(mk2.is_some(), "Stream Deck MK.2 not found");
+        assert_eq!(mk2.unwrap().name, "Elgato Stream Deck MK.2");
+
+        // Verify Stream Deck XL
+        let xl = library.find_definition(0x0fd9, 0x006c);
+        assert!(xl.is_some(), "Stream Deck XL not found");
+        assert_eq!(xl.unwrap().name, "Elgato Stream Deck XL");
+
+        // Verify Stream Deck Mini
+        let mini = library.find_definition(0x0fd9, 0x0063);
+        assert!(mini.is_some(), "Stream Deck Mini not found");
+        assert_eq!(mini.unwrap().name, "Elgato Stream Deck Mini");
+    }
 }

@@ -147,7 +147,7 @@
   - _Requirements: 7_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Hardware Specification Expert with knowledge of keyboard scancodes and layouts | Task: Create standard device definitions following requirement 7, documenting ANSI and ISO keyboard layouts with complete scancode mappings | Restrictions: Must use correct scancodes for each layout, document all 104/105 keys, include visual metadata | _Leverage: Standard keyboard layout references, existing scancode knowledge | Success: Definitions parse correctly, all keys mapped, README is comprehensive, validated against definition loader. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.4. Create Stream Deck device definitions
+- [x] 2.4. Create Stream Deck device definitions
   - Files: `device_definitions/elgato/stream-deck-mk2.toml`, `device_definitions/elgato/stream-deck-xl.toml`, `device_definitions/elgato/stream-deck-mini.toml`
   - Create Stream Deck MK.2 definition (3×5 matrix, VID:0x0fd9 PID:0x0080)
   - Create Stream Deck XL definition (4×8 matrix)
