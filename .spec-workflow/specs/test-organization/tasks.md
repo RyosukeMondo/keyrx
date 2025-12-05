@@ -57,7 +57,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer splitting tests | Task: Extract cycle tests from validation_integration.rs | Restrictions: Keep tests passing, < 500 LOC | _Leverage: Fixtures, existing tests | Success: Tests pass, organized by cycle scenarios | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 7. Split validation_integration.rs - remaining categories
+- [x] 7. Split validation_integration.rs - remaining categories
   - Files: `core/tests/integration/validation/{shadowing,safety,coverage,edge_case}_tests.rs`
   - Extract remaining test categories
   - Delete or minimize original file

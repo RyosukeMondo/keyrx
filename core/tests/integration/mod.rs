@@ -9,3 +9,4 @@ pub use keyrx_core::traits::InputSource;
 pub mod channel_tests;
 pub mod drivers;
 pub mod state_tests;
+pub mod validation;
