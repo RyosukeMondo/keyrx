@@ -19,5 +19,6 @@
 //!     .build();
 //! ```
 
+pub mod engine;
 pub mod operations;
 pub mod scripts;
