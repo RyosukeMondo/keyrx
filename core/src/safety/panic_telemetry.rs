@@ -321,7 +321,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Fix test isolation - appears to have state from other tests
+    #[serial_test::serial] // Run sequentially to avoid shared global state issues
     fn test_ring_buffer_limit() {
         reset_telemetry();
 
@@ -375,7 +375,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Fix test isolation - appears to have state from other tests
+    #[serial_test::serial] // Run sequentially to avoid shared global state issues
     fn test_telemetry_serialization() {
         reset_telemetry();
 

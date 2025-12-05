@@ -125,6 +125,8 @@ impl EventBuffer {
                     }
                 }
 
+                // Mark the last repeat as processed so we don't add it again
+                skip_indices.insert(last_repeat_idx);
                 result.push(events[last_repeat_idx].event.clone());
             } else {
                 result.push(current.event.clone());
@@ -216,7 +218,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Fix coalescing logic - expected 3 events but got 4
     fn buffer_coalesces_repeat_events() {
         let config = CoalescingConfig {
             max_batch_size: 10,

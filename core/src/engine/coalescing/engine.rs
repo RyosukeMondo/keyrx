@@ -268,7 +268,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Fix coalescing logic - related to buffer_coalesces_repeat_events failure
     fn coalesce_repeats_reduces_event_count() {
         let config = CoalescingConfig {
             max_batch_size: 10,
