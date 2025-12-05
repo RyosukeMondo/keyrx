@@ -7,7 +7,10 @@ library;
 import 'package:flutter/material.dart';
 
 import '../ffi/bridge.dart';
+import '../services/device_profile_service.dart' show VisualKeyOverride;
 import '../services/service_registry.dart';
+import '../models/keyboard_layout.dart';
+import '../widgets/visual_keyboard.dart';
 
 /// Page for viewing device profile information.
 class DeviceProfilePage extends StatefulWidget {
@@ -30,6 +33,7 @@ class DeviceProfilePage extends StatefulWidget {
 
 class _DeviceProfilePageState extends State<DeviceProfilePage> {
   DeviceProfile? _profile;
+  Map<String, VisualKeyOverride> _visualOverrides = {};
   bool _isLoading = true;
   String? _error;
 
@@ -48,12 +52,16 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
     final result = await widget.services.deviceProfileService
         .getProfile(widget.vendorId, widget.productId);
 
+    final overrides = await widget.services.deviceProfileService
+        .getVisualOverrides(widget.vendorId, widget.productId);
+
     if (!mounted) return;
 
     setState(() {
       _isLoading = false;
       if (result.isSuccess) {
         _profile = result.profile;
+        _visualOverrides = overrides;
       } else {
         _error = result.errorMessage ?? 'Unknown error';
       }
@@ -182,6 +190,8 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   }
 
   Widget _buildLayoutCard(DeviceProfile profile) {
+    final layout = _createLayoutFromProfile(profile);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -193,55 +203,82 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
                 const Icon(Icons.grid_4x4),
                 const SizedBox(width: 8),
                 Text(
-                  'Physical Layout',
+                  'Visual Layout',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Rows', '${profile.rows}'),
-            const SizedBox(height: 12),
-            Text(
-              'Columns per Row:',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            ...List.generate(profile.colsPerRow.length, (index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'R$index',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text('${profile.colsPerRow[index]} columns'),
-                  ],
+            SizedBox(
+              height: 300,
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: VisualKeyboard(
+                  layout: layout,
+                  enabled: false,
+                  showMappingOverlay: false,
+                  showSecondaryLabels: false,
+                  enableDragDrop: false,
                 ),
-              );
-            }),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  KeyboardLayout _createLayoutFromProfile(DeviceProfile profile) {
+    final rows = <KeyboardRow>[];
+
+    for (int r = 0; r < profile.rows; r++) {
+      final keys = <KeyDefinition>[];
+      final cols = profile.colsPerRow.length > r ? profile.colsPerRow[r] : 0;
+
+      for (int c = 0; c < cols; c++) {
+        final keyId = 'r${r}_c${c}';
+        final override = _visualOverrides[keyId];
+        final width = override?.width ?? 1.0;
+        final isSkipped = override?.isSkipped ?? false;
+
+        keys.add(KeyDefinition(
+          id: keyId,
+          label: isSkipped ? '' : 'R${r}C${c}',
+          row: r,
+          column: c.toDouble(), // This needs correct offset calculation if not grid
+          width: width,
+          // If skipped, we might want to render it invisible or just as a gap?
+          // VisualKeyboard renders all keys. If we want a gap, we should probably not add it?
+          // But KeyboardLayout assumes keys are in order.
+          // If we want a gap, we can use a transparent key or similar.
+          // But `VisualKeyboard` calculates position based on `column`.
+          // Wait, `VisualKeyboard` uses `layout.getKeyPosition`.
+          // `KeyboardLayout` has `getKeyPosition` which does `column * (unitSize + spacing)`.
+          // So `column` is the X coordinate in units.
+          // We need to calculate cumulative width for columns!
+        ));
+      }
+
+      // Recalculate columns based on widths
+      double currentX = 0.0;
+      final positionedKeys = <KeyDefinition>[];
+      for (final key in keys) {
+        positionedKeys.add(KeyDefinition(
+          id: key.id,
+          label: key.label,
+          row: key.row,
+          column: currentX,
+          width: key.width,
+        ));
+        currentX += key.width;
+      }
+
+      rows.add(KeyboardRow(keys: positionedKeys));
+    }
+
+    return KeyboardLayout(
+      name: profile.name ?? 'Device Layout',
+      rows: rows,
     );
   }
 
