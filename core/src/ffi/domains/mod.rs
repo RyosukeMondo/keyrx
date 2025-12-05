@@ -5,6 +5,7 @@
 
 pub mod analysis;
 pub mod device;
+pub mod device_definitions;
 pub mod device_registry;
 pub mod diagnostics;
 pub mod discovery;

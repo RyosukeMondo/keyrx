@@ -238,7 +238,7 @@
   - _Requirements: 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Developer with expertise in JSON marshalling and error handling | Task: Implement profile_registry FFI domain following requirement 17, exposing profile operations to Flutter | Restrictions: Must handle JSON parsing errors, validate profile data, use panic guards, proper memory management | _Leverage: FFI panic guards, JSON serialization patterns | Success: All FFI functions work, JSON parsing safe, errors handled, tested from Dart. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.3. Implement device_definitions FFI domain
+- [x] 3.3. Implement device_definitions FFI domain
   - Files: `core/src/ffi/domains/device_definitions.rs`, `core/src/ffi/domains/mod.rs`
   - Implement krx_definitions_list_all()
   - Implement krx_definitions_get_for_device(vid, pid)
