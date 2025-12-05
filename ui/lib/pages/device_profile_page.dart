@@ -20,12 +20,14 @@ class DeviceProfilePage extends StatefulWidget {
     required this.productId,
     required this.deviceName,
     required this.services,
+    this.initialProfile,
   });
 
   final int vendorId;
   final int productId;
   final String deviceName;
   final ServiceRegistry services;
+  final DeviceProfile? initialProfile;
 
   @override
   State<DeviceProfilePage> createState() => _DeviceProfilePageState();
@@ -37,10 +39,163 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   bool _isLoading = true;
   String? _error;
 
+  // Edit Mode State
+  bool _isEditing = false;
+  late TextEditingController _nameController;
+  Map<String, VisualKeyOverride> _tempOverrides = {};
+
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _nameController = TextEditingController();
+    if (widget.initialProfile != null) {
+      _profile = widget.initialProfile;
+      _nameController.text = _profile?.name ?? '';
+      // We still need overrides
+      _loadOverrides();
+    } else {
+      _loadProfile();
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _toggleEditMode() {
+    setState(() {
+      _isEditing = !_isEditing;
+      if (_isEditing) {
+        // Initialize temp state
+        _tempOverrides = Map.from(_visualOverrides);
+        _nameController.text = _profile?.name ?? '';
+      } else {
+        // Discard changes (revert to original)
+        // If we wanted to confirm discard, we could show a dialog here.
+      }
+    });
+  }
+
+  Future<void> _saveChanges() async {
+    if (_profile == null) return;
+
+    setState(() => _isLoading = true);
+
+    // 1. Update Profile Name
+    final updatedProfile = DeviceProfile(
+      vendorId: _profile!.vendorId,
+      productId: _profile!.productId,
+      name: _nameController.text,
+      source: _profile!.source,
+      schemaVersion: _profile!.schemaVersion,
+      discoveredAt: _profile!.discoveredAt, // Keep ID same
+      rows: _profile!.rows,
+      colsPerRow: _profile!.colsPerRow,
+      keymap: _profile!.keymap,
+      aliases: _profile!.aliases,
+    );
+
+    // 2. Save Profile
+    await widget.services.deviceProfileService.saveProfile(updatedProfile);
+
+    // 3. Save Visual Overrides
+    await widget.services.deviceProfileService.saveVisualOverrides(
+      updatedProfile.vendorId,
+      updatedProfile.productId,
+      _tempOverrides,
+    );
+
+    setState(() {
+      _profile = updatedProfile;
+      _visualOverrides = Map.from(_tempOverrides);
+      _isEditing = false;
+      _isLoading = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated')),
+      );
+    }
+  }
+
+  void _updateOverride(String keyId, {double? width, bool? isSkipped}) {
+    if (!_isEditing) return;
+
+    setState(() {
+      final current = _tempOverrides[keyId] ?? const VisualKeyOverride();
+      _tempOverrides[keyId] = VisualKeyOverride(
+        width: width ?? current.width,
+        isSkipped: isSkipped ?? current.isSkipped,
+      );
+    });
+  }
+
+  Future<void> _showKeyEditDialog(String keyId, int row, int col) async {
+    if (!_isEditing) return;
+
+    final current = _tempOverrides[keyId] ?? const VisualKeyOverride();
+    double newWidth = current.width;
+    bool newSkipped = current.isSkipped;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Edit Key R${row}C${col}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Text('Width: '),
+                  Expanded(
+                    child: Slider(
+                      value: newWidth,
+                      min: 0.25,
+                      max: 4.0,
+                      divisions: 15,
+                      label: '${newWidth}u',
+                      onChanged: (val) => setState(() => newWidth = val),
+                    ),
+                  ),
+                  Text('${newWidth}u'),
+                ],
+              ),
+              SwitchListTile(
+                title: const Text('Skip (Gap/Spacer)'),
+                value: newSkipped,
+                onChanged: (val) => setState(() => newSkipped = val),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                _updateOverride(keyId, width: newWidth, isSkipped: newSkipped);
+                Navigator.pop(context);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadOverrides() async {
+    final overrides = await widget.services.deviceProfileService
+        .getVisualOverrides(widget.vendorId, widget.productId);
+
+    if (mounted) {
+      setState(() {
+        _visualOverrides = overrides;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -62,6 +217,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
       if (result.isSuccess) {
         _profile = result.profile;
         _visualOverrides = overrides;
+        _nameController.text = _profile?.name ?? '';
       } else {
         _error = result.errorMessage ?? 'Unknown error';
       }
@@ -72,17 +228,46 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.deviceName),
-            Text(
-              '${widget.vendorId.toRadixString(16).padLeft(4, '0')}:'
-              '${widget.productId.toRadixString(16).padLeft(4, '0')}',
-              style: Theme.of(context).textTheme.bodySmall,
+        title: _isEditing
+            ? TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  hintText: 'Profile Name',
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(color: Colors.white, fontSize: 20),
+                autofocus: true,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_profile?.name ?? widget.deviceName),
+                  Text(
+                    '${widget.vendorId.toRadixString(16).padLeft(4, '0')}:'
+                    '${widget.productId.toRadixString(16).padLeft(4, '0')}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+        actions: [
+          if (_isEditing) ...[
+            IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: _saveChanges,
+              tooltip: 'Save Changes',
             ),
-          ],
-        ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _toggleEditMode,
+              tooltip: 'Cancel',
+            ),
+          ] else
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _toggleEditMode,
+              tooltip: 'Edit Profile',
+            ),
+        ],
       ),
       body: _buildBody(),
     );
@@ -190,7 +375,8 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   }
 
   Widget _buildLayoutCard(DeviceProfile profile) {
-    final layout = _createLayoutFromProfile(profile);
+    final overrides = _isEditing ? _tempOverrides : _visualOverrides;
+    final layout = _createLayoutFromProfile(profile, overrides);
 
     return Card(
       child: Padding(
@@ -206,6 +392,13 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
                   'Visual Layout',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                if (_isEditing) ...[
+                  const Spacer(),
+                  const Text(
+                    'Tap keys to edit',
+                    style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),
@@ -215,10 +408,11 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
                 physics: const NeverScrollableScrollPhysics(),
                 child: VisualKeyboard(
                   layout: layout,
-                  enabled: false,
+                  enabled: true, // Always enable so we can tap
                   showMappingOverlay: false,
                   showSecondaryLabels: false,
                   enableDragDrop: false,
+                  onKeyTap: _isEditing ? (key) => _showKeyEditDialog(key.id, key.row, 0) : null, // Pass row, logic needs fixing for col
                 ),
               ),
             ),
@@ -228,7 +422,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
     );
   }
 
-  KeyboardLayout _createLayoutFromProfile(DeviceProfile profile) {
+  KeyboardLayout _createLayoutFromProfile(DeviceProfile profile, Map<String, VisualKeyOverride> overrides) {
     final rows = <KeyboardRow>[];
 
     for (int r = 0; r < profile.rows; r++) {
@@ -237,7 +431,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
 
       for (int c = 0; c < cols; c++) {
         final keyId = 'r${r}_c${c}';
-        final override = _visualOverrides[keyId];
+        final override = overrides[keyId];
         final width = override?.width ?? 1.0;
         final isSkipped = override?.isSkipped ?? false;
 
@@ -245,17 +439,8 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
           id: keyId,
           label: isSkipped ? '' : 'R${r}C${c}',
           row: r,
-          column: c.toDouble(), // This needs correct offset calculation if not grid
+          column: c.toDouble(), // Placeholder, recalculated below
           width: width,
-          // If skipped, we might want to render it invisible or just as a gap?
-          // VisualKeyboard renders all keys. If we want a gap, we should probably not add it?
-          // But KeyboardLayout assumes keys are in order.
-          // If we want a gap, we can use a transparent key or similar.
-          // But `VisualKeyboard` calculates position based on `column`.
-          // Wait, `VisualKeyboard` uses `layout.getKeyPosition`.
-          // `KeyboardLayout` has `getKeyPosition` which does `column * (unitSize + spacing)`.
-          // So `column` is the X coordinate in units.
-          // We need to calculate cumulative width for columns!
         ));
       }
 

@@ -79,6 +79,23 @@ abstract class DeviceProfileService {
     Map<String, VisualKeyOverride> overrides,
   );
 
+  /// List all available profiles for a device.
+  Future<List<DeviceProfile>> listProfiles(int vendorId, int productId);
+
+  /// Save a profile.
+  ///
+  /// If [setActive] is true, this profile becomes the active one in the backend.
+  Future<void> saveProfile(DeviceProfile profile, {bool setActive = false});
+
+  /// Delete a profile.
+  Future<void> deleteProfile(DeviceProfile profile);
+
+  /// Set a profile as active.
+  Future<void> setActiveProfile(DeviceProfile profile);
+
+  /// Get the active profile ID (discoveredAt timestamp) for a device.
+  Future<String?> getActiveProfileId(int vendorId, int productId);
+
   /// Dispose any held resources.
   Future<void> dispose();
 }
@@ -181,6 +198,137 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
       jsonMap[entry.key] = entry.value.toJson();
     }
     await prefs.setString('layout_overrides_$cacheKey', json.encode(jsonMap));
+  }
+
+  @override
+  Future<List<DeviceProfile>> listProfiles(int vendorId, int productId) async {
+    final profiles = await _readProfilesFromStorage(vendorId, productId);
+
+    if (profiles.isNotEmpty) {
+      return profiles;
+    }
+
+    // Fallback: Check if active profile exists in backend
+    // If so, import it into our local list
+    final result = _bridge.getDeviceProfile(vendorId, productId);
+    if (result.isSuccess && result.profile != null) {
+      final profile = result.profile!;
+      await saveProfile(profile, setActive: true);
+      return [profile];
+    }
+
+    return [];
+  }
+
+  /// Helper to read profiles directly from storage without side effects.
+  Future<List<DeviceProfile>> _readProfilesFromStorage(int vendorId, int productId) async {
+    final cacheKey = _getCacheKey(vendorId, productId);
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('profiles_$cacheKey');
+
+    if (jsonStr != null) {
+      try {
+        final List<dynamic> jsonList = json.decode(jsonStr);
+        return jsonList
+            .map((e) => DeviceProfile.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } catch (e) {
+        print('Error parsing profiles: $e');
+      }
+    }
+    return [];
+  }
+
+  @override
+  Future<void> saveProfile(DeviceProfile profile,
+      {bool setActive = false}) async {
+    final cacheKey = _getCacheKey(profile.vendorId, profile.productId);
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load existing directly from storage to avoid infinite recursion loop via listProfiles fallback
+    final profiles = await _readProfilesFromStorage(profile.vendorId, profile.productId);
+    // Use a mutable list
+    final mutableProfiles = List<DeviceProfile>.from(profiles);
+
+    // Update or Add
+    final index = mutableProfiles.indexWhere((p) =>
+        p.discoveredAt.toIso8601String() ==
+        profile.discoveredAt.toIso8601String());
+
+    if (index >= 0) {
+      mutableProfiles[index] = profile;
+    } else {
+      mutableProfiles.add(profile);
+    }
+
+    // Save list
+    final jsonList = mutableProfiles.map((p) => p.toJson()).toList();
+    await prefs.setString('profiles_$cacheKey', json.encode(jsonList));
+
+    if (setActive) {
+      await setActiveProfile(profile);
+    }
+  }
+
+  @override
+  Future<void> deleteProfile(DeviceProfile profile) async {
+    final cacheKey = _getCacheKey(profile.vendorId, profile.productId);
+    final prefs = await SharedPreferences.getInstance();
+
+    final profiles = await _readProfilesFromStorage(profile.vendorId, profile.productId);
+    final mutableProfiles = List<DeviceProfile>.from(profiles);
+
+    mutableProfiles.removeWhere((p) =>
+        p.discoveredAt.toIso8601String() ==
+        profile.discoveredAt.toIso8601String());
+
+    final jsonList = mutableProfiles.map((p) => p.toJson()).toList();
+    await prefs.setString('profiles_$cacheKey', json.encode(jsonList));
+
+    // If we deleted the active one, we can't easily "unset" it in Rust.
+    // We just leave it as is in Rust until another one is set active.
+    // But we should clear our local active pointer if it matches.
+    final activeId = await getActiveProfileId(profile.vendorId, profile.productId);
+    if (activeId == profile.discoveredAt.toIso8601String()) {
+      await prefs.remove('active_profile_$cacheKey');
+    }
+  }
+
+  @override
+  Future<void> setActiveProfile(DeviceProfile profile) async {
+    final cacheKey = _getCacheKey(profile.vendorId, profile.productId);
+
+    // Save to backend
+    final jsonStr = json.encode(profile.toJson());
+    final success = _bridge.saveDeviceProfile(jsonStr);
+
+    if (success) {
+      // Invalidate cache
+      _cache.remove(cacheKey);
+
+      // Save active ID locally
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('active_profile_$cacheKey', profile.discoveredAt.toIso8601String());
+    }
+  }
+
+  @override
+  Future<String?> getActiveProfileId(int vendorId, int productId) async {
+    final cacheKey = _getCacheKey(vendorId, productId);
+    final prefs = await SharedPreferences.getInstance();
+
+    // Return local active ID preference
+    final localId = prefs.getString('active_profile_$cacheKey');
+    if (localId != null) return localId;
+
+    // Fallback: if backend has a profile, try to match it against our list
+    final result = _bridge.getDeviceProfile(vendorId, productId);
+    if (result.isSuccess && result.profile != null) {
+       // We assume the one in backend is active
+       return result.profile!.discoveredAt.toIso8601String();
+    }
+
+    return null;
   }
 
   @override

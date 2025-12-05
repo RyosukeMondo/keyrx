@@ -126,6 +126,20 @@ class DeviceProfile {
 
   /// Get total number of keys in the layout.
   int get totalKeys => colsPerRow.fold(0, (sum, cols) => sum + cols);
+
+  Map<String, dynamic> toJson() => {
+        'schema_version': schemaVersion,
+        'vendor_id': vendorId,
+        'product_id': productId,
+        if (name != null) 'name': name,
+        'discovered_at': discoveredAt.toIso8601String(),
+        'rows': rows,
+        'cols_per_row': colsPerRow,
+        'keymap': keymap.map(
+            (key, value) => MapEntry(key.toString(), value.toJson())),
+        'aliases': aliases,
+        'source': source.label,
+      };
 }
 
 /// Result of getting a device profile.

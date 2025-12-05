@@ -15,7 +15,7 @@ import '../services/facade/keyrx_facade.dart';
 import '../services/facade/result.dart';
 import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
-import '../services/device_profile_service.dart' show VisualKeyOverride;
+import '../services/device_profile_service.dart';
 
 class DeviceDiscoveryPage extends StatefulWidget {
   const DeviceDiscoveryPage({
@@ -468,8 +468,17 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
                           print('Attempting to save profile: $_finalProfileJson');
 
                           // Save profile
-                          final success = widget.services.bridge.saveDeviceProfile(_finalProfileJson!);
-                          print('saveDeviceProfile result: $success');
+                          bool success = false;
+                          try {
+                            final profileMap = json.decode(_finalProfileJson!) as Map<String, dynamic>;
+                            final profile = DeviceProfile.fromJson(profileMap);
+                            await widget.services.deviceProfileService.saveProfile(profile, setActive: true);
+                            success = true;
+                          } catch (e) {
+                            print('Error saving profile: $e');
+                          }
+
+                          print('saveProfile result: $success');
 
                           // Save visual overrides
                           if (success) {
@@ -480,17 +489,19 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
                             );
                           }
 
-                          setState(() => _isSaving = false);
+                          if (mounted) {
+                            setState(() => _isSaving = false);
 
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Profile saved!')),
-                            );
-                            Navigator.of(context).pop(); // Return to devices list
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to save profile'), backgroundColor: Colors.red),
-                            );
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Profile saved!')),
+                              );
+                              Navigator.of(context).pop(); // Return to devices list
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Failed to save profile'), backgroundColor: Colors.red),
+                              );
+                            }
                           }
                         }
                       },

@@ -27,6 +27,14 @@ dev:
 ui:
     cd ui && flutter run -d linux
 
+# Run Flutter analysis
+ui-check:
+    cd ui && flutter analyze
+
+# Verify Flutter build (Windows)
+ui-verify: ui-check
+    cd ui && flutter build windows --debug
+
 # Run all quality checks (fmt, clippy, test, docs, bindings)
 check: fmt-check clippy test docs verify-bindings
     @echo "All checks passed!"

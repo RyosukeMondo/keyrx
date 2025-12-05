@@ -10,7 +10,7 @@ import '../ffi/bridge.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../services/service_registry.dart';
 import 'device_discovery_page.dart';
-import 'device_profile_page.dart';
+import 'device_profiles_page.dart';
 
 /// Page for listing and selecting keyboard devices.
 class DevicesPage extends StatefulWidget {
@@ -116,17 +116,19 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  void _viewProfile(KeyboardDevice device) {
+  void _manageProfiles(KeyboardDevice device) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => DeviceProfilePage(
+        builder: (context) => DeviceProfilesPage(
           vendorId: device.vendorId,
           productId: device.productId,
           deviceName: device.name,
+          devicePath: device.path,
+          facade: widget.facade,
           services: widget.services,
         ),
       ),
-    );
+    ).then((_) => _loadDevices()); // Reload in case profiles changed/active status changed
   }
 
   void _startDiscovery(KeyboardDevice device) {
@@ -138,7 +140,7 @@ class _DevicesPageState extends State<DevicesPage> {
           services: widget.services,
         ),
       ),
-    );
+    ).then((_) => _loadDevices());
   }
 
   @override
@@ -284,8 +286,8 @@ class _DevicesPageState extends State<DevicesPage> {
           device: device,
           isSelected: isSelected,
           onTap: () => _selectDevice(device),
-          onViewProfile: device.hasProfile
-              ? () => _viewProfile(device)
+          onManageProfiles: device.hasProfile
+              ? () => _manageProfiles(device)
               : null,
           onStartDiscovery: !device.hasProfile
               ? () => _startDiscovery(device)
@@ -301,14 +303,14 @@ class _DeviceListTile extends StatelessWidget {
     required this.device,
     required this.isSelected,
     required this.onTap,
-    this.onViewProfile,
+    this.onManageProfiles,
     this.onStartDiscovery,
   });
 
   final KeyboardDevice device;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback? onViewProfile;
+  final VoidCallback? onManageProfiles;
   final VoidCallback? onStartDiscovery;
 
   @override
@@ -343,12 +345,12 @@ class _DeviceListTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onViewProfile != null)
-            TextButton.icon(
-              onPressed: onViewProfile,
-              icon: const Icon(Icons.visibility, size: 16),
-              label: const Text('View'),
-              style: TextButton.styleFrom(
+          if (onManageProfiles != null)
+            FilledButton.tonalIcon(
+              onPressed: onManageProfiles,
+              icon: const Icon(Icons.settings_applications, size: 16),
+              label: const Text('Profiles'),
+              style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
               ),
             ),
