@@ -138,7 +138,7 @@
   - _Requirements: Non-functional (performance)_
   - _Prompt: Implement the task for spec test-organization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer | Task: Update CI workflow to run test categories separately | Restrictions: Unit tests fast, integration can be slower, e2e optional | _Leverage: GitHub Actions, cargo nextest | Success: CI runs tests efficiently, clear feedback per category | After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record artifacts, then mark [x] when complete_
 
-- [ ] 16. Verify coverage maintained
+- [x] 16. Verify coverage maintained
   - Run coverage before and after reorganization
   - Ensure no coverage regression
   - Add coverage thresholds to CI
