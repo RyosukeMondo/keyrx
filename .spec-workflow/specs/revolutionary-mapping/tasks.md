@@ -352,7 +352,7 @@
   - _Requirements: 11_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Navigation Developer | Task: Reorder navigation following requirement 11, making Devices the first tab | Restrictions: Must preserve all other nav items, update indexes correctly, default to Devices | _Leverage: Existing main.dart navigation | Success: Navigation order correct, Devices is default, all tabs work, no broken links. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 4.6. Write Devices UI tests
+- [x] 4.6. Write Devices UI tests
   - Files: `ui/test/pages/devices_page_test.dart`, `ui/test/widgets/device_card_test.dart`
   - Test DevicesPage with mock service
   - Test DeviceCard widget interactions
