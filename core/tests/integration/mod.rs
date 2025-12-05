@@ -8,5 +8,6 @@ pub use keyrx_core::traits::InputSource;
 // Submodules
 pub mod channel_tests;
 pub mod drivers;
+pub mod phases;
 pub mod state_tests;
 pub mod validation;

@@ -68,7 +68,7 @@
 
 ## Phase 3: Split Phase Tests
 
-- [ ] 8. Split phase_1_3_integration_test.rs - Phase 1 tests
+- [x] 8. Split phase_1_3_integration_test.rs - Phase 1 tests
   - Files: `core/tests/integration/phases/phase1_{basic_remap,block}_tests.rs`
   - Extract Phase 1 functionality tests
   - Purpose: First phase test split
