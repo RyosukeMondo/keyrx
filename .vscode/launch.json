@@ -6,13 +6,19 @@
       "request": "launch",
       "name": "Debug keyrx run",
       "cargo": {
-        "args": ["build", "--bin=keyrx", "--package=keyrx_core"],
+        "args": [
+          "build",
+          "--bin=keyrx",
+          "--package=keyrx_core"
+        ],
         "filter": {
           "name": "keyrx",
           "kind": "bin"
         }
       },
-      "args": ["run"],
+      "args": [
+        "run"
+      ],
       "cwd": "${workspaceFolder}/core"
     },
     {
@@ -20,7 +26,12 @@
       "request": "launch",
       "name": "Debug Tests",
       "cargo": {
-        "args": ["test", "--no-run", "--lib", "--package=keyrx_core"],
+        "args": [
+          "test",
+          "--no-run",
+          "--lib",
+          "--package=keyrx_core"
+        ],
         "filter": {
           "name": "keyrx_core",
           "kind": "lib"
@@ -33,7 +44,8 @@
       "request": "launch",
       "name": "Flutter",
       "program": "ui/lib/main.dart",
-      "cwd": "${workspaceFolder}/ui"
+      "cwd": "${workspaceFolder}/ui",
+      "preLaunchTask": "Build Rust Core"
     }
   ]
 }
