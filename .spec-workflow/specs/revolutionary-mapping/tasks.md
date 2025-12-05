@@ -95,7 +95,7 @@
   - _Requirements: 6_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Data Persistence Developer with expertise in JSON serialization and file I/O | Task: Implement DeviceBindings persistence following requirement 6, storing device-profile assignments and labels | Restrictions: Must use atomic writes, handle corrupt files, create backups on corruption, default to empty bindings | _Leverage: Atomic write from registry/profile.rs, config paths | Success: Bindings persist across restarts, atomic writes work, corrupt file recovery works, unit tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (bindings struct, I/O methods), then mark as [x]._
 
-- [ ] 1.10. Write identity module tests
+- [x] 1.10. Write identity module tests
   - Files: `core/tests/identity_tests.rs`
   - Test DeviceIdentity to_key/from_key roundtrip
   - Test Windows path parsing with various formats
