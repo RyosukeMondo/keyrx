@@ -266,7 +266,7 @@
   - _Requirements: 1, 2, 3_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in data modeling and serialization | Task: Create Dart data models following requirements 1, 2, 3, using freezed for immutability and json_serializable | Restrictions: Must match Rust types exactly, use freezed for immutability, handle nullability correctly | _Leverage: Existing model patterns, freezed package | Success: Models match Rust types, serialize correctly, freezed generates code, tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.6. Create DeviceRegistryFFI bindings
+- [x] 3.6. Create DeviceRegistryFFI bindings
   - Files: `ui/lib/ffi/device_registry_ffi.dart`
   - Lookup all FFI functions from shared library
   - Create type-safe Dart wrappers
