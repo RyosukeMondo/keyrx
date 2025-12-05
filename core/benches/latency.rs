@@ -53,6 +53,7 @@ fn benchmark_process_event_with_pending(c: &mut Criterion) {
                     false,
                     false,
                     0,
+                    None,
                 );
                 let up = InputEvent::with_metadata(
                     KeyCode::A,
@@ -62,6 +63,7 @@ fn benchmark_process_event_with_pending(c: &mut Criterion) {
                     false,
                     false,
                     0,
+                    None,
                 );
                 (engine, down, up)
             },

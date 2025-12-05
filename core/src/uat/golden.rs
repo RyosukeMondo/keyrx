@@ -259,6 +259,7 @@ impl GoldenSessionManager {
                 is_repeat: false,
                 is_synthetic: true,
                 scan_code: 0,
+                serial_number: None,
             };
             record_input(input);
         }

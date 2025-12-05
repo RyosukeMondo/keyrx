@@ -398,6 +398,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         };
 
         assert!(ThreadLocalState::try_send(event));
@@ -415,6 +416,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         };
 
         assert!(!ThreadLocalState::try_send(event));
@@ -558,6 +560,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         };
 
         ThreadLocalState::try_send(event);
@@ -581,6 +584,7 @@ mod tests {
                 is_repeat: false,
                 is_synthetic: false,
                 scan_code: 0,
+                serial_number: None,
             };
             assert!(ThreadLocalState::try_send(event));
         }

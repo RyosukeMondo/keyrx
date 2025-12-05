@@ -142,6 +142,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 30,
+            serial_number: None,
         };
         let _g1 = tracer.span_input_received(&event);
 
@@ -173,6 +174,7 @@ mod tests {
             is_repeat: true,
             is_synthetic: false,
             scan_code: 57,
+            serial_number: None,
         };
         let _guard = tracer.span_input_received(&event);
 
@@ -185,6 +187,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: true,
             scan_code: 28,
+            serial_number: None,
         };
         let _guard2 = tracer.span_input_received(&event_no_device);
     }

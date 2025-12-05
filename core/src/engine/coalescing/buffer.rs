@@ -183,6 +183,7 @@ mod tests {
             is_repeat,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         }
     }
 

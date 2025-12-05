@@ -391,6 +391,7 @@ fn process_event_synthetic_event_passes_through() {
         false, // is_repeat
         true,  // is_synthetic - this is the key flag
         0,     // scan_code
+        None,  // serial_number
     );
     let output = engine.process_event(&event);
 
@@ -424,6 +425,7 @@ fn process_event_synthetic_key_up_passes_through() {
         false,
         true, // is_synthetic
         0,
+        None,
     );
     let output = engine.process_event(&event);
 
@@ -456,6 +458,7 @@ fn process_event_synthetic_bypasses_block() {
         false,
         true, // is_synthetic
         0,
+        None,
     );
     let output = engine.process_event(&event);
 
@@ -489,6 +492,7 @@ fn process_event_non_synthetic_still_remapped() {
         false,
         false, // is_synthetic = false
         30,
+        None,
     );
     let output = engine.process_event(&event);
 

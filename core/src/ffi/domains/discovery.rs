@@ -327,6 +327,7 @@ pub fn process_discovery_event(scan_code: u16, pressed: bool, timestamp_us: u64)
         false,
         false,
         scan_code,
+        None,
     );
 
     match state.session.handle_event(&event) {

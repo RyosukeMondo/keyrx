@@ -32,7 +32,7 @@
   - _Requirements: 9_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Linux Systems Developer with expertise in evdev and udev subsystems | Task: Implement Linux serial number extraction following requirement 9, using EVIOCGUNIQ ioctl and udev properties | Restrictions: Must use evdev crate API only, conditional compile with #[cfg(target_os = "linux")], ensure synthetic ID stability across reboots | _Leverage: Existing Linux driver patterns from core/src/drivers/linux/, evdev crate usage | Success: Extracts serial via EVIOCGUNIQ when available, falls back to udev then synthetic ID, hash is stable, all unit tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including detailed artifacts (functions, ioctl calls, hash algorithm), then mark as [x]._
 
-- [ ] 1.4. Add serial extraction to Windows driver
+- [x] 1.4. Add serial extraction to Windows driver
   - Files: `core/src/drivers/windows/raw_input.rs`
   - Call identity::windows::extract_serial_number() on device connection
   - Include serial_number in InputEvent metadata

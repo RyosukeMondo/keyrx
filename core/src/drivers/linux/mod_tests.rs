@@ -90,6 +90,7 @@ async fn poll_events_returns_channel_data() {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 30,
+            serial_number: None,
         })
         .unwrap();
 
@@ -214,6 +215,7 @@ async fn stop_resets_running_and_drains_events() {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 48,
+            serial_number: None,
         })
         .unwrap();
 

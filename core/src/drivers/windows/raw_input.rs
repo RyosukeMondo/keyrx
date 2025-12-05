@@ -235,6 +235,23 @@ fn process_raw_input(raw: &RAWINPUT) {
         }
     };
 
+    // Extract serial number from device path
+    let serial_number = if !path.is_empty() {
+        match crate::identity::windows::extract_serial_number(&path) {
+            Ok(serial) => Some(serial),
+            Err(e) => {
+                // Log warning but continue without serial
+                debug!(
+                    "Failed to extract serial number from device path '{}': {}",
+                    path, e
+                );
+                None
+            }
+        }
+    } else {
+        None
+    };
+
     let keyboard = unsafe { raw.data.keyboard };
     let vkey = keyboard.VKey;
     let flags = keyboard.Flags;
@@ -263,6 +280,7 @@ fn process_raw_input(raw: &RAWINPUT) {
         is_repeat: false,
         is_synthetic: false,
         scan_code: scan_code as u16,
+        serial_number,
     };
 
     CONTEXT.with(|ctx| {

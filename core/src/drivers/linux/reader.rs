@@ -488,6 +488,7 @@ fn build_input_event(
         is_repeat,
         is_synthetic: false,
         scan_code,
+        serial_number: None, // TODO: Extract from Linux device in task 1.5
     }
 }
 

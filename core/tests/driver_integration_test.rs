@@ -203,6 +203,7 @@ fn input_event_with_metadata_constructor() {
         true,
         true,
         42,
+        None,
     );
     assert_eq!(event.key, KeyCode::A);
     assert!(event.pressed);

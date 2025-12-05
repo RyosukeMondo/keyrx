@@ -51,6 +51,7 @@ fn press(scan_code: u16, device: &str) -> InputEvent {
         false,
         false,
         scan_code,
+        None,
     )
 }
 
@@ -63,6 +64,7 @@ fn press_key(key: KeyCode, scan_code: u16, device: &str) -> InputEvent {
         false,
         false,
         scan_code,
+        None,
     )
 }
 

@@ -94,6 +94,7 @@ impl MockInput {
             false, // is_repeat
             false, // is_synthetic
             0,     // scan_code
+            None,  // serial_number
         );
         self.input_queue.push_back(event);
     }
@@ -121,6 +122,7 @@ impl MockInput {
             true,  // is_repeat
             false, // is_synthetic
             0,     // scan_code
+            None,  // serial_number
         );
         self.input_queue.push_back(event);
     }
@@ -140,6 +142,7 @@ impl MockInput {
             false, // is_repeat
             true,  // is_synthetic
             0,     // scan_code
+            None,  // serial_number
         );
         self.input_queue.push_back(event);
     }

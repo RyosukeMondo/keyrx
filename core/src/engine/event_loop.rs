@@ -375,6 +375,7 @@ mod tests {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         }
     }
 

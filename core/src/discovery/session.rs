@@ -422,6 +422,7 @@ mod tests {
             false,
             false,
             scan_code,
+            None,
         )
     }
 

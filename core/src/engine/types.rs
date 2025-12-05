@@ -59,6 +59,12 @@ pub struct InputEvent {
     /// Useful for handling keys that may have the same virtual key code but
     /// different physical locations (e.g., numpad Enter vs main Enter).
     pub scan_code: u16,
+    /// Device serial number for unique device identification.
+    ///
+    /// **Linux**: Extracted via EVIOCGUNIQ ioctl, udev properties, or synthetic ID.
+    /// **Windows**: Extracted via HidD_GetSerialNumberString or Instance ID from device path.
+    /// Used with vendor_id:product_id to create unique DeviceIdentity for per-device configuration.
+    pub serial_number: Option<String>,
 }
 
 /// Output action to send to OS.
@@ -86,6 +92,7 @@ impl Default for InputEvent {
             is_repeat: false,
             is_synthetic: false,
             scan_code: 0,
+            serial_number: None,
         }
     }
 }
@@ -116,6 +123,7 @@ impl InputEvent {
     }
 
     /// Create a new event with full metadata.
+    #[allow(clippy::too_many_arguments)]
     pub fn with_metadata(
         key: KeyCode,
         pressed: bool,
@@ -124,6 +132,7 @@ impl InputEvent {
         is_repeat: bool,
         is_synthetic: bool,
         scan_code: u16,
+        serial_number: Option<String>,
     ) -> Self {
         Self {
             key,
@@ -133,6 +142,7 @@ impl InputEvent {
             is_repeat,
             is_synthetic,
             scan_code,
+            serial_number,
         }
     }
 

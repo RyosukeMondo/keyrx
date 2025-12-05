@@ -336,6 +336,7 @@ mod tests {
                 false,
                 false,
                 30,
+                None,
             ));
             mock.queue_event(InputEvent::with_metadata(
                 KeyCode::B,
@@ -345,6 +346,7 @@ mod tests {
                 false,
                 false,
                 31,
+                None,
             ));
             Ok(DiscoverInput {
                 input: Box::new(mock),

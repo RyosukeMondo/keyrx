@@ -302,6 +302,7 @@ fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
         is_repeat,
         is_synthetic: kb_struct.flags.contains(LLKHF_INJECTED),
         scan_code: kb_struct.scanCode as u16,
+        serial_number: None, // Low-level hooks don't provide device path
     }
 }
 
