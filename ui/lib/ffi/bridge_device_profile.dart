@@ -265,8 +265,10 @@ mixin BridgeDeviceProfileMixin {
       if (trimmed.toLowerCase().startsWith('ok:')) {
         return true;
       }
+      print('saveDeviceProfile failed. Rust returned: $trimmed');
       return false;
     } catch (e) {
+      print('saveDeviceProfile exception: $e');
       return false;
     } finally {
       calloc.free(jsonPtr);
