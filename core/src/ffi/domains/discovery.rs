@@ -11,7 +11,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::events::{EventRegistry, EventType};
 use crate::ffi::traits::FfiExportable;
-// use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
+use keyrx_ffi_macros::ffi_export;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{atomic::AtomicBool, atomic::Ordering, Arc};
@@ -152,7 +152,7 @@ pub(crate) fn global_event_registry() -> &'static EventRegistry {
 /// * `cols_per_row_json` - JSON array of column counts per row (e.g., "[14, 14, 13, 12, 8]")
 ///
 /// Returns JSON: `ok:{success: bool, error?: string, totalKeys?: number}`
-// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+#[ffi_export]
 pub fn start_discovery(
     device_id: &str,
     rows: u8,
@@ -286,7 +286,7 @@ pub fn start_discovery(
 /// - 1: Discovery session completed
 /// - -1: No active discovery session
 /// - -2: Discovery was cancelled
-// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+// #[ffi_export] // Use wrapper in exports_compat.rs for JSON return
 pub fn process_discovery_event(scan_code: u16, pressed: bool, timestamp_us: u64) -> FfiResult<i32> {
     let mut ctx_guard = global_discovery_context()
         .lock()
@@ -339,12 +339,91 @@ pub fn process_discovery_event(scan_code: u16, pressed: bool, timestamp_us: u64)
     }
 }
 
+/// Skip the current key in the discovery session (leave it unmapped).
+///
+/// Returns:
+/// - 0: Key skipped successfully
+/// - 1: Discovery session completed
+/// - -1: No active discovery session
+#[ffi_export]
+pub fn skip_discovery_key() -> FfiResult<i32> {
+    let mut ctx_guard = global_discovery_context()
+        .lock()
+        .map_err(|_| FfiError::internal("context lock poisoned"))?;
+
+    let ctx = ctx_guard
+        .as_mut()
+        .ok_or_else(|| FfiError::internal("no context"))?;
+
+    if !ctx.has_domain(DiscoveryFfi::DOMAIN) {
+        return Ok(-1);
+    }
+
+    let mut state_guard = ctx
+        .get_domain_mut::<Option<DiscoverySessionState>>(DiscoveryFfi::DOMAIN)
+        .ok_or_else(|| FfiError::internal("domain not found"))?;
+
+    let state_opt = state_guard
+        .downcast_mut::<Option<DiscoverySessionState>>()
+        .ok_or_else(|| FfiError::internal("type mismatch"))?;
+
+    let state = match state_opt.as_mut() {
+        Some(s) => s,
+        None => return Ok(-1),
+    };
+
+    match state.session.skip_current() {
+        crate::discovery::SessionUpdate::Finished(_) => {
+            // Clear session after completion
+            *state_opt = None;
+            Ok(1)
+        }
+        _ => Ok(0),
+    }
+}
+
+/// Undo the last mapped key in the discovery session.
+///
+/// Returns:
+/// - 0: Undo successful
+/// - -1: No active discovery session
+#[ffi_export]
+pub fn undo_discovery_mapping() -> FfiResult<i32> {
+    let mut ctx_guard = global_discovery_context()
+        .lock()
+        .map_err(|_| FfiError::internal("context lock poisoned"))?;
+
+    let ctx = ctx_guard
+        .as_mut()
+        .ok_or_else(|| FfiError::internal("no context"))?;
+
+    if !ctx.has_domain(DiscoveryFfi::DOMAIN) {
+        return Ok(-1);
+    }
+
+    let mut state_guard = ctx
+        .get_domain_mut::<Option<DiscoverySessionState>>(DiscoveryFfi::DOMAIN)
+        .ok_or_else(|| FfiError::internal("domain not found"))?;
+
+    let state_opt = state_guard
+        .downcast_mut::<Option<DiscoverySessionState>>()
+        .ok_or_else(|| FfiError::internal("type mismatch"))?;
+
+    let state = match state_opt.as_mut() {
+        Some(s) => s,
+        None => return Ok(-1),
+    };
+
+    state.session.undo_last();
+    Ok(0)
+}
+
 /// Cancel an ongoing discovery session.
 ///
 /// Returns:
 /// - 0: Discovery cancelled successfully
 /// - -1: No active discovery session
-// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+#[ffi_export]
 pub fn cancel_discovery() -> FfiResult<i32> {
     let mut ctx_guard = global_discovery_context()
         .lock()
@@ -391,7 +470,7 @@ pub struct DiscoveryProgressResult {
 /// Get the current discovery progress.
 ///
 /// Returns JSON: `ok:{captured, total, next?: {row, col}}`
-// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+#[ffi_export]
 pub fn get_discovery_progress() -> FfiResult<DiscoveryProgressResult> {
     let ctx_guard = global_discovery_context()
         .lock()

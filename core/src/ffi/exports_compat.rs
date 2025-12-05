@@ -175,35 +175,8 @@ pub unsafe extern "C" fn keyrx_save_device_profile(profile_json: *const c_char) 
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
-/// # Safety
-///
-/// Both `device_id` and `cols_per_row_json` must be valid, non-null, nul-terminated C strings.
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_start_discovery(
-    device_id: *const c_char,
-    rows: u8,
-    cols_per_row_json: *const c_char,
-) -> *mut c_char {
-    let device_id = match cstr_to_str(device_id) {
-        Ok(s) => s,
-        Err(code) => {
-            return ffi_error(FfiError::new(
-                format!("INVALID_DEVICE_ID_{code}"),
-                "invalid device id",
-            ))
-        }
-    };
-    let cols_json = match cstr_to_str(cols_per_row_json) {
-        Ok(s) => s,
-        Err(code) => {
-            return ffi_error(FfiError::new(
-                format!("INVALID_COLS_{code}"),
-                "invalid cols_per_row json",
-            ))
-        }
-    };
-    ffi_json(discovery::start_discovery(device_id, rows, cols_json))
-}
+// NOTE: keyrx_start_discovery is now exported directly from domains/discovery.rs
+// NOTE: keyrx_cancel_discovery is now exported directly from domains/discovery.rs
 
 #[no_mangle]
 pub extern "C" fn keyrx_process_discovery_event(
@@ -216,11 +189,6 @@ pub extern "C" fn keyrx_process_discovery_event(
         pressed,
         timestamp_us,
     ))
-}
-
-#[no_mangle]
-pub extern "C" fn keyrx_cancel_discovery() -> i32 {
-    discovery::cancel_discovery().unwrap_or(-4)
 }
 
 // ── Engine ───────────────────────────────────────────────────────────────────

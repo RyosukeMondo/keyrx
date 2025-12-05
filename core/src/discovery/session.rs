@@ -236,6 +236,25 @@ impl DiscoverySession {
         let position = self.expected_positions[self.cursor];
 
         if let Some(existing) = self.keymap.get(&event.scan_code) {
+            // Feature: Undo on double press
+            // If the duplicate matches the immediately preceding key, undo it.
+            if self.cursor > 0 {
+                let last_pos = self.expected_positions[self.cursor - 1];
+                if existing.row == last_pos.row && existing.col == last_pos.col {
+                    // Undo mapping
+                    self.keymap.remove(&event.scan_code);
+                    let alias = format!("r{}_c{}", last_pos.row, last_pos.col);
+                    self.aliases.remove(&alias);
+                    self.cursor -= 1;
+
+                    // Clear the duplicate warning for this specific interaction if needed,
+                    // but simply returning updated progress is sufficient.
+                    let update = SessionUpdate::Progress(self.progress());
+                    publish_session_update(&update);
+                    return update;
+                }
+            }
+
             let duplicate = DuplicateWarning {
                 scan_code: event.scan_code,
                 existing: ExpectedPosition {
@@ -265,6 +284,65 @@ impl DiscoverySession {
             SessionUpdate::Progress(self.progress())
         };
 
+        publish_session_update(&update);
+        update
+    }
+
+    pub fn skip_current(&mut self) -> SessionUpdate {
+        if self.status != SessionStatus::InProgress {
+            return SessionUpdate::Ignored;
+        }
+
+        if self.cursor >= self.expected_positions.len() {
+            return SessionUpdate::Ignored;
+        }
+
+        // Just advance the cursor without adding to keymap
+        self.cursor += 1;
+
+        let update = if self.cursor >= self.expected_positions.len() {
+            self.status = SessionStatus::Completed;
+            SessionUpdate::Finished(self.summary())
+        } else {
+            SessionUpdate::Progress(self.progress())
+        };
+
+        publish_session_update(&update);
+        update
+    }
+
+    pub fn undo_last(&mut self) -> SessionUpdate {
+        if self.status != SessionStatus::InProgress && self.status != SessionStatus::Completed {
+            // Can't undo if cancelled or bypassed, but allow undoing from Completed state (to re-open session)
+            if self.status != SessionStatus::Completed {
+                return SessionUpdate::Ignored;
+            }
+        }
+
+        if self.cursor == 0 {
+            return SessionUpdate::Ignored;
+        }
+
+        // Move cursor back
+        self.cursor -= 1;
+        self.status = SessionStatus::InProgress; // Always back to InProgress if we undo
+
+        // Remove mapping if it exists for this position
+        // We need to find the key that maps to the expected position at self.cursor
+        let position = self.expected_positions[self.cursor];
+
+        // Inefficient search but acceptable for discovery session sizes
+        let scan_code_to_remove = self.keymap.iter()
+            .find(|(_, k)| k.row == position.row && k.col == position.col)
+            .map(|(s, _)| *s);
+
+        if let Some(scan_code) = scan_code_to_remove {
+            self.keymap.remove(&scan_code);
+            let alias = format!("r{}_c{}", position.row, position.col);
+            self.aliases.remove(&alias);
+        }
+
+        let update = SessionUpdate::Progress(self.progress());
         publish_session_update(&update);
         update
     }
