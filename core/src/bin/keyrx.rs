@@ -52,11 +52,18 @@ For detailed exit code information, run:
 ")]
 struct Cli {
     /// Output format (human, json, or yaml)
-    #[arg(long, default_value = "human", conflicts_with = "json")]
-    format: String,
+    #[arg(
+        long = "output-format",
+        visible_alias = "format",
+        default_value = "human",
+        value_parser = ["human", "json", "yaml"],
+        global = true,
+        conflicts_with = "json"
+    )]
+    output_format: String,
 
-    /// Shortcut for JSON output (equivalent to --format json)
-    #[arg(long)]
+    /// Shortcut for JSON output (equivalent to --output-format json)
+    #[arg(long, global = true, conflicts_with = "output_format")]
     json: bool,
 
     /// Path to configuration file (default: ~/.config/keyrx/config.toml)
@@ -417,6 +424,42 @@ fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn parses_output_format_flag_and_alias() {
+        let cli = Cli::try_parse_from(["keyrx", "check", "--output-format", "yaml", "script.rhai"])
+            .expect("output-format flag should parse globally");
+        assert_eq!(cli.output_format, "yaml");
+
+        let cli = Cli::try_parse_from(["keyrx", "check", "--format", "json", "script.rhai"])
+            .expect("format alias should still work");
+        assert_eq!(cli.output_format, "json");
+    }
+
+    #[test]
+    fn parses_json_shortcut_after_subcommand() {
+        let cli = Cli::try_parse_from(["keyrx", "check", "script.rhai", "--json"])
+            .expect("--json should be accepted globally");
+        assert!(cli.json);
+    }
+
+    #[test]
+    fn parse_format_defaults_to_human_on_unknown_values() {
+        assert_eq!(parse_format("human", false), OutputFormat::Human);
+        assert_eq!(parse_format("unknown", false), OutputFormat::Human);
+    }
+
+    #[test]
+    fn parse_format_respects_json_flag_priority() {
+        assert_eq!(parse_format("yaml", true), OutputFormat::Json);
+        assert_eq!(parse_format("json", true), OutputFormat::Json);
+    }
+}
+
 /// Install a panic handler that logs panic info and ensures proper exit code.
 ///
 /// When a panic occurs, this handler:
@@ -464,7 +507,7 @@ async fn main() -> ExitCode {
     install_panic_handler();
 
     let cli = Cli::parse();
-    let format = parse_format(&cli.format, cli.json);
+    let format = parse_format(&cli.output_format, cli.json);
 
     // Initialize structured logger
     // Use human-readable format for CLI to make debugging easier

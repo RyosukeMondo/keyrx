@@ -31,7 +31,7 @@
 
 ## Phase 2: Integration
 
-- [ ] 5. Add global --output-format flag
+- [x] 5. Add global --output-format flag
   - File: `core/src/cli/mod.rs`
   - Parse format from args
   - Pass to all commands
