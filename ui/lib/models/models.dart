@@ -10,6 +10,12 @@ export 'keyboard_layout.dart';
 // Validation models
 export 'validation.dart';
 
+// Revolutionary mapping models
+export 'device_identity.dart';
+export 'device_state.dart';
+export 'layout_type.dart';
+export 'profile.dart';
+
 // Service models - re-exported for convenience
 // These are defined in their respective service files:
 // - KeyboardDevice, KeyboardDeviceInfo → device_service.dart
