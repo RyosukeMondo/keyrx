@@ -622,6 +622,7 @@ fn describe_reason(reason: &DiscoveryReason) -> String {
             "profile schema mismatch (expected {}, found {})",
             expected, found
         ),
+        DiscoveryReason::ValidationError => "stored profile failed schema validation".to_string(),
         DiscoveryReason::IoError(msg) => format!("I/O error loading profile: {msg}"),
     }
 }

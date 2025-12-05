@@ -2,11 +2,14 @@ use crate::discovery::types::{
     default_schema_version, device_profiles_dir, DeviceId, DeviceProfile, ProfileSource,
     SCHEMA_VERSION,
 };
+use crate::validation::{
+    SchemaError, SchemaRegistry, ValidationFailure, DEVICE_PROFILE_SCHEMA_NAME,
+};
 use chrono::Utc;
-use serde_json::Error as SerdeError;
+use serde_json::{Error as SerdeError, Value as JsonValue};
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 /// Errors that can occur while reading or writing device profiles.
@@ -32,6 +35,12 @@ pub enum StorageError {
         path: PathBuf,
         expected: u8,
         found: u8,
+    },
+    #[error("Profile validation failed at {path}: {source}")]
+    Validation {
+        path: PathBuf,
+        #[source]
+        source: ValidationFailure,
     },
 }
 
@@ -64,8 +73,22 @@ pub fn read_profile(device_id: DeviceId) -> Result<DeviceProfile, StorageError> 
         source,
     })?;
 
-    let profile: DeviceProfile =
+    let json_value: JsonValue =
         serde_json::from_str(&data).map_err(|source| StorageError::Parse {
+            path: path.clone(),
+            source,
+        })?;
+
+    if let Err(err) = validate_profile_schema(&path, &json_value) {
+        log_profile_validation_error(&path, &err);
+
+        if should_abort_profile_load(&err) {
+            return Err(StorageError::Validation { path, source: err });
+        }
+    }
+
+    let profile: DeviceProfile =
+        serde_json::from_value(json_value).map_err(|source| StorageError::Parse {
             path: path.clone(),
             source,
         })?;
@@ -86,6 +109,79 @@ pub fn validate_schema(
         });
     }
     Ok(profile)
+}
+
+fn validate_profile_schema(path: &Path, json_value: &JsonValue) -> Result<(), ValidationFailure> {
+    tracing::debug!(
+        service = "keyrx",
+        event = "profile_schema_validation_started",
+        component = "discovery",
+        path = %path.display(),
+        "Validating device profile against schema"
+    );
+
+    SchemaRegistry::global().validate(DEVICE_PROFILE_SCHEMA_NAME, json_value)
+}
+
+fn log_profile_validation_error(path: &Path, error: &ValidationFailure) {
+    match error {
+        ValidationFailure::Invalid { issues, .. } => {
+            tracing::error!(
+                service = "keyrx",
+                event = "profile_schema_invalid",
+                component = "discovery",
+                path = %path.display(),
+                issue_count = issues.len(),
+                "Profile schema validation failed"
+            );
+
+            for issue in issues {
+                tracing::error!(
+                    service = "keyrx",
+                    event = "profile_schema_issue",
+                    component = "discovery",
+                    path = %path.display(),
+                    instance_path = %issue.instance_path,
+                    schema_path = %issue.schema_path,
+                    message = %issue.message,
+                    "Schema validation error"
+                );
+            }
+        }
+        ValidationFailure::Schema(SchemaError::Missing { .. }) => {
+            tracing::warn!(
+                service = "keyrx",
+                event = "profile_schema_missing",
+                component = "discovery",
+                path = %path.display(),
+                "Profile schema not found, skipping schema validation"
+            );
+        }
+        ValidationFailure::Schema(SchemaError::Serialize { source, .. }) => {
+            tracing::warn!(
+                service = "keyrx",
+                event = "profile_schema_serialize_error",
+                component = "discovery",
+                path = %path.display(),
+                error = %source,
+                "Failed to serialize profile schema for validation, continuing without schema check"
+            );
+        }
+        ValidationFailure::Schema(SchemaError::Compile { message, .. }) => {
+            tracing::error!(
+                service = "keyrx",
+                event = "profile_schema_compile_error",
+                component = "discovery",
+                path = %path.display(),
+                error = %message,
+                "Failed to compile profile schema, continuing without schema check"
+            );
+        }
+    }
+}
+
+fn should_abort_profile_load(error: &ValidationFailure) -> bool {
+    matches!(error, ValidationFailure::Invalid { .. })
 }
 
 /// Atomically write a device profile to disk (temp file + rename).
@@ -126,6 +222,7 @@ pub fn write_profile(profile: &DeviceProfile) -> Result<PathBuf, StorageError> {
 mod tests {
     use super::*;
     use crate::discovery::test_utils::config_env_lock;
+    use crate::validation::ValidationFailure;
     use serial_test::serial;
     use std::fs;
     use std::time::Duration;
@@ -214,6 +311,40 @@ mod tests {
             fs::write(&path, "not-json").unwrap();
             let err = read_profile(id).expect_err("should fail to parse");
             assert!(matches!(err, StorageError::Parse { .. }));
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn validation_error_for_invalid_profile() {
+        with_temp_config(|| {
+            let id = DeviceId::new(0xCAFE, 0xBABE);
+            let path = profile_path(id);
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir).unwrap();
+            }
+            let invalid_profile = r#"
+                {
+                    "schema_version": 1,
+                    "vendor_id": 51966,
+                    "product_id": 47806,
+                    "discovered_at": "2025-01-01T00:00:00Z",
+                    "rows": "two",
+                    "cols_per_row": [1],
+                    "keymap": {},
+                    "aliases": {},
+                    "source": "Default"
+                }
+            "#;
+            fs::write(&path, invalid_profile).unwrap();
+
+            let err = read_profile(id).expect_err("should fail validation");
+            match err {
+                StorageError::Validation { source, .. } => {
+                    assert!(matches!(source, ValidationFailure::Invalid { .. }));
+                }
+                other => panic!("unexpected error: {:?}", other),
+            }
         });
     }
 

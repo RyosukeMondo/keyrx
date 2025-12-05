@@ -30,7 +30,7 @@
   - Purpose: Config validation
   - _Requirements: 2.1, 2.2_
 
-- [ ] 5. Add validation to profile loader
+- [x] 5. Add validation to profile loader
   - File: `core/src/discovery/storage.rs`
   - Validate profiles on load
   - Purpose: Profile validation

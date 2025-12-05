@@ -19,6 +19,8 @@ pub enum DiscoveryReason {
     MissingProfile,
     /// The on-disk profile failed to parse.
     ParseError,
+    /// The on-disk profile failed schema validation.
+    ValidationError,
     /// The on-disk profile schema is outdated.
     SchemaMismatch { expected: u8, found: u8 },
     /// Other IO errors (permission denied, etc.).
@@ -126,6 +128,7 @@ impl From<&StorageError> for DiscoveryReason {
                 expected: *expected,
                 found: *found,
             },
+            StorageError::Validation { .. } => DiscoveryReason::ValidationError,
         }
     }
 }
@@ -137,6 +140,7 @@ mod tests {
     use crate::discovery::types::SCHEMA_VERSION;
     use serial_test::serial;
     use std::env;
+    use std::fs;
     use tempfile::tempdir;
 
     fn with_temp_config<F: FnOnce()>(f: F) {
@@ -231,6 +235,41 @@ mod tests {
                 entry.status,
                 RegistryStatus::NeedsDiscovery(DiscoveryReason::SchemaMismatch { .. })
             ));
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn validation_error_signals_discovery() {
+        with_temp_config(|| {
+            let mut registry = DeviceRegistry::new();
+            let device_id = DeviceId::new(0xDEAD, 0xBEEF);
+            let path = profile_path(device_id);
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir).unwrap();
+            }
+            let invalid_profile = r#"
+                {
+                    "schema_version": 1,
+                    "vendor_id": 57005,
+                    "product_id": 48879,
+                    "discovered_at": "2025-01-01T00:00:00Z",
+                    "rows": "invalid",
+                    "cols_per_row": [1],
+                    "keymap": {},
+                    "aliases": {},
+                    "source": "Default"
+                }
+            "#;
+            fs::write(&path, invalid_profile).unwrap();
+
+            let entry = registry.load_or_default(device_id);
+
+            assert!(entry.discover_needed());
+            assert_eq!(
+                entry.status,
+                RegistryStatus::NeedsDiscovery(DiscoveryReason::ValidationError)
+            );
         });
     }
 }
