@@ -60,12 +60,12 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry, KeyrxFacade facade) {
     return [
-      VisualEditorPage(
-        mappingRepository: registry.mappingRepository,
-      ),
       DevicesPage(
         deviceService: registry.deviceRegistryService,
         profileService: registry.profileRegistryService,
+      ),
+      VisualEditorPage(
+        mappingRepository: registry.mappingRepository,
       ),
       const RunControlsPage(),
       const DebuggerPage(),
@@ -76,14 +76,14 @@ class _HomePageState extends State<HomePage> {
 
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(
-      icon: Icon(Icons.edit_outlined),
-      selectedIcon: Icon(Icons.edit),
-      label: 'Editor',
-    ),
-    NavigationDestination(
       icon: Icon(Icons.keyboard_outlined),
       selectedIcon: Icon(Icons.keyboard),
       label: 'Devices',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.edit_outlined),
+      selectedIcon: Icon(Icons.edit),
+      label: 'Editor',
     ),
     NavigationDestination(
       icon: Icon(Icons.play_circle_outlined),

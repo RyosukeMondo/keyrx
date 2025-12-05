@@ -343,7 +343,7 @@
   - _Requirements: 11, 12_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Page Developer | Task: Rebuild DevicesPage following requirements 11 and 12, showing all connected devices with controls | Restrictions: Must handle loading/empty/error states, refresh works, dialogs are user-friendly | _Leverage: Existing page patterns, DeviceRegistryService, DeviceCard widget | Success: Page shows devices correctly, all interactions work, empty state clear, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (page class, state management), then mark as [x]._
 
-- [ ] 4.5. Reorder navigation
+- [x] 4.5. Reorder navigation
   - Files: `ui/lib/main.dart`
   - Move Devices destination above Editor in NavigationRail
   - Set Devices as default landing page (index 0)
