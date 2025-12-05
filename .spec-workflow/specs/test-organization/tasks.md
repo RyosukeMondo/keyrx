@@ -40,7 +40,7 @@
 
 ## Phase 2: Split Validation Tests
 
-- [ ] 5. Split validation_integration.rs - conflict tests
+- [x] 5. Split validation_integration.rs - conflict tests
   - File: `core/tests/integration/validation/conflict_integration_tests.rs`
   - Extract conflict-related tests from 27K file
   - Use fixtures for setup
