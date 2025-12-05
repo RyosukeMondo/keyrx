@@ -392,7 +392,7 @@
   - _Requirements: 13, 14_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter State Management Developer | Task: Create DragDropMapper widget following requirements 13 and 14, coordinating mapping workflow | Restrictions: Must coordinate two-step selection, auto-save works, state management clean, UX intuitive | _Leverage: LayoutGrid, SoftKeyboard widgets, ProfileRegistryService | Success: Mapping workflow intuitive, auto-save works, state consistent, tested. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widget, state management, integration), then mark as [x]._
 
-- [ ] 5.4. Rebuild VisualEditorPage
+- [x] 5.4. Rebuild VisualEditorPage
   - Files: `ui/lib/pages/visual_editor_page.dart`
   - Add profile selector dropdown at top
   - Load profile and display in DragDropMapper
