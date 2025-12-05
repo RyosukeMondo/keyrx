@@ -257,7 +257,7 @@
   - _Requirements: 16, 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Safety Engineer with expertise in FFI testing and memory safety | Task: Write comprehensive FFI tests covering requirements 16 and 17, including panic and memory safety | Restrictions: Must test all error paths, verify no panics cross FFI boundary, check for memory leaks, test null pointers | _Leverage: Existing FFI test patterns from ffi/ tests | Success: All FFI functions tested, panic safety verified, no memory leaks, null pointer tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 3.5. Create Dart data models
+- [x] 3.5. Create Dart data models
   - Files: `ui/lib/models/device_identity.dart`, `ui/lib/models/device_state.dart`, `ui/lib/models/profile.dart`, `ui/lib/models/layout_type.dart`
   - Define DeviceIdentity, DeviceState, Profile, LayoutType Dart classes
   - Add fromJson/toJson methods
