@@ -476,7 +476,7 @@
   - _Requirements: 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Engineer | Task: Create performance benchmarks following requirement 10, verifying latency targets | Restrictions: Must use criterion, measure p99 latency, verify all targets met, realistic scenarios | _Leverage: criterion patterns from benches/ | Success: All benchmarks created, targets met, results documented, CI integrated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 6.7. Documentation updates
+- [x] 6.7. Documentation updates
   - Files: `docs/revolutionary-mapping-guide.md`, `device_definitions/README.md`, `README.md`
   - Write user guide for revolutionary mapping feature
   - Document device definition format

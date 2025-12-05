@@ -10,6 +10,24 @@ The Ultimate Input Remapping Engine - a cross-platform keyboard remapper powered
 2. **"Rx" (The Prescription)**: You are the doctor prescribing a script to fix your input
 3. **"Rx" (Reactive)**: Built on reactive programming principles with instant event reactions
 
+## Revolutionary Mapping
+
+KeyRx's **Revolutionary Mapping** system transforms it from a simple key remapper into a professional-grade Input Management System:
+
+- **Unique Device Identity**: Manage multiple identical devices independently using serial numbers
+- **Portable Profiles**: Create device-independent configurations that work on any compatible hardware
+- **Per-Device Control**: Toggle remapping and swap profiles for each device individually
+- **Any Layout Support**: Keyboards, macro pads, Stream Decks, split keyboards, and custom button boxes
+- **Sub-millisecond Latency**: < 1ms end-to-end pipeline with cached lookups and optimized resolution
+
+**Use Cases:**
+- Two Stream Decks with different purposes (OBS controls vs. Photoshop shortcuts)
+- Instant profile swapping without editing configuration files
+- Temporary passthrough mode for debugging
+- Visual editor that renders accurate device layouts
+
+See [Revolutionary Mapping Guide](docs/revolutionary-mapping-guide.md) for complete documentation.
+
 ## Installation
 
 ```bash
@@ -259,6 +277,8 @@ All fields are optional; missing values use sensible defaults.
 
 ## CLI Commands
 
+### Core Commands
+
 | Command | Description |
 |---------|-------------|
 | `check` | Validate and lint a Rhai script |
@@ -273,6 +293,27 @@ All fields are optional; missing values use sensible defaults.
 | `golden` | Manage golden sessions for regression testing |
 | `regression` | Verify golden sessions for regressions |
 | `ci-check` | Run complete CI test suite with gates |
+
+### Revolutionary Mapping Commands
+
+| Command | Description |
+|---------|-------------|
+| `devices list` | List all connected devices with identity and state |
+| `devices show <identity>` | Show detailed device information |
+| `devices label <identity> <label>` | Set custom device label |
+| `devices remap <identity> on\|off` | Toggle remapping for a device |
+| `devices assign <identity> <profile-id>` | Assign profile to device |
+| `devices unassign <identity>` | Remove profile assignment |
+| `profiles list` | List all available profiles |
+| `profiles show <profile-id>` | Show profile details and mappings |
+| `profiles create` | Create new profile interactively |
+| `profiles delete <profile-id>` | Delete a profile |
+| `profiles compatible <identity>` | Find profiles compatible with device layout |
+| `definitions list` | List all loaded device definitions |
+| `definitions show <vid:pid>` | Show definition for VID:PID |
+| `definitions validate <file>` | Validate a TOML definition file |
+| `definitions reload` | Reload definitions from disk |
+| `migrate --from v1 [--backup]` | Migrate old profiles to new system |
 
 Use `--format json` for machine-readable output.
 
@@ -377,12 +418,19 @@ just ui-build      # Production build
 
 | Screen | Description |
 |--------|-------------|
-| **Editor** | Visual script editor with syntax highlighting and validation |
-| **Devices** | Keyboard device selection and profile management |
+| **Devices** | Device registry with per-device remap toggles and profile assignment |
+| **Visual Editor** | Dynamic layout rendering for creating and editing profiles |
+| **Editor** | Script editor with syntax highlighting and validation |
 | **Run Controls** | Start/stop engine with recording toggle and status indicators |
 | **Debugger** | Real-time state visualization with layers, modifiers, pending decisions, and timing |
 | **Console** | Interactive REPL for Rhai commands |
 | **Timing** | Trade-off visualizer for tap-hold and combo tuning |
+
+**Revolutionary Mapping Features:**
+- **Devices Tab** (default landing page): Manage all connected devices, toggle remapping per device, assign profiles
+- **Visual Editor**: Create profiles with dynamic layout rendering (Matrix, Standard, Split)
+- **Profile Management**: Create, edit, delete portable profiles independent of devices
+- **Device Definitions**: Support for macro pads, Stream Decks, split keyboards, and custom layouts
 
 ### Developer Tools
 
