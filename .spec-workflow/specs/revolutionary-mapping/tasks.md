@@ -165,7 +165,7 @@
   - _Requirements: 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Pipeline Developer with expertise in async event processing | Task: Implement DeviceResolver following requirement 10, resolving OS device handles to DeviceState in <50μs | Restrictions: Must meet latency target, handle unknown devices gracefully, platform-specific identity extraction | _Leverage: Existing driver handle types, identity extraction from phase 1 | Success: Resolves handles correctly, meets latency target, handles errors, integration tests pass. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
-- [ ] 2.6. Implement ProfileResolver
+- [x] 2.6. Implement ProfileResolver
   - Files: `core/src/engine/profile_resolver.rs`, `core/src/engine/mod.rs`
   - Create ProfileResolver with registry + cache
   - Implement resolve(profile_id) -> Result<Arc<Profile>> with caching

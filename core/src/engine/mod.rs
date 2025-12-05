@@ -14,6 +14,7 @@ pub mod limits;
 mod multi_device;
 mod output;
 mod processing;
+mod profile_resolver;
 pub mod recording;
 pub mod replay;
 mod session;
@@ -42,6 +43,7 @@ pub use limits::{
 };
 pub use multi_device::{CoordinationAction, MultiDeviceCoordinator};
 pub use output::OutputQueue;
+pub use profile_resolver::{ProfileResolver, ProfileResolverError};
 pub use replay::{ReplayError, ReplayManifest, ReplaySession, ReplayState};
 pub use session::{HotplugAction, HotplugSession};
 pub use session_state::{SessionState, SessionStatus};
