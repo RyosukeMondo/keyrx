@@ -18,6 +18,7 @@
 use super::limits::{DEFAULT_EVENT_GAP_US, DEFAULT_REGRESSION_THRESHOLD_US, LATENCY_THRESHOLD_NS};
 use super::paths::config_dir;
 use super::timing::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -30,7 +31,7 @@ use std::path::Path;
 ///
 /// This contains all configurable settings for KeyRx, organized into
 /// logical sections.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Config {
     /// Timing configuration for tap-hold detection and combos.
     #[serde(default)]
@@ -56,7 +57,7 @@ pub struct Config {
 /// Timing configuration section.
 ///
 /// Controls the behavior of tap-hold detection and combo key windows.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct TimingSection {
     /// Duration (ms) to distinguish tap from hold.
     ///
@@ -102,7 +103,7 @@ impl Default for TimingSection {
 /// UI configuration section.
 ///
 /// Controls UI behavior in the Flutter debugger and visualizer.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct UiSection {
     /// Maximum number of events to keep in history.
     ///
@@ -137,7 +138,7 @@ impl Default for UiSection {
 /// Performance configuration section.
 ///
 /// Controls performance thresholds and warnings.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct PerformanceSection {
     /// Latency warning threshold in microseconds.
     ///
@@ -205,7 +206,7 @@ impl Default for PerformanceSection {
 /// Paths configuration section.
 ///
 /// Configures directories and file paths.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct PathsSection {
     /// Directory for user scripts.
     ///

@@ -2,7 +2,7 @@
 
 ## Phase 1: Schema Generation
 
-- [ ] 1. Add schemars derives to config types
+- [x] 1. Add schemars derives to config types
   - Files: `core/src/config/*.rs`
   - Add JsonSchema derive to all config types
   - Purpose: Schema generation

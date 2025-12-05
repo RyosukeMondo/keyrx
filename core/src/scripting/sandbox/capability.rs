@@ -3,6 +3,7 @@
 //! This module defines security tiers for script functions, enabling fine-grained
 //! control over what operations scripts can perform based on trust level.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Capability tier for script functions.
@@ -155,7 +156,7 @@ impl ScriptCapability {
 /// assert!(ScriptCapability::Standard.is_allowed_in(mode));
 /// assert!(!ScriptCapability::Advanced.is_allowed_in(mode));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, JsonSchema)]
 pub enum ScriptMode {
     /// Only safe functions are allowed.
     ///

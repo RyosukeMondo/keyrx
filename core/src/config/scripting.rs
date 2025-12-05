@@ -3,6 +3,7 @@
 //! This module provides configuration for script execution security and behavior.
 
 use crate::scripting::sandbox::ScriptMode;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Scripting configuration section.
@@ -18,7 +19,7 @@ use serde::{Deserialize, Serialize};
 /// let config = ScriptingSection::default();
 /// assert_eq!(config.mode, ScriptMode::Standard);
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct ScriptingSection {
     /// Script execution mode controlling available functions.
     ///

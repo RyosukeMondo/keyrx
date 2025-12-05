@@ -59,6 +59,9 @@ strsim = "0.11"
 # Stack traces for profiling
 backtrace = "0.3"
 
+# JSON Schema generation
+schemars = "0.8"
+
 # Memory usage tracking
 memory-stats = "1.2"
 

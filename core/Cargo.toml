@@ -36,6 +36,7 @@ strsim.workspace = true
 backtrace.workspace = true
 memory-stats.workspace = true
 blake3.workspace = true
+schemars.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 keyrx-core-macros = { path = "core-macros" }
 
