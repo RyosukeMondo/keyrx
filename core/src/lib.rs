@@ -24,6 +24,7 @@ pub mod errors;
 pub mod ffi;
 pub mod identity;
 pub mod metrics;
+pub mod migration;
 pub mod mocks;
 pub mod observability;
 pub mod profiling;

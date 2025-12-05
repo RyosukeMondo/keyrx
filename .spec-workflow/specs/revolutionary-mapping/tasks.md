@@ -414,7 +414,7 @@
 
 ## Phase 6: Migration & Polish (1 week)
 
-- [ ] 6.1. Implement migration module
+- [x] 6.1. Implement migration module
   - Files: `core/src/migration/mod.rs`, `core/src/migration/v1_to_v2.rs`
   - Create MigrationV1ToV2 struct
   - Implement migrate() method to scan and convert old profiles
