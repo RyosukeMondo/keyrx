@@ -9,7 +9,7 @@
   - Purpose: File format spec
   - _Requirements: 1.1, 3.1_
 
-- [ ] 2. Implement compression
+- [x] 2. Implement compression
   - File: `core/src/engine/recording/compression.rs`
   - Gzip block compression
   - Streaming decompression
