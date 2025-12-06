@@ -183,6 +183,10 @@ impl Default for FullMetricsCollector {
 }
 
 impl MetricsCollector for FullMetricsCollector {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     fn record_latency(&self, operation: Operation, micros: u64) {
         if let Some(histogram) = self.latency_histograms.get(&operation) {
             histogram.record(micros);

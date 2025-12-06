@@ -8,12 +8,12 @@ use crate::engine::{
 use crate::errors::KeyrxError;
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
-use crate::metrics::{MetricsCollector, Operation};
+use crate::metrics::{MetricsCollector, Operation, OtelMetricsCollector};
 use crate::traits::{InputSource, ScriptRuntime, StateStore};
 use crate::KeyCode;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tracing::debug;
 
 /// The main KeyRx engine.
@@ -137,6 +137,20 @@ where
         &self.metrics
     }
 
+    fn otel_metrics(&self) -> Option<&OtelMetricsCollector> {
+        self.metrics
+            .as_ref()
+            .as_any()
+            .downcast_ref::<OtelMetricsCollector>()
+    }
+
+    fn record_key_event_metric(&self, event: &InputEvent) {
+        if let Some(otel) = self.otel_metrics() {
+            let action = if event.pressed { "press" } else { "release" };
+            otel.record_key_event(event.scan_code as u32, action);
+        }
+    }
+
     /// Process a single input event and return the appropriate output action.
     ///
     /// Queries the script runtime's registry for remapping decisions and
@@ -152,18 +166,31 @@ where
             return Self::handle_synthetic(event);
         }
 
+        self.record_key_event_metric(event);
+
         let execution_guard = self.resource_enforcer.start_execution();
+        let rule_match_start = Instant::now();
         let action = self.script.lookup_remap(event.key);
+        let rule_match_micros = rule_match_start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::RuleMatch, rule_match_micros);
 
         if execution_guard.check_timeout().is_err() {
             return OutputAction::PassThrough;
         }
 
-        match action {
+        let action_start = Instant::now();
+        let output = match action {
             RemapAction::Remap(target_key) => Self::handle_remap(event, target_key),
             RemapAction::Block => Self::handle_block(event),
             RemapAction::Pass => Self::handle_pass(event),
-        }
+        };
+
+        let action_elapsed = action_start.elapsed().as_micros() as u64;
+        self.metrics
+            .record_latency(Operation::ActionExecute, action_elapsed);
+
+        output
     }
 
     fn handle_synthetic(event: &InputEvent) -> OutputAction {
@@ -240,7 +267,7 @@ where
             let events = self.input.poll_events().await?;
 
             for event in events {
-                let event_start = std::time::Instant::now();
+                let event_start = Instant::now();
 
                 // Track held keys for UI/state streaming.
                 if event.pressed {
@@ -278,9 +305,13 @@ where
                 }
 
                 // Record event processing latency
-                let elapsed_micros = event_start.elapsed().as_micros() as u64;
+                let elapsed = event_start.elapsed();
+                let elapsed_micros = elapsed.as_micros() as u64;
                 self.metrics
                     .record_latency(Operation::EventProcess, elapsed_micros);
+                if let Some(otel) = self.otel_metrics() {
+                    otel.record_processing_latency(elapsed);
+                }
             }
 
             // Check for timeout-based flush when coalescing is enabled

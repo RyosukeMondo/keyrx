@@ -4,6 +4,7 @@
 //! The `MetricsCollector` trait allows for pluggable implementations ranging
 //! from no-op collectors (zero overhead) to full profiling collectors.
 
+use std::any::Any;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::time::{Duration, Instant};
 
@@ -29,7 +30,9 @@ use super::snapshot::MetricsSnapshot;
 ///
 /// Implementations should strive for < 1 microsecond overhead per recording.
 /// Zero-allocation implementations are preferred for hot paths.
-pub trait MetricsCollector: Send + Sync {
+pub trait MetricsCollector: Send + Sync + Any {
+    /// Downcast support for accessing concrete collectors (e.g., OTEL).
+    fn as_any(&self) -> &dyn Any;
     /// Record latency for an operation in microseconds.
     ///
     /// # Arguments
@@ -324,6 +327,41 @@ impl OtelMetricsCollector {
     }
 }
 
+impl MetricsCollector for OtelMetricsCollector {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn record_latency(&self, operation: Operation, micros: u64) {
+        match operation {
+            Operation::EventProcess => {
+                self.record_processing_latency(Duration::from_micros(micros));
+            }
+            Operation::RuleMatch | Operation::ActionExecute => {
+                self.record_script_execution_time(Duration::from_micros(micros));
+            }
+            _ => {}
+        }
+    }
+
+    fn record_memory(&self, _bytes: usize) {}
+
+    fn start_profile(&self, name: &'static str) -> ProfileGuard<'_> {
+        ProfileGuard::new(self, name)
+    }
+
+    fn record_profile(&self, _name: &'static str, _micros: u64) {}
+
+    fn snapshot(&self) -> MetricsSnapshot {
+        MetricsSnapshot::empty()
+    }
+
+    fn reset(&self) {
+        self.set_active_sessions(0);
+        self.set_active_devices(0);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -349,6 +387,10 @@ mod tests {
     }
 
     impl MetricsCollector for TestCollector {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
         fn record_latency(&self, _operation: Operation, _micros: u64) {
             self.latency_calls.fetch_add(1, Ordering::Relaxed);
         }

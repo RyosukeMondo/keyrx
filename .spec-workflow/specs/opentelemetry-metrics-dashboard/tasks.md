@@ -11,7 +11,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Metrics collection
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Instrument engine
+- [x] 2. Instrument engine
   - File: `core/src/engine/mod.rs`
   - Key event counters
   - Latency histograms

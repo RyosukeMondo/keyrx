@@ -48,6 +48,11 @@ impl NoOpCollector {
 }
 
 impl MetricsCollector for NoOpCollector {
+    #[inline(always)]
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
     /// Record latency - no-op implementation.
     ///
     /// This compiles to zero instructions in release builds.
