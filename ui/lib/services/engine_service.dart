@@ -16,6 +16,7 @@ class EngineSnapshot {
     this.lastEvent,
     this.latencyUs,
     this.timing,
+    this.version,
   });
 
   final DateTime timestamp;
@@ -26,6 +27,7 @@ class EngineSnapshot {
   final String? lastEvent;
   final int? latencyUs;
   final EngineTiming? timing;
+  final int? version;
 }
 
 /// Timing configuration for decision-making.
@@ -49,10 +51,7 @@ class EngineTiming {
 
 /// Result of evaluating a console command via the engine.
 class ConsoleEvalResult {
-  const ConsoleEvalResult({
-    required this.success,
-    required this.output,
-  });
+  const ConsoleEvalResult({required this.success, required this.output});
 
   final bool success;
   final String output;

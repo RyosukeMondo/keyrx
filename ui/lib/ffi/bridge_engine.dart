@@ -12,27 +12,235 @@ import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
 
-/// State snapshot payload from the bridge.
-class BridgeState {
-  const BridgeState({
-    required this.layers,
-    required this.modifiers,
-    required this.heldKeys,
-    required this.pendingDecisions,
-    required this.timestamp,
-    this.lastEvent,
+/// State stream payload containing a delta and optional full snapshot.
+class BridgeStateUpdate {
+  const BridgeStateUpdate({
+    required this.delta,
+    this.fullSnapshot,
+    this.event,
     this.latencyUs,
     this.timing,
   });
 
-  final List<String> layers;
-  final List<String> modifiers;
-  final List<String> heldKeys;
-  final List<String> pendingDecisions;
-  final DateTime timestamp;
-  final String? lastEvent;
+  final BridgeStateDelta delta;
+  final BridgeSnapshot? fullSnapshot;
+  final String? event;
   final int? latencyUs;
   final BridgeTiming? timing;
+}
+
+/// Incremental delta describing changes to engine state.
+class BridgeStateDelta {
+  const BridgeStateDelta({
+    required this.fromVersion,
+    required this.toVersion,
+    required this.changes,
+  });
+
+  factory BridgeStateDelta.fromJson(Map<String, dynamic> json) {
+    final rawChanges = json['changes'] as List<dynamic>? ?? const [];
+    return BridgeStateDelta(
+      fromVersion: (json['from_version'] as num?)?.toInt() ?? 0,
+      toVersion: (json['to_version'] as num?)?.toInt() ?? 0,
+      changes: rawChanges
+          .map(BridgeDeltaChange.fromJson)
+          .whereType<BridgeDeltaChange>()
+          .toList(),
+    );
+  }
+
+  final int fromVersion;
+  final int toVersion;
+  final List<BridgeDeltaChange> changes;
+}
+
+/// Types of delta changes emitted by the core.
+enum BridgeDeltaChangeType {
+  keyPressed,
+  keyReleased,
+  allKeysReleased,
+  layerActivated,
+  layerDeactivated,
+  layerStackChanged,
+  modifierChanged,
+  allModifiersCleared,
+  pendingAdded,
+  pendingResolved,
+  allPendingCleared,
+  versionChanged,
+}
+
+/// One change entry inside a delta.
+class BridgeDeltaChange {
+  const BridgeDeltaChange(this.type, {this.payload});
+
+  final BridgeDeltaChangeType type;
+  final Object? payload;
+
+  static BridgeDeltaChange? fromJson(dynamic raw) {
+    if (raw is String) {
+      switch (raw) {
+        case 'AllKeysReleased':
+          return const BridgeDeltaChange(BridgeDeltaChangeType.allKeysReleased);
+        case 'AllModifiersCleared':
+          return const BridgeDeltaChange(
+            BridgeDeltaChangeType.allModifiersCleared,
+          );
+        case 'AllPendingCleared':
+          return const BridgeDeltaChange(
+            BridgeDeltaChangeType.allPendingCleared,
+          );
+        default:
+          return null;
+      }
+    }
+
+    if (raw is Map<String, dynamic> && raw.length == 1) {
+      final entry = raw.entries.first;
+      final key = entry.key;
+      final value = entry.value;
+
+      switch (key) {
+        case 'KeyPressed':
+          return BridgeDeltaChange(
+            BridgeDeltaChangeType.keyPressed,
+            payload: value,
+          );
+        case 'KeyReleased':
+          return BridgeDeltaChange(
+            BridgeDeltaChangeType.keyReleased,
+            payload: value,
+          );
+        case 'LayerActivated':
+          return BridgeDeltaChange(
+            BridgeDeltaChangeType.layerActivated,
+            payload: (value as num?)?.toInt(),
+          );
+        case 'LayerDeactivated':
+          return BridgeDeltaChange(
+            BridgeDeltaChangeType.layerDeactivated,
+            payload: (value as num?)?.toInt(),
+          );
+        case 'LayerStackChanged':
+          final layers = (value is Map<String, dynamic>)
+              ? value['layers']
+              : (value is List<dynamic> ? value : null);
+          return BridgeDeltaChange(
+            BridgeDeltaChangeType.layerStackChanged,
+            payload: layers is List<dynamic>
+                ? layers
+                      .map((e) => (e as num?)?.toInt())
+                      .whereType<int>()
+                      .toList()
+                : const <int>[],
+          );
+        case 'ModifierChanged':
+          if (value is Map<String, dynamic>) {
+            return BridgeDeltaChange(
+              BridgeDeltaChangeType.modifierChanged,
+              payload: {
+                'id': (value['id'] as num?)?.toInt(),
+                'active': value['active'] == true,
+              },
+            );
+          }
+          break;
+        case 'PendingAdded':
+          if (value is Map<String, dynamic>) {
+            return BridgeDeltaChange(
+              BridgeDeltaChangeType.pendingAdded,
+              payload: (value['id'] as num?)?.toInt(),
+            );
+          }
+          break;
+        case 'PendingResolved':
+          if (value is Map<String, dynamic>) {
+            return BridgeDeltaChange(
+              BridgeDeltaChangeType.pendingResolved,
+              payload: (value['id'] as num?)?.toInt(),
+            );
+          }
+          break;
+        case 'VersionChanged':
+          if (value is Map<String, dynamic>) {
+            return BridgeDeltaChange(
+              BridgeDeltaChangeType.versionChanged,
+              payload: (value['version'] as num?)?.toInt(),
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    return null;
+  }
+}
+
+/// Full snapshot payload attached to a delta when resync is needed.
+class BridgeSnapshot {
+  const BridgeSnapshot({
+    required this.version,
+    required this.pressedKeys,
+    required this.activeLayers,
+    required this.baseLayer,
+    required this.standardModifierBits,
+    required this.virtualModifiers,
+    required this.pendingCount,
+  });
+
+  factory BridgeSnapshot.fromJson(Map<String, dynamic> json) {
+    final pressed =
+        (json['pressed_keys'] as List<dynamic>?)
+            ?.map((e) {
+              if (e is Map<String, dynamic>) {
+                final key = e['key']?.toString() ?? '';
+                return key;
+              }
+              return e.toString();
+            })
+            .where((k) => k.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
+    var standardBits = 0;
+    final standardRaw = json['standard_modifiers'];
+    if (standardRaw is Map<String, dynamic>) {
+      if (standardRaw['bits'] is num) {
+        standardBits = (standardRaw['bits'] as num).toInt();
+      } else if (standardRaw.values.isNotEmpty &&
+          standardRaw.values.first is num) {
+        standardBits = (standardRaw.values.first as num).toInt();
+      }
+    }
+
+    return BridgeSnapshot(
+      version: (json['version'] as num?)?.toInt() ?? 0,
+      pressedKeys: pressed,
+      activeLayers:
+          (json['active_layers'] as List<dynamic>?)
+              ?.map((e) => (e as num?)?.toInt() ?? 0)
+              .toList() ??
+          const <int>[],
+      baseLayer: (json['base_layer'] as num?)?.toInt() ?? 0,
+      standardModifierBits: standardBits,
+      virtualModifiers:
+          (json['virtual_modifiers'] as List<dynamic>?)
+              ?.map((e) => (e as num?)?.toInt() ?? 0)
+              .toList() ??
+          const <int>[],
+      pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int version;
+  final List<String> pressedKeys;
+  final List<int> activeLayers;
+  final int baseLayer;
+  final int standardModifierBits;
+  final List<int> virtualModifiers;
+  final int pendingCount;
 }
 
 /// Timing configuration snapshot from the engine.
@@ -77,11 +285,8 @@ class KeyRegistryResult {
     this.usedFallback = false,
   });
 
-  factory KeyRegistryResult.fallback(String error) => KeyRegistryResult(
-        entries: const [],
-        error: error,
-        usedFallback: true,
-      );
+  factory KeyRegistryResult.fallback(String error) =>
+      KeyRegistryResult(entries: const [], error: error, usedFallback: true);
 
   factory KeyRegistryResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -99,24 +304,28 @@ class KeyRegistryResult {
         return KeyRegistryResult.fallback('error: invalid registry payload');
       }
 
-      final entries = decoded.map((entry) {
-        if (entry is! Map) {
-          return const KeyRegistryEntry(name: '');
-        }
-        final name = entry['name']?.toString() ?? '';
-        final aliases = (entry['aliases'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            const <String>[];
-        final evdev = (entry['evdev'] as num?)?.toInt();
-        final vk = (entry['vk'] as num?)?.toInt();
-        return KeyRegistryEntry(
-          name: name,
-          aliases: aliases,
-          evdev: evdev,
-          vk: vk,
-        );
-      }).where((entry) => entry.name.isNotEmpty).toList();
+      final entries = decoded
+          .map((entry) {
+            if (entry is! Map) {
+              return const KeyRegistryEntry(name: '');
+            }
+            final name = entry['name']?.toString() ?? '';
+            final aliases =
+                (entry['aliases'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                const <String>[];
+            final evdev = (entry['evdev'] as num?)?.toInt();
+            final vk = (entry['vk'] as num?)?.toInt();
+            return KeyRegistryEntry(
+              name: name,
+              aliases: aliases,
+              evdev: evdev,
+              vk: vk,
+            );
+          })
+          .where((entry) => entry.name.isNotEmpty)
+          .toList();
 
       if (entries.isEmpty) {
         return KeyRegistryResult.fallback('error: empty registry payload');
@@ -137,11 +346,7 @@ class KeyRegistryResult {
 
 /// Script validation error detail.
 class ScriptValidationError {
-  const ScriptValidationError({
-    this.line,
-    this.column,
-    required this.message,
-  });
+  const ScriptValidationError({this.line, this.column, required this.message});
 
   final int? line;
   final int? column;
@@ -167,7 +372,8 @@ class ScriptValidationResult {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return ScriptValidationResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -210,10 +416,10 @@ class ScriptValidationResult {
 mixin BridgeEngineMixin {
   KeyrxBindings? get bindings;
   Object? get loadFailure;
-  StreamController<BridgeState>? get stateController;
+  StreamController<BridgeStateUpdate>? get stateController;
 
   /// Subscribe to engine state snapshots if exposed by the native layer.
-  Stream<BridgeState>? get stateStream => stateController?.stream;
+  Stream<BridgeStateUpdate>? get stateStream => stateController?.stream;
 
   /// Load a Rhai script file.
   bool loadScript(String path) {
@@ -346,44 +552,75 @@ mixin BridgeEngineMixin {
 /// Extension for state stream setup and parsing.
 extension BridgeEngineStateSetup on BridgeEngineMixin {
   /// Parse state payload from JSON bytes.
-  static BridgeState? parseStatePayload(List<int> bytes) {
+  static BridgeStateUpdate? parseStatePayload(List<int> bytes) {
     try {
       final payload = json.decode(utf8.decode(bytes));
       if (payload is! Map<String, dynamic>) return null;
 
-      final layers = (payload['layers'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const <String>[];
-      final modifiers = (payload['modifiers'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const <String>[];
-      final held = (payload['held'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const <String>[];
-      final pending = (payload['pending'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          const <String>[];
-      final lastEvent = payload['event'] as String?;
-      final latencyUs = (payload['latency_us'] as num?)?.toInt();
-      final timing = _parseTiming(payload['timing']);
+      if (payload['delta'] is Map<String, dynamic>) {
+        final delta = BridgeStateDelta.fromJson(
+          payload['delta'] as Map<String, dynamic>,
+        );
+        final snapshotRaw = payload['full_snapshot'];
+        final snapshot = snapshotRaw is Map<String, dynamic>
+            ? BridgeSnapshot.fromJson(snapshotRaw)
+            : null;
 
-      return BridgeState(
-        layers: layers,
-        modifiers: modifiers,
-        heldKeys: held,
-        pendingDecisions: pending,
-        lastEvent: lastEvent,
-        latencyUs: latencyUs,
-        timing: timing,
-        timestamp: DateTime.now(),
+        return BridgeStateUpdate(
+          delta: delta,
+          fullSnapshot: snapshot,
+          event: payload['event']?.toString(),
+          latencyUs: (payload['latency_us'] as num?)?.toInt(),
+          timing: _parseTiming(payload['timing']),
+        );
+      }
+
+      // Legacy fallback: interpret flat payloads with layers/modifiers.
+      final layers = _asStringList(payload['layers']);
+      final modifiers = _asStringList(payload['modifiers']);
+      final held = _asStringList(payload['held']);
+      final pending = _asStringList(payload['pending']);
+      final hasLegacyData =
+          layers.isNotEmpty ||
+          modifiers.isNotEmpty ||
+          held.isNotEmpty ||
+          pending.isNotEmpty;
+
+      if (!hasLegacyData) return null;
+
+      final snapshot = BridgeSnapshot(
+        version: 0,
+        pressedKeys: held,
+        activeLayers: layers
+            .map((e) => int.tryParse(e) ?? 0)
+            .toList(growable: false),
+        baseLayer: 0,
+        standardModifierBits: 0,
+        virtualModifiers: const [],
+        pendingCount: pending.length,
+      );
+
+      return BridgeStateUpdate(
+        delta: const BridgeStateDelta(
+          fromVersion: 0,
+          toVersion: 0,
+          changes: [],
+        ),
+        fullSnapshot: snapshot,
+        event: payload['event']?.toString(),
+        latencyUs: (payload['latency_us'] as num?)?.toInt(),
+        timing: _parseTiming(payload['timing']),
       );
     } catch (_) {
       return null;
     }
+  }
+
+  static List<String> _asStringList(dynamic value) {
+    if (value is List<dynamic>) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return const [];
   }
 
   static BridgeTiming? _parseTiming(dynamic raw) {

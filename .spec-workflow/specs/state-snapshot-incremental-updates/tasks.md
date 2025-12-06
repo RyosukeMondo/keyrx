@@ -40,7 +40,7 @@ _Status: Priority #3 in 2025 implementation order; open items: 4 (in-progress), 
   - Purpose: FFI integration
   - _Requirements: 1.2, 1.4, 2.3_
 
-- [ ] 6. Update Flutter to apply deltas
+- [x] 6. Update Flutter to apply deltas
   - File: `ui/lib/state/app_state.dart`
   - Apply deltas to local state
   - Request full sync on error

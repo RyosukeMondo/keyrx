@@ -29,7 +29,11 @@ export 'bridge_discovery.dart'
 export 'event_types.dart' show EventType;
 export 'bridge_engine.dart'
     show
-        BridgeState,
+        BridgeStateUpdate,
+        BridgeStateDelta,
+        BridgeDeltaChange,
+        BridgeDeltaChangeType,
+        BridgeSnapshot,
         BridgeTiming,
         KeyRegistryEntry,
         KeyRegistryResult,
@@ -97,14 +101,14 @@ class KeyrxBridge
   KeyrxBindings? _bindings;
   bool _initialized = false;
   Object? _loadFailure;
-  StreamController<BridgeState>? _stateController;
+  StreamController<BridgeStateUpdate>? _stateController;
 
   // Unified event callback handlers
   final Map<EventType, void Function(Uint8List)> _eventHandlers = {};
 
   KeyrxBridge._({KeyrxBindings? bindings, Object? loadFailure})
-      : _bindings = bindings,
-        _loadFailure = loadFailure {
+    : _bindings = bindings,
+      _loadFailure = loadFailure {
     if (_bindings != null) {
       _setupStateStream();
     }
@@ -141,7 +145,7 @@ class KeyrxBridge
   Object? get loadFailure => _loadFailure;
 
   @override
-  StreamController<BridgeState>? get stateController => _stateController;
+  StreamController<BridgeStateUpdate>? get stateController => _stateController;
 
   /// Close any native resources and stop dispatching callbacks.
   Future<void> dispose() async {
@@ -183,10 +187,7 @@ class KeyrxBridge
       _handleUnifiedEvent,
     );
 
-    final result = _bindings!.registerEventCallback(
-      eventType.code,
-      callback,
-    );
+    final result = _bindings!.registerEventCallback(eventType.code, callback);
 
     return result == 0;
   }
@@ -201,10 +202,7 @@ class KeyrxBridge
     _eventHandlers.remove(eventType);
 
     // Unregister with the native code (pass nullptr)
-    final result = _bindings!.registerEventCallback(
-      eventType.code,
-      nullptr,
-    );
+    final result = _bindings!.registerEventCallback(eventType.code, nullptr);
 
     return result == 0;
   }
@@ -219,12 +217,25 @@ class KeyrxBridge
       return;
     }
 
-    _stateController ??= StreamController<BridgeState>.broadcast();
+    _stateController ??= StreamController<BridgeStateUpdate>.broadcast();
     _bindings!.onState!(
-      Pointer.fromFunction<KeyrxStateCallbackNative>(
-        _handleState,
-      ),
+      Pointer.fromFunction<KeyrxStateCallbackNative>(_handleState),
     );
+  }
+
+  /// Ask the native side to resend the next state update as a full snapshot.
+  void requestFullStateResubscribe() {
+    if (_bindings?.onState == null || _stateController?.isClosed == true) {
+      return;
+    }
+
+    try {
+      _bindings!.onState!(
+        Pointer.fromFunction<KeyrxStateCallbackNative>(_handleState),
+      );
+    } catch (_) {
+      // Ignore resubscribe failures; consumer will retry on next event.
+    }
   }
 
   void _initRevolutionaryRuntime() {
@@ -235,7 +246,8 @@ class KeyrxBridge
     final code = initFn();
     if (code != 0) {
       _loadFailure ??= Exception(
-          'Failed to initialize revolutionary runtime (code $code)');
+        'Failed to initialize revolutionary runtime (code $code)',
+      );
     }
   }
 
