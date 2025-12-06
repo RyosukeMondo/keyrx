@@ -118,7 +118,10 @@ class KeyrxBridge
   factory KeyrxBridge.open() {
     try {
       final lib = BridgeCoreMixin.loadLibrary();
-      return KeyrxBridge._(bindings: KeyrxBindings(lib));
+      final bindings = KeyrxBindings(lib);
+      final bridge = KeyrxBridge._(bindings: bindings);
+      bridge._initRevolutionaryRuntime();
+      return bridge;
     } catch (e) {
       return KeyrxBridge._(loadFailure: e);
     }
@@ -149,6 +152,12 @@ class KeyrxBridge
     // Unregister all unified event handlers
     for (final eventType in _eventHandlers.keys.toList()) {
       unregisterEventCallback(eventType);
+    }
+
+    // Best-effort shutdown of the revolutionary runtime when available.
+    final shutdown = _bindings?.revolutionaryRuntimeShutdown;
+    if (shutdown != null) {
+      shutdown();
     }
   }
 
@@ -216,6 +225,18 @@ class KeyrxBridge
         _handleState,
       ),
     );
+  }
+
+  void _initRevolutionaryRuntime() {
+    final initFn = _bindings?.revolutionaryRuntimeInit;
+    if (initFn == null) {
+      return;
+    }
+    final code = initFn();
+    if (code != 0) {
+      _loadFailure ??= Exception(
+          'Failed to initialize revolutionary runtime (code $code)');
+    }
   }
 
   static void _handleState(Pointer<Uint8> ptr, int length) {

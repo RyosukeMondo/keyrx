@@ -5,9 +5,17 @@
 #![allow(unsafe_code)]
 
 use std::ffi::{c_char, CString};
+use std::path::PathBuf;
+use std::sync::Arc;
 
+use crate::config;
+use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::events::{EventCallback, EventType};
+use crate::ffi::runtime::{
+    clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
+};
+use crate::registry::ProfileRegistry;
 
 /// Initialize the KeyRx engine.
 ///
@@ -45,6 +53,136 @@ pub unsafe extern "C" fn keyrx_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
         drop(CString::from_raw(ptr));
     }
+}
+
+// ---------------------------------------------------------------------------
+// Revolutionary runtime lifecycle (for FFI consumers like Flutter)
+// ---------------------------------------------------------------------------
+
+fn default_device_definitions() -> Arc<DeviceDefinitionLibrary> {
+    let mut library = DeviceDefinitionLibrary::new();
+    let mut loaded = 0usize;
+
+    // Preferred search paths (in order):
+    // 1) cwd/device_definitions
+    // 2) config dir: ~/.config/keyrx/device_definitions
+    let mut paths: Vec<PathBuf> = vec![];
+    if let Ok(cwd) = std::env::current_dir() {
+        paths.push(cwd.join("device_definitions"));
+    }
+    paths.push(config::config_dir().join("device_definitions"));
+
+    for path in paths {
+        if path.exists() {
+            match library.load_from_directory(&path) {
+                Ok(count) => {
+                    loaded += count;
+                    tracing::info!(
+                        service = "keyrx",
+                        component = "ffi_exports",
+                        event = "device_definitions_loaded",
+                        path = %path.display(),
+                        count,
+                        "Loaded device definitions for FFI runtime"
+                    );
+                }
+                Err(err) => {
+                    tracing::warn!(
+                        service = "keyrx",
+                        component = "ffi_exports",
+                        event = "device_definitions_load_failed",
+                        path = %path.display(),
+                        error = %err,
+                        "Failed to load device definitions for FFI runtime"
+                    );
+                }
+            }
+        }
+    }
+
+    if loaded == 0 {
+        tracing::warn!(
+            service = "keyrx",
+            component = "ffi_exports",
+            event = "device_definitions_empty",
+            "No device definitions loaded for FFI runtime; definition calls may return NOT_FOUND"
+        );
+    }
+
+    Arc::new(library)
+}
+
+fn init_revolutionary_runtime() -> i32 {
+    // Create registries using default locations.
+    let (device_registry, _rx) = crate::registry::DeviceRegistry::new();
+    let profile_registry = Arc::new(ProfileRegistry::new());
+    let device_definitions = default_device_definitions();
+
+    match set_revolutionary_runtime(RevolutionaryRuntime::new(
+        device_registry,
+        profile_registry,
+        device_definitions,
+    )) {
+        Ok(_) => {
+            tracing::info!(
+                service = "keyrx",
+                component = "ffi_exports",
+                event = "revolutionary_runtime_initialized",
+                "Revolutionary runtime initialized for FFI consumers"
+            );
+            0
+        }
+        Err(err) => {
+            tracing::error!(
+                service = "keyrx",
+                component = "ffi_exports",
+                event = "revolutionary_runtime_init_failed",
+                error = %err,
+                "Failed to initialize revolutionary runtime for FFI consumers"
+            );
+            -1
+        }
+    }
+}
+
+fn shutdown_revolutionary_runtime() -> i32 {
+    match clear_revolutionary_runtime() {
+        Ok(_) => {
+            tracing::info!(
+                service = "keyrx",
+                component = "ffi_exports",
+                event = "revolutionary_runtime_cleared",
+                "Revolutionary runtime cleared for FFI consumers"
+            );
+            0
+        }
+        Err(err) => {
+            tracing::error!(
+                service = "keyrx",
+                component = "ffi_exports",
+                event = "revolutionary_runtime_clear_failed",
+                error = %err,
+                "Failed to clear revolutionary runtime for FFI consumers"
+            );
+            -1
+        }
+    }
+}
+
+/// Initialize the revolutionary runtime for FFI consumers (e.g., Flutter).
+///
+/// Returns 0 on success, negative on failure.
+#[no_mangle]
+pub extern "C" fn keyrx_revolutionary_runtime_init() -> i32 {
+    std::panic::catch_unwind(init_revolutionary_runtime).unwrap_or(-2)
+}
+
+/// Shutdown/clear the revolutionary runtime.
+///
+/// Returns 0 on success, negative on failure.
+#[no_mangle]
+pub extern "C" fn keyrx_revolutionary_runtime_shutdown() -> i32 {
+    std::panic::catch_unwind(shutdown_revolutionary_runtime).unwrap_or(-2)
 }
 
 /// Register a unified event callback.

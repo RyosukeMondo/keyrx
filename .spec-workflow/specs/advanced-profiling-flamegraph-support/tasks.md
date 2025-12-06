@@ -41,7 +41,7 @@
   - Purpose: Memory profiling
   - _Requirements: 2.1, 2.2_
 
-- [ ] 6. Create allocation report
+- [-] 6. Create allocation report
   - File: `core/src/profiling/alloc_report.rs`
   - Hot spot detection
   - JSON output

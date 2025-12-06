@@ -34,6 +34,13 @@ typedef KeyrxSetBypass = void Function(bool active);
 typedef KeyrxFreeStringNative = Void Function(Pointer<Char> ptr);
 typedef KeyrxFreeString = void Function(Pointer<Char> ptr);
 
+// Revolutionary runtime lifecycle
+typedef KeyrxRevolutionaryRuntimeInitNative = Int32 Function();
+typedef KeyrxRevolutionaryRuntimeInit = int Function();
+
+typedef KeyrxRevolutionaryRuntimeShutdownNative = Int32 Function();
+typedef KeyrxRevolutionaryRuntimeShutdown = int Function();
+
 // ────────────────────────────────────────────────────────────────
 // Device Registry FFI Types (Revolutionary Mapping)
 // ────────────────────────────────────────────────────────────────
@@ -103,6 +110,10 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   // Memory management (required)
   late final KeyrxFreeString freeString;
 
+  // Revolutionary runtime lifecycle (optional; may not exist in older builds)
+  late final KeyrxRevolutionaryRuntimeInit? revolutionaryRuntimeInit;
+  late final KeyrxRevolutionaryRuntimeShutdown? revolutionaryRuntimeShutdown;
+
   // Device Registry FFI functions (revolutionary mapping)
   late final KeyrxDeviceRegistryListDevices? deviceRegistryListDevices;
   late final KeyrxDeviceRegistrySetRemapEnabled? deviceRegistrySetRemapEnabled;
@@ -121,6 +132,9 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     // Required functions
     freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
         'keyrx_free_string');
+
+    revolutionaryRuntimeInit = _tryLookupRuntimeInit();
+    revolutionaryRuntimeShutdown = _tryLookupRuntimeShutdown();
 
     // Optional legacy callbacks
     onState = _tryLookupOnState();
@@ -156,6 +170,28 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     try {
       return _lib.lookupFunction<KeyrxOnStateNative, KeyrxOnState>(
         'keyrx_on_state',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxRevolutionaryRuntimeInit? _tryLookupRuntimeInit() {
+    try {
+      return _lib.lookupFunction<KeyrxRevolutionaryRuntimeInitNative,
+          KeyrxRevolutionaryRuntimeInit>(
+        'keyrx_revolutionary_runtime_init',
+      );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxRevolutionaryRuntimeShutdown? _tryLookupRuntimeShutdown() {
+    try {
+      return _lib.lookupFunction<KeyrxRevolutionaryRuntimeShutdownNative,
+          KeyrxRevolutionaryRuntimeShutdown>(
+        'keyrx_revolutionary_runtime_shutdown',
       );
     } on ArgumentError {
       return null;

@@ -27,6 +27,7 @@
 //! println!("Collected {} samples", result.sample_count);
 //! ```
 
+pub mod alloc_report;
 pub mod allocations;
 pub mod flamegraph;
 pub mod flamegraph_diff;
@@ -34,6 +35,10 @@ pub mod profiler;
 pub mod sampler;
 
 // Re-export main types
+pub use alloc_report::{
+    AllocationAnalyzer, AllocationReport, AllocationReportConfig, AllocationReportGenerator,
+    ReportSummary, SerializableAllocationSite, SerializableAllocationStats,
+};
 pub use allocations::{AllocationSite, AllocationStats, AllocationTracker, TrackingAllocator};
 pub use flamegraph::{ColorScheme, FlameGraphConfig, FlameGraphGenerator};
 pub use flamegraph_diff::{DiffColorScheme, DiffFlameGraphConfig, DiffFlameGraphGenerator};
