@@ -57,7 +57,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Grafana import
   - _Requirements: 3.1_
 
-- [ ] 8. Add embedded dashboard
+- [x] 8. Add embedded dashboard
   - File: `ui/lib/pages/metrics_dashboard.dart`
   - Real-time charts
   - Time range selection

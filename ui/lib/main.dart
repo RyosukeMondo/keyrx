@@ -11,6 +11,7 @@ import 'pages/developer/test_runner_page.dart';
 import 'pages/developer/profiler_page.dart';
 import 'pages/migration_prompt_page.dart';
 import 'pages/mapping_page.dart';
+import 'pages/metrics_dashboard.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
@@ -92,6 +93,7 @@ class _HomePageState extends State<HomePage> {
       const VisualEditorPage(key: ValueKey('visual_editor_v2')),
       const MappingPage(),
       const RunControlsPage(),
+      const MetricsDashboardPage(),
       const DebuggerPage(),
       const ConsolePage(),
       const TradeOffVisualizerPage(),
@@ -118,6 +120,11 @@ class _HomePageState extends State<HomePage> {
       icon: Icon(Icons.play_circle_outlined),
       selectedIcon: Icon(Icons.play_circle),
       label: 'Run',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.analytics_outlined),
+      selectedIcon: Icon(Icons.analytics),
+      label: 'Metrics',
     ),
     NavigationDestination(
       icon: Icon(Icons.bug_report_outlined),

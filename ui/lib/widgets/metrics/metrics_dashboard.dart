@@ -15,17 +15,19 @@ import 'package:flutter/material.dart';
 
 import '../../services/metrics_service.dart';
 
-/// Maximum number of data points to keep in history.
-const int _kMaxHistoryPoints = 60;
+/// Default number of data points to keep in history.
+const int _kDefaultHistoryPoints = 60;
 
 /// Dashboard widget for displaying performance metrics with charts.
 class MetricsDashboard extends StatefulWidget {
   const MetricsDashboard({
     required this.metricsService,
+    this.maxHistoryPoints = _kDefaultHistoryPoints,
     super.key,
-  });
+  }) : assert(maxHistoryPoints > 0);
 
   final MetricsService metricsService;
+  final int maxHistoryPoints;
 
   @override
   State<MetricsDashboard> createState() => _MetricsDashboardState();
@@ -45,6 +47,14 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     _startMetrics();
   }
 
+  @override
+  void didUpdateWidget(covariant MetricsDashboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.maxHistoryPoints != widget.maxHistoryPoints) {
+      _trimHistory();
+    }
+  }
+
   Future<void> _startMetrics() async {
     if (_isRunning) {
       return;
@@ -53,8 +63,9 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     await widget.metricsService.startUpdates();
 
     // Subscribe to metrics stream
-    _metricsSubscription =
-        widget.metricsService.metricsStream.listen((snapshot) {
+    _metricsSubscription = widget.metricsService.metricsStream.listen((
+      snapshot,
+    ) {
       setState(() {
         _currentSnapshot = snapshot;
         _addToHistory(snapshot);
@@ -62,8 +73,9 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     });
 
     // Subscribe to violation stream
-    _violationSubscription =
-        widget.metricsService.violationStream.listen((violation) {
+    _violationSubscription = widget.metricsService.violationStream.listen((
+      violation,
+    ) {
       setState(() {
         _recentViolations.add(violation);
         // Keep only last 10 violations
@@ -102,16 +114,18 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
   }
 
   void _addToHistory(MetricsSnapshot snapshot) {
-    _history.add(_MetricsPoint(
-      timestamp: snapshot.dateTime,
-      latencyP50: snapshot.eventLatencyP50,
-      latencyP95: snapshot.eventLatencyP95,
-      latencyP99: snapshot.eventLatencyP99,
-      memoryUsed: snapshot.memoryUsed,
-    ));
+    _history.add(
+      _MetricsPoint(
+        timestamp: snapshot.dateTime,
+        latencyP50: snapshot.eventLatencyP50,
+        latencyP95: snapshot.eventLatencyP95,
+        latencyP99: snapshot.eventLatencyP99,
+        memoryUsed: snapshot.memoryUsed,
+      ),
+    );
 
     // Keep only last N points
-    while (_history.length > _kMaxHistoryPoints) {
+    while (_history.length > widget.maxHistoryPoints) {
       _history.removeFirst();
     }
   }
@@ -121,6 +135,12 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
       _history.clear();
       _recentViolations.clear();
     });
+  }
+
+  void _trimHistory() {
+    while (_history.length > widget.maxHistoryPoints) {
+      _history.removeFirst();
+    }
   }
 
   @override
@@ -165,10 +185,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Icon(
-              Icons.analytics,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.analytics, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Text(
               'Performance Metrics',
@@ -204,7 +221,8 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
 
   Widget _buildViolationsBanner(ThemeData theme) {
     final latest = _recentViolations.last;
-    final color = latest.type == ViolationType.latencyError ||
+    final color =
+        latest.type == ViolationType.latencyError ||
             latest.type == ViolationType.memoryError
         ? theme.colorScheme.error
         : theme.colorScheme.tertiary;
@@ -219,18 +237,12 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: color,
-            size: 20,
-          ),
+          Icon(Icons.warning_amber_rounded, color: color, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               latest.message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: color,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: color),
             ),
           ),
           Text(
@@ -339,9 +351,13 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
 
     final points = _history.toList();
     final maxY = points
-        .map((p) => [p.latencyP50, p.latencyP95, p.latencyP99].reduce(
-              (a, b) => a > b ? a : b,
-            ))
+        .map(
+          (p) => [
+            p.latencyP50,
+            p.latencyP95,
+            p.latencyP99,
+          ].reduce((a, b) => a > b ? a : b),
+        )
         .reduce((a, b) => a > b ? a : b)
         .toDouble();
 
@@ -601,10 +617,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
   ) {
     return LineChartBarData(
       spots: points.asMap().entries.map((entry) {
-        return FlSpot(
-          entry.key.toDouble(),
-          getValue(entry.value),
-        );
+        return FlSpot(entry.key.toDouble(), getValue(entry.value));
       }).toList(),
       isCurved: true,
       color: color,
@@ -627,10 +640,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(label, style: theme.textTheme.bodySmall),
       ],
     );
   }
