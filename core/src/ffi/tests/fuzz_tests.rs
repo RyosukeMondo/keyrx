@@ -245,7 +245,8 @@ proptest! {
 
         // This shouldn't panic even with invalid data
         // (actual invocation would need a callback, but construction should be safe)
-        prop_assert!(payload.len() >= 0); // Trivial check to use the data
+        let decoded = String::from_utf8_lossy(&payload);
+        prop_assert!(decoded.len() >= 0); // exercise payload handling
     }
 }
 

@@ -150,8 +150,8 @@ define_errors! {
         },
 
         SESSION_FILE_CORRUPT = 24 => {
-            message: "Session file is corrupted: {path}",
-            hint: "The session file cannot be read. It may be incomplete or damaged",
+            message: "Session file is corrupted: {path}. Parse error: {error}",
+            hint: "The session file cannot be read. It may be incomplete or damaged or unparsable",
             severity: Error,
         },
 
@@ -358,7 +358,12 @@ mod tests {
         let replay_err = keyrx_err!(SESSION_REPLAY_FAILED, reason = "unexpected EOF");
         assert!(replay_err.message().contains("unexpected EOF"));
 
-        let corrupt_err = keyrx_err!(SESSION_FILE_CORRUPT, path = "/tmp/session.krx");
+        let corrupt_err = keyrx_err!(
+            SESSION_FILE_CORRUPT,
+            path = "/tmp/session.krx",
+            error = "test error"
+        );
         assert!(corrupt_err.message().contains("/tmp/session.krx"));
+        assert!(corrupt_err.message().contains("test error"));
     }
 }

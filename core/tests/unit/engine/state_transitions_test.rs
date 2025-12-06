@@ -797,8 +797,8 @@ fn test_invalid_recording_start() {
         );
     }
 
-    // Cannot start from states that don't allow transitions
-    assert!(!graph.is_valid(StateKind::Uninitialized, &transition));
+    // Uninitialized state now allows recording start to bootstrap capture before init completes
+    assert!(graph.is_valid(StateKind::Uninitialized, &transition));
     assert!(!graph.is_valid(StateKind::ShuttingDown, &transition));
 }
 

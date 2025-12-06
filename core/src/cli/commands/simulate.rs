@@ -163,11 +163,7 @@ impl SimulateCommand {
         let (results, remapped, blocked, passed) =
             self.process_events(&mut engine, &events, &tap_hold_info);
         let state = engine.snapshot();
-        let active_layers = state
-            .active_layers
-            .iter()
-            .map(|id| id.to_string())
-            .collect();
+        let active_layers = engine.layers().active_layer_names();
 
         Ok(SimulationOutput {
             total: results.len(),

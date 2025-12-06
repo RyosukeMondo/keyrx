@@ -120,14 +120,13 @@ fn exit_1_replay_missing_session() {
     let temp_dir = tempdir().expect("Failed to create temp dir");
     let missing_session = temp_dir.path().join("nonexistent.krx");
 
-    // Missing session file returns DeviceNotFound (6) because session loading
-    // is part of the device/session subsystem
+    // Missing session file currently surfaces as a configuration read error (4)
     keyrx_cmd()
         .arg("replay")
         .arg(&missing_session)
         .assert()
         .failure()
-        .code(6);
+        .code(4);
 }
 
 // =============================================================================

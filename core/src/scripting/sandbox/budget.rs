@@ -74,14 +74,33 @@ impl ResourceBudget {
 
     /// Increment instruction count and check limit.
     pub fn increment_instructions(&self, count: u64) -> Result<(), ResourceExhausted> {
-        let new_count = self.instruction_count.fetch_add(count, Ordering::Relaxed) + count;
-        if new_count >= self.instruction_limit {
-            Err(ResourceExhausted::Instructions {
-                count: new_count,
-                limit: self.instruction_limit,
-            })
-        } else {
-            Ok(())
+        let mut current = self.instruction_count.load(Ordering::Relaxed);
+        loop {
+            let Some(next) = current.checked_add(count) else {
+                self.instruction_count.store(u64::MAX, Ordering::Relaxed);
+                return Err(ResourceExhausted::Instructions {
+                    count: u64::MAX,
+                    limit: self.instruction_limit,
+                });
+            };
+
+            match self.instruction_count.compare_exchange(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    if next >= self.instruction_limit {
+                        return Err(ResourceExhausted::Instructions {
+                            count: next,
+                            limit: self.instruction_limit,
+                        });
+                    }
+                    return Ok(());
+                }
+                Err(actual) => current = actual,
+            }
         }
     }
 
@@ -104,15 +123,34 @@ impl ResourceBudget {
 
     /// Allocate memory from the budget.
     pub fn allocate(&self, bytes: usize) -> Result<(), ResourceExhausted> {
-        let new_used = self.memory_used.fetch_add(bytes, Ordering::Relaxed) + bytes;
-        if new_used > self.memory_limit {
-            self.memory_used.fetch_sub(bytes, Ordering::Relaxed);
-            Err(ResourceExhausted::Memory {
-                used: new_used,
-                limit: self.memory_limit,
-            })
-        } else {
-            Ok(())
+        let mut current = self.memory_used.load(Ordering::Relaxed);
+        loop {
+            let Some(next) = current.checked_add(bytes) else {
+                self.memory_used.store(usize::MAX, Ordering::Relaxed);
+                return Err(ResourceExhausted::Memory {
+                    used: usize::MAX,
+                    limit: self.memory_limit,
+                });
+            };
+
+            match self.memory_used.compare_exchange(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    if next > self.memory_limit {
+                        self.memory_used.fetch_sub(bytes, Ordering::Relaxed);
+                        return Err(ResourceExhausted::Memory {
+                            used: next,
+                            limit: self.memory_limit,
+                        });
+                    }
+                    return Ok(());
+                }
+                Err(actual) => current = actual,
+            }
         }
     }
 

@@ -308,6 +308,14 @@ impl LayerStack {
         }
     }
 
+    /// Get the active layer names in priority order (base first).
+    pub fn active_layer_names(&self) -> Vec<String> {
+        self.stack
+            .iter()
+            .filter_map(|id| self.layers.get(id).map(|layer| layer.name.clone()))
+            .collect()
+    }
+
     /// Define or replace a layer.
     ///
     /// If the layer is already active in the stack, the active flag is preserved.

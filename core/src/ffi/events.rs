@@ -126,20 +126,15 @@ impl EventRegistry {
     /// - `event_type`: The type of event to register for
     /// - `callback`: Optional callback function pointer
     pub fn register(&self, event_type: EventType, callback: Option<EventCallback>) {
-        if let Ok(mut guard) = self.callbacks.write() {
-            if let Some(cb) = callback {
-                guard.insert(event_type, cb);
-            } else {
-                guard.remove(&event_type);
-            }
+        let mut guard = match self.callbacks.write() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        if let Some(cb) = callback {
+            guard.insert(event_type, cb);
         } else {
-            tracing::warn!(
-                service = "keyrx",
-                component = "ffi_events",
-                event = "register_failed",
-                event_type = event_type.name(),
-                "Failed to acquire write lock for callback registration"
-            );
+            guard.remove(&event_type);
         }
     }
 
@@ -205,19 +200,24 @@ impl EventRegistry {
         self.callbacks
             .read()
             .map(|guard| guard.contains_key(&event_type))
-            .unwrap_or(false)
+            .unwrap_or_else(|poisoned| poisoned.into_inner().contains_key(&event_type))
     }
 
     /// Get the number of registered callbacks.
     pub fn callback_count(&self) -> usize {
-        self.callbacks.read().map(|guard| guard.len()).unwrap_or(0)
+        self.callbacks
+            .read()
+            .map(|guard| guard.len())
+            .unwrap_or_else(|poisoned| poisoned.into_inner().len())
     }
 
     /// Clear all registered callbacks.
     pub fn clear(&self) {
-        if let Ok(mut guard) = self.callbacks.write() {
-            guard.clear();
-        }
+        let mut guard = self
+            .callbacks
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        guard.clear();
     }
 }
 

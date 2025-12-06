@@ -157,7 +157,10 @@ async fn simulate_without_script_passes_through() {
     assert_eq!(output.passed, 4);
     assert_eq!(output.remapped, 0);
     assert_eq!(output.blocked, 0);
-    assert!(output.active_layers.contains(&"base".to_string()));
+    assert!(
+        output.active_layers.contains(&"base".to_string()),
+        "Base layer should be active without a script"
+    );
 }
 
 /// Test simulate with remap script.

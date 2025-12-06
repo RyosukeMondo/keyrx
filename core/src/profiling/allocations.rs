@@ -328,8 +328,8 @@ mod tests {
         assert!(!tracker.is_active());
 
         // Stats should be available (may be zero without TrackingAllocator)
-        assert!(stats.total_allocated >= 0);
-        assert!(stats.total_freed >= 0);
+        assert_eq!(stats.current_usage, 0);
+        assert!(stats.total_allocated >= stats.total_freed);
     }
 
     #[test]
@@ -356,10 +356,8 @@ mod tests {
         let stats = tracker.stats();
 
         // Stats structure should be valid
-        assert!(stats.total_allocated >= 0);
-        assert!(stats.total_freed >= 0);
-        assert!(stats.peak_usage >= 0);
-        assert!(stats.current_usage >= 0);
+        assert!(stats.total_allocated >= stats.total_freed);
+        assert!(stats.peak_usage >= stats.current_usage);
     }
 
     #[test]

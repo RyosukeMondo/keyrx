@@ -129,8 +129,9 @@ fn duplicate_key_is_reported_and_profile_saved() {
 
         let events = [
             press(10, device_path),
-            press(10, device_path),
             press(11, device_path),
+            // Re-press the first key to trigger duplicate detection on a later position
+            press(10, device_path),
             press(12, device_path),
         ];
 

@@ -22,6 +22,7 @@ use keyrx_core::registry::profile::{LayoutType, Profile, ProfileRegistry};
 use keyrx_core::registry::DeviceRegistry;
 use keyrx_core::{clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime};
 use serde_json::Value;
+use serial_test::serial;
 use std::ffi::{CStr, CString};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -413,6 +414,7 @@ fn test_c_api_device_registry_null_profile_id() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_device_registry_null_label_clears() {
     let (registry, _profiles, temp_dir) = setup_shared_runtime();
     let identity = test_identity("TEST001");
@@ -473,16 +475,25 @@ fn test_c_api_profile_registry_null_profile_json() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_profile_registry_invalid_json() {
+    let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
+
     unsafe {
         let invalid_json = CString::new("not valid json").unwrap();
         let result = profile_registry::keyrx_profile_registry_save_profile(invalid_json.as_ptr());
         assert!(!result.is_null());
         let c_str = CStr::from_ptr(result);
         let msg = c_str.to_str().unwrap();
-        assert!(msg.contains("Invalid JSON") || msg.contains("JSON"));
+        assert!(
+            msg.starts_with("error:"),
+            "expected error response for invalid JSON, got {msg}"
+        );
         drop(CString::from_raw(result));
     }
+
+    clear_revolutionary_runtime().unwrap();
+    drop(temp_dir);
 }
 
 #[test]
@@ -515,6 +526,7 @@ fn test_c_api_profile_registry_invalid_layout_type() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_profile_registry_valid_layout_types() {
     let (_device_registry, _profile_registry, _temp_dir) = setup_shared_runtime();
 
@@ -537,6 +549,7 @@ fn test_c_api_profile_registry_valid_layout_types() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_device_registry_list_devices_round_trip() {
     let (device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
     let identity = test_identity("SERIAL123");
@@ -567,6 +580,7 @@ fn test_c_api_device_registry_list_devices_round_trip() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_profile_registry_save_and_get_round_trip() {
     let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
 
@@ -608,6 +622,7 @@ fn test_c_api_profile_registry_save_and_get_round_trip() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_definitions_list_all() {
     let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
     let result = device_definitions::keyrx_definitions_list_all();
@@ -628,6 +643,7 @@ fn test_c_api_definitions_list_all() {
 }
 
 #[test]
+#[serial]
 fn test_c_api_definitions_get_for_device_valid_ids() {
     let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
     let test_cases = vec![

@@ -428,7 +428,7 @@ mod tests {
     fn inspect_called_on_ok() {
         let mut inspected = false;
         let result = CriticalResult::ok(42);
-        result.inspect(|_| inspected = true);
+        let _ = result.inspect(|_| inspected = true);
         assert!(inspected);
     }
 
@@ -439,7 +439,7 @@ mod tests {
             reason: "test".to_string(),
             cause: None,
         });
-        result.inspect(|_| inspected = true);
+        let _ = result.inspect(|_| inspected = true);
         assert!(!inspected);
     }
 
@@ -450,7 +450,7 @@ mod tests {
             reason: "test".to_string(),
             cause: None,
         });
-        result.inspect_err(|_| inspected = true);
+        let _ = result.inspect_err(|_| inspected = true);
         assert!(inspected);
     }
 
@@ -458,7 +458,7 @@ mod tests {
     fn inspect_err_not_called_on_ok() {
         let mut inspected = false;
         let result = CriticalResult::ok(42);
-        result.inspect_err(|_| inspected = true);
+        let _ = result.inspect_err(|_| inspected = true);
         assert!(!inspected);
     }
 }

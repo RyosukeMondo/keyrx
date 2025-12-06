@@ -683,8 +683,19 @@ fn test_device_bindings_set_and_get() {
 
     bindings.set_binding(device.clone(), binding.clone());
 
-    let retrieved = bindings.get_binding(&device);
-    assert_eq!(retrieved, Some(&binding));
+    let mut retrieved = bindings
+        .get_binding(&device)
+        .cloned()
+        .expect("binding should be present");
+    assert!(
+        retrieved.bound_at.is_some(),
+        "binding should record bound_at timestamp"
+    );
+    retrieved.bound_at = None;
+
+    let mut expected = binding.clone();
+    expected.bound_at = None;
+    assert_eq!(retrieved, expected);
     assert_eq!(bindings.len(), 1);
 }
 
@@ -697,8 +708,18 @@ fn test_device_bindings_remove() {
     bindings.set_binding(device.clone(), binding.clone());
     assert_eq!(bindings.len(), 1);
 
-    let removed = bindings.remove_binding(&device);
-    assert_eq!(removed, Some(binding));
+    let mut removed = bindings
+        .remove_binding(&device)
+        .expect("binding should be removed");
+    assert!(
+        removed.bound_at.is_some(),
+        "removal should return binding with timestamp"
+    );
+    removed.bound_at = None;
+
+    let mut expected = binding;
+    expected.bound_at = None;
+    assert_eq!(removed, expected);
     assert_eq!(bindings.len(), 0);
 }
 

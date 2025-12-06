@@ -190,7 +190,7 @@ impl Default for DetectorOrchestrator {
 mod tests {
     use super::*;
     use crate::validation::config::ValidationConfig;
-    use crate::validation::detectors::{DetectorResult, Severity};
+    use crate::validation::detectors::DetectorResult;
 
     // Mock detector for testing
     struct MockDetector {

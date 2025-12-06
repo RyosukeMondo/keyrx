@@ -170,7 +170,7 @@ impl ReplaySession {
                 keyrx_err!(
                     SESSION_FILE_CORRUPT,
                     path = path.display().to_string(),
-                    error = e.to_string()
+                    error = format!("failed to parse session file: {e}")
                 )
             })?;
 
@@ -585,6 +585,7 @@ impl InputSource for ReplaySession {
     async fn stop(&mut self) -> Result<(), KeyrxError> {
         self.session_state.stop();
         self.emitted.clear();
+        self.consumed = self.manifest.total_events;
 
         if let ReplaySource::Legacy { queue, .. } = &mut self.source {
             queue.clear();
@@ -661,7 +662,7 @@ mod tests {
 
         replay.stop().await.expect("stop");
         assert_eq!(replay.state(), ReplayState::Idle);
-        assert_eq!(replay.events_remaining(), 5);
+        assert_eq!(replay.events_remaining(), 0);
     }
 
     #[tokio::test]
