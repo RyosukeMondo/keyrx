@@ -58,7 +58,7 @@ _Status: Priority #5 in 2025 implementation order; open items: 7 (in-progress), 
   - _Requirements: 1, 4, Reliability, Usability_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter integration engineer | Task: Wire autosave into profile/mapping edits with status feedback and debounce | Restrictions: Non-blocking UI; avoid duplicate toasts; ensure errors are shown without losing in-memory edits | Success: Edits trigger debounced autosave to .keyrx with visible status and retries on failure._
 
-- [ ] 9. Add tests for storage path resolver and autosave debounce/retry
+- [x] 9. Add tests for storage path resolver and autosave debounce/retry
   - Files: ui/test/storage_path_resolver_test.dart; ui/test/profile_autosave_service_test.dart
   - Add unit tests covering Windows vs Linux path resolution, directory creation, debounce behavior, and retry on transient save errors.
   - _Leverage: existing test harness in ui/test; dart:io mocks or test doubles_
