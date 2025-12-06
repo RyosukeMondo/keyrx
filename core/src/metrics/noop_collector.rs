@@ -86,6 +86,12 @@ impl MetricsCollector for NoOpCollector {
         // Intentionally empty - compiles to nothing
     }
 
+    /// Record error - no-op implementation.
+    #[inline(always)]
+    fn record_error(&self, _error_type: &str) {
+        // Intentionally empty - compiles to nothing
+    }
+
     /// Get empty snapshot.
     ///
     /// Returns a minimal snapshot with just a timestamp.

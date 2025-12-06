@@ -49,6 +49,10 @@ fn test_all_metrics_types_integrated() {
     collector.record_latency(Operation::RuleMatch, 50);
     collector.record_latency(Operation::ActionExecute, 200);
 
+    // Record errors
+    collector.record_error("io");
+    collector.record_error("parser");
+
     // Record memory
     collector.record_memory(1024 * 1024);
     collector.record_memory(2048 * 1024);
@@ -79,6 +83,9 @@ fn test_snapshot_captures_all_metrics() {
     collector.record_latency(Operation::RuleMatch, 50);
     collector.record_memory(1024 * 1024);
     collector.record_profile("func_a", 150);
+    collector.record_error("io");
+    collector.record_error("io");
+    collector.record_error("parser");
 
     let snapshot = collector.snapshot();
 
@@ -99,6 +106,11 @@ fn test_snapshot_captures_all_metrics() {
 
     // Verify profile stats
     assert!(snapshot.profiles.contains_key("func_a"));
+
+    // Verify error stats
+    assert_eq!(snapshot.errors.total, 3);
+    assert_eq!(snapshot.errors.by_type.get("io"), Some(&2));
+    assert_eq!(snapshot.errors.by_type.get("parser"), Some(&1));
 }
 
 #[test]
@@ -109,6 +121,7 @@ fn test_reset_clears_all_collectors() {
     collector.record_latency(Operation::EventProcess, 100);
     collector.record_memory(1024);
     collector.record_profile("test", 50);
+    collector.record_error("io");
 
     // Verify data exists
     assert!(
@@ -134,6 +147,9 @@ fn test_reset_clears_all_collectors() {
     );
     assert_eq!(collector.get_memory_monitor().stats().sample_count, 0);
     assert_eq!(collector.get_profile_points().count(), 0);
+    let error_stats = collector.get_error_metrics().snapshot();
+    assert_eq!(error_stats.total, 0);
+    assert!(error_stats.by_type.is_empty());
 }
 
 #[test]

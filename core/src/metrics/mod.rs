@@ -38,6 +38,7 @@
 //! ```
 
 pub mod collector;
+pub mod errors;
 pub mod full_collector;
 pub mod latency;
 pub mod memory;
@@ -49,6 +50,7 @@ pub mod snapshot;
 
 // Re-export commonly used types
 pub use collector::{MetricsCollector, OtelMetricsCollector, ProfileGuard};
+pub use errors::{ErrorMetrics, ErrorSnapshot};
 pub use full_collector::FullMetricsCollector;
 pub use latency::LatencyHistogram;
 pub use memory::{MemoryMonitor, MemoryStats};

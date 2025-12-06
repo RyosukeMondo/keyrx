@@ -27,6 +27,7 @@
 //! println!("{}", json);
 //! ```
 
+use super::errors::ErrorSnapshot;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -98,6 +99,10 @@ pub struct MetricsSnapshot {
     #[serde(rename = "memory")]
     pub memory: MemorySnapshot,
 
+    /// Error statistics including counts and rolling rate.
+    #[serde(rename = "errors")]
+    pub errors: ErrorSnapshot,
+
     /// Profile point statistics.
     ///
     /// Maps profile point name to timing statistics.
@@ -115,6 +120,7 @@ impl MetricsSnapshot {
             timestamp: Self::current_timestamp(),
             latencies: HashMap::new(),
             memory: MemorySnapshot::empty(),
+            errors: ErrorSnapshot::empty(),
             profiles: HashMap::new(),
         }
     }
@@ -125,26 +131,25 @@ impl MetricsSnapshot {
     ///
     /// * `latencies` - Latency statistics per operation
     /// * `memory` - Memory usage snapshot
+    /// * `errors` - Error metrics snapshot
     /// * `profiles` - Profile point statistics
     ///
     /// # Example
     ///
     /// ```ignore
-    /// let snapshot = MetricsSnapshot::new(
-    ///     latencies_map,
-    ///     memory_snap,
-    ///     profiles_map,
-    /// );
+    /// let snapshot = MetricsSnapshot::new(latencies_map, memory_snap, errors, profiles_map);
     /// ```
     pub fn new(
         latencies: HashMap<String, LatencyStats>,
         memory: MemorySnapshot,
+        errors: ErrorSnapshot,
         profiles: HashMap<String, ProfileSnapshot>,
     ) -> Self {
         Self {
             timestamp: Self::current_timestamp(),
             latencies,
             memory,
+            errors,
             profiles,
         }
     }
@@ -391,6 +396,8 @@ mod tests {
         let snapshot = MetricsSnapshot::empty();
         assert!(snapshot.latencies.is_empty());
         assert_eq!(snapshot.memory.current, 0);
+        assert_eq!(snapshot.errors.total, 0);
+        assert!(snapshot.errors.by_type.is_empty());
         assert!(snapshot.profiles.is_empty());
         assert!(snapshot.timestamp > 0);
     }
@@ -419,13 +426,20 @@ mod tests {
             ProfileSnapshot::new(50, 5000, 100, 50, 200),
         );
 
-        let snapshot = MetricsSnapshot::new(latencies, memory, profiles);
+        let mut errors = ErrorSnapshot::empty();
+        errors.total = 5;
+        errors.rate_per_minute = 12.5;
+        errors.by_type.insert("io".to_string(), 3);
+        errors.by_type.insert("parse".to_string(), 2);
+
+        let snapshot = MetricsSnapshot::new(latencies, memory, errors, profiles);
 
         // Test JSON serialization
         let json = snapshot.to_json().unwrap();
         assert!(json.contains("timestamp"));
         assert!(json.contains("latencies"));
         assert!(json.contains("memory"));
+        assert!(json.contains("errors"));
         assert!(json.contains("profiles"));
         assert!(json.contains("event_process"));
         assert!(json.contains("test_function"));
@@ -434,6 +448,8 @@ mod tests {
         let parsed = MetricsSnapshot::from_json(&json).unwrap();
         assert_eq!(parsed.latencies.len(), 1);
         assert_eq!(parsed.profiles.len(), 1);
+        assert_eq!(parsed.errors.total, 5);
+        assert_eq!(parsed.errors.by_type.len(), 2);
     }
 
     #[test]
@@ -594,7 +610,13 @@ mod tests {
             ProfileSnapshot::new(20, 2000, 100, 60, 180),
         );
 
-        let original = MetricsSnapshot::new(latencies, memory, profiles);
+        let mut errors = ErrorSnapshot::empty();
+        errors.total = 7;
+        errors.by_type.insert("io".to_string(), 5);
+        errors.by_type.insert("config".to_string(), 2);
+        errors.rate_per_minute = 14.0;
+
+        let original = MetricsSnapshot::new(latencies, memory, errors, profiles);
 
         // Serialize and deserialize
         let json = original.to_json().unwrap();
@@ -603,6 +625,7 @@ mod tests {
         // Verify data integrity
         assert_eq!(original.latencies.len(), restored.latencies.len());
         assert_eq!(original.profiles.len(), restored.profiles.len());
+        assert_eq!(original.errors.total, restored.errors.total);
 
         let op1 = restored.latencies.get("op1").unwrap();
         assert_eq!(op1.count, 100);

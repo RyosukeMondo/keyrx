@@ -18,7 +18,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Data collection
   - _Requirements: 1.1, 1.2_
 
-- [ ] 3. Add error metrics
+- [x] 3. Add error metrics
   - File: `core/src/metrics/errors.rs`
   - Error type counters
   - Error rate calculation

@@ -50,6 +50,7 @@
 //! ```
 
 use super::collector::{MetricsCollector, ProfileGuard};
+use super::errors::ErrorMetrics;
 use super::latency::LatencyHistogram;
 use super::memory::MemoryMonitor;
 use super::operation::Operation;
@@ -103,6 +104,9 @@ pub struct FullMetricsCollector {
 
     /// Function-level profile points for hot spot identification.
     profile_points: Arc<ProfilePoints>,
+
+    /// Error metrics tracker (counts + rate).
+    error_metrics: ErrorMetrics,
 }
 
 impl FullMetricsCollector {
@@ -145,6 +149,7 @@ impl FullMetricsCollector {
             latency_histograms: histograms,
             memory_monitor: MemoryMonitor::new(),
             profile_points: Arc::new(ProfilePoints::new()),
+            error_metrics: ErrorMetrics::new(),
         }
     }
 
@@ -173,6 +178,11 @@ impl FullMetricsCollector {
     /// Provides access to function-level profiling statistics and hot spots.
     pub fn get_profile_points(&self) -> Arc<ProfilePoints> {
         Arc::clone(&self.profile_points)
+    }
+
+    /// Get the error metrics tracker.
+    pub fn get_error_metrics(&self) -> &ErrorMetrics {
+        &self.error_metrics
     }
 }
 
@@ -203,6 +213,10 @@ impl MetricsCollector for FullMetricsCollector {
 
     fn record_profile(&self, name: &'static str, micros: u64) {
         self.profile_points.record(name, micros);
+    }
+
+    fn record_error(&self, error_type: &str) {
+        self.error_metrics.record(error_type);
     }
 
     fn snapshot(&self) -> MetricsSnapshot {
@@ -237,7 +251,10 @@ impl MetricsCollector for FullMetricsCollector {
             profiles.insert(name.to_string(), stats.into());
         }
 
-        MetricsSnapshot::new(latencies, memory, profiles)
+        // Collect error metrics
+        let errors = self.error_metrics.snapshot();
+
+        MetricsSnapshot::new(latencies, memory, errors, profiles)
     }
 
     fn reset(&self) {
@@ -251,6 +268,9 @@ impl MetricsCollector for FullMetricsCollector {
 
         // Reset profile points
         self.profile_points.reset();
+
+        // Reset error metrics
+        self.error_metrics.reset();
     }
 }
 

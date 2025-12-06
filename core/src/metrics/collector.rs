@@ -81,6 +81,17 @@ pub trait MetricsCollector: Send + Sync + Any {
     /// * `micros` - Duration in microseconds
     fn record_profile(&self, name: &'static str, micros: u64);
 
+    /// Record an error occurrence for observability.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_type` - Logical error category (e.g., "io", "script", "config")
+    ///
+    /// # Default
+    ///
+    /// Implementations may override to track error counters and rates.
+    fn record_error(&self, _error_type: &str) {}
+
     /// Get a snapshot of current metrics.
     ///
     /// Returns a point-in-time view of all collected metrics.
@@ -352,6 +363,10 @@ impl MetricsCollector for OtelMetricsCollector {
 
     fn record_profile(&self, _name: &'static str, _micros: u64) {}
 
+    fn record_error(&self, error_type: &str) {
+        OtelMetricsCollector::record_error(self, error_type);
+    }
+
     fn snapshot(&self) -> MetricsSnapshot {
         MetricsSnapshot::empty()
     }
@@ -374,6 +389,7 @@ mod tests {
         latency_calls: Arc<AtomicU64>,
         memory_calls: Arc<AtomicU64>,
         profile_calls: Arc<AtomicU64>,
+        error_calls: Arc<AtomicU64>,
     }
 
     impl TestCollector {
@@ -382,6 +398,7 @@ mod tests {
                 latency_calls: Arc::new(AtomicU64::new(0)),
                 memory_calls: Arc::new(AtomicU64::new(0)),
                 profile_calls: Arc::new(AtomicU64::new(0)),
+                error_calls: Arc::new(AtomicU64::new(0)),
             }
         }
     }
@@ -407,6 +424,10 @@ mod tests {
             self.profile_calls.fetch_add(1, Ordering::Relaxed);
         }
 
+        fn record_error(&self, _error_type: &str) {
+            self.error_calls.fetch_add(1, Ordering::Relaxed);
+        }
+
         fn snapshot(&self) -> MetricsSnapshot {
             MetricsSnapshot::empty()
         }
@@ -415,6 +436,7 @@ mod tests {
             self.latency_calls.store(0, Ordering::Relaxed);
             self.memory_calls.store(0, Ordering::Relaxed);
             self.profile_calls.store(0, Ordering::Relaxed);
+            self.error_calls.store(0, Ordering::Relaxed);
         }
     }
 
@@ -484,6 +506,8 @@ mod tests {
         collector.record_memory(1024);
         assert_eq!(collector.latency_calls.load(Ordering::Relaxed), 1);
         assert_eq!(collector.memory_calls.load(Ordering::Relaxed), 1);
+        collector.record_error("test");
+        assert_eq!(collector.error_calls.load(Ordering::Relaxed), 1);
 
         collector.reset();
         assert_eq!(collector.latency_calls.load(Ordering::Relaxed), 0);
