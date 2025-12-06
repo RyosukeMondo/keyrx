@@ -154,7 +154,7 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
     final updatedProfile = _currentProfile.copyWith(
       mappings: updatedMappings,
-      updatedAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toUtc().toIso8601String(),
     );
 
     setState(() {
@@ -200,7 +200,7 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
     final updatedProfile = _currentProfile.copyWith(
       mappings: updatedMappings,
-      updatedAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toUtc().toIso8601String(),
     );
 
     setState(() {

@@ -4,6 +4,7 @@
 //! All errors implement `std::error::Error` via `thiserror` and can be converted
 //! from common error sources like `std::io::Error` and Rhai's `EvalAltResult`.
 
+#[cfg(target_os = "linux")]
 use std::path::PathBuf;
 use thiserror::Error;
 

@@ -14,7 +14,7 @@ use crate::registry::{
     DeviceBinding, DeviceBindings, DeviceEvent, DeviceRegistry, ProfileRegistry,
 };
 use crate::scripting::RhaiRuntime;
-use crate::traits::{script_runtime::ScriptRuntime, InputSource};
+use crate::traits::InputSource;
 use anyhow::Result;
 use chrono::Utc;
 use std::collections::HashSet;
