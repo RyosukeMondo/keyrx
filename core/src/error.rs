@@ -4,7 +4,6 @@
 //! All errors implement `std::error::Error` via `thiserror` and can be converted
 //! from common error sources like `std::io::Error` and Rhai's `EvalAltResult`.
 
-use std::path::PathBuf;
 use thiserror::Error;
 
 /// The main error type for KeyRx operations.

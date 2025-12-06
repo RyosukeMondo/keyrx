@@ -101,6 +101,7 @@ windows = { workspace = true, optional = true, features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_Devices_HumanInterfaceDevice",
     "Win32_Storage_FileSystem",
+    "Win32_Security",
 ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]

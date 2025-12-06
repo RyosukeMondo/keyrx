@@ -95,9 +95,7 @@ class _HomePageState extends State<HomePage> {
         deviceService: registry.deviceRegistryService,
         profileService: registry.profileRegistryService,
       ),
-      VisualEditorPage(
-        mappingRepository: registry.mappingRepository,
-      ),
+      const VisualEditorPage(),
       const RunControlsPage(),
       const DebuggerPage(),
       const ConsolePage(),

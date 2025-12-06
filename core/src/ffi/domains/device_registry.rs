@@ -4,6 +4,7 @@
 //! exposing device management operations to Flutter.
 #![allow(unsafe_code)]
 
+use crate::drivers;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::runtime::{block_on_ffi, with_revolutionary_runtime};
 use crate::identity::DeviceIdentity;
@@ -36,6 +37,19 @@ impl From<DeviceState> for FfiDeviceState {
     }
 }
 
+fn extract_serial(path: &std::path::Path) -> String {
+    let path_str = path.to_string_lossy();
+    // On Windows, paths are like \\?\HID#VID_...&PID_...&MI_...#<InstanceID>#...
+    // We want the InstanceID (3rd component) as the serial/unique ID.
+    if cfg!(windows) && path_str.contains('#') {
+        let parts: Vec<&str> = path_str.split('#').collect();
+        if parts.len() >= 3 {
+            return parts[2].to_string();
+        }
+    }
+    path_str.to_string()
+}
+
 /// List all registered devices.
 ///
 /// Returns JSON array of device states.
@@ -43,6 +57,32 @@ impl From<DeviceState> for FfiDeviceState {
 /// # Returns
 /// * `Ok(Vec<FfiDeviceState>)` - List of registered devices
 pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceState>> {
+    // 1. Scan for physical devices
+    // We use spawn_blocking because list_keyboards might do I/O
+    let physical_devices = tokio::task::spawn_blocking(|| drivers::list_keyboards())
+        .await
+        .map_err(|e| FfiError::internal(format!("JoinError in list_devices: {}", e)))?
+        .unwrap_or_default();
+
+    // 2. Register found devices and track them
+    let mut found_identities = std::collections::HashSet::new();
+    for device in physical_devices {
+        let serial = extract_serial(&device.path);
+        let identity = DeviceIdentity::new(device.vendor_id, device.product_id, serial);
+        found_identities.insert(identity.clone());
+        registry.register_device(identity).await;
+    }
+
+    // 3. Unregister disconnected devices
+    // Get current list from registry to check against found physical devices
+    let registered_devices = registry.list_devices().await;
+    for device in registered_devices {
+        if !found_identities.contains(&device.identity) {
+            registry.unregister_device(&device.identity).await;
+        }
+    }
+
+    // 4. Return current registry state (now synchronized)
     let devices = registry.list_devices().await;
     let ffi_devices = devices.into_iter().map(FfiDeviceState::from).collect();
     Ok(ffi_devices)
