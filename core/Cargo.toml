@@ -49,13 +49,19 @@ keyrx-core-macros = { path = "core-macros" }
 opentelemetry = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true }
 opentelemetry-otlp = { workspace = true, optional = true }
+tracing-opentelemetry = { workspace = true, optional = true }
 regex = "1.12.2"
 flate2.workspace = true
 
 [features]
 # Enable platform drivers by default on their respective platforms
 default = ["windows-driver", "linux-driver", "transition-logging"]
-otel-tracing = ["opentelemetry", "opentelemetry_sdk", "opentelemetry-otlp"]
+otel-tracing = [
+    "opentelemetry",
+    "opentelemetry_sdk",
+    "opentelemetry-otlp",
+    "tracing-opentelemetry",
+]
 windows-driver = ["windows"]
 linux-driver = ["evdev", "nix", "signal-hook"]
 transition-logging = []

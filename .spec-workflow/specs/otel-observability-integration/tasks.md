@@ -1,8 +1,10 @@
 # Tasks Document
 
+_Status: Priority #4 in 2025 implementation order; all items pending. Establish OTEL tracing/metrics foundation before downstream dashboards._
+
 ## Phase 1: Setup
 
-- [ ] 1. Add OTEL dependencies
+- [x] 1. Add OTEL dependencies
   - File: `core/Cargo.toml`
   - Add opentelemetry, tracing-opentelemetry
   - Feature-gated
