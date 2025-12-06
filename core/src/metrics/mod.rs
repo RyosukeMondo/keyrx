@@ -37,6 +37,7 @@
 //! let snapshot = collector.snapshot();
 //! ```
 
+pub mod alerts;
 pub mod collector;
 pub mod errors;
 pub mod full_collector;
@@ -53,6 +54,7 @@ pub mod sampler;
 pub mod snapshot;
 
 // Re-export commonly used types
+pub use alerts::{Alert, AlertCallback, AlertKind, AlertLevel, AlertManager, AlertThresholds};
 pub use collector::{MetricsCollector, OtelMetricsCollector, ProfileGuard};
 pub use errors::{ErrorMetrics, ErrorSnapshot};
 pub use full_collector::FullMetricsCollector;

@@ -64,7 +64,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Local visualization
   - _Requirements: 3.2, 3.4_
 
-- [ ] 9. Implement alerting
+- [x] 9. Implement alerting
   - File: `core/src/metrics/alerts.rs`
   - Threshold configuration
   - Alert callbacks

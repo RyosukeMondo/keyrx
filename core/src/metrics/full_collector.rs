@@ -49,6 +49,7 @@
 //! let snapshot = collector.snapshot();
 //! ```
 
+use super::alerts::AlertManager;
 use super::collector::{MetricsCollector, ProfileGuard};
 use super::errors::ErrorMetrics;
 use super::latency::LatencyHistogram;
@@ -107,6 +108,9 @@ pub struct FullMetricsCollector {
 
     /// Error metrics tracker (counts + rate).
     error_metrics: ErrorMetrics,
+
+    /// Optional alert manager for threshold callbacks.
+    alert_manager: Option<Arc<AlertManager>>,
 }
 
 impl FullMetricsCollector {
@@ -136,6 +140,18 @@ impl FullMetricsCollector {
     /// let collector = FullMetricsCollector::with_threshold(500);
     /// ```
     pub fn with_threshold(threshold_micros: u64) -> Self {
+        Self::with_components(threshold_micros, None)
+    }
+
+    /// Create a collector with both latency threshold and alert manager.
+    ///
+    /// This wires alert evaluation into `snapshot()` so consumers can register
+    /// callbacks for threshold breaches.
+    pub fn with_alerts(threshold_micros: u64, alert_manager: Arc<AlertManager>) -> Self {
+        Self::with_components(threshold_micros, Some(alert_manager))
+    }
+
+    fn with_components(threshold_micros: u64, alert_manager: Option<Arc<AlertManager>>) -> Self {
         // Create histograms for each operation type
         let mut histograms = HashMap::new();
         for operation in Operation::all() {
@@ -150,6 +166,7 @@ impl FullMetricsCollector {
             memory_monitor: MemoryMonitor::new(),
             profile_points: Arc::new(ProfilePoints::new()),
             error_metrics: ErrorMetrics::new(),
+            alert_manager,
         }
     }
 
@@ -183,6 +200,11 @@ impl FullMetricsCollector {
     /// Get the error metrics tracker.
     pub fn get_error_metrics(&self) -> &ErrorMetrics {
         &self.error_metrics
+    }
+
+    /// Get the configured alert manager, if any.
+    pub fn alert_manager(&self) -> Option<Arc<AlertManager>> {
+        self.alert_manager.clone()
     }
 }
 
@@ -254,7 +276,13 @@ impl MetricsCollector for FullMetricsCollector {
         // Collect error metrics
         let errors = self.error_metrics.snapshot();
 
-        MetricsSnapshot::new(latencies, memory, errors, profiles)
+        let snapshot = MetricsSnapshot::new(latencies, memory, errors, profiles);
+
+        if let Some(manager) = &self.alert_manager {
+            manager.evaluate_and_emit(&snapshot);
+        }
+
+        snapshot
     }
 
     fn reset(&self) {
@@ -534,5 +562,40 @@ mod tests {
         assert_eq!(hot_spots.len(), 2);
         assert_eq!(hot_spots[0].0, "slow_function");
         assert_eq!(hot_spots[0].1.total_micros, 10000);
+    }
+
+    #[test]
+    fn snapshot_triggers_alert_callbacks() {
+        use crate::metrics::alerts::{AlertLevel, AlertManager, AlertThresholds};
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::time::Duration;
+
+        let manager = Arc::new(AlertManager::with_debounce(
+            AlertThresholds {
+                latency_warn_p99: 100,
+                latency_critical_p99: 500,
+                error_rate_warn_per_minute: 1.0,
+                error_rate_critical_per_minute: 5.0,
+                memory_warn_bytes: 1,
+                memory_critical_bytes: 2,
+                leak_detection_enabled: false,
+            },
+            Duration::from_millis(0),
+        ));
+
+        let fired = Arc::new(AtomicUsize::new(0));
+        let fired_clone = Arc::clone(&fired);
+        manager.register_callback(move |alert| {
+            if matches!(alert.level, AlertLevel::Warning | AlertLevel::Critical) {
+                fired_clone.fetch_add(1, Ordering::Relaxed);
+            }
+        });
+
+        let collector =
+            FullMetricsCollector::with_alerts(DEFAULT_LATENCY_THRESHOLD_MICROS, manager);
+        collector.record_latency(Operation::EventProcess, 10_000); // 10ms p99
+        let _ = collector.snapshot();
+
+        assert_eq!(fired.load(Ordering::Relaxed), 1);
     }
 }
