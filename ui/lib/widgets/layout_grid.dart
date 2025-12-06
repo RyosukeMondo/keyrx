@@ -41,6 +41,9 @@ class LayoutGrid extends StatelessWidget {
   /// Currently selected physical position (highlighted)
   final PhysicalPosition? selectedPosition;
 
+  /// Positions to highlight (e.g., search matches).
+  final Set<PhysicalPosition> highlightedPositions;
+
   /// Key size in pixels
   final double keySize;
 
@@ -53,6 +56,7 @@ class LayoutGrid extends StatelessWidget {
     this.profile,
     this.onKeyTap,
     this.selectedPosition,
+    this.highlightedPositions = const {},
     this.keySize = 48.0,
     this.keySpacing = 4.0,
   });
@@ -134,8 +138,8 @@ class LayoutGrid extends StatelessWidget {
           Text(
             'Visual representation coming soon',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
           ),
           const SizedBox(height: 16),
           // Show mapped keys as a simple list for now
@@ -161,13 +165,17 @@ class LayoutGrid extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Left half
-        Expanded(
-          child: _buildSplitHalf(context, 0, 0, halfCols, isLeft: true),
-        ),
+        Expanded(child: _buildSplitHalf(context, 0, 0, halfCols, isLeft: true)),
         SizedBox(width: keySpacing * 4), // Gap between halves
         // Right half
         Expanded(
-          child: _buildSplitHalf(context, 0, halfCols, layoutInfo.cols, isLeft: false),
+          child: _buildSplitHalf(
+            context,
+            0,
+            halfCols,
+            layoutInfo.cols,
+            isLeft: false,
+          ),
         ),
       ],
     );
@@ -206,6 +214,7 @@ class LayoutGrid extends StatelessWidget {
     final theme = Theme.of(context);
     final position = PhysicalPosition(row: row, col: col);
     final isSelected = selectedPosition == position;
+    final isHighlighted = highlightedPositions.contains(position);
 
     // Get the mapping for this position
     final action = profile?.getAction(position);
@@ -218,7 +227,7 @@ class LayoutGrid extends StatelessWidget {
     }
 
     return Material(
-      color: _getKeyColor(theme, isSelected, hasMapping),
+      color: _getKeyColor(theme, isSelected, hasMapping, isHighlighted),
       borderRadius: BorderRadius.circular(4),
       elevation: isSelected ? 4 : 1,
       child: InkWell(
@@ -258,6 +267,15 @@ class LayoutGrid extends StatelessWidget {
                     maxLines: 2,
                   ),
                 ],
+                if (isHighlighted && !isSelected)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(
+                      Icons.search,
+                      size: 14,
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -268,23 +286,36 @@ class LayoutGrid extends StatelessWidget {
 
   /// Get the display label for a key action
   String _getActionLabel(KeyAction action) {
-    return action.when(
-      key: (key) => key,
-      chord: (keys) => keys.join('+'),
-      script: (script) => 'Script',
-      block: () => 'BLOCK',
-      pass: () => 'PASS',
-    );
+    return keyActionLabel(action);
   }
 
   /// Get the color for a key based on its state
-  Color _getKeyColor(ThemeData theme, bool isSelected, bool hasMapping) {
+  Color _getKeyColor(
+    ThemeData theme,
+    bool isSelected,
+    bool hasMapping,
+    bool isHighlighted,
+  ) {
     if (isSelected) {
       return theme.colorScheme.primary;
+    }
+    if (isHighlighted) {
+      return theme.colorScheme.tertiaryContainer;
     }
     if (hasMapping) {
       return theme.colorScheme.secondaryContainer;
     }
     return theme.colorScheme.surfaceContainerHighest;
   }
+}
+
+/// Public helper to describe a [KeyAction] for UI labels.
+String keyActionLabel(KeyAction action) {
+  return action.when(
+    key: (key) => key,
+    chord: (keys) => keys.join('+'),
+    script: (script) => 'Script',
+    block: () => 'BLOCK',
+    pass: () => 'PASS',
+  );
 }

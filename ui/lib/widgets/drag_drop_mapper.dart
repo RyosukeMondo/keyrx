@@ -8,7 +8,6 @@
 // Provides an intuitive UX for creating and editing key mappings.
 
 import 'package:flutter/material.dart';
-import '../models/layout_type.dart';
 import '../models/profile.dart';
 import '../services/profile_registry_service.dart';
 import 'layout_grid.dart';
@@ -47,6 +46,9 @@ class DragDropMapper extends StatefulWidget {
   /// Callback when a save error occurs (optional)
   final void Function(String errorMessage)? onSaveError;
 
+  /// Optional initial selection to focus when the mapper opens.
+  final PhysicalPosition? initialSelectedPosition;
+
   const DragDropMapper({
     super.key,
     required this.layoutInfo,
@@ -54,6 +56,7 @@ class DragDropMapper extends StatefulWidget {
     required this.profileRegistryService,
     this.onProfileUpdated,
     this.onSaveError,
+    this.initialSelectedPosition,
   });
 
   @override
@@ -80,6 +83,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
   void initState() {
     super.initState();
     _currentProfile = widget.profile;
+    if (widget.initialSelectedPosition != null) {
+      _primeSelection(widget.initialSelectedPosition!);
+    }
   }
 
   @override
@@ -89,39 +95,49 @@ class _DragDropMapperState extends State<DragDropMapper> {
     if (widget.profile != oldWidget.profile) {
       _currentProfile = widget.profile;
     }
+    if (widget.initialSelectedPosition != null &&
+        widget.initialSelectedPosition != _selectedPhysicalPosition) {
+      setState(() {
+        _primeSelection(widget.initialSelectedPosition!);
+      });
+    }
   }
 
   /// Handle physical key tap from LayoutGrid
   void _onPhysicalKeyTap(int row, int col) {
     setState(() {
-      _selectedPhysicalPosition = PhysicalPosition(row: row, col: col);
-      _state = MappingState.selectingOutput;
-      _selectedOutputKey = null;
-
-      // Check if this position already has a mapping
-      final existingAction = _currentProfile.getAction(_selectedPhysicalPosition!);
-      if (existingAction != null) {
-        // Pre-select the current mapping in the soft keyboard
-        existingAction.when(
-          key: (key) {
-            _selectedOutputKey = key;
-          },
-          chord: (_) {
-            // For chords, don't pre-select (would need multi-select)
-            _selectedOutputKey = null;
-          },
-          script: (_) {
-            _selectedOutputKey = null;
-          },
-          block: () {
-            _selectedOutputKey = null;
-          },
-          pass: () {
-            _selectedOutputKey = null;
-          },
-        );
-      }
+      _primeSelection(PhysicalPosition(row: row, col: col));
     });
+  }
+
+  void _primeSelection(PhysicalPosition position) {
+    _selectedPhysicalPosition = position;
+    _state = MappingState.selectingOutput;
+    _selectedOutputKey = null;
+
+    // Check if this position already has a mapping
+    final existingAction = _currentProfile.getAction(position);
+    if (existingAction != null) {
+      // Pre-select the current mapping in the soft keyboard
+      existingAction.when(
+        key: (key) {
+          _selectedOutputKey = key;
+        },
+        chord: (_) {
+          // For chords, don't pre-select (would need multi-select)
+          _selectedOutputKey = null;
+        },
+        script: (_) {
+          _selectedOutputKey = null;
+        },
+        block: () {
+          _selectedOutputKey = null;
+        },
+        pass: () {
+          _selectedOutputKey = null;
+        },
+      );
+    }
   }
 
   /// Handle output key selection from SoftKeyboard
@@ -149,7 +165,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
     final newAction = KeyAction.key(key: outputKeyVariant);
 
     // Update profile with new mapping
-    final updatedMappings = Map<String, KeyAction>.from(_currentProfile.mappings);
+    final updatedMappings = Map<String, KeyAction>.from(
+      _currentProfile.mappings,
+    );
     updatedMappings[positionKey] = newAction;
 
     final updatedProfile = _currentProfile.copyWith(
@@ -163,7 +181,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
     });
 
     // Auto-save the profile
-    final result = await widget.profileRegistryService.saveProfile(updatedProfile);
+    final result = await widget.profileRegistryService.saveProfile(
+      updatedProfile,
+    );
 
     setState(() {
       _isSaving = false;
@@ -195,7 +215,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
     final positionKey = position.toKey();
 
     // Update profile by removing the mapping
-    final updatedMappings = Map<String, KeyAction>.from(_currentProfile.mappings);
+    final updatedMappings = Map<String, KeyAction>.from(
+      _currentProfile.mappings,
+    );
     updatedMappings.remove(positionKey);
 
     final updatedProfile = _currentProfile.copyWith(
@@ -209,7 +231,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
     });
 
     // Auto-save the profile
-    final result = await widget.profileRegistryService.saveProfile(updatedProfile);
+    final result = await widget.profileRegistryService.saveProfile(
+      updatedProfile,
+    );
 
     setState(() {
       _isSaving = false;
@@ -316,10 +340,7 @@ class _DragDropMapperState extends State<DragDropMapper> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Output Keys',
-                          style: theme.textTheme.titleMedium,
-                        ),
+                        Text('Output Keys', style: theme.textTheme.titleMedium),
                         const SizedBox(height: 8),
                         Text(
                           _state == MappingState.selectingPhysical
@@ -383,8 +404,9 @@ class _DragDropMapperState extends State<DragDropMapper> {
         ? 'Step 1: Select a physical key from the layout'
         : 'Step 2: Select an output key from the palette';
 
-    final statusIcon =
-        _state == MappingState.selectingPhysical ? Icons.keyboard : Icons.check;
+    final statusIcon = _state == MappingState.selectingPhysical
+        ? Icons.keyboard
+        : Icons.check;
 
     return Container(
       padding: const EdgeInsets.all(12.0),
@@ -437,15 +459,14 @@ class _DragDropMapperState extends State<DragDropMapper> {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.touch_app,
-                      size: 64,
-                      color: theme.disabledColor,
-                    ),
+                    Icon(Icons.touch_app, size: 64, color: theme.disabledColor),
                     const SizedBox(height: 16),
                     Text(
                       'Select a physical key first',

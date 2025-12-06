@@ -28,7 +28,7 @@
   - _Requirements: 3, 5_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI/UX engineer | Task: Refine the layout setup UI with validation, responsive preview sizing, and clearer spacing to prevent overly narrow vertical sections | Restrictions: Reuse existing widgets; avoid breaking current interactions | Success: Layout editor stays readable at typical sizes, invalid inputs are blocked with inline messaging, preview scales without vertical squish._
 
-- [ ] 5. Create Mapping page for per-key assignment
+- [x] 5. Create Mapping page for per-key assignment
   - Files: ui/lib/pages/mapping_page.dart (new); ui/lib/widgets/mapping_grid.dart (new, if needed)
   - Build a new Mapping screen that renders the profile grid with consistent cell sizing, supports density toggle (comfortable/compact), search/filter highlights, and invokes the mapping editor panel/dialog for key/action assignment.
   - _Leverage: grid/rendering patterns from visual_editor_widgets.dart; mapping/action editor components already used in the editor if present_
