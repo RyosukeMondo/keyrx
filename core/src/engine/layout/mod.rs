@@ -4,11 +4,13 @@
 //! `LayerStack` so layouts can be composed and managed independently.
 
 pub mod compositor;
+pub mod modifiers;
 
 use serde::{Deserialize, Serialize};
 
 use crate::engine::state::{Layer, LayerId, LayerStack};
 pub use compositor::{ActiveLayout, LayoutCompositor, ResolvedLayout};
+pub use modifiers::{CrossLayoutModifier, ModifierCoordinator, ModifierScope};
 
 /// Stable identifier for a layout.
 pub type LayoutId = String;

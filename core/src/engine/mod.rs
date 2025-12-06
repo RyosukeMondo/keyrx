@@ -42,7 +42,8 @@ pub use event_recording::{
 };
 pub use fallback::{FallbackEngine, FallbackReason};
 pub use layout::{
-    ActiveLayout, Layout, LayoutCompositor, LayoutId, LayoutMetadata, ResolvedLayout,
+    ActiveLayout, CrossLayoutModifier, Layout, LayoutCompositor, LayoutId, LayoutMetadata,
+    ModifierCoordinator, ModifierScope, ResolvedLayout,
 };
 pub use limits::{
     ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceLimits, ResourceUsageSnapshot,

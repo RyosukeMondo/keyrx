@@ -20,7 +20,7 @@ _Status: Priority #6 in 2025 implementation order; all items pending. Focus on c
 
 ## Phase 2: Modifier System
 
-- [ ] 3. Implement cross-layout modifiers
+- [x] 3. Implement cross-layout modifiers
   - File: `core/src/engine/layout/modifiers.rs`
   - Modifier scoping
   - Shared modifier state

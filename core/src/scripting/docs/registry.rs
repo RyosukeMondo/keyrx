@@ -5,7 +5,7 @@
 
 use super::types::{FunctionDoc, ModuleDoc, TypeDoc};
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// Static global documentation registry.
 static DOC_REGISTRY: RwLock<Option<DocRegistry>> = RwLock::new(None);
@@ -187,9 +187,8 @@ impl DocRegistry {
 /// This should be called once at application startup before any
 /// documentation queries are made.
 pub fn initialize() {
-    if let Ok(mut registry) = DOC_REGISTRY.write() {
-        *registry = Some(DocRegistry::new());
-    }
+    let mut registry = write_registry();
+    *registry = Some(DocRegistry::new());
 }
 
 /// Register a function in the global documentation registry.
@@ -197,13 +196,13 @@ pub fn initialize() {
 /// # Returns
 /// `true` if registration succeeded, `false` if registry is not initialized or lock failed.
 pub fn register_function(function: FunctionDoc) -> bool {
-    if let Ok(mut registry) = DOC_REGISTRY.write() {
-        if let Some(ref mut reg) = *registry {
-            reg.register_function(function);
-            return true;
-        }
+    let mut registry = write_registry();
+    if let Some(ref mut reg) = *registry {
+        reg.register_function(function);
+        true
+    } else {
+        false
     }
-    false
 }
 
 /// Register a type in the global documentation registry.
@@ -211,13 +210,13 @@ pub fn register_function(function: FunctionDoc) -> bool {
 /// # Returns
 /// `true` if registration succeeded, `false` if registry is not initialized or lock failed.
 pub fn register_type(type_doc: TypeDoc) -> bool {
-    if let Ok(mut registry) = DOC_REGISTRY.write() {
-        if let Some(ref mut reg) = *registry {
-            reg.register_type(type_doc);
-            return true;
-        }
+    let mut registry = write_registry();
+    if let Some(ref mut reg) = *registry {
+        reg.register_type(type_doc);
+        true
+    } else {
+        false
     }
-    false
 }
 
 /// Register a module in the global documentation registry.
@@ -225,20 +224,20 @@ pub fn register_type(type_doc: TypeDoc) -> bool {
 /// # Returns
 /// `true` if registration succeeded, `false` if registry is not initialized or lock failed.
 pub fn register_module(module: ModuleDoc) -> bool {
-    if let Ok(mut registry) = DOC_REGISTRY.write() {
-        if let Some(ref mut reg) = *registry {
-            reg.register_module(module);
-            return true;
-        }
+    let mut registry = write_registry();
+    if let Some(ref mut reg) = *registry {
+        reg.register_module(module);
+        true
+    } else {
+        false
     }
-    false
 }
 
 /// Get a function from the global documentation registry.
 ///
 /// Returns None if the registry is not initialized, lock failed, or the function is not found.
 pub fn get_function(module: &str, name: &str) -> Option<FunctionDoc> {
-    let registry = DOC_REGISTRY.read().ok()?;
+    let registry = read_registry();
     registry.as_ref()?.get_function(module, name).cloned()
 }
 
@@ -246,7 +245,7 @@ pub fn get_function(module: &str, name: &str) -> Option<FunctionDoc> {
 ///
 /// Returns None if the registry is not initialized, lock failed, or the type is not found.
 pub fn get_type(name: &str) -> Option<TypeDoc> {
-    let registry = DOC_REGISTRY.read().ok()?;
+    let registry = read_registry();
     registry.as_ref()?.get_type(name).cloned()
 }
 
@@ -254,7 +253,7 @@ pub fn get_type(name: &str) -> Option<TypeDoc> {
 ///
 /// Returns None if the registry is not initialized, lock failed, or the module is not found.
 pub fn get_module(name: &str) -> Option<ModuleDoc> {
-    let registry = DOC_REGISTRY.read().ok()?;
+    let registry = read_registry();
     registry.as_ref()?.get_module(name).cloned()
 }
 
@@ -262,10 +261,9 @@ pub fn get_module(name: &str) -> Option<ModuleDoc> {
 ///
 /// Returns an empty vector if the registry is not initialized or lock failed.
 pub fn all_functions() -> Vec<FunctionDoc> {
-    if let Ok(registry) = DOC_REGISTRY.read() {
-        if let Some(reg) = registry.as_ref() {
-            return reg.all_functions().cloned().collect();
-        }
+    let registry = read_registry();
+    if let Some(reg) = registry.as_ref() {
+        return reg.all_functions().cloned().collect();
     }
     vec![]
 }
@@ -274,10 +272,9 @@ pub fn all_functions() -> Vec<FunctionDoc> {
 ///
 /// Returns an empty vector if the registry is not initialized or lock failed.
 pub fn all_types() -> Vec<TypeDoc> {
-    if let Ok(registry) = DOC_REGISTRY.read() {
-        if let Some(reg) = registry.as_ref() {
-            return reg.all_types().cloned().collect();
-        }
+    let registry = read_registry();
+    if let Some(reg) = registry.as_ref() {
+        return reg.all_types().cloned().collect();
     }
     vec![]
 }
@@ -286,30 +283,27 @@ pub fn all_types() -> Vec<TypeDoc> {
 ///
 /// Returns an empty vector if the registry is not initialized or lock failed.
 pub fn all_modules() -> Vec<ModuleDoc> {
-    if let Ok(registry) = DOC_REGISTRY.read() {
-        if let Some(reg) = registry.as_ref() {
-            return reg.all_modules().cloned().collect();
-        }
+    let registry = read_registry();
+    if let Some(reg) = registry.as_ref() {
+        return reg.all_modules().cloned().collect();
     }
     vec![]
 }
 
 /// Get all functions in a specific module from the global registry.
 pub fn functions_in_module(module: &str) -> Vec<FunctionDoc> {
-    if let Ok(registry) = DOC_REGISTRY.read() {
-        if let Some(reg) = registry.as_ref() {
-            return reg.functions_in_module(module).cloned().collect();
-        }
+    let registry = read_registry();
+    if let Some(reg) = registry.as_ref() {
+        return reg.functions_in_module(module).cloned().collect();
     }
     vec![]
 }
 
 /// Get all types in a specific module from the global registry.
 pub fn types_in_module(module: &str) -> Vec<TypeDoc> {
-    if let Ok(registry) = DOC_REGISTRY.read() {
-        if let Some(reg) = registry.as_ref() {
-            return reg.types_in_module(module).cloned().collect();
-        }
+    let registry = read_registry();
+    if let Some(reg) = registry.as_ref() {
+        return reg.types_in_module(module).cloned().collect();
     }
     vec![]
 }
@@ -318,10 +312,23 @@ pub fn types_in_module(module: &str) -> Vec<TypeDoc> {
 ///
 /// Primarily useful for testing.
 pub fn clear() {
-    if let Ok(mut registry) = DOC_REGISTRY.write() {
-        if let Some(ref mut reg) = *registry {
-            reg.clear();
-        }
+    let mut registry = write_registry();
+    if let Some(ref mut reg) = *registry {
+        reg.clear();
+    }
+}
+
+fn write_registry() -> RwLockWriteGuard<'static, Option<DocRegistry>> {
+    match DOC_REGISTRY.write() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
+}
+
+fn read_registry() -> RwLockReadGuard<'static, Option<DocRegistry>> {
+    match DOC_REGISTRY.read() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
     }
 }
 
