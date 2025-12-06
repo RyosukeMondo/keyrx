@@ -1,8 +1,10 @@
 # Tasks Document
 
+_Status: Priority #6 in 2025 implementation order; all items pending. Focus on compositor/cross-layout modifiers with priority handling._
+
 ## Phase 1: Core Types
 
-- [ ] 1. Create Layout entity
+- [x] 1. Create Layout entity
   - File: `core/src/engine/layout/mod.rs`
   - Separate layout from layer stack
   - Add layout metadata

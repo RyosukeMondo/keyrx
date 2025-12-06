@@ -11,6 +11,7 @@ mod event_recorder;
 mod event_recording;
 pub mod fallback;
 pub mod layer_actions;
+pub mod layout;
 pub mod limits;
 mod multi_device;
 mod output;
@@ -40,6 +41,7 @@ pub use event_recording::{
     SessionFile, SESSION_FILE_VERSION,
 };
 pub use fallback::{FallbackEngine, FallbackReason};
+pub use layout::{Layout, LayoutId, LayoutMetadata};
 pub use limits::{
     ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceLimits, ResourceUsageSnapshot,
 };
