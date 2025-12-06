@@ -8,6 +8,7 @@ import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
 import 'pages/developer/test_runner_page.dart';
+import 'pages/developer/profiler_page.dart';
 import 'pages/migration_prompt_page.dart';
 import 'pages/mapping_page.dart';
 import 'pages/run_controls_page.dart';
@@ -20,12 +21,7 @@ import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
 
 void main() {
-  runApp(
-    MultiProvider(
-      providers: createProviders(),
-      child: const KeyrxApp(),
-    ),
-  );
+  runApp(MultiProvider(providers: createProviders(), child: const KeyrxApp()));
 }
 
 /// Main application widget.
@@ -69,11 +65,7 @@ class KeyrxApp extends StatelessWidget {
   Future<MigrationReport> _runMigration() async {
     // TODO: Implement FFI call to keyrx_migration_run
     // For now, return a success report
-    return MigrationReport(
-      totalCount: 0,
-      migratedCount: 0,
-      failedCount: 0,
-    );
+    return MigrationReport(totalCount: 0, migratedCount: 0, failedCount: 0);
   }
 }
 
@@ -256,6 +248,8 @@ class _HomePageState extends State<HomePage> {
         return const ConsolePage();
       case DeveloperTool.testRunner:
         return const TestRunnerPage();
+      case DeveloperTool.profiler:
+        return const ProfilerPage();
       case DeveloperTool.simulator:
       case DeveloperTool.analyzer:
       case DeveloperTool.benchmark:
@@ -323,8 +317,9 @@ class _HomePageState extends State<HomePage> {
                           ? Icons.developer_mode
                           : Icons.developer_mode_outlined,
                       size: 14,
-                      color:
-                          appState.isDeveloperMode ? Colors.amber : Colors.grey,
+                      color: appState.isDeveloperMode
+                          ? Colors.amber
+                          : Colors.grey,
                     ),
                     const SizedBox(width: 4),
                     Text(

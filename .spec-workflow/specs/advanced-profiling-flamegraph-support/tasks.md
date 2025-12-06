@@ -59,7 +59,7 @@ _Status: Priority #2 in 2025 implementation order; open items: 6 (in-progress), 
   - Purpose: CLI access
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 8. Add UI visualization
+- [x] 8. Add UI visualization
   - File: `ui/lib/pages/developer/profiler_page.dart`
   - Flame graph viewer
   - Allocation report

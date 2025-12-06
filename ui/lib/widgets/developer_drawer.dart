@@ -7,6 +7,11 @@ enum DeveloperTool {
   testRunner('Test Runner', Icons.science_outlined, Icons.science),
   simulator('Simulator', Icons.keyboard_outlined, Icons.keyboard),
   analyzer('Analyzer', Icons.analytics_outlined, Icons.analytics),
+  profiler(
+    'Profiler',
+    Icons.local_fire_department_outlined,
+    Icons.local_fire_department,
+  ),
   benchmark('Benchmark', Icons.speed_outlined, Icons.speed),
   doctor('Doctor', Icons.health_and_safety_outlined, Icons.health_and_safety),
   replay('Replay', Icons.replay_outlined, Icons.replay),
