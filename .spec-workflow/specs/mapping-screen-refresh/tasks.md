@@ -35,7 +35,7 @@
   - _Requirements: 4, 5_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer specializing in complex grids | Task: Add a Mapping page with grid view, density toggle, search/filter highlighting, and mapping editor invocation | Restrictions: Keep rendering performant; reuse existing grid/key widgets where possible; maintain accessibility (focus/keyboard nav) | Success: Mapping page is reachable, shows the grid, supports density toggle and search highlight, and opens the mapping editor for a cell._
 
-- [ ] 6. Wire navigation to include Mapping and rename Editor to Profiles
+- [x] 6. Wire navigation to include Mapping and rename Editor to Profiles
   - Files: ui/lib/main.dart; any nav drawer/rail configs
   - Add the Mapping destination and page to the navigation (Rail and page list), and ensure the existing Editor label is now Profiles across nav/drawer/status surfaces.
   - _Leverage: ui/lib/main.dart navigation destinations and page construction_

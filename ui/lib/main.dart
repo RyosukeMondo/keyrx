@@ -9,6 +9,7 @@ import 'pages/console.dart';
 import 'pages/devices_page.dart';
 import 'pages/developer/test_runner_page.dart';
 import 'pages/migration_prompt_page.dart';
+import 'pages/mapping_page.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/trade_off_visualizer.dart';
 import 'services/service_registry.dart';
@@ -97,6 +98,7 @@ class _HomePageState extends State<HomePage> {
       ),
       // Use ValueKey to force rebuild of VisualEditorPage to pick up layout fixes
       const VisualEditorPage(key: ValueKey('visual_editor_v2')),
+      const MappingPage(),
       const RunControlsPage(),
       const DebuggerPage(),
       const ConsolePage(),
@@ -114,6 +116,11 @@ class _HomePageState extends State<HomePage> {
       icon: Icon(Icons.edit_outlined),
       selectedIcon: Icon(Icons.edit),
       label: 'Profiles',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.grid_view_outlined),
+      selectedIcon: Icon(Icons.grid_view),
+      label: 'Mapping',
     ),
     NavigationDestination(
       icon: Icon(Icons.play_circle_outlined),
