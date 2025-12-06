@@ -537,7 +537,7 @@
   - _Requirements: 7, 16_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Developer for read-only data | Task: Expose device definitions via FFI using the live library instead of stubs | Restrictions: Read-only exposure, correct error codes, no global divergence, panic safety | _Leverage: ffi panic guards, runtime wiring | Success: Dart/FFI can list/get definitions; stubs removed; tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (FFI functions wired), then mark as [x]._
 
-- [ ] 7.7. Align CLI device commands with live registry
+- [x] 7.7. Align CLI device commands with live registry
   - Files: `core/src/cli/commands/devices.rs`, `core/src/cli/commands/run.rs`, potential helpers in `core/src/lib.rs`
   - Make CLI device operations (list/show/remap/assign/label) operate on the live DeviceRegistry when the engine is running, while persisting via DeviceBindings to keep SSOT.
   - Ensure outputs reflect actual runtime state (remap/profile/label) and still write bindings atomically; handle offline mode gracefully.
