@@ -20,6 +20,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/rhai_generator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/widgets/visual_keyboard.dart';
@@ -92,6 +93,7 @@ void main() {
       testService: FakeTestService(),
       bridge: FakeBridge(),
       apiDocsService: FakeApiDocsService(),
+      storagePathResolver: const StoragePathResolver(),
     );
 
     return MultiProvider(
@@ -107,16 +109,15 @@ void main() {
       child: MaterialApp(
         title: 'KeyRx Test',
         theme: ThemeData.dark(useMaterial3: true),
-        home: Scaffold(
-          body: VisualEditorPage(mappingRepository: mappingRepo),
-        ),
+        home: Scaffold(body: VisualEditorPage(mappingRepository: mappingRepo)),
       ),
     );
   }
 
   group('Visual Editor Flow', () {
-    testWidgets('Visual editor page renders with keyboard',
-        (WidgetTester tester) async {
+    testWidgets('Visual editor page renders with keyboard', (
+      WidgetTester tester,
+    ) async {
       // Set up larger window for visual editor
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -138,8 +139,9 @@ void main() {
       expect(find.text('No mappings yet.'), findsOneWidget);
     });
 
-    testWidgets('Toggle between visual and code view',
-        (WidgetTester tester) async {
+    testWidgets('Toggle between visual and code view', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -168,8 +170,9 @@ void main() {
       expect(find.byType(VisualKeyboard), findsOneWidget);
     });
 
-    testWidgets('Mapping panel shows count and clear button',
-        (WidgetTester tester) async {
+    testWidgets('Mapping panel shows count and clear button', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -188,8 +191,9 @@ void main() {
       expect(clearButton, findsOneWidget);
     });
 
-    testWidgets('Code view shows generated Rhai syntax',
-        (WidgetTester tester) async {
+    testWidgets('Code view shows generated Rhai syntax', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -211,8 +215,9 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('Parse to Visual button appears when code is modified',
-        (WidgetTester tester) async {
+    testWidgets('Parse to Visual button appears when code is modified', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -240,8 +245,9 @@ void main() {
       expect(find.text('Modified'), findsOneWidget);
     });
 
-    testWidgets('New configuration button shows confirmation dialog',
-        (WidgetTester tester) async {
+    testWidgets('New configuration button shows confirmation dialog', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -256,8 +262,7 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('Load script button is present',
-        (WidgetTester tester) async {
+    testWidgets('Load script button is present', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -286,8 +291,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Save script button is present',
-        (WidgetTester tester) async {
+    testWidgets('Save script button is present', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -316,8 +320,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Keyboard shows helper text for drag-drop',
-        (WidgetTester tester) async {
+    testWidgets('Keyboard shows helper text for drag-drop', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -335,8 +340,9 @@ void main() {
       );
     });
 
-    testWidgets('Empty mappings panel shows instructions',
-        (WidgetTester tester) async {
+    testWidgets('Empty mappings panel shows instructions', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -354,8 +360,9 @@ void main() {
   });
 
   group('Rhai Generator Integration', () {
-    testWidgets('Generated script contains correct syntax',
-        (WidgetTester tester) async {
+    testWidgets('Generated script contains correct syntax', (
+      WidgetTester tester,
+    ) async {
       // Test the generator directly for expected output
       final generator = RhaiGenerator();
 
@@ -376,8 +383,9 @@ void main() {
       expect(script, contains('// Generated by KeyRx Visual Editor'));
     });
 
-    testWidgets('Parser extracts mappings from valid script',
-        (WidgetTester tester) async {
+    testWidgets('Parser extracts mappings from valid script', (
+      WidgetTester tester,
+    ) async {
       final generator = RhaiGenerator();
 
       const script = '''
@@ -397,8 +405,9 @@ fn main() {
       expect(config.mappings[1].targetKeyId, 'Escape');
     });
 
-    testWidgets('Parser detects advanced features',
-        (WidgetTester tester) async {
+    testWidgets('Parser detects advanced features', (
+      WidgetTester tester,
+    ) async {
       final generator = RhaiGenerator();
 
       const advancedScript = '''
@@ -417,8 +426,9 @@ fn main() {
       expect(config.hasAdvancedFeatures, true);
     });
 
-    testWidgets('Roundtrip: generate -> parse -> generate',
-        (WidgetTester tester) async {
+    testWidgets('Roundtrip: generate -> parse -> generate', (
+      WidgetTester tester,
+    ) async {
       final generator = RhaiGenerator();
 
       const originalConfig = VisualConfig(
@@ -485,8 +495,9 @@ fn main() {
   });
 
   group('Visual Keyboard Integration', () {
-    testWidgets('Keyboard layout has expected structure',
-        (WidgetTester tester) async {
+    testWidgets('Keyboard layout has expected structure', (
+      WidgetTester tester,
+    ) async {
       // Verify default ANSI layout has expected keys
       final layout = KeyboardLayout.ansi104();
 
@@ -503,8 +514,9 @@ fn main() {
       expect(keyIds.contains('Enter'), true);
     });
 
-    testWidgets('Keyboard renders in visual editor context',
-        (WidgetTester tester) async {
+    testWidgets('Keyboard renders in visual editor context', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {

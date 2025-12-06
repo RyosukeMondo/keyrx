@@ -7,7 +7,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Relabel the Editor navigation item to Profiles and keep routing intact | Restrictions: Do not change route keys/indices; avoid altering other destinations | Success: Navigation shows Profiles where Editor was, and selecting it still opens the same screen._
 
-- [ ] 2. Add storage path resolver for home `.keyrx`
+- [x] 2. Add storage path resolver for home `.keyrx`
   - File: ui/lib/services/storage_path_resolver.dart (new)
   - Create a service that resolves the profiles directory to `%USERPROFILE%/.keyrx` on Windows and `~/.keyrx` on Linux, ensures the directory exists, and exposes the resolved path.
   - _Leverage: dart:io Platform APIs; existing service patterns in ui/lib/services/*

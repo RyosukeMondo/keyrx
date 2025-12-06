@@ -12,6 +12,7 @@ import 'package:keyrx_ui/pages/trade_off_visualizer.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:provider/provider.dart';
 
@@ -71,6 +72,7 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
     testService: FakeTestService(),
     bridge: FakeBridge(),
     apiDocsService: FakeApiDocsService(),
+    storagePathResolver: const StoragePathResolver(),
   );
 
   return MultiProvider(

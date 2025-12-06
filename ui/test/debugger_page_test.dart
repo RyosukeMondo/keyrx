@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +19,7 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     testService: FakeTestService(),
     bridge: FakeBridge(),
     apiDocsService: FakeApiDocsService(),
+    storagePathResolver: const StoragePathResolver(),
   );
 }
 
@@ -67,47 +69,50 @@ void main() {
     expect(find.textContaining('120µs'), findsWidgets);
   });
 
-  testWidgets('Debugger shows timing and pending decisions with latency timeline', (tester) async {
-    final fakeEngine = FakeEngineService();
-    final registry = _buildRegistry(fakeEngine);
+  testWidgets(
+    'Debugger shows timing and pending decisions with latency timeline',
+    (tester) async {
+      final fakeEngine = FakeEngineService();
+      final registry = _buildRegistry(fakeEngine);
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [Provider<ServiceRegistry>.value(value: registry)],
-        child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
-      ),
-    );
-
-    fakeEngine.emit(
-      EngineSnapshot(
-        timestamp: DateTime.now(),
-        activeLayers: const ['base'],
-        activeModifiers: const ['Shift'],
-        heldKeys: const ['K'],
-        pendingDecisions: const ['combo A+B'],
-        lastEvent: 'combo triggered',
-        latencyUs: 25000,
-        timing: const EngineTiming(
-          tapTimeoutMs: 150,
-          comboTimeoutMs: 250,
-          holdDelayMs: 40,
-          eagerTap: true,
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      fakeEngine.emit(
+        EngineSnapshot(
+          timestamp: DateTime.now(),
+          activeLayers: const ['base'],
+          activeModifiers: const ['Shift'],
+          heldKeys: const ['K'],
+          pendingDecisions: const ['combo A+B'],
+          lastEvent: 'combo triggered',
+          latencyUs: 25000,
+          timing: const EngineTiming(
+            tapTimeoutMs: 150,
+            comboTimeoutMs: 250,
+            holdDelayMs: 40,
+            eagerTap: true,
+          ),
+        ),
+      );
 
-    // Combo decisions are now shown with individual key chips (A and B extracted from "combo A+B")
-    expect(find.text('A'), findsWidgets);
-    expect(find.text('B'), findsWidgets);
-    expect(find.text('Timing'), findsOneWidget);
-    expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
-    expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
-    expect(find.textContaining('Eager tap: true'), findsOneWidget);
-    expect(find.textContaining('Latency Timeline'), findsOneWidget);
-    expect(find.textContaining('Avg:'), findsOneWidget);
-  });
+      await tester.pumpAndSettle();
+
+      // Combo decisions are now shown with individual key chips (A and B extracted from "combo A+B")
+      expect(find.text('A'), findsWidgets);
+      expect(find.text('B'), findsWidgets);
+      expect(find.text('Timing'), findsOneWidget);
+      expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
+      expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
+      expect(find.textContaining('Eager tap: true'), findsOneWidget);
+      expect(find.textContaining('Latency Timeline'), findsOneWidget);
+      expect(find.textContaining('Avg:'), findsOneWidget);
+    },
+  );
 
   group('State stream subscription', () {
     testWidgets('subscribes to state stream on init', (tester) async {
@@ -188,7 +193,6 @@ void main() {
       expect(find.text('updated'), findsOneWidget);
       expect(find.text('Shift'), findsOneWidget);
     });
-
   });
 
   group('Latency meter', () {
@@ -415,7 +419,9 @@ void main() {
       expect(laterValue, lessThan(initialValue ?? 1.0));
     });
 
-    testWidgets('categorizes taphold and hold keywords correctly', (tester) async {
+    testWidgets('categorizes taphold and hold keywords correctly', (
+      tester,
+    ) async {
       final fakeEngine = FakeEngineService();
       final registry = _buildRegistry(fakeEngine);
 
@@ -446,7 +452,9 @@ void main() {
   });
 
   group('Combo key highlighting', () {
-    testWidgets('extracts and displays combo keys from plus notation', (tester) async {
+    testWidgets('extracts and displays combo keys from plus notation', (
+      tester,
+    ) async {
       final fakeEngine = FakeEngineService();
       final registry = _buildRegistry(fakeEngine);
 

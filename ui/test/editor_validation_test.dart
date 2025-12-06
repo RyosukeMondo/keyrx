@@ -11,6 +11,7 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:provider/provider.dart';
@@ -38,20 +39,19 @@ void main() {
           tapHoldHold: 'Ctrl',
           layer: 'navigation',
         ),
-        const KeyMapping(
-          from: 'Q',
-          type: KeyActionType.block,
-        ),
+        const KeyMapping(from: 'Q', type: KeyActionType.block),
       ];
       final combos = [
         const ComboMapping(keys: ['A', 'S'], output: 'Ctrl'),
       ];
 
-      final script =
-          ScriptGenerator.build(mappings: mappings, combos: combos);
+      final script = ScriptGenerator.build(mappings: mappings, combos: combos);
 
       expect(script, contains('remap("CapsLock", "Escape");'));
-      expect(script, contains('tap_hold("CapsLock", tap: "Escape", hold: "Ctrl");'));
+      expect(
+        script,
+        contains('tap_hold("CapsLock", tap: "Escape", hold: "Ctrl");'),
+      );
       expect(script, contains('layer("navigation", "CapsLock", "Escape");'));
       expect(script, contains('block("Q");'));
       expect(script, contains('combo(["A", "S"], "Ctrl");'));
@@ -59,7 +59,9 @@ void main() {
   });
 
   group('EditorPage', () {
-    testWidgets('uses fetched key registry for validation and badges', (tester) async {
+    testWidgets('uses fetched key registry for validation and badges', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1400, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -86,6 +88,7 @@ void main() {
         mappingRepository: MappingRepository(),
         scriptFileService: FakeScriptFileService(),
         apiDocsService: FakeApiDocsService(),
+        storagePathResolver: const StoragePathResolver(),
       );
 
       final facade = KeyrxFacade.real(registry);
@@ -165,12 +168,11 @@ class _FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async =>
-      const KeyRegistryResult(
-        entries: [
-          KeyRegistryEntry(name: 'Space', aliases: ['Q', 'Enter']),
-        ],
-      );
+  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(
+    entries: [
+      KeyRegistryEntry(name: 'Space', aliases: ['Q', 'Enter']),
+    ],
+  );
 
   void emit(EngineSnapshot snapshot) {
     _stateController.add(snapshot);

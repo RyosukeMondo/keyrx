@@ -10,6 +10,7 @@ import 'error_translator.dart';
 import 'error_translator_impl.dart';
 import 'profile_registry_service.dart';
 import 'script_file_service.dart';
+import 'storage_path_resolver.dart';
 import 'test_service.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
@@ -26,6 +27,7 @@ class ServiceRegistry {
     required this.testService,
     required this.bridge,
     required this.apiDocsService,
+    required this.storagePathResolver,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -40,21 +42,26 @@ class ServiceRegistry {
     ScriptFileService? scriptFileService,
     TestService? testService,
     ApiDocsService? apiDocsService,
+    StoragePathResolver? storagePathResolver,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final effectiveBridge = bridge ?? KeyrxBridge.open();
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
     final deviceProfile =
-        deviceProfileService ?? DeviceProfileServiceImpl(bridge: effectiveBridge);
+        deviceProfileService ??
+        DeviceProfileServiceImpl(bridge: effectiveBridge);
     final deviceRegistry =
-        deviceRegistryService ?? DeviceRegistryServiceImpl(bridge: effectiveBridge);
+        deviceRegistryService ??
+        DeviceRegistryServiceImpl(bridge: effectiveBridge);
     final profileRegistry =
-        profileRegistryService ?? ProfileRegistryServiceImpl(bridge: effectiveBridge);
+        profileRegistryService ??
+        ProfileRegistryServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
+    final resolver = storagePathResolver ?? const StoragePathResolver();
 
     return ServiceRegistry(
       errorTranslator: translator,
@@ -68,6 +75,7 @@ class ServiceRegistry {
       testService: tests,
       bridge: effectiveBridge,
       apiDocsService: docs,
+      storagePathResolver: resolver,
     );
   }
 
@@ -84,6 +92,7 @@ class ServiceRegistry {
     required TestService testService,
     required KeyrxBridge bridge,
     required ApiDocsService apiDocsService,
+    required StoragePathResolver storagePathResolver,
   }) {
     return ServiceRegistry(
       errorTranslator: errorTranslator,
@@ -97,6 +106,7 @@ class ServiceRegistry {
       testService: testService,
       bridge: bridge,
       apiDocsService: apiDocsService,
+      storagePathResolver: storagePathResolver,
     );
   }
 
@@ -111,6 +121,7 @@ class ServiceRegistry {
   final TestService testService;
   final KeyrxBridge bridge;
   final ApiDocsService apiDocsService;
+  final StoragePathResolver storagePathResolver;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -125,6 +136,7 @@ class ServiceRegistry {
     TestService? testService,
     KeyrxBridge? bridge,
     ApiDocsService? apiDocsService,
+    StoragePathResolver? storagePathResolver,
   }) {
     return ServiceRegistry(
       errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -132,12 +144,15 @@ class ServiceRegistry {
       mappingRepository: mappingRepository ?? this.mappingRepository,
       deviceService: deviceService ?? this.deviceService,
       deviceProfileService: deviceProfileService ?? this.deviceProfileService,
-      deviceRegistryService: deviceRegistryService ?? this.deviceRegistryService,
-      profileRegistryService: profileRegistryService ?? this.profileRegistryService,
+      deviceRegistryService:
+          deviceRegistryService ?? this.deviceRegistryService,
+      profileRegistryService:
+          profileRegistryService ?? this.profileRegistryService,
       scriptFileService: scriptFileService ?? this.scriptFileService,
       testService: testService ?? this.testService,
       bridge: bridge ?? this.bridge,
       apiDocsService: apiDocsService ?? this.apiDocsService,
+      storagePathResolver: storagePathResolver ?? this.storagePathResolver,
     );
   }
 

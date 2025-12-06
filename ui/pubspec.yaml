@@ -43,6 +43,8 @@ dependencies:
 
   shared_preferences: ^2.3.5
 
+  path: ^1.9.0
+
   # Charts for trade-off visualization
   fl_chart: ^0.68.0
 
