@@ -27,7 +27,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
 
 ## Phase 2: Export
 
-- [ ] 4. Implement Prometheus exporter
+- [x] 4. Implement Prometheus exporter
   - File: `core/src/metrics/prometheus.rs`
   - /metrics endpoint
   - Label configuration
