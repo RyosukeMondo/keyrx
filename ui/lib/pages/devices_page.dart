@@ -51,14 +51,55 @@ class _DevicesPageState extends State<DevicesPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
+            onPressed: _isRefreshing
+                ? null
+                : () => _refreshDevices(showFeedback: true),
             tooltip: 'Refresh device list',
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _refreshDevices(showFeedback: true),
-        child: _buildBody(),
+      body: Column(
+        children: [
+          if (_isRefreshing) _buildDiscoveryIndicator(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _refreshDevices(showFeedback: true),
+              child: _buildBody(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscoveryIndicator() {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Discovering devices… You can continue using the app.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _isRefreshing
+                  ? null
+                  : () => _refreshDevices(showFeedback: true),
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Rescan'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -82,8 +123,7 @@ class _DevicesPageState extends State<DevicesPage> {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          if (_errorMessage != null)
-            _buildInlineErrorBanner(_errorMessage!),
+          if (_errorMessage != null) _buildInlineErrorBanner(_errorMessage!),
           _buildEmptyState(),
         ],
       );
@@ -139,7 +179,9 @@ class _DevicesPageState extends State<DevicesPage> {
               Icons.refresh,
               color: Theme.of(context).colorScheme.onErrorContainer,
             ),
-            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
+            onPressed: _isRefreshing
+                ? null
+                : () => _refreshDevices(showFeedback: true),
             tooltip: 'Retry refresh',
           ),
         ),
@@ -168,7 +210,9 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
+            onPressed: _isRefreshing
+                ? null
+                : () => _refreshDevices(showFeedback: true),
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
@@ -193,9 +237,17 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Connect a keyboard or other input device to get started.',
+            'Connect a keyboard or other input device, then tap Refresh to start discovery.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _isRefreshing
+                ? null
+                : () => _refreshDevices(showFeedback: true),
+            icon: const Icon(Icons.search),
+            label: const Text('Scan for devices'),
           ),
           const SizedBox(height: 32),
           _buildTroubleshootingCard(),
@@ -314,16 +366,12 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
         );
         _updateDeviceState(
-          device.copyWith(
-            identity: device.identity.copyWith(userLabel: label),
-          ),
+          device.copyWith(identity: device.identity.copyWith(userLabel: label)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Failed to update label: ${opResult.errorMessage}',
-            ),
+            content: Text('Failed to update label: ${opResult.errorMessage}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -385,11 +433,12 @@ class _DevicesPageState extends State<DevicesPage> {
         _showSnack('Failed to refresh devices: $e', isError: true);
       }
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _isRefreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
@@ -415,8 +464,7 @@ class _DevicesPageState extends State<DevicesPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError ? Theme.of(context).colorScheme.error : null,
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
       ),
     );
   }
@@ -424,10 +472,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
 /// Troubleshooting step widget
 class _TroubleshootingStep extends StatelessWidget {
-  const _TroubleshootingStep({
-    required this.number,
-    required this.text,
-  });
+  const _TroubleshootingStep({required this.number, required this.text});
 
   final String number;
   final String text;

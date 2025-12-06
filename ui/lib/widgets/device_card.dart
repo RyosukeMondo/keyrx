@@ -5,6 +5,7 @@
 // device configuration.
 
 import 'package:flutter/material.dart';
+import '../models/device_identity.dart';
 import '../models/device_state.dart';
 import '../services/device_registry_service.dart';
 import '../services/profile_registry_service.dart';
@@ -55,6 +56,9 @@ class _DeviceCardState extends State<DeviceCard> {
   String? _selectedProfileId;
   bool _remapInFlight = false;
   bool _profileInFlight = false;
+  bool _labelInFlight = false;
+  bool _editingLabel = false;
+  late final TextEditingController _labelController;
 
   @override
   void initState() {
@@ -62,6 +66,9 @@ class _DeviceCardState extends State<DeviceCard> {
     _currentState = widget.deviceState;
     _remapEnabled = widget.deviceState.remapEnabled;
     _selectedProfileId = widget.deviceState.profileId;
+    _labelController = TextEditingController(
+      text: widget.deviceState.identity.userLabel ?? '',
+    );
   }
 
   @override
@@ -71,10 +78,20 @@ class _DeviceCardState extends State<DeviceCard> {
       _currentState = widget.deviceState;
       _remapEnabled = widget.deviceState.remapEnabled;
       _selectedProfileId = widget.deviceState.profileId;
+      _labelController.text = widget.deviceState.identity.userLabel ?? '';
     }
   }
 
-  bool get _actionsDisabled => _remapInFlight || _profileInFlight;
+  @override
+  void dispose() {
+    _labelController.dispose();
+    super.dispose();
+  }
+
+  bool get _actionsDisabled =>
+      _remapInFlight || _profileInFlight || _labelInFlight;
+  bool get _hasCustomLabel =>
+      _currentState.identity.userLabel?.trim().isNotEmpty ?? false;
   String get _statusText {
     if (!_remapEnabled) {
       return 'Passthrough';
@@ -93,8 +110,10 @@ class _DeviceCardState extends State<DeviceCard> {
       _remapInFlight = true;
     });
 
-    final result = await widget.deviceService
-        .toggleRemap(_currentState.identity.toKey(), enabled);
+    final result = await widget.deviceService.toggleRemap(
+      _currentState.identity.toKey(),
+      enabled,
+    );
 
     if (!mounted) return;
 
@@ -133,8 +152,10 @@ class _DeviceCardState extends State<DeviceCard> {
       _profileInFlight = true;
     });
 
-    final result = await widget.deviceService
-        .assignProfile(_currentState.identity.toKey(), profileId);
+    final result = await widget.deviceService.assignProfile(
+      _currentState.identity.toKey(),
+      profileId,
+    );
 
     if (!mounted) return;
 
@@ -163,10 +184,65 @@ class _DeviceCardState extends State<DeviceCard> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError ? Theme.of(context).colorScheme.error : null,
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
       ),
     );
+  }
+
+  void _startInlineLabelEdit() {
+    setState(() {
+      _editingLabel = true;
+      _labelController.text = _currentState.identity.userLabel ?? '';
+    });
+  }
+
+  void _cancelInlineLabelEdit() {
+    setState(() {
+      _editingLabel = false;
+      _labelController.text = _currentState.identity.userLabel ?? '';
+    });
+  }
+
+  Future<void> _saveInlineLabel() async {
+    final raw = _labelController.text.trim();
+    final label = raw.isEmpty ? null : raw;
+    if (label == _currentState.identity.userLabel) {
+      setState(() => _editingLabel = false);
+      return;
+    }
+
+    setState(() {
+      _labelInFlight = true;
+    });
+
+    final opResult = await widget.deviceService.setUserLabel(
+      _currentState.identity.toKey(),
+      label,
+    );
+
+    if (!mounted) return;
+
+    if (!opResult.success) {
+      setState(() {
+        _labelInFlight = false;
+      });
+      _showSnack(
+        'Failed to update label: ${opResult.errorMessage ?? 'Unknown error'}',
+        isError: true,
+      );
+      return;
+    }
+
+    final updated = _currentState.copyWith(
+      identity: _currentState.identity.copyWith(userLabel: label),
+    );
+    setState(() {
+      _currentState = updated;
+      _labelInFlight = false;
+      _editingLabel = false;
+    });
+    widget.onDeviceUpdated?.call(updated);
+    _showSnack(label == null ? 'Label cleared' : 'Label saved');
   }
 
   @override
@@ -192,12 +268,9 @@ class _DeviceCardState extends State<DeviceCard> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    identity.displayName,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _editingLabel
+                      ? _buildInlineLabelEditor(theme)
+                      : _buildLabelSummary(theme, identity),
                 ),
                 // Status badge
                 Container(
@@ -226,13 +299,7 @@ class _DeviceCardState extends State<DeviceCard> {
             const SizedBox(height: 12),
 
             // Device identity information
-            Text(
-              identity.toKey(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontFamily: 'monospace',
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            _buildIdentityDetails(theme, identity),
             const SizedBox(height: 16),
 
             // Controls row
@@ -272,7 +339,9 @@ class _DeviceCardState extends State<DeviceCard> {
                       ProfileSelector(
                         profileService: widget.profileService,
                         selectedProfileId: _selectedProfileId,
-                        onChanged: _actionsDisabled ? null : _handleProfileChange,
+                        onChanged: _actionsDisabled
+                            ? null
+                            : _handleProfileChange,
                         enabled: !_actionsDisabled,
                       ),
                     ],
@@ -287,7 +356,7 @@ class _DeviceCardState extends State<DeviceCard> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  onPressed: widget.onEditLabel,
+                  onPressed: _actionsDisabled ? null : widget.onEditLabel,
                   icon: const Icon(Icons.edit, size: 16),
                   label: const Text('Edit Label'),
                 ),
@@ -302,6 +371,117 @@ class _DeviceCardState extends State<DeviceCard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLabelSummary(ThemeData theme, DeviceIdentity identity) {
+    final headline = _hasCustomLabel ? identity.userLabel! : 'Unnamed device';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                headline,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: _hasCustomLabel
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_note),
+              tooltip: 'Rename inline',
+              onPressed: _actionsDisabled ? null : _startInlineLabelEdit,
+            ),
+          ],
+        ),
+        if (_hasCustomLabel)
+          Text(
+            'Friendly name',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInlineLabelEditor(ThemeData theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _labelController,
+            autofocus: true,
+            enabled: !_labelInFlight,
+            decoration: InputDecoration(
+              labelText: 'Friendly name',
+              hintText: 'e.g., Work keyboard',
+              isDense: true,
+              border: const OutlineInputBorder(),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: theme.colorScheme.primary),
+              ),
+            ),
+            onSubmitted: (_) => _saveInlineLabel(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Cancel',
+          onPressed: _labelInFlight ? null : _cancelInlineLabelEdit,
+        ),
+        IconButton(
+          icon: _labelInFlight
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.check),
+          tooltip: 'Save',
+          onPressed: _labelInFlight ? null : _saveInlineLabel,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIdentityDetails(ThemeData theme, DeviceIdentity identity) {
+    final vid = identity.vendorId.toRadixString(16).padLeft(4, '0');
+    final pid = identity.productId.toRadixString(16).padLeft(4, '0');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Vendor 0x$vid • Product 0x$pid',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontFamily: 'monospace',
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Serial ${identity.serialNumber}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontFamily: 'monospace',
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          identity.toKey(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontFamily: 'monospace',
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

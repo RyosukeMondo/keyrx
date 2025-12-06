@@ -1,5 +1,7 @@
 # Tasks Document
 
+_Status: Priority #5 in 2025 implementation order; open items: 7 (in-progress), 8-9 pending. Finish Devices polish, autosave wiring, and tests._
+
 - [x] 1. Relabel Editor navigation to Profiles and align page title
   - File: ui/lib/main.dart
   - Update the NavigationRail destination label from "Editor" to "Profiles"; ensure any app bar/title text in the editor screen reflects Profiles without changing the underlying route/widget wiring.
@@ -42,7 +44,7 @@
   - _Requirements: 1, 4_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter navigation engineer | Task: Add Mapping as a new destination and update Editor label to Profiles without breaking indices/routes | Restrictions: Preserve existing order except where adding the new Mapping entry; keep selectedIndex wiring intact | Success: Navigation shows Profiles and Mapping; selecting each shows the correct page._
 
-- [ ] 7. Enhance Devices page for discovery and friendly naming
+- [x] 7. Enhance Devices page for discovery and friendly naming
   - File: ui/lib/pages/devices_page.dart
   - Add empty state messaging, inline/dialog rename with immediate persistence, and a non-blocking discovery indicator; display vendor/product ids with friendly name or placeholder.
   - _Leverage: existing device discovery and list UI in devices_page.dart_
