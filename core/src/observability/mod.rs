@@ -18,4 +18,7 @@ pub use metrics_bridge::{
     MetricsBridge, MetricsCollector, MetricsSnapshot, MetricsSnapshotFfi, NoOpMetricsCollector,
     Operation,
 };
-pub use otel::{OtelConfig, OtelConfigError};
+pub use otel::{
+    build_otel_layer, shutdown_tracer_provider, BoxedOtelLayer, OtelConfig, OtelConfigError,
+    OtelLayerError,
+};

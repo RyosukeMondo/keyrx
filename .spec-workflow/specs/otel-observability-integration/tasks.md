@@ -20,7 +20,7 @@ _Status: Priority #4 in 2025 implementation order; all items pending. Establish 
 
 ## Phase 2: Tracing
 
-- [ ] 3. Implement OTEL layer
+- [x] 3. Implement OTEL layer
   - File: `core/src/observability/otel/layer.rs`
   - Create tracer with batching
   - Add to subscriber
