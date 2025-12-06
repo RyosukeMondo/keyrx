@@ -134,6 +134,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_markdown_table_of_contents() {
         registry::initialize();
         registry::clear();

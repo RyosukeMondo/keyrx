@@ -460,6 +460,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_c_api_null_label_clears() {
         let (registry, _rx) = DeviceRegistry::new();
         let temp_dir = tempdir().unwrap();
@@ -468,6 +469,7 @@ mod tests {
         ));
         let definitions = Arc::new(DeviceDefinitionLibrary::new());
 
+        let _ = clear_revolutionary_runtime();
         set_revolutionary_runtime(RevolutionaryRuntime::new(
             registry.clone(),
             profile_registry,
