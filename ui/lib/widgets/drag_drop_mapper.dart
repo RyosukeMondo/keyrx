@@ -7,8 +7,11 @@
 //
 // Provides an intuitive UX for creating and editing key mappings.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/profile.dart';
+import '../services/profile_autosave_service.dart';
 import '../services/profile_registry_service.dart';
 import 'layout_grid.dart';
 import 'soft_keyboard.dart';
@@ -49,6 +52,9 @@ class DragDropMapper extends StatefulWidget {
   /// Optional initial selection to focus when the mapper opens.
   final PhysicalPosition? initialSelectedPosition;
 
+  /// Optional autosave service used to debounce and retry saves.
+  final ProfileAutosaveService? autosaveService;
+
   const DragDropMapper({
     super.key,
     required this.layoutInfo,
@@ -57,6 +63,7 @@ class DragDropMapper extends StatefulWidget {
     this.onProfileUpdated,
     this.onSaveError,
     this.initialSelectedPosition,
+    this.autosaveService,
   });
 
   @override
@@ -78,6 +85,7 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
   /// Whether a save operation is in progress
   bool _isSaving = false;
+  StreamSubscription<AutosaveStatus>? _autosaveSubscription;
 
   @override
   void initState() {
@@ -85,6 +93,14 @@ class _DragDropMapperState extends State<DragDropMapper> {
     _currentProfile = widget.profile;
     if (widget.initialSelectedPosition != null) {
       _primeSelection(widget.initialSelectedPosition!);
+    }
+
+    final autosave = widget.autosaveService;
+    if (autosave != null) {
+      _autosaveSubscription = autosave.statusStream.listen(
+        _handleAutosaveStatus,
+      );
+      _handleAutosaveStatus(autosave.status);
     }
   }
 
@@ -100,6 +116,17 @@ class _DragDropMapperState extends State<DragDropMapper> {
       setState(() {
         _primeSelection(widget.initialSelectedPosition!);
       });
+    }
+
+    if (widget.autosaveService != oldWidget.autosaveService) {
+      _autosaveSubscription?.cancel();
+      final autosave = widget.autosaveService;
+      if (autosave != null) {
+        _autosaveSubscription = autosave.statusStream.listen(
+          _handleAutosaveStatus,
+        );
+        _handleAutosaveStatus(autosave.status);
+      }
     }
   }
 
@@ -177,10 +204,25 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
     setState(() {
       _currentProfile = updatedProfile;
-      _isSaving = true;
     });
 
     // Auto-save the profile
+    if (widget.autosaveService != null) {
+      widget.autosaveService!.queueSave(updatedProfile);
+      widget.onProfileUpdated?.call(updatedProfile);
+      setState(() {
+        _isSaving = true;
+        _selectedPhysicalPosition = null;
+        _selectedOutputKey = null;
+        _state = MappingState.selectingPhysical;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
     final result = await widget.profileRegistryService.saveProfile(
       updatedProfile,
     );
@@ -227,10 +269,22 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
     setState(() {
       _currentProfile = updatedProfile;
+    });
+
+    if (widget.autosaveService != null) {
+      widget.autosaveService!.queueSave(updatedProfile);
+      widget.onProfileUpdated?.call(updatedProfile);
+      setState(() {
+        _isSaving = true;
+      });
+      return;
+    }
+
+    setState(() {
       _isSaving = true;
     });
 
-    // Auto-save the profile
+    // Auto-save the profile when no debounced service is provided.
     final result = await widget.profileRegistryService.saveProfile(
       updatedProfile,
     );
@@ -251,6 +305,33 @@ class _DragDropMapperState extends State<DragDropMapper> {
         _currentProfile = widget.profile;
       });
     }
+  }
+
+  void _handleAutosaveStatus(AutosaveStatus status) {
+    final isRelevant =
+        status.profileId == null || status.profileId == _currentProfile.id;
+
+    if (!isRelevant) return;
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSaving =
+          status.state == AutosaveState.queued ||
+          status.state == AutosaveState.saving;
+    });
+
+    if (status.state == AutosaveState.error) {
+      widget.onSaveError?.call(
+        status.errorMessage ?? 'Autosave failed. Please retry.',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _autosaveSubscription?.cancel();
+    super.dispose();
   }
 
   @override

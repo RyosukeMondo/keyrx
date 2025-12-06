@@ -4,6 +4,7 @@
 /// using the DragDropMapper widget with dynamic layout rendering.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/layout_type.dart';
 import '../models/profile.dart';
+import '../services/profile_autosave_service.dart';
 import '../services/profile_registry_service.dart';
 import '../services/service_registry.dart';
 import '../widgets/drag_drop_mapper.dart';
@@ -42,6 +44,10 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   List<int> _layoutRows = [];
   String? _layoutValidationMessage;
   final Map<String, LayoutInfo> _layoutOverrides = {};
+  AutosaveStatus _autosaveStatus = const AutosaveStatus(
+    state: AutosaveState.idle,
+  );
+  StreamSubscription<AutosaveStatus>? _autosaveSubscription;
 
   ProfileRegistryService get _profileService {
     try {
@@ -52,10 +58,26 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     }
   }
 
+  ProfileAutosaveService get _autosaveService {
+    try {
+      final registry = Provider.of<ServiceRegistry>(context, listen: false);
+      return registry.profileAutosaveService;
+    } on ProviderNotFoundException {
+      return Provider.of<ProfileAutosaveService>(context, listen: false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _listenToAutosave();
     _loadProfiles();
+  }
+
+  @override
+  void dispose() {
+    _autosaveSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadProfiles() async {
@@ -341,6 +363,10 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                   ],
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildAutosaveBanner(),
+            ),
 
             // Main content
             Expanded(flex: 1, child: ClipRect(child: _buildContent())),
@@ -422,6 +448,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                       layoutInfo: layoutInfo,
                       profile: _currentProfile!,
                       profileRegistryService: _profileService,
+                      autosaveService: _autosaveService,
                       onProfileUpdated: _handleProfileUpdated,
                       onSaveError: _handleSaveError,
                     ),
@@ -724,12 +751,6 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         () => _currentLayoutInfo ?? _getLayoutInfoForProfile(updatedProfile),
       );
     });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile "${updatedProfile.name}" saved')),
-      );
-    }
   }
 
   /// Show save error surfaced from DragDropMapper.
@@ -741,6 +762,105 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
+  }
+
+  void _listenToAutosave() {
+    _autosaveStatus = _autosaveService.status;
+    _autosaveSubscription = _autosaveService.statusStream.listen(
+      _handleAutosaveStatus,
+    );
+  }
+
+  void _handleAutosaveStatus(AutosaveStatus status) {
+    final currentProfileId = _currentProfile?.id;
+    if (status.profileId != null && status.profileId != currentProfileId) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final previousState = _autosaveStatus.state;
+    setState(() {
+      _autosaveStatus = status;
+    });
+
+    if (status.state == AutosaveState.error &&
+        previousState != AutosaveState.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(status.errorMessage ?? 'Autosave failed.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } else if (status.state == AutosaveState.success &&
+        previousState != AutosaveState.success &&
+        status.lastSavedAt != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Changes saved at ${_formatTime(status.lastSavedAt!)}'),
+        ),
+      );
+    }
+  }
+
+  Widget _buildAutosaveBanner() {
+    final status = _autosaveStatus;
+
+    String? message;
+    InlineMessageVariant variant = InlineMessageVariant.info;
+
+    switch (status.state) {
+      case AutosaveState.queued:
+        message = 'Autosave queued for ${status.profileId ?? 'profile'}...';
+        variant = InlineMessageVariant.info;
+        break;
+      case AutosaveState.saving:
+        final attempt = status.attempt;
+        final dir = status.targetDirectory ?? 'profiles directory';
+        message =
+            'Saving changes (attempt $attempt) to $dir... this stays non-blocking.';
+        variant = InlineMessageVariant.info;
+        break;
+      case AutosaveState.success:
+        final timestamp = status.lastSavedAt != null
+            ? _formatTime(status.lastSavedAt!)
+            : null;
+        message = 'Last saved${timestamp != null ? ' at $timestamp' : ''}.';
+        variant = InlineMessageVariant.success;
+        break;
+      case AutosaveState.error:
+        message = status.errorMessage ?? 'Autosave failed.';
+        variant = InlineMessageVariant.error;
+        break;
+      case AutosaveState.idle:
+        if (status.lastSavedAt != null) {
+          message = 'Last saved at ${_formatTime(status.lastSavedAt!)} (idle).';
+          variant = InlineMessageVariant.success;
+        }
+        break;
+    }
+
+    if (message == null) {
+      return const SizedBox.shrink();
+    }
+
+    return InlineMessage(
+      message: message,
+      variant: variant,
+      icon: switch (variant) {
+        InlineMessageVariant.success => Icons.check_circle_outline,
+        InlineMessageVariant.error => Icons.warning_amber_rounded,
+        _ => Icons.sync,
+      },
+    );
+  }
+
+  String _formatTime(DateTime timestamp) {
+    final local = timestamp.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    final second = local.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second';
   }
 
   /// Recalculate layout info from editable row data.

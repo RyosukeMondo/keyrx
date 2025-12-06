@@ -51,7 +51,7 @@ _Status: Priority #5 in 2025 implementation order; open items: 7 (in-progress), 
   - _Requirements: 2, 5_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer | Task: Improve Devices page with empty/loading states and inline rename that persists immediately | Restrictions: Keep discovery non-blocking; reuse current list patterns; avoid breaking device selection | Success: Devices page shows friendly names with ids, supports rename, shows empty/refresh guidance, and shows discovery progress unobtrusively._
 
-- [ ] 8. Hook autosave into Profiles and Mapping flows with feedback
+- [x] 8. Hook autosave into Profiles and Mapping flows with feedback
   - Files: ui/lib/pages/visual_editor_page.dart; ui/lib/pages/mapping_page.dart
   - Invoke autosave on profile/mapping changes using the autosave service; surface non-blocking status (saving/last saved/error) via toast/banner; ensure in-progress saves are debounced and last-writer wins.
   - _Leverage: profile_autosave_service.dart (task 3), storage_path_resolver.dart (task 2), existing toast/snackbar patterns_

@@ -1,6 +1,7 @@
 /// Dedicated Mapping page for per-key assignment with search and density controls.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../models/layout_type.dart';
 import '../models/profile.dart';
+import '../services/profile_autosave_service.dart';
 import '../services/profile_registry_service.dart';
 import '../services/service_registry.dart';
 import '../widgets/drag_drop_mapper.dart';
@@ -40,6 +42,10 @@ class _MappingPageState extends State<MappingPage> {
   String _searchQuery = '';
   MappingDensity _density = MappingDensity.comfortable;
   final TextEditingController _searchController = TextEditingController();
+  AutosaveStatus _autosaveStatus = const AutosaveStatus(
+    state: AutosaveState.idle,
+  );
+  StreamSubscription<AutosaveStatus>? _autosaveSubscription;
 
   ProfileRegistryService get _profileService {
     try {
@@ -50,14 +56,25 @@ class _MappingPageState extends State<MappingPage> {
     }
   }
 
+  ProfileAutosaveService get _autosaveService {
+    try {
+      final registry = Provider.of<ServiceRegistry>(context, listen: false);
+      return registry.profileAutosaveService;
+    } on ProviderNotFoundException {
+      return Provider.of<ProfileAutosaveService>(context, listen: false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _listenToAutosave();
     _loadProfiles();
   }
 
   @override
   void dispose() {
+    _autosaveSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -212,6 +229,7 @@ class _MappingPageState extends State<MappingPage> {
                 layoutInfo: layout,
                 profile: profile,
                 profileRegistryService: _profileService,
+                autosaveService: _autosaveService,
                 initialSelectedPosition: position,
                 onProfileUpdated: (updated) {
                   Navigator.of(ctx).pop(updated);
@@ -253,18 +271,7 @@ class _MappingPageState extends State<MappingPage> {
       updatedAt: DateTime.now().toUtc().toIso8601String(),
     );
 
-    final result = await _profileService.saveProfile(updatedProfile);
-    if (!result.success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.errorMessage ?? 'Failed to clear mapping.'),
-            backgroundColor: Theme.of(context).colorScheme.errorContainer,
-          ),
-        );
-      }
-      return;
-    }
+    _autosaveService.queueSave(updatedProfile);
 
     if (mounted) {
       setState(() {
@@ -275,6 +282,105 @@ class _MappingPageState extends State<MappingPage> {
         );
       });
     }
+  }
+
+  void _listenToAutosave() {
+    _autosaveStatus = _autosaveService.status;
+    _autosaveSubscription = _autosaveService.statusStream.listen(
+      _handleAutosaveStatus,
+    );
+  }
+
+  void _handleAutosaveStatus(AutosaveStatus status) {
+    final currentProfileId = _currentProfile?.id;
+    if (status.profileId != null && status.profileId != currentProfileId) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final previousState = _autosaveStatus.state;
+    setState(() {
+      _autosaveStatus = status;
+    });
+
+    if (status.state == AutosaveState.error &&
+        previousState != AutosaveState.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(status.errorMessage ?? 'Autosave failed.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } else if (status.state == AutosaveState.success &&
+        previousState != AutosaveState.success &&
+        status.lastSavedAt != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Changes saved at ${_formatTime(status.lastSavedAt!)}'),
+        ),
+      );
+    }
+  }
+
+  Widget _buildAutosaveBanner() {
+    final status = _autosaveStatus;
+
+    String? message;
+    InlineMessageVariant variant = InlineMessageVariant.info;
+
+    switch (status.state) {
+      case AutosaveState.queued:
+        message =
+            'Autosave queued${status.profileId != null ? ' for ${status.profileId}' : ''}.';
+        variant = InlineMessageVariant.info;
+        break;
+      case AutosaveState.saving:
+        final attempt = status.attempt;
+        final dir = status.targetDirectory ?? 'profiles directory';
+        message = 'Saving changes (attempt $attempt) to $dir...';
+        variant = InlineMessageVariant.info;
+        break;
+      case AutosaveState.success:
+        final timestamp = status.lastSavedAt != null
+            ? _formatTime(status.lastSavedAt!)
+            : null;
+        message = 'Last saved${timestamp != null ? ' at $timestamp' : ''}.';
+        variant = InlineMessageVariant.success;
+        break;
+      case AutosaveState.error:
+        message = status.errorMessage ?? 'Autosave failed.';
+        variant = InlineMessageVariant.error;
+        break;
+      case AutosaveState.idle:
+        if (status.lastSavedAt != null) {
+          message = 'Last saved at ${_formatTime(status.lastSavedAt!)} (idle).';
+          variant = InlineMessageVariant.success;
+        }
+        break;
+    }
+
+    if (message == null) {
+      return const SizedBox.shrink();
+    }
+
+    return InlineMessage(
+      message: message,
+      variant: variant,
+      icon: switch (variant) {
+        InlineMessageVariant.success => Icons.check_circle_outline,
+        InlineMessageVariant.error => Icons.warning_amber_rounded,
+        _ => Icons.sync,
+      },
+    );
+  }
+
+  String _formatTime(DateTime timestamp) {
+    final local = timestamp.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    final second = local.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second';
   }
 
   @override
@@ -298,6 +404,10 @@ class _MappingPageState extends State<MappingPage> {
                     variant: InlineMessageVariant.error,
                   ),
                 ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _buildAutosaveBanner(),
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: LayoutBuilder(
