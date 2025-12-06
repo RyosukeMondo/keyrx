@@ -228,7 +228,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Visual Editor'),
+        title: const Text('Profiles'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

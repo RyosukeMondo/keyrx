@@ -203,7 +203,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should have app bar
-        expect(find.widgetWithText(AppBar, 'Visual Editor'), findsOneWidget);
+        expect(find.widgetWithText(AppBar, 'Profiles'), findsOneWidget);
         expect(find.byIcon(Icons.refresh), findsOneWidget);
       });
     });

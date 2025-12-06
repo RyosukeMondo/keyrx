@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
     NavigationDestination(
       icon: Icon(Icons.edit_outlined),
       selectedIcon: Icon(Icons.edit),
-      label: 'Editor',
+      label: 'Profiles',
     ),
     NavigationDestination(
       icon: Icon(Icons.play_circle_outlined),
