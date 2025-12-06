@@ -3,9 +3,12 @@
 //! This module decouples layout identity/metadata from the underlying
 //! `LayerStack` so layouts can be composed and managed independently.
 
+pub mod compositor;
+
 use serde::{Deserialize, Serialize};
 
 use crate::engine::state::{Layer, LayerId, LayerStack};
+pub use compositor::{ActiveLayout, LayoutCompositor, ResolvedLayout};
 
 /// Stable identifier for a layout.
 pub type LayoutId = String;

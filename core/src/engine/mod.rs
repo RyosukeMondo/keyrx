@@ -41,7 +41,9 @@ pub use event_recording::{
     SessionFile, SESSION_FILE_VERSION,
 };
 pub use fallback::{FallbackEngine, FallbackReason};
-pub use layout::{Layout, LayoutId, LayoutMetadata};
+pub use layout::{
+    ActiveLayout, Layout, LayoutCompositor, LayoutId, LayoutMetadata, ResolvedLayout,
+};
 pub use limits::{
     ExecutionGuard, ResourceEnforcer, ResourceLimitError, ResourceLimits, ResourceUsageSnapshot,
 };
