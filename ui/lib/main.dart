@@ -95,7 +95,8 @@ class _HomePageState extends State<HomePage> {
         deviceService: registry.deviceRegistryService,
         profileService: registry.profileRegistryService,
       ),
-      const VisualEditorPage(),
+      // Use ValueKey to force rebuild of VisualEditorPage to pick up layout fixes
+      const VisualEditorPage(key: ValueKey('visual_editor_v2')),
       const RunControlsPage(),
       const DebuggerPage(),
       const ConsolePage(),

@@ -12,7 +12,6 @@ import '../models/discovery_progress.dart';
 import '../models/key_codes_windows.dart';
 import '../models/keyboard_layout.dart';
 import '../services/facade/keyrx_facade.dart';
-import '../services/facade/result.dart';
 import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
 import '../services/device_profile_service.dart';
@@ -66,6 +65,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
     // Initialize focus node with key handler attached directly
     _textFocusNode = FocusNode(
       onKey: (node, event) {
+        // ignore: deprecated_member_use
         if (event is RawKeyEvent) {
            _handleRawKeyEvent(event);
            return KeyEventResult.handled;
@@ -85,7 +85,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
              final existing = jsonMap['existing'];
              final row = existing['row'];
              final col = existing['col'];
-             final keyId = 'r${row}_c${col}';
+             final keyId = 'r${row}_c$col';
 
              if (mounted) {
                setState(() {
@@ -111,7 +111,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
              }
            }
          } catch (e) {
-           print('Error parsing duplicate: $e');
+           debugPrint('Error parsing duplicate: $e');
          }
       },
     );
@@ -153,7 +153,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
              _finalProfileJson = json.encode(profileMap);
           }
         } catch (e) {
-          print('Error parsing summary: $e');
+          debugPrint('Error parsing summary: $e');
         }
       },
     );
@@ -244,36 +244,6 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
         });
       },
     );
-  }
-
-  void _handleKeyEvent(KeyEvent event) {
-    if (!_isDiscovering || event is! KeyDownEvent) return;
-
-    // On Windows, scanCode is in physicalKey or logicalKey?
-    // Flutter's KeyEvent unifies this, but we want the raw scan code if possible.
-    // event.physicalKey.usbHidUsage might be useful, but on Windows we usually rely on scan code from platform.
-
-    // Actually, we can use data.scanCode if we cast to specific platform events,
-    // or assume the FFI expects what Flutter provides.
-    // Core expects u16 scan code.
-
-    int scanCode = 0;
-    // We'll use a best-effort mapping or the raw code if available
-    // In Flutter 3+, HardwareKeyboard provides cleaner events
-
-    // Wait, `processDiscoveryEvent` takes `scanCode`.
-    // On Windows, `RawKeyEvent.data` had `scanCode`.
-    // `KeyEvent` (newer) might hide it.
-    // Let's try to access it.
-
-    if (event is KeyDownEvent) {
-        // We need to get the scan code.
-        // This might be tricky with just `KeyEvent`.
-        // But wait, we can use `RawKeyboardListener` instead of `KeyboardListener` if we need raw access.
-        // Or inspect `event.data` if we import `package:flutter/services.dart`.
-        // `event` doesn't expose raw data easily in the base class.
-        // But `KeyEvent` has `physicalKey`.
-    }
   }
 
   // We use RawKeyboardListener for now to get platform-specific scan codes easily
@@ -386,50 +356,6 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    setState(() {
-      _isSaving = true;
-    });
-
-    // The profile is currently held in the Rust session/summary state.
-    // But wait, `save_device_profile` in FFI takes a JSON string.
-    // Where do we get that JSON?
-    // Ah, `DiscoverySummary` (from `capture_session` in CLI) contains it.
-    // But in FFI, `process_discovery_event` returns 1 when finished.
-    // Where is the result?
-
-    // Looking at `core/src/ffi/domains/discovery.rs`, `process_discovery_event` returns 1 on completion.
-    // And it publishes `SessionUpdate::Finished(summary)`.
-    // The `discovery_sink` invokes `EventType.DiscoverySummary` callback with the summary.
-
-    // I need to catch that summary JSON in the Facade or here!
-    // `KeyrxFacadeImpl` only listens to `DiscoveryProgress`.
-    // I should probably update Facade to also expose `discoveryResult` stream or Future.
-
-    // For now, I can register a one-off callback here or in `KeyrxFacadeImpl`.
-    // But `KeyrxFacadeImpl` is already designed.
-    // Let's assume for now that once complete, the profile is READY in Rust memory?
-    // No, `DiscoverySessionState` is cleared on finish.
-    // But `SessionUpdate::Finished` carries the summary.
-
-    // I need to capture that summary.
-    // I'll add a listener for `discoverySummary` in `KeyrxFacadeImpl` and expose `Stream<DeviceProfile> discoveryComplete`.
-
-    // Wait, I can't modify Facade right now without context switch cost.
-    // I'll use `widget.services.bridge.registerEventCallback` directly here as a pragmatic solution
-    // since `KeyrxFacade` doesn't expose the summary yet.
-
-    // Wait, I missed `saveDeviceProfile` implementation details.
-    // `saveDeviceProfile` takes a JSON.
-    // If I get the JSON from the summary event, I can pass it to `saveDeviceProfile`.
-
-    // So:
-    // 1. Register for `EventType.discoverySummary`.
-    // 2. When received, store the JSON.
-    // 3. On "Save", call `saveDeviceProfile` with that JSON.
-
-    // I'll do that in `_startDiscoverySession`.
-  }
 
   String? _finalProfileJson;
 
@@ -465,7 +391,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
                         if (_finalProfileJson != null) {
                           setState(() => _isSaving = true);
 
-                          print('Attempting to save profile: $_finalProfileJson');
+                          debugPrint('Attempting to save profile: $_finalProfileJson');
 
                           // Save profile
                           bool success = false;
@@ -475,10 +401,10 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
                             await widget.services.deviceProfileService.saveProfile(profile, setActive: true);
                             success = true;
                           } catch (e) {
-                            print('Error saving profile: $e');
+                            debugPrint('Error saving profile: $e');
                           }
 
-                          print('saveProfile result: $success');
+                          debugPrint('saveProfile result: $success');
 
                           // Save visual overrides
                           if (success) {
@@ -642,9 +568,9 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
@@ -735,7 +661,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
             Container(
               height: 300,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: VisualKeyboard(
@@ -783,9 +709,9 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withValues(alpha: 0.05),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -814,7 +740,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
       (row == _progress!.nextKey!.row && col < _progress!.nextKey!.col) // Previous col in same row
     );
 
-    final keyId = 'r${row}_c${col}';
+    final keyId = 'r${row}_c$col';
     final override = _visualOverrides[keyId];
     final width = override?.width ?? 1.0;
     final isSkipped = override?.isSkipped ?? false;
@@ -822,9 +748,13 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
     final isFlashing = _flashKeyId == keyId;
 
     Color color = Colors.grey.shade300;
-    if (isFlashing) color = Colors.orangeAccent; // Flashing duplicate
-    else if (isNext) color = Colors.blue; // Active target
-    else if (isMapped) color = isSkipped ? Colors.grey.shade400 : Colors.green; // Mapped
+    if (isFlashing) {
+      color = Colors.orangeAccent; // Flashing duplicate
+    } else if (isNext) {
+      color = Colors.blue; // Active target
+    } else if (isMapped) {
+      color = isSkipped ? Colors.grey.shade400 : Colors.green; // Mapped
+    }
 
     // Base unit size (e.g., 32px) times width factor
     final pixelWidth = 32.0 * width;
@@ -840,7 +770,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
             color: color,
             borderRadius: BorderRadius.circular(4),
             border: isNext ? Border.all(color: Colors.blue.shade800, width: 2) : null,
-            boxShadow: isNext ? [BoxShadow(color: Colors.blue.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)] : null,
+            boxShadow: isNext ? [BoxShadow(color: Colors.blue.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)] : null,
           ),
           child: Stack(
             children: [
@@ -875,7 +805,7 @@ class _DeviceDiscoveryPageState extends State<DeviceDiscoveryPage> {
           ),
         ),
         if (width != 1.0)
-          Text('${width}u', style: const TextStyle(fontSize: 8, color: Colors.grey)),
+          Text('$width' 'u', style: const TextStyle(fontSize: 8, color: Colors.grey)),
       ],
     );
   }

@@ -144,7 +144,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('Edit Key R${row}C${col}'),
+          title: Text('Edit Key R$rowC$col'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -430,14 +430,14 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
       final cols = profile.colsPerRow.length > r ? profile.colsPerRow[r] : 0;
 
       for (int c = 0; c < cols; c++) {
-        final keyId = 'r${r}_c${c}';
+        final keyId = 'r${r}_c$c';
         final override = overrides[keyId];
         final width = override?.width ?? 1.0;
         final isSkipped = override?.isSkipped ?? false;
 
         keys.add(KeyDefinition(
           id: keyId,
-          label: isSkipped ? '' : 'R${r}C${c}',
+          label: isSkipped ? '' : 'R$rC$c',
           row: r,
           column: c.toDouble(), // Placeholder, recalculated below
           width: width,

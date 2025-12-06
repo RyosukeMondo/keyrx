@@ -341,7 +341,7 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
           ),
           const SizedBox(width: 8),
           Text(
-            '${section.label} (${section.value})',
+            '${section.label} (${section.value}) - ${percentage.toStringAsFixed(1)}%',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

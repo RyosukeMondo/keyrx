@@ -215,7 +215,7 @@ class ProfileRegistryServiceImpl implements ProfileRegistryService {
     }
 
     if (cleaned.toLowerCase().contains('invalid profile')) {
-      return 'Invalid profile data. Please check the profile configuration.';
+      return 'Invalid profile data: $cleaned';
     }
 
     if (cleaned.toLowerCase().contains('validation')) {

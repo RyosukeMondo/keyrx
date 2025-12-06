@@ -125,9 +125,9 @@ class _ConsolePageState extends State<ConsolePage> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.black.withAlpha(128),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: style.color.withOpacity(0.35)),
+          border: Border.all(color: style.color.withAlpha(89)),
         ),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         child: Column(
@@ -289,9 +289,9 @@ class _ConsolePageState extends State<ConsolePage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withAlpha(38),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withAlpha(128)),
       ),
       child: Text(
         text,

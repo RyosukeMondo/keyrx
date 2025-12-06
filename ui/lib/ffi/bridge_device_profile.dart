@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 
 import 'bindings.dart';
 
@@ -207,14 +208,14 @@ mixin BridgeDeviceProfileMixin {
         return DeviceProfileResult.error('getDeviceProfile returned null');
       }
 
-      final raw = ptr!.cast<Utf8>().toDartString();
+      final raw = ptr.cast<Utf8>().toDartString();
       return DeviceProfileResult.parse(raw);
     } catch (e) {
       return DeviceProfileResult.error('$e');
     } finally {
       if (ptr != null && ptr != nullptr) {
         try {
-          bindings?.freeString(ptr!);
+          bindings?.freeString(ptr);
         } catch (_) {}
       }
     }
@@ -236,7 +237,7 @@ mixin BridgeDeviceProfileMixin {
         return false;
       }
 
-      final raw = ptr!.cast<Utf8>().toDartString();
+      final raw = ptr.cast<Utf8>().toDartString();
       final trimmed = raw.trim();
 
       // Parse "ok:true" or "ok:false" response
@@ -251,7 +252,7 @@ mixin BridgeDeviceProfileMixin {
     } finally {
       if (ptr != null && ptr != nullptr) {
         try {
-          bindings?.freeString(ptr!);
+          bindings?.freeString(ptr);
         } catch (_) {}
       }
     }
@@ -272,23 +273,23 @@ mixin BridgeDeviceProfileMixin {
       ptr = saveFn(jsonPtr.cast<Char>());
       if (ptr == nullptr) return false;
 
-      final raw = ptr!.cast<Utf8>().toDartString();
+      final raw = ptr.cast<Utf8>().toDartString();
       final trimmed = raw.trim();
 
       // Parse "ok:" response (or empty ok for void result)
       if (trimmed.toLowerCase().startsWith('ok:')) {
         return true;
       }
-      print('saveDeviceProfile failed. Rust returned: $trimmed');
+      debugPrint('saveDeviceProfile failed. Rust returned: $trimmed');
       return false;
     } catch (e) {
-      print('saveDeviceProfile exception: $e');
+      debugPrint('saveDeviceProfile exception: $e');
       return false;
     } finally {
       calloc.free(jsonPtr);
       if (ptr != null && ptr != nullptr) {
         try {
-          bindings?.freeString(ptr!);
+          bindings?.freeString(ptr);
         } catch (_) {}
       }
     }

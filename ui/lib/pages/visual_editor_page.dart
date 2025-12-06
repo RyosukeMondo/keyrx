@@ -11,7 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../models/layout_type.dart';
 import '../models/profile.dart';
 import '../services/profile_registry_service.dart';
-import '../widgets/drag_drop_mapper.dart';
+import '../services/service_registry.dart';
 import '../widgets/layout_grid.dart';
 
 const _uuid = Uuid();
@@ -32,7 +32,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   String? _errorMessage;
 
   ProfileRegistryService get _profileService =>
-      Provider.of<ProfileRegistryService>(context, listen: false);
+      Provider.of<ServiceRegistry>(context, listen: false).profileRegistryService;
 
   @override
   void initState() {
@@ -93,7 +93,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     final layoutType = await _showLayoutTypeSelector();
     if (layoutType == null) return;
 
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     final newProfile = Profile(
       id: _uuid.v4(),
       name: name,
@@ -195,23 +195,12 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     );
   }
 
-  void _handleProfileUpdated(Profile updatedProfile) {
-    setState(() {
-      _currentProfile = updatedProfile;
-    });
-  }
-
-  void _handleSaveError(String errorMessage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(errorMessage),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Verify build is called with new code
+    debugPrint('Building VisualEditorPage with layout fixes');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Visual Editor'),
@@ -223,94 +212,109 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Profile selector toolbar
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Row(
-              children: [
-                const Icon(Icons.person_outline),
-                const SizedBox(width: 12),
-                const Text(
-                  'Profile:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButton<String>(
-                    value: _selectedProfileId,
-                    hint: const Text('Select a profile'),
-                    isExpanded: true,
-                    items: _profileIds.map((id) {
-                      return DropdownMenuItem(
-                        value: id,
-                        child: FutureBuilder<Profile?>(
-                          future: _profileService.getProfile(id),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData && snapshot.data != null) {
-                              return Text(snapshot.data!.name);
-                            }
-                            return Text(id);
-                          },
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: _isLoading
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              _loadProfile(value);
-                            }
-                          },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _createNewProfile,
-                  icon: const Icon(Icons.add),
-                  label: const Text('New Profile'),
-                ),
-              ],
-            ),
-          ),
-
-          // Error message
-          if (_errorMessage != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onErrorContainer,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Profile selector toolbar
+            SizedBox(
+              height: 72, // Constrained height to prevent overflow
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_outline),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Profile:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: _selectedProfileId,
+                        hint: const Text('Select a profile'),
+                        isExpanded: true,
+                        underline: Container(),
+                        items: _profileIds.map((id) {
+                          return DropdownMenuItem(
+                            value: id,
+                            child: FutureBuilder<Profile?>(
+                              future: _profileService.getProfile(id),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data != null) {
+                                  return Text(
+                                    snapshot.data!.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                }
+                                return Text(id, overflow: TextOverflow.ellipsis);
+                              },
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  _loadProfile(value);
+                                }
+                              },
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _errorMessage = null),
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _createNewProfile,
+                      icon: const Icon(Icons.add),
+                      label: const Text('New Profile'),
+                    ),
+                  ],
+                ),
               ),
             ),
 
-          // Main content
-          Expanded(
-            child: _buildContent(),
-          ),
-        ],
+            // Error message
+            if (_errorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Theme.of(context).colorScheme.errorContainer,
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() => _errorMessage = null),
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ],
+                ),
+              ),
+
+            // Main content
+            Expanded(
+              flex: 1,
+              child: ClipRect(
+                child: _buildContent(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -365,10 +369,18 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     }
 
     // Determine layout info from profile
-    final layoutInfo = _getLayoutInfoForProfile(_currentProfile!);
+    // final layoutInfo = _getLayoutInfoForProfile(_currentProfile!);
 
     return Padding(
       padding: const EdgeInsets.all(16),
+      // Temporarily replace DragDropMapper to isolate layout issue
+      child: Container(
+        color: Colors.green.withValues(alpha: 0.2),
+        child: const Center(
+          child: Text('DragDropMapper Placeholder'),
+        ),
+      ),
+      /*
       child: DragDropMapper(
         layoutInfo: layoutInfo,
         profile: _currentProfile!,
@@ -376,6 +388,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         onProfileUpdated: _handleProfileUpdated,
         onSaveError: _handleSaveError,
       ),
+      */
     );
   }
 

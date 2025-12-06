@@ -92,18 +92,18 @@ class _DebugPageState extends State<DebugPage>
       builder: (context) => _ThresholdSettingsDialog(
         initialThresholds: _currentThresholds!,
         onSave: (newThresholds) async {
+          final messenger = ScaffoldMessenger.of(context);
           await widget.metricsService.setThresholds(newThresholds);
+          if (!mounted) return;
           setState(() {
             _currentThresholds = newThresholds;
           });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Thresholds updated successfully'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Thresholds updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
         },
       ),
     );

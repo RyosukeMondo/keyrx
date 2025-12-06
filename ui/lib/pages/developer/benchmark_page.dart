@@ -100,8 +100,8 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${_formatNumber(_minIterations)}', style: Theme.of(context).textTheme.bodySmall),
-                Text('${_formatNumber(_maxIterations)}', style: Theme.of(context).textTheme.bodySmall),
+                Text(_formatNumber(_minIterations), style: Theme.of(context).textTheme.bodySmall),
+                Text(_formatNumber(_maxIterations), style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
             const SizedBox(height: 16),
