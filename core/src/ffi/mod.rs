@@ -15,6 +15,7 @@ pub mod error;
 pub mod events;
 mod exports;
 mod exports_compat;
+mod exports_engine;
 mod exports_metrics;
 mod exports_telemetry;
 mod exports_transition_log;
@@ -27,6 +28,7 @@ mod tests;
 
 pub use exports::*;
 pub use exports_compat::*;
+pub use exports_engine::*;
 pub use exports_metrics::*;
 pub use exports_telemetry::*;
 pub use exports_transition_log::*;

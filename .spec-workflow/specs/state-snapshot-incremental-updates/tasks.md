@@ -1,5 +1,7 @@
 # Tasks Document
 
+_Status: Priority #3 in 2025 implementation order; open items: 4 (in-progress), 5-6 pending. Complete delta pipeline before higher-layer features._
+
 ## Phase 1: Core Types
 
 - [x] 1. Create StateChange enum
@@ -31,7 +33,7 @@
   - Purpose: Engine integration
   - _Requirements: 1.1_
 
-- [ ] 5. Update FFI to send deltas
+- [x] 5. Update FFI to send deltas
   - File: `core/src/ffi/exports_engine.rs`
   - Send delta instead of full state
   - Fallback to full on mismatch

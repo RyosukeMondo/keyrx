@@ -11,6 +11,7 @@ use std::sync::Arc;
 use crate::config;
 use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::domains::discovery::global_event_registry;
+use crate::ffi::domains::engine::global_event_registry as engine_event_registry;
 use crate::ffi::events::{EventCallback, EventType};
 use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
@@ -252,7 +253,12 @@ pub extern "C" fn keyrx_register_event_callback(
         }
     };
 
-    global_event_registry().register(event_type, callback);
+    let registry = match event_type {
+        EventType::EngineState => engine_event_registry(),
+        _ => global_event_registry(),
+    };
+
+    registry.register(event_type, callback);
 
     // Refresh discovery sink if registering discovery events
     if matches!(
