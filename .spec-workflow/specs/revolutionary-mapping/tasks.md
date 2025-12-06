@@ -505,7 +505,7 @@
   - _Requirements: 16, 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Systems Developer with Rust/Dart bridge expertise | Task: Connect device/profile registry FFI domains to the real runtime instances, replacing placeholder errors | Restrictions: No static singletons that diverge from engine state, enforce panic safety, validate inputs, keep JSON marshalling consistent, zero leaks | _Leverage: Existing FFI error handling helpers, bridge wiring patterns | Success: Dart bridge calls succeed against live registries (list/toggle/assign/save/delete), placeholder errors removed, FFI tests updated and passing. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (FFI functions bound to runtime), then mark as [x]._
 
-- [ ] 7.3. Elevate CLI to per-device operations
+- [x] 7.3. Elevate CLI to per-device operations
   - Files: `core/src/bin/keyrx.rs`, `core/src/cli/commands/devices.rs`, `core/src/cli/commands/state.rs`, `core/src/cli/commands/migrate.rs`
   - Add/adjust CLI commands to expose per-device remap toggle, label, and profile assignment using VID:PID:Serial identities.
   - Ensure outputs surface serials and binding persistence status; remove type-only (VID:PID) assumptions in messages and data structures.

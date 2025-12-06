@@ -4,10 +4,10 @@
 //! which is intentional and distinct from internal logging.
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use keyrx_core::cli::{
     commands::{
-        AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DevicesCommand,
+        AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
         GoldenSubcommand, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand,
         RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
@@ -82,8 +82,11 @@ enum Commands {
         script: PathBuf,
     },
 
-    /// List available keyboard devices
-    Devices,
+    /// Manage devices and bindings
+    Devices {
+        #[command(subcommand)]
+        command: Option<DeviceCommands>,
+    },
 
     /// Show all exit codes with descriptions
     ExitCodes,
@@ -382,6 +385,75 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand, Clone)]
+enum DeviceCommands {
+    /// List all persisted device bindings
+    List,
+
+    /// Show details for a device identity
+    Show {
+        /// Device identity key (VID:PID:SERIAL)
+        device: String,
+    },
+
+    /// Set or clear a user label for a device
+    Label {
+        /// Device identity key (VID:PID:SERIAL)
+        device: String,
+
+        /// New label value
+        #[arg(required_unless_present = "clear")]
+        label: Option<String>,
+
+        /// Clear the label instead of setting one
+        #[arg(long, action = ArgAction::SetTrue)]
+        clear: bool,
+    },
+
+    /// Toggle remapping for a device
+    Remap {
+        /// Device identity key (VID:PID:SERIAL)
+        device: String,
+
+        /// Desired remap state
+        #[arg(value_enum)]
+        state: RemapState,
+    },
+
+    /// Assign a profile to a device
+    Assign {
+        /// Device identity key (VID:PID:SERIAL)
+        device: String,
+
+        /// Profile ID to assign
+        profile: String,
+    },
+
+    /// Remove any profile assignment for a device
+    Unassign {
+        /// Device identity key (VID:PID:SERIAL)
+        device: String,
+    },
+}
+
+impl Default for DeviceCommands {
+    fn default() -> Self {
+        DeviceCommands::List
+    }
+}
+
+#[derive(Clone, ValueEnum)]
+enum RemapState {
+    On,
+    Off,
+}
+
+impl RemapState {
+    fn enabled(&self) -> bool {
+        matches!(self, RemapState::On)
+    }
+}
+
 /// Golden session subcommands.
 #[derive(Subcommand)]
 enum GoldenCommands {
@@ -583,7 +655,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
     // Log command execution start
     let command_name = match &command {
         Commands::Check { .. } => "check",
-        Commands::Devices => "devices",
+        Commands::Devices { .. } => "devices",
         Commands::ExitCodes => "exit-codes",
         Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
@@ -621,8 +693,32 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             let mut cmd = CheckCommand::new(script, ctx.output_format());
             cmd.execute(ctx)
         }
-        Commands::Devices => {
-            let mut cmd = DevicesCommand::new(ctx.output_format());
+        Commands::Devices { command } => {
+            let device_cmd = command.unwrap_or_default();
+            let action = match device_cmd {
+                DeviceCommands::List => DeviceAction::List,
+                DeviceCommands::Show { device } => DeviceAction::Show { device_key: device },
+                DeviceCommands::Label {
+                    device,
+                    label,
+                    clear,
+                } => DeviceAction::Label {
+                    device_key: device,
+                    label: if clear { None } else { label },
+                },
+                DeviceCommands::Remap { device, state } => DeviceAction::Remap {
+                    device_key: device,
+                    enabled: state.enabled(),
+                },
+                DeviceCommands::Assign { device, profile } => DeviceAction::Assign {
+                    device_key: device,
+                    profile_id: profile,
+                },
+                DeviceCommands::Unassign { device } => {
+                    DeviceAction::Unassign { device_key: device }
+                }
+            };
+            let mut cmd = DevicesCommand::new(ctx.output_format(), action);
             cmd.execute(ctx)
         }
         Commands::ExitCodes => {

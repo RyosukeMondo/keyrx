@@ -29,7 +29,7 @@ pub use analyze::{AnalysisResult, AnalyzeCommand};
 pub use bench::BenchCommand;
 pub use check::CheckCommand;
 pub use ci_check::{exit_codes as ci_check_exit_codes, CiCheckCommand, CiCheckSummary};
-pub use devices::DevicesCommand;
+pub use devices::{DeviceAction, DevicesCommand};
 pub use discover::{DiscoverCommand, DiscoverExit};
 pub use docs::{DocFormat, DocsCommand};
 pub use doctor::{CheckStatus, DiagnosticCheck, DoctorCommand};

@@ -12,6 +12,7 @@ use crate::registry::{DeviceBinding, DeviceBindings, DeviceEvent, DeviceRegistry
 use crate::scripting::RhaiRuntime;
 use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::Result;
+use chrono::Utc;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -126,6 +127,16 @@ impl DeviceRuntime {
             let _ = self.registry.unassign_profile(&identity).await;
         }
 
+        if let Some(label) = binding_to_apply.user_label.clone() {
+            if let Err(error) = self
+                .registry
+                .set_user_label(&identity, Some(label.clone()))
+                .await
+            {
+                output.warning(&format!("Failed to set label for {}: {error}", identity));
+            }
+        }
+
         self.bindings.set_binding(identity, binding_to_apply);
     }
 
@@ -134,6 +145,8 @@ impl DeviceRuntime {
             let binding = DeviceBinding {
                 profile_id: state.profile_id.clone(),
                 remap_enabled: state.remap_enabled,
+                user_label: state.identity.user_label.clone(),
+                bound_at: Some(Utc::now().to_rfc3339()),
             };
             self.bindings.set_binding(state.identity.clone(), binding);
         }

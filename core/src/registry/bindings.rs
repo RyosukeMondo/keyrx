@@ -6,9 +6,10 @@
 
 use crate::config::config_dir;
 use crate::identity::DeviceIdentity;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 use super::ProfileId;
@@ -23,6 +24,14 @@ pub struct DeviceBinding {
     /// Whether remapping is enabled for this device
     #[serde(default = "default_remap_enabled")]
     pub remap_enabled: bool,
+
+    /// Optional user label persisted for this device
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_label: Option<String>,
+
+    /// Timestamp (ISO 8601) when this binding was last updated
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bound_at: Option<String>,
 }
 
 fn default_remap_enabled() -> bool {
@@ -35,6 +44,8 @@ impl DeviceBinding {
         Self {
             profile_id: None,
             remap_enabled: true,
+            user_label: None,
+            bound_at: None,
         }
     }
 
@@ -43,6 +54,8 @@ impl DeviceBinding {
         Self {
             profile_id: Some(profile_id),
             remap_enabled: true,
+            user_label: None,
+            bound_at: None,
         }
     }
 
@@ -51,7 +64,14 @@ impl DeviceBinding {
         Self {
             profile_id: None,
             remap_enabled: false,
+            user_label: None,
+            bound_at: None,
         }
+    }
+
+    /// Refresh the bound_at timestamp to current time.
+    pub fn touch_bound_at(&mut self) {
+        self.bound_at = Some(Utc::now().to_rfc3339());
     }
 }
 
@@ -117,6 +137,11 @@ impl DeviceBindings {
     /// Get the default path for device bindings
     pub fn default_path() -> PathBuf {
         config_dir().join(Self::BINDINGS_FILE)
+    }
+
+    /// Path to the bindings file on disk.
+    pub fn path(&self) -> &Path {
+        &self.file_path
     }
 
     /// Load bindings from disk
@@ -253,7 +278,8 @@ impl DeviceBindings {
     }
 
     /// Set the binding for a device
-    pub fn set_binding(&mut self, device: DeviceIdentity, binding: DeviceBinding) {
+    pub fn set_binding(&mut self, device: DeviceIdentity, mut binding: DeviceBinding) {
+        binding.touch_bound_at();
         self.bindings.insert(device, binding);
     }
 
@@ -326,6 +352,8 @@ mod tests {
         let binding = DeviceBinding::new();
         assert_eq!(binding.profile_id, None);
         assert!(binding.remap_enabled);
+        assert!(binding.user_label.is_none());
+        assert!(binding.bound_at.is_none());
     }
 
     #[test]
@@ -334,6 +362,8 @@ mod tests {
         let binding = DeviceBinding::with_profile(profile_id.clone());
         assert_eq!(binding.profile_id, Some(profile_id));
         assert!(binding.remap_enabled);
+        assert!(binding.user_label.is_none());
+        assert!(binding.bound_at.is_none());
     }
 
     #[test]
@@ -341,6 +371,8 @@ mod tests {
         let binding = DeviceBinding::disabled();
         assert_eq!(binding.profile_id, None);
         assert!(!binding.remap_enabled);
+        assert!(binding.user_label.is_none());
+        assert!(binding.bound_at.is_none());
     }
 
     #[test]
@@ -358,7 +390,10 @@ mod tests {
         bindings.set_binding(device.clone(), binding.clone());
 
         let retrieved = bindings.get_binding(&device);
-        assert_eq!(retrieved, Some(&binding));
+        let retrieved = retrieved.unwrap();
+        assert_eq!(retrieved.profile_id, binding.profile_id);
+        assert_eq!(retrieved.remap_enabled, binding.remap_enabled);
+        assert!(retrieved.bound_at.is_some());
     }
 
     #[test]
@@ -371,7 +406,10 @@ mod tests {
         assert_eq!(bindings.len(), 1);
 
         let removed = bindings.remove_binding(&device);
-        assert_eq!(removed, Some(binding));
+        let removed = removed.unwrap();
+        assert_eq!(removed.profile_id, binding.profile_id);
+        assert_eq!(removed.remap_enabled, binding.remap_enabled);
+        assert!(removed.bound_at.is_some());
         assert_eq!(bindings.len(), 0);
     }
 
@@ -405,6 +443,8 @@ mod tests {
             Some("profile-1".to_string())
         );
         assert!(!loaded.get_binding(&device2).unwrap().remap_enabled);
+        assert!(loaded.get_binding(&device1).unwrap().bound_at.is_some());
+        assert!(loaded.get_binding(&device2).unwrap().bound_at.is_some());
     }
 
     #[test]
@@ -502,5 +542,25 @@ mod tests {
         let binding_json = &json["046d:c52b:ABC123"];
         assert_eq!(binding_json["profile_id"], "test-profile");
         assert_eq!(binding_json["remap_enabled"], true);
+        assert!(binding_json.get("bound_at").is_some());
+    }
+
+    #[test]
+    fn test_user_label_persists() {
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("labels.json");
+
+        let mut bindings = DeviceBindings::with_path(file_path.clone());
+        let device = DeviceIdentity::new(0x9999, 0x0001, "SERIAL99".to_string());
+        let mut binding = DeviceBinding::new();
+        binding.user_label = Some("My Deck".to_string());
+        bindings.set_binding(device.clone(), binding);
+        bindings.save().unwrap();
+
+        let mut loaded = DeviceBindings::with_path(file_path);
+        loaded.load().unwrap();
+        let loaded_binding = loaded.get_binding(&device).unwrap();
+        assert_eq!(loaded_binding.user_label.as_deref(), Some("My Deck"));
+        assert!(loaded_binding.bound_at.is_some());
     }
 }

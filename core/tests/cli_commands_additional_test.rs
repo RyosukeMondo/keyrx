@@ -1,8 +1,7 @@
 //! Additional CLI command tests for check, state, and devices commands.
 
-use keyrx_core::cli::commands::{CheckCommand, DevicesCommand, StateCommand};
+use keyrx_core::cli::commands::{CheckCommand, DeviceAction, DevicesCommand, StateCommand};
 use keyrx_core::cli::{Command, CommandContext, OutputFormat, Verbosity};
-use keyrx_core::drivers::DeviceInfo;
 use std::io::Write;
 use std::path::PathBuf;
 use tempfile::{tempdir, NamedTempFile};
@@ -101,64 +100,52 @@ fn state_command_collects_default_snapshot() {
     assert_eq!(state.pending_count, 0, "no pending decisions by default");
 }
 
-fn sample_devices() -> Vec<DeviceInfo> {
-    vec![
-        DeviceInfo::new(
-            PathBuf::from("/dev/input/event2"),
-            "Keyboard X".to_string(),
-            0xAAAA,
-            0xBBBB,
-            true,
-        ),
-        DeviceInfo::new(
-            PathBuf::from("/dev/input/event3"),
-            "Keyboard Y".to_string(),
-            0xCCCC,
-            0xDDDD,
-            true,
-        ),
-    ]
-}
-
 #[test]
 fn devices_command_new_sets_format() {
-    let cmd = DevicesCommand::new(OutputFormat::Json);
+    let temp_dir = tempdir().unwrap();
+    let cmd = DevicesCommand::new(OutputFormat::Json, DeviceAction::List)
+        .with_bindings_path(temp_dir.path().join("bindings.json"));
     assert!(matches!(cmd.output.format(), OutputFormat::Json));
 }
 
 #[test]
-fn devices_command_runs_with_injected_devices_human() {
-    let cmd = DevicesCommand::with_provider(OutputFormat::Human, || Ok(sample_devices()));
+fn devices_command_lists_empty_bindings() {
+    let temp_dir = tempdir().unwrap();
+    let cmd = DevicesCommand::new(OutputFormat::Human, DeviceAction::List)
+        .with_bindings_path(temp_dir.path().join("bindings.json"));
     let result = cmd.run();
-    assert!(result.is_success(), "rendering devices should succeed");
-}
-
-#[test]
-fn devices_command_runs_with_injected_devices_json() {
-    let cmd = DevicesCommand::with_provider(OutputFormat::Json, || Ok(sample_devices()));
-    let result = cmd.run();
-    assert!(result.is_success(), "rendering devices should succeed");
-}
-
-#[test]
-fn devices_command_handles_empty_lists_in_json() {
-    let cmd = DevicesCommand::with_provider(OutputFormat::Json, || Ok(vec![]));
-    let result = cmd.run();
-    assert!(result.is_success(), "empty list should be handled");
-}
-
-#[test]
-fn devices_command_propagates_errors() {
-    let cmd = DevicesCommand::with_provider(OutputFormat::Human, || {
-        anyhow::bail!("device enumeration failed")
-    });
-
-    let result = cmd.run();
-    assert!(result.is_failure(), "errors should propagate");
-    assert!(!result.messages().is_empty(), "should have error message");
-    let message = result.messages().join(" ");
     assert!(
-        message.contains("device enumeration failed"),
-        "error message should contain expected text"
+        result.is_success(),
+        "listing with no bindings should succeed"
+    );
+}
+
+#[test]
+fn devices_command_handles_json_output() {
+    let temp_dir = tempdir().unwrap();
+    let cmd = DevicesCommand::new(OutputFormat::Json, DeviceAction::List)
+        .with_bindings_path(temp_dir.path().join("bindings.json"));
+    let result = cmd.run();
+    assert!(
+        result.is_success(),
+        "json listing with no bindings should succeed"
+    );
+}
+
+#[test]
+fn devices_command_reports_load_errors() {
+    let temp_dir = tempdir().unwrap();
+    // Point bindings path to a directory to force a load error.
+    let cmd = DevicesCommand::new(OutputFormat::Human, DeviceAction::List)
+        .with_bindings_path(temp_dir.path().to_path_buf());
+
+    let result = cmd.run();
+    assert!(result.is_failure(), "should surface binding load errors");
+    assert!(
+        result
+            .messages()
+            .iter()
+            .any(|msg| msg.contains("Failed to load device bindings")),
+        "error message should mention load failure"
     );
 }
