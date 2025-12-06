@@ -5,6 +5,7 @@ use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;
 use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::Config;
+use crate::definitions::DeviceDefinitionLibrary;
 use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
 use crate::ffi::runtime::{RevolutionaryRuntime, RevolutionaryRuntimeGuard};
 use crate::identity::DeviceIdentity;
@@ -17,6 +18,7 @@ use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::Result;
 use chrono::Utc;
 use std::collections::HashSet;
+use std::env;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -282,14 +284,82 @@ impl RunCommand {
         registry
     }
 
+    fn device_definition_paths(&self) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+
+        if let Ok(exe_path) = env::current_exe() {
+            if let Some(dir) = exe_path.parent() {
+                paths.push(dir.join("device_definitions"));
+            }
+        }
+
+        if let Some(root) = PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent() {
+            paths.push(root.join("device_definitions"));
+        }
+
+        paths.push(crate::config::config_dir().join("device_definitions"));
+
+        let mut seen = std::collections::HashSet::new();
+        paths
+            .into_iter()
+            .filter(|path| seen.insert(path.clone()))
+            .filter(|path| path.exists())
+            .collect()
+    }
+
+    fn load_device_definitions(&self) -> Arc<DeviceDefinitionLibrary> {
+        let mut library = DeviceDefinitionLibrary::new();
+        let mut total_loaded = 0usize;
+
+        for path in self.device_definition_paths() {
+            match library.load_from_directory(&path) {
+                Ok(count) => {
+                    total_loaded += count;
+                    info!(
+                        service = "keyrx",
+                        component = "cli_run",
+                        event = "device_definitions_loaded",
+                        path = %path.display(),
+                        count,
+                        "Loaded device definitions"
+                    );
+                }
+                Err(err) => {
+                    self.output.warning(&format!(
+                        "Failed to load device definitions from {}: {err}",
+                        path.display()
+                    ));
+                    warn!(
+                        service = "keyrx",
+                        component = "cli_run",
+                        event = "device_definitions_load_failed",
+                        path = %path.display(),
+                        error = %err,
+                        "Unable to load device definitions"
+                    );
+                }
+            }
+        }
+
+        if total_loaded == 0 {
+            self.output.warning(
+                "No device definitions loaded; definition FFI calls will return NOT_FOUND until definitions are available.",
+            );
+        }
+
+        Arc::new(library)
+    }
+
     fn install_revolutionary_runtime(
         &self,
         device_registry: &DeviceRegistry,
         profile_registry: &Arc<ProfileRegistry>,
+        device_definitions: &Arc<DeviceDefinitionLibrary>,
     ) -> Result<RevolutionaryRuntimeGuard> {
         RevolutionaryRuntimeGuard::install(RevolutionaryRuntime::new(
             device_registry.clone(),
             profile_registry.clone(),
+            device_definitions.clone(),
         ))
         .map_err(|err| anyhow::anyhow!("failed to install revolutionary runtime: {err}"))
     }
@@ -307,25 +377,40 @@ impl RunCommand {
         }
 
         let profile_registry = self.prepare_profile_registry().await;
+        let device_definitions = self.load_device_definitions();
         self.output.success("Starting KeyRx engine...");
 
         if self.use_mock {
             let runtime = builder.prepare_runtime()?;
-            self.run_with_mock(runtime, &builder, profile_registry)
-                .await
+            self.run_with_mock(
+                runtime,
+                &builder,
+                profile_registry,
+                device_definitions.clone(),
+            )
+            .await
         } else {
             #[cfg(all(target_os = "linux", feature = "linux-driver"))]
             {
                 // For Linux, we need to load device profile BEFORE calling on_init
-                self.run_with_platform_driver_deferred_init(&builder, profile_registry)
-                    .await
+                self.run_with_platform_driver_deferred_init(
+                    &builder,
+                    profile_registry.clone(),
+                    device_definitions.clone(),
+                )
+                .await
             }
             #[cfg(not(all(target_os = "linux", feature = "linux-driver")))]
             {
                 // For Windows and others, use standard init
                 let runtime = builder.prepare_runtime()?;
-                self.run_with_platform_driver(runtime, &builder, profile_registry)
-                    .await
+                self.run_with_platform_driver(
+                    runtime,
+                    &builder,
+                    profile_registry,
+                    device_definitions,
+                )
+                .await
             }
         }
     }
@@ -335,6 +420,7 @@ impl RunCommand {
         runtime: RhaiRuntime,
         builder: &RuntimeBuilder<'_>,
         profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
     ) -> Result<()> {
         self.output
             .warning("Mock mode: Engine running without keyboard capture");
@@ -345,8 +431,11 @@ impl RunCommand {
 
         let mut input = MockInput::new();
         let device_runtime = DeviceRuntime::new(&self.output);
-        let _runtime_guard =
-            self.install_revolutionary_runtime(&device_runtime.registry, &profile_registry)?;
+        let _runtime_guard = self.install_revolutionary_runtime(
+            &device_runtime.registry,
+            &profile_registry,
+            &device_definitions,
+        )?;
         let mut registry = runtime.registry().clone();
 
         // Apply config-based timing overrides
@@ -419,6 +508,7 @@ impl RunCommand {
         &self,
         builder: &RuntimeBuilder<'_>,
         profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
     ) -> Result<()> {
         self.output.success("Using Linux input driver");
 
@@ -427,8 +517,11 @@ impl RunCommand {
         let device_info = input.device_info().clone();
 
         let mut device_runtime = DeviceRuntime::new(&self.output);
-        let _runtime_guard =
-            self.install_revolutionary_runtime(&device_runtime.registry, &profile_registry)?;
+        let _runtime_guard = self.install_revolutionary_runtime(
+            &device_runtime.registry,
+            &profile_registry,
+            &device_definitions,
+        )?;
         if let Ok(serial) = crate::identity::linux::extract_serial_number(input.device_path()) {
             let identity =
                 DeviceIdentity::new(device_info.vendor_id, device_info.product_id, serial);
@@ -582,13 +675,17 @@ impl RunCommand {
         runtime: RhaiRuntime,
         builder: &RuntimeBuilder<'_>,
         profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
     ) -> Result<()> {
         let mut input = self.init_windows_input()?;
         let mut registry = runtime.registry().clone();
 
         let mut device_runtime = DeviceRuntime::new(&self.output);
-        let _runtime_guard =
-            self.install_revolutionary_runtime(&device_runtime.registry, &profile_registry)?;
+        let _runtime_guard = self.install_revolutionary_runtime(
+            &device_runtime.registry,
+            &profile_registry,
+            &device_definitions,
+        )?;
 
         // Apply config-based timing overrides
         let timing_config = self.timing_config_from_config();
@@ -675,10 +772,12 @@ impl RunCommand {
         runtime: RhaiRuntime,
         builder: &RuntimeBuilder<'_>,
         profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
     ) -> Result<()> {
         self.output
             .warning("No platform driver available for this OS, falling back to mock input");
-        self.run_with_mock(runtime, builder, profile_registry).await
+        self.run_with_mock(runtime, builder, profile_registry, device_definitions)
+            .await
     }
 
     #[cfg(all(target_os = "windows", feature = "windows-driver"))]

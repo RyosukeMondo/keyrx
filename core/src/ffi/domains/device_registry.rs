@@ -315,6 +315,7 @@ pub unsafe extern "C" fn keyrx_device_registry_set_user_label(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::definitions::DeviceDefinitionLibrary;
     use crate::ffi::runtime::{
         clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
     };
@@ -465,10 +466,12 @@ mod tests {
         let profile_registry = Arc::new(ProfileRegistry::with_directory(
             temp_dir.path().to_path_buf(),
         ));
+        let definitions = Arc::new(DeviceDefinitionLibrary::new());
 
         set_revolutionary_runtime(RevolutionaryRuntime::new(
             registry.clone(),
             profile_registry,
+            definitions,
         ))
         .unwrap();
 

@@ -5,6 +5,7 @@
 //! avoids duplicating state while keeping panic-safe accessors for C ABI
 //! functions.
 
+use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::registry::{DeviceRegistry, ProfileRegistry};
 use std::future::Future;
@@ -16,14 +17,20 @@ use tracing::{error, info, warn};
 pub struct RevolutionaryRuntime {
     device_registry: DeviceRegistry,
     profile_registry: Arc<ProfileRegistry>,
+    device_definitions: Arc<DeviceDefinitionLibrary>,
 }
 
 impl RevolutionaryRuntime {
     /// Create a new runtime wrapper from shared registries.
-    pub fn new(device_registry: DeviceRegistry, profile_registry: Arc<ProfileRegistry>) -> Self {
+    pub fn new(
+        device_registry: DeviceRegistry,
+        profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
+    ) -> Self {
         Self {
             device_registry,
             profile_registry,
+            device_definitions,
         }
     }
 
@@ -35,6 +42,11 @@ impl RevolutionaryRuntime {
     /// Access the shared profile registry.
     pub fn profile_registry(&self) -> &Arc<ProfileRegistry> {
         &self.profile_registry
+    }
+
+    /// Access the shared device definition library.
+    pub fn device_definitions(&self) -> &Arc<DeviceDefinitionLibrary> {
+        &self.device_definitions
     }
 }
 

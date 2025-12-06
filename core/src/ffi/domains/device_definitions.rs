@@ -5,8 +5,11 @@
 #![allow(unsafe_code)]
 
 use crate::definitions::{DeviceDefinition, DeviceDefinitionLibrary};
-use crate::ffi::error::{FfiError, FfiResult};
+use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
+use crate::ffi::runtime::with_revolutionary_runtime;
+use serde::Serialize;
 use std::ffi::{c_char, CString};
+use std::ptr;
 
 /// List all loaded device definitions.
 ///
@@ -48,6 +51,15 @@ pub fn get_for_device(
 
 // C-ABI exports with panic guards
 
+fn ffi_response<T: Serialize>(result: FfiResult<T>) -> *mut c_char {
+    let payload = serialize_ffi_result(&result).unwrap_or_else(|e| {
+        format!("error:{{\"code\":\"SERIALIZATION_FAILED\",\"message\":\"{e}\"}}")
+    });
+    CString::new(payload)
+        .map(CString::into_raw)
+        .unwrap_or(ptr::null_mut())
+}
+
 /// List all loaded device definitions.
 ///
 /// Returns JSON string: `ok:<json>` or `error:<message>`.
@@ -57,17 +69,14 @@ pub fn get_for_device(
 #[no_mangle]
 pub extern "C" fn keyrx_definitions_list_all() -> *mut c_char {
     std::panic::catch_unwind(|| {
-        // TODO: This needs access to the DeviceDefinitionLibrary instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = "error:DeviceDefinitionLibrary not yet integrated with FFI context";
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<Vec<DeviceDefinition>> =
+            with_revolutionary_runtime(|runtime| list_all(runtime.device_definitions()));
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_definitions_list_all")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_definitions_list_all",
+        )))
     })
 }
 
@@ -84,20 +93,15 @@ pub extern "C" fn keyrx_definitions_list_all() -> *mut c_char {
 #[no_mangle]
 pub extern "C" fn keyrx_definitions_get_for_device(vendor_id: u16, product_id: u16) -> *mut c_char {
     std::panic::catch_unwind(move || {
-        // TODO: This needs access to the DeviceDefinitionLibrary instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:DeviceDefinitionLibrary not yet integrated (would get definition for {:04x}:{:04x})",
-            vendor_id, product_id
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<DeviceDefinition> = with_revolutionary_runtime(|runtime| {
+            get_for_device(runtime.device_definitions(), vendor_id, product_id)
+        });
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_definitions_get_for_device")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_definitions_get_for_device",
+        )))
     })
 }
 
@@ -105,7 +109,13 @@ pub extern "C" fn keyrx_definitions_get_for_device(vendor_id: u16, product_id: u
 mod tests {
     use super::*;
     use crate::definitions::DeviceDefinitionLibrary;
-    use std::ffi::CStr;
+    use crate::ffi::runtime::{
+        clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
+    };
+    use crate::registry::profile::ProfileRegistry;
+    use crate::registry::DeviceRegistry;
+    use std::ffi::{CStr, CString};
+    use std::sync::Arc;
     use tempfile::TempDir;
 
     fn create_test_definition_toml() -> String {
@@ -134,6 +144,36 @@ key_height = 80
 key_spacing = 4
 "#
         .to_string()
+    }
+
+    fn setup_runtime_with_definition() -> TempDir {
+        let (device_registry, _rx) = DeviceRegistry::new();
+        let temp_dir = TempDir::new().unwrap();
+        let profile_registry = Arc::new(ProfileRegistry::with_directory(
+            temp_dir.path().to_path_buf(),
+        ));
+
+        let mut library = DeviceDefinitionLibrary::new();
+        let file_path = temp_dir.path().join("test.toml");
+        std::fs::write(&file_path, create_test_definition_toml()).unwrap();
+        library.load_from_directory(temp_dir.path()).unwrap();
+        let library = Arc::new(library);
+
+        set_revolutionary_runtime(RevolutionaryRuntime::new(
+            device_registry,
+            profile_registry,
+            library,
+        ))
+        .unwrap();
+
+        temp_dir
+    }
+
+    unsafe fn c_string_result(ptr: *mut c_char) -> String {
+        assert!(!ptr.is_null());
+        let msg = CStr::from_ptr(ptr).to_str().unwrap().to_string();
+        drop(CString::from_raw(ptr));
+        msg
     }
 
     #[test]
@@ -227,48 +267,40 @@ key_spacing = 4
 
     #[test]
     fn test_c_api_list_all() {
-        let result = keyrx_definitions_list_all();
-        assert!(!result.is_null());
+        let temp_dir = setup_runtime_with_definition();
+        let msg = unsafe { c_string_result(keyrx_definitions_list_all()) };
+        assert!(msg.starts_with("ok:"));
 
-        unsafe {
-            let c_str = CStr::from_ptr(result);
-            let msg = c_str.to_str().unwrap();
-            // Should indicate integration needed
-            assert!(msg.contains("not yet integrated"));
-            drop(CString::from_raw(result));
-        }
+        let payload = msg.trim_start_matches("ok:");
+        let definitions: Vec<DeviceDefinition> = serde_json::from_str(payload).unwrap();
+        assert_eq!(definitions.len(), 1);
+
+        clear_revolutionary_runtime().unwrap();
+        drop(temp_dir);
     }
 
     #[test]
     fn test_c_api_get_for_device() {
-        let result = keyrx_definitions_get_for_device(0x1234, 0x5678);
-        assert!(!result.is_null());
+        let temp_dir = setup_runtime_with_definition();
+        let msg = unsafe { c_string_result(keyrx_definitions_get_for_device(0x1234, 0x5678)) };
+        assert!(msg.starts_with("ok:"));
 
-        unsafe {
-            let c_str = CStr::from_ptr(result);
-            let msg = c_str.to_str().unwrap();
-            // Should indicate integration needed and include VID:PID
-            assert!(msg.contains("not yet integrated"));
-            assert!(msg.contains("1234:5678"));
-            drop(CString::from_raw(result));
-        }
+        let payload = msg.trim_start_matches("ok:");
+        let definition: DeviceDefinition = serde_json::from_str(payload).unwrap();
+        assert_eq!(definition.vendor_id, 0x1234);
+        assert_eq!(definition.product_id, 0x5678);
+
+        clear_revolutionary_runtime().unwrap();
+        drop(temp_dir);
     }
 
     #[test]
     fn test_c_api_get_for_device_valid_ids() {
-        // Test with various valid VID:PID combinations
-        let test_cases = vec![(0x0001, 0x0001), (0xFFFF, 0xFFFF), (0x0fd9, 0x0080)];
+        let temp_dir = setup_runtime_with_definition();
+        let msg = unsafe { c_string_result(keyrx_definitions_get_for_device(0x0001, 0x0001)) };
+        assert!(msg.starts_with("error:"));
 
-        for (vid, pid) in test_cases {
-            let result = keyrx_definitions_get_for_device(vid, pid);
-            assert!(!result.is_null());
-
-            unsafe {
-                let c_str = CStr::from_ptr(result);
-                let msg = c_str.to_str().unwrap();
-                assert!(msg.starts_with("error:"));
-                drop(CString::from_raw(result));
-            }
-        }
+        clear_revolutionary_runtime().unwrap();
+        drop(temp_dir);
     }
 }

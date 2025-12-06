@@ -23,6 +23,7 @@ use keyrx_core::registry::DeviceRegistry;
 use keyrx_core::{clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime};
 use serde_json::Value;
 use std::ffi::{CStr, CString};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::tempdir;
 
@@ -51,6 +52,24 @@ unsafe fn get_result_string(ptr: *mut i8) -> String {
     result
 }
 
+fn load_test_definitions() -> Arc<DeviceDefinitionLibrary> {
+    let mut library = DeviceDefinitionLibrary::new();
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let workspace_root = manifest_dir
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or(manifest_dir);
+    let definitions_path = workspace_root.join("device_definitions");
+
+    if definitions_path.exists() {
+        library
+            .load_from_directory(&definitions_path)
+            .expect("device definitions should load for tests");
+    }
+
+    Arc::new(library)
+}
+
 fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::TempDir) {
     let (device_registry, _rx) = DeviceRegistry::new();
     let temp_dir = tempdir().unwrap();
@@ -58,9 +77,12 @@ fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::Te
         temp_dir.path().to_path_buf(),
     ));
 
+    let device_definitions = load_test_definitions();
+
     set_revolutionary_runtime(RevolutionaryRuntime::new(
         device_registry.clone(),
         profile_registry.clone(),
+        device_definitions,
     ))
     .unwrap();
 
@@ -392,19 +414,36 @@ fn test_c_api_device_registry_null_profile_id() {
 
 #[test]
 fn test_c_api_device_registry_null_label_clears() {
+    let (registry, _profiles, temp_dir) = setup_shared_runtime();
+    let identity = test_identity("TEST001");
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        registry.register_device(identity.clone()).await;
+        registry
+            .set_user_label(&identity, Some("Existing".to_string()))
+            .await
+            .unwrap();
+    });
+
     unsafe {
-        let device_key = CString::new("1234:5678:TEST001").unwrap();
+        let device_key = CString::new(identity.to_key()).unwrap();
         let result = device_registry::keyrx_device_registry_set_user_label(
             device_key.as_ptr(),
             std::ptr::null(),
         );
         assert!(!result.is_null());
-        let c_str = CStr::from_ptr(result);
-        let msg = c_str.to_str().unwrap();
-        // Should indicate integration needed, not null pointer error
-        assert!(msg.contains("not yet integrated") || msg.starts_with("error:"));
-        drop(CString::from_raw(result));
+        let msg = get_result_string(result);
+        assert!(msg.starts_with("ok:"));
     }
+
+    rt.block_on(async {
+        let state = registry.get_device_state(&identity).await.unwrap();
+        assert!(state.identity.user_label.is_none());
+    });
+
+    clear_revolutionary_runtime().unwrap();
+    drop(temp_dir);
 }
 
 #[test]
@@ -570,46 +609,65 @@ fn test_c_api_profile_registry_save_and_get_round_trip() {
 
 #[test]
 fn test_c_api_definitions_list_all() {
+    let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
     let result = device_definitions::keyrx_definitions_list_all();
     assert!(!result.is_null());
 
-    unsafe {
-        let c_str = CStr::from_ptr(result);
-        let msg = c_str.to_str().unwrap();
-        // Should indicate integration needed
-        assert!(msg.contains("not yet integrated") || msg.starts_with("error:"));
-        drop(CString::from_raw(result));
-    }
+    let msg = unsafe { get_result_string(result) };
+    assert!(msg.starts_with("ok:"), "expected ok response, got {}", msg);
+
+    let payload = msg.trim_start_matches("ok:");
+    let definitions: Vec<Value> = serde_json::from_str(payload).unwrap();
+    assert!(
+        !definitions.is_empty(),
+        "expected at least one device definition"
+    );
+
+    clear_revolutionary_runtime().unwrap();
+    drop(temp_dir);
 }
 
 #[test]
 fn test_c_api_definitions_get_for_device_valid_ids() {
+    let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
     let test_cases = vec![
-        (0x1234, 0x5678),
-        (0x0000, 0x0000),
-        (0xFFFF, 0xFFFF),
-        (0x0fd9, 0x0080),
+        ((0x0fd9, 0x0080), true),
+        ((0x0fd9, 0x006c), true),
+        ((0xFFFF, 0x0001), true),
+        ((0x1234, 0x5678), false),
     ];
 
-    for (vid, pid) in test_cases {
-        let result = device_definitions::keyrx_definitions_get_for_device(vid, pid);
-        assert!(!result.is_null());
-
-        unsafe {
-            let c_str = CStr::from_ptr(result);
-            let msg = c_str.to_str().unwrap();
-            assert!(msg.starts_with("error:"));
-            // Should contain hex VID:PID
-            let hex_id = format!("{:04x}:{:04x}", vid, pid);
+    for ((vid, pid), should_exist) in test_cases {
+        let msg = unsafe {
+            get_result_string(device_definitions::keyrx_definitions_get_for_device(
+                vid, pid,
+            ))
+        };
+        if should_exist {
             assert!(
-                msg.contains(&hex_id),
-                "Expected message to contain {}, got: {}",
-                hex_id,
+                msg.starts_with("ok:"),
+                "expected ok response for {:04x}:{:04x}, got {}",
+                vid,
+                pid,
                 msg
             );
-            drop(CString::from_raw(result));
+            let payload = msg.trim_start_matches("ok:");
+            let definition: Value = serde_json::from_str(payload).unwrap();
+            assert_eq!(definition["vendor_id"].as_u64(), Some(vid as u64));
+            assert_eq!(definition["product_id"].as_u64(), Some(pid as u64));
+        } else {
+            assert!(
+                msg.starts_with("error:"),
+                "expected error for {:04x}:{:04x}, got {}",
+                vid,
+                pid,
+                msg
+            );
         }
     }
+
+    clear_revolutionary_runtime().unwrap();
+    drop(temp_dir);
 }
 
 // ============================================================================

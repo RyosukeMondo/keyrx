@@ -529,7 +529,7 @@
   - _Requirements: 16, 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Runtime Integrator | Task: Wire runtime initialization so FFI registry calls operate on the live engine state (no more “runtime not initialized”) | Restrictions: No duplicate registries, handle shutdown/cleanup, keep thread safety | _Leverage: ffi/runtime helpers, engine builder init points | Success: All FFI registry calls succeed against live state in app/CLI; errors for missing runtime are no longer returned; tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (init/shutdown wiring), then mark as [x]._
 
-- [ ] 7.6. Integrate device definitions FFI with live library
+- [x] 7.6. Integrate device definitions FFI with live library
   - Files: `core/src/ffi/domains/device_definitions.rs`, `core/src/ffi/runtime.rs`, init wiring where DeviceDefinitionLibrary lives
   - Replace “not yet integrated” stubs with real access to the loaded DeviceDefinitionLibrary; ensure list/get use the shared instance and return structured ok/error strings.
   - Add panic guards and memory ownership checks; update Dart bindings/tests if present.
