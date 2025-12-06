@@ -48,7 +48,7 @@ pub mod sampler;
 pub mod snapshot;
 
 // Re-export commonly used types
-pub use collector::{MetricsCollector, ProfileGuard};
+pub use collector::{MetricsCollector, OtelMetricsCollector, ProfileGuard};
 pub use full_collector::FullMetricsCollector;
 pub use latency::LatencyHistogram;
 pub use memory::{MemoryMonitor, MemoryStats};

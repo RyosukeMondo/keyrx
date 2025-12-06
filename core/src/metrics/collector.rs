@@ -4,7 +4,13 @@
 //! The `MetricsCollector` trait allows for pluggable implementations ranging
 //! from no-op collectors (zero overhead) to full profiling collectors.
 
-use std::time::Instant;
+use std::sync::atomic::{AtomicI64, Ordering};
+use std::time::{Duration, Instant};
+
+#[cfg(feature = "otel-tracing")]
+use opentelemetry::metrics::{Counter, Histogram, UpDownCounter};
+#[cfg(feature = "otel-tracing")]
+use opentelemetry::KeyValue;
 
 use super::operation::Operation;
 use super::snapshot::MetricsSnapshot;
@@ -113,11 +119,217 @@ impl Drop for ProfileGuard<'_> {
     }
 }
 
+/// OpenTelemetry-backed metrics collector for key events, latency, and gauges.
+///
+/// This collector wires the KeyRx event stream into OTEL counters, histograms,
+/// and gauges to satisfy the metrics collection requirements:
+/// - Counters for key processing and errors (Req 1.1, 1.4)
+/// - Histograms for processing and script execution latency (Req 1.2)
+/// - Gauges for active sessions/devices (Req 1.3)
+///
+/// When the `otel-tracing` feature is disabled, methods degrade to no-ops while
+/// still tracking the last gauge values to keep call sites feature-agnostic.
+#[derive(Debug)]
+pub struct OtelMetricsCollector {
+    #[cfg(feature = "otel-tracing")]
+    key_events_total: Counter<u64>,
+    #[cfg(feature = "otel-tracing")]
+    errors_total: Counter<u64>,
+    #[cfg(feature = "otel-tracing")]
+    processing_latency: Histogram<f64>,
+    #[cfg(feature = "otel-tracing")]
+    script_execution_time: Histogram<f64>,
+    #[cfg(feature = "otel-tracing")]
+    active_sessions: UpDownCounter<i64>,
+    #[cfg(feature = "otel-tracing")]
+    active_devices: UpDownCounter<i64>,
+    session_value: AtomicI64,
+    device_value: AtomicI64,
+}
+
+impl OtelMetricsCollector {
+    /// Create a new OTEL metrics collector using the global meter provider.
+    ///
+    /// Instruments are prefixed with `keyrx.*` and use microsecond buckets to
+    /// align with latency requirements.
+    pub fn new() -> Self {
+        #[cfg(feature = "otel-tracing")]
+        {
+            const LATENCY_BUCKETS_US: &[f64] = &[
+                50.0,
+                100.0,
+                250.0,
+                500.0,
+                1_000.0,
+                2_500.0,
+                5_000.0,
+                10_000.0,
+                25_000.0,
+                50_000.0,
+                100_000.0,
+                250_000.0,
+                500_000.0,
+                1_000_000.0,
+            ];
+
+            let meter = opentelemetry::global::meter("keyrx.metrics");
+
+            let key_events_total = meter
+                .u64_counter("keyrx.key_events.total")
+                .with_description("Total key events processed by action and key code")
+                .with_unit("1")
+                .build();
+
+            let errors_total = meter
+                .u64_counter("keyrx.errors.total")
+                .with_description("Total errors encountered by type")
+                .with_unit("1")
+                .build();
+
+            let processing_latency = meter
+                .f64_histogram("keyrx.processing.latency.us")
+                .with_description("Event processing latency in microseconds")
+                .with_unit("us")
+                .with_boundaries(LATENCY_BUCKETS_US.to_vec())
+                .build();
+
+            let script_execution_time = meter
+                .f64_histogram("keyrx.script.execution.us")
+                .with_description("Script execution time in microseconds")
+                .with_unit("us")
+                .with_boundaries(LATENCY_BUCKETS_US.to_vec())
+                .build();
+
+            let active_sessions = meter
+                .i64_up_down_counter("keyrx.sessions.active")
+                .with_description("Active session count")
+                .with_unit("1")
+                .build();
+
+            let active_devices = meter
+                .i64_up_down_counter("keyrx.devices.active")
+                .with_description("Active device count")
+                .with_unit("1")
+                .build();
+
+            return Self {
+                key_events_total,
+                errors_total,
+                processing_latency,
+                script_execution_time,
+                active_sessions,
+                active_devices,
+                session_value: AtomicI64::new(0),
+                device_value: AtomicI64::new(0),
+            };
+        }
+
+        #[cfg(not(feature = "otel-tracing"))]
+        Self {
+            session_value: AtomicI64::new(0),
+            device_value: AtomicI64::new(0),
+        }
+    }
+
+    /// Record a processed key event with key code and action attributes.
+    pub fn record_key_event(&self, key_code: u32, action: &str) {
+        #[cfg(feature = "otel-tracing")]
+        {
+            self.key_events_total.add(
+                1,
+                &[
+                    KeyValue::new("key_code", key_code as i64),
+                    KeyValue::new("action", action.to_string()),
+                ],
+            );
+        }
+        let _ = (key_code, action);
+    }
+
+    /// Record event processing latency in microseconds.
+    pub fn record_processing_latency(&self, duration: Duration) {
+        #[cfg(feature = "otel-tracing")]
+        {
+            let micros = duration.as_secs_f64() * 1_000_000.0;
+            self.processing_latency
+                .record(micros, &[KeyValue::new("unit", "us")]);
+        }
+        let _ = duration;
+    }
+
+    /// Record script execution time in microseconds.
+    pub fn record_script_execution_time(&self, duration: Duration) {
+        #[cfg(feature = "otel-tracing")]
+        {
+            let micros = duration.as_secs_f64() * 1_000_000.0;
+            self.script_execution_time
+                .record(micros, &[KeyValue::new("unit", "us")]);
+        }
+        let _ = duration;
+    }
+
+    /// Record an error occurrence with error type attribute.
+    pub fn record_error(&self, error_type: &str) {
+        #[cfg(feature = "otel-tracing")]
+        {
+            self.errors_total
+                .add(1, &[KeyValue::new("error_type", error_type.to_string())]);
+        }
+        let _ = error_type;
+    }
+
+    /// Set the current active session gauge value.
+    pub fn set_active_sessions(&self, count: i64) {
+        let previous = self.session_value.swap(count, Ordering::Relaxed);
+        #[cfg(feature = "otel-tracing")]
+        {
+            let delta = count - previous;
+            if delta != 0 {
+                self.active_sessions
+                    .add(delta, &[KeyValue::new("state", "session")]);
+            }
+        }
+        let _ = previous;
+    }
+
+    /// Set the current active device gauge value.
+    pub fn set_active_devices(&self, count: i64) {
+        let previous = self.device_value.swap(count, Ordering::Relaxed);
+        #[cfg(feature = "otel-tracing")]
+        {
+            let delta = count - previous;
+            if delta != 0 {
+                self.active_devices
+                    .add(delta, &[KeyValue::new("state", "device")]);
+            }
+        }
+        let _ = previous;
+    }
+}
+
+impl Default for OtelMetricsCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+impl OtelMetricsCollector {
+    fn current_sessions(&self) -> i64 {
+        self.session_value.load(Ordering::Relaxed)
+    }
+
+    fn current_devices(&self) -> i64 {
+        self.device_value.load(Ordering::Relaxed)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Arc;
+    use std::time::Duration;
 
     // Test implementation that counts calls
     struct TestCollector {
@@ -197,6 +409,30 @@ mod tests {
         }
         // Just verify it was called, timing is non-deterministic in tests
         assert_eq!(collector.profile_calls.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn otel_collector_tracks_gauges_locally() {
+        let collector = OtelMetricsCollector::new();
+
+        collector.set_active_sessions(2);
+        collector.set_active_sessions(5);
+        assert_eq!(collector.current_sessions(), 5);
+
+        collector.set_active_devices(1);
+        collector.set_active_devices(0);
+        assert_eq!(collector.current_devices(), 0);
+    }
+
+    #[test]
+    fn otel_collector_accepts_event_and_error_calls() {
+        let collector = OtelMetricsCollector::new();
+
+        // These calls should be no-ops without OTEL enabled but must not panic.
+        collector.record_key_event(42, "press");
+        collector.record_processing_latency(Duration::from_micros(250));
+        collector.record_script_execution_time(Duration::from_micros(750));
+        collector.record_error("test_error");
     }
 
     #[test]

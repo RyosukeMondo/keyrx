@@ -1,8 +1,10 @@
 # Tasks Document
 
+_Status: Priority #5 in 2025 implementation order; all items pending. Build on OTEL integration for collection/export/dashboard._
+
 ## Phase 1: Metrics Collection
 
-- [ ] 1. Create MetricsCollector
+- [x] 1. Create MetricsCollector
   - File: `core/src/metrics/collector.rs`
   - Counter, histogram, gauge setup
   - OTEL integration
