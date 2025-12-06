@@ -19,6 +19,7 @@ mod exports_metrics;
 mod exports_telemetry;
 mod exports_transition_log;
 pub mod marshal;
+pub mod runtime;
 pub mod traits;
 
 #[cfg(test)]

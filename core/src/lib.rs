@@ -48,6 +48,10 @@ pub use engine::{
     ModifierSet, MultiDeviceCoordinator, OutputAction,
 };
 pub use error::KeyRxError;
+pub use ffi::runtime::{
+    clear_revolutionary_runtime, set_revolutionary_runtime, with_revolutionary_runtime,
+    RevolutionaryRuntime,
+};
 pub use identity::DeviceIdentity;
 pub use mocks::{MockInput, MockRuntime, MockState};
 pub use scripting::RhaiRuntime;

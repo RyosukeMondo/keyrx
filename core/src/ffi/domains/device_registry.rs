@@ -4,11 +4,13 @@
 //! exposing device management operations to Flutter.
 #![allow(unsafe_code)]
 
-use crate::ffi::error::{FfiError, FfiResult};
+use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
+use crate::ffi::runtime::{block_on_ffi, with_revolutionary_runtime};
 use crate::identity::DeviceIdentity;
 use crate::registry::{DeviceRegistry, DeviceState};
 use serde::{Deserialize, Serialize};
 use std::ffi::{c_char, CStr, CString};
+use std::ptr;
 
 /// Device state for FFI serialization.
 ///
@@ -126,6 +128,40 @@ pub async fn set_user_label(
 
 // C-ABI exports with panic guards
 
+fn ffi_response<T: Serialize>(result: FfiResult<T>) -> *mut c_char {
+    let payload = serialize_ffi_result(&result).unwrap_or_else(|e| {
+        format!("error:{{\"code\":\"SERIALIZATION_FAILED\",\"message\":\"{e}\"}}")
+    });
+    CString::new(payload)
+        .map(CString::into_raw)
+        .unwrap_or(ptr::null_mut())
+}
+
+/// # Safety
+///
+/// `ptr` must be a valid, null-terminated C string.
+unsafe fn parse_c_string(ptr: *const c_char, name: &str) -> FfiResult<String> {
+    if ptr.is_null() {
+        return Err(FfiError::null_pointer(name));
+    }
+
+    CStr::from_ptr(ptr)
+        .to_str()
+        .map(|s| s.to_string())
+        .map_err(|_| FfiError::invalid_utf8(name))
+}
+
+/// # Safety
+///
+/// `ptr` may be null. If non-null, it must be a valid, null-terminated C string.
+unsafe fn parse_optional_c_string(ptr: *const c_char, name: &str) -> FfiResult<Option<String>> {
+    if ptr.is_null() {
+        return Ok(None);
+    }
+
+    parse_c_string(ptr, name).map(Some)
+}
+
 /// List all registered devices.
 ///
 /// Returns JSON string: `ok:<json>` or `error:<message>`.
@@ -135,17 +171,15 @@ pub async fn set_user_label(
 #[no_mangle]
 pub extern "C" fn keyrx_device_registry_list_devices() -> *mut c_char {
     std::panic::catch_unwind(|| {
-        // TODO: This needs access to the DeviceRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = "error:DeviceRegistry not yet integrated with FFI context";
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<Vec<FfiDeviceState>> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(list_devices(runtime.device_registry()))
+        });
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_device_registry_list_devices")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_device_registry_list_devices",
+        )))
     })
 }
 
@@ -166,36 +200,26 @@ pub unsafe extern "C" fn keyrx_device_registry_set_remap_enabled(
     enabled: i32,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if device_key.is_null() {
-            return CString::new("error:device_key is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let key_str = match CStr::from_ptr(device_key).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:device_key is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let key_str = match parse_c_string(device_key, "device_key") {
+            Ok(key) => key,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // TODO: This needs access to the DeviceRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:DeviceRegistry not yet integrated (would set {} to {})",
-            key_str,
-            enabled != 0
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let enabled = enabled != 0;
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(set_remap_enabled(
+                runtime.device_registry(),
+                &key_str,
+                enabled,
+            ))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_device_registry_set_remap_enabled")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_device_registry_set_remap_enabled",
+        )))
     })
 }
 
@@ -216,50 +240,30 @@ pub unsafe extern "C" fn keyrx_device_registry_assign_profile(
     profile_id: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if device_key.is_null() {
-            return CString::new("error:device_key is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        if profile_id.is_null() {
-            return CString::new("error:profile_id is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let key_str = match CStr::from_ptr(device_key).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:device_key is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let key_str = match parse_c_string(device_key, "device_key") {
+            Ok(key) => key,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        let profile_str = match CStr::from_ptr(profile_id).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:profile_id is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let profile_str = match parse_c_string(profile_id, "profile_id") {
+            Ok(profile) => profile,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // TODO: This needs access to the DeviceRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:DeviceRegistry not yet integrated (would assign {} to {})",
-            profile_str, key_str
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(assign_profile(
+                runtime.device_registry(),
+                &key_str,
+                &profile_str,
+            ))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_device_registry_assign_profile")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_device_registry_assign_profile",
+        )))
     })
 }
 
@@ -281,48 +285,30 @@ pub unsafe extern "C" fn keyrx_device_registry_set_user_label(
     label: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if device_key.is_null() {
-            return CString::new("error:device_key is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let key_str = match CStr::from_ptr(device_key).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:device_key is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let key_str = match parse_c_string(device_key, "device_key") {
+            Ok(key) => key,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        let label_opt = if label.is_null() {
-            None
-        } else {
-            match CStr::from_ptr(label).to_str() {
-                Ok(s) => Some(s.to_string()),
-                Err(_) => {
-                    return CString::new("error:label is not valid UTF-8")
-                        .map(CString::into_raw)
-                        .unwrap_or(std::ptr::null_mut())
-                }
-            }
+        let label_opt = match parse_optional_c_string(label, "label") {
+            Ok(label) => label,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // TODO: This needs access to the DeviceRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:DeviceRegistry not yet integrated (would set label {:?} on {})",
-            label_opt, key_str
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(set_user_label(
+                runtime.device_registry(),
+                &key_str,
+                label_opt,
+            ))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_device_registry_set_user_label")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_device_registry_set_user_label",
+        )))
     })
 }
 

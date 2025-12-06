@@ -4,9 +4,11 @@
 //! exposing profile management operations to Flutter.
 #![allow(unsafe_code)]
 
-use crate::ffi::error::{FfiError, FfiResult};
+use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
+use crate::ffi::runtime::{block_on_ffi, with_revolutionary_runtime};
 use crate::registry::profile::{Profile, ProfileRegistry};
 use std::ffi::{c_char, CStr, CString};
+use std::ptr;
 
 /// List all profile IDs.
 ///
@@ -119,6 +121,29 @@ pub async fn find_compatible_profiles(
 
 // C-ABI exports with panic guards
 
+fn ffi_response<T: serde::Serialize>(result: FfiResult<T>) -> *mut c_char {
+    let payload = serialize_ffi_result(&result).unwrap_or_else(|e| {
+        format!("error:{{\"code\":\"SERIALIZATION_FAILED\",\"message\":\"{e}\"}}")
+    });
+    CString::new(payload)
+        .map(CString::into_raw)
+        .unwrap_or(ptr::null_mut())
+}
+
+/// # Safety
+///
+/// `ptr` must be a valid, null-terminated C string.
+unsafe fn parse_c_string(ptr: *const c_char, name: &str) -> FfiResult<String> {
+    if ptr.is_null() {
+        return Err(FfiError::null_pointer(name));
+    }
+
+    CStr::from_ptr(ptr)
+        .to_str()
+        .map(|s| s.to_string())
+        .map_err(|_| FfiError::invalid_utf8(name))
+}
+
 /// List all profile IDs.
 ///
 /// Returns JSON string: `ok:<json>` or `error:<message>`.
@@ -128,17 +153,15 @@ pub async fn find_compatible_profiles(
 #[no_mangle]
 pub extern "C" fn keyrx_profile_registry_list_profiles() -> *mut c_char {
     std::panic::catch_unwind(|| {
-        // TODO: This needs access to the ProfileRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = "error:ProfileRegistry not yet integrated with FFI context";
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<Vec<String>> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(list_profiles(runtime.profile_registry()))
+        });
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_profile_registry_list_profiles")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_profile_registry_list_profiles",
+        )))
     })
 }
 
@@ -157,35 +180,21 @@ pub unsafe extern "C" fn keyrx_profile_registry_get_profile(
     profile_id: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if profile_id.is_null() {
-            return CString::new("error:profile_id is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let id_str = match CStr::from_ptr(profile_id).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:profile_id is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let id_str = match parse_c_string(profile_id, "profile_id") {
+            Ok(id) => id,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // TODO: This needs access to the ProfileRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:ProfileRegistry not yet integrated (would get profile {})",
-            id_str
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<Profile> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(get_profile(runtime.profile_registry(), &id_str))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_profile_registry_get_profile")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_profile_registry_get_profile",
+        )))
     })
 }
 
@@ -204,43 +213,26 @@ pub unsafe extern "C" fn keyrx_profile_registry_save_profile(
     profile_json: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if profile_json.is_null() {
-            return CString::new("error:profile_json is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let json_str = match CStr::from_ptr(profile_json).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:profile_json is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let json_str = match parse_c_string(profile_json, "profile_json") {
+            Ok(json) => json,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // Validate JSON can be parsed
-        match serde_json::from_str::<serde_json::Value>(json_str) {
-            Ok(_) => {
-                // TODO: This needs access to the ProfileRegistry instance from the engine
-                // For now, return an error indicating this needs integration
-                let error_msg = "error:ProfileRegistry not yet integrated (would save profile)";
-                CString::new(error_msg)
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
-            Err(e) => {
-                let error_msg = format!("error:Invalid JSON: {}", e);
-                CString::new(error_msg)
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        // Basic JSON validation before hitting the runtime
+        if let Err(e) = serde_json::from_str::<serde_json::Value>(&json_str) {
+            return ffi_response::<()>(Err(FfiError::deserialization_failed(e.to_string())));
         }
+
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(save_profile(runtime.profile_registry(), &json_str))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_profile_registry_save_profile")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_profile_registry_save_profile",
+        )))
     })
 }
 
@@ -259,35 +251,21 @@ pub unsafe extern "C" fn keyrx_profile_registry_delete_profile(
     profile_id: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if profile_id.is_null() {
-            return CString::new("error:profile_id is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let id_str = match CStr::from_ptr(profile_id).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:profile_id is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let id_str = match parse_c_string(profile_id, "profile_id") {
+            Ok(id) => id,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // TODO: This needs access to the ProfileRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:ProfileRegistry not yet integrated (would delete profile {})",
-            id_str
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(delete_profile(runtime.profile_registry(), &id_str))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_profile_registry_delete_profile")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_profile_registry_delete_profile",
+        )))
     })
 }
 
@@ -306,46 +284,32 @@ pub unsafe extern "C" fn keyrx_profile_registry_find_compatible_profiles(
     layout_type: *const c_char,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
-        if layout_type.is_null() {
-            return CString::new("error:layout_type is null")
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
-        }
-
-        let type_str = match CStr::from_ptr(layout_type).to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return CString::new("error:layout_type is not valid UTF-8")
-                    .map(CString::into_raw)
-                    .unwrap_or(std::ptr::null_mut())
-            }
+        let type_str = match parse_c_string(layout_type, "layout_type") {
+            Ok(layout) => layout,
+            Err(err) => return ffi_response::<()>(Err(err)),
         };
 
-        // Validate layout type
-        if !["standard", "matrix", "split"].contains(&type_str) {
-            let error_msg = format!(
-                "error:Invalid layout type '{}'. Must be 'standard', 'matrix', or 'split'",
+        // Validate layout type before hitting registry
+        if !["standard", "matrix", "split"].contains(&type_str.as_str()) {
+            return ffi_response::<()>(Err(FfiError::invalid_input(format!(
+                "Invalid layout type '{}'. Must be 'standard', 'matrix', or 'split'",
                 type_str
-            );
-            return CString::new(error_msg)
-                .map(CString::into_raw)
-                .unwrap_or(std::ptr::null_mut());
+            ))));
         }
 
-        // TODO: This needs access to the ProfileRegistry instance from the engine
-        // For now, return an error indicating this needs integration
-        let error_msg = format!(
-            "error:ProfileRegistry not yet integrated (would find compatible profiles for {})",
-            type_str
-        );
-        CString::new(error_msg)
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        let result: FfiResult<Vec<Profile>> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(find_compatible_profiles(
+                runtime.profile_registry(),
+                &type_str,
+            ))
+        });
+
+        ffi_response(result)
     })
     .unwrap_or_else(|_| {
-        CString::new("error:panic in keyrx_profile_registry_find_compatible_profiles")
-            .map(CString::into_raw)
-            .unwrap_or(std::ptr::null_mut())
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_profile_registry_find_compatible_profiles",
+        )))
     })
 }
 

@@ -20,7 +20,10 @@ use keyrx_core::ffi::domains::profile_registry;
 use keyrx_core::identity::DeviceIdentity;
 use keyrx_core::registry::profile::{LayoutType, Profile, ProfileRegistry};
 use keyrx_core::registry::DeviceRegistry;
+use keyrx_core::{clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime};
+use serde_json::Value;
 use std::ffi::{CStr, CString};
+use std::sync::Arc;
 use tempfile::tempdir;
 
 // ============================================================================
@@ -46,6 +49,21 @@ unsafe fn get_result_string(ptr: *mut i8) -> String {
         .to_string();
     drop(CString::from_raw(ptr));
     result
+}
+
+fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::TempDir) {
+    let (device_registry, _rx) = DeviceRegistry::new();
+    let temp_dir = tempdir().unwrap();
+    let profile_registry = Arc::new(ProfileRegistry::with_directory(
+        temp_dir.path().to_path_buf(),
+    ));
+
+    set_revolutionary_runtime(RevolutionaryRuntime::new(
+        device_registry.clone(),
+        profile_registry.clone(),
+    ));
+
+    (device_registry, profile_registry, temp_dir)
 }
 
 // ============================================================================
@@ -458,19 +476,95 @@ fn test_c_api_profile_registry_invalid_layout_type() {
 
 #[test]
 fn test_c_api_profile_registry_valid_layout_types() {
+    let (_device_registry, _profile_registry, _temp_dir) = setup_shared_runtime();
+
     unsafe {
         for layout_type in &["standard", "matrix", "split"] {
             let layout = CString::new(*layout_type).unwrap();
             let result =
                 profile_registry::keyrx_profile_registry_find_compatible_profiles(layout.as_ptr());
-            assert!(!result.is_null());
-            let c_str = CStr::from_ptr(result);
-            let msg = c_str.to_str().unwrap();
-            // Should indicate integration needed, not invalid layout
-            assert!(msg.contains("not yet integrated") || msg.starts_with("error:"));
-            drop(CString::from_raw(result));
+            let msg = get_result_string(result);
+            assert!(
+                msg.starts_with("ok:"),
+                "expected ok response for layout {}, got {}",
+                layout_type,
+                msg
+            );
         }
     }
+
+    clear_revolutionary_runtime();
+}
+
+#[test]
+fn test_c_api_device_registry_list_devices_round_trip() {
+    let (device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
+    let identity = test_identity("SERIAL123");
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        device_registry.register_device(identity.clone()).await;
+        device_registry
+            .set_remap_enabled(&identity, true)
+            .await
+            .unwrap();
+    });
+
+    unsafe {
+        let result = device_registry::keyrx_device_registry_list_devices();
+        let raw = get_result_string(result);
+        assert!(raw.starts_with("ok:"));
+
+        let payload = raw.trim_start_matches("ok:");
+        let devices: Vec<Value> = serde_json::from_str(payload).unwrap();
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0]["identity"]["serial_number"], "SERIAL123");
+        assert_eq!(devices[0]["remap_enabled"], Value::Bool(true));
+    }
+
+    clear_revolutionary_runtime();
+    drop(temp_dir);
+}
+
+#[test]
+fn test_c_api_profile_registry_save_and_get_round_trip() {
+    let (_device_registry, profile_registry, temp_dir) = setup_shared_runtime();
+
+    let profile = test_profile("FFI Profile", LayoutType::Matrix);
+    let profile_json = serde_json::to_string(&profile).unwrap();
+    let profile_id = profile.id.clone();
+    let profile_name = profile.name.clone();
+
+    unsafe {
+        let profile_json_c = CString::new(profile_json.clone()).unwrap();
+        let save_result =
+            profile_registry::keyrx_profile_registry_save_profile(profile_json_c.as_ptr());
+        let msg = get_result_string(save_result);
+        assert!(msg.starts_with("ok:"));
+    }
+
+    unsafe {
+        let id_c = CString::new(profile_id.clone()).unwrap();
+        let get_result = profile_registry::keyrx_profile_registry_get_profile(id_c.as_ptr());
+        let msg = get_result_string(get_result);
+        assert!(msg.starts_with("ok:"));
+        let payload = msg.trim_start_matches("ok:");
+        let loaded: Profile = serde_json::from_str(payload).unwrap();
+        assert_eq!(loaded.id, profile_id);
+        assert_eq!(loaded.name, profile_name);
+    }
+
+    unsafe {
+        let list_result = profile_registry::keyrx_profile_registry_list_profiles();
+        let msg = get_result_string(list_result);
+        assert!(msg.starts_with("ok:"));
+        let payload = msg.trim_start_matches("ok:");
+        let ids: Vec<String> = serde_json::from_str(payload).unwrap();
+        assert!(ids.contains(&profile_id));
+    }
+
+    clear_revolutionary_runtime();
+    drop(temp_dir);
 }
 
 #[test]

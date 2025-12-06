@@ -497,7 +497,7 @@
   - _Requirements: 2, 6, 10_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Systems Integrator with expertise in DI and runtime wiring | Task: Replace the legacy discovery registry with the new per-device registry end-to-end (CLI + engine), hydrate from DeviceBindings, and ensure events carry VID:PID:Serial | Restrictions: Drop old registry usage entirely, keep latency targets (<1ms pipeline), no duplicate sources of truth, handle binding load/save errors gracefully | _Leverage: DeviceRegistry, DeviceBindings, AdvancedEngine.with_device_registry | Success: Engine runs with a single registry, bindings persist across restarts, InputEvents include serials, all existing tests still pass (no regressions). After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (wiring points, persistence hooks), then mark as [x]._
 
-- [ ] 7.2. Wire registry/profile FFI to shared runtime
+- [x] 7.2. Wire registry/profile FFI to shared runtime
   - Files: `core/src/ffi/domains/device_registry.rs`, `core/src/ffi/domains/profile_registry.rs`, `core/src/ffi/bridge.rs`, `core/src/lib.rs` (FFI context)
   - Provide the live DeviceRegistry and ProfileRegistry instances to FFI exports; remove “not yet integrated” placeholder errors.
   - Ensure FFI functions operate on the shared runtime state, enforce panic safety, and return consistent ok/error strings with correct memory ownership.
