@@ -34,7 +34,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Prometheus scraping
   - _Requirements: 2.1_
 
-- [ ] 5. Add OTLP metrics export
+- [x] 5. Add OTLP metrics export
   - File: `core/src/metrics/otlp.rs`
   - Batch export
   - Endpoint configuration
