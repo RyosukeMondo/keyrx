@@ -21,8 +21,38 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             );
         }
 
+        #[cfg(feature = "otel-tracing")]
+        let device_identity = self
+            .device_identity
+            .as_ref()
+            .map(|d| d.to_key())
+            .unwrap_or_else(|| "unknown".to_string());
+        #[cfg(feature = "otel-tracing")]
+        let poll_span = tracing::trace_span!(
+            "driver.poll_events",
+            driver = "windows",
+            device = %device_identity,
+            running = self.running.load(Ordering::Relaxed)
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _poll_guard = poll_span.enter();
+
         let mut events = Vec::new();
         while let Some(event) = self.next_event()? {
+            #[cfg(feature = "otel-tracing")]
+            let event_span = tracing::trace_span!(
+                "driver.input_event",
+                driver = "windows",
+                key = ?event.key,
+                pressed = event.pressed,
+                timestamp_us = event.timestamp_us,
+                device_id = event.device_id.as_deref().unwrap_or(""),
+                is_repeat = event.is_repeat,
+                is_synthetic = event.is_synthetic,
+                scan_code = event.scan_code as u64,
+            );
+            #[cfg(feature = "otel-tracing")]
+            let _event_guard = event_span.enter();
             events.push(event);
         }
 
@@ -34,6 +64,22 @@ impl<I: KeyInjector + 'static> InputSource for WindowsInput<I> {
             self.log_inactive_send();
             return Ok(());
         }
+
+        #[cfg(feature = "otel-tracing")]
+        let action_label = format!("{:?}", &action);
+        #[cfg(feature = "otel-tracing")]
+        let send_span = tracing::trace_span!(
+            "driver.send_output",
+            driver = "windows",
+            device = %self
+                .device_identity
+                .as_ref()
+                .map(|d| d.to_key())
+                .unwrap_or_else(|| "unknown".to_string()),
+            action = %action_label
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _send_guard = send_span.enter();
         match action {
             OutputAction::KeyDown(key) => self.inject_key_action(key, true, "windows_key_down")?,
             OutputAction::KeyUp(key) => self.inject_key_action(key, false, "windows_key_up")?,

@@ -272,6 +272,25 @@ where
         tracer: Option<&EngineTracer>,
     ) -> Vec<OutputAction> {
         let start_time = std::time::Instant::now();
+        #[cfg(feature = "otel-tracing")]
+        let event_span = tracing::info_span!(
+            "engine.process_event",
+            key = ?event.key,
+            pressed = event.pressed,
+            timestamp_us = event.timestamp_us,
+            device_id = event.device_id.as_deref().unwrap_or(""),
+            vendor_id = event.vendor_id.unwrap_or_default(),
+            product_id = event.product_id.unwrap_or_default(),
+            is_repeat = event.is_repeat,
+            is_synthetic = event.is_synthetic,
+            scan_code = event.scan_code as u64,
+            serial = event
+                .serial_number
+                .as_deref()
+                .unwrap_or(""),
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _event_span_guard = event_span.enter();
 
         // Step 0: Revolutionary mapping pipeline - device resolution and passthrough
         // Check if this device has remapping disabled

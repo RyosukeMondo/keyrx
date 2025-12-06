@@ -233,6 +233,7 @@ impl LinuxInput {
         }
     }
 }
+
 #[async_trait]
 impl InputSource for LinuxInput {
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
@@ -245,19 +246,56 @@ impl InputSource for LinuxInput {
             );
         }
 
+        #[cfg(feature = "otel-tracing")]
+        let poll_span = tracing::trace_span!(
+            "driver.poll_events",
+            driver = "linux",
+            device = %self.device_path.display(),
+            running = self.running.load(Ordering::Relaxed)
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _poll_guard = poll_span.enter();
+
         let mut events = Vec::new();
         while let Some(event) = self.next_event()? {
+            #[cfg(feature = "otel-tracing")]
+            let event_span = tracing::trace_span!(
+                "driver.input_event",
+                driver = "linux",
+                key = ?event.key,
+                pressed = event.pressed,
+                timestamp_us = event.timestamp_us,
+                device_id = event.device_id.as_deref().unwrap_or(""),
+                is_repeat = event.is_repeat,
+                is_synthetic = event.is_synthetic,
+                scan_code = event.scan_code as u64,
+            );
+            #[cfg(feature = "otel-tracing")]
+            let _event_guard = event_span.enter();
             events.push(event);
         }
 
         self.log_polled_events(events.len());
         Ok(events)
     }
+
     async fn send_output(&mut self, action: OutputAction) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_inactive_send();
             return Ok(());
         }
+
+        #[cfg(feature = "otel-tracing")]
+        let action_label = format!("{:?}", &action);
+        #[cfg(feature = "otel-tracing")]
+        let send_span = tracing::trace_span!(
+            "driver.send_output",
+            driver = "linux",
+            device = %self.device_path.display(),
+            action = %action_label
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _send_guard = send_span.enter();
 
         match action {
             OutputAction::KeyDown(key) => self.inject_key_action(key, true, "linux_key_down")?,
@@ -268,6 +306,7 @@ impl InputSource for LinuxInput {
         }
         Ok(())
     }
+
     async fn start(&mut self) -> Result<(), KeyrxError> {
         if self.running.load(Ordering::Relaxed) {
             self.log_start_skipped();
@@ -284,6 +323,7 @@ impl InputSource for LinuxInput {
         self.log_started();
         Ok(())
     }
+
     async fn stop(&mut self) -> Result<(), KeyrxError> {
         if !self.running.load(Ordering::Relaxed) {
             self.log_stop_skipped();

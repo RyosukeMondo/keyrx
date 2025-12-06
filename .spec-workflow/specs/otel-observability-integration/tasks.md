@@ -27,7 +27,7 @@ _Status: Priority #4 in 2025 implementation order; all items pending. Establish 
   - Purpose: Trace export
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 4. Add span instrumentation
+- [x] 4. Add span instrumentation
   - Files: Engine, drivers
   - Instrument key paths
   - Add relevant attributes

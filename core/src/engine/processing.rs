@@ -138,11 +138,27 @@ pub fn trace_event(
     active_layer_ids: &[u32],
     outputs: &[OutputAction],
 ) {
+    let latency_us = start_time.elapsed().as_micros() as u64;
+    #[cfg(feature = "otel-tracing")]
+    let tracing_span = tracing::trace_span!(
+        "engine.trace_event",
+        key = ?event.key,
+        pressed = event.pressed,
+        decision = ?decision_type,
+        latency_us,
+        active_layer_ids = ?active_layer_ids,
+        output_count = outputs.len(),
+        device_id = event.device_id.as_deref().unwrap_or(""),
+        is_repeat = event.is_repeat,
+        is_synthetic = event.is_synthetic,
+    );
+    #[cfg(feature = "otel-tracing")]
+    let _span_guard = tracing_span.enter();
+
     if let Some(t) = tracer {
         // Input span is already emitted at the start of processing
         let _input_span = t.span_input_received(event);
 
-        let latency_us = start_time.elapsed().as_micros() as u64;
         let _decision_span = t.span_decision_made(decision_type, latency_us, active_layer_ids);
         let _output_span = t.span_output_generated(outputs);
     }

@@ -348,6 +348,16 @@ impl InputSource for WindowsRawInput {
     }
 
     async fn poll_events(&mut self) -> Result<Vec<InputEvent>, KeyrxError> {
+        #[cfg(feature = "otel-tracing")]
+        let poll_span = tracing::trace_span!(
+            "driver.poll_events",
+            driver = "windows_raw",
+            target = self.target_path.as_deref().unwrap_or("any"),
+            running = self.running.load(Ordering::Relaxed)
+        );
+        #[cfg(feature = "otel-tracing")]
+        let _poll_guard = poll_span.enter();
+
         let mut events = Vec::new();
         while let Ok(event) = self.rx.try_recv() {
             if let Some(target) = &self.target_path {
@@ -355,6 +365,17 @@ impl InputSource for WindowsRawInput {
                     continue;
                 }
             }
+            #[cfg(feature = "otel-tracing")]
+            let event_span = tracing::trace_span!(
+                "driver.input_event",
+                driver = "windows_raw",
+                key = ?event.key,
+                pressed = event.pressed,
+                device_id = event.device_id.as_deref().unwrap_or(""),
+                scan_code = event.scan_code as u64,
+            );
+            #[cfg(feature = "otel-tracing")]
+            let _event_guard = event_span.enter();
             events.push(event);
         }
         Ok(events)
