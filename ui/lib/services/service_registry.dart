@@ -8,6 +8,7 @@ import 'engine_service.dart';
 import 'engine_service_impl.dart';
 import 'error_translator.dart';
 import 'error_translator_impl.dart';
+import 'profile_autosave_service.dart';
 import 'profile_registry_service.dart';
 import 'script_file_service.dart';
 import 'storage_path_resolver.dart';
@@ -28,6 +29,7 @@ class ServiceRegistry {
     required this.bridge,
     required this.apiDocsService,
     required this.storagePathResolver,
+    required this.profileAutosaveService,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -43,6 +45,7 @@ class ServiceRegistry {
     TestService? testService,
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
+    ProfileAutosaveService? profileAutosaveService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final effectiveBridge = bridge ?? KeyrxBridge.open();
@@ -62,6 +65,11 @@ class ServiceRegistry {
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
     final resolver = storagePathResolver ?? const StoragePathResolver();
+    final autosave = profileAutosaveService ??
+        ProfileAutosaveService(
+          profileRegistryService: profileRegistry,
+          storagePathResolver: resolver,
+        );
 
     return ServiceRegistry(
       errorTranslator: translator,
@@ -76,6 +84,7 @@ class ServiceRegistry {
       bridge: effectiveBridge,
       apiDocsService: docs,
       storagePathResolver: resolver,
+      profileAutosaveService: autosave,
     );
   }
 
@@ -93,7 +102,14 @@ class ServiceRegistry {
     required KeyrxBridge bridge,
     required ApiDocsService apiDocsService,
     required StoragePathResolver storagePathResolver,
+    ProfileAutosaveService? profileAutosaveService,
   }) {
+    final autosave = profileAutosaveService ??
+        ProfileAutosaveService(
+          profileRegistryService: profileRegistryService,
+          storagePathResolver: storagePathResolver,
+        );
+
     return ServiceRegistry(
       errorTranslator: errorTranslator,
       engineService: engineService,
@@ -107,6 +123,7 @@ class ServiceRegistry {
       bridge: bridge,
       apiDocsService: apiDocsService,
       storagePathResolver: storagePathResolver,
+      profileAutosaveService: autosave,
     );
   }
 
@@ -122,6 +139,7 @@ class ServiceRegistry {
   final KeyrxBridge bridge;
   final ApiDocsService apiDocsService;
   final StoragePathResolver storagePathResolver;
+  final ProfileAutosaveService profileAutosaveService;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -137,6 +155,7 @@ class ServiceRegistry {
     KeyrxBridge? bridge,
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
+    ProfileAutosaveService? profileAutosaveService,
   }) {
     return ServiceRegistry(
       errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -153,6 +172,8 @@ class ServiceRegistry {
       bridge: bridge ?? this.bridge,
       apiDocsService: apiDocsService ?? this.apiDocsService,
       storagePathResolver: storagePathResolver ?? this.storagePathResolver,
+      profileAutosaveService:
+          profileAutosaveService ?? this.profileAutosaveService,
     );
   }
 
@@ -164,6 +185,7 @@ class ServiceRegistry {
     await deviceRegistryService.dispose();
     await profileRegistryService.dispose();
     await testService.dispose();
+    await profileAutosaveService.dispose();
     await bridge.dispose();
   }
 }

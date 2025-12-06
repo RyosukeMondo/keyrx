@@ -14,7 +14,7 @@
   - _Requirements: 1, 4_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter service engineer | Task: Build a storage path resolver that returns/creates the user home .keyrx directory cross-platform | Restrictions: No elevated permissions; do not hardcode absolute user names | Success: Service returns a valid directory path, creates it if missing, handles Windows and Linux._
 
-- [ ] 3. Implement profile autosave service (debounce + retry)
+- [x] 3. Implement profile autosave service (debounce + retry)
   - File: ui/lib/services/profile_autosave_service.dart (new)
   - Add a debounced autosave helper that writes profiles via the profile repository to the resolved `.keyrx` path, emits saving/success/error status, and retries up to 3 times on transient failures with backoff.
   - _Leverage: ui/lib/services/storage_path_resolver.dart (task 2), existing profile repository/service in ui/lib/services and ui/lib/repositories_
