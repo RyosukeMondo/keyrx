@@ -41,7 +41,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
   - Purpose: Collector export
   - _Requirements: 2.2_
 
-- [ ] 6. Create local metrics store
+- [x] 6. Create local metrics store
   - File: `core/src/metrics/local_store.rs`
   - Time-series storage
   - Query interface
