@@ -34,7 +34,7 @@
 
 ## Phase 3: Allocation Tracking
 
-- [ ] 5. Implement allocation tracker
+- [x] 5. Implement allocation tracker
   - File: `core/src/profiling/allocations.rs`
   - Global allocator wrapper
   - Site tracking
