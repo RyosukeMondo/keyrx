@@ -50,7 +50,7 @@ _Status: Priority #5 in 2025 implementation order; all items pending. Build on O
 
 ## Phase 3: Dashboard
 
-- [ ] 7. Create Grafana dashboard JSON
+- [x] 7. Create Grafana dashboard JSON
   - File: `core/src/metrics/grafana.rs`
   - Panel definitions
   - Query templates

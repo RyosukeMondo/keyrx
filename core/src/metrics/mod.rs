@@ -40,6 +40,7 @@
 pub mod collector;
 pub mod errors;
 pub mod full_collector;
+pub mod grafana;
 pub mod latency;
 pub mod local_store;
 pub mod memory;
@@ -55,6 +56,7 @@ pub mod snapshot;
 pub use collector::{MetricsCollector, OtelMetricsCollector, ProfileGuard};
 pub use errors::{ErrorMetrics, ErrorSnapshot};
 pub use full_collector::FullMetricsCollector;
+pub use grafana::{GrafanaDashboard, GrafanaPanel};
 pub use latency::LatencyHistogram;
 pub use local_store::{LocalMetricsStore, DEFAULT_MAX_SAMPLES, DEFAULT_RETENTION};
 pub use memory::{MemoryMonitor, MemoryStats};
