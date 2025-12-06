@@ -315,7 +315,14 @@ pub unsafe extern "C" fn keyrx_device_registry_set_user_label(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ffi::runtime::{
+        clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
+    };
+    use crate::registry::profile::ProfileRegistry;
     use crate::registry::DeviceRegistry;
+    use std::sync::Arc;
+    use tempfile::tempdir;
+    use tokio::runtime::Runtime;
 
     fn test_identity(serial: &str) -> DeviceIdentity {
         DeviceIdentity::new(0x1234, 0x5678, serial.to_string())
@@ -453,16 +460,46 @@ mod tests {
 
     #[test]
     fn test_c_api_null_label_clears() {
+        let (registry, _rx) = DeviceRegistry::new();
+        let temp_dir = tempdir().unwrap();
+        let profile_registry = Arc::new(ProfileRegistry::with_directory(
+            temp_dir.path().to_path_buf(),
+        ));
+
+        set_revolutionary_runtime(RevolutionaryRuntime::new(
+            registry.clone(),
+            profile_registry,
+        ))
+        .unwrap();
+
+        let identity = test_identity("TEST001");
+        let key = identity.to_key();
+
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            registry.register_device(identity.clone()).await;
+            registry
+                .set_user_label(&identity, Some("Existing".to_string()))
+                .await
+                .unwrap();
+        });
+
         unsafe {
-            let device_key = CString::new("1234:5678:TEST001").unwrap();
+            let device_key = CString::new(key.clone()).unwrap();
             let result =
                 keyrx_device_registry_set_user_label(device_key.as_ptr(), std::ptr::null());
             assert!(!result.is_null());
             let c_str = CStr::from_ptr(result);
             let msg = c_str.to_str().unwrap();
-            // Should indicate integration needed, not null pointer error
-            assert!(msg.contains("not yet integrated"));
+            assert!(msg.starts_with("ok:"));
             drop(CString::from_raw(result));
         }
+
+        rt.block_on(async {
+            let state = registry.get_device_state(&identity).await.unwrap();
+            assert!(state.identity.user_label.is_none());
+        });
+
+        clear_revolutionary_runtime().unwrap();
     }
 }

@@ -61,7 +61,8 @@ fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::Te
     set_revolutionary_runtime(RevolutionaryRuntime::new(
         device_registry.clone(),
         profile_registry.clone(),
-    ));
+    ))
+    .unwrap();
 
     (device_registry, profile_registry, temp_dir)
 }
@@ -493,7 +494,7 @@ fn test_c_api_profile_registry_valid_layout_types() {
         }
     }
 
-    clear_revolutionary_runtime();
+    clear_revolutionary_runtime().unwrap();
 }
 
 #[test]
@@ -522,13 +523,13 @@ fn test_c_api_device_registry_list_devices_round_trip() {
         assert_eq!(devices[0]["remap_enabled"], Value::Bool(true));
     }
 
-    clear_revolutionary_runtime();
+    clear_revolutionary_runtime().unwrap();
     drop(temp_dir);
 }
 
 #[test]
 fn test_c_api_profile_registry_save_and_get_round_trip() {
-    let (_device_registry, profile_registry, temp_dir) = setup_shared_runtime();
+    let (_device_registry, _profile_registry, temp_dir) = setup_shared_runtime();
 
     let profile = test_profile("FFI Profile", LayoutType::Matrix);
     let profile_json = serde_json::to_string(&profile).unwrap();
@@ -563,7 +564,7 @@ fn test_c_api_profile_registry_save_and_get_round_trip() {
         assert!(ids.contains(&profile_id));
     }
 
-    clear_revolutionary_runtime();
+    clear_revolutionary_runtime().unwrap();
     drop(temp_dir);
 }
 

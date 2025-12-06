@@ -9,6 +9,7 @@ use crate::ffi::error::{FfiError, FfiResult};
 use crate::registry::{DeviceRegistry, ProfileRegistry};
 use std::future::Future;
 use std::sync::{Arc, OnceLock, RwLock};
+use tracing::{error, info, warn};
 
 /// Runtime state required by revolutionary mapping FFI domains.
 #[derive(Clone)]
@@ -46,17 +47,67 @@ fn runtime_slot() -> &'static RwLock<Option<Arc<RevolutionaryRuntime>>> {
 ///
 /// Subsequent calls replace the previous runtime. Callers should supply
 /// the same instances used by the engine to keep state consistent.
-pub fn set_revolutionary_runtime(runtime: RevolutionaryRuntime) {
-    if let Ok(mut guard) = runtime_slot().write() {
-        *guard = Some(Arc::new(runtime));
+pub fn set_revolutionary_runtime(runtime: RevolutionaryRuntime) -> FfiResult<()> {
+    let mut guard = runtime_slot().write().map_err(|_| {
+        error!(
+            service = "keyrx",
+            component = "ffi_runtime",
+            event = "runtime_lock_poisoned",
+            "Failed to acquire runtime slot for initialization"
+        );
+        FfiError::internal("runtime lock poisoned")
+    })?;
+
+    if guard.is_some() {
+        warn!(
+            service = "keyrx",
+            component = "ffi_runtime",
+            event = "runtime_replaced",
+            "Replacing existing revolutionary runtime instance"
+        );
     }
+
+    *guard = Some(Arc::new(runtime));
+
+    info!(
+        service = "keyrx",
+        component = "ffi_runtime",
+        event = "runtime_initialized",
+        "Revolutionary runtime initialized"
+    );
+
+    Ok(())
 }
 
 /// Clear the shared runtime slot (primarily for tests).
-pub fn clear_revolutionary_runtime() {
-    if let Ok(mut guard) = runtime_slot().write() {
-        guard.take();
+pub fn clear_revolutionary_runtime() -> FfiResult<()> {
+    let mut guard = runtime_slot().write().map_err(|_| {
+        error!(
+            service = "keyrx",
+            component = "ffi_runtime",
+            event = "runtime_lock_poisoned",
+            "Failed to acquire runtime slot for clearing"
+        );
+        FfiError::internal("runtime lock poisoned")
+    })?;
+
+    if guard.take().is_some() {
+        info!(
+            service = "keyrx",
+            component = "ffi_runtime",
+            event = "runtime_cleared",
+            "Revolutionary runtime cleared"
+        );
+    } else {
+        warn!(
+            service = "keyrx",
+            component = "ffi_runtime",
+            event = "runtime_clear_noop",
+            "clear_revolutionary_runtime called with no runtime set"
+        );
     }
+
+    Ok(())
 }
 
 /// Execute a function with the shared runtime, returning an FFI-friendly error
@@ -74,6 +125,31 @@ where
         .ok_or_else(|| FfiError::internal("revolutionary runtime not initialized"))?;
 
     f(runtime)
+}
+
+/// Guard that clears the shared runtime when dropped.
+pub struct RevolutionaryRuntimeGuard;
+
+impl RevolutionaryRuntimeGuard {
+    /// Install the given runtime and return a guard that will clear it on drop.
+    pub fn install(runtime: RevolutionaryRuntime) -> FfiResult<Self> {
+        set_revolutionary_runtime(runtime)?;
+        Ok(Self)
+    }
+}
+
+impl Drop for RevolutionaryRuntimeGuard {
+    fn drop(&mut self) {
+        if let Err(err) = clear_revolutionary_runtime() {
+            error!(
+                service = "keyrx",
+                component = "ffi_runtime",
+                event = "runtime_clear_failed",
+                error = %err,
+                "Failed to clear revolutionary runtime"
+            );
+        }
+    }
 }
 
 /// Execute an async operation using the current Tokio runtime if one is

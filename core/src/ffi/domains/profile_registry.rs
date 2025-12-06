@@ -316,11 +316,32 @@ pub unsafe extern "C" fn keyrx_profile_registry_find_compatible_profiles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ffi::runtime::{
+        clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
+    };
     use crate::registry::profile::{LayoutType, Profile};
+    use crate::registry::DeviceRegistry;
+    use std::sync::Arc;
     use tempfile::tempdir;
 
     fn test_profile(name: &str, layout: LayoutType) -> Profile {
         Profile::new(name, layout)
+    }
+
+    fn setup_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::TempDir) {
+        let (device_registry, _rx) = DeviceRegistry::new();
+        let temp_dir = tempdir().unwrap();
+        let profile_registry = Arc::new(ProfileRegistry::with_directory(
+            temp_dir.path().to_path_buf(),
+        ));
+
+        set_revolutionary_runtime(RevolutionaryRuntime::new(
+            device_registry.clone(),
+            profile_registry.clone(),
+        ))
+        .unwrap();
+
+        (device_registry, profile_registry, temp_dir)
     }
 
     #[tokio::test]
@@ -484,7 +505,12 @@ mod tests {
             assert!(!result.is_null());
             let c_str = CStr::from_ptr(result);
             let msg = c_str.to_str().unwrap();
-            assert!(msg.contains("Invalid JSON"));
+            assert!(msg.starts_with("error:"));
+            assert!(
+                msg.contains("DESERIALIZATION_FAILED")
+                    || msg.contains("Invalid profile JSON")
+                    || msg.contains("Invalid JSON")
+            );
             drop(CString::from_raw(result));
         }
     }
@@ -516,15 +542,18 @@ mod tests {
 
     #[test]
     fn test_c_api_valid_layout_type() {
+        let (_device_registry, _profile_registry, _temp_dir) = setup_runtime();
+
         unsafe {
             let layout = CString::new("matrix").unwrap();
             let result = keyrx_profile_registry_find_compatible_profiles(layout.as_ptr());
             assert!(!result.is_null());
             let c_str = CStr::from_ptr(result);
             let msg = c_str.to_str().unwrap();
-            // Should indicate integration needed, not invalid layout
-            assert!(msg.contains("not yet integrated"));
+            assert!(msg.starts_with("ok:"));
             drop(CString::from_raw(result));
         }
+
+        clear_revolutionary_runtime().unwrap();
     }
 }

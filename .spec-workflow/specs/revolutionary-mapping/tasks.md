@@ -520,3 +520,27 @@
   - _Leverage: DeviceRegistryFFI + ProfileRegistryFFI results; existing snackbar patterns_
   - _Requirements: 11, 12, 16, 17_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI/UX Developer focused on reliability | Task: Harden Devices UI to reflect real registry state, handle errors visibly, and keep device list responsive when refresh fails | Restrictions: No silent error swallowing, maintain accessibility, minimize layout churn, keep interactions snappy | _Leverage: Services + widgets already built, common error-handling patterns | Success: Users see actionable errors, toggles/assignments give feedback, refresh preserves last data on failure, widget tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widgets/services changes), then mark as [x]._
+
+- [x] 7.5. Initialize shared runtime for FFI domains
+  - Files: `core/src/lib.rs`, `core/src/ffi/runtime.rs`, `core/src/ffi/exports.rs`, engine/CLI init path (e.g., `core/src/cli/commands/run.rs`)
+  - Register a live `RevolutionaryRuntime` (DeviceRegistry + ProfileRegistry) during engine bootstrap so all FFI domains have access to the real state; clear on shutdown.
+  - Ensure panic-safe lifecycle: set once, replace on restart, clear in tests; add logging for failed initialization.
+  - _Leverage: `set_revolutionary_runtime`, `with_revolutionary_runtime` helpers_
+  - _Requirements: 16, 17_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Runtime Integrator | Task: Wire runtime initialization so FFI registry calls operate on the live engine state (no more “runtime not initialized”) | Restrictions: No duplicate registries, handle shutdown/cleanup, keep thread safety | _Leverage: ffi/runtime helpers, engine builder init points | Success: All FFI registry calls succeed against live state in app/CLI; errors for missing runtime are no longer returned; tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (init/shutdown wiring), then mark as [x]._
+
+- [ ] 7.6. Integrate device definitions FFI with live library
+  - Files: `core/src/ffi/domains/device_definitions.rs`, `core/src/ffi/runtime.rs`, init wiring where DeviceDefinitionLibrary lives
+  - Replace “not yet integrated” stubs with real access to the loaded DeviceDefinitionLibrary; ensure list/get use the shared instance and return structured ok/error strings.
+  - Add panic guards and memory ownership checks; update Dart bindings/tests if present.
+  - _Leverage: DeviceDefinitionLibrary already loaded in core; ffi/runtime slot for shared state_
+  - _Requirements: 7, 16_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Developer for read-only data | Task: Expose device definitions via FFI using the live library instead of stubs | Restrictions: Read-only exposure, correct error codes, no global divergence, panic safety | _Leverage: ffi panic guards, runtime wiring | Success: Dart/FFI can list/get definitions; stubs removed; tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (FFI functions wired), then mark as [x]._
+
+- [ ] 7.7. Align CLI device commands with live registry
+  - Files: `core/src/cli/commands/devices.rs`, `core/src/cli/commands/run.rs`, potential helpers in `core/src/lib.rs`
+  - Make CLI device operations (list/show/remap/assign/label) operate on the live DeviceRegistry when the engine is running, while persisting via DeviceBindings to keep SSOT.
+  - Ensure outputs reflect actual runtime state (remap/profile/label) and still write bindings atomically; handle offline mode gracefully.
+  - _Leverage: DeviceRegistry + DeviceBindings from tasks 7.1/7.5_
+  - _Requirements: 2, 6, 10, 15_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI Systems Engineer | Task: Route device CLI to the live registry (with fallback to bindings), keeping persisted state in sync | Restrictions: Maintain backward-compatible UX, avoid duplicate sources of truth, solid error messaging | _Leverage: registry/bindings wiring, CLI OutputWriter patterns | Success: CLI reflects real device state, updates bindings, and works both when engine is active and offline; tests/docs updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (CLI wiring), then mark as [x]._
