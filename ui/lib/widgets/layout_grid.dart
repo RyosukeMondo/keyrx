@@ -13,11 +13,13 @@ class LayoutInfo {
   final int rows;
   final int cols;
   final LayoutType type;
+  final List<int>? colsPerRow;
 
   const LayoutInfo({
     required this.rows,
     required this.cols,
     required this.type,
+    this.colsPerRow,
   });
 }
 
@@ -69,11 +71,38 @@ class LayoutGrid extends StatelessWidget {
 
   /// Build matrix layout using GridView
   Widget _buildMatrixLayout(BuildContext context) {
+    final perRow = layoutInfo.colsPerRow;
+
+    if (perRow != null && perRow.isNotEmpty) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int row = 0; row < perRow.length; row++) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int col = 0; col < perRow[row]; col++)
+                  Padding(
+                    padding: EdgeInsets.all(keySpacing / 2),
+                    child: SizedBox(
+                      width: keySize,
+                      height: keySize,
+                      child: _buildKey(context, row, col),
+                    ),
+                  ),
+              ],
+            ),
+            if (row != perRow.length - 1) SizedBox(height: keySpacing),
+          ],
+        ],
+      );
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: layoutInfo.cols,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: keySize + keySpacing * 2,
         mainAxisSpacing: keySpacing,
         crossAxisSpacing: keySpacing,
         childAspectRatio: 1.0,
@@ -157,8 +186,8 @@ class LayoutGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: halfCols,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: keySize + keySpacing * 2,
         mainAxisSpacing: keySpacing,
         crossAxisSpacing: keySpacing,
         childAspectRatio: 1.0,
@@ -197,24 +226,25 @@ class LayoutGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.all(4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Position label (small)
-              Text(
-                '$row,$col',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimary.withOpacity(0.7)
-                      : theme.colorScheme.onSurface.withOpacity(0.5),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$row,$col',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary.withOpacity(0.7)
+                        : theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
                 ),
-              ),
-              if (hasMapping) ...[
-                const SizedBox(height: 2),
-                // Mapping label (larger)
-                Flexible(
-                  child: Text(
+                if (hasMapping) ...[
+                  const SizedBox(height: 2),
+                  Text(
                     label,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -227,9 +257,9 @@ class LayoutGrid extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

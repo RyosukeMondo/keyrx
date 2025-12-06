@@ -430,32 +430,44 @@ class _DragDropMapperState extends State<DragDropMapper> {
 
   /// Build disabled palette overlay when no physical key is selected
   Widget _buildDisabledPaletteOverlay(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.touch_app,
-            size: 64,
-            color: theme.disabledColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Select a physical key first',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.disabledColor,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.touch_app,
+                      size: 64,
+                      color: theme.disabledColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Select a physical key first',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.disabledColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Click any key in the device layout to begin mapping',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.disabledColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Click any key in the device layout to begin mapping',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.disabledColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

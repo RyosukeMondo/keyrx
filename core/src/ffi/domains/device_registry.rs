@@ -59,10 +59,19 @@ fn extract_serial(path: &std::path::Path) -> String {
 pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceState>> {
     // 1. Scan for physical devices
     // We use spawn_blocking because list_keyboards might do I/O
-    let physical_devices = tokio::task::spawn_blocking(|| drivers::list_keyboards())
+    let scan_result = tokio::task::spawn_blocking(drivers::list_keyboards)
         .await
-        .map_err(|e| FfiError::internal(format!("JoinError in list_devices: {}", e)))?
-        .unwrap_or_default();
+        .map_err(|e| FfiError::internal(format!("JoinError in list_devices: {}", e)))?;
+
+    let (physical_devices, scan_succeeded) = match scan_result {
+        Ok(devices) => (devices, true),
+        Err(err) => {
+            // In test/no-driver environments, keep existing registry entries instead of
+            // unregistering everything due to a failed scan.
+            tracing::warn!("Device scan failed in list_devices: {}", err);
+            (Vec::new(), false)
+        }
+    };
 
     // 2. Register found devices and track them
     let mut found_identities = std::collections::HashSet::new();
@@ -73,12 +82,13 @@ pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceS
         registry.register_device(identity).await;
     }
 
-    // 3. Unregister disconnected devices
-    // Get current list from registry to check against found physical devices
-    let registered_devices = registry.list_devices().await;
-    for device in registered_devices {
-        if !found_identities.contains(&device.identity) {
-            registry.unregister_device(&device.identity).await;
+    // 3. Unregister disconnected devices only if we successfully scanned hardware
+    if scan_succeeded && !found_identities.is_empty() {
+        let registered_devices = registry.list_devices().await;
+        for device in registered_devices {
+            if !found_identities.contains(&device.identity) {
+                registry.unregister_device(&device.identity).await;
+            }
         }
     }
 

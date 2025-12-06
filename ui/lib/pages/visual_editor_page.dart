@@ -4,6 +4,8 @@
 /// using the DragDropMapper widget with dynamic layout rendering.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +14,7 @@ import '../models/layout_type.dart';
 import '../models/profile.dart';
 import '../services/profile_registry_service.dart';
 import '../services/service_registry.dart';
+import '../widgets/drag_drop_mapper.dart';
 import '../widgets/layout_grid.dart';
 
 const _uuid = Uuid();
@@ -30,9 +33,19 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   List<String> _profileIds = [];
   bool _isLoading = false;
   String? _errorMessage;
+  LayoutInfo? _currentLayoutInfo;
+  List<int> _layoutRows = [];
+  final Map<String, LayoutInfo> _layoutOverrides = {};
 
-  ProfileRegistryService get _profileService =>
-      Provider.of<ServiceRegistry>(context, listen: false).profileRegistryService;
+  ProfileRegistryService get _profileService {
+    try {
+      final registry =
+          Provider.of<ServiceRegistry>(context, listen: false);
+      return registry.profileRegistryService;
+    } on ProviderNotFoundException {
+      return Provider.of<ProfileRegistryService>(context, listen: false);
+    }
+  }
 
   @override
   void initState() {
@@ -73,9 +86,21 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
 
     try {
       final profile = await _profileService.getProfile(profileId);
+      if (profile == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load profile: $profileId not found';
+        });
+        return;
+      }
+
+      final layoutInfo = _layoutOverrides[profileId] ?? _getLayoutInfoForProfile(profile);
+
       setState(() {
         _selectedProfileId = profileId;
         _currentProfile = profile;
+        _currentLayoutInfo = layoutInfo;
+        _layoutRows = _buildRowsFromLayout(layoutInfo);
         _isLoading = false;
       });
     } catch (e) {
@@ -368,28 +393,327 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
       );
     }
 
-    // Determine layout info from profile
-    // final layoutInfo = _getLayoutInfoForProfile(_currentProfile!);
+    final layoutInfo = _currentLayoutInfo ?? _getLayoutInfoForProfile(_currentProfile!);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      // Temporarily replace DragDropMapper to isolate layout issue
-      child: Container(
-        color: Colors.green.withValues(alpha: 0.2),
-        child: const Center(
-          child: Text('DragDropMapper Placeholder'),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mapperHeight = math.max(360.0, constraints.maxHeight * 0.55);
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildLayoutEditorCard(layoutInfo),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: mapperHeight,
+                    child: DragDropMapper(
+                      layoutInfo: layoutInfo,
+                      profile: _currentProfile!,
+                      profileRegistryService: _profileService,
+                      onProfileUpdated: _handleProfileUpdated,
+                      onSaveError: _handleSaveError,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build layout editor section for adjusting rows/columns before mapping.
+  Widget _buildLayoutEditorCard(LayoutInfo layoutInfo) {
+    final isMatrixLayout = _currentProfile?.layoutType == LayoutType.matrix;
+    final totalKeys = _layoutRows.isNotEmpty
+        ? _layoutRows.fold<int>(0, (sum, value) => sum + value)
+        : layoutInfo.rows * layoutInfo.cols;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 200, maxWidth: 460),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Profile Layout Editor',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Shape your physical grid before mapping keys.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _resetLayoutToDefault,
+                  icon: const Icon(Icons.restore),
+                  label: const Text('Reset layout'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (isMatrixLayout)
+              _buildRowEditorList()
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Layout editing is focused on matrix devices. '
+                  'Using default ${layoutInfo.rows} rows × ${layoutInfo.cols} columns for ${layoutInfo.type.label}.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.grid_on, size: 16),
+                  label: Text(
+                      '${layoutInfo.rows} rows × ${layoutInfo.cols} cols'),
+                ),
+                Chip(
+                  avatar: const Icon(Icons.numbers, size: 16),
+                  label: Text('$totalKeys keys defined'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Preview',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            _buildLayoutPreview(layoutInfo),
+          ],
         ),
       ),
-      /*
-      child: DragDropMapper(
-        layoutInfo: layoutInfo,
-        profile: _currentProfile!,
-        profileRegistryService: _profileService,
-        onProfileUpdated: _handleProfileUpdated,
-        onSaveError: _handleSaveError,
-      ),
-      */
     );
+  }
+
+  /// Editable row controls for matrix layout.
+  Widget _buildRowEditorList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _layoutRows.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final cols = _layoutRows[index];
+            return Row(
+              children: [
+                Text(
+                  'Row ${index + 1}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Slider(
+                    value: cols.toDouble(),
+                    min: 1,
+                    max: 20,
+                    divisions: 19,
+                    label: '$cols keys',
+                    onChanged: (value) {
+                      setState(() {
+                        _layoutRows[index] = value.toInt();
+                      });
+                      _refreshLayoutInfoFromRows();
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 48,
+                  child: Text(
+                    '$cols',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _layoutRows.length > 1
+                      ? () {
+                          setState(() {
+                            _layoutRows.removeAt(index);
+                          });
+                          _refreshLayoutInfoFromRows();
+                        }
+                      : null,
+                  tooltip: 'Remove row',
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _layoutRows.add(_layoutRows.isNotEmpty ? _layoutRows.last : 5);
+                });
+                _refreshLayoutInfoFromRows();
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Row'),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${_layoutRows.length} rows configured',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Preview of the current layout configuration.
+  Widget _buildLayoutPreview(LayoutInfo layoutInfo) {
+    final rows =
+        _layoutRows.isNotEmpty ? _layoutRows.length : layoutInfo.rows;
+    final cols = _layoutRows.isNotEmpty
+        ? _layoutRows.fold<int>(1, (maxCols, value) => math.max(maxCols, value))
+        : layoutInfo.cols;
+
+    final previewLayout = layoutInfo.type == LayoutType.matrix
+        ? LayoutInfo(
+            rows: rows,
+            cols: cols,
+            type: layoutInfo.type,
+            colsPerRow: List<int>.from(
+              _layoutRows.isNotEmpty
+                  ? _layoutRows
+                  : _buildRowsFromLayout(layoutInfo),
+            ),
+          )
+        : layoutInfo;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: LayoutGrid(
+        layoutInfo: previewLayout,
+        keySize: 40,
+        keySpacing: 6,
+      ),
+    );
+  }
+
+  /// Update current profile state when DragDropMapper saves successfully.
+  void _handleProfileUpdated(Profile updatedProfile) {
+    setState(() {
+      _currentProfile = updatedProfile;
+      _selectedProfileId = updatedProfile.id;
+      _layoutOverrides.putIfAbsent(
+        updatedProfile.id,
+        () => _currentLayoutInfo ?? _getLayoutInfoForProfile(updatedProfile),
+      );
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profile "${updatedProfile.name}" saved')),
+      );
+    }
+  }
+
+  /// Show save error surfaced from DragDropMapper.
+  void _handleSaveError(String errorMessage) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
+  /// Recalculate layout info from editable row data.
+  void _refreshLayoutInfoFromRows() {
+    if (_currentProfile == null) return;
+
+    final rows = _layoutRows.isNotEmpty ? _layoutRows.length : 1;
+    final cols = _layoutRows.isNotEmpty
+        ? _layoutRows.fold<int>(1, (maxCols, value) => math.max(maxCols, value))
+        : 1;
+
+    final updatedLayout = LayoutInfo(
+      rows: rows,
+      cols: cols,
+      type: _currentProfile!.layoutType,
+      colsPerRow: List<int>.from(
+        _layoutRows.isNotEmpty ? _layoutRows : [cols],
+      ),
+    );
+
+    setState(() {
+      _currentLayoutInfo = updatedLayout;
+      _layoutOverrides[_currentProfile!.id] = updatedLayout;
+    });
+  }
+
+  /// Build editable rows list from layout info, falling back to uniform grid.
+  List<int> _buildRowsFromLayout(LayoutInfo layoutInfo) {
+    if (layoutInfo.colsPerRow != null && layoutInfo.colsPerRow!.isNotEmpty) {
+      return List<int>.from(layoutInfo.colsPerRow!);
+    }
+    return List<int>.filled(layoutInfo.rows, layoutInfo.cols);
+  }
+
+  /// Reset layout editor to defaults for the current profile.
+  void _resetLayoutToDefault() {
+    if (_currentProfile == null) return;
+    final defaultLayout = _getLayoutInfoForProfile(_currentProfile!);
+    setState(() {
+      _layoutRows = _buildRowsFromLayout(defaultLayout);
+      _currentLayoutInfo = defaultLayout;
+      _layoutOverrides[_currentProfile!.id] = defaultLayout;
+    });
   }
 
   /// Get layout info for a profile based on its layout type.
@@ -400,13 +724,26 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     switch (profile.layoutType) {
       case LayoutType.matrix:
         // Default to 5x5 matrix for now
-        return const LayoutInfo(rows: 5, cols: 5, type: LayoutType.matrix);
+        return const LayoutInfo(
+          rows: 5,
+          cols: 5,
+          type: LayoutType.matrix,
+          colsPerRow: [5, 5, 5, 5, 5],
+        );
       case LayoutType.standard:
         // Standard keyboard layout (simplified)
-        return const LayoutInfo(rows: 6, cols: 15, type: LayoutType.standard);
+        return const LayoutInfo(
+          rows: 6,
+          cols: 15,
+          type: LayoutType.standard,
+        );
       case LayoutType.split:
         // Split keyboard layout
-        return const LayoutInfo(rows: 5, cols: 14, type: LayoutType.split);
+        return const LayoutInfo(
+          rows: 5,
+          cols: 14,
+          type: LayoutType.split,
+        );
     }
   }
 }
