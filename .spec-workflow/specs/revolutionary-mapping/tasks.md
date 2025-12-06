@@ -486,3 +486,37 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer | Task: Create comprehensive documentation for revolutionary mapping, covering user guide, device definitions, and migration | Restrictions: Must be user-friendly, include examples, cover all features, migration steps clear | _Leverage: Existing docs structure | Success: Documentation complete, clear, accurate, examples work, reviewed. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool, then mark as [x]._
 
+## Phase 7: Registry Consolidation, FFI Wiring, and UI Hardening (stability)
+
+- [x] 7.1. Replace legacy discovery registry with unified per-device registry
+  - Files: `core/src/cli/commands/run.rs`, `core/src/lib.rs`, `core/src/discovery/*` (as needed), `core/src/engine/advanced.rs`, `core/src/drivers/common/types.rs`
+  - Remove legacy discovery registry as runtime authority; route engine + CLI to the revolutionary DeviceRegistry.
+  - Ensure InputEvents carry VID:PID:Serial from drivers; hydrate DeviceRegistry from drivers and use it in AdvancedEngine.
+  - Load/save DeviceBindings on startup/shutdown to persist remap_enabled and profile assignments; hydrate registry on device connect.
+  - _Leverage: DeviceRegistry, DeviceBindings, AdvancedEngine.with_device_registry hook_
+  - _Requirements: 2, 6, 10_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Systems Integrator with expertise in DI and runtime wiring | Task: Replace the legacy discovery registry with the new per-device registry end-to-end (CLI + engine), hydrate from DeviceBindings, and ensure events carry VID:PID:Serial | Restrictions: Drop old registry usage entirely, keep latency targets (<1ms pipeline), no duplicate sources of truth, handle binding load/save errors gracefully | _Leverage: DeviceRegistry, DeviceBindings, AdvancedEngine.with_device_registry | Success: Engine runs with a single registry, bindings persist across restarts, InputEvents include serials, all existing tests still pass (no regressions). After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (wiring points, persistence hooks), then mark as [x]._
+
+- [ ] 7.2. Wire registry/profile FFI to shared runtime
+  - Files: `core/src/ffi/domains/device_registry.rs`, `core/src/ffi/domains/profile_registry.rs`, `core/src/ffi/bridge.rs`, `core/src/lib.rs` (FFI context)
+  - Provide the live DeviceRegistry and ProfileRegistry instances to FFI exports; remove “not yet integrated” placeholder errors.
+  - Ensure FFI functions operate on the shared runtime state, enforce panic safety, and return consistent ok/error strings with correct memory ownership.
+  - _Leverage: Existing FFI panic guard patterns; DeviceRegistry/ProfileRegistry_
+  - _Requirements: 16, 17_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: FFI Systems Developer with Rust/Dart bridge expertise | Task: Connect device/profile registry FFI domains to the real runtime instances, replacing placeholder errors | Restrictions: No static singletons that diverge from engine state, enforce panic safety, validate inputs, keep JSON marshalling consistent, zero leaks | _Leverage: Existing FFI error handling helpers, bridge wiring patterns | Success: Dart bridge calls succeed against live registries (list/toggle/assign/save/delete), placeholder errors removed, FFI tests updated and passing. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (FFI functions bound to runtime), then mark as [x]._
+
+- [ ] 7.3. Elevate CLI to per-device operations
+  - Files: `core/src/bin/keyrx.rs`, `core/src/cli/commands/devices.rs`, `core/src/cli/commands/state.rs`, `core/src/cli/commands/migrate.rs`
+  - Add/adjust CLI commands to expose per-device remap toggle, label, and profile assignment using VID:PID:Serial identities.
+  - Ensure outputs surface serials and binding persistence status; remove type-only (VID:PID) assumptions in messages and data structures.
+  - _Leverage: DeviceRegistry + DeviceBindings integration from task 7.1_
+  - _Requirements: 2, 6, 10, 15_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI Developer with Rust Clap expertise | Task: Extend CLI to manage per-device remap/labels/assignments keyed by VID:PID:Serial, reflecting binding persistence | Restrictions: Backward compatibility where practical, align human/json outputs, clear error messaging | _Leverage: Clap patterns in existing commands, registry/bindings API | Success: Users can list devices with serials, toggle remap, set labels, assign/unassign profiles via CLI; commands use the unified registry; tests/docs updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (CLI commands/options), then mark as [x]._
+
+- [ ] 7.4. Flutter UI/UX hardening for devices
+  - Files: `ui/lib/services/device_registry_service.dart`, `ui/lib/widgets/device_card.dart`, `ui/lib/pages/devices_page.dart`
+  - Surface errors from registry operations (toggle/assign/label/refresh) with user-visible feedback; avoid silent empty states on transient errors.
+  - Preserve last-known device list on refresh failures and add optimistic/rollback handling for toggles and assignments.
+  - _Leverage: DeviceRegistryFFI + ProfileRegistryFFI results; existing snackbar patterns_
+  - _Requirements: 11, 12, 16, 17_
+  - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI/UX Developer focused on reliability | Task: Harden Devices UI to reflect real registry state, handle errors visibly, and keep device list responsive when refresh fails | Restrictions: No silent error swallowing, maintain accessibility, minimize layout churn, keep interactions snappy | _Leverage: Services + widgets already built, common error-handling patterns | Success: Users see actionable errors, toggles/assignments give feedback, refresh preserves last data on failure, widget tests updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (widgets/services changes), then mark as [x]._

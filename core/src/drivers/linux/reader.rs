@@ -53,6 +53,10 @@ pub struct EvdevReader {
     device_id: String,
     /// Serial number extracted from the device for unique identification.
     serial_number: Option<String>,
+    /// USB vendor ID for the device (if available).
+    vendor_id: Option<u16>,
+    /// USB product ID for the device (if available).
+    product_id: Option<u16>,
     /// Modifier state tracking for emergency exit detection.
     modifier_state: ModifierStateTracker,
     /// LRU cache for evdev scan code to KeyCode mappings.
@@ -102,12 +106,16 @@ impl EvdevReader {
     /// - The device path does not exist
     /// - Permission is denied when opening the device
     /// - The device cannot be opened for other reasons
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         device_path: PathBuf,
         tx: Sender<InputEvent>,
         running: Arc<AtomicBool>,
         panic_error: Arc<AtomicBool>,
         cache: Arc<LruKeymapCache>,
+        vendor_id: u16,
+        product_id: u16,
+        serial_number: Option<String>,
     ) -> Result<Self, KeyrxError> {
         // Use SafeDevice wrapper which provides better error messages and RAII cleanup
         let device = SafeDevice::open(&device_path)?;
@@ -124,29 +132,33 @@ impl EvdevReader {
         // Create device_id from path for event metadata
         let device_id = device_path.to_string_lossy().to_string();
 
-        // Extract serial number for device identification
-        let serial_number = match identity::linux::extract_serial_number(&device_path) {
-            Ok(serial) => {
-                debug!(
-                    service = "keyrx",
-                    event = "serial_extracted",
-                    component = "linux_reader",
-                    path = %device_path.display(),
-                    serial = %serial,
-                    "Successfully extracted device serial number"
-                );
-                Some(serial)
-            }
-            Err(e) => {
-                warn!(
-                    service = "keyrx",
-                    event = "serial_extraction_failed",
-                    component = "linux_reader",
-                    path = %device_path.display(),
-                    error = %e,
-                    "Failed to extract serial number, device events will not include serial"
-                );
-                None
+        // Extract serial number for device identification (use provided value when available)
+        let serial_number = if let Some(serial) = serial_number {
+            Some(serial)
+        } else {
+            match identity::linux::extract_serial_number(&device_path) {
+                Ok(serial) => {
+                    debug!(
+                        service = "keyrx",
+                        event = "serial_extracted",
+                        component = "linux_reader",
+                        path = %device_path.display(),
+                        serial = %serial,
+                        "Successfully extracted device serial number"
+                    );
+                    Some(serial)
+                }
+                Err(e) => {
+                    warn!(
+                        service = "keyrx",
+                        event = "serial_extraction_failed",
+                        component = "linux_reader",
+                        path = %device_path.display(),
+                        error = %e,
+                        "Failed to extract serial number, device events will not include serial"
+                    );
+                    None
+                }
             }
         };
 
@@ -158,6 +170,8 @@ impl EvdevReader {
             panic_error,
             device_id,
             serial_number,
+            vendor_id: (vendor_id != 0).then_some(vendor_id),
+            product_id: (product_id != 0).then_some(product_id),
             modifier_state: ModifierStateTracker::default(),
             cache,
         })
@@ -402,7 +416,14 @@ impl EvdevReader {
 
     /// Convert an evdev event to an InputEvent.
     fn convert_event(&self, event: &evdev::InputEvent) -> InputEvent {
-        build_input_event(&self.device_id, &self.serial_number, event, &self.cache)
+        build_input_event(
+            &self.device_id,
+            &self.serial_number,
+            self.vendor_id,
+            self.product_id,
+            event,
+            &self.cache,
+        )
     }
 
     /// Handle a read error from the evdev device.
@@ -488,6 +509,8 @@ impl EvdevReader {
 fn build_input_event(
     device_id: &str,
     serial_number: &Option<String>,
+    vendor_id: Option<u16>,
+    product_id: Option<u16>,
     event: &evdev::InputEvent,
     cache: &Arc<LruKeymapCache>,
 ) -> InputEvent {
@@ -520,8 +543,8 @@ fn build_input_event(
         is_synthetic: false,
         scan_code,
         serial_number: serial_number.clone(),
-        vendor_id: None,  // TODO: Extract from udev in phase 2
-        product_id: None, // TODO: Extract from udev in phase 2
+        vendor_id,
+        product_id,
     }
 }
 

@@ -1,7 +1,10 @@
 #![allow(unsafe_code)]
+use super::device::list_keyboards;
 use super::hook_thread::spawn_hook_thread;
 use super::injector::SendInputInjector;
 use crate::drivers::common::cache::{KeymapCache, LruKeymapCache};
+use crate::identity::windows::extract_serial_number;
+use crate::identity::DeviceIdentity;
 use crate::metrics::{MetricsCollector, Operation};
 use crate::{
     drivers::KeyInjector,
@@ -25,6 +28,7 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     injector: I,
     panic_error: Arc<AtomicBool>,
     thread_id_store: Arc<AtomicU32>,
+    device_identity: Option<DeviceIdentity>,
     metrics: Arc<dyn MetricsCollector>,
     cache: Arc<LruKeymapCache>,
 }
@@ -61,6 +65,7 @@ impl WindowsInput {
             injector,
             panic_error,
             thread_id_store,
+            device_identity: Self::detect_device_identity(),
             metrics,
             cache,
         })
@@ -101,6 +106,7 @@ impl<I: KeyInjector> WindowsInput<I> {
             injector,
             panic_error,
             thread_id_store,
+            device_identity: Self::detect_device_identity(),
             metrics,
             cache,
         })
@@ -119,6 +125,18 @@ impl<I: KeyInjector> WindowsInput<I> {
     }
     pub(crate) fn inject_key(&mut self, key: KeyCode, pressed: bool) -> Result<()> {
         Ok(self.injector.inject(key, pressed)?)
+    }
+
+    fn detect_device_identity() -> Option<DeviceIdentity> {
+        let device = list_keyboards().ok()?.into_iter().next()?;
+        let path = device.path.to_string_lossy().to_string();
+        let serial = extract_serial_number(&path).ok()?;
+
+        Some(DeviceIdentity::new(
+            device.vendor_id,
+            device.product_id,
+            serial,
+        ))
     }
 
     pub fn invalidate_cache(&self, device_id: &str) {
@@ -415,12 +433,14 @@ impl<I: KeyInjector> WindowsInput<I> {
         let thread_id_store = self.thread_id_store.clone();
         let tx = self.tx.clone();
         let cache = self.cache.clone();
+        let identity = self.device_identity.clone();
         self.hook_thread = Some(spawn_hook_thread(
             running,
             panic_error,
             thread_id_store,
             tx,
             cache,
+            identity,
         ));
     }
 

@@ -293,6 +293,7 @@ fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
 
     // Use ThreadLocalState for safe key state tracking
     let is_repeat = ThreadLocalState::track_key_state(vk_code, pressed);
+    let identity = ThreadLocalState::device_identity();
 
     InputEvent {
         key: map_vk_to_keycode(vk_code, is_extended),
@@ -302,7 +303,9 @@ fn build_input_event(kb_struct: &KBDLLHOOKSTRUCT, pressed: bool) -> InputEvent {
         is_repeat,
         is_synthetic: kb_struct.flags.contains(LLKHF_INJECTED),
         scan_code: kb_struct.scanCode as u16,
-        serial_number: None, // Low-level hooks don't provide device path
+        serial_number: identity.as_ref().map(|id| id.serial_number.clone()),
+        vendor_id: identity.as_ref().map(|id| id.vendor_id),
+        product_id: identity.as_ref().map(|id| id.product_id),
     }
 }
 

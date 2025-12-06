@@ -19,27 +19,61 @@ fn test_cache() -> Arc<LruKeymapCache> {
 fn build_input_event_sets_flags_and_metadata() {
     let cache = test_cache();
     let serial = Some("test_serial_123".to_string());
+    let vendor_id = Some(0x1234);
+    let product_id = Some(0x5678);
 
-    let key_down = build_input_event("dev0", &serial, &sample_event(30, 1), &cache);
+    let key_down = build_input_event(
+        "dev0",
+        &serial,
+        vendor_id,
+        product_id,
+        &sample_event(30, 1),
+        &cache,
+    );
     assert_eq!(key_down.key, KeyCode::A);
     assert!(key_down.pressed);
     assert!(!key_down.is_repeat);
     assert_eq!(key_down.device_id.as_deref(), Some("dev0"));
     assert_eq!(key_down.serial_number.as_deref(), Some("test_serial_123"));
+    assert_eq!(key_down.vendor_id, vendor_id);
+    assert_eq!(key_down.product_id, product_id);
 
-    let key_repeat = build_input_event("dev0", &serial, &sample_event(30, 2), &cache);
+    let key_repeat = build_input_event(
+        "dev0",
+        &serial,
+        vendor_id,
+        product_id,
+        &sample_event(30, 2),
+        &cache,
+    );
     assert!(key_repeat.pressed);
     assert!(key_repeat.is_repeat);
     assert_eq!(key_repeat.serial_number.as_deref(), Some("test_serial_123"));
 
-    let key_up = build_input_event("dev0", &serial, &sample_event(30, 0), &cache);
+    let key_up = build_input_event(
+        "dev0",
+        &serial,
+        vendor_id,
+        product_id,
+        &sample_event(30, 0),
+        &cache,
+    );
     assert!(!key_up.pressed);
     assert!(!key_up.is_repeat);
     assert_eq!(key_up.serial_number.as_deref(), Some("test_serial_123"));
 
     // Test with None serial
-    let key_no_serial = build_input_event("dev0", &None, &sample_event(30, 1), &cache);
+    let key_no_serial = build_input_event(
+        "dev0",
+        &None,
+        vendor_id,
+        product_id,
+        &sample_event(30, 1),
+        &cache,
+    );
     assert_eq!(key_no_serial.serial_number, None);
+    assert_eq!(key_no_serial.vendor_id, vendor_id);
+    assert_eq!(key_no_serial.product_id, product_id);
 }
 
 #[test]
@@ -51,7 +85,7 @@ fn process_events_internal_sends_all_events() {
 
     let keep_running = process_events_internal(
         &tx,
-        |event| build_input_event("dev1", &serial, event, &cache),
+        |event| build_input_event("dev1", &serial, None, None, event, &cache),
         &events,
     );
     assert!(keep_running);
@@ -74,7 +108,7 @@ fn process_events_internal_stops_on_disconnected_channel() {
     let events = vec![sample_event(1, 1)];
     let keep_running = process_events_internal(
         &tx,
-        |event| build_input_event("dev1", &serial, event, &cache),
+        |event| build_input_event("dev1", &serial, None, None, event, &cache),
         &events,
     );
     assert!(!keep_running);

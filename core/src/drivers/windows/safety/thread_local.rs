@@ -46,6 +46,7 @@
 //! ```
 
 use crate::engine::InputEvent;
+use crate::identity::DeviceIdentity;
 use crossbeam_channel::Sender;
 use std::cell::RefCell;
 use std::collections::HashSet;
@@ -71,6 +72,11 @@ thread_local! {
     /// key repeat events by checking if a key-down event is received for a key that's
     /// already marked as pressed.
     static KEY_STATES: RefCell<KeyStates> = RefCell::new(HashSet::new());
+}
+
+thread_local! {
+    /// Thread-local storage for the active device identity (VID:PID:Serial).
+    static DEVICE_IDENTITY: RefCell<Option<DeviceIdentity>> = const { RefCell::new(None) };
 }
 
 /// Safe wrapper around thread-local storage for Windows hooks.
@@ -327,6 +333,9 @@ impl ThreadLocalState {
         KEY_STATES.with(|states| {
             states.borrow_mut().clear();
         });
+        DEVICE_IDENTITY.with(|identity| {
+            *identity.borrow_mut() = None;
+        });
     }
 
     /// Check if the sender is initialized.
@@ -344,6 +353,18 @@ impl ThreadLocalState {
     /// ```
     pub fn is_sender_initialized() -> bool {
         HOOK_SENDER.with(|s| s.borrow().is_some())
+    }
+
+    /// Set the current device identity for the hook thread.
+    pub fn set_device_identity(identity: Option<DeviceIdentity>) {
+        DEVICE_IDENTITY.with(|slot| {
+            *slot.borrow_mut() = identity;
+        });
+    }
+
+    /// Get the current device identity for the hook thread.
+    pub fn device_identity() -> Option<DeviceIdentity> {
+        DEVICE_IDENTITY.with(|slot| (*slot.borrow()).clone())
     }
 }
 
@@ -399,6 +420,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 0,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
 
         assert!(ThreadLocalState::try_send(event));
@@ -417,6 +440,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 0,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
 
         assert!(!ThreadLocalState::try_send(event));
@@ -561,6 +586,8 @@ mod tests {
             is_synthetic: false,
             scan_code: 0,
             serial_number: None,
+            vendor_id: None,
+            product_id: None,
         };
 
         ThreadLocalState::try_send(event);
@@ -585,6 +612,8 @@ mod tests {
                 is_synthetic: false,
                 scan_code: 0,
                 serial_number: None,
+                vendor_id: None,
+                product_id: None,
             };
             assert!(ThreadLocalState::try_send(event));
         }

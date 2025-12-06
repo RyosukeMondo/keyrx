@@ -1,7 +1,9 @@
 use super::hook::HookManager;
+use super::safety::thread_local::ThreadLocalState;
 use crate::drivers::common::cache::LruKeymapCache;
 use crate::drivers::common::extract_panic_message;
 use crate::engine::InputEvent;
+use crate::identity::DeviceIdentity;
 use crossbeam_channel::Sender;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -15,8 +17,18 @@ pub(crate) fn spawn_hook_thread(
     thread_id_store: Arc<AtomicU32>,
     tx: Sender<InputEvent>,
     cache: Arc<LruKeymapCache>,
+    device_identity: Option<DeviceIdentity>,
 ) -> thread::JoinHandle<()> {
-    thread::spawn(move || run_hook_thread(running, panic_error, thread_id_store, tx, cache))
+    thread::spawn(move || {
+        run_hook_thread(
+            running,
+            panic_error,
+            thread_id_store,
+            tx,
+            cache,
+            device_identity,
+        )
+    })
 }
 
 fn run_hook_thread(
@@ -25,6 +37,7 @@ fn run_hook_thread(
     thread_id_store: Arc<AtomicU32>,
     tx: Sender<InputEvent>,
     cache: Arc<LruKeymapCache>,
+    device_identity: Option<DeviceIdentity>,
 ) {
     debug!(
         service = "keyrx",
@@ -32,6 +45,7 @@ fn run_hook_thread(
         component = "windows_input",
         "Hook thread started"
     );
+    ThreadLocalState::set_device_identity(device_identity);
     let mut hook_manager = HookManager::new(running.clone(), thread_id_store);
     if let Err(e) = hook_manager.install(tx, cache) {
         error!(

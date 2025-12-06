@@ -4,9 +4,11 @@ use crate::errors::KeyrxError;
 use crate::traits::InputSource;
 use anyhow::{Context, Result};
 use crossbeam_channel::{Receiver, Sender};
+use regex::Regex;
 use std::mem::size_of;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::thread::{self, JoinHandle};
 use tracing::{debug, error};
 use windows::core::{w, PCWSTR};
@@ -208,6 +210,29 @@ unsafe extern "system" fn wnd_proc(
     }
 }
 
+fn parse_vid_pid(path: &str) -> (Option<u16>, Option<u16>) {
+    static RE: OnceLock<Regex> = OnceLock::new();
+
+    if path.is_empty() {
+        return (None, None);
+    }
+
+    let re = RE.get_or_init(|| Regex::new(r"VID_([0-9A-Fa-f]{4}).*PID_([0-9A-Fa-f]{4})").unwrap());
+
+    let captures = re.captures(path);
+
+    let vendor_id = captures
+        .as_ref()
+        .and_then(|caps| caps.get(1))
+        .and_then(|m| u16::from_str_radix(m.as_str(), 16).ok());
+    let product_id = captures
+        .as_ref()
+        .and_then(|caps| caps.get(2))
+        .and_then(|m| u16::from_str_radix(m.as_str(), 16).ok());
+
+    (vendor_id, product_id)
+}
+
 fn process_raw_input(raw: &RAWINPUT) {
     let h_device = raw.header.hDevice;
 
@@ -272,6 +297,8 @@ fn process_raw_input(raw: &RAWINPUT) {
         }
     }
 
+    let (vendor_id, product_id) = parse_vid_pid(&path);
+
     let event = InputEvent {
         key: key_code,
         pressed,
@@ -281,6 +308,8 @@ fn process_raw_input(raw: &RAWINPUT) {
         is_synthetic: false,
         scan_code: scan_code as u16,
         serial_number,
+        vendor_id,
+        product_id,
     };
 
     CONTEXT.with(|ctx| {

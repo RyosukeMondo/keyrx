@@ -5,21 +5,20 @@ use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;
 use crate::cli::{Command, CommandContext, CommandResult, OutputFormat, OutputWriter};
 use crate::config::Config;
-#[cfg(all(target_os = "linux", feature = "linux-driver"))]
-use crate::discovery::{DeviceId, DeviceRegistry, DiscoveryReason, RegistryEntry, RegistryStatus};
-#[cfg(all(target_os = "linux", feature = "linux-driver"))]
-use crate::drivers::DeviceInfo;
 use crate::engine::{AdvancedEngine, EngineTracer, EventRecorder, InputEvent, TimingConfig};
+use crate::identity::DeviceIdentity;
 use crate::mocks::MockInput;
+use crate::registry::{DeviceBinding, DeviceBindings, DeviceEvent, DeviceRegistry};
 use crate::scripting::RhaiRuntime;
 use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::Result;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-use tracing::{debug, warn};
+use tracing::debug;
 use tracing::{info, instrument};
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
@@ -51,6 +50,112 @@ pub struct RunCommand {
     pub disable_cache: bool,
     /// Clear script cache before running.
     pub clear_cache: bool,
+}
+
+struct DeviceRuntime {
+    registry: DeviceRegistry,
+    bindings: DeviceBindings,
+    seen_devices: HashSet<DeviceIdentity>,
+    #[allow(dead_code)]
+    events_rx: tokio::sync::mpsc::UnboundedReceiver<DeviceEvent>,
+}
+
+impl DeviceRuntime {
+    fn new(output: &OutputWriter) -> Self {
+        let (registry, events_rx) = DeviceRegistry::new();
+        let mut bindings = DeviceBindings::new();
+
+        if let Err(error) = bindings.load() {
+            output.warning(&format!(
+                "Failed to load device bindings, starting fresh: {error}"
+            ));
+            bindings.clear();
+        }
+
+        Self {
+            registry,
+            bindings,
+            seen_devices: HashSet::new(),
+            events_rx,
+        }
+    }
+
+    async fn register_event_device(&mut self, event: &InputEvent, output: &OutputWriter) {
+        if let Some(identity) = identity_from_event(event) {
+            self.register_identity(identity, output).await;
+        }
+    }
+
+    async fn register_identity(&mut self, identity: DeviceIdentity, output: &OutputWriter) {
+        if !self.seen_devices.insert(identity.clone()) {
+            return;
+        }
+
+        let _ = self.registry.register_device(identity.clone()).await;
+
+        let binding = self.bindings.get_binding(&identity).cloned();
+        let binding_to_apply = binding.unwrap_or_else(|| {
+            let mut default_binding = DeviceBinding::new();
+            default_binding.remap_enabled = true;
+            default_binding
+        });
+
+        if let Err(error) = self
+            .registry
+            .set_remap_enabled(&identity, binding_to_apply.remap_enabled)
+            .await
+        {
+            output.warning(&format!(
+                "Failed to set remap state for {}: {error}",
+                identity
+            ));
+        }
+
+        if let Some(profile_id) = binding_to_apply.profile_id.clone() {
+            if let Err(error) = self
+                .registry
+                .assign_profile(&identity, profile_id.clone())
+                .await
+            {
+                output.warning(&format!(
+                    "Failed to assign profile {} to {}: {error}",
+                    profile_id, identity
+                ));
+            }
+        } else {
+            let _ = self.registry.unassign_profile(&identity).await;
+        }
+
+        self.bindings.set_binding(identity, binding_to_apply);
+    }
+
+    async fn persist(&mut self, output: &OutputWriter) {
+        for state in self.registry.list_devices().await {
+            let binding = DeviceBinding {
+                profile_id: state.profile_id.clone(),
+                remap_enabled: state.remap_enabled,
+            };
+            self.bindings.set_binding(state.identity.clone(), binding);
+        }
+
+        if let Err(error) = self.bindings.save() {
+            output.warning(&format!("Failed to save device bindings: {error}"));
+        } else {
+            output.success("Saved device bindings");
+        }
+    }
+}
+
+fn identity_from_event(event: &InputEvent) -> Option<DeviceIdentity> {
+    let vendor_id = event.vendor_id?;
+    let product_id = event.product_id?;
+    let serial_number = event.serial_number.as_ref()?;
+
+    Some(DeviceIdentity::new(
+        vendor_id,
+        product_id,
+        serial_number.clone(),
+    ))
 }
 
 impl RunCommand {
@@ -165,43 +270,6 @@ impl RunCommand {
         }
     }
 
-    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-    fn load_device_profile(&self, device_info: &DeviceInfo) -> RegistryEntry {
-        let mut registry = DeviceRegistry::new();
-        registry.load_or_default(DeviceId::new(device_info.vendor_id, device_info.product_id))
-    }
-
-    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-    fn report_profile_status(&self, device_info: &DeviceInfo, entry: &RegistryEntry) {
-        match &entry.status {
-            RegistryStatus::Ready => {
-                self.output.success(&format!(
-                    "Loaded device profile for {:04x}:{:04x} from {}",
-                    device_info.vendor_id,
-                    device_info.product_id,
-                    entry.path.display()
-                ));
-            }
-            RegistryStatus::NeedsDiscovery(reason) => {
-                let reason_text = describe_reason(reason);
-                self.output.warning(&format!(
-                    "Using default profile for {:04x}:{:04x} ({}). Discovery recommended: {}",
-                    device_info.vendor_id, device_info.product_id, device_info.name, reason_text
-                ));
-                warn!(
-                    service = "keyrx",
-                    event = "discovery_prompt",
-                    component = "cli_run",
-                    vendor_id = device_info.vendor_id,
-                    product_id = device_info.product_id,
-                    path = %entry.path.display(),
-                    reason = ?reason,
-                    "Profile missing or invalid, discovery needed"
-                );
-            }
-        }
-    }
-
     async fn run_with_mock(
         &self,
         runtime: RhaiRuntime,
@@ -269,6 +337,7 @@ impl RunCommand {
                 &mut recorder,
                 &mut seq,
                 tracer.as_ref(),
+                None,
             )
             .await?;
             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
@@ -291,20 +360,18 @@ impl RunCommand {
         // 1. Initialize Linux input driver to get device info
         let mut input = self.initialize_linux_input()?;
         let device_info = input.device_info().clone();
-        let profile_entry = self.load_device_profile(&device_info);
-        self.report_profile_status(&device_info, &profile_entry);
 
-        // 2. Create runtime and load device profile BEFORE loading script
-        let mut runtime = RhaiRuntime::new()?;
-        let device_id = DeviceId::new(device_info.vendor_id, device_info.product_id);
-        if let Err(e) = runtime.load_device_profile(device_id) {
-            self.output.warning(&format!(
-                "Row-col API unavailable: Could not load device profile ({})",
-                e
-            ));
+        let mut device_runtime = DeviceRuntime::new(&self.output);
+        if let Ok(serial) = crate::identity::linux::extract_serial_number(input.device_path()) {
+            let identity =
+                DeviceIdentity::new(device_info.vendor_id, device_info.product_id, serial);
+            device_runtime
+                .register_identity(identity, &self.output)
+                .await;
         }
 
-        // 3. Now load script and call on_init (device profile is already loaded)
+        // 2. Load script and call on_init
+        let mut runtime = RhaiRuntime::new()?;
         if let Some(path) = &self.script_path {
             self.output
                 .success(&format!("Loading script: {}", path.display()));
@@ -327,7 +394,9 @@ impl RunCommand {
         registry.set_timing_config(timing_config.clone());
 
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
-        let mut engine = builder.build_engine(runtime, registry);
+        let mut engine = builder
+            .build_engine(runtime, registry)
+            .with_device_registry(device_runtime.registry.clone());
 
         let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
         let mut recorder =
@@ -367,6 +436,7 @@ impl RunCommand {
                             &mut recorder,
                             &mut seq,
                             tracer.as_ref(),
+                            Some(&mut device_runtime),
                         )
                         .await?;
                     } else {
@@ -387,6 +457,7 @@ impl RunCommand {
             self.output.success("Emergency exit triggered, stopping...");
         }
         input.stop().await?;
+        device_runtime.persist(&self.output).await;
         recording_mgr.finish_recording(recorder)?;
         tracing_mgr.finish_tracing(tracer);
         self.output.success("Engine stopped.");
@@ -447,12 +518,16 @@ impl RunCommand {
         let mut input = self.init_windows_input()?;
         let mut registry = runtime.registry().clone();
 
+        let mut device_runtime = DeviceRuntime::new(&self.output);
+
         // Apply config-based timing overrides
         let timing_config = self.timing_config_from_config();
         registry.set_timing_config(timing_config.clone());
 
         let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
-        let mut engine = builder.build_engine(runtime, registry);
+        let mut engine = builder
+            .build_engine(runtime, registry)
+            .with_device_registry(device_runtime.registry.clone());
 
         let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
         let mut recorder =
@@ -493,6 +568,7 @@ impl RunCommand {
                             &mut recorder,
                             &mut seq,
                             tracer.as_ref(),
+                            Some(&mut device_runtime),
                         )
                         .await?;
                     } else {
@@ -513,6 +589,7 @@ impl RunCommand {
             self.output.success("Emergency exit triggered, stopping...");
         }
         input.stop().await?;
+        device_runtime.persist(&self.output).await;
         recording_mgr.finish_recording(recorder)?;
         tracing_mgr.finish_tracing(tracer);
         self.output.success("Engine stopped.");
@@ -569,7 +646,17 @@ impl RunCommand {
     #[allow(clippy::too_many_arguments)]
     #[instrument(
         level = "trace",
-        skip(self, engine, input, events, last_timestamp, recorder, seq, tracer),
+        skip(
+            self,
+            engine,
+            input,
+            events,
+            last_timestamp,
+            recorder,
+            seq,
+            tracer,
+            device_runtime
+        ),
         fields(event_count = events.len())
     )]
     async fn process_events<I: InputSource>(
@@ -581,8 +668,13 @@ impl RunCommand {
         recorder: &mut Option<EventRecorder>,
         seq: &mut u64,
         tracer: Option<&EngineTracer>,
+        mut device_runtime: Option<&mut DeviceRuntime>,
     ) -> Result<()> {
         for event in events {
+            if let Some(runtime) = device_runtime.as_deref_mut() {
+                runtime.register_event_device(&event, &self.output).await;
+            }
+
             if event.timestamp_us > *last_timestamp {
                 for action in engine.tick(event.timestamp_us) {
                     input.send_output(action).await?;
@@ -628,19 +720,3 @@ impl Command for RunCommand {
         }
     }
 }
-
-#[cfg(all(target_os = "linux", feature = "linux-driver"))]
-fn describe_reason(reason: &DiscoveryReason) -> String {
-    match reason {
-        DiscoveryReason::MissingProfile => "no profile found on disk".to_string(),
-        DiscoveryReason::ParseError => "stored profile is corrupt".to_string(),
-        DiscoveryReason::SchemaMismatch { expected, found } => format!(
-            "profile schema mismatch (expected {}, found {})",
-            expected, found
-        ),
-        DiscoveryReason::ValidationError => "stored profile failed schema validation".to_string(),
-        DiscoveryReason::IoError(msg) => format!("I/O error loading profile: {msg}"),
-    }
-}
-
-// Tests for RuntimeBuilder are in run_builder.rs
