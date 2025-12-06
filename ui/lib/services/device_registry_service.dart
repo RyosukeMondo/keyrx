@@ -7,6 +7,21 @@ library;
 import '../ffi/bridge.dart';
 import '../models/device_state.dart';
 
+/// Exception thrown when device listing fails.
+///
+/// Carries a user-friendly message and any cached devices so the UI
+/// can continue to show the last known list instead of dropping to
+/// an empty state.
+class DeviceRegistryFetchException implements Exception {
+  DeviceRegistryFetchException(this.message, {this.fallbackDevices = const []});
+
+  final String message;
+  final List<DeviceState> fallbackDevices;
+
+  @override
+  String toString() => message;
+}
+
 /// Result of a device registry operation.
 class DeviceRegistryOperationResult {
   const DeviceRegistryOperationResult({
@@ -104,12 +119,21 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(result.errorMessage!, 'toggle remap'),
+        _makeUserFriendly(
+          result.errorMessage ?? 'Unknown error',
+          'toggle remap',
+        ),
       );
     }
 
     // Invalidate cache to force refresh
-    _cachedDevices = null;
+    _updateCachedDevice(
+      deviceKey,
+      (device) => device.copyWith(
+        remapEnabled: enabled,
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      ),
+    );
 
     return DeviceRegistryOperationResult.success();
   }
@@ -129,12 +153,21 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(result.errorMessage!, 'assign profile'),
+        _makeUserFriendly(
+          result.errorMessage ?? 'Unknown error',
+          'assign profile',
+        ),
       );
     }
 
     // Invalidate cache to force refresh
-    _cachedDevices = null;
+    _updateCachedDevice(
+      deviceKey,
+      (device) => device.copyWith(
+        profileId: profileId,
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      ),
+    );
 
     return DeviceRegistryOperationResult.success();
   }
@@ -154,12 +187,21 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(result.errorMessage!, 'set label'),
+        _makeUserFriendly(
+          result.errorMessage ?? 'Unknown error',
+          'set label',
+        ),
       );
     }
 
     // Invalidate cache to force refresh
-    _cachedDevices = null;
+    _updateCachedDevice(
+      deviceKey,
+      (device) => device.copyWith(
+        identity: device.identity.copyWith(userLabel: label),
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      ),
+    );
 
     return DeviceRegistryOperationResult.success();
   }
@@ -167,14 +209,23 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   @override
   Future<List<DeviceState>> refresh() async {
     if (_bridge.loadFailure != null) {
-      return const [];
+      throw DeviceRegistryFetchException(
+        'Engine unavailable: ${_bridge.loadFailure}',
+        fallbackDevices: _cachedDevices ?? const [],
+      );
     }
 
     final result = _bridge.listRegisteredDevices();
 
     if (result.hasError) {
-      _cachedDevices = const [];
-      return const [];
+      final message = _makeUserFriendly(
+        result.errorMessage ?? 'Unknown error',
+        'load devices',
+      );
+      throw DeviceRegistryFetchException(
+        message,
+        fallbackDevices: _cachedDevices ?? const [],
+      );
     }
 
     _cachedDevices = result.data ?? const [];
@@ -217,5 +268,27 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     // If we can't map it, return a generic but helpful message
     return 'Failed to $operation: $cleaned';
+  }
+
+  void _updateCachedDevice(
+    String deviceKey,
+    DeviceState Function(DeviceState current) update,
+  ) {
+    if (_cachedDevices == null || _cachedDevices!.isEmpty) {
+      return;
+    }
+
+    final index = _cachedDevices!.indexWhere(
+      (device) => device.identity.toKey() == deviceKey,
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    final updated = update(_cachedDevices![index]);
+    final mutable = List<DeviceState>.from(_cachedDevices!);
+    mutable[index] = updated;
+    _cachedDevices = mutable;
   }
 }

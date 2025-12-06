@@ -32,8 +32,16 @@ class DevicesPage extends StatefulWidget {
 }
 
 class _DevicesPageState extends State<DevicesPage> {
-  // Key used to trigger FutureBuilder refresh
-  int _refreshKey = 0;
+  List<DeviceState> _devices = const [];
+  String? _errorMessage;
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDevices();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,102 +51,156 @@ class _DevicesPageState extends State<DevicesPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshDevices,
+            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
             tooltip: 'Refresh device list',
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          _refreshDevices();
-        },
-        child: FutureBuilder<List<DeviceState>>(
-          key: ValueKey(_refreshKey),
-          future: widget.deviceService.getDevices(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        onRefresh: () => _refreshDevices(showFeedback: true),
+        child: _buildBody(),
+      ),
+    );
+  }
 
-            if (snapshot.hasError) {
-              return _buildErrorState(snapshot.error.toString());
-            }
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            final devices = snapshot.data ?? [];
+    if (_devices.isEmpty && _errorMessage != null) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          _buildInlineErrorBanner(_errorMessage!),
+          _buildErrorState(_errorMessage!),
+        ],
+      );
+    }
 
-            if (devices.isEmpty) {
-              return _buildEmptyState();
-            }
+    if (_devices.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          if (_errorMessage != null)
+            _buildInlineErrorBanner(_errorMessage!),
+          _buildEmptyState(),
+        ],
+      );
+    }
 
-            return _buildDeviceList(devices);
-          },
+    final totalItems = _devices.length + (_errorMessage != null ? 1 : 0);
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: totalItems,
+      itemBuilder: (context, index) {
+        if (_errorMessage != null) {
+          if (index == 0) {
+            return _buildInlineErrorBanner(_errorMessage!);
+          }
+          final device = _devices[index - 1];
+          return _buildDeviceCard(device);
+        }
+
+        final device = _devices[index];
+        return _buildDeviceCard(device);
+      },
+    );
+  }
+
+  Widget _buildInlineErrorBanner(String error) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          leading: Icon(
+            Icons.error_outline,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+          ),
+          title: Text(
+            'We could not refresh devices',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            error,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
+          trailing: IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
+            tooltip: 'Retry refresh',
+          ),
         ),
       ),
     );
   }
 
-  /// Refresh the device list by incrementing the key
-  void _refreshDevices() {
-    setState(() {
-      _refreshKey++;
-    });
-    widget.deviceService.refresh();
-  }
-
   /// Build error state UI
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading devices',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _refreshDevices,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading devices',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _isRefreshing ? null : () => _refreshDevices(showFeedback: true),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }
 
   /// Build empty state UI
   Widget _buildEmptyState() {
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(24),
-      children: [
-        const SizedBox(height: 48),
-        const Icon(Icons.keyboard, size: 64, color: Colors.grey),
-        const SizedBox(height: 16),
-        Text(
-          'No devices found',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Connect a keyboard or other input device to get started.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 32),
-        _buildTroubleshootingCard(),
-      ],
+      child: Column(
+        children: [
+          const SizedBox(height: 48),
+          const Icon(Icons.keyboard, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            'No devices found',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Connect a keyboard or other input device to get started.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 32),
+          _buildTroubleshootingCard(),
+        ],
+      ),
     );
   }
 
@@ -184,20 +246,14 @@ class _DevicesPageState extends State<DevicesPage> {
   }
 
   /// Build list of device cards
-  Widget _buildDeviceList(List<DeviceState> devices) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: devices.length,
-      itemBuilder: (context, index) {
-        final device = devices[index];
-        return DeviceCard(
-          deviceState: device,
-          deviceService: widget.deviceService,
-          profileService: widget.profileService,
-          onEditLabel: () => _showEditLabelDialog(device),
-          onManageProfiles: () => _showManageProfilesDialog(device),
-        );
-      },
+  Widget _buildDeviceCard(DeviceState device) {
+    return DeviceCard(
+      deviceState: device,
+      deviceService: widget.deviceService,
+      profileService: widget.profileService,
+      onEditLabel: () => _showEditLabelDialog(device),
+      onManageProfiles: () => _showManageProfilesDialog(device),
+      onDeviceUpdated: _updateDeviceState,
     );
   }
 
@@ -257,7 +313,11 @@ class _DevicesPageState extends State<DevicesPage> {
             backgroundColor: Colors.green,
           ),
         );
-        _refreshDevices();
+        _updateDeviceState(
+          device.copyWith(
+            identity: device.identity.copyWith(userLabel: label),
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -287,6 +347,76 @@ class _DevicesPageState extends State<DevicesPage> {
             child: const Text('OK'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _loadDevices({bool showFeedback = false}) async {
+    setState(() {
+      _isRefreshing = true;
+      _isLoading = _devices.isEmpty;
+      _errorMessage = null;
+    });
+
+    try {
+      final devices = await widget.deviceService.refresh();
+      if (!mounted) return;
+      setState(() {
+        _devices = devices;
+        _errorMessage = null;
+      });
+    } on DeviceRegistryFetchException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message;
+        if (e.fallbackDevices.isNotEmpty) {
+          _devices = e.fallbackDevices;
+        }
+      });
+      if (showFeedback && mounted) {
+        _showSnack(e.message, isError: true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString();
+      });
+      if (showFeedback && mounted) {
+        _showSnack('Failed to refresh devices: $e', isError: true);
+      }
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+    }
+  }
+
+  Future<void> _refreshDevices({bool showFeedback = false}) {
+    return _loadDevices(showFeedback: showFeedback);
+  }
+
+  void _updateDeviceState(DeviceState updated) {
+    setState(() {
+      final updatedKey = updated.identity.toKey();
+      final index = _devices.indexWhere(
+        (device) => device.identity.toKey() == updatedKey,
+      );
+      if (index != -1) {
+        final mutable = List<DeviceState>.from(_devices);
+        mutable[index] = updated;
+        _devices = mutable;
+      }
+    });
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+            isError ? Theme.of(context).colorScheme.error : null,
       ),
     );
   }

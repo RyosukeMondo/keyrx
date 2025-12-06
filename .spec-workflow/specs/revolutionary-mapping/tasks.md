@@ -513,7 +513,7 @@
   - _Requirements: 2, 6, 10, 15_
   - _Prompt: Implement the task for spec revolutionary-mapping, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CLI Developer with Rust Clap expertise | Task: Extend CLI to manage per-device remap/labels/assignments keyed by VID:PID:Serial, reflecting binding persistence | Restrictions: Backward compatibility where practical, align human/json outputs, clear error messaging | _Leverage: Clap patterns in existing commands, registry/bindings API | Success: Users can list devices with serials, toggle remap, set labels, assign/unassign profiles via CLI; commands use the unified registry; tests/docs updated. After completing, update tasks.md to mark this task as [-], log implementation with log-implementation tool including artifacts (CLI commands/options), then mark as [x]._
 
-- [ ] 7.4. Flutter UI/UX hardening for devices
+- [x] 7.4. Flutter UI/UX hardening for devices
   - Files: `ui/lib/services/device_registry_service.dart`, `ui/lib/widgets/device_card.dart`, `ui/lib/pages/devices_page.dart`
   - Surface errors from registry operations (toggle/assign/label/refresh) with user-visible feedback; avoid silent empty states on transient errors.
   - Preserve last-known device list on refresh failures and add optimistic/rollback handling for toggles and assignments.

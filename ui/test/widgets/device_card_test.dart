@@ -509,5 +509,61 @@ void main() {
           tester.widget<ProfileSelector>(find.byType(ProfileSelector));
       expect(profileSelector.selectedProfileId, 'test-profile');
     });
+
+    testWidgets('rolls back remap toggle on failure and shows error snackbar',
+        (WidgetTester tester) async {
+      deviceService = MockDeviceRegistryService(shouldFail: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DeviceCard(
+              deviceState: deviceState,
+              deviceService: deviceService,
+              profileService: profileService,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      final remapToggle = tester.widget<RemapToggle>(find.byType(RemapToggle));
+      expect(remapToggle.enabled, isTrue);
+      expect(find.textContaining('Failed to toggle remap'), findsOneWidget);
+    });
+
+    testWidgets('rolls back profile selection on failure and shows error snackbar',
+        (WidgetTester tester) async {
+      deviceService = MockDeviceRegistryService(shouldFail: true);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DeviceCard(
+              deviceState: deviceState,
+              deviceService: deviceService,
+              profileService: profileService,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('another-profile').last);
+      await tester.pumpAndSettle();
+
+      final profileSelector =
+          tester.widget<ProfileSelector>(find.byType(ProfileSelector));
+      expect(profileSelector.selectedProfileId, 'test-profile');
+      expect(find.textContaining('Failed to assign profile'), findsOneWidget);
+    });
   });
 }

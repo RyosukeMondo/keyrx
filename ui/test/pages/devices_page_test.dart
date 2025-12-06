@@ -12,26 +12,23 @@ import 'package:keyrx_ui/widgets/device_card.dart';
 /// Mock DeviceRegistryService for testing.
 class MockDeviceRegistryService implements DeviceRegistryService {
   final List<DeviceState> _devices;
-  final bool _shouldFailGetDevices;
+  final bool _shouldFailRefresh;
   final bool _shouldFailSetLabel;
-  bool refreshCalled = false;
+  int refreshCallCount = 0;
   String? lastLabelDeviceKey;
   String? lastLabelValue;
 
   MockDeviceRegistryService({
     List<DeviceState>? devices,
-    bool shouldFailGetDevices = false,
+    bool shouldFailRefresh = false,
     bool shouldFailSetLabel = false,
   })  : _devices = devices ?? [],
-        _shouldFailGetDevices = shouldFailGetDevices,
+        _shouldFailRefresh = shouldFailRefresh,
         _shouldFailSetLabel = shouldFailSetLabel;
 
   @override
   Future<List<DeviceState>> getDevices() async {
-    if (_shouldFailGetDevices) {
-      throw Exception('Failed to load devices');
-    }
-    return _devices;
+    return refresh();
   }
 
   @override
@@ -65,7 +62,13 @@ class MockDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<List<DeviceState>> refresh() async {
-    refreshCalled = true;
+    refreshCallCount += 1;
+    if (_shouldFailRefresh) {
+      throw DeviceRegistryFetchException(
+        'Failed to load devices',
+        fallbackDevices: _devices,
+      );
+    }
     return _devices;
   }
 
@@ -225,7 +228,7 @@ void main() {
 
     testWidgets('displays error state when loading fails',
         (WidgetTester tester) async {
-      deviceService = MockDeviceRegistryService(shouldFailGetDevices: true);
+      deviceService = MockDeviceRegistryService(shouldFailRefresh: true);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -239,9 +242,46 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Error loading devices'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Exception: Failed to load devices'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsWidgets);
+      expect(find.text('Failed to load devices'), findsWidgets);
       expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('keeps last known devices when refresh fails',
+        (WidgetTester tester) async {
+      final devices = [
+        const DeviceState(
+          identity: DeviceIdentity(
+            vendorId: 0x046d,
+            productId: 0xc52b,
+            serialNumber: 'ABC123',
+          ),
+          remapEnabled: true,
+          profileId: 'test-profile',
+          connectedAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+        ),
+      ];
+
+      deviceService = MockDeviceRegistryService(
+        devices: devices,
+        shouldFailRefresh: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DevicesPage(
+            deviceService: deviceService,
+            profileService: profileService,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeviceCard), findsOneWidget);
+      expect(find.text('We could not refresh devices'), findsOneWidget);
+      expect(find.text('Failed to load devices'), findsWidgets);
     });
 
     testWidgets('displays app bar with title and refresh button',
@@ -275,18 +315,18 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(deviceService.refreshCalled, isFalse);
+      expect(deviceService.refreshCallCount, 1);
 
       // Tap refresh button
       await tester.tap(find.byIcon(Icons.refresh));
       await tester.pumpAndSettle();
 
-      expect(deviceService.refreshCalled, isTrue);
+      expect(deviceService.refreshCallCount, 2);
     });
 
     testWidgets('retry button in error state calls refresh',
         (WidgetTester tester) async {
-      deviceService = MockDeviceRegistryService(shouldFailGetDevices: true);
+      deviceService = MockDeviceRegistryService(shouldFailRefresh: true);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -299,13 +339,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(deviceService.refreshCalled, isFalse);
+      expect(deviceService.refreshCallCount, 1);
 
       // Tap retry button
       await tester.tap(find.text('Retry'));
       await tester.pumpAndSettle();
 
-      expect(deviceService.refreshCalled, isTrue);
+      expect(deviceService.refreshCallCount, 2);
     });
 
     testWidgets('supports pull-to-refresh gesture',
