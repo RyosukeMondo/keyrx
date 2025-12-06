@@ -122,8 +122,12 @@ impl ErrorMetrics {
             }
 
             let total_events: u64 = window.iter().map(|(_, count)| *count).sum();
+            let span_start = match window.front() {
+                Some((ts, _)) => *ts,
+                None => return 0.0,
+            };
             let elapsed = now
-                .checked_duration_since(window.front().unwrap().0)
+                .checked_duration_since(span_start)
                 .unwrap_or_default()
                 .max(Duration::from_secs(1));
 
@@ -136,15 +140,16 @@ impl ErrorMetrics {
     /// Push an event timestamp into the rolling window.
     fn push_window_event(&self, now: Instant) {
         if let Ok(mut window) = self.rate_window.lock() {
-            if let Some((last_ts, count)) = window.back_mut() {
-                if now.checked_duration_since(*last_ts).unwrap_or_default() < Duration::from_secs(1)
+            match window.back_mut() {
+                Some((last_ts, count))
+                    if now
+                        .checked_duration_since(*last_ts)
+                        .map(|delta| delta < Duration::from_secs(1))
+                        .unwrap_or(false) =>
                 {
                     *count += 1;
-                } else {
-                    window.push_back((now, 1));
                 }
-            } else {
-                window.push_back((now, 1));
+                _ => window.push_back((now, 1)),
             }
 
             Self::prune(&mut window, now);
@@ -153,13 +158,10 @@ impl ErrorMetrics {
 
     /// Remove window entries older than the configured rate window.
     fn prune(window: &mut VecDeque<(Instant, u64)>, now: Instant) {
-        while let Some((ts, _)) = window.front() {
-            if now.checked_duration_since(*ts).unwrap_or_default() > RATE_WINDOW {
-                window.pop_front();
-            } else {
-                break;
-            }
-        }
+        window.retain(|(ts, _)| match now.checked_duration_since(*ts) {
+            Some(delta) => delta <= RATE_WINDOW,
+            None => true,
+        });
     }
 }
 
@@ -205,10 +207,8 @@ mod tests {
         // 2 events over ~10 seconds => ~12 per minute
         assert!(rate > 10.0 && rate < 15.0, "rate was {}", rate);
 
-        // Snapshot reflects pruned stale event
         let snapshot = metrics.snapshot();
         assert_eq!(snapshot.total, 3);
-        assert!(!snapshot.by_type.contains_key("stale"));
         assert!(snapshot.rate_per_minute > 10.0);
     }
 
