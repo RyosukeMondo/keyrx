@@ -183,6 +183,19 @@ impl Default for DeltaTracker {
     }
 }
 
+impl Clone for DeltaTracker {
+    fn clone(&self) -> Self {
+        let version = self.current_version();
+        let pending = self.peek_changes();
+
+        let cloned = DeltaTracker::with_version(version);
+        if !pending.is_empty() {
+            cloned.record_batch(pending);
+        }
+        cloned
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

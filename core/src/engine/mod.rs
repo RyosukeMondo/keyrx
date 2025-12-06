@@ -50,8 +50,9 @@ pub use replay::{ReplayError, ReplayManifest, ReplaySession, ReplayState};
 pub use session::{HotplugAction, HotplugSession};
 pub use session_state::{SessionState, SessionStatus};
 pub use state::{
-    HoldAction, KeyStateTracker, Layer, LayerAction, LayerId, LayerStack, Modifier, ModifierSet,
-    ModifierState, StandardModifier, StandardModifiers, VirtualModifiers,
+    DeltaChange, DeltaTracker, HoldAction, KeyStateTracker, Layer, LayerAction, LayerId,
+    LayerStack, Modifier, ModifierSet, ModifierState, StandardModifier, StandardModifiers,
+    StateDelta, VirtualModifiers,
 };
 
 // Export the unified EngineState and its snapshot types

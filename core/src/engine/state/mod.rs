@@ -145,6 +145,8 @@ pub struct EngineState {
     pending: PendingState,
     /// State version counter (increments with each mutation).
     version: u64,
+    /// Tracker for incremental deltas based on state mutations.
+    delta_tracker: DeltaTracker,
 }
 
 #[allow(dead_code)] // Will be used in tasks 9-18 for mutations, integration, and cleanup
@@ -161,6 +163,7 @@ impl EngineState {
             modifiers: ModifierState::new(),
             pending: PendingState::new(timing_config),
             version: 0,
+            delta_tracker: DeltaTracker::new(),
         }
     }
 
@@ -177,6 +180,7 @@ impl EngineState {
             modifiers: ModifierState::new(),
             pending: PendingState::new(timing_config),
             version: 0,
+            delta_tracker: DeltaTracker::new(),
         }
     }
 
@@ -188,6 +192,20 @@ impl EngineState {
     #[inline]
     pub fn version(&self) -> u64 {
         self.version
+    }
+
+    /// Get the current delta version (mirrors the state version).
+    #[inline]
+    pub fn delta_version(&self) -> u64 {
+        self.delta_tracker.current_version()
+    }
+
+    /// Take the accumulated state delta and clear recorded changes.
+    ///
+    /// This is used by higher layers (e.g., FFI) to stream incremental
+    /// updates instead of full snapshots.
+    pub fn take_delta(&self) -> StateDelta {
+        self.delta_tracker.take_delta()
     }
 
     // === Key State Queries ===
@@ -566,6 +584,7 @@ impl EngineState {
 
         // Create change that will be returned
         let mut effects = Vec::new();
+        let mut delta_change: Option<DeltaChange> = None;
 
         // Apply the mutation to the appropriate component(s)
         match &mutation {
@@ -579,6 +598,7 @@ impl EngineState {
                 if !changed && !is_repeat {
                     return Err(StateError::KeyAlreadyPressed { key: *key });
                 }
+                delta_change = Some(DeltaChange::KeyPressed(*key));
             }
 
             Mutation::KeyUp { key, .. } => {
@@ -590,6 +610,7 @@ impl EngineState {
                 // engine's key processing logic, not at the state mutation level.
                 // The engine knows which keys are bound to modifiers and can issue
                 // explicit DeactivateModifier mutations when needed.
+                delta_change = Some(DeltaChange::KeyReleased(*key));
             }
 
             // === Layer State Mutations ===
@@ -598,6 +619,7 @@ impl EngineState {
                 // Synchronize state after layer change
                 let sync_effects = self.sync_on_layer_change();
                 effects.extend(sync_effects);
+                delta_change = Some(DeltaChange::LayerActivated(*layer_id));
             }
 
             Mutation::PopLayer => {
@@ -607,6 +629,7 @@ impl EngineState {
                     // Synchronize state after layer change
                     let sync_effects = self.sync_on_layer_change();
                     effects.extend(sync_effects);
+                    delta_change = Some(DeltaChange::LayerDeactivated(layer_id));
                 } else {
                     return Err(StateError::CannotPopBaseLayer);
                 }
@@ -617,6 +640,11 @@ impl EngineState {
                 // Synchronize state after layer change
                 let sync_effects = self.sync_on_layer_change();
                 effects.extend(sync_effects);
+                delta_change = Some(if self.layers.is_active(*layer_id) {
+                    DeltaChange::LayerActivated(*layer_id)
+                } else {
+                    DeltaChange::LayerDeactivated(*layer_id)
+                });
             }
 
             // === Modifier State Mutations ===
@@ -629,6 +657,10 @@ impl EngineState {
                 }
                 let modifier = Modifier::Virtual(*modifier_id);
                 self.modifiers.activate(modifier);
+                delta_change = Some(DeltaChange::ModifierChanged {
+                    id: *modifier_id,
+                    active: true,
+                });
             }
 
             Mutation::DeactivateModifier { modifier_id } => {
@@ -642,6 +674,10 @@ impl EngineState {
                 self.modifiers.deactivate(modifier);
                 effects.push(Effect::ModifierDeactivated {
                     modifier_id: *modifier_id,
+                });
+                delta_change = Some(DeltaChange::ModifierChanged {
+                    id: *modifier_id,
+                    active: false,
                 });
             }
 
@@ -659,6 +695,7 @@ impl EngineState {
             Mutation::ClearModifiers => {
                 self.modifiers.clear();
                 effects.push(Effect::AllModifiersCleared);
+                delta_change = Some(DeltaChange::AllModifiersCleared);
             }
 
             // === Pending Decision Mutations ===
@@ -693,6 +730,8 @@ impl EngineState {
                         },
                     });
                 }
+
+                // Pending decisions currently don't expose stable IDs for deltas.
             }
 
             Mutation::AddCombo {
@@ -706,6 +745,7 @@ impl EngineState {
                         max_size: PendingState::MAX_PENDING,
                     });
                 }
+                // Pending decisions currently don't expose stable IDs for deltas.
             }
 
             Mutation::MarkInterrupted { by_key } => {
@@ -713,11 +753,13 @@ impl EngineState {
                 // Count is tracked via internal queue state, we approximate here
                 // A more accurate count would require changes to PendingState API
                 effects.push(Effect::PendingInterrupted { count: 1 });
+                // Pending decisions currently don't expose stable IDs for deltas.
             }
 
             Mutation::ClearPending => {
                 let count = self.pending.clear();
                 effects.push(Effect::PendingCleared { count });
+                delta_change = Some(DeltaChange::AllPendingCleared);
             }
 
             // === Batch Mutations ===
@@ -727,8 +769,16 @@ impl EngineState {
             }
         }
 
-        // Increment version
-        self.version += 1;
+        // Record delta and increment version counters
+        let new_version = self.version.wrapping_add(1);
+        let recorded_change = delta_change.unwrap_or(DeltaChange::VersionChanged {
+            version: new_version,
+        });
+
+        self.delta_tracker.record(recorded_change);
+        let tracker_version = self.delta_tracker.increment_version();
+        debug_assert_eq!(tracker_version, new_version);
+        self.version = tracker_version;
 
         // Validate state invariants after mutation
         self.validate_invariants();
@@ -1126,6 +1176,46 @@ mod tests {
 
         state.apply(Mutation::PushLayer { layer_id: 1 }).unwrap();
         assert_eq!(state.version(), 3);
+    }
+
+    #[test]
+    fn delta_tracker_records_key_changes() {
+        let mut state = EngineState::default();
+
+        state
+            .apply(Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 1000,
+                is_repeat: false,
+            })
+            .expect("valid mutation");
+
+        let delta = state.take_delta();
+        assert_eq!(delta.from_version, 0);
+        assert_eq!(delta.to_version, 1);
+        assert_eq!(delta.changes, vec![DeltaChange::KeyPressed(KeyCode::A)]);
+        assert_eq!(state.delta_version(), state.version());
+    }
+
+    #[test]
+    fn delta_tracker_tracks_layer_toggles() {
+        let mut state = EngineState::default();
+
+        state
+            .apply(Mutation::ToggleLayer { layer_id: 1 })
+            .expect("valid mutation");
+        let activated = state.take_delta();
+        assert_eq!(activated.changes, vec![DeltaChange::LayerActivated(1)]);
+        assert_eq!(activated.from_version, 0);
+        assert_eq!(activated.to_version, 1);
+
+        state
+            .apply(Mutation::ToggleLayer { layer_id: 1 })
+            .expect("valid mutation");
+        let deactivated = state.take_delta();
+        assert_eq!(deactivated.changes, vec![DeltaChange::LayerDeactivated(1)]);
+        assert_eq!(deactivated.from_version, 1);
+        assert_eq!(deactivated.to_version, 2);
     }
 
     // === Batch Mutation Tests ===

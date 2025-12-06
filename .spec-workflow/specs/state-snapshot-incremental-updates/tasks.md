@@ -25,7 +25,7 @@
 
 ## Phase 2: Integration
 
-- [-] 4. Integrate delta tracking into Engine
+- [x] 4. Integrate delta tracking into Engine
   - File: `core/src/engine/mod.rs`
   - Record changes on state mutations
   - Purpose: Engine integration
