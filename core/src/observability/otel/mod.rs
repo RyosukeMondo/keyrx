@@ -2,6 +2,8 @@
 
 pub mod config;
 pub mod layer;
+pub mod metrics;
 
 pub use config::{OtelConfig, OtelConfigError};
 pub use layer::{build_otel_layer, shutdown_tracer_provider, BoxedOtelLayer, OtelLayerError};
+pub use metrics::{build_metrics_exporter, OtelMetricsError, OtelMetricsExporter};

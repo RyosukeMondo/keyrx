@@ -36,7 +36,7 @@ _Status: Priority #4 in 2025 implementation order; all items pending. Establish 
 
 ## Phase 3: Metrics
 
-- [ ] 5. Implement metrics export
+- [x] 5. Implement metrics export
   - File: `core/src/observability/otel/metrics.rs`
   - Export histograms and counters
   - Configure buckets

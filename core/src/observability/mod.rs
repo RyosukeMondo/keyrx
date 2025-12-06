@@ -19,6 +19,6 @@ pub use metrics_bridge::{
     Operation,
 };
 pub use otel::{
-    build_otel_layer, shutdown_tracer_provider, BoxedOtelLayer, OtelConfig, OtelConfigError,
-    OtelLayerError,
+    build_metrics_exporter, build_otel_layer, shutdown_tracer_provider, BoxedOtelLayer, OtelConfig,
+    OtelConfigError, OtelLayerError, OtelMetricsError, OtelMetricsExporter,
 };
