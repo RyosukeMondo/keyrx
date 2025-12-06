@@ -52,7 +52,7 @@ _Status: Priority #2 in 2025 implementation order; open items: 6 (in-progress), 
 
 ## Phase 4: Integration
 
-- [ ] 7. Extend bench command
+- [x] 7. Extend bench command
   - File: `core/src/cli/commands/bench.rs`
   - --flamegraph flag
   - --allocations flag

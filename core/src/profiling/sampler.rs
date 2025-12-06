@@ -118,8 +118,10 @@ impl StackSampler {
         // - Sampling-based profiling (perf_event_open on Linux)
         // - Platform-specific APIs (instruments on macOS, ETW on Windows)
 
-        let bt = backtrace::Backtrace::new();
-        let frames: Vec<String> = format!("{:?}", bt)
+        let trace_string = std::panic::catch_unwind(backtrace::Backtrace::new)
+            .map(|bt| format!("{:?}", bt))
+            .unwrap_or_else(|_| "<backtrace unavailable>".to_string());
+        let frames: Vec<String> = trace_string
             .lines()
             .filter(|line| !line.trim().is_empty())
             .map(Self::symbolicate_frame)

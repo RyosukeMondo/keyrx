@@ -4,10 +4,14 @@ use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat,
 use crate::config::LATENCY_THRESHOLD_NS;
 use crate::engine::{Engine, InputEvent, KeyCode};
 use crate::mocks::{MockInput, MockState};
+use crate::profiling::{
+    FlameGraphConfig, FlameGraphGenerator, ProfileResult, Profiler, ProfilerConfig,
+};
 use crate::scripting::RhaiRuntime;
 use crate::traits::ScriptRuntime;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 /// Benchmark result statistics.
@@ -26,6 +30,34 @@ pub struct BenchResult {
     /// Warning message if performance threshold exceeded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
+    /// Path to generated flame graph, when requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flamegraph: Option<FlamegraphArtifact>,
+    /// Path and metadata for allocation report, when requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allocation_report: Option<AllocationReportArtifact>,
+}
+
+/// Metadata for generated flame graph artifacts.
+#[derive(Debug, Serialize)]
+pub struct FlamegraphArtifact {
+    /// Where the flame graph SVG was written.
+    pub path: PathBuf,
+    /// Number of samples included in the flame graph.
+    pub samples: usize,
+    /// Duration captured by the profiler in milliseconds.
+    pub duration_ms: u128,
+}
+
+/// Metadata for generated allocation reports.
+#[derive(Debug, Serialize)]
+pub struct AllocationReportArtifact {
+    /// Where the allocation report JSON was written.
+    pub path: PathBuf,
+    /// Number of detected allocation hot spots.
+    pub hot_spots: usize,
+    /// Any warnings raised during report generation.
+    pub warnings: Vec<String>,
 }
 
 /// Bench command for latency measurement.
@@ -33,6 +65,9 @@ pub struct BenchCommand {
     pub iterations: usize,
     pub script_path: Option<PathBuf>,
     pub output: OutputWriter,
+    pub flamegraph_output: Option<PathBuf>,
+    pub allocation_report_output: Option<PathBuf>,
+    pub collect_allocations: bool,
 }
 
 impl BenchCommand {
@@ -44,7 +79,24 @@ impl BenchCommand {
             iterations,
             script_path,
             output: OutputWriter::new(format),
+            flamegraph_output: None,
+            allocation_report_output: None,
+            collect_allocations: false,
         }
+    }
+
+    /// Enable flame graph generation, optionally overriding the output path.
+    pub fn with_flamegraph_output(mut self, path: Option<PathBuf>) -> Self {
+        self.flamegraph_output = Some(path.unwrap_or_else(Self::default_flamegraph_path));
+        self
+    }
+
+    /// Enable allocation report generation, optionally overriding the output path.
+    pub fn with_allocation_report_output(mut self, path: Option<PathBuf>) -> Self {
+        self.collect_allocations = true;
+        self.allocation_report_output =
+            Some(path.unwrap_or_else(Self::default_allocation_report_path));
+        self
     }
 
     /// Calculate statistics from latency measurements.
@@ -80,6 +132,8 @@ impl BenchCommand {
             p99_ns,
             iterations: latencies.len(),
             warning,
+            flamegraph: None,
+            allocation_report: None,
         }
     }
 
@@ -99,6 +153,26 @@ impl BenchCommand {
             self.output.error(warning);
         }
 
+        if let Some(ref flamegraph) = result.flamegraph {
+            self.output.success(&format!(
+                "Flame graph written to {} ({} samples, {}ms)",
+                flamegraph.path.display(),
+                flamegraph.samples,
+                flamegraph.duration_ms
+            ));
+        }
+
+        if let Some(ref allocation) = result.allocation_report {
+            let mut message = format!("Allocation report written to {}", allocation.path.display());
+            if allocation.hot_spots > 0 {
+                message.push_str(&format!(" ({} hot spots)", allocation.hot_spots));
+            }
+            self.output.success(&message);
+            for warning in &allocation.warnings {
+                self.output.warning(warning);
+            }
+        }
+
         if let Err(e) = self.output.data(&result) {
             return CommandResult::failure(
                 ExitCode::GeneralError,
@@ -111,6 +185,8 @@ impl BenchCommand {
 
     /// Execute benchmark and return results directly.
     pub async fn execute(&self) -> anyhow::Result<BenchResult> {
+        let mut profiler = self.build_profiler();
+
         // Create runtime and load script if provided
         let mut runtime = RhaiRuntime::new()?;
         if let Some(path) = &self.script_path {
@@ -141,6 +217,11 @@ impl BenchCommand {
             let _ = engine.process_event(&test_event);
         }
 
+        // Start profiling after warmup to focus on measured iterations.
+        if let Some(p) = profiler.as_mut() {
+            p.start()?;
+        }
+
         // Measurement phase
         let mut latencies = Vec::with_capacity(self.iterations);
 
@@ -151,8 +232,100 @@ impl BenchCommand {
             latencies.push(elapsed);
         }
 
-        // Calculate and return results
-        Ok(self.calculate_stats(&mut latencies))
+        let mut result = self.calculate_stats(&mut latencies);
+
+        if let Some(mut profiler) = profiler {
+            let profile = profiler.stop()?;
+            self.attach_profiling_outputs(&profile, &mut result)?;
+        }
+
+        Ok(result)
+    }
+
+    fn attach_profiling_outputs(
+        &self,
+        profile: &ProfileResult,
+        result: &mut BenchResult,
+    ) -> anyhow::Result<()> {
+        if let Some(path) = self.flamegraph_output.clone() {
+            let svg = self.generate_flamegraph(profile);
+            self.write_artifact(&path, &svg)?;
+
+            result.flamegraph = Some(FlamegraphArtifact {
+                path,
+                samples: profile.sample_count,
+                duration_ms: profile.duration.as_millis(),
+            });
+        }
+
+        if self.collect_allocations {
+            if let (Some(report_json), Some(report)) = (
+                profile.allocation_report_json.as_ref(),
+                profile.allocation_report.as_ref(),
+            ) {
+                let path = self
+                    .allocation_report_output
+                    .clone()
+                    .unwrap_or_else(Self::default_allocation_report_path);
+                self.write_artifact(&path, report_json)?;
+
+                result.allocation_report = Some(AllocationReportArtifact {
+                    path,
+                    hot_spots: report.hot_spots.len(),
+                    warnings: report.warnings.clone(),
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    fn generate_flamegraph(&self, profile: &ProfileResult) -> String {
+        let config = FlameGraphConfig {
+            title: format!("keyrx bench ({} iterations)", self.iterations),
+            ..FlameGraphConfig::default()
+        };
+
+        let generator = FlameGraphGenerator::new(config);
+        generator.generate(&profile.stack_samples)
+    }
+
+    fn write_artifact(&self, path: &Path, contents: &str) -> anyhow::Result<()> {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        fs::write(path, contents)?;
+        Ok(())
+    }
+
+    fn build_profiler(&self) -> Option<Profiler> {
+        if !self.profiling_enabled() {
+            return None;
+        }
+
+        Some(Profiler::new(self.profiler_config()))
+    }
+
+    fn profiling_enabled(&self) -> bool {
+        self.flamegraph_output.is_some() || self.collect_allocations
+    }
+
+    fn profiler_config(&self) -> ProfilerConfig {
+        ProfilerConfig {
+            stack_sampling: self.flamegraph_output.is_some(),
+            allocation_tracking: self.collect_allocations,
+            ..ProfilerConfig::default()
+        }
+    }
+
+    fn default_flamegraph_path() -> PathBuf {
+        PathBuf::from("bench-flamegraph.svg")
+    }
+
+    fn default_allocation_report_path() -> PathBuf {
+        PathBuf::from("bench-allocations.json")
     }
 }
 
@@ -181,6 +354,7 @@ impl Command for BenchCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn calculate_stats_works() {
@@ -221,5 +395,39 @@ mod tests {
         assert_eq!(result.mean_ns, 0);
         assert_eq!(result.p99_ns, 0);
         assert_eq!(result.iterations, 0);
+    }
+
+    #[test]
+    fn generates_profiling_artifacts_when_requested() {
+        let temp = tempdir().expect("tempdir should be created");
+        let flamegraph_path = temp.path().join("flame.svg");
+        let allocation_path = temp.path().join("alloc.json");
+
+        let cmd = BenchCommand::new(200, None, OutputFormat::Json)
+            .with_flamegraph_output(Some(flamegraph_path.clone()))
+            .with_allocation_report_output(Some(allocation_path.clone()));
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime should build");
+
+        let result = rt
+            .block_on(cmd.execute())
+            .expect("bench execution should succeed");
+
+        assert!(
+            flamegraph_path.exists(),
+            "flamegraph file should be written"
+        );
+        assert!(
+            allocation_path.exists(),
+            "allocation report file should be written"
+        );
+        assert!(result.flamegraph.is_some(), "flamegraph metadata missing");
+        assert!(
+            result.allocation_report.is_some(),
+            "allocation metadata missing"
+        );
     }
 }

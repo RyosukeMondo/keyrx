@@ -4,6 +4,7 @@
 //! sites and sizes for memory profiling purposes.
 
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::cell::Cell;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
@@ -59,6 +60,38 @@ struct AllocationState {
     free_count: AtomicUsize,
     /// Allocation sites being tracked
     sites: Mutex<Vec<AllocationSite>>,
+}
+
+thread_local! {
+    /// Prevent recursive tracking when stack trace capture allocates.
+    static IN_CAPTURE: Cell<bool> = const { Cell::new(false) };
+}
+
+struct CaptureGuard;
+
+impl CaptureGuard {
+    fn new() -> Option<Self> {
+        let already_capturing = IN_CAPTURE.with(|flag| {
+            if flag.get() {
+                true
+            } else {
+                flag.set(true);
+                false
+            }
+        });
+
+        if already_capturing {
+            None
+        } else {
+            Some(Self)
+        }
+    }
+}
+
+impl Drop for CaptureGuard {
+    fn drop(&mut self) {
+        IN_CAPTURE.with(|flag| flag.set(false));
+    }
 }
 
 impl AllocationState {
@@ -130,6 +163,11 @@ impl AllocationState {
     }
 
     fn capture_allocation_site(&self, size: usize, _layout: Layout) {
+        let _guard = match CaptureGuard::new() {
+            Some(guard) => guard,
+            None => return,
+        };
+
         // Capture stack trace
         let stack_trace = capture_stack_trace();
 
@@ -288,8 +326,11 @@ impl AllocationTracker {
 
 /// Capture current stack trace for allocation site tracking
 fn capture_stack_trace() -> Vec<String> {
-    let bt = backtrace::Backtrace::new();
-    format!("{:?}", bt)
+    let trace_string = std::panic::catch_unwind(backtrace::Backtrace::new)
+        .map(|bt| format!("{:?}", bt))
+        .unwrap_or_else(|_| "<backtrace unavailable>".to_string());
+
+    trace_string
         .lines()
         .filter(|line| !line.trim().is_empty())
         .filter(|line| {

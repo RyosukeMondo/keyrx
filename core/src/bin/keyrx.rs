@@ -191,6 +191,14 @@ enum Commands {
         /// Path to the script file
         #[arg(short, long)]
         script: Option<PathBuf>,
+
+        /// Generate a flame graph SVG (writes bench-flamegraph.svg)
+        #[arg(long)]
+        flamegraph: bool,
+
+        /// Generate an allocation report JSON (writes bench-allocations.json)
+        #[arg(long)]
+        allocations: bool,
     },
 
     /// Simulate key events without real keyboard
@@ -776,8 +784,20 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             let mut cmd = ReplCommand::new(ctx.output_format());
             cmd.execute(ctx)
         }
-        Commands::Bench { iterations, script } => {
+        Commands::Bench {
+            iterations,
+            script,
+            flamegraph,
+            allocations,
+        } => {
             let mut cmd = BenchCommand::new(iterations, script, ctx.output_format());
+            if flamegraph {
+                cmd = cmd.with_flamegraph_output(None);
+            }
+
+            if allocations {
+                cmd = cmd.with_allocation_report_output(None);
+            }
             Command::execute(&mut cmd, ctx)
         }
         Commands::Simulate {
