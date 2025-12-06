@@ -8,6 +8,7 @@ pub mod entry;
 pub mod logger;
 pub mod macros;
 pub mod metrics_bridge;
+pub mod otel;
 
 // Re-export commonly used types
 pub use bridge::LogBridge;
@@ -17,3 +18,4 @@ pub use metrics_bridge::{
     MetricsBridge, MetricsCollector, MetricsSnapshot, MetricsSnapshotFfi, NoOpMetricsCollector,
     Operation,
 };
+pub use otel::{OtelConfig, OtelConfigError};

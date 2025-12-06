@@ -11,7 +11,7 @@ _Status: Priority #4 in 2025 implementation order; all items pending. Establish 
   - Purpose: Dependency setup
   - _Requirements: 3.4_
 
-- [ ] 2. Create OtelConfig
+- [x] 2. Create OtelConfig
   - File: `core/src/observability/otel/config.rs`
   - Environment-based configuration
   - Defaults and validation
