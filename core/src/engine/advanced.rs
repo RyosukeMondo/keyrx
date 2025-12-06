@@ -12,13 +12,17 @@ use crate::engine::transitions::log::{TransitionEntry, TransitionLog};
 use crate::engine::transitions::{StateGraph, StateKind, StateTransition};
 use crate::engine::{
     ComboDef, ComboRegistry, DecisionQueue, DecisionResolution, DecisionType, EngineTracer,
-    InputEvent, KeyCode, LayerAction, LayerStack, ModifierState, OutputAction, PendingDecision,
-    TimingConfig,
+    InputEvent, KeyCode, LayerAction, LayerStack, Layout, LayoutCompositor, LayoutMetadata,
+    ModifierCoordinator, ModifierState, OutputAction, PendingDecision, TimingConfig,
 };
 use crate::identity::DeviceIdentity;
 use crate::registry::device::DeviceRegistry;
 use crate::traits::{KeyStateProvider, ScriptRuntime};
 use std::collections::HashSet;
+use std::sync::OnceLock;
+
+const DEFAULT_LAYOUT_ID: &str = "default";
+static FALLBACK_LAYOUT: OnceLock<Layout> = OnceLock::new();
 
 /// View adapter for KeyState that implements KeyStateProvider.
 ///
@@ -67,8 +71,9 @@ where
     // Transition logging for debugging
     transition_log: TransitionLog,
 
-    // Legacy compatibility layer during migration
-    layers_compat: LayerStack, // For layer definitions and lookups
+    // Layout compositor with a default layout (replaces legacy single stack)
+    layouts: LayoutCompositor,
+    modifier_coordinator: ModifierCoordinator,
 
     // Decisions
     pending: DecisionQueue,
@@ -91,13 +96,20 @@ where
 {
     /// Create a new engine with injected dependencies and timing config.
     pub fn new(script: S, timing: TimingConfig) -> Self {
+        let mut layouts = LayoutCompositor::new();
+        layouts.add_layout(
+            Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+            0,
+        );
+
         Self {
             _script: script,
             state: EngineState::new(timing.clone()),
             state_graph: StateGraph::new(),
             current_state_kind: StateKind::Idle,
             transition_log: TransitionLog::default(),
-            layers_compat: LayerStack::new(),
+            layouts,
+            modifier_coordinator: ModifierCoordinator::new(),
             pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
             blocked_releases: HashSet::new(),
@@ -106,6 +118,66 @@ where
             _running: false,
             device_registry: None,
         }
+    }
+
+    /// Access the default layout used for single-layout compatibility.
+    fn default_layout(&self) -> &Layout {
+        self.layouts
+            .layout(DEFAULT_LAYOUT_ID)
+            .or_else(|| {
+                self.layouts
+                    .active_layouts()
+                    .next()
+                    .map(|layout| layout.layout())
+            })
+            .unwrap_or_else(|| {
+                FALLBACK_LAYOUT
+                    .get_or_init(|| Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")))
+            })
+    }
+
+    /// Mutably access the default layout, recreating it if missing.
+    #[allow(clippy::unwrap_used)]
+    fn default_layout_mut(&mut self) -> &mut Layout {
+        if self.layouts.layout(DEFAULT_LAYOUT_ID).is_none() {
+            self.layouts.add_layout(
+                Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+                0,
+            );
+        }
+        self.layouts.layout_mut(DEFAULT_LAYOUT_ID).unwrap()
+    }
+
+    /// Convenience for accessing the default layout's layers.
+    fn default_layers(&self) -> &LayerStack {
+        self.default_layout().layers()
+    }
+
+    /// Convenience for mutating the default layout's layers.
+    fn default_layers_mut(&mut self) -> &mut LayerStack {
+        self.default_layout_mut().layers_mut()
+    }
+
+    /// Borrow modifier state and the default layout's layers together.
+    #[allow(clippy::unwrap_used)]
+    fn modifier_and_default_layers(&mut self) -> (&mut ModifierState, &mut LayerStack) {
+        let (state, layouts) = (&mut self.state, &mut self.layouts);
+
+        if layouts.layout(DEFAULT_LAYOUT_ID).is_none() {
+            layouts.add_layout(
+                Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+                0,
+            );
+        }
+
+        let layers = layouts
+            .layout_mut(DEFAULT_LAYOUT_ID)
+            .map(|layout| layout.layers_mut())
+            .unwrap();
+
+        let modifiers = state.modifiers_mut();
+
+        (modifiers, layers)
     }
 
     /// Set the device registry for per-device revolutionary mapping.
@@ -127,7 +199,7 @@ where
 
     /// Mutable access to layer stack (useful for configuration in setup/tests).
     pub fn layers_mut(&mut self) -> &mut LayerStack {
-        &mut self.layers_compat
+        self.default_layers_mut()
     }
 
     /// Mutable access to combo registry for configuration.
@@ -374,7 +446,7 @@ where
             &event,
             result.decision_type,
             start_time,
-            &self.layers_compat.active_layer_ids(),
+            &self.default_layers().active_layer_ids(),
             &result.outputs,
         );
 
@@ -410,9 +482,9 @@ where
         result.consumed |= resolved_consumed;
         result.skip_layer_actions = skip_layer_actions;
 
-        // Layer lookup and action execution using the compat layer
+        // Layer lookup and action execution using the default layout
         if !result.skip_layer_actions {
-            if let Some(action) = self.layers_compat.lookup(event.key).cloned() {
+            if let Some(action) = self.default_layers().lookup(event.key).cloned() {
                 let (handled_outputs, handled) = self.handle_layer_action(event, action.clone());
                 result.outputs.extend(handled_outputs);
                 if handled {
@@ -459,7 +531,27 @@ where
 
     /// Inspect layer stack.
     pub fn layers(&self) -> &LayerStack {
-        &self.layers_compat
+        self.default_layers()
+    }
+
+    /// Inspect the layout compositor (including multiple layouts).
+    pub fn layouts(&self) -> &LayoutCompositor {
+        &self.layouts
+    }
+
+    /// Mutate the layout compositor.
+    pub fn layouts_mut(&mut self) -> &mut LayoutCompositor {
+        &mut self.layouts
+    }
+
+    /// Access cross-layout modifier coordination.
+    pub fn modifier_coordinator(&self) -> &ModifierCoordinator {
+        &self.modifier_coordinator
+    }
+
+    /// Mutate cross-layout modifier coordination.
+    pub fn modifier_coordinator_mut(&mut self) -> &mut ModifierCoordinator {
+        &mut self.modifier_coordinator
     }
 
     /// Inspect pending decisions.
@@ -528,8 +620,8 @@ where
         // Activate hold actions
         // TODO: Eventually use the unified state's mutation API instead
         for (_, action) in &result.hold_activations {
-            let hold_outputs =
-                activate_hold_action(action, self.state.modifiers_mut(), &mut self.layers_compat);
+            let (modifiers, layers) = self.modifier_and_default_layers();
+            let hold_outputs = activate_hold_action(action, modifiers, layers);
             outputs.extend(hold_outputs);
         }
 
@@ -567,12 +659,8 @@ where
 
         // Use the decision_engine helper for other actions
         // TODO: Eventually use the unified state's mutation API instead
-        let result = handle_layer_action(
-            event,
-            &action,
-            self.state.modifiers_mut(),
-            &mut self.layers_compat,
-        );
+        let (modifiers, layers) = self.modifier_and_default_layers();
+        let result = handle_layer_action(event, &action, modifiers, layers);
         (result.outputs, result.consumed)
     }
 
@@ -596,11 +684,8 @@ where
 
         // Use decision_engine helper for other actions
         // TODO: Eventually use the unified state's mutation API instead
-        decision_engine::execute_layer_action(
-            &action,
-            self.state.modifiers_mut(),
-            &mut self.layers_compat,
-        )
+        let (modifiers, layers) = self.modifier_and_default_layers();
+        decision_engine::execute_layer_action(&action, modifiers, layers)
     }
 }
 

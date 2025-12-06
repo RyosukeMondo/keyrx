@@ -29,7 +29,7 @@ _Status: Priority #6 in 2025 implementation order; all items pending. Focus on c
 
 ## Phase 3: Integration
 
-- [ ] 4. Integrate compositor into engine
+- [x] 4. Integrate compositor into engine
   - File: `core/src/engine/mod.rs`
   - Replace single layout with compositor
   - Handle transitions
