@@ -15,12 +15,70 @@ import '../widgets/common/dialogs/dialogs.dart';
 export '../services/rhai_generator.dart' show TapHoldConfig;
 export '../widgets/visual_keyboard.dart' show RemapConfig, MappingType;
 
+/// Lightweight inline message used for helper and validation text.
+class InlineMessage extends StatelessWidget {
+  const InlineMessage({
+    super.key,
+    required this.message,
+    this.variant = InlineMessageVariant.info,
+  });
+
+  final String message;
+  final InlineMessageVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final Color foreground = switch (variant) {
+      InlineMessageVariant.info => scheme.onSurfaceVariant,
+      InlineMessageVariant.warning => scheme.onTertiaryContainer,
+      InlineMessageVariant.error => scheme.onErrorContainer,
+    };
+    final Color background = switch (variant) {
+      InlineMessageVariant.info => scheme.surfaceContainerLowest,
+      InlineMessageVariant.warning => scheme.tertiaryContainer,
+      InlineMessageVariant.error => scheme.errorContainer,
+    };
+    final IconData icon = switch (variant) {
+      InlineMessageVariant.info => Icons.info_outline,
+      InlineMessageVariant.warning => Icons.warning_amber_outlined,
+      InlineMessageVariant.error => Icons.error_outline,
+    };
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: foreground),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: foreground),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Message type for InlineMessage.
+enum InlineMessageVariant { info, warning, error }
+
 /// Warning banner shown when script has advanced features.
 class AdvancedFeaturesWarning extends StatelessWidget {
-  const AdvancedFeaturesWarning({
-    super.key,
-    required this.onViewCode,
-  });
+  const AdvancedFeaturesWarning({super.key, required this.onViewCode});
 
   final VoidCallback onViewCode;
 
@@ -32,21 +90,21 @@ class AdvancedFeaturesWarning extends StatelessWidget {
       color: Theme.of(context).colorScheme.errorContainer,
       child: Row(
         children: [
-          Icon(Icons.warning_amber,
-              color: Theme.of(context).colorScheme.onErrorContainer),
+          Icon(
+            Icons.warning_amber,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'This script contains advanced features that cannot be edited visually. '
               'Use the code view to edit.',
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer),
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
             ),
           ),
-          TextButton(
-            onPressed: onViewCode,
-            child: const Text('View Code'),
-          ),
+          TextButton(onPressed: onViewCode, child: const Text('View Code')),
         ],
       ),
     );
@@ -79,9 +137,7 @@ class MappingPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
       child: Row(
@@ -93,8 +149,12 @@ class MappingPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeader(context, 'Mappings', mappings.length,
-                    showClear: true),
+                _buildHeader(
+                  context,
+                  'Mappings',
+                  mappings.length,
+                  showClear: true,
+                ),
                 Expanded(child: _buildMappingList(context)),
               ],
             ),
@@ -106,19 +166,21 @@ class MappingPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeader(context, 'Tap-Hold & Combos', tapHoldConfigs.length),
+                _buildHeader(
+                  context,
+                  'Tap-Hold & Combos',
+                  tapHoldConfigs.length,
+                ),
                 Expanded(
                   child: tapHoldConfigs.isEmpty
                       ? Center(
                           child: Text(
                             'No advanced configs',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         )
@@ -136,8 +198,12 @@ class MappingPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String title, int count,
-      {bool showClear = false}) {
+  Widget _buildHeader(
+    BuildContext context,
+    String title,
+    int count, {
+    bool showClear = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -168,8 +234,8 @@ class MappingPanel extends StatelessWidget {
             'No mappings yet.\n\nDrag from one key to another on the keyboard to create a mapping.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
@@ -270,15 +336,9 @@ class _CodeEditorViewState extends State<CodeEditorView> {
 
     return Row(
       children: [
-        Expanded(
-          flex: 2,
-          child: _buildEditor(context),
-        ),
+        Expanded(flex: 2, child: _buildEditor(context)),
         const VerticalDivider(width: 1),
-        Expanded(
-          flex: 1,
-          child: _buildDocsPanel(context),
-        ),
+        Expanded(flex: 1, child: _buildDocsPanel(context)),
       ],
     );
   }
@@ -289,15 +349,9 @@ class _CodeEditorViewState extends State<CodeEditorView> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          left: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
-        ),
+        border: Border(left: BorderSide(color: Theme.of(context).dividerColor)),
       ),
-      child: ApiBrowser(
-        docsService: docsService,
-      ),
+      child: ApiBrowser(docsService: docsService),
     );
   }
 
@@ -307,13 +361,13 @@ class _CodeEditorViewState extends State<CodeEditorView> {
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Icon(Icons.code,
-              size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            'Rhai Script',
-            style: Theme.of(context).textTheme.titleSmall,
+          Icon(
+            Icons.code,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
           ),
+          const SizedBox(width: 8),
+          Text('Rhai Script', style: Theme.of(context).textTheme.titleSmall),
           const Spacer(),
           if (widget.isModified)
             Padding(
@@ -324,8 +378,9 @@ class _CodeEditorViewState extends State<CodeEditorView> {
                   fontSize: 11,
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
-                backgroundColor:
-                    Theme.of(context).colorScheme.secondaryContainer,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer,
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
@@ -357,10 +412,7 @@ class _CodeEditorViewState extends State<CodeEditorView> {
         maxLines: null,
         expands: true,
         textAlignVertical: TextAlignVertical.top,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-        ),
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
         decoration: const InputDecoration(
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(16),
@@ -412,7 +464,8 @@ class VisualEditorDialogs {
     return DialogHelpers.confirmClear(
       context,
       title: 'Clear Configuration',
-      message: 'Are you sure you want to clear all mappings? This cannot be undone.',
+      message:
+          'Are you sure you want to clear all mappings? This cannot be undone.',
       confirmLabel: 'Clear',
     );
   }
@@ -436,7 +489,8 @@ class VisualEditorDialogs {
     return DialogHelpers.inputPath(
       context,
       title: 'Save Script',
-      message: 'Enter the path where the script should be saved.\n'
+      message:
+          'Enter the path where the script should be saved.\n'
           'The script can be loaded with: keyrx run --script <path>',
       initialValue: suggestedPath,
       hintText: 'scripts/my-config.rhai',

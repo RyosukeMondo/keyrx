@@ -16,8 +16,13 @@ import '../services/profile_registry_service.dart';
 import '../services/service_registry.dart';
 import '../widgets/drag_drop_mapper.dart';
 import '../widgets/layout_grid.dart';
+import 'visual_editor_widgets.dart' show InlineMessage, InlineMessageVariant;
 
 const _uuid = Uuid();
+const double _minPreviewWidth = 380;
+const double _minPreviewHeight = 240;
+const int _maxMatrixRows = 12;
+const int _maxColsPerRow = 20;
 
 /// Visual editor page for profile-based key mapping.
 class VisualEditorPage extends StatefulWidget {
@@ -35,12 +40,12 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   String? _errorMessage;
   LayoutInfo? _currentLayoutInfo;
   List<int> _layoutRows = [];
+  String? _layoutValidationMessage;
   final Map<String, LayoutInfo> _layoutOverrides = {};
 
   ProfileRegistryService get _profileService {
     try {
-      final registry =
-          Provider.of<ServiceRegistry>(context, listen: false);
+      final registry = Provider.of<ServiceRegistry>(context, listen: false);
       return registry.profileRegistryService;
     } on ProviderNotFoundException {
       return Provider.of<ProfileRegistryService>(context, listen: false);
@@ -94,13 +99,15 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         return;
       }
 
-      final layoutInfo = _layoutOverrides[profileId] ?? _getLayoutInfoForProfile(profile);
+      final layoutInfo =
+          _layoutOverrides[profileId] ?? _getLayoutInfoForProfile(profile);
 
       setState(() {
         _selectedProfileId = profileId;
         _currentProfile = profile;
         _currentLayoutInfo = layoutInfo;
         _layoutRows = _buildRowsFromLayout(layoutInfo);
+        _layoutValidationMessage = _validateLayoutRows(_layoutRows);
         _isLoading = false;
       });
     } catch (e) {
@@ -220,7 +227,6 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     // Verify build is called with new code
@@ -274,7 +280,10 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                                     overflow: TextOverflow.ellipsis,
                                   );
                                 }
-                                return Text(id, overflow: TextOverflow.ellipsis);
+                                return Text(
+                                  id,
+                                  overflow: TextOverflow.ellipsis,
+                                );
                               },
                             ),
                           );
@@ -317,7 +326,9 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                         child: Text(
                           _errorMessage!,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                           ),
                         ),
                       ),
@@ -332,12 +343,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
               ),
 
             // Main content
-            Expanded(
-              flex: 1,
-              child: ClipRect(
-                child: _buildContent(),
-              ),
-            ),
+            Expanded(flex: 1, child: ClipRect(child: _buildContent())),
           ],
         ),
       ),
@@ -372,8 +378,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
             Text(
               'No profile selected',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context).disabledColor,
-                  ),
+                color: Theme.of(context).disabledColor,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -393,7 +399,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
       );
     }
 
-    final layoutInfo = _currentLayoutInfo ?? _getLayoutInfoForProfile(_currentProfile!);
+    final layoutInfo =
+        _currentLayoutInfo ?? _getLayoutInfoForProfile(_currentProfile!);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -448,7 +455,10 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
               alignment: WrapAlignment.spaceBetween,
               children: [
                 ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 200, maxWidth: 460),
+                  constraints: const BoxConstraints(
+                    minWidth: 200,
+                    maxWidth: 460,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -459,14 +469,9 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Shape your physical grid before mapping keys.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -478,16 +483,32 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Configure rows and per-row columns to mirror your physical board. '
+              'We keep the preview wide enough to avoid cramped stacking.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 12),
             if (isMatrixLayout)
-              _buildRowEditorList()
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildRowEditorList(),
+                  if (_layoutValidationMessage != null)
+                    InlineMessage(
+                      message: _layoutValidationMessage!,
+                      variant: InlineMessageVariant.error,
+                    ),
+                ],
+              )
             else
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -504,7 +525,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                 Chip(
                   avatar: const Icon(Icons.grid_on, size: 16),
                   label: Text(
-                      '${layoutInfo.rows} rows × ${layoutInfo.cols} cols'),
+                    '${layoutInfo.rows} rows × ${layoutInfo.cols} cols',
+                  ),
                 ),
                 Chip(
                   avatar: const Icon(Icons.numbers, size: 16),
@@ -513,11 +535,15 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
               ],
             ),
             const SizedBox(height: 12),
+            Text('Preview', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
             Text(
-              'Preview',
-              style: Theme.of(context).textTheme.titleSmall,
+              'Preview enforces a minimum canvas so rows and columns stay readable.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             _buildLayoutPreview(layoutInfo),
           ],
         ),
@@ -548,8 +574,8 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
                   child: Slider(
                     value: cols.toDouble(),
                     min: 1,
-                    max: 20,
-                    divisions: 19,
+                    max: _maxColsPerRow.toDouble(),
+                    divisions: _maxColsPerRow - 1,
                     label: '$cols keys',
                     onChanged: (value) {
                       setState(() {
@@ -587,19 +613,16 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         Row(
           children: [
             OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _layoutRows.add(_layoutRows.isNotEmpty ? _layoutRows.last : 5);
-                });
-                _refreshLayoutInfoFromRows();
-              },
+              onPressed: _handleAddRow,
               icon: const Icon(Icons.add),
               label: const Text('Add Row'),
             ),
             const SizedBox(width: 12),
             Text(
-              '${_layoutRows.length} rows configured',
-              style: Theme.of(context).textTheme.bodyMedium,
+              '${_layoutRows.length} rows configured (max $_maxMatrixRows)',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -607,10 +630,25 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
     );
   }
 
+  void _handleAddRow() {
+    if (_layoutRows.length >= _maxMatrixRows) {
+      setState(() {
+        _layoutValidationMessage =
+            'Limit layouts to $_maxMatrixRows rows to keep the preview readable.';
+      });
+      return;
+    }
+
+    setState(() {
+      _layoutRows.add(_layoutRows.isNotEmpty ? _layoutRows.last : 5);
+      _layoutValidationMessage = null;
+    });
+    _refreshLayoutInfoFromRows();
+  }
+
   /// Preview of the current layout configuration.
   Widget _buildLayoutPreview(LayoutInfo layoutInfo) {
-    final rows =
-        _layoutRows.isNotEmpty ? _layoutRows.length : layoutInfo.rows;
+    final rows = _layoutRows.isNotEmpty ? _layoutRows.length : layoutInfo.rows;
     final cols = _layoutRows.isNotEmpty
         ? _layoutRows.fold<int>(1, (maxCols, value) => math.max(maxCols, value))
         : layoutInfo.cols;
@@ -628,19 +666,51 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
           )
         : layoutInfo;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: LayoutGrid(
-        layoutInfo: previewLayout,
-        keySize: 40,
-        keySpacing: 6,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : _minPreviewWidth;
+        final constrainedWidth = math.max(_minPreviewWidth, availableWidth);
+        final widestRow =
+            previewLayout.colsPerRow?.reduce(math.max) ?? previewLayout.cols;
+        final computedKeySize =
+            ((constrainedWidth - 48) / math.max(1, widestRow)).clamp(
+              28.0,
+              64.0,
+            );
+        final keySpacing = computedKeySize < 36 ? 4.0 : 6.0;
+
+        final preview = ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: constrainedWidth,
+            minHeight: _minPreviewHeight,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Center(
+              child: LayoutGrid(
+                layoutInfo: previewLayout,
+                keySize: computedKeySize.toDouble(),
+                keySpacing: keySpacing,
+              ),
+            ),
+          ),
+        );
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: preview,
+        );
+      },
     );
   }
 
@@ -674,12 +744,42 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   }
 
   /// Recalculate layout info from editable row data.
+  String? _validateLayoutRows(List<int> rows) {
+    if (rows.isEmpty) return 'Add at least one row to preview.';
+    if (rows.length > _maxMatrixRows) {
+      return 'Keep layouts to $_maxMatrixRows rows or fewer for readability.';
+    }
+    final invalidIndex = rows.indexWhere(
+      (value) => value < 1 || value > _maxColsPerRow,
+    );
+    if (invalidIndex != -1) {
+      return 'Row ${invalidIndex + 1} must have between 1 and $_maxColsPerRow columns.';
+    }
+    return null;
+  }
+
   void _refreshLayoutInfoFromRows() {
     if (_currentProfile == null) return;
 
-    final rows = _layoutRows.isNotEmpty ? _layoutRows.length : 1;
-    final cols = _layoutRows.isNotEmpty
-        ? _layoutRows.fold<int>(1, (maxCols, value) => math.max(maxCols, value))
+    final sanitizedRows = _layoutRows
+        .map((value) => value.clamp(1, _maxColsPerRow))
+        .map((value) => value.toInt())
+        .toList();
+    final validation = _validateLayoutRows(sanitizedRows);
+    if (validation != null) {
+      setState(() {
+        _layoutRows = sanitizedRows;
+        _layoutValidationMessage = validation;
+      });
+      return;
+    }
+
+    final rows = sanitizedRows.isNotEmpty ? sanitizedRows.length : 1;
+    final cols = sanitizedRows.isNotEmpty
+        ? sanitizedRows.fold<int>(
+            1,
+            (maxCols, value) => math.max(maxCols, value),
+          )
         : 1;
 
     final updatedLayout = LayoutInfo(
@@ -687,11 +787,13 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
       cols: cols,
       type: _currentProfile!.layoutType,
       colsPerRow: List<int>.from(
-        _layoutRows.isNotEmpty ? _layoutRows : [cols],
+        sanitizedRows.isNotEmpty ? sanitizedRows : [cols],
       ),
     );
 
     setState(() {
+      _layoutRows = sanitizedRows;
+      _layoutValidationMessage = null;
       _currentLayoutInfo = updatedLayout;
       _layoutOverrides[_currentProfile!.id] = updatedLayout;
     });
@@ -700,9 +802,14 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
   /// Build editable rows list from layout info, falling back to uniform grid.
   List<int> _buildRowsFromLayout(LayoutInfo layoutInfo) {
     if (layoutInfo.colsPerRow != null && layoutInfo.colsPerRow!.isNotEmpty) {
-      return List<int>.from(layoutInfo.colsPerRow!);
+      return layoutInfo.colsPerRow!
+          .map((value) => value.clamp(1, _maxColsPerRow).toInt())
+          .take(_maxMatrixRows)
+          .toList();
     }
-    return List<int>.filled(layoutInfo.rows, layoutInfo.cols);
+    final rows = math.min(layoutInfo.rows, _maxMatrixRows);
+    final cols = math.min(layoutInfo.cols, _maxColsPerRow);
+    return List<int>.filled(math.max(1, rows), math.max(1, cols));
   }
 
   /// Reset layout editor to defaults for the current profile.
@@ -713,6 +820,7 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
       _layoutRows = _buildRowsFromLayout(defaultLayout);
       _currentLayoutInfo = defaultLayout;
       _layoutOverrides[_currentProfile!.id] = defaultLayout;
+      _layoutValidationMessage = _validateLayoutRows(_layoutRows);
     });
   }
 
@@ -732,18 +840,10 @@ class _VisualEditorPageState extends State<VisualEditorPage> {
         );
       case LayoutType.standard:
         // Standard keyboard layout (simplified)
-        return const LayoutInfo(
-          rows: 6,
-          cols: 15,
-          type: LayoutType.standard,
-        );
+        return const LayoutInfo(rows: 6, cols: 15, type: LayoutType.standard);
       case LayoutType.split:
         // Split keyboard layout
-        return const LayoutInfo(
-          rows: 5,
-          cols: 14,
-          type: LayoutType.split,
-        );
+        return const LayoutInfo(rows: 5, cols: 14, type: LayoutType.split);
     }
   }
 }

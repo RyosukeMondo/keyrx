@@ -21,7 +21,7 @@
   - _Requirements: 1, 4, Reliability_
   - _Prompt: Implement the task for spec mapping-screen-refresh, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Dart platform engineer | Task: Add a debounced autosave service with retry that persists profiles to the .keyrx path and surfaces status | Restrictions: Keep UI thread non-blocking; avoid duplicate writes by debouncing; follow existing service patterns | Success: Autosave can be triggered with profile data, writes to .keyrx, reports status, retries on transient errors._
 
-- [ ] 4. Improve Profiles layout UX (responsive preview and validation)
+- [x] 4. Improve Profiles layout UX (responsive preview and validation)
   - Files: ui/lib/pages/visual_editor_page.dart; ui/lib/pages/visual_editor_widgets.dart
   - Make the layout setup step clearer: enforce minimum height/width for the preview to avoid narrow stacking, add validation for rows/cols per row, and adjust spacing/typography for readability.
   - _Leverage: existing layout editor and grid preview widgets in visual_editor_page.dart and visual_editor_widgets.dart_
