@@ -10,6 +10,10 @@
 // KeyrxError is intentionally large to include all necessary context
 #![allow(clippy::result_large_err)]
 
+/// Global allocator that enables allocation tracking when profiling is active.
+#[global_allocator]
+static GLOBAL_ALLOCATOR: profiling::TrackingAllocator = profiling::TrackingAllocator;
+
 // Re-export procedural macros
 pub use keyrx_ffi_macros::ffi_export;
 

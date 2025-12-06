@@ -115,9 +115,18 @@ impl AllocationState {
             return;
         }
 
+        let threshold = self.threshold.load(Ordering::Relaxed);
+        if size < threshold {
+            return;
+        }
+
         self.total_freed.fetch_add(size, Ordering::Relaxed);
         self.free_count.fetch_add(1, Ordering::Relaxed);
-        self.current_usage.fetch_sub(size, Ordering::Relaxed);
+        let _ = self
+            .current_usage
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+                Some(current.saturating_sub(size))
+            });
     }
 
     fn capture_allocation_site(&self, size: usize, _layout: Layout) {

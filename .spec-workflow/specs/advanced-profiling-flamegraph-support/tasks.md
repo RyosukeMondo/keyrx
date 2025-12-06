@@ -1,5 +1,7 @@
 # Tasks Document
 
+_Status: Priority #2 in 2025 implementation order; open items: 6 (in-progress), 7-8 pending. Revolutionary-mapping is done—finish profiling/bench/UI integration next._
+
 ## Phase 1: Stack Sampling
 
 - [x] 1. Create Profiler struct
@@ -41,7 +43,7 @@
   - Purpose: Memory profiling
   - _Requirements: 2.1, 2.2_
 
-- [-] 6. Create allocation report
+- [x] 6. Create allocation report
   - File: `core/src/profiling/alloc_report.rs`
   - Hot spot detection
   - JSON output

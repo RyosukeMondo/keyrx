@@ -16,6 +16,7 @@
 //!     sample_rate: Duration::from_millis(10),
 //!     allocation_tracking: false,
 //!     allocation_threshold: 1024,
+//!     allocation_report_config: Default::default(),
 //! };
 //!
 //! let mut profiler = Profiler::new(config);

@@ -5,6 +5,8 @@
 
 use std::time::Duration;
 
+use super::alloc_report::{AllocationReport, AllocationReportConfig, AllocationReportGenerator};
+use super::allocations::{AllocationSite, AllocationStats, AllocationTracker};
 use super::sampler::StackSampler;
 use crate::error::KeyRxError;
 
@@ -19,6 +21,8 @@ pub struct ProfilerConfig {
     pub allocation_tracking: bool,
     /// Minimum allocation size to track (in bytes)
     pub allocation_threshold: usize,
+    /// Reporting configuration for allocation analysis
+    pub allocation_report_config: AllocationReportConfig,
 }
 
 impl Default for ProfilerConfig {
@@ -28,6 +32,7 @@ impl Default for ProfilerConfig {
             sample_rate: Duration::from_millis(10),
             allocation_tracking: false,
             allocation_threshold: 1024, // 1KB
+            allocation_report_config: AllocationReportConfig::default(),
         }
     }
 }
@@ -41,6 +46,14 @@ pub struct ProfileResult {
     pub duration: Duration,
     /// Number of samples collected
     pub sample_count: usize,
+    /// Allocation statistics (when allocation tracking is enabled)
+    pub allocation_stats: Option<AllocationStats>,
+    /// Allocation sites captured during profiling
+    pub allocation_sites: Option<Vec<AllocationSite>>,
+    /// Analyzed allocation report with hot spots and warnings
+    pub allocation_report: Option<AllocationReport>,
+    /// JSON representation of the allocation report
+    pub allocation_report_json: Option<String>,
 }
 
 /// A single stack sample captured during profiling
@@ -59,15 +72,21 @@ pub struct StackSample {
 pub struct Profiler {
     config: ProfilerConfig,
     sampler: Option<StackSampler>,
+    allocator: Option<AllocationTracker>,
+    report_generator: AllocationReportGenerator,
     start_time: Option<std::time::Instant>,
 }
 
 impl Profiler {
     /// Create a new profiler with the given configuration
     pub fn new(config: ProfilerConfig) -> Self {
+        let report_generator =
+            AllocationReportGenerator::new(config.allocation_report_config.clone());
         Self {
             config,
             sampler: None,
+            allocator: None,
+            report_generator,
             start_time: None,
         }
     }
@@ -83,6 +102,12 @@ impl Profiler {
             let mut sampler = StackSampler::new(self.config.sample_rate);
             sampler.start()?;
             self.sampler = Some(sampler);
+        }
+
+        if self.config.allocation_tracking {
+            let mut tracker = AllocationTracker::new(self.config.allocation_threshold);
+            tracker.start()?;
+            self.allocator = Some(tracker);
         }
 
         Ok(())
@@ -103,6 +128,19 @@ impl Profiler {
             Vec::new()
         };
 
+        let (allocation_stats, allocation_sites, allocation_report, allocation_report_json) =
+            if let Some(mut allocator) = self.allocator.take() {
+                let stats = allocator.stop()?;
+                let sites = allocator.sites();
+                let report = self
+                    .report_generator
+                    .generate(stats.clone(), sites.clone())?;
+                let report_json = self.report_generator.to_json(&report)?;
+                (Some(stats), Some(sites), Some(report), Some(report_json))
+            } else {
+                (None, None, None, None)
+            };
+
         let sample_count = stack_samples.len();
 
         self.sampler = None;
@@ -112,6 +150,10 @@ impl Profiler {
             stack_samples,
             duration,
             sample_count,
+            allocation_stats,
+            allocation_sites,
+            allocation_report,
+            allocation_report_json,
         })
     }
 
@@ -146,6 +188,10 @@ mod tests {
         let result = profiler.stop().expect("Failed to stop profiler");
         assert!(!profiler.is_active());
         assert!(result.duration > Duration::from_nanos(0));
+        assert!(result.allocation_report.is_none());
+        assert!(result.allocation_report_json.is_none());
+        assert!(result.allocation_stats.is_none());
+        assert!(result.allocation_sites.is_none());
     }
 
     #[test]
@@ -164,5 +210,26 @@ mod tests {
         assert!(!config.allocation_tracking);
         assert_eq!(config.sample_rate, Duration::from_millis(10));
         assert_eq!(config.allocation_threshold, 1024);
+        assert_eq!(
+            config.allocation_report_config.hot_spot_threshold,
+            1024 * 1024
+        );
+    }
+
+    #[test]
+    fn test_allocation_tracking_report_included() {
+        let config = ProfilerConfig {
+            allocation_tracking: true,
+            ..Default::default()
+        };
+
+        let mut profiler = Profiler::new(config);
+        profiler.start().expect("Failed to start profiler");
+
+        let result = profiler.stop().expect("Failed to stop profiler");
+        assert!(result.allocation_stats.is_some());
+        assert!(result.allocation_sites.is_some());
+        assert!(result.allocation_report.is_some());
+        assert!(result.allocation_report_json.is_some());
     }
 }

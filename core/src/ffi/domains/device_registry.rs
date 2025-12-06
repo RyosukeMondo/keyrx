@@ -57,6 +57,12 @@ fn extract_serial(path: &std::path::Path) -> String {
 /// # Returns
 /// * `Ok(Vec<FfiDeviceState>)` - List of registered devices
 pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceState>> {
+    // In tests or when explicitly requested, skip hardware scanning to keep deterministic results.
+    if cfg!(test) || std::env::var("KEYRX_SKIP_DEVICE_SCAN").is_ok() {
+        let devices = registry.list_devices().await;
+        return Ok(devices.into_iter().map(FfiDeviceState::from).collect());
+    }
+
     // 1. Scan for physical devices
     // We use spawn_blocking because list_keyboards might do I/O
     let scan_result = tokio::task::spawn_blocking(drivers::list_keyboards)
