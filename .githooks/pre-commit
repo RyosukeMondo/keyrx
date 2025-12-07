@@ -85,7 +85,8 @@ echo ""
 
 # Step 3: Unit tests (lib only for speed)
 echo "[3/$TOTAL_CHECKS] Running unit tests..."
-if ! cargo test --lib --quiet 2>&1; then
+# Force single-threaded execution to avoid flaky global state interactions in docs registry
+if ! RUST_TEST_THREADS=1 cargo test --lib --quiet -- --test-threads=1 2>&1; then
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  ❌ FAILED: Unit tests                                     ║"

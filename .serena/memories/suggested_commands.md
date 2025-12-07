@@ -1,0 +1,11 @@
+# Useful Commands
+- List just recipes: `just` (shows dev tasks)
+- Setup dev tools/hooks: `just setup`
+- Core dev loop: `just dev`
+- Flutter UI dev: `just ui`; build UI: `just ui-build`
+- Build release binary: `just build` (or cargo build --release inside core)
+- Quality suite: `just check` (fmt+clippy+tests)
+- Format Rust: `just fmt`; lint: `just clippy`; tests: `just test`
+- Benchmarks: `just bench`
+- CI-style all tests: `keyrx ci-check`
+- UAT suite: `keyrx uat` (with optional gates/filters)
