@@ -51,6 +51,16 @@ pub extern "C" fn keyrx_version() -> *const c_char {
     VERSION.as_ptr() as *const c_char
 }
 
+/// Get the ABI protocol version.
+///
+/// This integer is incremented whenever the FFI data structures or contract changes.
+/// The UI should check this on startup to ensure it is compatible with the loaded core library.
+#[no_mangle]
+pub extern "C" fn keyrx_protocol_version() -> u32 {
+    // Increment this whenever FFI structs/signatures change
+    1
+}
+
 /// Free a string allocated by KeyRx.
 ///
 /// # Safety

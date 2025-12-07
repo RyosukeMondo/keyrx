@@ -49,16 +49,14 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   ///
   /// Remember to call [dispose] when the facade is no longer needed.
   KeyrxFacadeImpl(this._services)
-      : _stateSubject = BehaviorSubject<FacadeState>.seeded(
-          FacadeState.initial(),
-        ),
-        _discoverySubject = BehaviorSubject<DiscoveryProgress>() {
+    : _stateSubject = BehaviorSubject<FacadeState>.seeded(
+        FacadeState.initial(),
+      ) {
     _initializeStateAggregation();
   }
 
   final ServiceRegistry _services;
   final BehaviorSubject<FacadeState> _stateSubject;
-  final BehaviorSubject<DiscoveryProgress> _discoverySubject;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   bool _disposed = false;
@@ -73,61 +71,50 @@ class KeyrxFacadeImpl implements KeyrxFacade {
     final engineStateSub = _services.engineService.stateStream
         .debounceTime(const Duration(milliseconds: 100))
         .listen(
-      (engineSnapshot) {
-        // Map engine snapshot to engine status
-        EngineStatus engineStatus = currentState.engine;
+          (engineSnapshot) {
+            // Map engine snapshot to engine status
+            EngineStatus engineStatus = currentState.engine;
 
-        // If we have active layers or held keys, the engine is actively running
-        if (engineSnapshot.activeLayers.isNotEmpty ||
-            engineSnapshot.heldKeys.isNotEmpty ||
-            engineSnapshot.pendingDecisions.isNotEmpty) {
-          engineStatus = EngineStatus.running;
-        } else if (_services.engineService.isInitialized) {
-          // If initialized but idle, mark as ready
-          if (currentState.engine != EngineStatus.running &&
-              currentState.engine != EngineStatus.loading) {
-            engineStatus = EngineStatus.ready;
-          }
-        }
+            // If we have active layers or held keys, the engine is actively running
+            if (engineSnapshot.activeLayers.isNotEmpty ||
+                engineSnapshot.heldKeys.isNotEmpty ||
+                engineSnapshot.pendingDecisions.isNotEmpty) {
+              engineStatus = EngineStatus.running;
+            } else if (_services.engineService.isInitialized) {
+              // If initialized but idle, mark as ready
+              if (currentState.engine != EngineStatus.running &&
+                  currentState.engine != EngineStatus.loading) {
+                engineStatus = EngineStatus.ready;
+              }
+            }
 
-        // Only update if status changed or we have new event data
-        if (engineStatus != currentState.engine ||
-            engineSnapshot.lastEvent != null) {
-          _updateState(currentState.copyWith(
-            engine: engineStatus,
-            timestamp: engineSnapshot.timestamp,
-          ));
-        }
-      },
-      onError: (error) {
-        // On engine stream error, update state to reflect error
-        _updateState(currentState.withEngineStatus(
-          EngineStatus.error,
-          error: 'Engine stream error: $error',
-        ));
-      },
-    );
+            // Only update if status changed or we have new event data
+            if (engineStatus != currentState.engine ||
+                engineSnapshot.lastEvent != null) {
+              _updateState(
+                currentState.copyWith(
+                  engine: engineStatus,
+                  timestamp: engineSnapshot.timestamp,
+                ),
+              );
+            }
+          },
+          onError: (error) {
+            // On engine stream error, update state to reflect error
+            _updateState(
+              currentState.withEngineStatus(
+                EngineStatus.error,
+                error: 'Engine stream error: $error',
+              ),
+            );
+          },
+        );
 
     _subscriptions.add(engineStateSub);
 
-    // Register for discovery progress events
-    _services.bridge.registerEventCallback(
-      EventType.discoveryProgress,
-      (Uint8List payload) {
-        try {
-          final jsonStr = utf8.decode(payload);
-          final jsonMap = json.decode(jsonStr) as Map<String, dynamic>;
-          final progress = DiscoveryProgress.fromJson(jsonMap);
-          _discoverySubject.add(progress);
-        } catch (e) {
-          // Ignore parse errors for now
-        }
-      },
-    );
-
     // Note: DeviceService, ValidationStatus, and DiscoveryStatus don't have
     // their own state streams. These states are managed through the facade's
-    // operation methods (listDevices, validateScript, startDiscovery, etc.)
+    // operation methods (listDevices, validateScript, etc.)
     // and are already updated via _updateState() calls in those methods.
     //
     // The 100ms debounce on the state subject's stream (applied via the getter)
@@ -138,9 +125,6 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   Stream<FacadeState> get stateStream => _stateSubject.stream
       .debounceTime(const Duration(milliseconds: 100))
       .distinct((prev, next) => prev == next);
-
-  @override
-  Stream<DiscoveryProgress> get discoveryProgress => _discoverySubject.stream;
 
   @override
   FacadeState get currentState => _stateSubject.value;
@@ -156,10 +140,12 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
     try {
       // Step 1: Update state to loading
-      _updateState(currentState.withEngineStatus(
-        EngineStatus.loading,
-        scriptPath: scriptPath,
-      ));
+      _updateState(
+        currentState.withEngineStatus(
+          EngineStatus.loading,
+          scriptPath: scriptPath,
+        ),
+      );
 
       // Step 2: Initialize engine if not already initialized
       if (!_services.engineService.isInitialized) {
@@ -171,20 +157,24 @@ class KeyrxFacadeImpl implements KeyrxFacade {
             'Engine initialization failed',
             userMessage: 'Failed to initialize the engine. Please try again.',
           );
-          _updateState(currentState.withEngineStatus(
-            EngineStatus.error,
-            error: error.userMessage,
-          ));
+          _updateState(
+            currentState.withEngineStatus(
+              EngineStatus.error,
+              error: error.userMessage,
+            ),
+          );
           return Result.err(error);
         }
         _updateState(currentState.withEngineStatus(EngineStatus.ready));
       }
 
       // Step 3: Load the script
-      _updateState(currentState.withEngineStatus(
-        EngineStatus.loading,
-        scriptPath: scriptPath,
-      ));
+      _updateState(
+        currentState.withEngineStatus(
+          EngineStatus.loading,
+          scriptPath: scriptPath,
+        ),
+      );
       final loaded = await _services.engineService.loadScript(scriptPath);
       if (!loaded) {
         final error = FacadeError.operationFailed(
@@ -192,26 +182,32 @@ class KeyrxFacadeImpl implements KeyrxFacade {
           'Script loading failed',
           userMessage: 'Failed to load the script. Please check the file path.',
         );
-        _updateState(currentState.withEngineStatus(
-          EngineStatus.error,
-          error: error.userMessage,
-        ));
+        _updateState(
+          currentState.withEngineStatus(
+            EngineStatus.error,
+            error: error.userMessage,
+          ),
+        );
         return Result.err(error);
       }
 
       // Step 4: Mark engine as running
-      _updateState(currentState.withEngineStatus(
-        EngineStatus.running,
-        scriptPath: scriptPath,
-      ));
+      _updateState(
+        currentState.withEngineStatus(
+          EngineStatus.running,
+          scriptPath: scriptPath,
+        ),
+      );
 
       return const Result.ok(null);
     } catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withEngineStatus(
-        EngineStatus.error,
-        error: error.userMessage,
-      ));
+      _updateState(
+        currentState.withEngineStatus(
+          EngineStatus.error,
+          error: error.userMessage,
+        ),
+      );
       return Result.err(error);
     }
   }
@@ -237,10 +233,12 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       return const Result.ok(null);
     } catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withEngineStatus(
-        EngineStatus.error,
-        error: error.userMessage,
-      ));
+      _updateState(
+        currentState.withEngineStatus(
+          EngineStatus.error,
+          error: error.userMessage,
+        ),
+      );
       return Result.err(error);
     }
   }
@@ -268,12 +266,16 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   // === Script Operations ===
 
   @override
-  Future<Result<ScriptValidationResult>> validateScript(String scriptPath) async {
+  Future<Result<ScriptValidationResult>> validateScript(
+    String scriptPath,
+  ) async {
     _checkDisposed();
 
     try {
       // Update state to validating
-      _updateState(currentState.withValidationStatus(ValidationStatus.validating));
+      _updateState(
+        currentState.withValidationStatus(ValidationStatus.validating),
+      );
 
       // Step 1: Load script content
       final content = await _services.scriptFileService.loadScript(scriptPath);
@@ -281,12 +283,15 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         final error = FacadeError.operationFailed(
           'validateScript',
           'Script file not found or cannot be read',
-          userMessage: 'Could not read the script file. Please check the file path.',
+          userMessage:
+              'Could not read the script file. Please check the file path.',
         );
-        _updateState(currentState.withValidationStatus(
-          ValidationStatus.none,
-          error: error.userMessage,
-        ));
+        _updateState(
+          currentState.withValidationStatus(
+            ValidationStatus.none,
+            error: error.userMessage,
+          ),
+        );
         return Result.err(error);
       }
 
@@ -297,20 +302,24 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       final facadeResult = ScriptValidationResult(
         isValid: validationResult.isValid,
         errors: validationResult.errors
-            .map((e) => ValidationIssue(
-                  message: e.message,
-                  line: e.location?.line,
-                  column: e.location?.column,
-                  severity: IssueSeverity.error,
-                ))
+            .map(
+              (e) => ValidationIssue(
+                message: e.message,
+                line: e.location?.line,
+                column: e.location?.column,
+                severity: IssueSeverity.error,
+              ),
+            )
             .toList(),
         warnings: validationResult.warnings
-            .map((w) => ValidationIssue(
-                  message: w.message,
-                  line: w.location?.line,
-                  column: w.location?.column,
-                  severity: IssueSeverity.warning,
-                ))
+            .map(
+              (w) => ValidationIssue(
+                message: w.message,
+                line: w.location?.line,
+                column: w.location?.column,
+                severity: IssueSeverity.warning,
+              ),
+            )
             .toList(),
         suggestions: validationResult.errors
             .where((e) => e.hasSuggestions)
@@ -321,33 +330,41 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       // Step 4: Update validation state based on result
       if (validationResult.isValid) {
         if (validationResult.hasWarnings) {
-          _updateState(currentState.withValidationStatus(
-            ValidationStatus.validWithWarnings,
-            errorCount: 0,
-            warningCount: validationResult.warnings.length,
-          ));
+          _updateState(
+            currentState.withValidationStatus(
+              ValidationStatus.validWithWarnings,
+              errorCount: 0,
+              warningCount: validationResult.warnings.length,
+            ),
+          );
         } else {
-          _updateState(currentState.withValidationStatus(
-            ValidationStatus.valid,
-            errorCount: 0,
-            warningCount: 0,
-          ));
+          _updateState(
+            currentState.withValidationStatus(
+              ValidationStatus.valid,
+              errorCount: 0,
+              warningCount: 0,
+            ),
+          );
         }
       } else {
-        _updateState(currentState.withValidationStatus(
-          ValidationStatus.invalid,
-          errorCount: validationResult.errors.length,
-          warningCount: validationResult.warnings.length,
-        ));
+        _updateState(
+          currentState.withValidationStatus(
+            ValidationStatus.invalid,
+            errorCount: validationResult.errors.length,
+            warningCount: validationResult.warnings.length,
+          ),
+        );
       }
 
       return Result.ok(facadeResult);
     } catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withValidationStatus(
-        ValidationStatus.none,
-        error: error.userMessage,
-      ));
+      _updateState(
+        currentState.withValidationStatus(
+          ValidationStatus.none,
+          error: error.userMessage,
+        ),
+      );
       return Result.err(error);
     }
   }
@@ -380,13 +397,17 @@ class KeyrxFacadeImpl implements KeyrxFacade {
     _checkDisposed();
 
     try {
-      final result = await _services.scriptFileService.saveScript(path, content);
+      final result = await _services.scriptFileService.saveScript(
+        path,
+        content,
+      );
 
       if (!result.success) {
         final error = FacadeError.operationFailed(
           'saveScript',
           result.errorMessage ?? 'Unknown error',
-          userMessage: 'Failed to save the script. ${result.errorMessage ?? "Please try again."}',
+          userMessage:
+              'Failed to save the script. ${result.errorMessage ?? "Please try again."}',
         );
         return Result.err(error);
       }
@@ -423,10 +444,12 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       return Result.ok(devices);
     } catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withDeviceStatus(
-        DeviceStatus.error,
-        error: error.userMessage,
-      ));
+      _updateState(
+        currentState.withDeviceStatus(
+          DeviceStatus.error,
+          error: error.userMessage,
+        ),
+      );
       return Result.err(error);
     }
   }
@@ -437,10 +460,12 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
     try {
       // Update state to selected
-      _updateState(currentState.withDeviceStatus(
-        DeviceStatus.selected,
-        devicePath: devicePath,
-      ));
+      _updateState(
+        currentState.withDeviceStatus(
+          DeviceStatus.selected,
+          devicePath: devicePath,
+        ),
+      );
 
       // Select the device using device service
       final result = await _services.deviceService.selectDevice(devicePath);
@@ -449,123 +474,35 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         final error = FacadeError.operationFailed(
           'selectDevice',
           result.errorMessage ?? 'Unknown error',
-          userMessage: 'Failed to select device. ${result.errorMessage ?? "Please try again."}',
+          userMessage:
+              'Failed to select device. ${result.errorMessage ?? "Please try again."}',
         );
-        _updateState(currentState.withDeviceStatus(
-          DeviceStatus.error,
-          error: error.userMessage,
-        ));
+        _updateState(
+          currentState.withDeviceStatus(
+            DeviceStatus.error,
+            error: error.userMessage,
+          ),
+        );
         return Result.err(error);
       }
 
       // Update state to connected
-      _updateState(currentState.withDeviceStatus(
-        DeviceStatus.connected,
-        devicePath: devicePath,
-      ));
+      _updateState(
+        currentState.withDeviceStatus(
+          DeviceStatus.connected,
+          devicePath: devicePath,
+        ),
+      );
 
       return const Result.ok(null);
     } catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withDeviceStatus(
-        DeviceStatus.error,
-        error: error.userMessage,
-      ));
-      return Result.err(error);
-    }
-  }
-
-  @override
-  Future<Result<void>> startDiscovery({
-    required KeyboardDevice device,
-    required int rows,
-    required List<int> colsPerRow,
-  }) async {
-    _checkDisposed();
-
-    try {
-      // Update state to starting
-      _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.starting));
-
-      // Build device ID from vendorId:productId in hex format
-      final deviceId = '${device.vendorId.toRadixString(16)}:${device.productId.toRadixString(16)}';
-
-      // Start discovery using the bridge
-      final result = _services.bridge.startDiscovery(deviceId, rows, colsPerRow);
-
-      if (result.hasError) {
-        final error = FacadeError.operationFailed(
-          'startDiscovery',
-          result.errorMessage ?? 'Unknown error',
-          userMessage: 'Failed to start discovery. ${result.errorMessage ?? "Please try again."}',
-        );
-        _updateState(currentState.withDiscoveryStatus(
-          DiscoveryStatus.error,
+      _updateState(
+        currentState.withDeviceStatus(
+          DeviceStatus.error,
           error: error.userMessage,
-        ));
-        return Result.err(error);
-      }
-
-      // Update state to active
-      _updateState(currentState.withDiscoveryStatus(
-        DiscoveryStatus.active,
-        deviceCount: result.totalKeys,
-      ));
-
-      return const Result.ok(null);
-    } catch (e) {
-      final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withDiscoveryStatus(
-        DiscoveryStatus.error,
-        error: error.userMessage,
-      ));
-      return Result.err(error);
-    }
-  }
-
-  @override
-  Future<Result<void>> cancelDiscovery() async {
-    _checkDisposed();
-
-    try {
-      // Check if discovery is active
-      if (!currentState.isDiscovering) {
-        // No discovery active, nothing to cancel
-        return const Result.ok(null);
-      }
-
-      // Cancel discovery using the bridge
-      final result = _services.bridge.cancelDiscovery();
-
-      if (result == -1) {
-        // No active discovery session (shouldn't happen due to state check)
-        _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.idle));
-        return const Result.ok(null);
-      }
-
-      if (result != 0) {
-        final error = FacadeError.operationFailed(
-          'cancelDiscovery',
-          'Discovery cancellation returned error code: $result',
-          userMessage: 'Failed to cancel discovery. Please try again.',
-        );
-        _updateState(currentState.withDiscoveryStatus(
-          DiscoveryStatus.error,
-          error: error.userMessage,
-        ));
-        return Result.err(error);
-      }
-
-      // Update state to cancelled
-      _updateState(currentState.withDiscoveryStatus(DiscoveryStatus.cancelled));
-
-      return const Result.ok(null);
-    } catch (e) {
-      final error = FacadeError.from(e, _services.errorTranslator);
-      _updateState(currentState.withDiscoveryStatus(
-        DiscoveryStatus.error,
-        error: error.userMessage,
-      ));
+        ),
+      );
       return Result.err(error);
     }
   }
@@ -573,7 +510,9 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   // === Testing Operations ===
 
   @override
-  Future<Result<TestDiscoveryServiceResult>> discoverTests(String scriptPath) async {
+  Future<Result<TestDiscoveryServiceResult>> discoverTests(
+    String scriptPath,
+  ) async {
     _checkDisposed();
 
     try {
@@ -585,7 +524,8 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         final error = FacadeError.operationFailed(
           'discoverTests',
           result.errorMessage ?? 'Unknown error',
-          userMessage: 'Failed to discover tests. ${result.errorMessage ?? "Please check the script."}',
+          userMessage:
+              'Failed to discover tests. ${result.errorMessage ?? "Please check the script."}',
         );
         return Result.err(error);
       }
@@ -616,7 +556,8 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         final error = FacadeError.operationFailed(
           'runTests',
           result.errorMessage ?? 'Unknown error',
-          userMessage: 'Failed to run tests. ${result.errorMessage ?? "Please check the script."}',
+          userMessage:
+              'Failed to run tests. ${result.errorMessage ?? "Please check the script."}',
         );
         return Result.err(error);
       }

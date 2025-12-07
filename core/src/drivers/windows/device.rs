@@ -42,7 +42,14 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
     }
 
     if device_count == 0 {
-        return Ok(vec![]);
+        tracing::warn!("GetRawInputDeviceList returned 0 devices");
+        return Ok(vec![DeviceInfo::new(
+            PathBuf::from("System#Keyboard"),
+            "System Keyboard (Fallback)".to_string(),
+            0,
+            0,
+            true,
+        )]);
     }
 
     let mut devices = vec![RAWINPUTDEVICELIST::default(); device_count as usize];
@@ -92,6 +99,7 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
         };
 
         if bytes_copied == u32::MAX || bytes_copied == 0 {
+            tracing::warn!("GetRawInputDeviceInfoW failed or returned 0 bytes");
             continue;
         }
 
@@ -125,6 +133,18 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
             name,
             vendor_id,
             product_id,
+            true,
+        ));
+    }
+
+    // If no devices found after filtering, add fallback
+    if result.is_empty() {
+        tracing::warn!("No keyboards found after filtering, adding fallback");
+        result.push(DeviceInfo::new(
+            PathBuf::from("System#Keyboard"),
+            "System Keyboard (Fallback)".to_string(),
+            0,
+            0,
             true,
         ));
     }

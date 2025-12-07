@@ -64,46 +64,38 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
     when(() => mock.currentState).thenReturn(FacadeState.initial());
 
     // Engine operations
-    when(() => mock.startEngine(any()))
-        .thenAnswer((_) async => const Result.ok(null));
-    when(() => mock.stopEngine())
-        .thenAnswer((_) async => const Result.ok(null));
-    when(() => mock.getEngineStatus())
-        .thenAnswer((_) async => const Result.ok(EngineStatus.uninitialized));
+    when(
+      () => mock.startEngine(any()),
+    ).thenAnswer((_) async => const Result.ok(null));
+    when(
+      () => mock.stopEngine(),
+    ).thenAnswer((_) async => const Result.ok(null));
+    when(
+      () => mock.getEngineStatus(),
+    ).thenAnswer((_) async => const Result.ok(EngineStatus.uninitialized));
 
     // Script operations
     when(() => mock.validateScript(any())).thenAnswer(
       (_) async => const Result.ok(
-        ScriptValidationResult(
-          isValid: true,
-          errors: [],
-          warnings: [],
-        ),
+        ScriptValidationResult(isValid: true, errors: [], warnings: []),
       ),
     );
-    when(() => mock.loadScriptContent(any()))
-        .thenAnswer((_) async => const Result.ok('// Empty script'));
-    when(() => mock.saveScript(any(), any()))
-        .thenAnswer((_) async => const Result.ok(null));
+    when(
+      () => mock.loadScriptContent(any()),
+    ).thenAnswer((_) async => const Result.ok('// Empty script'));
+    when(
+      () => mock.saveScript(any(), any()),
+    ).thenAnswer((_) async => const Result.ok(null));
 
     // Device operations
-    when(() => mock.listDevices())
-        .thenAnswer((_) async => const Result.ok([]));
-    when(() => mock.selectDevice(any()))
-        .thenAnswer((_) async => const Result.ok(null));
-    when(() => mock.startDiscovery(
-          device: any(named: 'device'),
-          rows: any(named: 'rows'),
-          colsPerRow: any(named: 'colsPerRow'),
-        )).thenAnswer((_) async => const Result.ok(null));
-    when(() => mock.cancelDiscovery())
-        .thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.listDevices()).thenAnswer((_) async => const Result.ok([]));
+    when(
+      () => mock.selectDevice(any()),
+    ).thenAnswer((_) async => const Result.ok(null));
 
     // Test operations
     when(() => mock.discoverTests(any())).thenAnswer(
-      (_) async => const Result.ok(
-        TestDiscoveryServiceResult(tests: []),
-      ),
+      (_) async => const Result.ok(TestDiscoveryServiceResult(tests: [])),
     );
     when(() => mock.runTests(any(), filter: any(named: 'filter'))).thenAnswer(
       (_) async => const Result.ok(
@@ -116,8 +108,9 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
         ),
       ),
     );
-    when(() => mock.cancelTests())
-        .thenAnswer((_) async => const Result.ok(null));
+    when(
+      () => mock.cancelTests(),
+    ).thenAnswer((_) async => const Result.ok(null));
 
     // Lifecycle
     when(() => mock.dispose()).thenAnswer((_) async {

@@ -97,6 +97,8 @@ class KeyrxBridge
         BridgeValidationMixin,
         DeviceRegistryFFIMixin,
         ProfileRegistryFFIMixin {
+  static const int expectedProtocolVersion = 1;
+
   static KeyrxBridge? _currentInstance;
 
   KeyrxBindings? _bindings;
@@ -125,10 +127,37 @@ class KeyrxBridge
       final lib = BridgeCoreMixin.loadLibrary();
       final bindings = KeyrxBindings(lib);
       final bridge = KeyrxBridge._(bindings: bindings);
-      bridge._initRevolutionaryRuntime();
+
+      // Perform handshake first to ensure binary compatibility
+      bridge._checkProtocolVersion();
+
+      if (bridge.loadFailure == null) {
+        bridge._initRevolutionaryRuntime();
+      }
       return bridge;
     } catch (e) {
       return KeyrxBridge._(loadFailure: e);
+    }
+  }
+
+  void _checkProtocolVersion() {
+    final versionFn = _bindings?.protocolVersion;
+    // If the function is missing, it implies an old binary (pre-versioning).
+    if (versionFn == null) {
+      _loadFailure ??= Exception(
+        'Native library is outdated (missing protocol version check). '
+        'Please run "flutter clean" and rebuild.',
+      );
+      return;
+    }
+
+    final version = versionFn();
+    if (version != expectedProtocolVersion) {
+      _loadFailure ??= Exception(
+        'Native library protocol mismatch. '
+        'UI expects v$expectedProtocolVersion, Core is v$version. '
+        'Please run "flutter clean" and rebuild.',
+      );
     }
   }
 
@@ -214,25 +243,24 @@ class KeyrxBridge
   }
 
   void _setupStateStream() {
-    if (_bindings?.onState == null) {
+    // onState is a required binding now, but _bindings itself is nullable
+    if (_bindings == null) {
       return;
     }
 
     _stateController ??= StreamController<BridgeStateUpdate>.broadcast();
-    _bindings!.onState!(
-      Pointer.fromFunction<KeyrxStateCallbackNative>(_handleState),
-    );
+    _bindings!.onState(Pointer.fromFunction<EventCallbackNative>(_handleState));
   }
 
   /// Ask the native side to resend the next state update as a full snapshot.
   void requestFullStateResubscribe() {
-    if (_bindings?.onState == null || _stateController?.isClosed == true) {
+    if (_bindings == null || _stateController?.isClosed == true) {
       return;
     }
 
     try {
-      _bindings!.onState!(
-        Pointer.fromFunction<KeyrxStateCallbackNative>(_handleState),
+      _bindings!.onState(
+        Pointer.fromFunction<EventCallbackNative>(_handleState),
       );
     } catch (_) {
       // Ignore resubscribe failures; consumer will retry on next event.

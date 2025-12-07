@@ -29,15 +29,10 @@ class KeyboardDevice {
 
 /// Result of listing keyboard devices.
 class DeviceListResult {
-  const DeviceListResult({
-    required this.devices,
-    this.errorMessage,
-  });
+  const DeviceListResult({required this.devices, this.errorMessage});
 
-  factory DeviceListResult.error(String message) => DeviceListResult(
-        devices: const [],
-        errorMessage: message,
-      );
+  factory DeviceListResult.error(String message) =>
+      DeviceListResult(devices: const [], errorMessage: message);
 
   factory DeviceListResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -55,18 +50,21 @@ class DeviceListResult {
         return DeviceListResult.error('invalid device list payload');
       }
 
-      final devices = decoded.map((entry) {
-        if (entry is! Map<String, dynamic>) {
-          return null;
-        }
-        return KeyboardDevice(
-          name: entry['name']?.toString() ?? 'Unknown',
-          vendorId: (entry['vendorId'] as num?)?.toInt() ?? 0,
-          productId: (entry['productId'] as num?)?.toInt() ?? 0,
-          path: entry['path']?.toString() ?? '',
-          hasProfile: entry['hasProfile'] as bool? ?? false,
-        );
-      }).whereType<KeyboardDevice>().toList();
+      final devices = decoded
+          .map((entry) {
+            if (entry is! Map<String, dynamic>) {
+              return null;
+            }
+            return KeyboardDevice(
+              name: entry['name']?.toString() ?? 'Unknown',
+              vendorId: (entry['vendorId'] as num?)?.toInt() ?? 0,
+              productId: (entry['productId'] as num?)?.toInt() ?? 0,
+              path: entry['path']?.toString() ?? '',
+              hasProfile: entry['hasProfile'] as bool? ?? false,
+            );
+          })
+          .whereType<KeyboardDevice>()
+          .toList();
 
       return DeviceListResult(devices: devices);
     } catch (e) {
@@ -88,16 +86,15 @@ class DiscoveryStartResult {
     this.errorMessage,
   });
 
-  factory DiscoveryStartResult.error(String message) => DiscoveryStartResult(
-        success: false,
-        errorMessage: message,
-      );
+  factory DiscoveryStartResult.error(String message) =>
+      DiscoveryStartResult(success: false, errorMessage: message);
 
   factory DiscoveryStartResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return DiscoveryStartResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -180,120 +177,6 @@ mixin BridgeDiscoveryMixin {
     }
   }
 
-  /// Start a discovery session for a device.
-  ///
-  /// [deviceId] - Device identifier as "vendorId:productId" (hex format)
-  /// [rows] - Number of rows in the keyboard layout
-  /// [colsPerRow] - Number of columns for each row
-  DiscoveryStartResult startDiscovery(
-    String deviceId,
-    int rows,
-    List<int> colsPerRow,
-  ) {
-    final discoveryFn = bindings?.startDiscovery;
-    if (discoveryFn == null) {
-      return DiscoveryStartResult.error('startDiscovery not available');
-    }
-
-    final devicePtr = deviceId.toNativeUtf8();
-    final colsJson = json.encode(colsPerRow);
-    final colsPtr = colsJson.toNativeUtf8();
-    Pointer<Char>? ptr;
-    try {
-      ptr = discoveryFn(devicePtr.cast<Char>(), rows, colsPtr.cast<Char>());
-      if (ptr == nullptr) {
-        return DiscoveryStartResult.error('startDiscovery returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
-      return DiscoveryStartResult.parse(raw);
-    } catch (e) {
-      return DiscoveryStartResult.error('$e');
-    } finally {
-      calloc.free(devicePtr);
-      calloc.free(colsPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
-    }
-  }
-
-  /// Skip the current key in the discovery session.
-  ///
-  /// Returns true if successful.
-  bool skipDiscoveryKey() {
-    try {
-      final skipFn = bindings?.skipDiscoveryKey;
-      if (skipFn == null) return false;
-
-      final result = skipFn();
-      // 0 = success, 1 = completed (also success), -1 = no session
-      return result >= 0;
-    } catch (e) {
-      // Symbol lookup failed (outdated DLL)
-      return false;
-    }
-  }
-
-  /// Undo the last mapped key in the discovery session.
-  ///
-  /// Returns true if successful.
-  bool undoDiscoveryMapping() {
-    try {
-      final undoFn = bindings?.undoDiscoveryMapping;
-      if (undoFn == null) return false;
-
-      final result = undoFn();
-      return result >= 0;
-    } catch (e) {
-      // Symbol lookup failed (outdated DLL)
-      return false;
-    }
-  }
-
-  /// Cancel an ongoing discovery session.
-  ///
-  /// Returns 0 on success, -1 if no discovery is active.
-  int cancelDiscovery() {
-    final cancelFn = bindings?.cancelDiscovery;
-    if (cancelFn == null) return -1;
-
-    try {
-      return cancelFn();
-    } catch (e) {
-      return -1;
-    }
-  }
-
-  /// Process a discovery event.
-  ///
-  /// Returns:
-  /// - 0: Success
-  /// - 1: Discovery complete
-  /// - -1: No active session
-  /// - -2: Cancelled
-  int processDiscoveryEvent(int scanCode, bool pressed, int timestampUs) {
-    final processFn = bindings?.processDiscoveryEvent;
-    if (processFn == null) return -1;
-
-    try {
-      Pointer<Char>? resultPtr = processFn(scanCode, pressed, timestampUs);
-      if (resultPtr == nullptr) return -1;
-
-      final resultStr = resultPtr.cast<Utf8>().toDartString();
-      try {
-        bindings?.freeString(resultPtr);
-      } catch (_) {}
-
-      if (resultStr.startsWith('ok:')) {
-        final payload = resultStr.substring(3).trim();
-        return int.tryParse(payload) ?? 0;
-      }
-      return -1;
-    } catch (e) {
-      return -1;
-    }
-  }
+  // NOTE: Legacy discovery methods (startDiscovery, etc.) have been removed.
+  // Use DeviceRegistryService for device management.
 }

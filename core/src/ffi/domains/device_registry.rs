@@ -226,13 +226,24 @@ unsafe fn parse_optional_c_string(ptr: *const c_char, name: &str) -> FfiResult<O
 /// This function catches panics and returns an error string if a panic occurs.
 #[no_mangle]
 pub extern "C" fn keyrx_device_registry_list_devices() -> *mut c_char {
+    println!("keyrx_device_registry_list_devices called");
     std::panic::catch_unwind(|| {
         let result: FfiResult<Vec<FfiDeviceState>> = with_revolutionary_runtime(|runtime| {
+            println!("keyrx_device_registry_list_devices: runtime acquired");
             block_on_ffi(list_devices(runtime.device_registry()))
         });
+        if let Ok(ref res) = result {
+            println!(
+                "keyrx_device_registry_list_devices: returning {} devices",
+                res.len()
+            );
+        } else {
+            println!("keyrx_device_registry_list_devices: returning error");
+        }
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        println!("keyrx_device_registry_list_devices: PANIC caught");
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_device_registry_list_devices",
         )))

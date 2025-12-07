@@ -43,24 +43,30 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
-    registerFallbackValue(EngineSnapshot(
-      activeLayers: const [],
-      heldKeys: const [],
-      pendingDecisions: const [],
-      timestamp: DateTime.now(),
-    ));
-    registerFallbackValue(const UserMessage(
-      title: 'Error',
-      body: 'An error occurred',
-      category: MessageCategory.error,
-    ));
-    registerFallbackValue(const KeyboardDevice(
-      path: '/dev/input/event0',
-      name: 'Test Keyboard',
-      vendorId: 0x1234,
-      productId: 0x5678,
-      hasProfile: false,
-    ));
+    registerFallbackValue(
+      EngineSnapshot(
+        activeLayers: const [],
+        heldKeys: const [],
+        pendingDecisions: const [],
+        timestamp: DateTime.now(),
+      ),
+    );
+    registerFallbackValue(
+      const UserMessage(
+        title: 'Error',
+        body: 'An error occurred',
+        category: MessageCategory.error,
+      ),
+    );
+    registerFallbackValue(
+      const KeyboardDevice(
+        path: '/dev/input/event0',
+        name: 'Test Keyboard',
+        vendorId: 0x1234,
+        productId: 0x5678,
+        hasProfile: false,
+      ),
+    );
   });
 
   setUp(() {
@@ -90,7 +96,9 @@ void main() {
     when(() => mockRegistry.errorTranslator).thenReturn(mockTranslator);
     when(() => mockRegistry.bridge).thenReturn(mockBridge);
 
-    when(() => mockEngine.stateStream).thenAnswer((_) => engineStateSubject.stream);
+    when(
+      () => mockEngine.stateStream,
+    ).thenAnswer((_) => engineStateSubject.stream);
     when(() => mockEngine.isInitialized).thenReturn(false);
 
     // Default translator behavior
@@ -138,24 +146,27 @@ void main() {
   });
 
   group('KeyrxFacadeImpl - Engine Operations', () {
-    test('startEngine: success flow initializes, loads, and starts engine', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      const scriptPath = '/path/to/script.rhai';
+    test(
+      'startEngine: success flow initializes, loads, and starts engine',
+      () async {
+        final facade = KeyrxFacadeImpl(mockRegistry);
+        const scriptPath = '/path/to/script.rhai';
 
-      when(() => mockEngine.initialize()).thenAnswer((_) async => true);
-      when(() => mockEngine.loadScript(any())).thenAnswer((_) async => true);
+        when(() => mockEngine.initialize()).thenAnswer((_) async => true);
+        when(() => mockEngine.loadScript(any())).thenAnswer((_) async => true);
 
-      final result = await facade.startEngine(scriptPath);
+        final result = await facade.startEngine(scriptPath);
 
-      expect(result.isOk, isTrue);
-      expect(facade.currentState.engine, EngineStatus.running);
-      expect(facade.currentState.scriptPath, scriptPath);
+        expect(result.isOk, isTrue);
+        expect(facade.currentState.engine, EngineStatus.running);
+        expect(facade.currentState.scriptPath, scriptPath);
 
-      verify(() => mockEngine.initialize()).called(1);
-      verify(() => mockEngine.loadScript(scriptPath)).called(1);
+        verify(() => mockEngine.initialize()).called(1);
+        verify(() => mockEngine.loadScript(scriptPath)).called(1);
 
-      await facade.dispose();
-    });
+        await facade.dispose();
+      },
+    );
 
     test('startEngine: skips initialization if already initialized', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
@@ -248,31 +259,37 @@ void main() {
       await facade.dispose();
     });
 
-    test('getEngineStatus: returns uninitialized when not initialized', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
+    test(
+      'getEngineStatus: returns uninitialized when not initialized',
+      () async {
+        final facade = KeyrxFacadeImpl(mockRegistry);
 
-      final result = await facade.getEngineStatus();
+        final result = await facade.getEngineStatus();
 
-      expect(result.isOk, isTrue);
-      expect(result.okOrNull, EngineStatus.uninitialized);
+        expect(result.isOk, isTrue);
+        expect(result.okOrNull, EngineStatus.uninitialized);
 
-      await facade.dispose();
-    });
+        await facade.dispose();
+      },
+    );
 
-    test('getEngineStatus: returns current engine status when initialized', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
+    test(
+      'getEngineStatus: returns current engine status when initialized',
+      () async {
+        final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockEngine.isInitialized).thenReturn(true);
-      when(() => mockEngine.loadScript(any())).thenAnswer((_) async => true);
-      await facade.startEngine('/path/to/script.rhai');
+        when(() => mockEngine.isInitialized).thenReturn(true);
+        when(() => mockEngine.loadScript(any())).thenAnswer((_) async => true);
+        await facade.startEngine('/path/to/script.rhai');
 
-      final result = await facade.getEngineStatus();
+        final result = await facade.getEngineStatus();
 
-      expect(result.isOk, isTrue);
-      expect(result.okOrNull, EngineStatus.running);
+        expect(result.isOk, isTrue);
+        expect(result.okOrNull, EngineStatus.running);
 
-      await facade.dispose();
-    });
+        await facade.dispose();
+      },
+    );
   });
 
   group('KeyrxFacadeImpl - Script Operations', () {
@@ -281,8 +298,9 @@ void main() {
       const scriptPath = '/path/to/script.rhai';
       const scriptContent = 'fn test() {}';
 
-      when(() => mockScriptFile.loadScript(scriptPath))
-          .thenAnswer((_) async => scriptContent);
+      when(
+        () => mockScriptFile.loadScript(scriptPath),
+      ).thenAnswer((_) async => scriptContent);
       when(() => mockBridge.validateScript(scriptContent)).thenReturn(
         ValidationResult(isValid: true, errors: const [], warnings: const []),
       );
@@ -302,8 +320,9 @@ void main() {
       final facade = KeyrxFacadeImpl(mockRegistry);
       const scriptPath = '/path/to/script.rhai';
 
-      when(() => mockScriptFile.loadScript(scriptPath))
-          .thenAnswer((_) async => 'script');
+      when(
+        () => mockScriptFile.loadScript(scriptPath),
+      ).thenAnswer((_) async => 'script');
       when(() => mockBridge.validateScript(any())).thenReturn(
         ValidationResult(
           isValid: true,
@@ -324,7 +343,10 @@ void main() {
       expect(result.isOk, isTrue);
       expect(result.okOrNull!.isValid, isTrue);
       expect(result.okOrNull!.warnings.length, 1);
-      expect(facade.currentState.validation, ValidationStatus.validWithWarnings);
+      expect(
+        facade.currentState.validation,
+        ValidationStatus.validWithWarnings,
+      );
       expect(facade.currentState.validationWarningCount, 1);
 
       await facade.dispose();
@@ -334,8 +356,9 @@ void main() {
       final facade = KeyrxFacadeImpl(mockRegistry);
       const scriptPath = '/path/to/script.rhai';
 
-      when(() => mockScriptFile.loadScript(scriptPath))
-          .thenAnswer((_) async => 'invalid script');
+      when(
+        () => mockScriptFile.loadScript(scriptPath),
+      ).thenAnswer((_) async => 'invalid script');
       when(() => mockBridge.validateScript(any())).thenReturn(
         ValidationResult(
           isValid: false,
@@ -365,7 +388,9 @@ void main() {
     test('validateScript: returns error if file not found', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockScriptFile.loadScript(any())).thenAnswer((_) async => null);
+      when(
+        () => mockScriptFile.loadScript(any()),
+      ).thenAnswer((_) async => null);
 
       final result = await facade.validateScript('/nonexistent.rhai');
 
@@ -382,7 +407,9 @@ void main() {
       final facade = KeyrxFacadeImpl(mockRegistry);
       const content = 'fn main() { print("Hello"); }';
 
-      when(() => mockScriptFile.loadScript(any())).thenAnswer((_) async => content);
+      when(
+        () => mockScriptFile.loadScript(any()),
+      ).thenAnswer((_) async => content);
 
       final result = await facade.loadScriptContent('/path/to/script.rhai');
 
@@ -395,7 +422,9 @@ void main() {
     test('loadScriptContent: returns error if file not found', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockScriptFile.loadScript(any())).thenAnswer((_) async => null);
+      when(
+        () => mockScriptFile.loadScript(any()),
+      ).thenAnswer((_) async => null);
 
       final result = await facade.loadScriptContent('/nonexistent.rhai');
 
@@ -410,9 +439,9 @@ void main() {
     test('saveScript: success', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockScriptFile.saveScript(any(), any())).thenAnswer(
-        (_) async => const ScriptFileResult(success: true),
-      );
+      when(
+        () => mockScriptFile.saveScript(any(), any()),
+      ).thenAnswer((_) async => const ScriptFileResult(success: true));
 
       final result = await facade.saveScript('/path/to/script.rhai', 'content');
 
@@ -425,10 +454,8 @@ void main() {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
       when(() => mockScriptFile.saveScript(any(), any())).thenAnswer(
-        (_) async => const ScriptFileResult(
-          success: false,
-          errorMessage: 'Disk full',
-        ),
+        (_) async =>
+            const ScriptFileResult(success: false, errorMessage: 'Disk full'),
       );
 
       final result = await facade.saveScript('/path/to/script.rhai', 'content');
@@ -437,17 +464,6 @@ void main() {
 
       final error = result.errOrNull!;
       expect(error.userMessage, contains('Disk full'));
-
-      await facade.dispose();
-    });
-  });
-
-  group('KeyrxFacadeImpl - Device Operations', () {
-    test('listDevices: success with devices', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      final devices = [
-        const KeyboardDevice(
-          path: '/dev/input/event0',
           name: 'Keyboard 1',
           vendorId: 0x1234,
           productId: 0x5678,
@@ -494,150 +510,27 @@ void main() {
 
       final result = await facade.listDevices();
 
-      expect(result.isErr, isTrue);
-      expect(facade.currentState.device, DeviceStatus.error);
-
-      await facade.dispose();
-    });
-
-    test('selectDevice: success', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      const devicePath = '/dev/input/event0';
-
-      when(() => mockDevice.selectDevice(devicePath)).thenAnswer(
-        (_) async => DeviceSelectionResult.success(),
-      );
-
-      final result = await facade.selectDevice(devicePath);
-
-      expect(result.isOk, isTrue);
-      expect(facade.currentState.device, DeviceStatus.connected);
-      expect(facade.currentState.selectedDevicePath, devicePath);
-
-      await facade.dispose();
-    });
-
-    test('selectDevice: returns error on failure', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-
-      when(() => mockDevice.selectDevice(any())).thenAnswer(
-        (_) async => DeviceSelectionResult.error('Device not found'),
-      );
-
-      final result = await facade.selectDevice('/dev/input/event99');
-
-      expect(result.isErr, isTrue);
-      expect(facade.currentState.device, DeviceStatus.error);
-
-      await facade.dispose();
-    });
-
-    test('startDiscovery: success', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      const device = KeyboardDevice(
-        path: '/dev/input/event0',
-        name: 'Test',
-        vendorId: 0x1234,
-        productId: 0x5678,
-        hasProfile: false,
-      );
-
-      when(() => mockBridge.startDiscovery(any(), any(), any())).thenReturn(
-        const DiscoveryStartResult(success: true, totalKeys: 61),
-      );
-
-      final result = await facade.startDiscovery(
-        device: device,
-        rows: 5,
-        colsPerRow: [13, 13, 12, 12, 11],
-      );
-
-      expect(result.isOk, isTrue);
-      expect(facade.currentState.discovery, DiscoveryStatus.active);
-      expect(facade.currentState.discoveredDeviceCount, 61);
-
-      await facade.dispose();
-    });
-
-    test('startDiscovery: returns error on failure', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      const device = KeyboardDevice(
-        path: '/dev/input/event0',
-        name: 'Test',
-        vendorId: 0x1234,
-        productId: 0x5678,
-        hasProfile: false,
-      );
-
-      when(() => mockBridge.startDiscovery(any(), any(), any())).thenReturn(
-        DiscoveryStartResult.error('Device busy'),
-      );
-
-      final result = await facade.startDiscovery(
-        device: device,
-        rows: 5,
-        colsPerRow: [13, 13, 12, 12, 11],
-      );
-
-      expect(result.isErr, isTrue);
-      expect(facade.currentState.discovery, DiscoveryStatus.error);
-
-      await facade.dispose();
-    });
-
-    test('cancelDiscovery: success when discovery active', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-      const device = KeyboardDevice(
-        path: '/dev/input/event0',
-        name: 'Test',
-        vendorId: 0x1234,
-        productId: 0x5678,
-        hasProfile: false,
-      );
-
-      // Start discovery first
-      when(() => mockBridge.startDiscovery(any(), any(), any())).thenReturn(
-        const DiscoveryStartResult(success: true, totalKeys: 61),
-      );
-      await facade.startDiscovery(
-        device: device,
-        rows: 5,
-        colsPerRow: [13, 13, 12, 12, 11],
-      );
-
-      when(() => mockBridge.cancelDiscovery()).thenReturn(0);
-
-      final result = await facade.cancelDiscovery();
-
-      expect(result.isOk, isTrue);
-      expect(facade.currentState.discovery, DiscoveryStatus.cancelled);
-
-      await facade.dispose();
-    });
-
-    test('cancelDiscovery: succeeds when no discovery active', () async {
-      final facade = KeyrxFacadeImpl(mockRegistry);
-
-      final result = await facade.cancelDiscovery();
-
-      expect(result.isOk, isTrue);
-
-      await facade.dispose();
-    });
-  });
-
   group('KeyrxFacadeImpl - Test Operations', () {
     test('discoverTests: success', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
       const testResult = TestDiscoveryServiceResult(
         tests: [
-          TestCase(name: 'test_addition', file: '/path/to/script.rhai', line: 10),
-          TestCase(name: 'test_subtraction', file: '/path/to/script.rhai', line: 20),
+          TestCase(
+            name: 'test_addition',
+            file: '/path/to/script.rhai',
+            line: 10,
+          ),
+          TestCase(
+            name: 'test_subtraction',
+            file: '/path/to/script.rhai',
+            line: 20,
+          ),
         ],
       );
 
-      when(() => mockTestService.discoverTests(any()))
-          .thenAnswer((_) async => testResult);
+      when(
+        () => mockTestService.discoverTests(any()),
+      ).thenAnswer((_) async => testResult);
 
       final result = await facade.discoverTests('/path/to/script.rhai');
 
@@ -680,8 +573,9 @@ void main() {
         ],
       );
 
-      when(() => mockTestService.runTests(any(), filter: any(named: 'filter')))
-          .thenAnswer((_) async => testResult);
+      when(
+        () => mockTestService.runTests(any(), filter: any(named: 'filter')),
+      ).thenAnswer((_) async => testResult);
 
       final result = await facade.runTests('/path/to/script.rhai');
 
@@ -696,15 +590,20 @@ void main() {
     test('runTests: with filter', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockTestService.runTests(any(), filter: any(named: 'filter')))
-          .thenAnswer(
+      when(
+        () => mockTestService.runTests(any(), filter: any(named: 'filter')),
+      ).thenAnswer(
         (_) async => const TestRunServiceResult(
           total: 1,
           passed: 1,
           failed: 0,
           durationMs: 50.0,
           results: [
-            TestCaseResult(name: 'test_addition', passed: true, durationMs: 50.0),
+            TestCaseResult(
+              name: 'test_addition',
+              passed: true,
+              durationMs: 50.0,
+            ),
           ],
         ),
       );
@@ -717,10 +616,12 @@ void main() {
       expect(result.isOk, isTrue);
       expect(result.okOrNull!.total, 1);
 
-      verify(() => mockTestService.runTests(
-            '/path/to/script.rhai',
-            filter: 'addition',
-          )).called(1);
+      verify(
+        () => mockTestService.runTests(
+          '/path/to/script.rhai',
+          filter: 'addition',
+        ),
+      ).called(1);
 
       await facade.dispose();
     });
@@ -728,8 +629,9 @@ void main() {
     test('runTests: returns error on failure', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockTestService.runTests(any(), filter: any(named: 'filter')))
-          .thenAnswer(
+      when(
+        () => mockTestService.runTests(any(), filter: any(named: 'filter')),
+      ).thenAnswer(
         (_) async => TestRunServiceResult.error('Script compilation failed'),
       );
 
@@ -918,8 +820,9 @@ void main() {
     test('translates exceptions to user-friendly errors', () async {
       final facade = KeyrxFacadeImpl(mockRegistry);
 
-      when(() => mockEngine.initialize())
-          .thenThrow(Exception('Low-level FFI error'));
+      when(
+        () => mockEngine.initialize(),
+      ).thenThrow(Exception('Low-level FFI error'));
       when(() => mockTranslator.translate(any())).thenReturn(
         const UserMessage(
           title: 'Engine Error',

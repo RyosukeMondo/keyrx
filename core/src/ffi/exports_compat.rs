@@ -68,7 +68,8 @@ unsafe fn cstr_to_str(ptr: *const c_char) -> Result<&'static str, i32> {
 
 #[no_mangle]
 pub extern "C" fn keyrx_list_devices() -> *mut c_char {
-    ffi_json(device::list_devices())
+    std::panic::catch_unwind(|| ffi_json(device::list_devices()))
+        .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_list_devices")))
 }
 
 /// # Safety
@@ -76,31 +77,35 @@ pub extern "C" fn keyrx_list_devices() -> *mut c_char {
 /// The `path` pointer must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_select_device(path: *const c_char) -> i32 {
-    let path = match cstr_to_str(path) {
-        Ok(s) => s,
-        Err(code) => return code,
-    };
+    std::panic::catch_unwind(|| {
+        let path = match cstr_to_str(path) {
+            Ok(s) => s,
+            Err(code) => return code,
+        };
 
-    let res = with_ctx(|ctx| {
-        ensure_domain::<DeviceFfi>(ctx)?;
-        device::select_device(ctx, path)
-    });
+        let res = with_ctx(|ctx| {
+            ensure_domain::<DeviceFfi>(ctx)?;
+            device::select_device(ctx, path)
+        });
 
-    match res {
-        Ok(_) => 0,
-        Err(err) => {
-            if err.code == "NOT_FOUND" {
-                -3
-            } else {
-                -4
+        match res {
+            Ok(_) => 0,
+            Err(err) => {
+                if err.code == "NOT_FOUND" {
+                    -3
+                } else {
+                    -4
+                }
             }
         }
-    }
+    })
+    .unwrap_or(-5) // -5 for panic
 }
 
 #[no_mangle]
 pub extern "C" fn keyrx_list_keys() -> *mut c_char {
-    ffi_json(device::list_keys())
+    std::panic::catch_unwind(|| ffi_json(device::list_keys()))
+        .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_list_keys")))
 }
 
 /// Get device profile for a specific device.
@@ -141,7 +146,8 @@ pub extern "C" fn keyrx_list_keys() -> *mut c_char {
 /// ```
 #[no_mangle]
 pub extern "C" fn keyrx_get_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
-    ffi_json(device::get_device_profile(vendor_id, product_id))
+    std::panic::catch_unwind(|| ffi_json(device::get_device_profile(vendor_id, product_id)))
+        .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_get_device_profile")))
 }
 
 /// Check if a device profile exists.
@@ -155,7 +161,8 @@ pub extern "C" fn keyrx_get_device_profile(vendor_id: u16, product_id: u16) -> *
 /// * `ok:false` if profile does not exist
 #[no_mangle]
 pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
-    ffi_json(device::has_device_profile(vendor_id, product_id))
+    std::panic::catch_unwind(|| ffi_json(device::has_device_profile(vendor_id, product_id)))
+        .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_has_device_profile")))
 }
 
 /// Save a device profile.
@@ -164,30 +171,22 @@ pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *
 /// `profile_json` must be a valid, non-null, nul-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_save_device_profile(profile_json: *const c_char) -> *mut c_char {
-    let json = match cstr_to_str(profile_json) {
-        Ok(s) => s,
-        Err(code) => return ffi_error(FfiError::invalid_utf8(format!("profile_json ({code})"))),
-    };
-    ffi_json(device::save_device_profile(json))
+    std::panic::catch_unwind(|| {
+        let json = match cstr_to_str(profile_json) {
+            Ok(s) => s,
+            Err(code) => {
+                return ffi_error(FfiError::invalid_utf8(format!("profile_json ({code})")))
+            }
+        };
+        ffi_json(device::save_device_profile(json))
+    })
+    .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_save_device_profile")))
 }
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
-// NOTE: keyrx_start_discovery is now exported directly from domains/discovery.rs
-// NOTE: keyrx_cancel_discovery is now exported directly from domains/discovery.rs
-
-#[no_mangle]
-pub extern "C" fn keyrx_process_discovery_event(
-    scan_code: u16,
-    pressed: bool,
-    timestamp_us: u64,
-) -> *mut c_char {
-    ffi_json(discovery::process_discovery_event(
-        scan_code,
-        pressed,
-        timestamp_us,
-    ))
-}
+// NOTE: Legacy discovery functions (start_discovery, cancel_discovery, process_event)
+// have been removed to enforce Single Source of Truth (SSOT) via DeviceRegistry.
 
 // ── Engine ───────────────────────────────────────────────────────────────────
 

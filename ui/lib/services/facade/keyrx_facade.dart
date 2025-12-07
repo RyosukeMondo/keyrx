@@ -70,12 +70,6 @@ abstract class KeyrxFacade {
   /// through a single subscription.
   Stream<FacadeState> get stateStream;
 
-  /// Stream of detailed discovery progress updates.
-  ///
-  /// Emits [DiscoveryProgress] events during an active discovery session.
-  /// This provides real-time feedback on which keys have been mapped.
-  Stream<DiscoveryProgress> get discoveryProgress;
-
   /// Current aggregated state snapshot.
   ///
   /// Returns the most recent [FacadeState] without subscribing to updates.
@@ -171,34 +165,6 @@ abstract class KeyrxFacade {
   /// - `Result.ok(void)` if device selected successfully
   /// - `Result.err(error)` if device not found or selection failed
   Future<Result<void>> selectDevice(String devicePath);
-
-  /// Start device key discovery process.
-  ///
-  /// Begins the interactive process of mapping physical keys to their
-  /// positions in the keyboard layout.
-  ///
-  /// [device] - The keyboard device to discover keys for
-  /// [rows] - Number of rows in the keyboard layout
-  /// [colsPerRow] - Number of columns in each row
-  ///
-  /// Returns:
-  /// - `Result.ok(void)` if discovery started
-  /// - `Result.err(error)` if device unavailable or discovery failed to start
-  Future<Result<void>> startDiscovery({
-    required KeyboardDevice device,
-    required int rows,
-    required List<int> colsPerRow,
-  });
-
-  /// Cancel the ongoing device discovery process.
-  ///
-  /// Stops discovery and cleans up resources. Safe to call even if
-  /// no discovery is in progress.
-  ///
-  /// Returns:
-  /// - `Result.ok(void)` if cancelled successfully or no discovery active
-  /// - `Result.err(error)` if cancellation encountered issues
-  Future<Result<void>> cancelDiscovery();
 
   // === Testing Operations ===
 
@@ -317,8 +283,8 @@ class ValidationIssue {
     final location = (line != null && column != null)
         ? 'Line $line, Col $column: '
         : (line != null)
-            ? 'Line $line: '
-            : '';
+        ? 'Line $line: '
+        : '';
     final severityStr = severity == IssueSeverity.error ? 'Error' : 'Warning';
     return '$severityStr: $location$message';
   }

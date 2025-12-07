@@ -9,6 +9,8 @@ import 'dart:typed_data';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
+import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
 import 'package:keyrx_ui/models/device_state.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
 import 'package:keyrx_ui/models/profile.dart';
@@ -54,14 +56,13 @@ class FakeTestService implements TestService {
   Future<TestRunServiceResult> runTests(
     String scriptPath, {
     String? filter,
-  }) async =>
-      const TestRunServiceResult(
-        total: 0,
-        passed: 0,
-        failed: 0,
-        durationMs: 0,
-        results: [],
-      );
+  }) async => const TestRunServiceResult(
+    total: 0,
+    passed: 0,
+    failed: 0,
+    durationMs: 0,
+    results: [],
+  );
 
   @override
   Future<void> dispose() async {}
@@ -186,22 +187,20 @@ class FakeBridge implements KeyrxBridge {
       const TestDiscoveryResult(tests: []);
 
   @override
-  TestRunResult runTests(String path, {String? filter}) =>
-      const TestRunResult(
-        total: 0,
-        passed: 0,
-        failed: 0,
-        durationMs: 0,
-        results: [],
-      );
+  TestRunResult runTests(String path, {String? filter}) => const TestRunResult(
+    total: 0,
+    passed: 0,
+    failed: 0,
+    durationMs: 0,
+    results: [],
+  );
 
   @override
   SimulationResult simulate(
     List<KeyInput> keys, {
     String? scriptPath,
     bool comboMode = false,
-  }) =>
-      const SimulationResult(mappings: [], activeLayers: [], pending: []);
+  }) => const SimulationResult(mappings: [], activeLayers: [], pending: []);
 
   @override
   SessionListResult listSessions(String dirPath) =>
@@ -223,15 +222,56 @@ class FakeBridge implements KeyrxBridge {
   DoctorResult runDoctor() => DoctorResult.error('Not implemented in fake');
 
   @override
-  DiscoveryStartResult startDiscovery(
-    String deviceId,
-    int rows,
-    List<int> colsPerRow,
-  ) =>
-      DiscoveryStartResult.error('Not implemented in fake');
+  void requestFullStateResubscribe() {}
 
   @override
-  int cancelDiscovery() => 0;
+  DeviceProfileResult getDeviceProfile(int vendorId, int productId) =>
+      DeviceProfileResult.error('Not implemented in fake');
+
+  @override
+  bool hasDeviceProfile(int vendorId, int productId) => false;
+
+  @override
+  bool saveDeviceProfile(String profileJson) => false;
+
+  @override
+  DeviceRegistryResult<List<DeviceState>> listRegisteredDevices() =>
+      DeviceRegistryResult.error('Not implemented in fake');
+
+  @override
+  DeviceRegistryResult<void> assignProfile(
+    String deviceKey,
+    String profileId,
+  ) => DeviceRegistryResult.error('Not implemented in fake');
+
+  @override
+  DeviceRegistryResult<void> setRemapEnabled(String deviceKey, bool enabled) =>
+      DeviceRegistryResult.error('Not implemented in fake');
+
+  @override
+  DeviceRegistryResult<void> setUserLabel(String deviceKey, String? label) =>
+      DeviceRegistryResult.error('Not implemented in fake');
+
+  @override
+  ProfileRegistryResult<List<String>> listProfiles() =>
+      ProfileRegistryResult.error('Not implemented in fake');
+
+  @override
+  ProfileRegistryResult<Profile> getProfile(String profileId) =>
+      ProfileRegistryResult.error('Not implemented in fake');
+
+  @override
+  ProfileRegistryResult<void> saveProfile(Profile profile) =>
+      ProfileRegistryResult.error('Not implemented in fake');
+
+  @override
+  ProfileRegistryResult<void> deleteProfile(String profileId) =>
+      ProfileRegistryResult.error('Not implemented in fake');
+
+  @override
+  ProfileRegistryResult<List<Profile>> findCompatibleProfiles(
+    LayoutType layoutType,
+  ) => ProfileRegistryResult.error('Not implemented in fake');
 
   @override
   RecordingStartResult startRecording(String path) =>
@@ -242,8 +282,10 @@ class FakeBridge implements KeyrxBridge {
       RecordingStopResult.error('Not implemented in fake');
 
   @override
-  ValidationResult validateScript(String script, [ValidationOptions? options]) =>
-      const ValidationResult(isValid: true, errors: [], warnings: []);
+  ValidationResult validateScript(
+    String script, [
+    ValidationOptions? options,
+  ]) => const ValidationResult(isValid: true, errors: [], warnings: []);
 
   @override
   List<String> suggestKeys(String partial) => const [];
@@ -311,22 +353,19 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<DeviceRegistryOperationResult> toggleRemap(
     String deviceKey,
     bool enabled,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => const [];
@@ -348,8 +387,9 @@ class FakeProfileRegistryService implements ProfileRegistryService {
       ProfileRegistryOperationResult.success();
 
   @override
-  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async =>
-      ProfileRegistryOperationResult.success();
+  Future<ProfileRegistryOperationResult> deleteProfile(
+    String profileId,
+  ) async => ProfileRegistryOperationResult.success();
 
   @override
   Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async =>

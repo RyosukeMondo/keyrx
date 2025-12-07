@@ -89,7 +89,6 @@ fn panicking_function(_x: u32) -> Result<TestResult, ffi::error::FfiError> {
 #[test]
 fn test_macro_compiles() {
     // If we get here, the macro expanded successfully
-    assert!(true);
 }
 
 #[test]

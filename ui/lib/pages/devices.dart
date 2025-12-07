@@ -83,9 +83,7 @@ class _DevicesPageState extends State<DevicesPage> {
         _keymaps = keymapResult.data ?? const [];
         _registryDevices
           ..clear()
-          ..addEntries(
-            devices.map((d) => MapEntry(d.identity.toKey(), d)),
-          );
+          ..addEntries(devices.map((d) => MapEntry(d.identity.toKey(), d)));
         _error = errors.isEmpty ? null : errors.join(' • ');
         _isLoading = false;
       });
@@ -145,7 +143,8 @@ class _DevicesPageState extends State<DevicesPage> {
   DeviceState? _findRegistryDevice(DeviceInstanceId device) {
     for (final entry in _registryDevices.values) {
       final identity = entry.identity;
-      final serialMatches = device.serial == null ||
+      final serialMatches =
+          device.serial == null ||
           device.serial!.isEmpty ||
           identity.serialNumber == device.serial;
       if (identity.vendorId == device.vendorId &&
@@ -206,6 +205,26 @@ class _DevicesPageState extends State<DevicesPage> {
     return filtered.isEmpty ? _hardwareProfiles : filtered;
   }
 
+  List<DeviceSlots> get _mergedDevices {
+    final knownDevices = _runtime.devices.toList();
+    final knownKeys = knownDevices.map((d) => _deviceKey(d.device)).toSet();
+
+    for (final entry in _registryDevices.values) {
+      final identity = entry.identity;
+      final instanceId = DeviceInstanceId(
+        vendorId: identity.vendorId,
+        productId: identity.productId,
+        serial: identity.serialNumber,
+      );
+      final key = _deviceKey(instanceId);
+
+      if (!knownKeys.contains(key)) {
+        knownDevices.add(DeviceSlots(device: instanceId, slots: []));
+      }
+    }
+    return knownDevices;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -219,10 +238,7 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadAll,
-        child: _buildBody(),
-      ),
+      body: RefreshIndicator(onRefresh: _loadAll, child: _buildBody()),
     );
   }
 
@@ -231,7 +247,7 @@ class _DevicesPageState extends State<DevicesPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final devices = _runtime.devices;
+    final devices = _mergedDevices;
 
     if (devices.isEmpty) {
       return ListView(
@@ -274,7 +290,10 @@ class _DevicesPageState extends State<DevicesPage> {
           children: [
             Row(
               children: [
-                Icon(Icons.keyboard, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.keyboard,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -282,9 +301,8 @@ class _DevicesPageState extends State<DevicesPage> {
                     children: [
                       Text(
                         _deviceTitle(device),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -355,8 +373,9 @@ class _DevicesPageState extends State<DevicesPage> {
           )
         : null;
     final hasKeymap = _keymaps.any((k) => k.id == slot.keymapId);
-    final keymapValue =
-        hasKeymap ? slot.keymapId : (_keymaps.isNotEmpty ? _keymaps.first.id : null);
+    final keymapValue = hasKeymap
+        ? slot.keymapId
+        : (_keymaps.isNotEmpty ? _keymaps.first.id : null);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -389,8 +408,9 @@ class _DevicesPageState extends State<DevicesPage> {
                 const Spacer(),
                 IconButton(
                   tooltip: 'Move up',
-                  onPressed:
-                      slotBusy || index == 0 ? null : () => _moveSlot(device, slot, -1),
+                  onPressed: slotBusy || index == 0
+                      ? null
+                      : () => _moveSlot(device, slot, -1),
                   icon: const Icon(Icons.arrow_upward),
                 ),
                 IconButton(
@@ -404,12 +424,14 @@ class _DevicesPageState extends State<DevicesPage> {
                   value: slot.active,
                   onChanged: slotBusy
                       ? null
-                      : (value) =>
-                          _mutate(() => widget.runtimeService.setSlotActive(
-                                device.device,
-                                slot.id,
-                                value,
-                              ), slotId: slot.id),
+                      : (value) => _mutate(
+                          () => widget.runtimeService.setSlotActive(
+                            device.device,
+                            slot.id,
+                            value,
+                          ),
+                          slotId: slot.id,
+                        ),
                 ),
               ],
             ),
@@ -435,7 +457,8 @@ class _DevicesPageState extends State<DevicesPage> {
                     onChanged: slotBusy || hardwareOptions.isEmpty
                         ? null
                         : (value) {
-                            if (value != null && value != slot.hardwareProfileId) {
+                            if (value != null &&
+                                value != slot.hardwareProfileId) {
                               _mutate(
                                 () => widget.runtimeService.addSlot(
                                   device.device,
@@ -488,12 +511,12 @@ class _DevicesPageState extends State<DevicesPage> {
                 onPressed: slotBusy
                     ? null
                     : () => _mutate(
-                          () => widget.runtimeService.removeSlot(
-                            device.device,
-                            slot.id,
-                          ),
-                          slotId: slot.id,
+                        () => widget.runtimeService.removeSlot(
+                          device.device,
+                          slot.id,
                         ),
+                        slotId: slot.id,
+                      ),
                 icon: const Icon(Icons.delete),
                 label: const Text('Remove Slot'),
               ),
@@ -551,8 +574,9 @@ class _DevicesPageState extends State<DevicesPage> {
                     onChanged: (value) {
                       if (value == null) return;
                       setDialogState(() {
-                        selectedHardware =
-                            hardwareOptions.firstWhere((h) => h.id == value);
+                        selectedHardware = hardwareOptions.firstWhere(
+                          (h) => h.id == value,
+                        );
                       });
                     },
                   ),
@@ -574,8 +598,9 @@ class _DevicesPageState extends State<DevicesPage> {
                     onChanged: (value) {
                       if (value == null) return;
                       setDialogState(() {
-                        selectedKeymap =
-                            _keymaps.firstWhere((k) => k.id == value);
+                        selectedKeymap = _keymaps.firstWhere(
+                          (k) => k.id == value,
+                        );
                       });
                     },
                   ),
@@ -682,8 +707,9 @@ class _DevicesPageState extends State<DevicesPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError ? Theme.of(context).colorScheme.errorContainer : null,
+        backgroundColor: isError
+            ? Theme.of(context).colorScheme.errorContainer
+            : null,
       ),
     );
   }
@@ -739,8 +765,10 @@ class _InlineInfoBanner extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          Icon(Icons.info_outline,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.info_outline,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 8),
           Expanded(child: Text(message)),
         ],

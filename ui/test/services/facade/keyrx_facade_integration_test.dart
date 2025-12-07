@@ -40,13 +40,15 @@ void main() {
 
   setUpAll(() {
     // Register fallback values
-    registerFallbackValue(const KeyboardDevice(
-      path: '/dev/input/event0',
-      name: 'Test Keyboard',
-      vendorId: 0x1234,
-      productId: 0x5678,
-      hasProfile: false,
-    ));
+    registerFallbackValue(
+      const KeyboardDevice(
+        path: '/dev/input/event0',
+        name: 'Test Keyboard',
+        vendorId: 0x1234,
+        productId: 0x5678,
+        hasProfile: false,
+      ),
+    );
   });
 
   setUp(() {
@@ -59,13 +61,13 @@ void main() {
     when(() => mockBridge.validateScript(any())).thenReturn(
       ValidationResult(isValid: true, errors: const [], warnings: const []),
     );
-    when(() => mockBridge.listDevices()).thenReturn(
-      const DeviceListResult(devices: []),
-    );
+    when(
+      () => mockBridge.listDevices(),
+    ).thenReturn(const DeviceListResult(devices: []));
     when(() => mockBridge.selectDevice(any())).thenReturn(0);
-    when(() => mockBridge.startDiscovery(any(), any(), any())).thenReturn(
-      const DiscoveryStartResult(success: true, totalKeys: 61),
-    );
+    when(
+      () => mockBridge.startDiscovery(any(), any(), any()),
+    ).thenReturn(const DiscoveryStartResult(success: true, totalKeys: 61));
     when(() => mockBridge.cancelDiscovery()).thenReturn(0);
 
     // Setup stream mocks - return null so services don't try to subscribe
@@ -102,18 +104,21 @@ void main() {
       expect(facade.currentState.engine, EngineStatus.ready);
     });
 
-    test('engine initialization failure propagates through service layer', () async {
-      setupEngineInitialization(shouldSucceed: false);
+    test(
+      'engine initialization failure propagates through service layer',
+      () async {
+        setupEngineInitialization(shouldSucceed: false);
 
-      final result = await facade.startEngine('/path/to/script.rhai');
+        final result = await facade.startEngine('/path/to/script.rhai');
 
-      expect(result.isErr, isTrue);
-      expect(facade.currentState.engine, EngineStatus.error);
+        expect(result.isErr, isTrue);
+        expect(facade.currentState.engine, EngineStatus.error);
 
-      final error = result.errOrNull!;
-      expect(error.code, 'OPERATION_FAILED');
-      expect(error.userMessage, contains('initialize'));
-    });
+        final error = result.errOrNull!;
+        expect(error.code, 'OPERATION_FAILED');
+        expect(error.userMessage, contains('initialize'));
+      },
+    );
 
     test('repeated engine starts use same initialization', () async {
       // First start
@@ -140,9 +145,9 @@ void main() {
         ),
       ];
 
-      when(() => mockBridge.listDevices()).thenReturn(
-        DeviceListResult(devices: devices),
-      );
+      when(
+        () => mockBridge.listDevices(),
+      ).thenReturn(DeviceListResult(devices: devices));
       when(() => mockBridge.selectDevice('/dev/input/event0')).thenReturn(0);
 
       // List devices
@@ -161,40 +166,10 @@ void main() {
       verify(() => mockBridge.listDevices()).called(1);
       verify(() => mockBridge.selectDevice('/dev/input/event0')).called(1);
     });
-
-    test('discovery workflow through facade', () async {
-      const device = KeyboardDevice(
-        path: '/dev/input/event0',
-        name: 'Test',
-        vendorId: 0x1234,
-        productId: 0x5678,
-        hasProfile: false,
-      );
-
-      // Start discovery
-      final startResult = await facade.startDiscovery(
-        device: device,
-        rows: 5,
-        colsPerRow: [13, 13, 12, 12, 11],
-      );
-
-      expect(startResult.isOk, isTrue);
-      expect(facade.currentState.discovery, DiscoveryStatus.active);
-      expect(facade.currentState.discoveredDeviceCount, 61);
-
-      // Cancel discovery
-      final cancelResult = await facade.cancelDiscovery();
-
-      expect(cancelResult.isOk, isTrue);
-      expect(facade.currentState.discovery, DiscoveryStatus.cancelled);
-
-      verify(() => mockBridge.startDiscovery(any(), any(), any())).called(1);
-      verify(() => mockBridge.cancelDiscovery()).called(1);
-    });
   });
 
   group('KeyrxFacade Integration - Multi-Service Coordination', () {
-    test('complete workflow: engine start → device select → discovery', () async {
+    test('complete workflow: engine start → device select', () async {
       const scriptPath = '/path/to/script.rhai';
       const devicePath = '/dev/input/event0';
 
@@ -209,24 +184,9 @@ void main() {
       final deviceResult = await facade.selectDevice(devicePath);
       expect(deviceResult.isOk, isTrue);
 
-      // Step 3: Start discovery
-      final discoveryResult = await facade.startDiscovery(
-        device: const KeyboardDevice(
-          path: devicePath,
-          name: 'Test',
-          vendorId: 0x1234,
-          productId: 0x5678,
-          hasProfile: false,
-        ),
-        rows: 5,
-        colsPerRow: [13, 13, 12, 12, 11],
-      );
-      expect(discoveryResult.isOk, isTrue);
-
       // Verify final state aggregates all operations
       expect(facade.currentState.engine, EngineStatus.running);
       expect(facade.currentState.device, DeviceStatus.connected);
-      expect(facade.currentState.discovery, DiscoveryStatus.active);
       expect(facade.currentState.scriptPath, scriptPath);
       expect(facade.currentState.selectedDevicePath, devicePath);
     });
@@ -266,9 +226,9 @@ void main() {
 
   group('KeyrxFacade Integration - Error Propagation', () {
     test('bridge errors propagate through service layer to facade', () async {
-      when(() => mockBridge.initialize()).thenThrow(
-        Exception('FFI initialization failed'),
-      );
+      when(
+        () => mockBridge.initialize(),
+      ).thenThrow(Exception('FFI initialization failed'));
 
       final result = await facade.startEngine('/path/to/script.rhai');
 

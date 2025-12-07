@@ -187,10 +187,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(
-          result.errorMessage ?? 'Unknown error',
-          'set label',
-        ),
+        _makeUserFriendly(result.errorMessage ?? 'Unknown error', 'set label'),
       );
     }
 
@@ -215,6 +212,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
       );
     }
 
+    print('DeviceRegistryService: refreshing devices via FFI...');
     final result = _bridge.listRegisteredDevices();
 
     if (result.hasError) {
@@ -222,13 +220,16 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
         result.errorMessage ?? 'Unknown error',
         'load devices',
       );
+      print('DeviceRegistryService: FFI returned error: $message');
       throw DeviceRegistryFetchException(
         message,
         fallbackDevices: _cachedDevices ?? const [],
       );
     }
 
-    _cachedDevices = result.data ?? const [];
+    final devices = result.data ?? const [];
+    print('DeviceRegistryService: fetched ${devices.length} devices');
+    _cachedDevices = devices;
     return _cachedDevices!;
   }
 
