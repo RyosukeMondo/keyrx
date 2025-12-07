@@ -13,6 +13,7 @@ import 'keymap_service.dart';
 import 'layout_service.dart';
 import 'profile_autosave_service.dart';
 import 'profile_registry_service.dart';
+import 'runtime_service.dart';
 import 'script_file_service.dart';
 import 'storage_path_resolver.dart';
 import 'test_service.dart';
@@ -36,6 +37,7 @@ class ServiceRegistry {
     required this.layoutService,
     required this.hardwareService,
     required this.keymapService,
+    required this.runtimeService,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -55,6 +57,7 @@ class ServiceRegistry {
     LayoutService? layoutService,
     HardwareService? hardwareService,
     KeymapService? keymapService,
+    RuntimeService? runtimeService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final effectiveBridge = bridge ?? KeyrxBridge.open();
@@ -75,6 +78,8 @@ class ServiceRegistry {
     final hardware =
         hardwareService ?? HardwareService(bridge: effectiveBridge);
     final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
+    final runtime =
+        runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
     final resolver = storagePathResolver ?? const StoragePathResolver();
@@ -102,6 +107,7 @@ class ServiceRegistry {
       layoutService: layouts,
       hardwareService: hardware,
       keymapService: keymaps,
+      runtimeService: runtime,
     );
   }
 
@@ -123,6 +129,7 @@ class ServiceRegistry {
     required LayoutService layoutService,
     required HardwareService hardwareService,
     required KeymapService keymapService,
+    required RuntimeService runtimeService,
   }) {
     final autosave =
         profileAutosaveService ??
@@ -148,6 +155,7 @@ class ServiceRegistry {
       layoutService: layoutService,
       hardwareService: hardwareService,
       keymapService: keymapService,
+      runtimeService: runtimeService,
     );
   }
 
@@ -167,6 +175,7 @@ class ServiceRegistry {
   final LayoutService layoutService;
   final HardwareService hardwareService;
   final KeymapService keymapService;
+  final RuntimeService runtimeService;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -186,6 +195,7 @@ class ServiceRegistry {
     LayoutService? layoutService,
     HardwareService? hardwareService,
     KeymapService? keymapService,
+    RuntimeService? runtimeService,
   }) {
     return ServiceRegistry(
       errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -207,6 +217,7 @@ class ServiceRegistry {
       layoutService: layoutService ?? this.layoutService,
       hardwareService: hardwareService ?? this.hardwareService,
       keymapService: keymapService ?? this.keymapService,
+      runtimeService: runtimeService ?? this.runtimeService,
     );
   }
 

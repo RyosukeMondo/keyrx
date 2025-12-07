@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'pages/debugger.dart';
 import 'pages/console.dart';
-import 'pages/devices_page.dart';
+import 'pages/devices.dart';
 import 'pages/developer/test_runner_page.dart';
 import 'pages/developer/profiler_page.dart';
 import 'pages/layouts.dart';
@@ -83,8 +83,10 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
       DevicesPage(
-        deviceService: registry.deviceRegistryService,
-        profileService: registry.profileRegistryService,
+        runtimeService: registry.runtimeService,
+        hardwareService: registry.hardwareService,
+        keymapService: registry.keymapService,
+        deviceRegistryService: registry.deviceRegistryService,
       ),
       const LayoutsPage(),
       const WiringPage(),

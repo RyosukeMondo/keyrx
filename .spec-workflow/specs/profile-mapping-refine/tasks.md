@@ -102,7 +102,7 @@
   - _Requirements: 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Update the main application scaffold to use a 4-tab left navigation rail. | Success: Navigation works correctly._
 
-- [ ] 16. Implement Devices Tab
+- [x] 16. Implement Devices Tab
   - File: `ui/lib/pages/devices.dart`
   - Create UI for managing connected devices and their Profile Slots.
   - Features: Add/Remove slots, Toggle Active, Reorder (Up/Down), Select Wiring/Keymap.
