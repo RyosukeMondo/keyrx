@@ -50,7 +50,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
   - Purpose: Hardware calibration
   - _Requirements: 3.1, 3.2_
 
-- [ ] 7. Implement timing optimizer
+- [x] 7. Implement timing optimizer
   - File: `core/src/hardware/optimizer.rs`
   - Optimal timing calculation
   - Confidence scoring

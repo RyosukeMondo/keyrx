@@ -1,4 +1,5 @@
 use crate::errors::KeyrxError;
+use crate::hardware::optimizer::TimingOptimizer;
 use crate::hardware::TimingConfig;
 use async_trait::async_trait;
 use std::time::Duration;
@@ -59,12 +60,16 @@ pub trait CalibrationRunner {
 /// a tuned timing configuration.
 pub struct Calibrator {
     config: CalibrationConfig,
+    optimizer: TimingOptimizer,
 }
 
 impl Calibrator {
     /// Build a calibrator with the provided configuration.
     pub fn new(config: CalibrationConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            optimizer: TimingOptimizer::new(),
+        }
     }
 
     /// Run calibration using the supplied runner implementation.
@@ -77,14 +82,12 @@ impl Calibrator {
             .await?;
 
         let samples = self.prepare_samples(raw_samples);
-        let measured_latency = Duration::from_micros(self.mean_us(&samples));
-        let optimal_timing = self.derive_timing(&samples);
-        let confidence = self.confidence(&samples);
+        let optimization = self.optimizer.optimize(&samples, self.config.sample_count);
 
         Ok(CalibrationResult {
-            measured_latency,
-            optimal_timing,
-            confidence,
+            measured_latency: optimization.measured_latency,
+            optimal_timing: optimization.timing,
+            confidence: optimization.confidence,
             samples,
         })
     }
@@ -105,71 +108,6 @@ impl Calibrator {
             .skip(self.config.warmup_samples)
             .take(self.config.sample_count)
             .collect()
-    }
-
-    fn derive_timing(&self, samples: &[Duration]) -> TimingConfig {
-        if samples.is_empty() {
-            return TimingConfig::default();
-        }
-
-        let mut timing = TimingConfig::default();
-        let mean_us = self.mean_us(samples);
-        let p95_us = self.percentile_us(samples, 0.95).unwrap_or(mean_us);
-
-        timing.debounce_ms = timing.debounce_ms.max(((p95_us / 1_000).max(1)) as u32);
-
-        // Bias scan interval toward half the observed mean to avoid over-polling.
-        timing.scan_interval_us = timing.scan_interval_us.max(((mean_us / 2).max(250)) as u32);
-
-        timing
-    }
-
-    fn confidence(&self, samples: &[Duration]) -> f64 {
-        if samples.is_empty() {
-            return 0.0;
-        }
-
-        let mean = self.mean_us(samples) as f64;
-        if mean == 0.0 {
-            return 0.0;
-        }
-
-        let variance = samples
-            .iter()
-            .map(|d| {
-                let delta = d.as_micros() as f64 - mean;
-                delta * delta
-            })
-            .sum::<f64>()
-            / samples.len() as f64;
-        let std_dev = variance.sqrt();
-        let jitter_ratio = (std_dev / mean).min(1.0);
-
-        let expected = self.config.sample_count.max(1) as f64;
-        let coverage = (samples.len() as f64 / expected).min(1.0);
-
-        (0.6 * (1.0 - jitter_ratio) + 0.4 * coverage).clamp(0.0, 1.0)
-    }
-
-    fn mean_us(&self, samples: &[Duration]) -> u64 {
-        if samples.is_empty() {
-            return 0;
-        }
-
-        let sum: u128 = samples.iter().map(|d| d.as_micros()).sum();
-        (sum / samples.len() as u128) as u64
-    }
-
-    fn percentile_us(&self, samples: &[Duration], percentile: f64) -> Option<u64> {
-        if samples.is_empty() {
-            return None;
-        }
-
-        let mut micros: Vec<u64> = samples.iter().map(|d| d.as_micros() as u64).collect();
-        micros.sort_unstable();
-
-        let idx = ((micros.len() as f64 * percentile).ceil() as usize).saturating_sub(1);
-        micros.get(idx).copied()
     }
 }
 

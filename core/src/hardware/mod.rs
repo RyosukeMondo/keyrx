@@ -9,6 +9,7 @@ pub mod classification;
 pub mod cloud_sync;
 pub mod database;
 pub mod detector;
+pub mod optimizer;
 pub mod profile;
 
 pub use calibrator::{
@@ -20,4 +21,5 @@ pub use cloud_sync::{
 };
 pub use database::ProfileDatabase;
 pub use detector::{HardwareDetector, HardwareInfo};
+pub use optimizer::{TimingOptimization, TimingOptimizer};
 pub use profile::{HardwareProfile, ProfileSource, TimingConfig};
