@@ -34,7 +34,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
   - Purpose: Profile storage
   - _Requirements: 1.2, 2.1, 2.4_
 
-- [ ] 5. Add cloud profile sync
+- [x] 5. Add cloud profile sync
   - File: `core/src/hardware/cloud_sync.rs`
   - Community profile download
   - Update checking

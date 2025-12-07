@@ -5,11 +5,15 @@
 //! used for profile lookup and calibration defaults.
 
 pub mod classification;
+pub mod cloud_sync;
 pub mod database;
 pub mod detector;
 pub mod profile;
 
 pub use classification::{DeviceClass, DeviceClassifier};
+pub use cloud_sync::{
+    CloudProfileBundle, CloudProfileSync, CloudSyncOutcome, HttpProfileClient, ProfileClient,
+};
 pub use database::ProfileDatabase;
 pub use detector::{HardwareDetector, HardwareInfo};
 pub use profile::{HardwareProfile, ProfileSource, TimingConfig};

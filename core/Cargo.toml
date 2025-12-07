@@ -44,6 +44,7 @@ jsonschema.workspace = true
 walkdir.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 keyrx-core-macros = { path = "core-macros" }
+reqwest.workspace = true
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }
