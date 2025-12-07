@@ -20,7 +20,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
 
 ## Phase 2: Profile Database
 
-- [ ] 3. Create HardwareProfile struct
+- [x] 3. Create HardwareProfile struct
   - File: `core/src/hardware/profile.rs`
   - Timing configuration
   - Profile metadata

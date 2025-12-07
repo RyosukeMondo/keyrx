@@ -6,6 +6,8 @@
 
 pub mod classification;
 pub mod detector;
+pub mod profile;
 
 pub use classification::{DeviceClass, DeviceClassifier};
 pub use detector::{HardwareDetector, HardwareInfo};
+pub use profile::{HardwareProfile, ProfileSource, TimingConfig};
