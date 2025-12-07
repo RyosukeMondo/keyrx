@@ -77,6 +77,11 @@ impl CoverageAnalyzer {
                 | PendingOp::LayerPush { .. }
                 | PendingOp::LayerToggle { .. }
                 | PendingOp::LayerPop
+                | PendingOp::LayoutDefine { .. }
+                | PendingOp::LayoutEnable { .. }
+                | PendingOp::LayoutDisable { .. }
+                | PendingOp::LayoutRemove { .. }
+                | PendingOp::LayoutSetPriority { .. }
                 | PendingOp::DefineModifier { .. }
                 | PendingOp::ModifierActivate { .. }
                 | PendingOp::ModifierDeactivate { .. }

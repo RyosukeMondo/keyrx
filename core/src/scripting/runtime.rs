@@ -296,6 +296,15 @@ impl RhaiRuntime {
                 PendingOp::LayerMap { layer, .. } => {
                     size_of::<PendingOp>() + layer.len() + size_of::<LayerAction>()
                 }
+                PendingOp::LayoutDefine { id, name, .. } => {
+                    size_of::<PendingOp>() + id.len() + name.len() + size_of::<i32>()
+                }
+                PendingOp::LayoutEnable { id }
+                | PendingOp::LayoutDisable { id }
+                | PendingOp::LayoutRemove { id }
+                | PendingOp::LayoutSetPriority { id, .. } => {
+                    size_of::<PendingOp>() + id.len() + size_of::<i32>()
+                }
             })
             .sum()
     }

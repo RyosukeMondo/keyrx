@@ -178,6 +178,11 @@ impl SemanticValidator<'_> {
             | PendingOp::Combo { .. }
             | PendingOp::LayerDefine { .. }
             | PendingOp::DefineModifier { .. }
+            | PendingOp::LayoutDefine { .. }
+            | PendingOp::LayoutEnable { .. }
+            | PendingOp::LayoutDisable { .. }
+            | PendingOp::LayoutRemove { .. }
+            | PendingOp::LayoutSetPriority { .. }
             | PendingOp::LayerPop
             | PendingOp::SetTiming(_) => {}
         }

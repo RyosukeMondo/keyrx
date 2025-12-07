@@ -129,6 +129,24 @@ pub enum PendingOp {
         key: KeyCode,
         action: LayerMapAction,
     },
+    LayoutDefine {
+        id: String,
+        name: String,
+        priority: i32,
+    },
+    LayoutEnable {
+        id: String,
+    },
+    LayoutDisable {
+        id: String,
+    },
+    LayoutRemove {
+        id: String,
+    },
+    LayoutSetPriority {
+        id: String,
+        priority: i32,
+    },
     LayerPush {
         name: String,
     },

@@ -36,7 +36,7 @@ _Status: Priority #6 in 2025 implementation order; all items pending. Focus on c
   - Purpose: Engine integration
   - _Requirements: 1.3_
 
-- [ ] 5. Add Rhai bindings
+- [x] 5. Add Rhai bindings
   - File: `core/src/scripting/bindings.rs`
   - Layout composition functions
   - Priority control

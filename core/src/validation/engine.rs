@@ -347,6 +347,21 @@ pub fn find_operation_line(script: &str, op: &PendingOp) -> Option<usize> {
         PendingOp::LayerMap { layer, key, .. } => {
             format!("layer_map(\"{}\", \"{}\"", layer, key.name())
         }
+        PendingOp::LayoutDefine { id, .. } => {
+            format!("layout_define(\"{}\"", id)
+        }
+        PendingOp::LayoutEnable { id } => {
+            format!("layout_enable(\"{}\")", id)
+        }
+        PendingOp::LayoutDisable { id } => {
+            format!("layout_disable(\"{}\")", id)
+        }
+        PendingOp::LayoutRemove { id } => {
+            format!("layout_remove(\"{}\")", id)
+        }
+        PendingOp::LayoutSetPriority { id, .. } => {
+            format!("layout_set_priority(\"{}\"", id)
+        }
         PendingOp::DefineModifier { name, .. } => {
             format!("define_modifier(\"{}\")", name)
         }

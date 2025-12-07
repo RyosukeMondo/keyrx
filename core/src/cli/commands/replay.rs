@@ -167,31 +167,33 @@ impl ReplayCommand {
 
         let mut engine = AdvancedEngine::new(runtime, timing_config.clone());
 
-        // Seed layer mappings from registry
-        let mut layers = registry.layers().clone();
-        if let Some(base_id) = layers.layer_id_by_name("base") {
-            for (key, action) in registry.mappings() {
-                if let Some(layer_action) = match action {
-                    RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
-                    RemapAction::Block => Some(LayerAction::Block),
-                    RemapAction::Pass => None,
-                } {
-                    layers.set_mapping_for_layer(base_id, key, layer_action);
+        // Seed layout mappings from registry
+        *engine.layouts_mut() = registry.layouts().clone();
+        {
+            let layers = engine.layers_mut();
+            if let Some(base_id) = layers.layer_id_by_name("base") {
+                for (key, action) in registry.mappings() {
+                    if let Some(layer_action) = match action {
+                        RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
+                        RemapAction::Block => Some(LayerAction::Block),
+                        RemapAction::Pass => None,
+                    } {
+                        layers.set_mapping_for_layer(base_id, key, layer_action);
+                    }
+                }
+
+                for (key, binding) in registry.tap_holds() {
+                    layers.set_mapping_for_layer(
+                        base_id,
+                        *key,
+                        LayerAction::TapHold {
+                            tap: binding.tap,
+                            hold: binding.hold.clone(),
+                        },
+                    );
                 }
             }
-
-            for (key, binding) in registry.tap_holds() {
-                layers.set_mapping_for_layer(
-                    base_id,
-                    *key,
-                    LayerAction::TapHold {
-                        tap: binding.tap,
-                        hold: binding.hold.clone(),
-                    },
-                );
-            }
         }
-        *engine.layers_mut() = layers;
 
         // Seed combos and modifiers
         for combo in registry.combos().all() {

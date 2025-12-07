@@ -7,7 +7,7 @@ use std::fmt::Display;
 
 use super::builtins::{apply_timing_update, LayerMapAction, PendingOp, PendingOps};
 use super::registry_sync::RegistrySyncer;
-use crate::engine::{KeyCode, LayerAction, TimingConfig};
+use crate::engine::{KeyCode, LayerAction, LayoutMetadata, TimingConfig};
 use crate::scripting::RemapRegistry;
 
 /// Helper to execute a fallible operation and log errors with structured tracing.
@@ -82,6 +82,15 @@ impl<'a> PendingOpsApplier<'a> {
                 self.apply_layer_define(&name, transparent)
             }
             PendingOp::LayerMap { layer, key, action } => self.apply_layer_map(&layer, key, action),
+            PendingOp::LayoutDefine { id, name, priority } => {
+                self.apply_layout_define(&id, &name, priority)
+            }
+            PendingOp::LayoutEnable { id } => self.apply_layout_enable(&id),
+            PendingOp::LayoutDisable { id } => self.apply_layout_disable(&id),
+            PendingOp::LayoutRemove { id } => self.apply_layout_remove(&id),
+            PendingOp::LayoutSetPriority { id, priority } => {
+                self.apply_layout_priority(&id, priority)
+            }
             PendingOp::LayerPush { name } => self.apply_layer_push(&name),
             PendingOp::LayerToggle { name } => self.apply_layer_toggle(&name),
             PendingOp::LayerPop => self.apply_layer_pop(),
@@ -175,6 +184,60 @@ impl<'a> PendingOpsApplier<'a> {
 
     fn apply_layer_pop(&mut self) {
         let _ = self.registry.pop_layer();
+    }
+
+    fn apply_layout_define(&mut self, id: &str, name: &str, priority: i32) {
+        let metadata = LayoutMetadata::new(id, name);
+        self.registry.define_layout(metadata, priority);
+    }
+
+    fn apply_layout_enable(&mut self, id: &str) {
+        if !self.registry.enable_layout(id) {
+            tracing::warn!(
+                service = "keyrx",
+                event = "rhai_layout_enable_failed",
+                component = "scripting_runtime",
+                layout = id,
+                "Layout enable ignored (not found)"
+            );
+        }
+    }
+
+    fn apply_layout_disable(&mut self, id: &str) {
+        if !self.registry.disable_layout(id) {
+            tracing::warn!(
+                service = "keyrx",
+                event = "rhai_layout_disable_failed",
+                component = "scripting_runtime",
+                layout = id,
+                "Layout disable ignored (not found or protected)"
+            );
+        }
+    }
+
+    fn apply_layout_remove(&mut self, id: &str) {
+        if !self.registry.remove_layout(id) {
+            tracing::warn!(
+                service = "keyrx",
+                event = "rhai_layout_remove_failed",
+                component = "scripting_runtime",
+                layout = id,
+                "Layout removal ignored (not found or protected)"
+            );
+        }
+    }
+
+    fn apply_layout_priority(&mut self, id: &str, priority: i32) {
+        if !self.registry.set_layout_priority(id, priority) {
+            tracing::warn!(
+                service = "keyrx",
+                event = "rhai_layout_priority_failed",
+                component = "scripting_runtime",
+                layout = id,
+                priority = priority,
+                "Layout priority update ignored (not found)"
+            );
+        }
     }
 
     fn apply_define_modifier(&mut self, name: &str, id: u8) {

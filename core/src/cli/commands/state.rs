@@ -143,27 +143,29 @@ impl StateCommand {
     ) -> AdvancedEngine<RhaiRuntime> {
         let mut engine = AdvancedEngine::new(runtime, registry.timing_config().clone());
 
-        // Seed layers with mappings and tap-holds.
-        let mut layers = registry.layers().clone();
-        if let Some(base_id) = layers.layer_id_by_name("base") {
-            for (key, action) in registry.mappings() {
-                if let Some(layer_action) = Self::to_layer_action(action) {
-                    layers.set_mapping_for_layer(base_id, key, layer_action);
+        // Seed layouts with mappings and tap-holds.
+        *engine.layouts_mut() = registry.layouts().clone();
+        {
+            let layers = engine.layers_mut();
+            if let Some(base_id) = layers.layer_id_by_name("base") {
+                for (key, action) in registry.mappings() {
+                    if let Some(layer_action) = Self::to_layer_action(action) {
+                        layers.set_mapping_for_layer(base_id, key, layer_action);
+                    }
+                }
+
+                for (key, binding) in registry.tap_holds() {
+                    layers.set_mapping_for_layer(
+                        base_id,
+                        *key,
+                        LayerAction::TapHold {
+                            tap: binding.tap,
+                            hold: binding.hold.clone(),
+                        },
+                    );
                 }
             }
-
-            for (key, binding) in registry.tap_holds() {
-                layers.set_mapping_for_layer(
-                    base_id,
-                    *key,
-                    LayerAction::TapHold {
-                        tap: binding.tap,
-                        hold: binding.hold.clone(),
-                    },
-                );
-            }
         }
-        *engine.layers_mut() = layers;
 
         // Seed combos.
         for combo in registry.combos().all() {

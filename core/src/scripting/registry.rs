@@ -1,10 +1,15 @@
 //! Registry for storing key remappings defined by scripts.
 
+use crate::engine::layout::{Layout, LayoutCompositor, LayoutMetadata};
 use crate::engine::{
     ComboRegistry, HoldAction, KeyCode, LayerAction, LayerId, LayerStack, Modifier, ModifierState,
     RemapAction, TimingConfig, VirtualModifiers,
 };
 use std::collections::HashMap;
+use std::sync::OnceLock;
+
+const DEFAULT_LAYOUT_ID: &str = "default";
+static FALLBACK_LAYOUT: OnceLock<Layout> = OnceLock::new();
 
 /// Central storage for script-defined key behaviors.
 ///
@@ -15,7 +20,7 @@ pub struct RemapRegistry {
     mappings: HashMap<KeyCode, RemapAction>,
     tap_holds: HashMap<KeyCode, TapHoldBinding>,
     combos: ComboRegistry,
-    layers: LayerStack,
+    layouts: LayoutCompositor,
     modifier_names: HashMap<String, u8>,
     modifiers: ModifierState,
     next_modifier_id: u16,
@@ -32,11 +37,16 @@ pub struct TapHoldBinding {
 impl RemapRegistry {
     /// Create a new empty registry.
     pub fn new() -> Self {
+        let mut layouts = LayoutCompositor::new();
+        layouts.add_layout(
+            Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+            0,
+        );
         Self {
             mappings: HashMap::new(),
             tap_holds: HashMap::new(),
             combos: ComboRegistry::new(),
-            layers: LayerStack::new(),
+            layouts,
             modifier_names: HashMap::new(),
             modifiers: ModifierState::new(),
             next_modifier_id: 0,
@@ -203,7 +213,9 @@ impl RemapRegistry {
     /// Define or update a layer by name, returning its ID.
     pub fn define_layer(&mut self, name: &str, transparent: bool) -> Result<LayerId, String> {
         let normalized = Self::normalize_layer_name(name)?;
-        Ok(self.layers.define_or_update_named(&normalized, transparent))
+        Ok(self
+            .default_layers_mut()
+            .define_or_update_named(&normalized, transparent))
     }
 
     /// Map a key to an action within a named layer.
@@ -215,11 +227,14 @@ impl RemapRegistry {
     ) -> Result<(), String> {
         let normalized = Self::normalize_layer_name(layer_name)?;
         let layer_id = self
-            .layers
+            .default_layers()
             .layer_id_by_name(&normalized)
             .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
 
-        if !self.layers.set_mapping_for_layer(layer_id, key, action) {
+        if !self
+            .default_layers_mut()
+            .set_mapping_for_layer(layer_id, key, action)
+        {
             return Err(format!("failed to set mapping for layer '{}'", normalized));
         }
 
@@ -230,42 +245,42 @@ impl RemapRegistry {
     pub fn push_layer(&mut self, name: &str) -> Result<bool, String> {
         let normalized = Self::normalize_layer_name(name)?;
         let layer_id = self
-            .layers
+            .default_layers()
             .layer_id_by_name(&normalized)
             .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
-        Ok(self.layers.push(layer_id))
+        Ok(self.default_layers_mut().push(layer_id))
     }
 
     /// Toggle a named layer on/off.
     pub fn toggle_layer(&mut self, name: &str) -> Result<bool, String> {
         let normalized = Self::normalize_layer_name(name)?;
         let layer_id = self
-            .layers
+            .default_layers()
             .layer_id_by_name(&normalized)
             .ok_or_else(|| format!("layer '{}' is not defined", normalized))?;
-        Ok(self.layers.toggle(layer_id))
+        Ok(self.default_layers_mut().toggle(layer_id))
     }
 
     /// Pop the top-most non-base layer.
     pub fn pop_layer(&mut self) -> Option<LayerId> {
-        self.layers.pop()
+        self.default_layers_mut().pop()
     }
 
     /// Check if a layer is active by name.
     pub fn is_layer_active(&self, name: &str) -> Result<bool, String> {
         let normalized = Self::normalize_layer_name(name)?;
-        Ok(self.layers.is_active_by_name(&normalized))
+        Ok(self.default_layers().is_active_by_name(&normalized))
     }
 
     /// Get the layer stack.
     pub fn layers(&self) -> &LayerStack {
-        &self.layers
+        self.default_layers()
     }
 
     /// Look up a layer ID by name.
     pub fn layer_id(&self, name: &str) -> Option<LayerId> {
         let normalized = Self::normalize_layer_name(name).ok()?;
-        self.layers.layer_id_by_name(&normalized)
+        self.default_layers().layer_id_by_name(&normalized)
     }
 
     /// Clear all mappings.
@@ -273,7 +288,11 @@ impl RemapRegistry {
         self.mappings.clear();
         self.tap_holds.clear();
         self.combos = ComboRegistry::new();
-        self.layers = LayerStack::new();
+        self.layouts.clear();
+        self.layouts.add_layout(
+            Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+            0,
+        );
         self.modifier_names.clear();
         self.modifiers = ModifierState::new();
         self.next_modifier_id = 0;
@@ -290,10 +309,88 @@ impl RemapRegistry {
         self.mappings.is_empty()
             && self.tap_holds.is_empty()
             && self.combos.is_empty()
-            && self.layers.is_empty()
+            && self.default_layers().is_empty()
             && self.modifier_names.is_empty()
             && self.modifiers == ModifierState::new()
             && self.timing == TimingConfig::default()
+    }
+
+    /// Access layout compositor (including default layout).
+    pub fn layouts(&self) -> &LayoutCompositor {
+        &self.layouts
+    }
+
+    /// Mutably access layout compositor (including default layout).
+    pub fn layouts_mut(&mut self) -> &mut LayoutCompositor {
+        &mut self.layouts
+    }
+
+    /// Define or update a layout with priority.
+    pub fn define_layout(&mut self, metadata: LayoutMetadata, priority: i32) {
+        self.layouts.add_layout(Layout::new(metadata), priority);
+    }
+
+    /// Remove a layout by id (default layout cannot be removed).
+    pub fn remove_layout(&mut self, id: &str) -> bool {
+        if id == DEFAULT_LAYOUT_ID {
+            return false;
+        }
+        self.layouts.remove_layout(id)
+    }
+
+    /// Enable a layout by id.
+    pub fn enable_layout(&mut self, id: &str) -> bool {
+        self.layouts.enable_layout(id)
+    }
+
+    /// Disable a layout by id (default layout stays enabled).
+    pub fn disable_layout(&mut self, id: &str) -> bool {
+        if id == DEFAULT_LAYOUT_ID {
+            return false;
+        }
+        self.layouts.disable_layout(id)
+    }
+
+    /// Set layout priority (higher wins). Returns false if layout is unknown.
+    pub fn set_layout_priority(&mut self, id: &str, priority: i32) -> bool {
+        self.layouts.set_priority(id, priority)
+    }
+
+    fn default_layout(&self) -> &Layout {
+        self.layouts
+            .layout(DEFAULT_LAYOUT_ID)
+            .or_else(|| {
+                self.layouts
+                    .active_layouts()
+                    .next()
+                    .map(|layout| layout.layout())
+            })
+            .unwrap_or_else(|| {
+                FALLBACK_LAYOUT
+                    .get_or_init(|| Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")))
+            })
+    }
+
+    fn default_layout_mut(&mut self) -> &mut Layout {
+        if self.layouts.layout(DEFAULT_LAYOUT_ID).is_none() {
+            self.layouts.add_layout(
+                Layout::new(LayoutMetadata::new(DEFAULT_LAYOUT_ID, "Default")),
+                0,
+            );
+        }
+        if let Some(layout) = self.layouts.layout_mut(DEFAULT_LAYOUT_ID) {
+            layout
+        } else {
+            unreachable!("default layout must exist")
+        }
+    }
+
+    fn default_layers(&self) -> &LayerStack {
+        self.default_layout().layers()
+    }
+
+    fn default_layers_mut(&mut self) -> &mut LayerStack {
+        self.default_layout_mut().layers_mut()
     }
 
     fn normalize_layer_name(name: &str) -> Result<String, String> {
