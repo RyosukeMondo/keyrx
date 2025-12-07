@@ -65,7 +65,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
   - Purpose: CLI access
   - _Requirements: 1.1, 3.1_
 
-- [ ] 9. Create calibration UI
+- [x] 9. Create calibration UI
   - File: `ui/lib/pages/calibration_page.dart`
   - Interactive calibration
   - Before/after comparison

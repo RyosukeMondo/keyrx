@@ -14,6 +14,7 @@ import 'pages/mapping_page.dart';
 import 'pages/metrics_dashboard.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/trade_off_visualizer.dart';
+import 'pages/calibration_page.dart';
 import 'services/service_registry.dart';
 import 'services/facade/keyrx_facade.dart';
 import 'state/app_state.dart';
@@ -94,6 +95,7 @@ class _HomePageState extends State<HomePage> {
       const MappingPage(),
       const RunControlsPage(),
       const MetricsDashboardPage(),
+      const CalibrationPage(),
       const DebuggerPage(),
       const ConsolePage(),
       const TradeOffVisualizerPage(),
@@ -125,6 +127,11 @@ class _HomePageState extends State<HomePage> {
       icon: Icon(Icons.analytics_outlined),
       selectedIcon: Icon(Icons.analytics),
       label: 'Metrics',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.tune_outlined),
+      selectedIcon: Icon(Icons.tune),
+      label: 'Calibration',
     ),
     NavigationDestination(
       icon: Icon(Icons.bug_report_outlined),
