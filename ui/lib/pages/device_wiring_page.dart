@@ -1,82 +1,122 @@
-/// Device profile viewer page showing row-column layout and keymap.
+/// Device wiring editor page.
 ///
-/// Displays the physical keyboard layout information discovered during
-/// the device discovery process.
+/// Provides a visual interface for wiring physical keys to the virtual matrix
+/// (Device Profile Editor). Replaces the old VisualEditorPage.
 library;
 
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import '../ffi/bridge.dart';
-import '../services/service_registry.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../ffi/bridge_device_profile.dart';
+import '../models/device_state.dart';
 import '../models/keyboard_layout.dart';
 import '../models/key_codes_windows.dart';
+import '../services/device_profile_service.dart';
+import '../services/device_registry_service.dart';
+import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
+import 'visual_editor_widgets.dart' show InlineMessage, InlineMessageVariant;
 
-/// Page for viewing device profile information.
-class DeviceProfilePage extends StatefulWidget {
-  const DeviceProfilePage({
-    super.key,
-    required this.vendorId,
-    required this.productId,
-    required this.deviceName,
-    required this.services,
-    this.initialProfile,
-  });
-
-  final int vendorId;
-  final int productId;
-  final String deviceName;
-  final ServiceRegistry services;
-  final DeviceProfile? initialProfile;
+/// Page for wiring physical keys to the virtual matrix.
+class DeviceWiringPage extends StatefulWidget {
+  const DeviceWiringPage({super.key});
 
   @override
-  State<DeviceProfilePage> createState() => _DeviceProfilePageState();
+  State<DeviceWiringPage> createState() => _DeviceWiringPageState();
 }
 
-class _DeviceProfilePageState extends State<DeviceProfilePage> {
+class _DeviceWiringPageState extends State<DeviceWiringPage> {
+  List<DeviceState> _devices = [];
+  DeviceState? _selectedDevice;
   DeviceProfile? _profile;
-  bool _isLoading = true;
-  String? _error;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   // Mapping State
   String? _selectedPhysicalKeyId;
 
+  DeviceRegistryService get _deviceRegistry => Provider.of<ServiceRegistry>(
+    context,
+    listen: false,
+  ).deviceRegistryService;
+
+  DeviceProfileService get _profileService =>
+      Provider.of<ServiceRegistry>(context, listen: false).deviceProfileService;
+
   @override
   void initState() {
     super.initState();
-    if (widget.initialProfile != null) {
-      _profile = widget.initialProfile;
-      _isLoading = false;
-    } else {
-      _loadProfile();
+    _loadDevices();
+  }
+
+  Future<void> _loadDevices() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final devices = await _deviceRegistry.getDevices();
+      setState(() {
+        _devices = devices;
+        _isLoading = false;
+
+        // Auto-select first device if none selected
+        if (_selectedDevice == null && devices.isNotEmpty) {
+          _selectDevice(devices.first);
+        } else if (_selectedDevice != null) {
+          // Refresh selected device
+          final updated = devices
+              .where(
+                (d) => d.identity.toKey() == _selectedDevice!.identity.toKey(),
+              )
+              .firstOrNull;
+          if (updated != null) {
+            _selectedDevice = updated;
+          }
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load devices: $e';
+      });
     }
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _selectDevice(DeviceState device) async {
     setState(() {
+      _selectedDevice = device;
+      _profile = null;
       _isLoading = true;
-      _error = null;
     });
 
-    final result = await widget.services.deviceProfileService.getProfile(
-      widget.vendorId,
-      widget.productId,
-    );
+    try {
+      final result = await _profileService.getProfile(
+        device.identity.vendorId,
+        device.identity.productId,
+      );
 
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-      if (result.isSuccess) {
-        _profile = result.profile;
-      } else {
-        _error = result.errorMessage ?? 'Unknown error';
-      }
-    });
+      setState(() {
+        _isLoading = false;
+        if (result.isSuccess) {
+          _profile = result.profile;
+        } else {
+          _errorMessage = result.errorMessage;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load profile: $e';
+      });
+    }
   }
 
   Future<void> _saveMapping(int scanCode, int row, int col) async {
-    if (_profile == null) return;
+    if (_profile == null || _selectedDevice == null) return;
 
     // Update keymap
     final updatedKeymap = Map<int, PhysicalKey>.from(_profile!.keymap);
@@ -99,8 +139,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
       source: _profile!.source,
     );
 
-    // Save to backend
-    await widget.services.deviceProfileService.saveProfile(updatedProfile);
+    await _profileService.saveProfile(updatedProfile);
 
     setState(() {
       _profile = updatedProfile;
@@ -137,7 +176,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
       source: _profile!.source,
     );
 
-    await widget.services.deviceProfileService.saveProfile(updatedProfile);
+    await _profileService.saveProfile(updatedProfile);
 
     setState(() {
       _profile = updatedProfile;
@@ -146,7 +185,6 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   }
 
   void _handlePhysicalKeyTap(KeyDefinition key) {
-    // Only allow selection if we have a scancode mapping
     if (keyIdToWindowsScanCode.containsKey(key.id)) {
       setState(() {
         _selectedPhysicalKeyId = key.id;
@@ -162,58 +200,91 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_profile?.name ?? widget.deviceName),
-            Text(
-              'Wire Physical Keys to Virtual Matrix',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
+        title: const Text('Profiles (Device Wiring)'),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDevices),
+        ],
       ),
-      body: _buildBody(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Toolbar: Device Selector
+          _buildToolbar(),
+
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: InlineMessage(
+                message: _errorMessage!,
+                variant: InlineMessageVariant.error,
+              ),
+            ),
+
+          // Content
+          Expanded(child: _buildContent()),
+
+          // Palette
+          _buildMatrixPalette(),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(child: Text('Error: $_error'));
-    }
-
-    if (_profile == null) {
-      return const Center(child: Text('No profile data'));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Info (Collapsible)
-        ExpansionTile(
-          title: const Text('Device Information'),
-          leading: const Icon(Icons.info_outline),
-          children: [_buildInfoCard(_profile!)],
-        ),
-
-        // Top: Physical Keyboard
-        Expanded(child: _buildPhysicalKeyboard()),
-
-        // Bottom: Matrix Palette
-        _buildMatrixPalette(),
-      ],
+  Widget _buildToolbar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          const Icon(Icons.keyboard_outlined),
+          const SizedBox(width: 12),
+          const Text('Device:', style: TextStyle(fontWeight: FontWeight.w500)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButton<String>(
+              value: _selectedDevice?.identity.toKey(),
+              hint: const Text('Select a device'),
+              isExpanded: true,
+              underline: Container(),
+              items: _devices.map((d) {
+                return DropdownMenuItem(
+                  value: d.identity.toKey(),
+                  child: Text(d.identity.displayName),
+                );
+              }).toList(),
+              onChanged: (key) {
+                if (key != null) {
+                  final device = _devices.firstWhere(
+                    (d) => d.identity.toKey() == key,
+                  );
+                  _selectDevice(device);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_devices.isEmpty)
+      return const Center(
+        child: Text('No devices found. Connect a supported device.'),
+      );
+    if (_selectedDevice == null)
+      return const Center(child: Text('Select a device to configure.'));
+    if (_profile == null)
+      return const Center(child: Text('No profile found for this device.'));
+
+    return _buildPhysicalKeyboard();
   }
 
   Widget _buildPhysicalKeyboard() {
     final mappedScanCodes = _profile!.keymap.keys.toSet();
     final mappedKeyIds = <String>{};
 
-    // Reverse lookup mapped keys for highlighting
     for (final entry in keyIdToWindowsScanCode.entries) {
       if (mappedScanCodes.contains(entry.value)) {
         mappedKeyIds.add(entry.key);
@@ -230,17 +301,22 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
                 'Typical Key Layout (Physical)',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              Text(
+                'Tap a key to assign its matrix position (Row/Col).',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: Center(
                   child: VisualKeyboard(
-                    layout: KeyboardLayout.ansi104(), // Standard Layout
+                    layout: KeyboardLayout.ansi104(),
                     onKeyTap: _handlePhysicalKeyTap,
                     selectedKeys: _selectedPhysicalKeyId != null
                         ? {_selectedPhysicalKeyId!}
                         : {},
                     mappedKeys: mappedKeyIds,
-                    showMappingOverlay: false, // We handle mapping differently
+                    showMappingOverlay: false,
                     enableDragDrop: false,
                   ),
                 ),
@@ -261,7 +337,7 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
 
     if (_selectedPhysicalKeyId != null) {
       selectedScanCode = keyIdToWindowsScanCode[_selectedPhysicalKeyId];
-      if (selectedScanCode != null) {
+      if (selectedScanCode != null && _profile != null) {
         currentMapping = _profile!.keymap[selectedScanCode];
       }
     }
@@ -390,63 +466,5 @@ class _DeviceProfilePageState extends State<DeviceProfilePage> {
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
-  }
-
-  Widget _buildInfoCard(DeviceProfile profile) {
-    final discoveredDate = profile.discoveredAt.toLocal();
-    final dateStr =
-        '${discoveredDate.year}-${discoveredDate.month.toString().padLeft(2, '0')}-${discoveredDate.day.toString().padLeft(2, '0')} '
-        '${discoveredDate.hour.toString().padLeft(2, '0')}:${discoveredDate.minute.toString().padLeft(2, '0')}';
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.info_outline),
-                const SizedBox(width: 8),
-                Text(
-                  'Profile Information',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Device Name', profile.name ?? 'Unknown'),
-            _buildInfoRow('Device ID', profile.deviceId),
-            _buildInfoRow('Source', profile.source.label),
-            _buildInfoRow('Discovered', dateStr),
-            _buildInfoRow('Schema Version', '${profile.schemaVersion}'),
-            _buildInfoRow('Total Keys', '${profile.totalKeys}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-        ],
-      ),
-    );
   }
 }

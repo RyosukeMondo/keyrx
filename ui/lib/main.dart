@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pages/visual_editor_page.dart';
+import 'pages/device_wiring_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
@@ -90,8 +90,8 @@ class _HomePageState extends State<HomePage> {
         deviceService: registry.deviceRegistryService,
         profileService: registry.profileRegistryService,
       ),
-      // Use ValueKey to force rebuild of VisualEditorPage to pick up layout fixes
-      const VisualEditorPage(key: ValueKey('visual_editor_v2')),
+      // "Profiles" tab now handles Device Wiring (Physical -> Virtual)
+      const DeviceWiringPage(key: ValueKey('device_wiring_v1')),
       const MappingPage(),
       const RunControlsPage(),
       const MetricsDashboardPage(),

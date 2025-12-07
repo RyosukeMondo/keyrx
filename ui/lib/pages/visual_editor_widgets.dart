@@ -21,29 +21,36 @@ class InlineMessage extends StatelessWidget {
     super.key,
     required this.message,
     this.variant = InlineMessageVariant.info,
+    this.icon,
   });
 
   final String message;
   final InlineMessageVariant variant;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final Color foreground = switch (variant) {
       InlineMessageVariant.info => scheme.onSurfaceVariant,
+      InlineMessageVariant.success => scheme.onSecondaryContainer,
       InlineMessageVariant.warning => scheme.onTertiaryContainer,
       InlineMessageVariant.error => scheme.onErrorContainer,
     };
     final Color background = switch (variant) {
       InlineMessageVariant.info => scheme.surfaceContainerLowest,
+      InlineMessageVariant.success => scheme.secondaryContainer,
       InlineMessageVariant.warning => scheme.tertiaryContainer,
       InlineMessageVariant.error => scheme.errorContainer,
     };
-    final IconData icon = switch (variant) {
-      InlineMessageVariant.info => Icons.info_outline,
-      InlineMessageVariant.warning => Icons.warning_amber_outlined,
-      InlineMessageVariant.error => Icons.error_outline,
-    };
+    final IconData icon =
+        this.icon ??
+        switch (variant) {
+          InlineMessageVariant.info => Icons.info_outline,
+          InlineMessageVariant.success => Icons.check_circle_outline,
+          InlineMessageVariant.warning => Icons.warning_amber_outlined,
+          InlineMessageVariant.error => Icons.error_outline,
+        };
 
     return Container(
       width: double.infinity,
@@ -74,7 +81,7 @@ class InlineMessage extends StatelessWidget {
 }
 
 /// Message type for InlineMessage.
-enum InlineMessageVariant { info, warning, error }
+enum InlineMessageVariant { info, success, warning, error }
 
 /// Warning banner shown when script has advanced features.
 class AdvancedFeaturesWarning extends StatelessWidget {

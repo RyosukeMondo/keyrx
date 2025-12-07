@@ -12,8 +12,8 @@ import '../models/profile.dart';
 import '../services/profile_autosave_service.dart';
 import '../services/profile_registry_service.dart';
 import '../services/service_registry.dart';
-import '../widgets/drag_drop_mapper.dart';
 import '../widgets/layout_grid.dart';
+import '../widgets/soft_keyboard.dart';
 import 'visual_editor_widgets.dart' show InlineMessage, InlineMessageVariant;
 
 const double _minPreviewWidth = 420;
@@ -36,6 +36,7 @@ class _MappingPageState extends State<MappingPage> {
   LayoutInfo? _layoutInfo;
   String? _selectedProfileId;
   PhysicalPosition? _selectedPosition;
+  String? _selectedOutputKey;
   Set<PhysicalPosition> _highlightedPositions = {};
   bool _isLoading = false;
   String? _errorMessage;
@@ -201,62 +202,62 @@ class _MappingPageState extends State<MappingPage> {
     final position = PhysicalPosition(row: row, col: col);
     setState(() {
       _selectedPosition = position;
+      _selectedOutputKey = null;
     });
-    _openMappingEditor();
+
+    // Check if mapped
+    final action = _currentProfile?.getAction(position);
+    if (action != null) {
+      action.when(
+        key: (k) => setState(() => _selectedOutputKey = k),
+        chord: (_) {},
+        script: (_) {},
+        block: () {},
+        pass: () {},
+      );
+    }
   }
 
-  Future<void> _openMappingEditor() async {
+  Future<void> _handleOutputKeySelected(String key) async {
+    setState(() {
+      _selectedOutputKey = key;
+    });
+    await _applyMapping(key);
+  }
+
+  Future<void> _applyMapping(String keyVariant) async {
     final profile = _currentProfile;
-    final layout = _layoutInfo;
     final position = _selectedPosition;
+    if (profile == null || position == null) return;
 
-    if (profile == null || layout == null || position == null) return;
+    final updatedMappings = Map<String, KeyAction>.from(profile.mappings);
+    updatedMappings[position.toKey()] = KeyAction.key(key: keyVariant);
 
-    final updatedProfile = await showModalBottomSheet<Profile>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            top: 16,
-          ),
-          child: FractionallySizedBox(
-            heightFactor: 0.9,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: DragDropMapper(
-                layoutInfo: layout,
-                profile: profile,
-                profileRegistryService: _profileService,
-                autosaveService: _autosaveService,
-                initialSelectedPosition: position,
-                onProfileUpdated: (updated) {
-                  Navigator.of(ctx).pop(updated);
-                },
-                onSaveError: (message) {
-                  ScaffoldMessenger.of(
-                    ctx,
-                  ).showSnackBar(SnackBar(content: Text(message)));
-                },
-              ),
-            ),
-          ),
-        );
-      },
+    final updatedProfile = profile.copyWith(
+      mappings: updatedMappings,
+      updatedAt: DateTime.now().toUtc().toIso8601String(),
     );
 
-    if (updatedProfile != null && mounted) {
+    _autosaveService.queueSave(updatedProfile);
+
+    if (mounted) {
       setState(() {
         _currentProfile = updatedProfile;
         _highlightedPositions = _computeHighlights(
           updatedProfile,
           _searchQuery,
         );
+        // "Fold" the palette - clear selection
+        _selectedPosition = null;
+        _selectedOutputKey = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Mapping updated')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mapping saved'),
+          duration: Duration(milliseconds: 1000),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -388,55 +389,48 @@ class _MappingPageState extends State<MappingPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mapping')),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildProfileToolbar(),
-              const SizedBox(height: 12),
-              _buildSearchAndDensity(),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: InlineMessage(
-                    message: _errorMessage!,
-                    variant: InlineMessageVariant.error,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildProfileToolbar(),
+                  const SizedBox(height: 12),
+                  _buildSearchAndDensity(),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: InlineMessage(
+                        message: _errorMessage!,
+                        variant: InlineMessageVariant.error,
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: _buildAutosaveBanner(),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: _buildAutosaveBanner(),
+                ],
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (_isLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (_currentProfile == null || _layoutInfo == null) {
-                      return _buildEmptyState();
-                    }
+            ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (_isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (_currentProfile == null || _layoutInfo == null) {
+                    return _buildEmptyState();
+                  }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _buildGridCard(
-                            _layoutInfo!,
-                            constraints.maxWidth,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildSelectionDetails(),
-                      ],
-                    );
-                  },
-                ),
+                  return _buildGridLayout(_layoutInfo!, constraints.maxWidth);
+                },
               ),
-            ],
-          ),
+            ),
+            _buildPalettePanel(),
+          ],
         ),
       ),
     );
@@ -558,49 +552,49 @@ class _MappingPageState extends State<MappingPage> {
     );
   }
 
-  Widget _buildGridCard(LayoutInfo layoutInfo, double maxWidth) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final availableWidth = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : maxWidth;
-            final widestRow =
-                layoutInfo.colsPerRow?.reduce(math.max) ?? layoutInfo.cols;
-            final baseKeySize =
-                (availableWidth - 64) / math.max(1, widestRow.toDouble());
-            final keySize = _clampedKeySize(baseKeySize);
-            final keySpacing = _density == MappingDensity.comfortable
-                ? 8.0
-                : 4.0;
+  Widget _buildGridLayout(LayoutInfo layoutInfo, double maxWidth) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableWidth = constraints.maxWidth.isFinite
+              ? constraints.maxWidth
+              : maxWidth;
+          final widestRow =
+              layoutInfo.colsPerRow?.reduce(math.max) ?? layoutInfo.cols;
+          final baseKeySize =
+              (availableWidth - 64) / math.max(1, widestRow.toDouble());
+          final keySize = _clampedKeySize(baseKeySize);
+          final keySpacing = _density == MappingDensity.comfortable ? 8.0 : 4.0;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Chip(
-                      avatar: const Icon(Icons.grid_on, size: 16),
-                      label: Text('${layoutInfo.rows} rows'),
-                    ),
-                    const SizedBox(width: 8),
-                    Chip(
-                      avatar: const Icon(Icons.numbers, size: 16),
-                      label: Text('$widestRow max cols'),
-                    ),
-                    const SizedBox(width: 8),
-                    Chip(
-                      avatar: const Icon(Icons.apps, size: 16),
-                      label: Text(
-                        '${_currentProfile?.mappingCount ?? 0} mapped',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Chip(
+                    avatar: const Icon(Icons.grid_on, size: 16),
+                    label: Text('${layoutInfo.rows} rows'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: 8),
+                  Chip(
+                    avatar: const Icon(Icons.numbers, size: 16),
+                    label: Text('$widestRow max cols'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const SizedBox(width: 8),
+                  Chip(
+                    avatar: const Icon(Icons.apps, size: 16),
+                    label: Text('${_currentProfile?.mappingCount ?? 0} mapped'),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Center(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: ConstrainedBox(
@@ -620,10 +614,10 @@ class _MappingPageState extends State<MappingPage> {
                     ),
                   ),
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -641,57 +635,88 @@ class _MappingPageState extends State<MappingPage> {
     return base.clamp(minSize, maxSize);
   }
 
-  Widget _buildSelectionDetails() {
-    if (_selectedPosition == null) {
-      return const InlineMessage(
-        message: 'Tap a key to inspect and edit its mapping.',
-      );
-    }
+  Widget _buildPalettePanel() {
+    final show = _selectedPosition != null;
+    final theme = Theme.of(context);
+    final action = _selectedPosition != null
+        ? _currentProfile?.getAction(_selectedPosition!)
+        : null;
 
-    final action = _currentProfile?.getAction(_selectedPosition!);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.push_pin, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: show ? 400 : 0,
+      curve: Curves.easeInOutCubicEmphasized,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: show
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Key ${_selectedPosition!.toKey()}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.keyboard,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Select mapping for ${_selectedPosition?.toKey()}',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        const SizedBox(width: 12),
+                        if (action != null)
+                          Chip(
+                            label: Text(keyActionLabel(action)),
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            labelStyle: TextStyle(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontSize: 11,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            onDeleted: () => _clearMapping(_selectedPosition!),
+                          ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              _selectedPosition = null;
+                              _selectedOutputKey = null;
+                            });
+                          },
+                          tooltip: 'Close',
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    action == null
-                        ? 'No mapping assigned yet.'
-                        : 'Mapped to ${keyActionLabel(action)}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: SoftKeyboard(
+                      onKeySelected: _handleOutputKeySelected,
+                      selectedKey: _selectedOutputKey,
                     ),
                   ),
                 ],
-              ),
-            ),
-            if (action != null) ...[
-              TextButton.icon(
-                onPressed: () => _clearMapping(_selectedPosition!),
-                icon: const Icon(Icons.clear),
-                label: const Text('Clear'),
-              ),
-              const SizedBox(width: 8),
-            ],
-            FilledButton.icon(
-              onPressed: _openMappingEditor,
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit mapping'),
-            ),
-          ],
-        ),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }
