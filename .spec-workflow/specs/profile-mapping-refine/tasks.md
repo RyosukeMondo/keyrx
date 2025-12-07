@@ -48,7 +48,7 @@
   - _Requirements: Non-functional (CLI First)_
   - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Virtual Layouts. | Success: `keyrx layout list` works._
 
-- [ ] 8. Implement Profile/Wiring CLI Commands
+- [x] 8. Implement Profile/Wiring CLI Commands
   - File: `core/src/cli/commands/hardware.rs`
   - Implement `keyrx hardware list`, `define`, `wire` commands.
   - _Requirements: Non-functional (CLI First)_

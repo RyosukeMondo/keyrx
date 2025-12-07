@@ -37,7 +37,7 @@ pub use docs::{DocFormat, DocsCommand};
 pub use doctor::{CheckStatus, DiagnosticCheck, DoctorCommand};
 pub use exit_codes::ExitCodesCommand;
 pub use golden::{exit_codes as golden_exit_codes, GoldenCommand, GoldenSubcommand};
-pub use hardware::{HardwareAction, HardwareCommand};
+pub use hardware::{HardwareAction, HardwareCommand, HardwareSource};
 pub use layout::{LayoutAction, LayoutCommand, LayoutSource};
 pub use migrate::MigrateCommand;
 pub use regression::{exit_codes as regression_exit_codes, RegressionCommand, RegressionSummary};

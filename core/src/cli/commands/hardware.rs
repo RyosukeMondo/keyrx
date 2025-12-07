@@ -5,18 +5,32 @@
 
 use crate::cli::HasExitCode;
 use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
+use crate::config::models::HardwareProfile;
+use crate::config::{ConfigManager, StorageError};
 use crate::hardware::{
     CalibrationComparison, CalibrationConfig, CalibrationRunner, Calibrator, DeviceClass,
     HardwareDetector, HardwareInfo, ProfileDatabase, ProfileSource, TimingConfig,
 };
 use serde::Serialize;
 use std::fs;
+use std::io::{self, Read};
+use std::path::PathBuf;
 use std::time::Duration;
 use tokio::runtime::Handle;
 
 /// Actions supported by the hardware command.
 #[derive(Debug, Clone)]
 pub enum HardwareAction {
+    List,
+    Define {
+        source: HardwareSource,
+    },
+    Wire {
+        profile_id: String,
+        scancode: u16,
+        virtual_key: Option<String>,
+        clear: bool,
+    },
     Detect,
     Profile {
         vendor_id: Option<u16>,
@@ -44,10 +58,18 @@ struct CalibrationRequest {
     samples_file: Option<String>,
 }
 
+/// Source for hardware profile creation (file path or stdin).
+#[derive(Debug, Clone)]
+pub enum HardwareSource {
+    File(PathBuf),
+    Stdin,
+}
+
 /// Hardware command entry point.
 pub struct HardwareCommand {
     output: OutputWriter,
     action: HardwareAction,
+    config_root: Option<PathBuf>,
 }
 
 impl HardwareCommand {
@@ -55,7 +77,201 @@ impl HardwareCommand {
         Self {
             output: OutputWriter::new(format),
             action,
+            config_root: None,
         }
+    }
+
+    /// Override the config root (useful for tests).
+    pub fn with_config_root(mut self, root: impl Into<PathBuf>) -> Self {
+        self.config_root = Some(root.into());
+        self
+    }
+
+    fn run(&self) -> CommandResult<()> {
+        match &self.action {
+            HardwareAction::List => self.list(),
+            HardwareAction::Define { source } => self.define(source),
+            HardwareAction::Wire {
+                profile_id,
+                scancode,
+                virtual_key,
+                clear,
+            } => self.wire(profile_id, *scancode, virtual_key.as_deref(), *clear),
+            HardwareAction::Detect => self.detect(),
+            HardwareAction::Profile {
+                vendor_id,
+                product_id,
+            } => self.profile(*vendor_id, *product_id),
+            HardwareAction::Calibrate {
+                vendor_id,
+                product_id,
+                warmup_samples,
+                sample_count,
+                max_duration_secs,
+                latencies_us,
+                samples_file,
+            } => self.calibrate(CalibrationRequest {
+                vendor_id: *vendor_id,
+                product_id: *product_id,
+                warmup_samples: *warmup_samples,
+                sample_count: *sample_count,
+                max_duration_secs: *max_duration_secs,
+                latencies_us: latencies_us.clone(),
+                samples_file: samples_file.clone(),
+            }),
+        }
+    }
+
+    fn list(&self) -> CommandResult<()> {
+        let manager = self.manager();
+        let profiles = match manager.load_hardware_profiles() {
+            Ok(map) => map.into_values().collect::<Vec<_>>(),
+            Err(err) => return self.storage_failure("load hardware profiles", err),
+        };
+
+        let mut summaries: Vec<HardwareSummary> =
+            profiles.into_iter().map(HardwareSummary::from).collect();
+        summaries.sort_by(|a, b| a.id.cmp(&b.id));
+
+        if let Err(err) = self.output.data(&HardwareListOutput {
+            hardware_profiles: summaries,
+        }) {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to render hardware list: {err}"),
+            );
+        }
+
+        CommandResult::success(())
+    }
+
+    fn define(&self, source: &HardwareSource) -> CommandResult<()> {
+        let json = match self.read_source(source) {
+            Ok(content) => content,
+            Err(result) => return result,
+        };
+
+        let profile: HardwareProfile = match serde_json::from_str(&json) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                return CommandResult::failure(
+                    ExitCode::ValidationFailed,
+                    format!("Invalid hardware profile JSON: {err}"),
+                )
+            }
+        };
+
+        let manager = self.manager();
+        let saved_path = match manager.save_hardware_profile(&profile) {
+            Ok(path) => path,
+            Err(err) => return self.storage_failure("save hardware profile", err),
+        };
+
+        let summary = HardwareSummary::from(profile);
+
+        if let Err(err) = self.output.data(&HardwareSaveOutput {
+            saved_path: saved_path.display().to_string(),
+            profile: summary.clone(),
+        }) {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to render hardware output: {err}"),
+            );
+        }
+
+        if matches!(
+            self.output.format(),
+            OutputFormat::Human | OutputFormat::Table
+        ) {
+            self.output.success(&format!(
+                "Saved hardware profile '{}' to {}",
+                summary.id,
+                saved_path.display()
+            ));
+        }
+
+        CommandResult::success(())
+    }
+
+    fn wire(
+        &self,
+        profile_id: &str,
+        scancode: u16,
+        virtual_key: Option<&str>,
+        clear: bool,
+    ) -> CommandResult<()> {
+        if clear && virtual_key.is_some() {
+            return CommandResult::failure(
+                ExitCode::ValidationFailed,
+                "Use either --virtual-key to set or --clear to remove a mapping, not both",
+            );
+        }
+
+        if virtual_key.is_none() && !clear {
+            return CommandResult::failure(
+                ExitCode::ValidationFailed,
+                "Provide --virtual-key to set a mapping or --clear to remove one",
+            );
+        }
+
+        let manager = self.manager();
+        let mut profiles = match manager.load_hardware_profiles() {
+            Ok(map) => map,
+            Err(err) => return self.storage_failure("load hardware profiles", err),
+        };
+
+        let Some(mut profile) = profiles.remove(profile_id) else {
+            return CommandResult::failure(
+                ExitCode::ValidationFailed,
+                format!("Hardware profile '{profile_id}' not found"),
+            );
+        };
+
+        if clear {
+            profile.wiring.remove(&scancode);
+        } else if let Some(key) = virtual_key {
+            profile.wiring.insert(scancode, key.to_string());
+        }
+
+        let saved_path = match manager.save_hardware_profile(&profile) {
+            Ok(path) => path,
+            Err(err) => return self.storage_failure("save hardware profile", err),
+        };
+
+        let mapping = profile.wiring.get(&scancode).cloned();
+        let summary = HardwareSummary::from(profile);
+
+        if let Err(err) = self.output.data(&HardwareWireOutput {
+            saved_path: saved_path.display().to_string(),
+            profile: summary.clone(),
+            mapping: WireMappingOutput {
+                scancode,
+                virtual_key: mapping.clone(),
+                action: if clear { "cleared" } else { "set" }.to_string(),
+            },
+        }) {
+            return CommandResult::failure(
+                ExitCode::GeneralError,
+                format!("Failed to render wiring output: {err}"),
+            );
+        }
+
+        if matches!(
+            self.output.format(),
+            OutputFormat::Human | OutputFormat::Table
+        ) {
+            if clear {
+                self.output.success(&format!(
+                    "Cleared mapping for scancode 0x{scancode:02x} in profile '{profile_id}'"
+                ));
+            } else if let Some(key) = mapping {
+                self.output.success(&format!(
+                    "Mapped scancode 0x{scancode:02x} -> {key} in profile '{profile_id}'"
+                ));
+            }
+        }
+
+        CommandResult::success(())
     }
 
     fn detect(&self) -> CommandResult<()> {
@@ -345,6 +561,58 @@ impl HardwareCommand {
 
         Ok(durations)
     }
+
+    fn read_source(&self, source: &HardwareSource) -> Result<String, CommandResult<()>> {
+        match source {
+            HardwareSource::Stdin => {
+                let mut buffer = String::new();
+                if let Err(err) = io::stdin().read_to_string(&mut buffer) {
+                    return Err(CommandResult::failure(
+                        ExitCode::GeneralError,
+                        format!("Failed to read hardware profile from stdin: {err}"),
+                    ));
+                }
+                Ok(buffer)
+            }
+            HardwareSource::File(path) => fs::read_to_string(path).map_err(|err| {
+                let code = if err.kind() == io::ErrorKind::PermissionDenied {
+                    ExitCode::PermissionDenied
+                } else {
+                    ExitCode::GeneralError
+                };
+                CommandResult::failure(
+                    code,
+                    format!(
+                        "Failed to read hardware profile file '{}': {err}",
+                        path.display()
+                    ),
+                )
+            }),
+        }
+    }
+
+    fn storage_failure(&self, action: &str, err: StorageError) -> CommandResult<()> {
+        let code = match &err {
+            StorageError::CreateDir(_, e)
+            | StorageError::ReadDir(_, e)
+            | StorageError::ReadFile(_, e)
+            | StorageError::WriteFile(_, e)
+                if e.kind() == io::ErrorKind::PermissionDenied =>
+            {
+                ExitCode::PermissionDenied
+            }
+            StorageError::Parse(_, _) => ExitCode::ValidationFailed,
+            _ => ExitCode::GeneralError,
+        };
+        CommandResult::failure(code, format!("Failed to {action}: {err}"))
+    }
+
+    fn manager(&self) -> ConfigManager {
+        match &self.config_root {
+            Some(root) => ConfigManager::new(root.clone()),
+            None => ConfigManager::default(),
+        }
+    }
 }
 
 impl Command for HardwareCommand {
@@ -353,31 +621,57 @@ impl Command for HardwareCommand {
     }
 
     fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
-        match self.action.clone() {
-            HardwareAction::Detect => self.detect(),
-            HardwareAction::Profile {
-                vendor_id,
-                product_id,
-            } => self.profile(vendor_id, product_id),
-            HardwareAction::Calibrate {
-                vendor_id,
-                product_id,
-                warmup_samples,
-                sample_count,
-                max_duration_secs,
-                latencies_us,
-                samples_file,
-            } => self.calibrate(CalibrationRequest {
-                vendor_id,
-                product_id,
-                warmup_samples,
-                sample_count,
-                max_duration_secs,
-                latencies_us,
-                samples_file,
-            }),
+        self.run()
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct HardwareSummary {
+    id: String,
+    vendor_id: u16,
+    product_id: u16,
+    name: Option<String>,
+    virtual_layout_id: String,
+    wiring_count: usize,
+}
+
+impl From<HardwareProfile> for HardwareSummary {
+    fn from(profile: HardwareProfile) -> Self {
+        Self {
+            id: profile.id,
+            vendor_id: profile.vendor_id,
+            product_id: profile.product_id,
+            name: profile.name,
+            virtual_layout_id: profile.virtual_layout_id,
+            wiring_count: profile.wiring.len(),
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+struct HardwareListOutput {
+    hardware_profiles: Vec<HardwareSummary>,
+}
+
+#[derive(Debug, Serialize)]
+struct HardwareSaveOutput {
+    saved_path: String,
+    profile: HardwareSummary,
+}
+
+#[derive(Debug, Serialize)]
+struct WireMappingOutput {
+    scancode: u16,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    virtual_key: Option<String>,
+    action: String,
+}
+
+#[derive(Debug, Serialize)]
+struct HardwareWireOutput {
+    saved_path: String,
+    profile: HardwareSummary,
+    mapping: WireMappingOutput,
 }
 
 #[derive(Debug, Serialize)]

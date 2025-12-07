@@ -9,9 +9,9 @@ use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, HardwareAction, HardwareCommand, LayoutAction, LayoutCommand,
-        LayoutSource, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand, RunCommand,
-        SimulateCommand, StateCommand, TestCommand, UatCommand,
+        GoldenSubcommand, HardwareAction, HardwareCommand, HardwareSource, LayoutAction,
+        LayoutCommand, LayoutSource, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand,
+        RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -408,6 +408,35 @@ enum Commands {
 
 #[derive(Subcommand, Clone)]
 enum HardwareCommands {
+    /// List stored hardware wiring profiles
+    List,
+
+    /// Create or update a hardware wiring profile from JSON (file path or "-")
+    Define {
+        /// Path to hardware profile JSON (use "-" to read from stdin)
+        #[arg(value_name = "PATH")]
+        source: PathBuf,
+    },
+
+    /// Wire a scancode to a virtual key within a hardware profile
+    Wire {
+        /// Hardware profile identifier
+        #[arg(long)]
+        profile: String,
+
+        /// Scancode to map (hex like 0x04 or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        scancode: u16,
+
+        /// Virtual key identifier to assign (omit with --clear to remove)
+        #[arg(long)]
+        virtual_key: Option<String>,
+
+        /// Clear an existing mapping for the scancode
+        #[arg(long, action = ArgAction::SetTrue)]
+        clear: bool,
+    },
+
     /// Detect connected keyboards and suggest timing profiles
     Detect,
 
@@ -830,6 +859,26 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         }
         Commands::Hardware { command } => {
             let action = match command {
+                HardwareCommands::List => HardwareAction::List,
+                HardwareCommands::Define { source } => {
+                    let src = if source.as_os_str() == "-" {
+                        HardwareSource::Stdin
+                    } else {
+                        HardwareSource::File(source)
+                    };
+                    HardwareAction::Define { source: src }
+                }
+                HardwareCommands::Wire {
+                    profile,
+                    scancode,
+                    virtual_key,
+                    clear,
+                } => HardwareAction::Wire {
+                    profile_id: profile,
+                    scancode,
+                    virtual_key,
+                    clear,
+                },
                 HardwareCommands::Detect => HardwareAction::Detect,
                 HardwareCommands::Profile {
                     vendor_id,
