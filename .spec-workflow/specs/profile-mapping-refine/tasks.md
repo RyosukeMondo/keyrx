@@ -28,8 +28,6 @@
   - _Requirements: Non-functional (Modularity)_
   - _Prompt: Role: Rust/FFI Engineer | Task: Update `extern "C"` functions. Expose `VirtualLayout`, `HardwareProfile`, `Keymap` CRUD. Expose `RuntimeConfig` methods: `add_slot`, `remove_slot`, `reorder_slot`, `set_active`. | Success: FFI functions match the new core API._
 
-## Phase 2: Dart Model & Service Refactor
-
 - [x] 5. Generate FFI Bindings
   - File: `ui/lib/ffi/generated/bindings.dart`
   - Run `flutter pub run ffi_gen` or manual update to reflect Rust FFI changes.
@@ -42,7 +40,35 @@
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Role: Flutter Developer | Task: Create `VirtualLayout`, `HardwareProfile`, `Keymap`, and `RuntimeConfig` data classes in Dart. | Success: Models match Rust structs._
 
-- [ ] 7. Update Dart Services
+## Phase 1.5: CLI Implementation (CLI First)
+
+- [ ] 7. Implement Layout CLI Commands
+  - File: `core/src/cli/commands/layout.rs`
+  - Implement `keyrx layout list`, `create`, `show` commands.
+  - _Requirements: Non-functional (CLI First)_
+  - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Virtual Layouts. | Success: `keyrx layout list` works._
+
+- [ ] 8. Implement Profile/Wiring CLI Commands
+  - File: `core/src/cli/commands/hardware.rs`
+  - Implement `keyrx hardware list`, `define`, `wire` commands.
+  - _Requirements: Non-functional (CLI First)_
+  - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Hardware Profiles. Support interactive wiring mode if possible. | Success: `keyrx hardware list` works._
+
+- [ ] 9. Implement Keymap CLI Commands
+  - File: `core/src/cli/commands/keymap.rs`
+  - Implement `keyrx keymap list`, `map`, `show` commands.
+  - _Requirements: Non-functional (CLI First)_
+  - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Keymaps. | Success: `keyrx keymap list` works._
+
+- [ ] 10. Implement Runtime CLI Commands
+  - File: `core/src/cli/commands/runtime.rs`
+  - Implement `keyrx device list` (showing slots), `slot add/remove`, `slot active`.
+  - _Requirements: Non-functional (CLI First)_
+  - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to inspect and modify the runtime state (connected devices and their slots). | Success: `keyrx device list` shows active slots._
+
+## Phase 2: Dart Service Refactor
+
+- [ ] 11. Update Dart Services
   - File: `ui/lib/services/`
   - Update `HardwareService`, `LayoutService`, `KeymapService` to use the new FFI calls.
   - _Requirements: 1.1, 1.2, 1.3_
@@ -50,33 +76,33 @@
 
 ## Phase 3: UI Implementation
 
-- [ ] 8. Implement Layouts Tab
+- [ ] 12. Implement Layouts Tab
   - File: `ui/lib/pages/layouts.dart`
   - Create UI for listing and creating/editing Virtual Layouts.
   - _Requirements: 2.1, 2.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Create `LayoutsPage` with a list of layouts and an editor for defining keys (Matrix grid or named keys). | Success: User can create and save a Virtual Layout._
 
-- [ ] 9. Implement Wiring Tab
+- [ ] 13. Implement Wiring Tab
   - File: `ui/lib/pages/wiring.dart`
   - Create UI for wiring Physical Keys to Virtual Layouts.
   - Interaction: QMK-style (Physical Source Top, Virtual Target Bottom).
   - _Requirements: 3.1, 3.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Create `WiringPage`. Display Physical Keys (Source) on top, Virtual Layout (Target) on bottom. Click source -> Click target to assign. No physical key press required. | Success: User can wire a physical device to a layout._
 
-- [ ] 10. Implement Mapping Tab
+- [ ] 14. Implement Mapping Tab
   - File: `ui/lib/pages/mapping.dart`
   - Update the existing editor to map Virtual Keys to Actions.
   - Interaction: QMK-style (Virtual Source Top, Action Palette Bottom).
   - _Requirements: 4.1, 4.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Refactor `MappingPage`. Display Virtual Layout (Source) on top, Action Palette (Standard Keys/Macros) on bottom. Click source -> Click action to map. | Success: User can map virtual keys to actions._
 
-- [ ] 11. Update Main Navigation
+- [ ] 15. Update Main Navigation
   - File: `ui/lib/main.dart`
   - Implement the 4-tab navigation structure (Devices, Layouts, Wiring, Mapping).
   - _Requirements: 5.1_
-  - _Prompt: Role: Flutter UI Developer | Task: Update the main application scaffold to use a 4-item left navigation rail. | Success: Navigation works correctly._
+  - _Prompt: Role: Flutter UI Developer | Task: Update the main application scaffold to use a 4-tab left navigation rail. | Success: Navigation works correctly._
 
-- [ ] 12. Implement Devices Tab
+- [ ] 16. Implement Devices Tab
   - File: `ui/lib/pages/devices.dart`
   - Create UI for managing connected devices and their Profile Slots.
   - Features: Add/Remove slots, Toggle Active, Reorder (Up/Down), Select Wiring/Keymap.
