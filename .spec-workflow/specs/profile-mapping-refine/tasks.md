@@ -2,7 +2,7 @@
 
 ## Phase 1: Rust Core Refactor
 
-- [ ] 1. Define Core Structs
+- [x] 1. Define Core Structs
   - File: `core/src/config/models.rs` (create/update)
   - Define `VirtualLayout`, `HardwareProfile`, `Keymap`, `RuntimeConfig`, and `ProfileSlot` structs.
   - Implement serialization/deserialization (Serde).
