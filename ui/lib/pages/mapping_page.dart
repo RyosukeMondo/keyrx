@@ -1,28 +1,18 @@
-/// Dedicated Mapping page for per-key assignment with search and density controls.
+/// Mapping tab for binding virtual keys to actions using virtual layouts + keymaps.
 library;
-
-import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/layout_type.dart';
-import '../models/profile.dart';
-import '../services/profile_autosave_service.dart';
-import '../services/profile_registry_service.dart';
+import '../models/action_binding.dart';
+import '../models/keymap.dart';
+import '../models/virtual_layout.dart';
+import '../models/virtual_layout_type.dart';
+import '../services/keymap_service.dart';
+import '../services/layout_service.dart';
 import '../services/service_registry.dart';
-import '../widgets/layout_grid.dart';
 import '../widgets/soft_keyboard.dart';
-import 'visual_editor_widgets.dart' show InlineMessage, InlineMessageVariant;
 
-const double _minPreviewWidth = 420;
-const double _minPreviewHeight = 320;
-
-/// Density options for the mapping grid.
-enum MappingDensity { comfortable, compact }
-
-/// Mapping page showing the profile grid with search highlights and an editor dialog.
 class MappingPage extends StatefulWidget {
   const MappingPage({super.key});
 
@@ -31,357 +21,602 @@ class MappingPage extends StatefulWidget {
 }
 
 class _MappingPageState extends State<MappingPage> {
-  List<String> _profileIds = [];
-  Profile? _currentProfile;
-  LayoutInfo? _layoutInfo;
-  String? _selectedProfileId;
-  PhysicalPosition? _selectedPosition;
-  String? _selectedOutputKey;
-  Set<PhysicalPosition> _highlightedPositions = {};
-  bool _isLoading = false;
+  List<VirtualLayout> _layouts = const [];
+  List<Keymap> _keymaps = const [];
+  VirtualLayout? _selectedLayout;
+  Keymap? _workingKeymap;
+  int _selectedLayerIndex = 0;
+  String? _selectedVirtualKeyId;
+  bool _isLoading = true;
+  bool _isSaving = false;
   String? _errorMessage;
-  String _searchQuery = '';
-  MappingDensity _density = MappingDensity.comfortable;
-  final TextEditingController _searchController = TextEditingController();
-  AutosaveStatus _autosaveStatus = const AutosaveStatus(
-    state: AutosaveState.idle,
-  );
-  StreamSubscription<AutosaveStatus>? _autosaveSubscription;
 
-  ProfileRegistryService get _profileService {
+  final TextEditingController _keymapIdController = TextEditingController();
+  final TextEditingController _keymapNameController = TextEditingController();
+  final TextEditingController _macroController = TextEditingController();
+
+  LayoutService get _layoutService {
     try {
       final registry = Provider.of<ServiceRegistry>(context, listen: false);
-      return registry.profileRegistryService;
+      return registry.layoutService;
     } on ProviderNotFoundException {
-      return Provider.of<ProfileRegistryService>(context, listen: false);
+      return Provider.of<LayoutService>(context, listen: false);
     }
   }
 
-  ProfileAutosaveService get _autosaveService {
+  KeymapService get _keymapService {
     try {
       final registry = Provider.of<ServiceRegistry>(context, listen: false);
-      return registry.profileAutosaveService;
+      return registry.keymapService;
     } on ProviderNotFoundException {
-      return Provider.of<ProfileAutosaveService>(context, listen: false);
+      return Provider.of<KeymapService>(context, listen: false);
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _listenToAutosave();
-    _loadProfiles();
+    _loadData();
   }
 
   @override
   void dispose() {
-    _autosaveSubscription?.cancel();
-    _searchController.dispose();
+    _keymapIdController.dispose();
+    _keymapNameController.dispose();
+    _macroController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadProfiles() async {
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    try {
-      final ids = await _profileService.listProfiles();
-      _profileIds = ids;
-
-      if (ids.isEmpty) {
-        setState(() {
-          _isLoading = false;
-          _currentProfile = null;
-          _layoutInfo = null;
-          _selectedProfileId = null;
-          _highlightedPositions = {};
-        });
-        return;
-      }
-
-      final targetId = _selectedProfileId ?? ids.first;
-      await _loadProfile(targetId);
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to load profiles: $e';
-      });
-    }
-  }
-
-  Future<void> _loadProfile(String profileId) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _selectedProfileId = profileId;
-    });
-
-    try {
-      final profile = await _profileService.getProfile(profileId);
-      if (profile == null) {
-        setState(() {
-          _isLoading = false;
-          _currentProfile = null;
-          _layoutInfo = null;
-          _errorMessage = 'Profile $profileId not found.';
-        });
-        return;
-      }
-
-      final layout = _buildLayoutInfo(profile);
-      final highlights = _computeHighlights(profile, _searchQuery);
-
-      setState(() {
-        _currentProfile = profile;
-        _layoutInfo = layout;
-        _highlightedPositions = highlights;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to load profile: $e';
-      });
-    }
-  }
-
-  LayoutInfo _buildLayoutInfo(Profile profile) {
-    switch (profile.layoutType) {
-      case LayoutType.matrix:
-        return const LayoutInfo(
-          rows: 5,
-          cols: 5,
-          type: LayoutType.matrix,
-          colsPerRow: [5, 5, 5, 5, 5],
-        );
-      case LayoutType.standard:
-        return const LayoutInfo(rows: 6, cols: 15, type: LayoutType.standard);
-      case LayoutType.split:
-        return const LayoutInfo(rows: 5, cols: 14, type: LayoutType.split);
-    }
-  }
-
-  Set<PhysicalPosition> _computeHighlights(Profile profile, String query) {
-    if (query.isEmpty) return {};
-    final normalized = query.toLowerCase();
-    final matches = <PhysicalPosition>{};
-
-    profile.mappings.forEach((key, action) {
-      final label = keyActionLabel(action).toLowerCase();
-      if (label.contains(normalized) ||
-          key.toLowerCase().contains(normalized)) {
-        final position = PhysicalPosition.fromKey(key);
-        if (position != null) {
-          matches.add(position);
-        }
-      }
-    });
-
-    return matches;
-  }
-
-  void _handleSearchChanged(String value) {
-    final profile = _currentProfile;
-    if (profile == null) return;
-
-    setState(() {
-      _searchQuery = value;
-      _highlightedPositions = _computeHighlights(profile, value);
-    });
-  }
-
-  void _handleDensityChanged(MappingDensity density) {
-    setState(() {
-      _density = density;
-    });
-  }
-
-  void _handleKeyTap(int row, int col) {
-    final position = PhysicalPosition(row: row, col: col);
-    setState(() {
-      _selectedPosition = position;
-      _selectedOutputKey = null;
-    });
-
-    // Check if mapped
-    final action = _currentProfile?.getAction(position);
-    if (action != null) {
-      action.when(
-        key: (k) => setState(() => _selectedOutputKey = k),
-        chord: (_) {},
-        script: (_) {},
-        block: () {},
-        pass: () {},
-      );
-    }
-  }
-
-  Future<void> _handleOutputKeySelected(String key) async {
-    setState(() {
-      _selectedOutputKey = key;
-    });
-    await _applyMapping(key);
-  }
-
-  Future<void> _applyMapping(String keyVariant) async {
-    final profile = _currentProfile;
-    final position = _selectedPosition;
-    if (profile == null || position == null) return;
-
-    final updatedMappings = Map<String, KeyAction>.from(profile.mappings);
-    updatedMappings[position.toKey()] = KeyAction.key(key: keyVariant);
-
-    final updatedProfile = profile.copyWith(
-      mappings: updatedMappings,
-      updatedAt: DateTime.now().toUtc().toIso8601String(),
-    );
-
-    _autosaveService.queueSave(updatedProfile);
-
-    if (mounted) {
-      setState(() {
-        _currentProfile = updatedProfile;
-        _highlightedPositions = _computeHighlights(
-          updatedProfile,
-          _searchQuery,
-        );
-        // "Fold" the palette - clear selection
-        _selectedPosition = null;
-        _selectedOutputKey = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mapping saved'),
-          duration: Duration(milliseconds: 1000),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  Future<void> _clearMapping(PhysicalPosition position) async {
-    final profile = _currentProfile;
-    if (profile == null) return;
-
-    final updatedMappings = Map<String, KeyAction>.from(profile.mappings)
-      ..remove(position.toKey());
-    final updatedProfile = profile.copyWith(
-      mappings: updatedMappings,
-      updatedAt: DateTime.now().toUtc().toIso8601String(),
-    );
-
-    _autosaveService.queueSave(updatedProfile);
-
-    if (mounted) {
-      setState(() {
-        _currentProfile = updatedProfile;
-        _highlightedPositions = _computeHighlights(
-          updatedProfile,
-          _searchQuery,
-        );
-      });
-    }
-  }
-
-  void _listenToAutosave() {
-    _autosaveStatus = _autosaveService.status;
-    _autosaveSubscription = _autosaveService.statusStream.listen(
-      _handleAutosaveStatus,
-    );
-  }
-
-  void _handleAutosaveStatus(AutosaveStatus status) {
-    final currentProfileId = _currentProfile?.id;
-    if (status.profileId != null && status.profileId != currentProfileId) {
-      return;
-    }
+    final layoutsResult = await _layoutService.listLayouts();
+    final keymapsResult = await _keymapService.listKeymaps();
 
     if (!mounted) return;
 
-    final previousState = _autosaveStatus.state;
+    if (layoutsResult.hasError) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = layoutsResult.errorMessage;
+      });
+      return;
+    }
+
+    if (keymapsResult.hasError) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = keymapsResult.errorMessage;
+      });
+      return;
+    }
+
+    final layouts = layoutsResult.data ?? [];
+    final keymaps = keymapsResult.data ?? [];
+
     setState(() {
-      _autosaveStatus = status;
+      _layouts = layouts;
+      _keymaps = keymaps;
+      _isLoading = false;
     });
 
-    if (status.state == AutosaveState.error &&
-        previousState != AutosaveState.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(status.errorMessage ?? 'Autosave failed.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    } else if (status.state == AutosaveState.success &&
-        previousState != AutosaveState.success &&
-        status.lastSavedAt != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Changes saved at ${_formatTime(status.lastSavedAt!)}'),
-        ),
-      );
+    if (layouts.isNotEmpty) {
+      _selectLayout(layouts.first);
     }
   }
 
-  Widget _buildAutosaveBanner() {
-    final status = _autosaveStatus;
+  void _selectLayout(VirtualLayout layout) {
+    final matching = _keymaps
+        .where((k) => k.virtualLayoutId == layout.id)
+        .toList(growable: false);
 
-    String? message;
-    InlineMessageVariant variant = InlineMessageVariant.info;
+    final keymap = matching.isNotEmpty
+        ? matching.first
+        : _buildDraftKeymap(layout);
+    _setKeymap(keymap);
 
-    switch (status.state) {
-      case AutosaveState.queued:
-        message =
-            'Autosave queued${status.profileId != null ? ' for ${status.profileId}' : ''}.';
-        variant = InlineMessageVariant.info;
-        break;
-      case AutosaveState.saving:
-        final attempt = status.attempt;
-        final dir = status.targetDirectory ?? 'profiles directory';
-        message = 'Saving changes (attempt $attempt) to $dir...';
-        variant = InlineMessageVariant.info;
-        break;
-      case AutosaveState.success:
-        final timestamp = status.lastSavedAt != null
-            ? _formatTime(status.lastSavedAt!)
-            : null;
-        message = 'Last saved${timestamp != null ? ' at $timestamp' : ''}.';
-        variant = InlineMessageVariant.success;
-        break;
-      case AutosaveState.error:
-        message = status.errorMessage ?? 'Autosave failed.';
-        variant = InlineMessageVariant.error;
-        break;
-      case AutosaveState.idle:
-        if (status.lastSavedAt != null) {
-          message = 'Last saved at ${_formatTime(status.lastSavedAt!)} (idle).';
-          variant = InlineMessageVariant.success;
-        }
-        break;
+    setState(() {
+      _selectedLayout = layout;
+    });
+  }
+
+  void _setKeymap(Keymap keymap) {
+    final withLayer = _ensureLayer(keymap);
+    setState(() {
+      _workingKeymap = withLayer;
+      _selectedLayerIndex = 0;
+      _selectedVirtualKeyId = null;
+      _keymapIdController.text = withLayer.id;
+      _keymapNameController.text = withLayer.name;
+    });
+  }
+
+  Keymap _buildDraftKeymap(VirtualLayout layout) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return Keymap(
+      id: 'keymap_$timestamp',
+      name: '${layout.name} Keymap',
+      virtualLayoutId: layout.id,
+      layers: const [],
+    );
+  }
+
+  Keymap _ensureLayer(Keymap keymap) {
+    if (keymap.layers.isNotEmpty) return keymap;
+    return keymap.copyWith(
+      layers: [KeymapLayer(name: 'Layer 0', bindings: const {})],
+    );
+  }
+
+  KeymapLayer? get _currentLayer {
+    if (_workingKeymap == null) return null;
+    if (_selectedLayerIndex < 0 ||
+        _selectedLayerIndex >= _workingKeymap!.layers.length) {
+      return null;
+    }
+    return _workingKeymap!.layers[_selectedLayerIndex];
+  }
+
+  Map<String, ActionBinding> get _bindingsForLayer {
+    return _currentLayer?.bindings ?? const {};
+  }
+
+  void _applyBinding(ActionBinding binding) {
+    final keyId = _selectedVirtualKeyId;
+    if (keyId == null || _workingKeymap == null || _currentLayer == null) {
+      return;
     }
 
-    if (message == null) {
-      return const SizedBox.shrink();
+    final layers = [..._workingKeymap!.layers];
+    final layer = layers[_selectedLayerIndex];
+    final updatedBindings = Map<String, ActionBinding>.from(layer.bindings);
+    updatedBindings[keyId] = binding;
+    layers[_selectedLayerIndex] = layer.copyWith(bindings: updatedBindings);
+
+    setState(() {
+      _workingKeymap = _workingKeymap!.copyWith(layers: layers);
+    });
+
+    _showSnack('Mapped $keyId to ${_bindingLabel(binding)}');
+  }
+
+  void _clearBinding() {
+    final keyId = _selectedVirtualKeyId;
+    if (keyId == null || _workingKeymap == null || _currentLayer == null) {
+      return;
     }
 
-    return InlineMessage(
-      message: message,
-      variant: variant,
-      icon: switch (variant) {
-        InlineMessageVariant.success => Icons.check_circle_outline,
-        InlineMessageVariant.error => Icons.warning_amber_rounded,
-        _ => Icons.sync,
+    final layers = [..._workingKeymap!.layers];
+    final layer = layers[_selectedLayerIndex];
+    final updatedBindings = Map<String, ActionBinding>.from(layer.bindings);
+    updatedBindings.remove(keyId);
+    layers[_selectedLayerIndex] = layer.copyWith(bindings: updatedBindings);
+
+    setState(() {
+      _workingKeymap = _workingKeymap!.copyWith(layers: layers);
+    });
+  }
+
+  Future<void> _saveKeymap() async {
+    final layout = _selectedLayout;
+    final keymap = _workingKeymap;
+    if (layout == null || keymap == null) {
+      _showSnack('Select a layout and keymap before saving', isError: true);
+      return;
+    }
+
+    final id = _keymapIdController.text.trim().isEmpty
+        ? keymap.id
+        : _keymapIdController.text.trim();
+    final name = _keymapNameController.text.trim().isEmpty
+        ? keymap.name
+        : _keymapNameController.text.trim();
+
+    final toSave = keymap.copyWith(
+      id: id,
+      name: name,
+      virtualLayoutId: layout.id,
+    );
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final result = await _keymapService.saveKeymap(toSave);
+    if (!mounted) return;
+
+    setState(() => _isSaving = false);
+
+    if (result.hasError) {
+      setState(() {
+        _errorMessage = result.errorMessage;
+      });
+      _showSnack(
+        'Failed to save keymap: ${result.errorMessage}',
+        isError: true,
+      );
+      return;
+    }
+
+    final saved = result.data ?? toSave;
+    final updated = [..._keymaps];
+    final existingIndex = updated.indexWhere((k) => k.id == saved.id);
+    if (existingIndex >= 0) {
+      updated[existingIndex] = saved;
+    } else {
+      updated.add(saved);
+    }
+
+    setState(() {
+      _keymaps = updated;
+      _setKeymap(saved);
+    });
+    _showSnack('Keymap saved');
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
+
+  String _bindingLabel(ActionBinding? binding) {
+    if (binding == null) return 'Unmapped';
+    return binding.map(
+      standardKey: (b) => b.value,
+      macro: (b) => 'Macro: ${b.value}',
+      layerToggle: (b) => 'Layer → ${b.value}',
+      transparent: (_) => 'Transparent',
+    );
+  }
+
+  Widget _buildLayoutSelector() {
+    return DropdownButtonFormField<String>(
+      value: _selectedLayout?.id,
+      decoration: const InputDecoration(
+        labelText: 'Virtual Layout',
+        border: OutlineInputBorder(),
+      ),
+      items: _layouts
+          .map(
+            (layout) => DropdownMenuItem(
+              value: layout.id,
+              child: Text('${layout.name} (${layout.layoutType.label})'),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        final layout = _layouts.firstWhere((l) => l.id == value);
+        _selectLayout(layout);
       },
     );
   }
 
-  String _formatTime(DateTime timestamp) {
-    final local = timestamp.toLocal();
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    final second = local.second.toString().padLeft(2, '0');
-    return '$hour:$minute:$second';
+  Widget _buildKeymapSelector() {
+    final layout = _selectedLayout;
+    final options = layout == null
+        ? <Keymap>[]
+        : _keymaps.where((k) => k.virtualLayoutId == layout.id).toList();
+    return DropdownButtonFormField<String>(
+      value: _workingKeymap?.id,
+      decoration: const InputDecoration(
+        labelText: 'Keymap',
+        border: OutlineInputBorder(),
+      ),
+      items: options
+          .map((k) => DropdownMenuItem(value: k.id, child: Text(k.name)))
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        final keymap = options.firstWhere((k) => k.id == value);
+        _setKeymap(keymap);
+      },
+    );
+  }
+
+  Widget _buildLayerSelector() {
+    final layers = _workingKeymap?.layers ?? const [];
+    if (layers.isEmpty) {
+      return const Text('No layers');
+    }
+    return DropdownButton<int>(
+      value: _selectedLayerIndex < layers.length ? _selectedLayerIndex : 0,
+      items: List.generate(
+        layers.length,
+        (i) => DropdownMenuItem(value: i, child: Text(layers[i].name)),
+      ),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() {
+          _selectedLayerIndex = value;
+          _selectedVirtualKeyId = null;
+        });
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: _buildLayoutSelector()),
+                const SizedBox(width: 12),
+                Expanded(child: _buildKeymapSelector()),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'New keymap for layout',
+                  onPressed: _selectedLayout == null
+                      ? null
+                      : () {
+                          if (_selectedLayout == null) return;
+                          final draft = _buildDraftKeymap(_selectedLayout!);
+                          _setKeymap(draft);
+                        },
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _keymapIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Keymap ID',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _keymapNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Display name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Layer'),
+                    const SizedBox(height: 4),
+                    _buildLayerSelector(),
+                  ],
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: _isSaving ? null : _saveKeymap,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: const Text('Save'),
+                ),
+              ],
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVirtualLayoutView() {
+    final layout = _selectedLayout;
+    final keymap = _workingKeymap;
+
+    if (layout == null) {
+      return const Center(child: Text('Create a virtual layout to start.'));
+    }
+    if (keymap == null) {
+      return const Center(child: Text('Create or select a keymap.'));
+    }
+    if (layout.keys.isEmpty) {
+      return const Center(child: Text('This layout has no keys yet.'));
+    }
+
+    final bindings = _bindingsForLayer;
+    final sortedKeys = [...layout.keys];
+    sortedKeys.sort((a, b) {
+      final ay = a.position?.y ?? 0;
+      final by = b.position?.y ?? 0;
+      final ax = a.position?.x ?? 0;
+      final bx = b.position?.x ?? 0;
+      final yCompare = ay.compareTo(by);
+      if (yCompare != 0) return yCompare;
+      return ax.compareTo(bx);
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: sortedKeys.map((key) {
+            final binding = bindings[key.id];
+            final selected = _selectedVirtualKeyId == key.id;
+            return ChoiceChip(
+              selected: selected,
+              label: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(key.label, overflow: TextOverflow.ellipsis),
+                  Text(
+                    _bindingLabel(binding),
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              onSelected: (_) {
+                setState(() {
+                  _selectedVirtualKeyId = key.id;
+                });
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Mapped keys: ${bindings.length} | Layer: ${_currentLayer?.name ?? '—'} | Layout: ${layout.name}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionPalette() {
+    final selectedKeyLabel = _selectedVirtualKeyId == null
+        ? 'Select a virtual key to map'
+        : 'Map actions to ${_selectedVirtualKeyId}';
+
+    return Card(
+      elevation: 2,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(12),
+        height: 320,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.bolt_outlined, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  selectedKeyLabel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: _selectedVirtualKeyId == null
+                      ? null
+                      : _clearBinding,
+                  icon: const Icon(Icons.backspace_outlined),
+                  label: const Text('Clear mapping'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: SoftKeyboard(
+                      selectedKey: null,
+                      onKeySelected: (key) {
+                        _applyBinding(ActionBinding.standardKey(value: key));
+                      },
+                      keySize: 48,
+                      keySpacing: 6,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Action palette',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _macroController,
+                          decoration: const InputDecoration(
+                            labelText: 'Macro text',
+                            hintText: 'Enter macro / script name',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.tonalIcon(
+                              icon: const Icon(Icons.play_circle_outline),
+                              label: const Text('Set macro'),
+                              onPressed: _selectedVirtualKeyId == null
+                                  ? null
+                                  : () {
+                                      final text = _macroController.text.trim();
+                                      if (text.isEmpty) return;
+                                      _applyBinding(
+                                        ActionBinding.macro(value: text),
+                                      );
+                                    },
+                            ),
+                            FilledButton.tonalIcon(
+                              icon: const Icon(Icons.layers),
+                              label: const Text('Toggle layer'),
+                              onPressed: _selectedVirtualKeyId == null
+                                  ? null
+                                  : () {
+                                      final target =
+                                          _currentLayer?.name ?? 'Layer 0';
+                                      _applyBinding(
+                                        ActionBinding.layerToggle(
+                                          value: target,
+                                        ),
+                                      );
+                                    },
+                            ),
+                            FilledButton.tonalIcon(
+                              icon: const Icon(Icons.transit_enterexit),
+                              label: const Text('Transparent'),
+                              onPressed: _selectedVirtualKeyId == null
+                                  ? null
+                                  : () => _applyBinding(
+                                      const ActionBinding.transparent(),
+                                    ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Tip: Click a virtual key above, then choose a standard key or macro below.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -389,364 +624,25 @@ class _MappingPageState extends State<MappingPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mapping')),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildProfileToolbar(),
-                  const SizedBox(height: 12),
-                  _buildSearchAndDensity(),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: InlineMessage(
-                        message: _errorMessage!,
-                        variant: InlineMessageVariant.error,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _buildVirtualLayoutView(),
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _buildAutosaveBanner(),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (_isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (_currentProfile == null || _layoutInfo == null) {
-                    return _buildEmptyState();
-                  }
-
-                  return _buildGridLayout(_layoutInfo!, constraints.maxWidth);
-                },
-              ),
-            ),
-            _buildPalettePanel(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileToolbar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.person_outline),
-          const SizedBox(width: 12),
-          Text('Profile', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(width: 12),
-          Expanded(
-            child: DropdownButton<String>(
-              value: _selectedProfileId,
-              hint: const Text('Select a profile'),
-              isExpanded: true,
-              underline: Container(),
-              items: _profileIds.map((id) {
-                return DropdownMenuItem(
-                  value: id,
-                  child: FutureBuilder<Profile?>(
-                    future: _profileService.getProfile(id),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data != null) {
-                        return Text(
-                          snapshot.data!.name,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      }
-                      return Text(id, overflow: TextOverflow.ellipsis);
-                    },
-                  ),
-                );
-              }).toList(),
-              onChanged: _isLoading
-                  ? null
-                  : (value) {
-                      if (value != null) {
-                        _loadProfile(value);
-                      }
-                    },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh profiles',
-            onPressed: _isLoading ? null : _loadProfiles,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchAndDensity() {
-    final matchesLabel = _searchQuery.isEmpty
-        ? 'Search mappings'
-        : '${_highlightedPositions.length} match${_highlightedPositions.length == 1 ? '' : 'es'}';
-
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search by mapped key or position...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _handleSearchChanged('');
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onChanged: _handleSearchChanged,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(matchesLabel, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 6),
-            SegmentedButton<MappingDensity>(
-              segments: const [
-                ButtonSegment(
-                  value: MappingDensity.comfortable,
-                  icon: Icon(Icons.grid_view),
-                  label: Text('Comfort'),
+                    const SizedBox(height: 12),
+                    _buildActionPalette(),
+                  ],
                 ),
-                ButtonSegment(
-                  value: MappingDensity.compact,
-                  icon: Icon(Icons.density_small),
-                  label: Text('Compact'),
-                ),
-              ],
-              selected: {_density},
-              onSelectionChanged: (values) {
-                _handleDensityChanged(values.first);
-              },
-              showSelectedIcon: false,
-            ),
-          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildGridLayout(LayoutInfo layoutInfo, double maxWidth) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final availableWidth = constraints.maxWidth.isFinite
-              ? constraints.maxWidth
-              : maxWidth;
-          final widestRow =
-              layoutInfo.colsPerRow?.reduce(math.max) ?? layoutInfo.cols;
-          final baseKeySize =
-              (availableWidth - 64) / math.max(1, widestRow.toDouble());
-          final keySize = _clampedKeySize(baseKeySize);
-          final keySpacing = _density == MappingDensity.comfortable ? 8.0 : 4.0;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Chip(
-                    avatar: const Icon(Icons.grid_on, size: 16),
-                    label: Text('${layoutInfo.rows} rows'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const SizedBox(width: 8),
-                  Chip(
-                    avatar: const Icon(Icons.numbers, size: 16),
-                    label: Text('$widestRow max cols'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const SizedBox(width: 8),
-                  Chip(
-                    avatar: const Icon(Icons.apps, size: 16),
-                    label: Text('${_currentProfile?.mappingCount ?? 0} mapped'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: math.max(_minPreviewWidth, availableWidth),
-                        minHeight: _minPreviewHeight,
-                      ),
-                      child: LayoutGrid(
-                        layoutInfo: layoutInfo,
-                        profile: _currentProfile,
-                        onKeyTap: _handleKeyTap,
-                        selectedPosition: _selectedPosition,
-                        highlightedPositions: _highlightedPositions,
-                        keySize: keySize,
-                        keySpacing: keySpacing,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  double _clampedKeySize(double base) {
-    final double minSize;
-    final double maxSize;
-    if (_density == MappingDensity.comfortable) {
-      minSize = 48;
-      maxSize = 76;
-    } else {
-      minSize = 36;
-      maxSize = 58;
-    }
-    return base.clamp(minSize, maxSize);
-  }
-
-  Widget _buildPalettePanel() {
-    final show = _selectedPosition != null;
-    final theme = Theme.of(context);
-    final action = _selectedPosition != null
-        ? _currentProfile?.getAction(_selectedPosition!)
-        : null;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: show ? 400 : 0,
-      curve: Curves.easeInOutCubicEmphasized,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        child: show
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.keyboard,
-                          size: 18,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Select mapping for ${_selectedPosition?.toKey()}',
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        const SizedBox(width: 12),
-                        if (action != null)
-                          Chip(
-                            label: Text(keyActionLabel(action)),
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            labelStyle: TextStyle(
-                              color: theme.colorScheme.onPrimaryContainer,
-                              fontSize: 11,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            onDeleted: () => _clearMapping(_selectedPosition!),
-                          ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              _selectedPosition = null;
-                              _selectedOutputKey = null;
-                            });
-                          },
-                          tooltip: 'Close',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SoftKeyboard(
-                      onKeySelected: _handleOutputKeySelected,
-                      selectedKey: _selectedOutputKey,
-                    ),
-                  ),
-                ],
-              )
-            : const SizedBox.shrink(),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.layers_clear,
-            size: 64,
-            color: Theme.of(context).disabledColor,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No profiles available',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Theme.of(context).disabledColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text('Create a profile in the Profiles page to start mapping.'),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: _isLoading ? null : _loadProfiles,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
-          ),
-        ],
       ),
     );
   }

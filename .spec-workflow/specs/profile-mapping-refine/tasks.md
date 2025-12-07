@@ -89,7 +89,7 @@
   - _Requirements: 3.1, 3.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Create `WiringPage`. Display Physical Keys (Source) on top, Virtual Layout (Target) on bottom. Click source -> Click target to assign. No physical key press required. | Success: User can wire a physical device to a layout._
 
-- [ ] 14. Implement Mapping Tab
+- [x] 14. Implement Mapping Tab
   - File: `ui/lib/pages/mapping.dart`
   - Update the existing editor to map Virtual Keys to Actions.
   - Interaction: QMK-style (Virtual Source Top, Action Palette Bottom).
