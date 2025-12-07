@@ -9,7 +9,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 6.2, 7.1_
   - _Prompt: Role: Rust Backend Developer | Task: Define `VirtualLayout`, `HardwareProfile`, and `Keymap` structs. Additionally, define `RuntimeConfig` and `ProfileSlot` to support 1:N device-to-profile mapping with priority. | Context: Replacing old `DeviceProfile` and `Profile`. | Success: Structs defined and compilable._
 
-- [ ] 2. Update Engine Pipeline
+- [x] 2. Update Engine Pipeline
   - File: `core/src/engine/pipeline.rs` (or similar)
   - Refactor event processing to use the 3-stage pipeline with multi-device concurrency.
   - Implement priority resolution: Iterate through active slots for the device; first match consumes event.
