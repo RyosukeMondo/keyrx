@@ -36,10 +36,7 @@ class DiscoveryProgress {
 
 /// A specific key position in the matrix.
 class DiscoveryPosition {
-  const DiscoveryPosition({
-    required this.row,
-    required this.col,
-  });
+  const DiscoveryPosition({required this.row, required this.col});
 
   factory DiscoveryPosition.fromJson(Map<String, dynamic> json) {
     return DiscoveryPosition(

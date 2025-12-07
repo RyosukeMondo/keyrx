@@ -15,6 +15,13 @@ export 'device_identity.dart';
 export 'device_state.dart';
 export 'layout_type.dart';
 export 'profile.dart';
+export 'config_ids.dart';
+export 'virtual_layout_type.dart';
+export 'virtual_layout.dart';
+export 'hardware_profile.dart';
+export 'action_binding.dart';
+export 'keymap.dart';
+export 'runtime_config.dart';
 
 // Service models - re-exported for convenience
 // These are defined in their respective service files:

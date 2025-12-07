@@ -92,7 +92,6 @@ const Map<String, int> keyIdToWindowsScanCode = {
   'MetaRight': 0xE05C, // Extended
   'ContextMenu': 0xE05D, // Extended
   'ControlRight': 0xE01D, // Extended
-
   // Navigation Cluster (if needed)
   'Insert': 0xE052,
   'Home': 0xE047,
@@ -128,7 +127,6 @@ const Map<String, int> keyIdToWindowsScanCode = {
   'PrintScreen': 0xE037,
   'ScrollLock': 0x46,
   'Pause': 0xE11D, // Very special sequence usually
-
   // Japanese Keys
   'NonConvert': 0x7B, // Muhenkan
   'Convert': 0x79, // Henkan

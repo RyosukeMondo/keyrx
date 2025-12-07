@@ -36,7 +36,7 @@
   - _Requirements: Non-functional_
   - _Prompt: Role: Flutter/Rust Bridge Engineer | Task: Regenerate or manually update Dart FFI bindings to match the new Rust exports. | Success: Dart code can call the new Rust functions._
 
-- [ ] 6. Update Dart Models
+- [x] 6. Update Dart Models
   - File: `ui/lib/models/`
   - Create/Update Dart classes mirroring the Rust structs (`ProfileSlot`, `RuntimeConfig`, etc).
   - _Requirements: 1.1, 1.2, 1.3_

@@ -1,0 +1,49 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'hardware_profile.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$DeviceInstanceIdImpl _$$DeviceInstanceIdImplFromJson(
+  Map<String, dynamic> json,
+) => _$DeviceInstanceIdImpl(
+  vendorId: (json['vendor_id'] as num).toInt(),
+  productId: (json['product_id'] as num).toInt(),
+  serial: json['serial'] as String?,
+);
+
+Map<String, dynamic> _$$DeviceInstanceIdImplToJson(
+  _$DeviceInstanceIdImpl instance,
+) => <String, dynamic>{
+  'vendor_id': instance.vendorId,
+  'product_id': instance.productId,
+  'serial': instance.serial,
+};
+
+_$HardwareProfileImpl _$$HardwareProfileImplFromJson(
+  Map<String, dynamic> json,
+) => _$HardwareProfileImpl(
+  id: json['id'] as String,
+  vendorId: (json['vendor_id'] as num).toInt(),
+  productId: (json['product_id'] as num).toInt(),
+  name: json['name'] as String?,
+  virtualLayoutId: json['virtual_layout_id'] as String,
+  wiring:
+      (json['wiring'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(int.parse(k), e as String),
+      ) ??
+      const <int, VirtualKeyId>{},
+);
+
+Map<String, dynamic> _$$HardwareProfileImplToJson(
+  _$HardwareProfileImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'vendor_id': instance.vendorId,
+  'product_id': instance.productId,
+  'name': instance.name,
+  'virtual_layout_id': instance.virtualLayoutId,
+  'wiring': instance.wiring.map((k, e) => MapEntry(k.toString(), e)),
+};

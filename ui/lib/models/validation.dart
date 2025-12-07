@@ -15,13 +15,16 @@ class ValidationResult {
   factory ValidationResult.fromJson(Map<String, dynamic> json) {
     return ValidationResult(
       isValid: json['is_valid'] as bool? ?? false,
-      errors: (json['errors'] as List<dynamic>?)
+      errors:
+          (json['errors'] as List<dynamic>?)
               ?.map((e) => ValidationError.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      warnings: (json['warnings'] as List<dynamic>?)
+      warnings:
+          (json['warnings'] as List<dynamic>?)
               ?.map(
-                  (e) => ValidationWarning.fromJson(e as Map<String, dynamic>))
+                (e) => ValidationWarning.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           const [],
       coverage: json['coverage'] != null
@@ -31,10 +34,10 @@ class ValidationResult {
   }
 
   factory ValidationResult.error(String message) => ValidationResult(
-        isValid: false,
-        errors: [ValidationError(code: 'E000', message: message)],
-        warnings: const [],
-      );
+    isValid: false,
+    errors: [ValidationError(code: 'E000', message: message)],
+    warnings: const [],
+  );
 
   final bool isValid;
   final List<ValidationError> errors;
@@ -61,7 +64,8 @@ class ValidationError {
       location: json['location'] != null
           ? SourceLocation.fromJson(json['location'] as Map<String, dynamic>)
           : null,
-      suggestions: (json['suggestions'] as List<dynamic>?)
+      suggestions:
+          (json['suggestions'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -120,11 +124,7 @@ enum WarningCategory {
 
 /// Source location for errors and warnings.
 class SourceLocation {
-  const SourceLocation({
-    required this.line,
-    this.column,
-    this.context,
-  });
+  const SourceLocation({required this.line, this.column, this.context});
 
   factory SourceLocation.fromJson(Map<String, dynamic> json) {
     return SourceLocation(
@@ -157,7 +157,8 @@ class CoverageReport {
       tapHold: _parseKeyList(json['tap_hold']),
       comboTriggers: _parseKeyList(json['combo_triggers']),
       unaffected: _parseKeyList(json['unaffected']),
-      layers: (json['layers'] as Map<String, dynamic>?)?.map(
+      layers:
+          (json['layers'] as Map<String, dynamic>?)?.map(
             (k, v) =>
                 MapEntry(k, LayerCoverage.fromJson(v as Map<String, dynamic>)),
           ) ??
@@ -177,20 +178,20 @@ class CoverageReport {
 
   static List<String> _parseKeyList(dynamic value) {
     if (value is! List) return const [];
-    return value.map((e) {
-      if (e is String) return e;
-      if (e is Map<String, dynamic>) return e['name'] as String? ?? '';
-      return '';
-    }).where((s) => s.isNotEmpty).toList();
+    return value
+        .map((e) {
+          if (e is String) return e;
+          if (e is Map<String, dynamic>) return e['name'] as String? ?? '';
+          return '';
+        })
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 }
 
 /// Per-layer coverage information.
 class LayerCoverage {
-  const LayerCoverage({
-    this.remapped = const [],
-    this.blocked = const [],
-  });
+  const LayerCoverage({this.remapped = const [], this.blocked = const []});
 
   factory LayerCoverage.fromJson(Map<String, dynamic> json) {
     return LayerCoverage(
@@ -218,9 +219,9 @@ class ValidationOptions {
   final bool includeVisual;
 
   Map<String, dynamic> toJson() => {
-        'strict': strict,
-        'no_warnings': noWarnings,
-        'include_coverage': includeCoverage,
-        'include_visual': includeVisual,
-      };
+    'strict': strict,
+    'no_warnings': noWarnings,
+    'include_coverage': includeCoverage,
+    'include_visual': includeVisual,
+  };
 }
