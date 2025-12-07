@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
@@ -10,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'helpers/fake_services.dart';
 
 ServiceRegistry _buildRegistry(FakeEngineService engine) {
+  final bridge = FakeBridge();
   return ServiceRegistry.withOverrides(
     errorTranslator: FakeErrorTranslator(),
     engineService: engine,
@@ -17,9 +21,12 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     deviceService: FakeDeviceService(),
     scriptFileService: FakeScriptFileService(),
     testService: FakeTestService(),
-    bridge: FakeBridge(),
+    bridge: bridge,
     apiDocsService: FakeApiDocsService(),
     storagePathResolver: const StoragePathResolver(),
+    layoutService: LayoutService(bridge: bridge),
+    hardwareService: HardwareService(bridge: bridge),
+    keymapService: KeymapService(bridge: bridge),
   );
 }
 

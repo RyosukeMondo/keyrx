@@ -11,6 +11,9 @@ import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/trade_off_visualizer.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
@@ -63,6 +66,7 @@ class _FakeErrorTranslator implements ErrorTranslator {
 
 Widget _buildTestWidget({_FakeEngineService? engine}) {
   final fakeEngine = engine ?? _FakeEngineService();
+  final bridge = FakeBridge();
   final registry = ServiceRegistry.withOverrides(
     errorTranslator: _FakeErrorTranslator(),
     engineService: fakeEngine,
@@ -70,9 +74,12 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
     deviceService: FakeDeviceService(),
     scriptFileService: FakeScriptFileService(),
     testService: FakeTestService(),
-    bridge: FakeBridge(),
+    bridge: bridge,
     apiDocsService: FakeApiDocsService(),
     storagePathResolver: const StoragePathResolver(),
+    layoutService: LayoutService(bridge: bridge),
+    hardwareService: HardwareService(bridge: bridge),
+    keymapService: KeymapService(bridge: bridge),
   );
 
   return MultiProvider(

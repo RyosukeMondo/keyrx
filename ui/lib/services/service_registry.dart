@@ -8,6 +8,9 @@ import 'engine_service.dart';
 import 'engine_service_impl.dart';
 import 'error_translator.dart';
 import 'error_translator_impl.dart';
+import 'hardware_service.dart';
+import 'keymap_service.dart';
+import 'layout_service.dart';
 import 'profile_autosave_service.dart';
 import 'profile_registry_service.dart';
 import 'script_file_service.dart';
@@ -30,6 +33,9 @@ class ServiceRegistry {
     required this.apiDocsService,
     required this.storagePathResolver,
     required this.profileAutosaveService,
+    required this.layoutService,
+    required this.hardwareService,
+    required this.keymapService,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -46,6 +52,9 @@ class ServiceRegistry {
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
     ProfileAutosaveService? profileAutosaveService,
+    LayoutService? layoutService,
+    HardwareService? hardwareService,
+    KeymapService? keymapService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
     final effectiveBridge = bridge ?? KeyrxBridge.open();
@@ -62,10 +71,15 @@ class ServiceRegistry {
         ProfileRegistryServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
+    final layouts = layoutService ?? LayoutService(bridge: effectiveBridge);
+    final hardware =
+        hardwareService ?? HardwareService(bridge: effectiveBridge);
+    final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
     final resolver = storagePathResolver ?? const StoragePathResolver();
-    final autosave = profileAutosaveService ??
+    final autosave =
+        profileAutosaveService ??
         ProfileAutosaveService(
           profileRegistryService: profileRegistry,
           storagePathResolver: resolver,
@@ -85,6 +99,9 @@ class ServiceRegistry {
       apiDocsService: docs,
       storagePathResolver: resolver,
       profileAutosaveService: autosave,
+      layoutService: layouts,
+      hardwareService: hardware,
+      keymapService: keymaps,
     );
   }
 
@@ -103,8 +120,12 @@ class ServiceRegistry {
     required ApiDocsService apiDocsService,
     required StoragePathResolver storagePathResolver,
     ProfileAutosaveService? profileAutosaveService,
+    required LayoutService layoutService,
+    required HardwareService hardwareService,
+    required KeymapService keymapService,
   }) {
-    final autosave = profileAutosaveService ??
+    final autosave =
+        profileAutosaveService ??
         ProfileAutosaveService(
           profileRegistryService: profileRegistryService,
           storagePathResolver: storagePathResolver,
@@ -124,6 +145,9 @@ class ServiceRegistry {
       apiDocsService: apiDocsService,
       storagePathResolver: storagePathResolver,
       profileAutosaveService: autosave,
+      layoutService: layoutService,
+      hardwareService: hardwareService,
+      keymapService: keymapService,
     );
   }
 
@@ -140,6 +164,9 @@ class ServiceRegistry {
   final ApiDocsService apiDocsService;
   final StoragePathResolver storagePathResolver;
   final ProfileAutosaveService profileAutosaveService;
+  final LayoutService layoutService;
+  final HardwareService hardwareService;
+  final KeymapService keymapService;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -156,6 +183,9 @@ class ServiceRegistry {
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
     ProfileAutosaveService? profileAutosaveService,
+    LayoutService? layoutService,
+    HardwareService? hardwareService,
+    KeymapService? keymapService,
   }) {
     return ServiceRegistry(
       errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -174,6 +204,9 @@ class ServiceRegistry {
       storagePathResolver: storagePathResolver ?? this.storagePathResolver,
       profileAutosaveService:
           profileAutosaveService ?? this.profileAutosaveService,
+      layoutService: layoutService ?? this.layoutService,
+      hardwareService: hardwareService ?? this.hardwareService,
+      keymapService: keymapService ?? this.keymapService,
     );
   }
 

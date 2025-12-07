@@ -18,6 +18,9 @@ import 'package:keyrx_ui/models/keyboard_layout.dart';
 import 'package:keyrx_ui/pages/visual_editor_page.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/rhai_generator.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
@@ -81,6 +84,7 @@ void main() {
 
   Widget buildTestApp() {
     final mappingRepo = MappingRepository();
+    final bridge = FakeBridge();
     final registry = ServiceRegistry.withOverrides(
       errorTranslator: MockErrorTranslator(),
       engineService: mockEngine,
@@ -91,9 +95,12 @@ void main() {
       profileRegistryService: FakeProfileRegistryService(),
       scriptFileService: FakeScriptFileService(),
       testService: FakeTestService(),
-      bridge: FakeBridge(),
+      bridge: bridge,
       apiDocsService: FakeApiDocsService(),
       storagePathResolver: const StoragePathResolver(),
+      layoutService: LayoutService(bridge: bridge),
+      hardwareService: HardwareService(bridge: bridge),
+      keymapService: KeymapService(bridge: bridge),
     );
 
     return MultiProvider(

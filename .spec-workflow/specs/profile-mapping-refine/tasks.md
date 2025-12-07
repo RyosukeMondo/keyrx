@@ -68,7 +68,7 @@
 
 ## Phase 2: Dart Service Refactor
 
-- [ ] 11. Update Dart Services
+- [x] 11. Update Dart Services
   - File: `ui/lib/services/`
   - Update `HardwareService`, `LayoutService`, `KeymapService` to use the new FFI calls.
   - _Requirements: 1.1, 1.2, 1.3_

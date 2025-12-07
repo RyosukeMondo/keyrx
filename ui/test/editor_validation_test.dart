@@ -9,6 +9,9 @@ import 'package:keyrx_ui/services/key_mappings_util.dart';
 import 'package:keyrx_ui/services/script_generator.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
@@ -89,6 +92,9 @@ void main() {
         scriptFileService: FakeScriptFileService(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: const StoragePathResolver(),
+        layoutService: LayoutService(bridge: bridge),
+        hardwareService: HardwareService(bridge: bridge),
+        keymapService: KeymapService(bridge: bridge),
       );
 
       final facade = KeyrxFacade.real(registry);
