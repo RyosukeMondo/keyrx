@@ -9,8 +9,9 @@ use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand,
-        RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
+        GoldenSubcommand, HardwareAction, HardwareCommand, MigrateCommand, RegressionCommand,
+        ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
+        UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -86,6 +87,12 @@ enum Commands {
     Devices {
         #[command(subcommand)]
         command: Option<DeviceCommands>,
+    },
+
+    /// Hardware detection, profiles, and calibration
+    Hardware {
+        #[command(subcommand)]
+        command: HardwareCommands,
     },
 
     /// Show all exit codes with descriptions
@@ -394,8 +401,57 @@ enum Commands {
 }
 
 #[derive(Subcommand, Clone)]
+enum HardwareCommands {
+    /// Detect connected keyboards and suggest timing profiles
+    Detect,
+
+    /// Resolve profiles for detected or specific hardware
+    Profile {
+        /// Vendor ID (hex like 0x1b1c or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        vendor_id: Option<u16>,
+
+        /// Product ID (hex like 0x1b2e or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        product_id: Option<u16>,
+    },
+
+    /// Run calibration using latency samples (microseconds)
+    Calibrate {
+        /// Vendor ID (hex like 0x1b1c or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        vendor_id: Option<u16>,
+
+        /// Product ID (hex like 0x1b2e or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        product_id: Option<u16>,
+
+        /// Warmup samples to discard
+        #[arg(long, default_value_t = 3)]
+        warmup_samples: usize,
+
+        /// Samples to keep for optimization
+        #[arg(long, default_value_t = 25)]
+        sample_count: usize,
+
+        /// Max duration for calibration run (seconds)
+        #[arg(long, default_value_t = 30)]
+        max_duration_secs: u64,
+
+        /// Latency samples in microseconds (repeatable)
+        #[arg(long = "latency-us")]
+        latencies: Vec<u64>,
+
+        /// Path to newline-delimited latency samples (microseconds)
+        #[arg(long)]
+        samples_file: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand, Clone, Default)]
 enum DeviceCommands {
     /// List all persisted device bindings
+    #[default]
     List,
 
     /// Show details for a device identity
@@ -442,12 +498,6 @@ enum DeviceCommands {
         /// Device identity key (VID:PID:SERIAL)
         device: String,
     },
-}
-
-impl Default for DeviceCommands {
-    fn default() -> Self {
-        DeviceCommands::List
-    }
 }
 
 #[derive(Clone, ValueEnum)]
@@ -515,6 +565,20 @@ fn parse_format(s: &str, json_flag: bool) -> OutputFormat {
     }
 }
 
+fn parse_hex_or_decimal_u16(value: &str) -> Result<u16, String> {
+    let trimmed = value.trim();
+    if let Some(hex) = trimmed
+        .strip_prefix("0x")
+        .or_else(|| trimmed.strip_prefix("0X"))
+    {
+        u16::from_str_radix(hex, 16).map_err(|err| format!("Invalid hex value '{value}': {err}"))
+    } else {
+        trimmed
+            .parse::<u16>()
+            .map_err(|err| format!("Invalid number '{value}': {err}"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -548,6 +612,13 @@ mod tests {
     fn parse_format_respects_json_flag_priority() {
         assert_eq!(parse_format("yaml", true), OutputFormat::Json);
         assert_eq!(parse_format("json", true), OutputFormat::Json);
+    }
+
+    #[test]
+    fn parses_hex_or_decimal() {
+        assert_eq!(parse_hex_or_decimal_u16("0x1b1c").unwrap(), 0x1b1c);
+        assert_eq!(parse_hex_or_decimal_u16("1b1c").unwrap(), 0x1b1c);
+        assert_eq!(parse_hex_or_decimal_u16("7000").unwrap(), 7000);
     }
 }
 
@@ -664,6 +735,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
     let command_name = match &command {
         Commands::Check { .. } => "check",
         Commands::Devices { .. } => "devices",
+        Commands::Hardware { .. } => "hardware",
         Commands::ExitCodes => "exit-codes",
         Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
@@ -727,6 +799,37 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
                 }
             };
             let mut cmd = DevicesCommand::new(ctx.output_format(), action);
+            cmd.execute(ctx)
+        }
+        Commands::Hardware { command } => {
+            let action = match command {
+                HardwareCommands::Detect => HardwareAction::Detect,
+                HardwareCommands::Profile {
+                    vendor_id,
+                    product_id,
+                } => HardwareAction::Profile {
+                    vendor_id,
+                    product_id,
+                },
+                HardwareCommands::Calibrate {
+                    vendor_id,
+                    product_id,
+                    warmup_samples,
+                    sample_count,
+                    max_duration_secs,
+                    latencies,
+                    samples_file,
+                } => HardwareAction::Calibrate {
+                    vendor_id,
+                    product_id,
+                    warmup_samples,
+                    sample_count,
+                    max_duration_secs,
+                    latencies_us: latencies,
+                    samples_file: samples_file.map(|p| p.display().to_string()),
+                },
+            };
+            let mut cmd = HardwareCommand::new(ctx.output_format(), action);
             cmd.execute(ctx)
         }
         Commands::ExitCodes => {

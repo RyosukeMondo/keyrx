@@ -59,7 +59,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
 
 ## Phase 4: Integration
 
-- [ ] 8. Add CLI commands
+- [x] 8. Add CLI commands
   - File: `core/src/cli/commands/hardware.rs`
   - detect, calibrate, profile
   - Purpose: CLI access
