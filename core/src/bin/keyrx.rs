@@ -9,9 +9,9 @@ use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, HardwareAction, HardwareCommand, MigrateCommand, RegressionCommand,
-        ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand, TestCommand,
-        UatCommand,
+        GoldenSubcommand, HardwareAction, HardwareCommand, LayoutAction, LayoutCommand,
+        LayoutSource, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand, RunCommand,
+        SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -93,6 +93,12 @@ enum Commands {
     Hardware {
         #[command(subcommand)]
         command: HardwareCommands,
+    },
+
+    /// Manage virtual layouts
+    Layout {
+        #[command(subcommand)]
+        command: Option<LayoutCommands>,
     },
 
     /// Show all exit codes with descriptions
@@ -449,6 +455,26 @@ enum HardwareCommands {
 }
 
 #[derive(Subcommand, Clone, Default)]
+enum LayoutCommands {
+    /// List all virtual layouts
+    #[default]
+    List,
+
+    /// Show a specific virtual layout by id
+    Show {
+        /// Layout identifier
+        id: String,
+    },
+
+    /// Create or update a virtual layout from JSON (file path or "-")
+    Create {
+        /// Path to layout JSON (use "-" to read from stdin)
+        #[arg(value_name = "PATH")]
+        source: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Clone, Default)]
 enum DeviceCommands {
     /// List all persisted device bindings
     #[default]
@@ -736,6 +762,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Check { .. } => "check",
         Commands::Devices { .. } => "devices",
         Commands::Hardware { .. } => "hardware",
+        Commands::Layout { .. } => "layout",
         Commands::ExitCodes => "exit-codes",
         Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
@@ -830,6 +857,23 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
                 },
             };
             let mut cmd = HardwareCommand::new(ctx.output_format(), action);
+            cmd.execute(ctx)
+        }
+        Commands::Layout { command } => {
+            let layout_cmd = command.unwrap_or_default();
+            let action = match layout_cmd {
+                LayoutCommands::List => LayoutAction::List,
+                LayoutCommands::Show { id } => LayoutAction::Show { id },
+                LayoutCommands::Create { source } => {
+                    let src = if source.as_os_str() == "-" {
+                        LayoutSource::Stdin
+                    } else {
+                        LayoutSource::File(source)
+                    };
+                    LayoutAction::Create { source: src }
+                }
+            };
+            let mut cmd = LayoutCommand::new(ctx.output_format(), action);
             cmd.execute(ctx)
         }
         Commands::ExitCodes => {

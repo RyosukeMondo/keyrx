@@ -42,7 +42,7 @@
 
 ## Phase 1.5: CLI Implementation (CLI First)
 
-- [ ] 7. Implement Layout CLI Commands
+- [x] 7. Implement Layout CLI Commands
   - File: `core/src/cli/commands/layout.rs`
   - Implement `keyrx layout list`, `create`, `show` commands.
   - _Requirements: Non-functional (CLI First)_
