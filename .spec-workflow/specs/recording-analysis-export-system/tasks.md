@@ -1,5 +1,7 @@
 # Tasks Document
 
+_Status: Priority #9 in 2025 implementation order; all items pending. Implement analysis/export/CLI after observability/profile foundations._
+
 ## Phase 1: Analysis Engine
 
 - [ ] 1. Create AnalysisEngine

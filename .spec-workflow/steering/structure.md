@@ -59,6 +59,20 @@ keyrx/
 └── README.md                  # Project overview
 ```
 
+## Current Spec Implementation Order (pending specs)
+
+We only touch specs with open tasks; completed specs remain unchanged. Implementation order (post revolutionary-mapping):
+1) mapping-screen-refresh
+2) advanced-profiling-flamegraph-support
+3) state-snapshot-incremental-updates
+4) otel-observability-integration
+5) opentelemetry-metrics-dashboard
+6) multi-layout-simultaneous-support
+7) multi-user-profile-system
+8) hardware-specific-profile-optimization
+9) recording-analysis-export-system
+10) flutter-web-build-support
+
 ## Naming Conventions
 
 ### Files

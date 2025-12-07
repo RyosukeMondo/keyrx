@@ -49,6 +49,20 @@ KeyRx is an advanced input remapping engine that empowers users to fully control
 - **Adoption**: Community standard library with 50+ shared scripts
 - **Performance Regression**: CI fails if any PR increases latency > 100 microseconds
 
+## Current Spec Implementation Order (post revolutionary-mapping completion)
+
+Only specs with open tasks remain in the queue; completed specs are untouched. Order is chosen to finish in-progress work, lay observability foundations, then ship UX and platform items:
+1. **mapping-screen-refresh** — finish devices page polish, autosave wiring, and related tests already in flight.
+2. **advanced-profiling-flamegraph-support** — finish allocation report plus bench/UI wiring to complete profiling toolchain.
+3. **state-snapshot-incremental-updates** — complete engine delta integration and FFI/UI consumption for efficient sync.
+4. **otel-observability-integration** — add OTEL tracing/metrics export to unlock downstream dashboards.
+5. **opentelemetry-metrics-dashboard** — build collectors/exporters and Grafana/UI surfaces on top of OTEL.
+6. **multi-layout-simultaneous-support** — implement compositor/cross-layout modifiers with priority handling.
+7. **multi-user-profile-system** — land profile manager, switching (rules/hotkeys), CLI, and UI flows.
+8. **hardware-specific-profile-optimization** — add hardware detector/calibration profiles after profile system exists.
+9. **recording-analysis-export-system** — implement analysis engine plus export/visualization/CLI.
+10. **flutter-web-build-support** — add web server/bridge/responsive layout after core features stabilize.
+
 ## Product Principles
 
 1. **Logic > Configuration**: Static config files are insufficient. Scripting (Rhai) enables true programmable behavior.

@@ -31,6 +31,20 @@ Desktop application with a hybrid architecture: native Rust core engine communic
 - **dart:ffi**: Foreign Function Interface to Rust
 - **Skia/Impeller**: Hardware-accelerated rendering
 
+## Spec Implementation Order (engineering focus)
+
+Pending specs only; revolutionary-mapping is already shipped. Sequence balances in-progress work, observability foundations, then UX/platform deliverables:
+1. mapping-screen-refresh — devices page polish, autosave wiring, tests.
+2. advanced-profiling-flamegraph-support — finish allocation report + bench/UI flags.
+3. state-snapshot-incremental-updates — finish engine/FFI/UI delta flow.
+4. otel-observability-integration — wire tracing/metrics export (foundation).
+5. opentelemetry-metrics-dashboard — collectors/exporters/Grafana + embedded UI.
+6. multi-layout-simultaneous-support — compositor + cross-layout modifiers.
+7. multi-user-profile-system — profile manager, switching rules/hotkeys, CLI/UI.
+8. hardware-specific-profile-optimization — detector/calibration built atop profiles.
+9. recording-analysis-export-system — analysis engine + export/CLI/viz.
+10. flutter-web-build-support — web server/bridge/responsive build.
+
 ### Application Architecture
 
 **3-Layer Hybrid Architecture**:

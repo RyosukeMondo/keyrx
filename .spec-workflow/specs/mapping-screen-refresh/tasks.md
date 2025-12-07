@@ -1,6 +1,6 @@
 # Tasks Document
 
-_Status: Priority #5 in 2025 implementation order; open items: 7 (in-progress), 8-9 pending. Finish Devices polish, autosave wiring, and tests._
+_Status: Priority #1 in 2025 implementation order; open items: 7 (in-progress), 8-9 pending. Finish Devices polish, autosave wiring, and tests._
 
 - [x] 1. Relabel Editor navigation to Profiles and align page title
   - File: ui/lib/main.dart

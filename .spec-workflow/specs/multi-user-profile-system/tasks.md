@@ -1,8 +1,10 @@
 # Tasks Document
 
+_Status: Priority #7 in 2025 implementation order; all items pending. Build profile manager/switching/CLI/UI after layout work._
+
 ## Phase 1: Core Profile System
 
-- [ ] 1. Create Profile struct
+- [-] 1. Create Profile struct
   - File: `core/src/profile/mod.rs`
   - Profile definition
   - Serialization

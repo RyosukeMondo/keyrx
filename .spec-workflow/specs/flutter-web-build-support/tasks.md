@@ -1,5 +1,7 @@
 # Tasks Document
 
+_Status: Priority #10 in 2025 implementation order; all items pending. Execute after core features/metrics are stable._
+
 ## Phase 1: Backend Server
 
 - [ ] 1. Create HTTP server
