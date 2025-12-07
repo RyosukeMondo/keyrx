@@ -16,7 +16,7 @@
   - _Requirements: 1.4, 6.1, 7.2_
   - _Prompt: Role: Rust System Engineer | Task: Refactor event loop. For each hardware event, look up the device's active `ProfileSlot`s. Iterate top-down (priority). Translate Scancode -> VirtualKey. If mapped, process via Keymap -> Action. | Context: Decoupling hardware from logic with priority support. | Success: Pipeline compiles and logically follows the priority stages._
 
-- [ ] 3. Update File Storage Logic
+- [x] 3. Update File Storage Logic
   - File: `core/src/config/manager.rs`
   - Update config manager to load/save from `layouts/`, `hardware/`, and `keymaps/` directories.
   - _Requirements: 1.5_
