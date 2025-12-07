@@ -27,7 +27,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
   - Purpose: Profile data model
   - _Requirements: 2.1_
 
-- [ ] 4. Build profile database
+- [x] 4. Build profile database
   - File: `core/src/hardware/database.rs`
   - Builtin profiles
   - Lookup by VID/PID
