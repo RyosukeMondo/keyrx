@@ -82,7 +82,7 @@
   - _Requirements: 2.1, 2.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Create `LayoutsPage` with a list of layouts and an editor for defining keys (Matrix grid or named keys). | Success: User can create and save a Virtual Layout._
 
-- [ ] 13. Implement Wiring Tab
+- [x] 13. Implement Wiring Tab
   - File: `ui/lib/pages/wiring.dart`
   - Create UI for wiring Physical Keys to Virtual Layouts.
   - Interaction: QMK-style (Physical Source Top, Virtual Target Bottom).
