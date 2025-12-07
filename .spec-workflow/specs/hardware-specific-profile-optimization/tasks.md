@@ -1,8 +1,10 @@
 # Tasks Document
 
+_Status: Priority #8 in 2025 implementation order; all items pending. Layer on detector/calibration after profile system lands._
+
 ## Phase 1: Hardware Detection
 
-- [ ] 1. Create HardwareDetector
+- [x] 1. Create HardwareDetector
   - File: `core/src/hardware/detector.rs`
   - Vendor/product ID extraction
   - Device class inference

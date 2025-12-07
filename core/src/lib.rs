@@ -26,6 +26,7 @@ pub mod engine;
 pub mod error;
 pub mod errors;
 pub mod ffi;
+pub mod hardware;
 pub mod identity;
 pub mod metrics;
 pub mod migration;
