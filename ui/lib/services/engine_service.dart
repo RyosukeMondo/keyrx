@@ -13,6 +13,8 @@ class EngineSnapshot {
     this.activeModifiers = const [],
     this.heldKeys = const [],
     this.pendingDecisions = const [],
+    this.layouts = const [],
+    this.sharedModifiers = const [],
     this.lastEvent,
     this.latencyUs,
     this.timing,
@@ -24,10 +26,35 @@ class EngineSnapshot {
   final List<String> activeModifiers;
   final List<String> heldKeys;
   final List<String> pendingDecisions;
+  final List<LayoutState> layouts;
+  final List<int> sharedModifiers;
   final String? lastEvent;
   final int? latencyUs;
   final EngineTiming? timing;
   final int? version;
+}
+
+/// Snapshot of an individual layout's state.
+class LayoutState {
+  const LayoutState({
+    required this.id,
+    required this.name,
+    required this.priority,
+    required this.enabled,
+    this.activeLayers = const [],
+    this.tags = const [],
+    this.description,
+    this.modifiers = const [],
+  });
+
+  final String id;
+  final String name;
+  final int priority;
+  final bool enabled;
+  final List<int> activeLayers;
+  final List<String> tags;
+  final String? description;
+  final List<int> modifiers;
 }
 
 /// Timing configuration for decision-making.

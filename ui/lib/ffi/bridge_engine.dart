@@ -188,6 +188,8 @@ class BridgeSnapshot {
     required this.standardModifierBits,
     required this.virtualModifiers,
     required this.pendingCount,
+    this.layouts = const [],
+    this.sharedModifiers = const [],
   });
 
   factory BridgeSnapshot.fromJson(Map<String, dynamic> json) {
@@ -215,6 +217,26 @@ class BridgeSnapshot {
       }
     }
 
+    List<BridgeLayoutSnapshot> layouts = const [];
+    List<int> sharedModifiers = const [];
+    final compositor = json['layout_compositor'];
+    if (compositor is Map<String, dynamic>) {
+      final rawLayouts = compositor['layouts'] as List<dynamic>? ?? const [];
+      layouts = rawLayouts
+          .map(
+            (entry) => entry is Map<String, dynamic>
+                ? BridgeLayoutSnapshot.fromJson(entry)
+                : null,
+          )
+          .whereType<BridgeLayoutSnapshot>()
+          .toList();
+      sharedModifiers =
+          (compositor['shared_modifiers'] as List<dynamic>? ?? const [])
+              .map((e) => (e as num?)?.toInt())
+              .whereType<int>()
+              .toList();
+    }
+
     return BridgeSnapshot(
       version: (json['version'] as num?)?.toInt() ?? 0,
       pressedKeys: pressed,
@@ -231,6 +253,8 @@ class BridgeSnapshot {
               .toList() ??
           const <int>[],
       pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
+      layouts: layouts,
+      sharedModifiers: sharedModifiers,
     );
   }
 
@@ -241,6 +265,52 @@ class BridgeSnapshot {
   final int standardModifierBits;
   final List<int> virtualModifiers;
   final int pendingCount;
+  final List<BridgeLayoutSnapshot> layouts;
+  final List<int> sharedModifiers;
+}
+
+/// Snapshot of a layout as reported by the native compositor.
+class BridgeLayoutSnapshot {
+  const BridgeLayoutSnapshot({
+    required this.id,
+    required this.name,
+    required this.priority,
+    required this.enabled,
+    this.activeLayers = const [],
+    this.description,
+    this.tags = const [],
+    this.modifiers = const [],
+  });
+
+  factory BridgeLayoutSnapshot.fromJson(Map<String, dynamic> json) {
+    return BridgeLayoutSnapshot(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      priority: (json['priority'] as num?)?.toInt() ?? 0,
+      enabled: json['enabled'] == true,
+      activeLayers: (json['active_layers'] as List<dynamic>? ?? const [])
+          .map((e) => (e as num?)?.toInt() ?? 0)
+          .toList(),
+      description: json['description']?.toString(),
+      tags: (json['tags'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      modifiers: (json['modifiers'] as List<dynamic>? ?? const [])
+          .map((e) => (e as num?)?.toInt())
+          .whereType<int>()
+          .toList(),
+    );
+  }
+
+  final String id;
+  final String name;
+  final int priority;
+  final bool enabled;
+  final List<int> activeLayers;
+  final String? description;
+  final List<String> tags;
+  final List<int> modifiers;
 }
 
 /// Timing configuration snapshot from the engine.

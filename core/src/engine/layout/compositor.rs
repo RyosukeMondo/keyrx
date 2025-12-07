@@ -184,6 +184,11 @@ impl LayoutCompositor {
         self.layouts.iter().filter(|l| l.enabled)
     }
 
+    /// Iterator over all layouts in resolution order, including disabled ones.
+    pub fn all_layouts(&self) -> impl Iterator<Item = &ActiveLayout> {
+        self.layouts.iter()
+    }
+
     /// Produce a snapshot of active layouts and their layer ids in resolution order.
     pub fn resolved_layouts(&self) -> Vec<ResolvedLayout> {
         self.active_layouts()

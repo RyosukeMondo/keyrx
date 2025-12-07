@@ -43,7 +43,7 @@ _Status: Priority #6 in 2025 implementation order; all items pending. Focus on c
   - Purpose: Script access
   - _Requirements: 1.1, 3.3_
 
-- [ ] 6. Update FFI and Flutter
+- [x] 6. Update FFI and Flutter
   - Files: FFI exports, Flutter UI
   - Expose multi-layout state
   - UI for layout management

@@ -34,6 +34,7 @@ export 'bridge_engine.dart'
         BridgeDeltaChange,
         BridgeDeltaChangeType,
         BridgeSnapshot,
+        BridgeLayoutSnapshot,
         BridgeTiming,
         KeyRegistryEntry,
         KeyRegistryResult,

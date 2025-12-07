@@ -75,15 +75,16 @@ class TagSectionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 AnimatedContainer(
                   duration: animationDuration,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: items.isEmpty
                         ? Colors.grey.withValues(alpha: 0.2)
-                        : Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.2),
+                        : Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -140,6 +141,196 @@ class TagSectionCard extends StatelessWidget {
   }
 }
 
+/// Displays layout compositor state including priorities and shared modifiers.
+class LayoutsCard extends StatelessWidget {
+  const LayoutsCard({
+    super.key,
+    required this.layouts,
+    required this.sharedModifiers,
+    required this.animationDuration,
+  });
+
+  final List<LayoutState> layouts;
+  final List<int> sharedModifiers;
+  final Duration animationDuration;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = [...layouts]
+      ..sort((a, b) => b.priority.compareTo(a.priority));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Layouts',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: animationDuration,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: sorted.isEmpty
+                        ? Colors.grey.withValues(alpha: 0.2)
+                        : Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${sorted.length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: sorted.isEmpty
+                          ? Colors.grey
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(),
+            if (sorted.isEmpty)
+              Text(
+                'No layouts reported',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else
+              Column(
+                children: [
+                  for (final layout in sorted) ...[
+                    _LayoutRow(layout: layout),
+                    const Divider(height: 12),
+                  ],
+                ],
+              ),
+            if (sharedModifiers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: sharedModifiers
+                    .map(
+                      (id) => Chip(
+                        label: Text('shared mod$id'),
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LayoutRow extends StatelessWidget {
+  const _LayoutRow({required this.layout});
+
+  final LayoutState layout;
+
+  @override
+  Widget build(BuildContext context) {
+    final layerLabel = layout.activeLayers.isEmpty
+        ? 'layers: —'
+        : 'layers: ${layout.activeLayers.join(", ")}';
+    final modifierChips = layout.modifiers
+        .map(
+          (id) =>
+              Chip(label: Text('mod$id'), visualDensity: VisualDensity.compact),
+        )
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              layout.enabled ? Icons.check_circle : Icons.cancel,
+              color: layout.enabled ? Colors.green : Colors.redAccent,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    layout.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  if (layout.tags.isNotEmpty)
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      children: layout.tags
+                          .map(
+                            (tag) => Chip(
+                              label: Text(tag),
+                              visualDensity: VisualDensity.compact,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.secondaryContainer,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  if (layout.description?.isNotEmpty == true)
+                    Text(
+                      layout.description!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Chip(
+                  label: Text('prio ${layout.priority}'),
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.6),
+                  side: BorderSide.none,
+                ),
+                Text(layerLabel, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ],
+        ),
+        if (modifierChips.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(spacing: 6, runSpacing: 4, children: modifierChips),
+          ),
+      ],
+    );
+  }
+}
+
 /// Builds the pending decisions card with categorized decisions.
 class PendingDecisionsCard extends StatelessWidget {
   const PendingDecisionsCard({
@@ -192,8 +383,10 @@ class PendingDecisionsCard extends StatelessWidget {
                 ),
                 AnimatedContainer(
                   duration: animationDuration,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: pending.isEmpty
                         ? Colors.grey.withValues(alpha: 0.2)
@@ -224,7 +417,10 @@ class PendingDecisionsCard extends StatelessWidget {
               // Tap-hold decisions with countdown
               for (final decision in tapHoldDecisions)
                 PendingTapHoldWidget(
-                    decision: decision, timing: timing, pulse: pulseAnimation),
+                  decision: decision,
+                  timing: timing,
+                  pulse: pulseAnimation,
+                ),
               // Combo decisions with key highlights
               for (final decision in comboDecisions)
                 PendingComboWidget(decision: decision, pulse: pulseAnimation),
@@ -365,8 +561,9 @@ class TimelineWidget extends StatelessWidget {
               duration: animationDuration,
               height: 6,
               width: 120 * width,
-              color: LatencyMeterCard.latencyColor(snap.latencyUs)
-                  .withValues(alpha: 0.7),
+              color: LatencyMeterCard.latencyColor(
+                snap.latencyUs,
+              ).withValues(alpha: 0.7),
             ),
             const SizedBox(width: 8),
             Text(snap.latencyUs != null ? '${snap.latencyUs}µs' : '—'),

@@ -15,9 +15,10 @@ import 'debugger_widgets.dart';
 
 /// Real-time state debugger page.
 class DebuggerPage extends StatefulWidget {
-  const DebuggerPage({
-    super.key,
-  });
+  const DebuggerPage({super.key, this.engineService});
+
+  /// Optional override for tests; normally resolved via KeyrxFacade.
+  final EngineService? engineService;
 
   @override
   State<DebuggerPage> createState() => _DebuggerPageState();
@@ -25,8 +26,9 @@ class DebuggerPage extends StatefulWidget {
 
 class _DebuggerPageState extends State<DebuggerPage>
     with SingleTickerProviderStateMixin, StreamSubscriber<DebuggerPage> {
-  static const Duration _animationDuration =
-      Duration(milliseconds: TimingConfig.animationDurationMs);
+  static const Duration _animationDuration = Duration(
+    milliseconds: TimingConfig.animationDurationMs,
+  );
 
   final List<EngineSnapshot> _recent = [];
   bool _isRecording = true;
@@ -36,6 +38,7 @@ class _DebuggerPageState extends State<DebuggerPage>
   Set<String> _previousLayers = {};
   Set<String> _previousModifiers = {};
   Set<String> _previousHeldKeys = {};
+  Set<String> _previousLayouts = {};
   int? _previousLatency;
 
   // Animation controller for pulse effects
@@ -62,7 +65,7 @@ class _DebuggerPageState extends State<DebuggerPage>
   void _subscribeToStateStream() {
     cancelAllSubscriptions();
     final facade = Provider.of<KeyrxFacade>(context, listen: false);
-    final engineService = facade.services.engineService;
+    final engineService = widget.engineService ?? facade.services.engineService;
     subscribe<EngineSnapshot>(
       engineService.stateStream,
       onData: (snapshot) {
@@ -78,15 +81,27 @@ class _DebuggerPageState extends State<DebuggerPage>
           final newLayers = snapshot.activeLayers.toSet();
           final newModifiers = snapshot.activeModifiers.toSet();
           final newHeldKeys = snapshot.heldKeys.toSet();
+          final newLayouts = snapshot.layouts
+              .map(
+                (layout) =>
+                    '${layout.id}:${layout.priority}:${layout.enabled}:${layout.activeLayers.join(",")}',
+              )
+              .toSet();
 
           // Trigger pulse animation on significant changes
-          if (_hasSignificantChange(newLayers, newModifiers, newHeldKeys)) {
+          if (_hasSignificantChange(
+            newLayers,
+            newModifiers,
+            newHeldKeys,
+            newLayouts,
+          )) {
             _pulseController.forward(from: 0);
           }
 
           _previousLayers = newLayers;
           _previousModifiers = newModifiers;
           _previousHeldKeys = newHeldKeys;
+          _previousLayouts = newLayouts;
           _previousLatency = snapshot.latencyUs;
         });
       },
@@ -97,10 +112,12 @@ class _DebuggerPageState extends State<DebuggerPage>
     Set<String> newLayers,
     Set<String> newModifiers,
     Set<String> newHeldKeys,
+    Set<String> newLayouts,
   ) {
     return !_setEquals(newLayers, _previousLayers) ||
         !_setEquals(newModifiers, _previousModifiers) ||
-        !_setEquals(newHeldKeys, _previousHeldKeys);
+        !_setEquals(newHeldKeys, _previousHeldKeys) ||
+        !_setEquals(newLayouts, _previousLayouts);
   }
 
   bool _setEquals(Set<String> a, Set<String> b) {
@@ -210,6 +227,8 @@ class _DebuggerPageState extends State<DebuggerPage>
     final activeModifiers = snapshot?.activeModifiers ?? const [];
     final heldKeys = snapshot?.heldKeys ?? const [];
     final pending = snapshot?.pendingDecisions ?? const [];
+    final layouts = snapshot?.layouts ?? const [];
+    final sharedModifiers = snapshot?.sharedModifiers ?? const [];
     final latencyUs = snapshot?.latencyUs;
     final timing = snapshot?.timing;
 
@@ -224,6 +243,12 @@ class _DebuggerPageState extends State<DebuggerPage>
           LatencyMeterCard(
             latencyUs: latencyUs,
             previousLatency: _previousLatency,
+            animationDuration: _animationDuration,
+          ),
+          const SizedBox(height: 16),
+          LayoutsCard(
+            layouts: layouts,
+            sharedModifiers: sharedModifiers,
             animationDuration: _animationDuration,
           ),
           const SizedBox(height: 16),
@@ -273,10 +298,9 @@ class _DebuggerPageState extends State<DebuggerPage>
         borderRadius: BorderRadius.circular(12),
         border: snapshot?.lastEvent != null
             ? Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.3),
                 width: 1,
               )
             : null,

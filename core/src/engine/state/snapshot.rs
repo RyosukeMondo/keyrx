@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::engine::layout::{LayoutCompositor, LayoutId, ModifierCoordinator};
 use crate::engine::state::{LayerId, StandardModifiers};
 use crate::engine::KeyCode;
 
@@ -59,6 +60,10 @@ pub struct StateSnapshot {
 
     /// Number of pending decisions.
     pub pending_count: usize,
+
+    /// Multi-layout compositor snapshot (if available).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout_compositor: Option<LayoutCompositorSnapshot>,
 }
 
 /// A pressed key with its press timestamp.
@@ -107,6 +112,7 @@ impl From<&EngineState> for StateSnapshot {
             standard_modifiers: state.standard_modifiers(),
             virtual_modifiers: virtual_modifier_ids,
             pending_count: state.pending_count(),
+            layout_compositor: None,
         }
     }
 }
@@ -123,6 +129,7 @@ impl StateSnapshot {
             standard_modifiers: StandardModifiers::default(),
             virtual_modifiers: Vec::new(),
             pending_count: 0,
+            layout_compositor: None,
         }
     }
 
@@ -140,6 +147,20 @@ impl StateSnapshot {
             active_layers: layers,
             ..Self::empty()
         }
+    }
+
+    /// Create a snapshot enriched with layout compositor data.
+    pub fn with_layouts(
+        state: &EngineState,
+        layouts: &LayoutCompositor,
+        coordinator: Option<&ModifierCoordinator>,
+    ) -> Self {
+        let mut snapshot: StateSnapshot = state.into();
+        snapshot.layout_compositor = Some(LayoutCompositorSnapshot::from_components(
+            layouts,
+            coordinator,
+        ));
+        snapshot
     }
 
     /// Check if a key is pressed in this snapshot.
@@ -179,10 +200,83 @@ impl StateSnapshot {
     }
 }
 
+/// Summary of a layout's state for FFI/debugging.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LayoutSnapshot {
+    /// Stable layout identifier.
+    pub id: LayoutId,
+    /// Human-friendly layout name.
+    pub name: String,
+    /// Priority applied during resolution (higher wins).
+    pub priority: i32,
+    /// Whether the layout participates in composition.
+    pub enabled: bool,
+    /// Active layer identifiers for this layout.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub active_layers: Vec<LayerId>,
+    /// Optional description.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// Tags associated with the layout.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    /// Cross-layout modifiers visible to this layout.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub modifiers: Vec<u8>,
+}
+
+/// Snapshot of the layout compositor including shared modifiers.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct LayoutCompositorSnapshot {
+    /// Layouts in resolution order (enabled and disabled).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub layouts: Vec<LayoutSnapshot>,
+    /// Modifiers shared across every layout.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub shared_modifiers: Vec<u8>,
+}
+
+impl LayoutCompositorSnapshot {
+    fn from_components(
+        layouts: &LayoutCompositor,
+        coordinator: Option<&ModifierCoordinator>,
+    ) -> Self {
+        let shared_modifiers = layouts.shared_modifiers().active_ids();
+        let layout_snapshots = layouts
+            .all_layouts()
+            .map(|layout| {
+                let metadata = layout.layout().metadata().clone();
+                let modifiers = coordinator
+                    .map(|coord| coord.modifiers_for_layout(layout.id()).active_ids())
+                    .unwrap_or_default();
+                LayoutSnapshot {
+                    id: metadata.id,
+                    name: metadata.name,
+                    priority: layout.priority(),
+                    enabled: layout.enabled(),
+                    active_layers: layout.layer_ids(),
+                    description: metadata.description,
+                    tags: metadata.tags,
+                    modifiers,
+                }
+            })
+            .collect();
+
+        Self {
+            layouts: layout_snapshots,
+            shared_modifiers,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::engine::decision::timing::TimingConfig;
+    use crate::engine::layout::{
+        CrossLayoutModifier, Layout, LayoutCompositor, LayoutMetadata, ModifierCoordinator,
+        ModifierScope,
+    };
     use crate::engine::state::{Modifier, Mutation, StandardModifier};
 
     #[test]
@@ -194,6 +288,25 @@ mod tests {
         assert_eq!(snapshot.base_layer, 0);
         assert_eq!(snapshot.virtual_modifiers.len(), 0);
         assert_eq!(snapshot.pending_count, 0);
+    }
+
+    #[test]
+    fn snapshot_with_layouts_includes_compositor_state() {
+        let mut compositor = LayoutCompositor::new();
+        compositor.add_layout(Layout::new(LayoutMetadata::new("coding", "Coding")), 5);
+        let mut coordinator = ModifierCoordinator::new();
+        coordinator.activate(CrossLayoutModifier::new(3, ModifierScope::Global));
+
+        let state = EngineState::new(TimingConfig::default());
+        let snapshot = StateSnapshot::with_layouts(&state, &compositor, Some(&coordinator));
+
+        let layout_state = snapshot
+            .layout_compositor
+            .expect("layout compositor snapshot");
+        assert_eq!(layout_state.layouts.len(), 1);
+        assert_eq!(layout_state.layouts[0].id, "coding");
+        assert_eq!(layout_state.layouts[0].priority, 5);
+        assert_eq!(layout_state.layouts[0].modifiers, vec![3]);
     }
 
     #[test]
@@ -350,6 +463,7 @@ mod tests {
             standard_modifiers: StandardModifiers::default(),
             virtual_modifiers: vec![5, 10],
             pending_count: 3,
+            layout_compositor: None,
         };
 
         assert!(snapshot.is_key_pressed(KeyCode::A));

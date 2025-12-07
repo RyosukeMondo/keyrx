@@ -568,7 +568,11 @@ where
     ///
     /// Returns a StateSnapshot suitable for FFI, debugging, and persistence.
     pub fn snapshot(&self) -> crate::engine::state::snapshot::StateSnapshot {
-        (&self.state).into()
+        crate::engine::state::snapshot::StateSnapshot::with_layouts(
+            &self.state,
+            &self.layouts,
+            Some(&self.modifier_coordinator),
+        )
     }
 
     fn enqueue_combos(&mut self, event: &InputEvent) -> (bool, Vec<OutputAction>) {

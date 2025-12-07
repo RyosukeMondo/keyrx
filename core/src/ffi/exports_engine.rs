@@ -5,6 +5,7 @@
 //! fallback when versions drift.
 #![allow(unsafe_code)]
 
+use crate::engine::layout::{LayoutCompositor, ModifierCoordinator};
 use crate::engine::state::{snapshot::StateSnapshot, EngineState, StateDelta};
 use crate::ffi::domains::engine::global_event_registry;
 use crate::ffi::events::{EventCallback, EventType};
@@ -45,11 +46,12 @@ fn should_send_full(delta: &StateDelta, last_version: u64, has_sent: bool) -> bo
 
 fn build_state_update_event(
     state: &EngineState,
+    snapshot_override: Option<StateSnapshot>,
     event: Option<String>,
     latency_us: Option<u64>,
 ) -> StateUpdateEvent {
     let delta = state.take_delta();
-    let snapshot: StateSnapshot = state.into();
+    let snapshot: StateSnapshot = snapshot_override.unwrap_or_else(|| state.into());
 
     let last_version = last_sent_version().load(Ordering::Relaxed);
     let has_sent = last_version != INITIAL_VERSION_SENTINEL;
@@ -83,7 +85,24 @@ fn build_state_update_event(
 /// - The previous sent version does not match the delta's `from_version`
 /// - The delta heuristic indicates a full sync is more efficient
 pub fn publish_state_update(state: &EngineState, event: Option<String>, latency_us: Option<u64>) {
-    let payload = build_state_update_event(state, event, latency_us);
+    let payload = build_state_update_event(state, None, event, latency_us);
+    global_event_registry().invoke(EventType::EngineState, &payload);
+}
+
+/// Publish an EngineState update with layout compositor context.
+///
+/// This variant enriches the snapshot with multi-layout metadata when provided,
+/// enabling Flutter/FFI consumers to visualize active layouts and shared modifiers.
+pub fn publish_state_update_with_layouts(
+    state: &EngineState,
+    layouts: Option<&LayoutCompositor>,
+    coordinator: Option<&ModifierCoordinator>,
+    event: Option<String>,
+    latency_us: Option<u64>,
+) {
+    let snapshot = layouts.map(|layouts| StateSnapshot::with_layouts(state, layouts, coordinator));
+
+    let payload = build_state_update_event(state, snapshot, event, latency_us);
     global_event_registry().invoke(EventType::EngineState, &payload);
 }
 
@@ -120,7 +139,7 @@ mod tests {
         reset_last_sent_version();
 
         let state = EngineState::new(TimingConfig::default());
-        let event = build_state_update_event(&state, Some("init".into()), Some(0));
+        let event = build_state_update_event(&state, None, Some("init".into()), Some(0));
 
         assert!(
             event.full_snapshot.is_some(),
@@ -136,14 +155,14 @@ mod tests {
         reset_last_sent_version();
 
         let mut state = EngineState::new(TimingConfig::default());
-        let initial = build_state_update_event(&state, None, None); // bootstrap
+        let initial = build_state_update_event(&state, None, None, None); // bootstrap
         assert!(
             initial.full_snapshot.is_some(),
             "bootstrap should include snapshot"
         );
 
         apply_keydown(&mut state).expect("mutation applies");
-        let event = build_state_update_event(&state, Some("key_down".into()), Some(500));
+        let event = build_state_update_event(&state, None, Some("key_down".into()), Some(500));
         assert!(
             event.full_snapshot.is_none(),
             "delta publish should not include snapshot"

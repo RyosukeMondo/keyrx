@@ -170,6 +170,8 @@ class _EngineStateAccumulator {
   final Set<_StandardModifier> _standardModifiers = <_StandardModifier>{};
   final Set<String> _heldKeys = <String>{};
   final Set<int> _pendingIds = <int>{};
+  List<LayoutState> _layouts = const [];
+  List<int> _sharedModifiers = const [];
 
   void applySnapshot(BridgeSnapshot snapshot) {
     version = snapshot.version;
@@ -197,6 +199,21 @@ class _EngineStateAccumulator {
       ..addAll(snapshot.pressedKeys);
     _pendingIds.clear();
     _pendingCount = snapshot.pendingCount;
+    _layouts = snapshot.layouts
+        .map(
+          (layout) => LayoutState(
+            id: layout.id,
+            name: layout.name,
+            priority: layout.priority,
+            enabled: layout.enabled,
+            activeLayers: layout.activeLayers,
+            tags: layout.tags,
+            description: layout.description,
+            modifiers: layout.modifiers,
+          ),
+        )
+        .toList(growable: false);
+    _sharedModifiers = List<int>.from(snapshot.sharedModifiers);
   }
 
   bool applyDelta(BridgeStateDelta delta) {
@@ -316,6 +333,8 @@ class _EngineStateAccumulator {
       activeModifiers: modifiers,
       heldKeys: _heldKeys.toList(growable: false),
       pendingDecisions: pending,
+      layouts: _layouts,
+      sharedModifiers: _sharedModifiers,
       lastEvent: lastEvent,
       latencyUs: latencyUs,
       timing: timing,
