@@ -76,7 +76,7 @@
 
 ## Phase 3: UI Implementation
 
-- [ ] 12. Implement Layouts Tab
+- [x] 12. Implement Layouts Tab
   - File: `ui/lib/pages/layouts.dart`
   - Create UI for listing and creating/editing Virtual Layouts.
   - _Requirements: 2.1, 2.2, 5.1_
