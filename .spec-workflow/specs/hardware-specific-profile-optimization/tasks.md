@@ -43,7 +43,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
 
 ## Phase 3: Calibration
 
-- [ ] 6. Create Calibrator
+- [x] 6. Create Calibrator
   - File: `core/src/hardware/calibrator.rs`
   - Test sequence runner
   - Latency measurement

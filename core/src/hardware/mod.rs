@@ -4,12 +4,16 @@
 //! vendor/product identifiers and infers a coarse device class that can be
 //! used for profile lookup and calibration defaults.
 
+pub mod calibrator;
 pub mod classification;
 pub mod cloud_sync;
 pub mod database;
 pub mod detector;
 pub mod profile;
 
+pub use calibrator::{
+    CalibrationComparison, CalibrationConfig, CalibrationResult, CalibrationRunner, Calibrator,
+};
 pub use classification::{DeviceClass, DeviceClassifier};
 pub use cloud_sync::{
     CloudProfileBundle, CloudProfileSync, CloudSyncOutcome, HttpProfileClient, ProfileClient,
