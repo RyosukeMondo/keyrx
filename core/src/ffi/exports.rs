@@ -4,19 +4,25 @@
 //! Unsafe code is required for FFI interoperability.
 #![allow(unsafe_code)]
 
-use std::ffi::{c_char, CString};
-use std::path::PathBuf;
-use std::sync::Arc;
-
 use crate::config;
+use crate::config::models::{
+    DeviceInstanceId, DeviceSlots, HardwareProfile, Keymap, ProfileSlot, RuntimeConfig,
+    VirtualLayout,
+};
+use crate::config::{ConfigManager, StorageError};
 use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::domains::engine::global_event_registry as engine_event_registry;
+use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::events::{EventCallback, EventType};
 use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };
 use crate::registry::ProfileRegistry;
+use serde::Serialize;
+use std::ffi::{c_char, CStr, CString};
+use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Initialize the KeyRx engine.
 ///
@@ -269,6 +275,493 @@ pub extern "C" fn keyrx_register_event_callback(
     }
 
     0
+}
+
+// ---------------------------------------------------------------------------
+// Configuration management (layouts, hardware profiles, keymaps, runtime)
+// ---------------------------------------------------------------------------
+
+fn ffi_json<T: Serialize>(result: FfiResult<T>) -> *mut c_char {
+    let payload = serialize_ffi_result(&result).unwrap_or_else(|e| {
+        format!("error:{{\"code\":\"SERIALIZATION_FAILED\",\"message\":\"{e}\"}}")
+    });
+    CString::new(payload)
+        .map(CString::into_raw)
+        .unwrap_or(std::ptr::null_mut())
+}
+
+fn storage_error(err: StorageError) -> FfiError {
+    match err {
+        StorageError::CreateDir(path, source) => FfiError::new(
+            "STORAGE_ERROR",
+            format!("failed to create directory {}: {}", path.display(), source),
+        ),
+        StorageError::ReadDir(path, source) => FfiError::new(
+            "STORAGE_ERROR",
+            format!("failed to read directory {}: {}", path.display(), source),
+        ),
+        StorageError::ReadFile(path, source) => FfiError::new(
+            "STORAGE_ERROR",
+            format!("failed to read file {}: {}", path.display(), source),
+        ),
+        StorageError::WriteFile(path, source) => FfiError::new(
+            "STORAGE_ERROR",
+            format!("failed to write file {}: {}", path.display(), source),
+        ),
+        StorageError::Parse(path, source) => FfiError::deserialization_failed(format!(
+            "failed to parse JSON {}: {}",
+            path.display(),
+            source
+        )),
+    }
+}
+
+unsafe fn parse_c_string(ptr: *const c_char, name: &str) -> FfiResult<String> {
+    if ptr.is_null() {
+        return Err(FfiError::null_pointer(name));
+    }
+
+    CStr::from_ptr(ptr)
+        .to_str()
+        .map(|s| s.to_owned())
+        .map_err(|_| FfiError::invalid_utf8(name))
+}
+
+fn config_manager() -> ConfigManager {
+    ConfigManager::default()
+}
+
+fn update_runtime_config<F, T>(mutate: F) -> FfiResult<T>
+where
+    F: FnOnce(&mut RuntimeConfig) -> FfiResult<T>,
+{
+    let manager = config_manager();
+    let mut runtime = manager.load_runtime_config().map_err(storage_error)?;
+
+    let result = mutate(&mut runtime)?;
+
+    manager
+        .save_runtime_config(&runtime)
+        .map_err(storage_error)?;
+
+    Ok(result)
+}
+
+fn reorder_slots(slots: &mut [ProfileSlot]) {
+    slots.sort_by(|a, b| b.priority.cmp(&a.priority));
+}
+
+#[no_mangle]
+pub extern "C" fn keyrx_config_list_virtual_layouts() -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let result: FfiResult<Vec<VirtualLayout>> = config_manager()
+            .load_virtual_layouts()
+            .map(|m| m.into_values().collect())
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in list_virtual_layouts"))))
+}
+
+#[no_mangle]
+/// Save or update a virtual layout definition.
+///
+/// # Safety
+/// `layout_json` must be a valid, non-null, UTF-8 C string containing a serialized `VirtualLayout`.
+pub unsafe extern "C" fn keyrx_config_save_virtual_layout(
+    layout_json: *const c_char,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let json = match parse_c_string(layout_json, "layout_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let layout: VirtualLayout = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(err) => {
+                return ffi_json::<()>(Err(FfiError::deserialization_failed(err.to_string())))
+            }
+        };
+
+        let result: FfiResult<VirtualLayout> = config_manager()
+            .save_virtual_layout(&layout)
+            .map_err(storage_error)
+            .map(|_| layout);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in save_virtual_layout"))))
+}
+
+#[no_mangle]
+/// Delete a persisted virtual layout by id.
+///
+/// # Safety
+/// `id` must be a valid, non-null, UTF-8 C string.
+pub unsafe extern "C" fn keyrx_config_delete_virtual_layout(id: *const c_char) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let id = match parse_c_string(id, "layout_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<()> = config_manager()
+            .delete_virtual_layout(&id)
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in delete_virtual_layout"))))
+}
+
+#[no_mangle]
+pub extern "C" fn keyrx_config_list_hardware_profiles() -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let result: FfiResult<Vec<HardwareProfile>> = config_manager()
+            .load_hardware_profiles()
+            .map(|m| m.into_values().collect())
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in list_hardware_profiles"))))
+}
+
+#[no_mangle]
+/// Save or update a hardware wiring profile.
+///
+/// # Safety
+/// `profile_json` must be a valid, non-null, UTF-8 C string containing a serialized `HardwareProfile`.
+pub unsafe extern "C" fn keyrx_config_save_hardware_profile(
+    profile_json: *const c_char,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let json = match parse_c_string(profile_json, "hardware_profile_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let profile: HardwareProfile = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(err) => {
+                return ffi_json::<()>(Err(FfiError::deserialization_failed(err.to_string())))
+            }
+        };
+
+        let result: FfiResult<HardwareProfile> = config_manager()
+            .save_hardware_profile(&profile)
+            .map_err(storage_error)
+            .map(|_| profile);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in save_hardware_profile"))))
+}
+
+#[no_mangle]
+/// Delete a hardware profile by id.
+///
+/// # Safety
+/// `id` must be a valid, non-null, UTF-8 C string.
+pub unsafe extern "C" fn keyrx_config_delete_hardware_profile(id: *const c_char) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let id = match parse_c_string(id, "hardware_profile_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<()> = config_manager()
+            .delete_hardware_profile(&id)
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in delete_hardware_profile"))))
+}
+
+#[no_mangle]
+pub extern "C" fn keyrx_config_list_keymaps() -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let result: FfiResult<Vec<Keymap>> = config_manager()
+            .load_keymaps()
+            .map(|m| m.into_values().collect())
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in list_keymaps"))))
+}
+
+#[no_mangle]
+/// Save or update a keymap definition.
+///
+/// # Safety
+/// `keymap_json` must be a valid, non-null, UTF-8 C string containing a serialized `Keymap`.
+pub unsafe extern "C" fn keyrx_config_save_keymap(keymap_json: *const c_char) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let json = match parse_c_string(keymap_json, "keymap_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let keymap: Keymap = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(err) => {
+                return ffi_json::<()>(Err(FfiError::deserialization_failed(err.to_string())))
+            }
+        };
+
+        let result: FfiResult<Keymap> = config_manager()
+            .save_keymap(&keymap)
+            .map_err(storage_error)
+            .map(|_| keymap);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in save_keymap"))))
+}
+
+#[no_mangle]
+/// Delete a keymap by id.
+///
+/// # Safety
+/// `id` must be a valid, non-null, UTF-8 C string.
+pub unsafe extern "C" fn keyrx_config_delete_keymap(id: *const c_char) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let id = match parse_c_string(id, "keymap_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<()> = config_manager().delete_keymap(&id).map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in delete_keymap"))))
+}
+
+fn parse_device_json(json: &str) -> FfiResult<DeviceInstanceId> {
+    serde_json::from_str(json)
+        .map_err(|err| FfiError::deserialization_failed(format!("device: {err}")))
+}
+
+fn parse_slot_json(json: &str) -> FfiResult<ProfileSlot> {
+    serde_json::from_str(json)
+        .map_err(|err| FfiError::deserialization_failed(format!("slot: {err}")))
+}
+
+#[no_mangle]
+pub extern "C" fn keyrx_runtime_get_config() -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let result: FfiResult<RuntimeConfig> = config_manager()
+            .load_runtime_config()
+            .map_err(storage_error);
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in get_runtime_config"))))
+}
+
+#[no_mangle]
+/// Add or upsert a runtime profile slot for a device and persist the configuration.
+///
+/// # Safety
+/// `device_json` and `slot_json` must be valid, non-null, UTF-8 C strings containing `DeviceInstanceId`
+/// and `ProfileSlot` JSON payloads.
+pub unsafe extern "C" fn keyrx_runtime_add_slot(
+    device_json: *const c_char,
+    slot_json: *const c_char,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let device_json = match parse_c_string(device_json, "device_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+        let slot_json = match parse_c_string(slot_json, "slot_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let device = match parse_device_json(&device_json) {
+            Ok(d) => d,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+        let slot = match parse_slot_json(&slot_json) {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<RuntimeConfig> = update_runtime_config(|runtime| {
+            let device_index = runtime
+                .devices
+                .iter()
+                .position(|d| d.device == device)
+                .unwrap_or_else(|| {
+                    runtime.devices.push(DeviceSlots {
+                        device: device.clone(),
+                        slots: vec![],
+                    });
+                    runtime.devices.len() - 1
+                });
+
+            let slots = {
+                let device_slots = runtime
+                    .devices
+                    .get_mut(device_index)
+                    .ok_or_else(|| FfiError::internal("device slot missing after insertion"))?;
+                &mut device_slots.slots
+            };
+            // Replace existing slot with same id to keep updates idempotent.
+            if let Some(existing_idx) = slots.iter().position(|s| s.id == slot.id) {
+                slots[existing_idx] = slot.clone();
+            } else {
+                slots.push(slot.clone());
+            }
+            reorder_slots(slots);
+            Ok(runtime.clone())
+        });
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_add_slot"))))
+}
+
+#[no_mangle]
+/// Remove a runtime slot for a device.
+///
+/// # Safety
+/// `device_json` and `slot_id` must be valid, non-null, UTF-8 C strings.
+pub unsafe extern "C" fn keyrx_runtime_remove_slot(
+    device_json: *const c_char,
+    slot_id: *const c_char,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let device_json = match parse_c_string(device_json, "device_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+        let slot_id = match parse_c_string(slot_id, "slot_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let device = match parse_device_json(&device_json) {
+            Ok(d) => d,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<RuntimeConfig> = update_runtime_config(|runtime| {
+            let Some(slots) = runtime
+                .devices
+                .iter_mut()
+                .find(|d| d.device == device)
+                .map(|d| &mut d.slots)
+            else {
+                return Err(FfiError::not_found("device slots"));
+            };
+
+            let before_len = slots.len();
+            slots.retain(|slot| slot.id != slot_id);
+
+            if before_len == slots.len() {
+                return Err(FfiError::not_found(format!(
+                    "slot '{}' for device",
+                    slot_id
+                )));
+            }
+
+            Ok(runtime.clone())
+        });
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_remove_slot"))))
+}
+
+#[no_mangle]
+/// Update slot priority and re-order the runtime configuration for a device.
+///
+/// # Safety
+/// `device_json` and `slot_id` must be valid, non-null, UTF-8 C strings.
+pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
+    device_json: *const c_char,
+    slot_id: *const c_char,
+    priority: u32,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let device_json = match parse_c_string(device_json, "device_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+        let slot_id = match parse_c_string(slot_id, "slot_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let device = match parse_device_json(&device_json) {
+            Ok(d) => d,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<RuntimeConfig> = update_runtime_config(|runtime| {
+            let Some(slots) = runtime
+                .devices
+                .iter_mut()
+                .find(|d| d.device == device)
+                .map(|d| &mut d.slots)
+            else {
+                return Err(FfiError::not_found("device slots"));
+            };
+
+            let Some(slot) = slots.iter_mut().find(|s| s.id == slot_id) else {
+                return Err(FfiError::not_found("slot"));
+            };
+
+            slot.priority = priority;
+            reorder_slots(slots);
+            Ok(runtime.clone())
+        });
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_reorder_slot"))))
+}
+
+#[no_mangle]
+/// Toggle a runtime slot active flag for a device.
+///
+/// # Safety
+/// `device_json` and `slot_id` must be valid, non-null, UTF-8 C strings.
+pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
+    device_json: *const c_char,
+    slot_id: *const c_char,
+    active: bool,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let device_json = match parse_c_string(device_json, "device_json") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+        let slot_id = match parse_c_string(slot_id, "slot_id") {
+            Ok(s) => s,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let device = match parse_device_json(&device_json) {
+            Ok(d) => d,
+            Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let result: FfiResult<RuntimeConfig> = update_runtime_config(|runtime| {
+            let Some(slots) = runtime
+                .devices
+                .iter_mut()
+                .find(|d| d.device == device)
+                .map(|d| &mut d.slots)
+            else {
+                return Err(FfiError::not_found("device slots"));
+            };
+
+            let Some(slot) = slots.iter_mut().find(|s| s.id == slot_id) else {
+                return Err(FfiError::not_found("slot"));
+            };
+
+            slot.active = active;
+            reorder_slots(slots);
+            Ok(runtime.clone())
+        });
+        ffi_json(result)
+    })
+    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_set_slot_active"))))
 }
 
 #[cfg(test)]

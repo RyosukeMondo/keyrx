@@ -22,7 +22,7 @@
   - _Requirements: 1.5_
   - _Prompt: Role: Rust Developer | Task: Update configuration management to read/write JSON files in `~/.config/keyrx/layouts`, `hardware`, and `keymaps`. | Success: File I/O handles the new directory structure._
 
-- [ ] 4. Update FFI Exports
+- [x] 4. Update FFI Exports
   - File: `core/src/ffi/exports.rs`
   - Expose new structs and management functions (including `RuntimeConfig` manipulation) to Dart via FFI.
   - _Requirements: Non-functional (Modularity)_
