@@ -96,7 +96,7 @@
   - _Requirements: 4.1, 4.2, 5.1_
   - _Prompt: Role: Flutter UI Developer | Task: Refactor `MappingPage`. Display Virtual Layout (Source) on top, Action Palette (Standard Keys/Macros) on bottom. Click source -> Click action to map. | Success: User can map virtual keys to actions._
 
-- [ ] 15. Update Main Navigation
+- [x] 15. Update Main Navigation
   - File: `ui/lib/main.dart`
   - Implement the 4-tab navigation structure (Devices, Layouts, Wiring, Mapping).
   - _Requirements: 5.1_

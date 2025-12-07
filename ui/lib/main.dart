@@ -3,20 +3,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'pages/device_wiring_page.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices_page.dart';
 import 'pages/developer/test_runner_page.dart';
 import 'pages/developer/profiler_page.dart';
+import 'pages/layouts.dart';
 import 'pages/migration_prompt_page.dart';
 import 'pages/mapping_page.dart';
-import 'pages/metrics_dashboard.dart';
-import 'pages/run_controls_page.dart';
-import 'pages/trade_off_visualizer.dart';
-import 'pages/calibration_page.dart';
+import 'pages/wiring.dart';
 import 'services/service_registry.dart';
-import 'services/facade/keyrx_facade.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
@@ -84,21 +80,15 @@ class _HomePageState extends State<HomePage> {
   DeveloperTool? _selectedDevTool;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  List<Widget> _buildPages(ServiceRegistry registry, KeyrxFacade facade) {
+  List<Widget> _buildPages(ServiceRegistry registry) {
     return [
       DevicesPage(
         deviceService: registry.deviceRegistryService,
         profileService: registry.profileRegistryService,
       ),
-      // "Profiles" tab now handles Device Wiring (Physical -> Virtual)
-      const DeviceWiringPage(key: ValueKey('device_wiring_v1')),
+      const LayoutsPage(),
+      const WiringPage(),
       const MappingPage(),
-      const RunControlsPage(),
-      const MetricsDashboardPage(),
-      const CalibrationPage(),
-      const DebuggerPage(),
-      const ConsolePage(),
-      const TradeOffVisualizerPage(),
     ];
   }
 
@@ -109,44 +99,19 @@ class _HomePageState extends State<HomePage> {
       label: 'Devices',
     ),
     NavigationDestination(
-      icon: Icon(Icons.edit_outlined),
-      selectedIcon: Icon(Icons.edit),
-      label: 'Profiles',
+      icon: Icon(Icons.view_quilt_outlined),
+      selectedIcon: Icon(Icons.view_quilt),
+      label: 'Layouts',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.cable_outlined),
+      selectedIcon: Icon(Icons.cable),
+      label: 'Wiring',
     ),
     NavigationDestination(
       icon: Icon(Icons.grid_view_outlined),
       selectedIcon: Icon(Icons.grid_view),
       label: 'Mapping',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.play_circle_outlined),
-      selectedIcon: Icon(Icons.play_circle),
-      label: 'Run',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.analytics_outlined),
-      selectedIcon: Icon(Icons.analytics),
-      label: 'Metrics',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.tune_outlined),
-      selectedIcon: Icon(Icons.tune),
-      label: 'Calibration',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.bug_report_outlined),
-      selectedIcon: Icon(Icons.bug_report),
-      label: 'Debugger',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.terminal_outlined),
-      selectedIcon: Icon(Icons.terminal),
-      label: 'Console',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.tune_outlined),
-      selectedIcon: Icon(Icons.tune),
-      label: 'Timing',
     ),
   ];
 
@@ -177,9 +142,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final registry = context.read<ServiceRegistry>();
-    final facade = context.read<KeyrxFacade>();
     final appState = context.watch<AppState>();
-    final pages = _buildPages(registry, facade);
+    final pages = _buildPages(registry);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -249,7 +213,10 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildCurrentPage(ServiceRegistry registry, List<Widget> pages) {
     if (_selectedDevTool == null) {
-      return pages[_selectedIndex];
+      return IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      );
     }
     return _buildDevToolPage(registry);
   }
