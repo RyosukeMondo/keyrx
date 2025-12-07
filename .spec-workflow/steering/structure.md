@@ -34,7 +34,10 @@ keyrx/
 │   │   │   ├── bindings.dart  # Generated FFI bindings
 │   │   │   └── bridge.dart    # High-level Rust bridge
 │   │   ├── pages/             # UI screens
-│   │   │   ├── editor.dart    # Visual keymap editor
+│   │   │   ├── devices.dart   # Tab 1: Device management
+│   │   │   ├── layouts.dart   # Tab 2: Virtual Layout editor
+│   │   │   ├── wiring.dart    # Tab 3: Hardware Profile wiring
+│   │   │   ├── mapping.dart   # Tab 4: Logical Mapping (Keymap)
 │   │   │   ├── debugger.dart  # Real-time state visualizer
 │   │   │   └── console.dart   # Rhai REPL terminal
 │   │   ├── widgets/           # Reusable UI components

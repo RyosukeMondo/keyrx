@@ -100,11 +100,39 @@ Ctrl + Alt + Shift + Escape = Instantly disable all remapping
 
 **Why foundational**: Trust is the foundation. Users must never fear losing control.
 
+### Multi-Device Mastery (Concurrent Input)
+
+**Problem**: Power users often use multiple devices (e.g., a split keyboard, a macro pad, and a numpad) and want them to behave differently, or want to split a single large keyboard into two logical devices.
+
+**Solution**: A flexible runtime registry that supports **1:N Mapping** and **Conflict Resolution**.
+
+```rhai
+┌─────────────────────────────────────────────────────────────┐
+│ PHYSICAL DEVICE: Stream Deck XL (32 Keys)                   │
+├──────────────────────────────┬──────────────────────────────┤
+│ SLOT 1 (Priority: High)      │ SLOT 2 (Priority: Low)       │
+│ Keys 1-16 -> Left Half       │ Keys 17-32 -> Right Half     │
+│ [Active]                     │ [Active]                     │
+│ ↓                            │ ↓                            │
+│ Wiring: 4x4 Matrix           │ Wiring: 4x4 Matrix           │
+│ ↓                            │ ↓                            │
+│ Keymap: Photoshop Tools      │ Keymap: Streaming Controls   │
+└──────────────────────────────┴──────────────────────────────┘
+```
+
+**Key Capabilities**:
+1.  **Concurrent Usage**: All connected devices are active simultaneously.
+2.  **Profile Slots**: A single physical device can have multiple "slots" assigned to it.
+3.  **Conflict Resolution**: If two active slots map the same physical key, the higher-priority slot wins.
+4.  **Independent Toggles**: Users can turn off "SLOT 1" without unplugging the device.
+
+**Why foundational**: This transforms KeyRx from a simple remapper into a professional input orchestrator for complex setups.
+
 ### True Blank Canvas (Hardware-Level Abstraction)
 
 **Problem**: Traditional remappers inherit OS assumptions about keys. "A" is always "A", "Shift" is always a modifier. This limits what's possible and ties configurations to specific keyboard layouts (ANSI, ISO, JIS).
 
-**Solution**: Treat the keyboard as a pure grid of physical buttons:
+**Solution**: Decouple the physical hardware from the logical meaning via a **Virtual Layout** layer.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -115,40 +143,53 @@ Ctrl + Alt + Shift + Escape = Instantly disable all remapping
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│ KEYRX VIEW (Hardware-centric)                               │
+│ KEYRX VIEW (3-Stage Pipeline)                               │
 │                                                             │
-│  [0,0] [0,1] [0,2] ...  ← Just buttons with positions      │
-│  [3,0] [3,1] [3,2] ...  ← No "special" keys exist          │
+│  1. PHYSICAL: [Scancode 0x04] (Just a signal)              │
+│       ↓ (Hardware Profile)                                  │
+│  2. VIRTUAL:  [KEY_A] or [r0c1] (Abstract ID)              │
+│       ↓ (Keymap)                                            │
+│  3. LOGICAL:  [Action] (e.g. "Macro 1")                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Device Discovery Flow**:
-1. On first connection, detect keyboard by (vendor_id, product_id)
-2. If no profile exists, prompt user to discover physical layout
-3. User presses keys in order: top-left → right, then next row
-4. Each key is registered by physical position: `KEY_0_0`, `KEY_0_1`, etc.
-5. Profile is saved per-device for future sessions
+**Two Modes of Operation**:
+1.  **Semantic Mode (Beginner/Standard)**:
+    -   Virtual Keys are named: `KEY_A`, `KEY_ENTER`.
+    -   Hardware is auto-wired (Scancode 0x04 -> `KEY_A`).
+    -   User just remaps `KEY_A` -> `Action`.
+2.  **Matrix Mode (Advanced/Hand-wired)**:
+    -   Virtual Keys are coordinates: `r0c0`, `r0c1`.
+    -   Hardware is manually wired (Scancode -> Row/Col).
+    -   User maps `r0c0` -> `Action`.
 
-**Per-Keyboard Profiles**:
+**Device Discovery Flow**:
+1.  On first connection, detect keyboard by (vendor_id, product_id).
+2.  If no **Hardware Profile** exists, prompt user to select a **Virtual Layout** (e.g., "Standard ANSI" or "4x4 Matrix").
+3.  If "Standard", auto-wire keys based on defaults.
+4.  If "Matrix", prompt user to press keys to wire them to the grid.
+5.  Save **Hardware Profile** (`scancode` -> `virtual_id`).
+
+**Hardware Profiles**:
 ```
-~/.config/keyrx/devices/
-├── 046d_c52b.json    # Logitech K270 - discovered layout
-├── 1234_5678.json    # Custom ortholinear
-└── default.json      # Fallback to OS key names
+~/.config/keyrx/hardware/
+├── 046d_c52b.json    # Logitech K270 (Wired to ANSI 104)
+├── 1234_5678.json    # Custom ortholinear (Wired to 4x12 Grid)
+└── default.json      # Fallback
 ```
 
 **Modifier Keys as Pure Buttons**:
 - At hardware level, Shift/Ctrl/Alt send key down/up like any other key
 - OS adds "modifier" behavior on top
 - KeyRx intercepts BEFORE OS modifier processing
-- Result: Shift is just `KEY_4_0`, a button like any other
+- Result: Shift is just a button like any other
+- The **Keymap** defines if it acts as a modifier or a macro trigger.
 
 **Benefits**:
-- Works with ANY keyboard layout (ANSI, ISO, JIS, ortholinear, custom)
-- No assumptions about key meanings
-- Truly layout-agnostic configurations
-- Multiple keyboards can have different profiles
-- Share configs by position, not by key name
+- **Semantic Mode**: Easy for beginners ("Remap CapsLock").
+- **Matrix Mode**: Ultimate power for custom builds ("Remap Row 0 Col 0").
+- **Hardware Agnostic**: Share **Keymaps** (Logical layers) across different devices that share the same **Virtual Layout**.
+- **Hardware Profiles**: Handle the wiring once, never touch it again.
 
 **Why foundational**: This is what makes KeyRx a "blank canvas" rather than a "remap layer on top of OS".
 
