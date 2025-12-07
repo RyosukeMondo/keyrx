@@ -1,16 +1,7 @@
 use crate::drivers::{list_keyboards, DeviceInfo};
 use crate::errors::KeyrxError;
+use crate::hardware::{DeviceClass, DeviceClassifier};
 use serde::{Deserialize, Serialize};
-
-/// High-level classification of a keyboard device.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DeviceClass {
-    MechanicalKeyboard,
-    MembraneKeyboard,
-    LaptopKeyboard,
-    VirtualKeyboard,
-    Unknown,
-}
 
 /// Hardware fingerprint extracted from a device enumeration result.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,7 +16,7 @@ pub struct HardwareInfo {
 impl HardwareInfo {
     /// Build a HardwareInfo record from a DeviceInfo.
     pub fn from_device_info(device: &DeviceInfo) -> Self {
-        let device_class = infer_device_class(device);
+        let device_class = DeviceClassifier::classify(device);
 
         Self {
             vendor_id: device.vendor_id(),
@@ -62,48 +53,10 @@ impl HardwareDetector {
     }
 }
 
-fn infer_device_class(device: &DeviceInfo) -> DeviceClass {
-    let name = device.name().to_lowercase();
-    let vendor_id = device.vendor_id();
-    let product_id = device.product_id();
-
-    if name.contains("virtual") || name.contains("simulated") || name.contains("vkeyboard") {
-        return DeviceClass::VirtualKeyboard;
-    }
-
-    if vendor_id == 0 && product_id == 0 {
-        return DeviceClass::VirtualKeyboard;
-    }
-
-    if name.contains("laptop")
-        || name.contains("notebook")
-        || name.contains("thinkpad")
-        || name.contains("macbook")
-        || name.contains("internal keyboard")
-    {
-        return DeviceClass::LaptopKeyboard;
-    }
-
-    if name.contains("mechanical")
-        || name.contains("cherry")
-        || name.contains("gateron")
-        || name.contains("kailh")
-        || name.contains("optical switch")
-        || name.contains("hall effect")
-    {
-        return DeviceClass::MechanicalKeyboard;
-    }
-
-    if name.contains("membrane") || name.contains("rubber dome") {
-        return DeviceClass::MembraneKeyboard;
-    }
-
-    DeviceClass::Unknown
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hardware::DeviceClass;
     use std::path::PathBuf;
 
     fn device(name: &str, vendor_id: u16, product_id: u16) -> DeviceInfo {

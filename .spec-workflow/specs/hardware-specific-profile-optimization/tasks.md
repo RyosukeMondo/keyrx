@@ -11,7 +11,7 @@ _Status: Priority #8 in 2025 implementation order; all items pending. Layer on d
   - Purpose: Hardware identification
   - _Requirements: 1.1, 1.3_
 
-- [ ] 2. Implement device classification
+- [x] 2. Implement device classification
   - File: `core/src/hardware/classification.rs`
   - Mechanical vs membrane detection
   - Heuristic-based classification
