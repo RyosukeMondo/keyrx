@@ -98,16 +98,18 @@ class RustFfiParser:
     # Pattern to match #[no_mangle] pub extern "C" functions
     # Use DOTALL to allow multiline parameters, but ensure we stop at the return type
     FUNCTION_PATTERN = re.compile(
-        r'#\[no_mangle\]\s+'
-        r'pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+'
+        r'#\[no_mangle\]'
+        r'(?:\s*///[^\n]*\n)*'  # Allow doc comments between attribute and fn
+        r'\s*pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+'
         r'(\w+)\s*\(([^)]*)\)\s*->\s*([^\{]+)',
         re.MULTILINE
     )
 
     # Pattern for void return (no -> part)
     VOID_FUNCTION_PATTERN = re.compile(
-        r'#\[no_mangle\]\s+'
-        r'pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+'
+        r'#\[no_mangle\]'
+        r'(?:\s*///[^\n]*\n)*'  # Allow doc comments between attribute and fn
+        r'\s*pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+'
         r'(\w+)\s*\((.*?)\)\s*\{',
         re.MULTILINE | re.DOTALL
     )

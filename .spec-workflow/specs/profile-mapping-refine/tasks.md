@@ -30,7 +30,7 @@
 
 ## Phase 2: Dart Model & Service Refactor
 
-- [ ] 5. Generate FFI Bindings
+- [x] 5. Generate FFI Bindings
   - File: `ui/lib/ffi/generated/bindings.dart`
   - Run `flutter pub run ffi_gen` or manual update to reflect Rust FFI changes.
   - _Requirements: Non-functional_
