@@ -9,9 +9,10 @@ use keyrx_core::cli::{
     commands::{
         AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, HardwareAction, HardwareCommand, HardwareSource, LayoutAction,
-        LayoutCommand, LayoutSource, MigrateCommand, RegressionCommand, ReplCommand, ReplayCommand,
-        RunCommand, SimulateCommand, StateCommand, TestCommand, UatCommand,
+        GoldenSubcommand, HardwareAction, HardwareCommand, HardwareSource, KeymapAction,
+        KeymapCommand, LayoutAction, LayoutCommand, LayoutSource, MapRequest, MigrateCommand,
+        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand,
+        TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -99,6 +100,12 @@ enum Commands {
     Layout {
         #[command(subcommand)]
         command: Option<LayoutCommands>,
+    },
+
+    /// Manage logical keymaps
+    Keymap {
+        #[command(subcommand)]
+        command: Option<KeymapCommands>,
     },
 
     /// Show all exit codes with descriptions
@@ -504,6 +511,42 @@ enum LayoutCommands {
 }
 
 #[derive(Subcommand, Clone, Default)]
+enum KeymapCommands {
+    /// List all keymaps
+    #[default]
+    List,
+
+    /// Show a specific keymap by id
+    Show {
+        /// Keymap identifier
+        id: String,
+    },
+
+    /// Set or clear a binding in a keymap layer
+    Map {
+        /// Keymap identifier
+        #[arg(long)]
+        keymap: String,
+
+        /// Layer name (creates the layer if missing)
+        #[arg(long)]
+        layer: String,
+
+        /// Virtual key identifier to bind
+        #[arg(long = "virtual-key")]
+        virtual_key: String,
+
+        /// Action binding to apply (key:<code>, macro:<text>, layer-toggle:<layer>, or transparent)
+        #[arg(long, required_unless_present = "clear")]
+        action: Option<String>,
+
+        /// Clear the binding instead of setting it
+        #[arg(long, action = ArgAction::SetTrue)]
+        clear: bool,
+    },
+}
+
+#[derive(Subcommand, Clone, Default)]
 enum DeviceCommands {
     /// List all persisted device bindings
     #[default]
@@ -792,6 +835,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Devices { .. } => "devices",
         Commands::Hardware { .. } => "hardware",
         Commands::Layout { .. } => "layout",
+        Commands::Keymap { .. } => "keymap",
         Commands::ExitCodes => "exit-codes",
         Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
@@ -923,6 +967,30 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
                 }
             };
             let mut cmd = LayoutCommand::new(ctx.output_format(), action);
+            cmd.execute(ctx)
+        }
+        Commands::Keymap { command } => {
+            let keymap_cmd = command.unwrap_or_default();
+            let action = match keymap_cmd {
+                KeymapCommands::List => KeymapAction::List,
+                KeymapCommands::Show { id } => KeymapAction::Show { id },
+                KeymapCommands::Map {
+                    keymap,
+                    layer,
+                    virtual_key,
+                    action,
+                    clear,
+                } => KeymapAction::Map {
+                    request: MapRequest {
+                        keymap_id: keymap,
+                        layer,
+                        virtual_key,
+                        action,
+                        clear,
+                    },
+                },
+            };
+            let mut cmd = KeymapCommand::new(ctx.output_format(), action);
             cmd.execute(ctx)
         }
         Commands::ExitCodes => {

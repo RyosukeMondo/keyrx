@@ -54,7 +54,7 @@
   - _Requirements: Non-functional (CLI First)_
   - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Hardware Profiles. Support interactive wiring mode if possible. | Success: `keyrx hardware list` works._
 
-- [ ] 9. Implement Keymap CLI Commands
+- [x] 9. Implement Keymap CLI Commands
   - File: `core/src/cli/commands/keymap.rs`
   - Implement `keyrx keymap list`, `map`, `show` commands.
   - _Requirements: Non-functional (CLI First)_
