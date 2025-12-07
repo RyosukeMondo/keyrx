@@ -205,13 +205,10 @@ impl KeymapCommand {
         let action_label = if request.clear {
             "cleared".to_string()
         } else {
-            format!(
-                "{}",
-                binding
-                    .as_ref()
-                    .map(|b| format!("{b:?}"))
-                    .unwrap_or_else(|| "cleared".to_string())
-            )
+            binding
+                .as_ref()
+                .map(|b| format!("{b:?}"))
+                .unwrap_or_else(|| "cleared".to_string())
         };
 
         if let Err(err) = self.output.data(&KeymapMapOutput {
@@ -284,16 +281,15 @@ impl Command for KeymapCommand {
 
 fn ensure_layer<'a>(layers: &'a mut Vec<KeymapLayer>, name: &str) -> &'a mut KeymapLayer {
     if let Some(index) = layers.iter().position(|layer| layer.name == name) {
-        return layers
-            .get_mut(index)
-            .expect("layer index should be valid after position lookup");
+        return &mut layers[index];
     }
 
     layers.push(KeymapLayer {
         name: name.to_string(),
         bindings: HashMap::new(),
     });
-    layers.last_mut().expect("new layer present")
+    let last = layers.len().saturating_sub(1);
+    &mut layers[last]
 }
 
 fn parse_action_binding(input: &str) -> Result<ActionBinding, String> {

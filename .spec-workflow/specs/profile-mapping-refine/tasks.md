@@ -60,7 +60,7 @@
   - _Requirements: Non-functional (CLI First)_
   - _Prompt: Role: Rust CLI Developer | Task: Implement CLI commands to manage Keymaps. | Success: `keyrx keymap list` works._
 
-- [ ] 10. Implement Runtime CLI Commands
+- [x] 10. Implement Runtime CLI Commands
   - File: `core/src/cli/commands/runtime.rs`
   - Implement `keyrx device list` (showing slots), `slot add/remove`, `slot active`.
   - _Requirements: Non-functional (CLI First)_

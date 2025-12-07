@@ -11,8 +11,8 @@ use keyrx_core::cli::{
         DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
         GoldenSubcommand, HardwareAction, HardwareCommand, HardwareSource, KeymapAction,
         KeymapCommand, LayoutAction, LayoutCommand, LayoutSource, MapRequest, MigrateCommand,
-        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, SimulateCommand, StateCommand,
-        TestCommand, UatCommand,
+        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, RuntimeAction, RuntimeCommand,
+        SimulateCommand, StateCommand, TestCommand, UatCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
 };
@@ -106,6 +106,12 @@ enum Commands {
     Keymap {
         #[command(subcommand)]
         command: Option<KeymapCommands>,
+    },
+
+    /// Inspect and modify runtime profile slots
+    Runtime {
+        #[command(subcommand)]
+        command: Option<RuntimeCommands>,
     },
 
     /// Show all exit codes with descriptions
@@ -547,6 +553,90 @@ enum KeymapCommands {
 }
 
 #[derive(Subcommand, Clone, Default)]
+enum RuntimeCommands {
+    /// List runtime devices and active slots
+    #[default]
+    Devices,
+
+    /// Add or update a runtime slot for a device
+    SlotAdd {
+        /// Vendor ID (hex like 0x1b1c or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        vendor_id: u16,
+
+        /// Product ID (hex like 0x1b2e or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        product_id: u16,
+
+        /// Optional device serial number to disambiguate identical models
+        #[arg(long)]
+        serial: Option<String>,
+
+        /// Slot identifier
+        #[arg(long)]
+        slot: String,
+
+        /// Hardware profile id to attach
+        #[arg(long = "hardware-profile")]
+        hardware_profile: String,
+
+        /// Keymap id to attach
+        #[arg(long)]
+        keymap: String,
+
+        /// Slot priority (higher wins). Defaults to append order.
+        #[arg(long)]
+        priority: Option<u32>,
+
+        /// Whether the slot is active
+        #[arg(long, default_value_t = true)]
+        active: bool,
+    },
+
+    /// Remove a runtime slot
+    SlotRemove {
+        /// Vendor ID (hex like 0x1b1c or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        vendor_id: u16,
+
+        /// Product ID (hex like 0x1b2e or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        product_id: u16,
+
+        /// Optional device serial number to disambiguate identical models
+        #[arg(long)]
+        serial: Option<String>,
+
+        /// Slot identifier to remove
+        #[arg(long)]
+        slot: String,
+    },
+
+    /// Toggle a runtime slot's active flag
+    SlotActive {
+        /// Vendor ID (hex like 0x1b1c or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        vendor_id: u16,
+
+        /// Product ID (hex like 0x1b2e or decimal)
+        #[arg(long, value_parser = parse_hex_or_decimal_u16)]
+        product_id: u16,
+
+        /// Optional device serial number to disambiguate identical models
+        #[arg(long)]
+        serial: Option<String>,
+
+        /// Slot identifier to toggle
+        #[arg(long)]
+        slot: String,
+
+        /// Desired active state (true/false)
+        #[arg(long)]
+        active: bool,
+    },
+}
+
+#[derive(Subcommand, Clone, Default)]
 enum DeviceCommands {
     /// List all persisted device bindings
     #[default]
@@ -836,6 +926,7 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Hardware { .. } => "hardware",
         Commands::Layout { .. } => "layout",
         Commands::Keymap { .. } => "keymap",
+        Commands::Runtime { .. } => "runtime",
         Commands::ExitCodes => "exit-codes",
         Commands::Docs { .. } => "docs",
         Commands::Run { .. } => "run",
@@ -991,6 +1082,57 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
                 },
             };
             let mut cmd = KeymapCommand::new(ctx.output_format(), action);
+            cmd.execute(ctx)
+        }
+        Commands::Runtime { command } => {
+            let runtime_cmd = command.unwrap_or_default();
+            let action = match runtime_cmd {
+                RuntimeCommands::Devices => RuntimeAction::ListDevices,
+                RuntimeCommands::SlotAdd {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    hardware_profile,
+                    keymap,
+                    priority,
+                    active,
+                } => RuntimeAction::AddSlot {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot_id: slot,
+                    hardware_profile_id: hardware_profile,
+                    keymap_id: keymap,
+                    active,
+                    priority,
+                },
+                RuntimeCommands::SlotRemove {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                } => RuntimeAction::RemoveSlot {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot_id: slot,
+                },
+                RuntimeCommands::SlotActive {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    active,
+                } => RuntimeAction::SetSlotActive {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot_id: slot,
+                    active,
+                },
+            };
+            let mut cmd = RuntimeCommand::new(ctx.output_format(), action);
             cmd.execute(ctx)
         }
         Commands::ExitCodes => {
