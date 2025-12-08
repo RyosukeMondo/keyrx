@@ -299,10 +299,23 @@ class _DevicesPageState extends State<DevicesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _deviceTitle(device),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _deviceTitle(device),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 16),
+                            tooltip: 'Rename device',
+                            onPressed: disabled
+                                ? null
+                                : () => _showRenameDialog(device),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -703,6 +716,66 @@ class _DevicesPageState extends State<DevicesPage> {
     }
   }
 
+  Future<void> _showRenameDialog(DeviceSlots device) async {
+    final registry = _findRegistryDevice(device.device);
+    final key = registry?.identity.toKey() ?? _deviceKey(device.device);
+    final currentLabel = registry?.identity.userLabel ?? '';
+    final controller = TextEditingController(text: currentLabel);
+
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Rename Device'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Device Name',
+              hintText: 'Enter a custom name for this device',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newLabel == null || newLabel == currentLabel) return;
+
+    setState(() {
+      _isMutating = true;
+    });
+
+    try {
+      final result = await widget.deviceRegistryService.setUserLabel(
+        key,
+        newLabel.isEmpty ? null : newLabel,
+      );
+
+      if (!result.success) {
+        _showSnack('Failed to rename: ${result.errorMessage}', isError: true);
+      } else {
+        await _loadAll();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isMutating = false;
+        });
+      }
+    }
+  }
+
   void _showSnack(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -713,7 +786,7 @@ class _DevicesPageState extends State<DevicesPage> {
       ),
     );
   }
-}
+} // End of State
 
 class _InlineErrorBanner extends StatelessWidget {
   const _InlineErrorBanner({required this.message});

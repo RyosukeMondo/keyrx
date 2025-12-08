@@ -21,8 +21,7 @@ class FakeRuntimeService implements RuntimeService {
   Future<ConfigOperationResult<RuntimeConfig>> addSlot(
     DeviceInstanceId device,
     ProfileSlot slot,
-  ) async =>
-      ConfigOperationResult.success(config);
+  ) async => ConfigOperationResult.success(config);
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> getConfig() async =>
@@ -32,24 +31,21 @@ class FakeRuntimeService implements RuntimeService {
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
     DeviceInstanceId device,
     String slotId,
-  ) async =>
-      ConfigOperationResult.success(config);
+  ) async => ConfigOperationResult.success(config);
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> reorderSlot(
     DeviceInstanceId device,
     String slotId,
     int priority,
-  ) async =>
-      ConfigOperationResult.success(config);
+  ) async => ConfigOperationResult.success(config);
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> setSlotActive(
     DeviceInstanceId device,
     String slotId,
     bool active,
-  ) async =>
-      ConfigOperationResult.success(config);
+  ) async => ConfigOperationResult.success(config);
 }
 
 class FakeHardwareService implements HardwareService {
@@ -68,8 +64,7 @@ class FakeHardwareService implements HardwareService {
   @override
   Future<ConfigOperationResult<HardwareProfile>> saveProfile(
     HardwareProfile profile,
-  ) async =>
-      ConfigOperationResult.success(profile);
+  ) async => ConfigOperationResult.success(profile);
 }
 
 class FakeKeymapService implements KeymapService {
@@ -102,25 +97,25 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
     String deviceKey,
     bool enabled,
-  ) async =>
-      DeviceRegistryOperationResult.success();
+  ) async => DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => devices;
+
+  @override
+  Stream<List<DeviceState>> get devicesStream => Stream.value(devices);
 
   @override
   Future<void> dispose() async {}
@@ -128,8 +123,9 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
 
 void main() {
   group('DevicesPage', () {
-    testWidgets('shows empty state when runtime has no devices',
-        (tester) async {
+    testWidgets('shows empty state when runtime has no devices', (
+      tester,
+    ) async {
       final runtimeService = FakeRuntimeService(const RuntimeConfig());
       final hardwareService = FakeHardwareService(const []);
       final keymapService = FakeKeymapService(const []);
@@ -148,8 +144,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No connected devices with runtime slots'),
-          findsOneWidget);
+      expect(
+        find.text('No connected devices with runtime slots'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.devices_other_outlined), findsOneWidget);
     });
 

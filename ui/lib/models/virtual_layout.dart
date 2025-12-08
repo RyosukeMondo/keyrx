@@ -41,6 +41,8 @@ class VirtualKeyDef with _$VirtualKeyDef {
     required String label,
     KeyPosition? position,
     KeySize? size,
+    int? row,
+    int? column,
   }) = _VirtualKeyDef;
 
   const VirtualKeyDef._();

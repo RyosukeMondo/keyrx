@@ -371,6 +371,9 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<List<DeviceState>> refresh() async => const [];
 
   @override
+  Stream<List<DeviceState>> get devicesStream => const Stream.empty();
+
+  @override
   Future<void> dispose() async {}
 }
 

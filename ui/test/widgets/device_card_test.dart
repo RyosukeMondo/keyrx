@@ -22,8 +22,8 @@ class MockDeviceRegistryService implements DeviceRegistryService {
   MockDeviceRegistryService({
     List<DeviceState>? devices,
     bool shouldFail = false,
-  })  : _devices = devices ?? [],
-        _shouldFail = shouldFail;
+  }) : _devices = devices ?? [],
+       _shouldFail = shouldFail;
 
   @override
   Future<List<DeviceState>> getDevices() async {
@@ -73,6 +73,9 @@ class MockDeviceRegistryService implements DeviceRegistryService {
   }
 
   @override
+  Stream<List<DeviceState>> get devicesStream => Stream.value(_devices);
+
+  @override
   Future<void> dispose() async {}
 }
 
@@ -80,9 +83,8 @@ class MockDeviceRegistryService implements DeviceRegistryService {
 class MockProfileRegistryService implements ProfileRegistryService {
   final List<String> _profiles;
 
-  MockProfileRegistryService({
-    List<String>? profiles,
-  }) : _profiles = profiles ?? [];
+  MockProfileRegistryService({List<String>? profiles})
+    : _profiles = profiles ?? [];
 
   @override
   Future<List<String>> listProfiles() async {
@@ -210,27 +212,30 @@ void main() {
       expect(find.text('046d:c52b:ABC123'), findsOneWidget);
     });
 
-    testWidgets('displays Active status when remap enabled and profile assigned',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: DeviceCard(
-              deviceState: deviceState,
-              deviceService: deviceService,
-              profileService: profileService,
+    testWidgets(
+      'displays Active status when remap enabled and profile assigned',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DeviceCard(
+                deviceState: deviceState,
+                deviceService: deviceService,
+                profileService: profileService,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Active'), findsOneWidget);
-    });
+        expect(find.text('Active'), findsOneWidget);
+      },
+    );
 
-    testWidgets('displays Passthrough status when remap disabled',
-        (WidgetTester tester) async {
+    testWidgets('displays Passthrough status when remap disabled', (
+      WidgetTester tester,
+    ) async {
       final passthroughDevice = deviceState.copyWith(remapEnabled: false);
 
       await tester.pumpWidget(
@@ -250,8 +255,9 @@ void main() {
       expect(find.text('Passthrough'), findsOneWidget);
     });
 
-    testWidgets('displays No Profile status when no profile assigned',
-        (WidgetTester tester) async {
+    testWidgets('displays No Profile status when no profile assigned', (
+      WidgetTester tester,
+    ) async {
       final noProfileDevice = deviceState.copyWith(
         profileId: null,
         remapEnabled: true,
@@ -293,8 +299,7 @@ void main() {
       expect(find.byType(RemapToggle), findsOneWidget);
     });
 
-    testWidgets('includes ProfileSelector widget',
-        (WidgetTester tester) async {
+    testWidgets('includes ProfileSelector widget', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -312,8 +317,9 @@ void main() {
       expect(find.byType(ProfileSelector), findsOneWidget);
     });
 
-    testWidgets('calls deviceService.toggleRemap when toggle is changed',
-        (WidgetTester tester) async {
+    testWidgets('calls deviceService.toggleRemap when toggle is changed', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -336,8 +342,9 @@ void main() {
       expect(deviceService.lastToggledValue, false);
     });
 
-    testWidgets('calls deviceService.assignProfile when profile is selected',
-        (WidgetTester tester) async {
+    testWidgets('calls deviceService.assignProfile when profile is selected', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -382,8 +389,7 @@ void main() {
       expect(find.text('Edit Label'), findsOneWidget);
     });
 
-    testWidgets('displays Manage Profiles button',
-        (WidgetTester tester) async {
+    testWidgets('displays Manage Profiles button', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -401,8 +407,9 @@ void main() {
       expect(find.text('Manage Profiles'), findsOneWidget);
     });
 
-    testWidgets('calls onEditLabel when Edit Label button is pressed',
-        (WidgetTester tester) async {
+    testWidgets('calls onEditLabel when Edit Label button is pressed', (
+      WidgetTester tester,
+    ) async {
       bool editLabelCalled = false;
 
       await tester.pumpWidget(
@@ -426,30 +433,32 @@ void main() {
       expect(editLabelCalled, isTrue);
     });
 
-    testWidgets('calls onManageProfiles when Manage Profiles button is pressed',
-        (WidgetTester tester) async {
-      bool manageProfilesCalled = false;
+    testWidgets(
+      'calls onManageProfiles when Manage Profiles button is pressed',
+      (WidgetTester tester) async {
+        bool manageProfilesCalled = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: DeviceCard(
-              deviceState: deviceState,
-              deviceService: deviceService,
-              profileService: profileService,
-              onManageProfiles: () => manageProfilesCalled = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DeviceCard(
+                deviceState: deviceState,
+                deviceService: deviceService,
+                profileService: profileService,
+                onManageProfiles: () => manageProfilesCalled = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Manage Profiles'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Manage Profiles'));
+        await tester.pumpAndSettle();
 
-      expect(manageProfilesCalled, isTrue);
-    });
+        expect(manageProfilesCalled, isTrue);
+      },
+    );
 
     testWidgets('displays as Card widget', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -469,8 +478,9 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
     });
 
-    testWidgets('RemapToggle reflects device remap state',
-        (WidgetTester tester) async {
+    testWidgets('RemapToggle reflects device remap state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -489,8 +499,9 @@ void main() {
       expect(remapToggle.enabled, isTrue);
     });
 
-    testWidgets('ProfileSelector reflects device profile assignment',
-        (WidgetTester tester) async {
+    testWidgets('ProfileSelector reflects device profile assignment', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -505,13 +516,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final profileSelector =
-          tester.widget<ProfileSelector>(find.byType(ProfileSelector));
+      final profileSelector = tester.widget<ProfileSelector>(
+        find.byType(ProfileSelector),
+      );
       expect(profileSelector.selectedProfileId, 'test-profile');
     });
 
-    testWidgets('rolls back remap toggle on failure and shows error snackbar',
-        (WidgetTester tester) async {
+    testWidgets('rolls back remap toggle on failure and shows error snackbar', (
+      WidgetTester tester,
+    ) async {
       deviceService = MockDeviceRegistryService(shouldFail: true);
 
       await tester.pumpWidget(
@@ -536,34 +549,37 @@ void main() {
       expect(find.textContaining('Failed to toggle remap'), findsOneWidget);
     });
 
-    testWidgets('rolls back profile selection on failure and shows error snackbar',
-        (WidgetTester tester) async {
-      deviceService = MockDeviceRegistryService(shouldFail: true);
+    testWidgets(
+      'rolls back profile selection on failure and shows error snackbar',
+      (WidgetTester tester) async {
+        deviceService = MockDeviceRegistryService(shouldFail: true);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: DeviceCard(
-              deviceState: deviceState,
-              deviceService: deviceService,
-              profileService: profileService,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DeviceCard(
+                deviceState: deviceState,
+                deviceService: deviceService,
+                profileService: profileService,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DropdownButton<String?>));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(DropdownButton<String?>));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('another-profile').last);
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('another-profile').last);
+        await tester.pumpAndSettle();
 
-      final profileSelector =
-          tester.widget<ProfileSelector>(find.byType(ProfileSelector));
-      expect(profileSelector.selectedProfileId, 'test-profile');
-      expect(find.textContaining('Failed to assign profile'), findsOneWidget);
-    });
+        final profileSelector = tester.widget<ProfileSelector>(
+          find.byType(ProfileSelector),
+        );
+        expect(profileSelector.selectedProfileId, 'test-profile');
+        expect(find.textContaining('Failed to assign profile'), findsOneWidget);
+      },
+    );
   });
 }

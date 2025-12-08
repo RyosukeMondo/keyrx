@@ -464,27 +464,6 @@ void main() {
 
       final error = result.errOrNull!;
       expect(error.userMessage, contains('Disk full'));
-          name: 'Keyboard 1',
-          vendorId: 0x1234,
-          productId: 0x5678,
-          hasProfile: false,
-        ),
-        const KeyboardDevice(
-          path: '/dev/input/event1',
-          name: 'Keyboard 2',
-          vendorId: 0xABCD,
-          productId: 0xEF00,
-          hasProfile: true,
-        ),
-      ];
-
-      when(() => mockDevice.refresh()).thenAnswer((_) async => devices);
-
-      final result = await facade.listDevices();
-
-      expect(result.isOk, isTrue);
-      expect(result.okOrNull, devices);
-      expect(facade.currentState.device, DeviceStatus.available);
 
       await facade.dispose();
     });

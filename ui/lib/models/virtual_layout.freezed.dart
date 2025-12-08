@@ -358,6 +358,8 @@ mixin _$VirtualKeyDef {
   String get label => throw _privateConstructorUsedError;
   KeyPosition? get position => throw _privateConstructorUsedError;
   KeySize? get size => throw _privateConstructorUsedError;
+  int? get row => throw _privateConstructorUsedError;
+  int? get column => throw _privateConstructorUsedError;
 
   /// Serializes this VirtualKeyDef to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -376,7 +378,14 @@ abstract class $VirtualKeyDefCopyWith<$Res> {
     $Res Function(VirtualKeyDef) then,
   ) = _$VirtualKeyDefCopyWithImpl<$Res, VirtualKeyDef>;
   @useResult
-  $Res call({String id, String label, KeyPosition? position, KeySize? size});
+  $Res call({
+    String id,
+    String label,
+    KeyPosition? position,
+    KeySize? size,
+    int? row,
+    int? column,
+  });
 
   $KeyPositionCopyWith<$Res>? get position;
   $KeySizeCopyWith<$Res>? get size;
@@ -401,6 +410,8 @@ class _$VirtualKeyDefCopyWithImpl<$Res, $Val extends VirtualKeyDef>
     Object? label = null,
     Object? position = freezed,
     Object? size = freezed,
+    Object? row = freezed,
+    Object? column = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -420,6 +431,14 @@ class _$VirtualKeyDefCopyWithImpl<$Res, $Val extends VirtualKeyDef>
                 ? _value.size
                 : size // ignore: cast_nullable_to_non_nullable
                       as KeySize?,
+            row: freezed == row
+                ? _value.row
+                : row // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            column: freezed == column
+                ? _value.column
+                : column // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -463,7 +482,14 @@ abstract class _$$VirtualKeyDefImplCopyWith<$Res>
   ) = __$$VirtualKeyDefImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String label, KeyPosition? position, KeySize? size});
+  $Res call({
+    String id,
+    String label,
+    KeyPosition? position,
+    KeySize? size,
+    int? row,
+    int? column,
+  });
 
   @override
   $KeyPositionCopyWith<$Res>? get position;
@@ -489,6 +515,8 @@ class __$$VirtualKeyDefImplCopyWithImpl<$Res>
     Object? label = null,
     Object? position = freezed,
     Object? size = freezed,
+    Object? row = freezed,
+    Object? column = freezed,
   }) {
     return _then(
       _$VirtualKeyDefImpl(
@@ -508,6 +536,14 @@ class __$$VirtualKeyDefImplCopyWithImpl<$Res>
             ? _value.size
             : size // ignore: cast_nullable_to_non_nullable
                   as KeySize?,
+        row: freezed == row
+            ? _value.row
+            : row // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        column: freezed == column
+            ? _value.column
+            : column // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -521,6 +557,8 @@ class _$VirtualKeyDefImpl extends _VirtualKeyDef {
     required this.label,
     this.position,
     this.size,
+    this.row,
+    this.column,
   }) : super._();
 
   factory _$VirtualKeyDefImpl.fromJson(Map<String, dynamic> json) =>
@@ -534,10 +572,14 @@ class _$VirtualKeyDefImpl extends _VirtualKeyDef {
   final KeyPosition? position;
   @override
   final KeySize? size;
+  @override
+  final int? row;
+  @override
+  final int? column;
 
   @override
   String toString() {
-    return 'VirtualKeyDef(id: $id, label: $label, position: $position, size: $size)';
+    return 'VirtualKeyDef(id: $id, label: $label, position: $position, size: $size, row: $row, column: $column)';
   }
 
   @override
@@ -549,12 +591,15 @@ class _$VirtualKeyDefImpl extends _VirtualKeyDef {
             (identical(other.label, label) || other.label == label) &&
             (identical(other.position, position) ||
                 other.position == position) &&
-            (identical(other.size, size) || other.size == size));
+            (identical(other.size, size) || other.size == size) &&
+            (identical(other.row, row) || other.row == row) &&
+            (identical(other.column, column) || other.column == column));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, label, position, size);
+  int get hashCode =>
+      Object.hash(runtimeType, id, label, position, size, row, column);
 
   /// Create a copy of VirtualKeyDef
   /// with the given fields replaced by the non-null parameter values.
@@ -576,6 +621,8 @@ abstract class _VirtualKeyDef extends VirtualKeyDef {
     required final String label,
     final KeyPosition? position,
     final KeySize? size,
+    final int? row,
+    final int? column,
   }) = _$VirtualKeyDefImpl;
   const _VirtualKeyDef._() : super._();
 
@@ -590,6 +637,10 @@ abstract class _VirtualKeyDef extends VirtualKeyDef {
   KeyPosition? get position;
   @override
   KeySize? get size;
+  @override
+  int? get row;
+  @override
+  int? get column;
 
   /// Create a copy of VirtualKeyDef
   /// with the given fields replaced by the non-null parameter values.

@@ -4,6 +4,8 @@
 /// wrapping FFI calls with error handling and user-friendly messages.
 library;
 
+import 'dart:async';
+
 import '../ffi/bridge.dart';
 import '../models/device_state.dart';
 
@@ -85,6 +87,11 @@ abstract class DeviceRegistryService {
   /// Forces a refresh of the device list from the engine.
   Future<List<DeviceState>> refresh();
 
+  /// Stream of device list updates.
+  ///
+  /// Emits a new list whenever the device registry changes.
+  Stream<List<DeviceState>> get devicesStream;
+
   /// Dispose any held resources.
   Future<void> dispose();
 }
@@ -95,6 +102,10 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
   final KeyrxBridge _bridge;
   List<DeviceState>? _cachedDevices;
+  final _devicesController = StreamController<List<DeviceState>>.broadcast();
+
+  @override
+  Stream<List<DeviceState>> get devicesStream => _devicesController.stream;
 
   @override
   Future<List<DeviceState>> getDevices() async {
@@ -230,11 +241,13 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     final devices = result.data ?? const [];
     print('DeviceRegistryService: fetched ${devices.length} devices');
     _cachedDevices = devices;
+    _devicesController.add(_cachedDevices!);
     return _cachedDevices!;
   }
 
   @override
   Future<void> dispose() async {
+    await _devicesController.close();
     _cachedDevices = null;
   }
 
@@ -291,5 +304,6 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     final mutable = List<DeviceState>.from(_cachedDevices!);
     mutable[index] = updated;
     _cachedDevices = mutable;
+    _devicesController.add(_cachedDevices!);
   }
 }

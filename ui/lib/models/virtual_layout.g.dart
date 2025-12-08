@@ -34,6 +34,8 @@ _$VirtualKeyDefImpl _$$VirtualKeyDefImplFromJson(Map<String, dynamic> json) =>
       size: json['size'] == null
           ? null
           : KeySize.fromJson(json['size'] as Map<String, dynamic>),
+      row: (json['row'] as num?)?.toInt(),
+      column: (json['column'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$VirtualKeyDefImplToJson(_$VirtualKeyDefImpl instance) =>
@@ -42,6 +44,8 @@ Map<String, dynamic> _$$VirtualKeyDefImplToJson(_$VirtualKeyDefImpl instance) =>
       'label': instance.label,
       'position': instance.position,
       'size': instance.size,
+      'row': instance.row,
+      'column': instance.column,
     };
 
 _$VirtualLayoutImpl _$$VirtualLayoutImplFromJson(Map<String, dynamic> json) =>
