@@ -113,6 +113,11 @@ class FakeEngineService implements EngineService {
   Future<void> dispose() async {
     await _stateController.close();
   }
+
+  @override
+  Future<void> stop() async {
+    // No-op for fake
+  }
 }
 
 /// Fake KeyrxBridge that provides minimal stub implementations.
@@ -314,6 +319,11 @@ class FakeBridge implements KeyrxBridge {
   @override
   Future<void> dispose() async {
     await _stateController.close();
+  }
+
+  @override
+  void shutdown() {
+    // No-op for fake
   }
 }
 

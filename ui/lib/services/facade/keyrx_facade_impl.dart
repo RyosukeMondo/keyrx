@@ -227,8 +227,10 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       // Update state to stopping
       _updateState(currentState.withEngineStatus(EngineStatus.stopping));
 
-      // For now, just mark as ready since we don't have explicit stop methods
-      // The engine service disposal will handle cleanup
+      // Stop the engine via service
+      await _services.engineService.stop();
+
+      // Mark as ready
       _updateState(currentState.withEngineStatus(EngineStatus.ready));
 
       return const Result.ok(null);

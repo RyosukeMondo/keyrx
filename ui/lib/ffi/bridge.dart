@@ -228,6 +228,14 @@ class KeyrxBridge
     }
   }
 
+  /// Shutdown the revolutionary runtime (stop the engine).
+  void shutdown() {
+    final shutdownFn = _bindings?.revolutionaryRuntimeShutdown;
+    if (shutdownFn != null) {
+      shutdownFn();
+    }
+  }
+
   /// Register a unified event callback for a specific event type.
   ///
   /// This is the new unified API that replaces domain-specific callback
@@ -364,8 +372,10 @@ class KeyrxBridge
 
     try {
       final bytes = ptr.asTypedList(length);
+      /*
       // Temporary debug log
       print('DART: Received unified event: ${bytes.length} bytes');
+      */
 
       // The Rust core sends events in the format:
       // {"eventType": <code>, "payload": {...}}

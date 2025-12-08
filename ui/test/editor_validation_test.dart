@@ -188,6 +188,11 @@ class _FakeEngineService implements EngineService {
   Future<void> dispose() async {
     await _stateController.close();
   }
+
+  @override
+  Future<void> stop() async {
+    // No-op
+  }
 }
 
 class _FakeErrorTranslator implements ErrorTranslator {

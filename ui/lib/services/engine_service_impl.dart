@@ -101,6 +101,13 @@ class EngineServiceImpl implements EngineService {
     await _stateController.close();
   }
 
+  @override
+  Future<void> stop() async {
+    if (_bridge.isInitialized) {
+      _bridge.shutdown();
+    }
+  }
+
   void _handleStateUpdate(BridgeStateUpdate update) {
     final timing = _mapTiming(update.timing);
 

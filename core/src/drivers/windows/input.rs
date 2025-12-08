@@ -244,6 +244,7 @@ impl<I: KeyInjector> WindowsInput<I> {
         let start = std::time::Instant::now();
         let result = match self.rx.try_recv() {
             Ok(event) => {
+                /*
                 trace!(
                     service = "keyrx",
                     event = "windows_input_event_received",
@@ -252,6 +253,7 @@ impl<I: KeyInjector> WindowsInput<I> {
                     pressed = event.pressed,
                     "Received input event"
                 );
+                */
                 Ok(Some(event))
             }
             Err(crossbeam_channel::TryRecvError::Empty) => Ok(None),
@@ -272,6 +274,7 @@ impl<I: KeyInjector> WindowsInput<I> {
 
     pub(crate) fn log_polled_events(&self, count: usize) {
         if count > 0 {
+            /*
             debug!(
                 service = "keyrx",
                 event = "windows_poll_events",
@@ -279,6 +282,7 @@ impl<I: KeyInjector> WindowsInput<I> {
                 count = count,
                 "Returning polled events"
             );
+            */
         }
     }
 
@@ -344,12 +348,14 @@ impl<I: KeyInjector> WindowsInput<I> {
     }
 
     pub(crate) fn log_passthrough_action(&self) {
+        /*
         trace!(
             service = "keyrx",
             event = "windows_passthrough_action",
             component = "windows_input",
             "PassThrough (no action needed)"
         );
+        */
     }
 
     pub(crate) fn log_start_skipped(&self) {
