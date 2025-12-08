@@ -279,7 +279,7 @@ class _MappingPageState extends State<MappingPage> {
 
   Widget _buildLayoutSelector() {
     return DropdownButtonFormField<String>(
-      value: _selectedLayout?.id,
+      initialValue: _selectedLayout?.id,
       decoration: const InputDecoration(
         labelText: 'Virtual Layout',
         border: OutlineInputBorder(),
@@ -306,7 +306,7 @@ class _MappingPageState extends State<MappingPage> {
         ? <Keymap>[]
         : _keymaps.where((k) => k.virtualLayoutId == layout.id).toList();
     return DropdownButtonFormField<String>(
-      value: _workingKeymap?.id,
+      initialValue: _workingKeymap?.id,
       decoration: const InputDecoration(
         labelText: 'Keymap',
         border: OutlineInputBorder(),
@@ -374,16 +374,7 @@ class _MappingPageState extends State<MappingPage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _keymapIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Keymap ID',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
+                    // ID is hidden/auto-generated
                     controller: _keymapNameController,
                     decoration: const InputDecoration(
                       labelText: 'Display name',
@@ -495,7 +486,7 @@ class _MappingPageState extends State<MappingPage> {
   Widget _buildActionPalette() {
     final selectedKeyLabel = _selectedVirtualKeyId == null
         ? 'Select a virtual key to map'
-        : 'Map actions to ${_selectedVirtualKeyId}';
+        : 'Map actions to $_selectedVirtualKeyId';
 
     return Card(
       elevation: 2,

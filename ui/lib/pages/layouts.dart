@@ -276,6 +276,8 @@ class _LayoutsPageState extends State<LayoutsPage> {
       body: Column(
         children: [
           // Metadata Bar (ID, Type)
+          // Metadata Bar removed (ID is hidden)
+          /*
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(
@@ -294,6 +296,8 @@ class _LayoutsPageState extends State<LayoutsPage> {
               ],
             ),
           ),
+          const Divider(height: 1),
+          */
           const Divider(height: 1),
           // Visual Editor
           Expanded(
