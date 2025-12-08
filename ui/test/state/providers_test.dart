@@ -1,4 +1,5 @@
 /// Tests for provider configuration.
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -13,9 +14,9 @@ void main() {
     test('provides ServiceRegistry', () {
       final providers = createProviders();
 
-      final serviceRegistryProvider = providers.firstWhere(
-        (p) => p is Provider<ServiceRegistry>,
-      ) as Provider<ServiceRegistry>;
+      final serviceRegistryProvider =
+          providers.firstWhere((p) => p is Provider<ServiceRegistry>)
+              as Provider<ServiceRegistry>;
 
       expect(serviceRegistryProvider, isNotNull);
     });
@@ -23,9 +24,9 @@ void main() {
     test('provides KeyrxFacade', () {
       final providers = createProviders();
 
-      final facadeProvider = providers.firstWhere(
-        (p) => p is Provider<KeyrxFacade>,
-      ) as Provider<KeyrxFacade>;
+      final facadeProvider =
+          providers.firstWhere((p) => p is Provider<KeyrxFacade>)
+              as Provider<KeyrxFacade>;
 
       expect(facadeProvider, isNotNull);
     });
@@ -33,9 +34,9 @@ void main() {
     test('provides AppState', () {
       final providers = createProviders();
 
-      final appStateProvider = providers.firstWhere(
-        (p) => p is ChangeNotifierProvider<AppState>,
-      ) as ChangeNotifierProvider<AppState>;
+      final appStateProvider =
+          providers.firstWhere((p) => p is ChangeNotifierProvider<AppState>)
+              as ChangeNotifierProvider<AppState>;
 
       expect(appStateProvider, isNotNull);
     });

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/widgets/common/styled_text_field.dart';
 
@@ -8,27 +7,22 @@ void main() {
     testWidgets('renders with label', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: StyledTextField(
-              labelText: 'Name',
-            ),
-          ),
+          home: Scaffold(body: StyledTextField(labelText: 'Name')),
         ),
       );
 
       expect(find.text('Name'), findsOneWidget);
     });
 
-    testWidgets('calls onChanged when text changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text changes', (
+      WidgetTester tester,
+    ) async {
       String? changedValue;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: StyledTextField(
-              onChanged: (value) => changedValue = value,
-            ),
+            body: StyledTextField(onChanged: (value) => changedValue = value),
           ),
         ),
       );
@@ -37,8 +31,9 @@ void main() {
       expect(changedValue, equals('test'));
     });
 
-    testWidgets('calls onSubmitted when submitted',
-        (WidgetTester tester) async {
+    testWidgets('calls onSubmitted when submitted', (
+      WidgetTester tester,
+    ) async {
       String? submittedValue;
 
       await tester.pumpWidget(
@@ -60,13 +55,7 @@ void main() {
 
     testWidgets('respects enabled state', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StyledTextField(
-              enabled: false,
-            ),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: StyledTextField(enabled: false))),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -75,13 +64,7 @@ void main() {
 
     testWidgets('supports multiline', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StyledTextField(
-              maxLines: 5,
-            ),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: StyledTextField(maxLines: 5))),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -91,19 +74,16 @@ void main() {
     testWidgets('shows hint text', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: StyledTextField(
-              hintText: 'Enter text here',
-            ),
-          ),
+          home: Scaffold(body: StyledTextField(hintText: 'Enter text here')),
         ),
       );
 
       expect(find.text('Enter text here'), findsOneWidget);
     });
 
-    testWidgets('displays prefix and suffix icons',
-        (WidgetTester tester) async {
+    testWidgets('displays prefix and suffix icons', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -119,8 +99,9 @@ void main() {
       expect(find.byIcon(Icons.clear), findsOneWidget);
     });
 
-    testWidgets('uses custom decoration when provided',
-        (WidgetTester tester) async {
+    testWidgets('uses custom decoration when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -143,32 +124,24 @@ void main() {
     testWidgets('renders with outline border', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: OutlinedTextField(
-              labelText: 'Email',
-            ),
-          ),
+          home: Scaffold(body: OutlinedTextField(labelText: 'Email')),
         ),
       );
 
       expect(find.text('Email'), findsOneWidget);
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(
-        textField.decoration?.border,
-        isA<OutlineInputBorder>(),
-      );
+      expect(textField.decoration?.border, isA<OutlineInputBorder>());
     });
 
-    testWidgets('calls onChanged when text changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text changes', (
+      WidgetTester tester,
+    ) async {
       String? changedValue;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: OutlinedTextField(
-              onChanged: (value) => changedValue = value,
-            ),
+            body: OutlinedTextField(onChanged: (value) => changedValue = value),
           ),
         ),
       );
@@ -179,13 +152,7 @@ void main() {
 
     testWidgets('respects enabled state', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OutlinedTextField(
-              enabled: false,
-            ),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: OutlinedTextField(enabled: false))),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -200,9 +167,7 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               height: 200,
-              child: ExpandingTextField(
-                hintText: 'Enter code',
-              ),
+              child: ExpandingTextField(hintText: 'Enter code'),
             ),
           ),
         ),
@@ -213,8 +178,9 @@ void main() {
       expect(textField.maxLines, isNull);
     });
 
-    testWidgets('calls onChanged when text changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text changes', (
+      WidgetTester tester,
+    ) async {
       String? changedValue;
 
       await tester.pumpWidget(
@@ -238,10 +204,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SizedBox(
-              height: 200,
-              child: ExpandingTextField(),
-            ),
+            body: SizedBox(height: 200, child: ExpandingTextField()),
           ),
         ),
       );
@@ -256,9 +219,7 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               height: 200,
-              child: ExpandingTextField(
-                enabled: false,
-              ),
+              child: ExpandingTextField(enabled: false),
             ),
           ),
         ),
@@ -275,11 +236,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: NumberTextField(
-              controller: controller,
-            ),
-          ),
+          home: Scaffold(body: NumberTextField(controller: controller)),
         ),
       );
 
@@ -293,10 +250,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: NumberTextField(
-              controller: controller,
-              allowDecimal: true,
-            ),
+            body: NumberTextField(controller: controller, allowDecimal: true),
           ),
         ),
       );
@@ -311,10 +265,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: NumberTextField(
-              controller: controller,
-              allowNegative: true,
-            ),
+            body: NumberTextField(controller: controller, allowNegative: true),
           ),
         ),
       );
@@ -323,8 +274,9 @@ void main() {
       expect(controller.text, equals('-123'));
     });
 
-    testWidgets('allows decimal and negative when both enabled',
-        (WidgetTester tester) async {
+    testWidgets('allows decimal and negative when both enabled', (
+      WidgetTester tester,
+    ) async {
       final controller = TextEditingController();
 
       await tester.pumpWidget(
@@ -343,35 +295,26 @@ void main() {
       expect(controller.text, equals('-123.45'));
     });
 
-    testWidgets('renders with outline border when outlined is true',
-        (WidgetTester tester) async {
+    testWidgets('renders with outline border when outlined is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: NumberTextField(
-              outlined: true,
-            ),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: NumberTextField(outlined: true))),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(
-        textField.decoration?.border,
-        isA<OutlineInputBorder>(),
-      );
+      expect(textField.decoration?.border, isA<OutlineInputBorder>());
     });
 
-    testWidgets('calls onChanged when text changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text changes', (
+      WidgetTester tester,
+    ) async {
       String? changedValue;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: NumberTextField(
-              onChanged: (value) => changedValue = value,
-            ),
+            body: NumberTextField(onChanged: (value) => changedValue = value),
           ),
         ),
       );

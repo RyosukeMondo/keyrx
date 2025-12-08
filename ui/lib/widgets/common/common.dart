@@ -1,5 +1,5 @@
 /// Common widgets used across the application
-library common;
+library;
 
 // Export common widget components
 export 'styled_icon_button.dart';

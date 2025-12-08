@@ -2,6 +2,7 @@
 ///
 /// Manages the global application state including
 /// engine connection status, loaded scripts, and UI state.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,8 +29,8 @@ class AppState extends ChangeNotifier {
   AppState({
     required EngineService engineService,
     required ErrorTranslator errorTranslator,
-  })  : _engineService = engineService,
-        _errorTranslator = errorTranslator;
+  }) : _engineService = engineService,
+       _errorTranslator = errorTranslator;
 
   final EngineService _engineService;
   final ErrorTranslator _errorTranslator;
@@ -68,12 +69,11 @@ class AppState extends ChangeNotifier {
 
       if (_initialized) {
         // Load default layers
-        _layers = [
-          const LayerInfo(name: 'base', active: true, priority: 0),
-        ];
+        _layers = [const LayerInfo(name: 'base', active: true, priority: 0)];
       } else {
-        _error =
-            _errorTranslator.translate(StateError('Engine not ready')).body;
+        _error = _errorTranslator
+            .translate(StateError('Engine not ready'))
+            .body;
       }
 
       notifyListeners();
@@ -88,8 +88,7 @@ class AppState extends ChangeNotifier {
   /// Load a script file.
   Future<bool> loadScript(String path) async {
     if (!initialized) {
-      _error =
-          _errorTranslator.translate(StateError('Engine not ready')).body;
+      _error = _errorTranslator.translate(StateError('Engine not ready')).body;
       notifyListeners();
       return false;
     }
@@ -101,8 +100,9 @@ class AppState extends ChangeNotifier {
       if (success) {
         _loadedScript = path;
       } else {
-        _error =
-            _errorTranslator.translate(StateError('Failed to load $path')).body;
+        _error = _errorTranslator
+            .translate(StateError('Failed to load $path'))
+            .body;
       }
 
       notifyListeners();
@@ -129,11 +129,7 @@ class AppState extends ChangeNotifier {
 
   /// Add a new layer.
   void addLayer(String name, {int priority = 0}) {
-    _layers.add(LayerInfo(
-      name: name,
-      active: false,
-      priority: priority,
-    ));
+    _layers.add(LayerInfo(name: name, active: false, priority: priority));
     notifyListeners();
   }
 

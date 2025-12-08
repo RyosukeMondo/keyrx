@@ -1,4 +1,4 @@
 /// Scripting widgets
-library scripting;
+library;
 
 export 'api_browser.dart' show ApiBrowser, SyntaxHighlightedCode;

@@ -269,14 +269,17 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
 
   Widget _buildContent() {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_devices.isEmpty)
+    if (_devices.isEmpty) {
       return const Center(
         child: Text('No devices found. Connect a supported device.'),
       );
-    if (_selectedDevice == null)
+    }
+    if (_selectedDevice == null) {
       return const Center(child: Text('Select a device to configure.'));
-    if (_profile == null)
+    }
+    if (_profile == null) {
       return const Center(child: Text('No profile found for this device.'));
+    }
 
     return _buildPhysicalKeyboard();
   }

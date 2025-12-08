@@ -4,7 +4,6 @@
 // and displays them in a dropdown, showing the current selection.
 
 import 'package:flutter/material.dart';
-import '../models/profile.dart';
 import '../services/profile_registry_service.dart';
 
 /// Widget that provides a dropdown selector for profiles.
@@ -60,7 +59,11 @@ class ProfileSelector extends StatelessWidget {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 16),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.error,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Failed to load profiles',
@@ -93,10 +96,7 @@ class ProfileSelector extends StatelessWidget {
           ),
           // Profile items
           ...profileIds.map((id) {
-            return DropdownMenuItem<String?>(
-              value: id,
-              child: Text(id),
-            );
+            return DropdownMenuItem<String?>(value: id, child: Text(id));
           }),
         ];
 

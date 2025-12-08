@@ -1,5 +1,6 @@
 //! KeyRx Core - The Ultimate Input Remapping Engine
 //!
+//!
 //! This crate provides the core functionality for KeyRx:
 //! - Async event loop for input processing
 //! - Rhai scripting integration

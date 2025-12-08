@@ -2,6 +2,7 @@
 ///
 /// Provides an interactive console for typing Rhai commands
 /// directly into the running engine.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,10 +13,7 @@ import '../services/facade/keyrx_facade.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
-  const ConsolePage({
-    super.key,
-    this.parser = const ConsoleParser(),
-  });
+  const ConsolePage({super.key, this.parser = const ConsoleParser()});
 
   /// The parser for classifying console output.
   final ConsoleParser parser;
@@ -118,8 +116,9 @@ class _ConsolePageState extends State<ConsolePage> {
     final isError = entry.isError || entryType == ConsoleEntryType.error;
     final style = _getEntryStyle(entryType, isError);
     final showInitButton = parser.needsInitButton(entry.text, isError: isError);
-    final displayText =
-        entry.isInput ? entry.text : parser.stripPrefix(entry.text);
+    final displayText = entry.isInput
+        ? entry.text
+        : parser.stripPrefix(entry.text);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -276,10 +275,12 @@ class _ConsolePageState extends State<ConsolePage> {
     final engineService = facade.services.engineService;
     final success = await engineService.initialize();
     setState(() {
-      _history.add(ConsoleEntry(
-        success ? 'ok: Engine initialized.' : 'error: Initialization failed.',
-        isError: !success,
-      ));
+      _history.add(
+        ConsoleEntry(
+          success ? 'ok: Engine initialized.' : 'error: Initialization failed.',
+          isError: !success,
+        ),
+      );
       _isBusy = false;
     });
     _scrollToBottom();
@@ -304,7 +305,6 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-
 }
 
 /// A single console history entry.

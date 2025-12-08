@@ -107,9 +107,9 @@ class ThresholdViolation {
       ViolationType.latencyError =>
         'Error: Latency ${actualValue}us exceeds threshold ${thresholdValue}us',
       ViolationType.memoryWarning =>
-        'Warning: Memory ${actualValue} bytes exceeds threshold ${thresholdValue} bytes',
+        'Warning: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
       ViolationType.memoryError =>
-        'Error: Memory ${actualValue} bytes exceeds threshold ${thresholdValue} bytes',
+        'Error: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
     };
   }
 }

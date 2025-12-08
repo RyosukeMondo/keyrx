@@ -2,6 +2,7 @@
 ///
 /// Central place for configuring all Provider-based dependencies
 /// used throughout the application.
+library;
 
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';

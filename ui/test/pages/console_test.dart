@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:keyrx_ui/ffi/bridge.dart';
@@ -71,8 +70,9 @@ void main() {
     );
   }
 
-  testWidgets('displays initial UI with input field and clear button',
-      (tester) async {
+  testWidgets('displays initial UI with input field and clear button', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestWidget());
 
     expect(find.text('Rhai Console'), findsOneWidget);
@@ -96,10 +96,8 @@ void main() {
   });
 
   testWidgets('shows error badge for failed commands', (tester) async {
-    fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: syntax error',
-        );
+    fakeEngine.onEval = (_) async =>
+        const ConsoleEvalResult(success: false, output: 'error: syntax error');
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -141,13 +139,12 @@ void main() {
     expect(fakeEngine.evalCommands, isEmpty);
   });
 
-  testWidgets('initialize engine button appears on init error',
-      (tester) async {
+  testWidgets('initialize engine button appears on init error', (tester) async {
     fakeEngine.initializeResult = false;
     fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: Engine not initialized',
-        );
+      success: false,
+      output: 'error: Engine not initialized',
+    );
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -162,9 +159,9 @@ void main() {
   testWidgets('initialize engine button works', (tester) async {
     fakeEngine.initializeResult = true;
     fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: Engine not initialized',
-        );
+      success: false,
+      output: 'error: Engine not initialized',
+    );
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -213,10 +210,8 @@ void main() {
   });
 
   testWidgets('console shows ok output styling', (tester) async {
-    fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-          success: true,
-          output: 'ok: command succeeded',
-        );
+    fakeEngine.onEval = (_) async =>
+        const ConsoleEvalResult(success: true, output: 'ok: command succeeded');
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -228,8 +223,9 @@ void main() {
     expect(find.text('OK'), findsWidgets);
   });
 
-  testWidgets('console handles command with special characters',
-      (tester) async {
+  testWidgets('console handles command with special characters', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestWidget());
 
     await tester.enterText(find.byType(TextField), 'remap("a", "b")');
@@ -240,8 +236,9 @@ void main() {
     expect(fakeEngine.evalCommands, contains('remap("a", "b")'));
   });
 
-  testWidgets('input field is disabled during command execution',
-      (tester) async {
+  testWidgets('input field is disabled during command execution', (
+    tester,
+  ) async {
     final completer = Completer<ConsoleEvalResult>();
     fakeEngine.onEval = (_) => completer.future;
 

@@ -15,10 +15,7 @@ import '../../services/observability_service.dart';
 
 /// Widget for viewing real-time performance metrics.
 class MetricsWidget extends StatefulWidget {
-  const MetricsWidget({
-    required this.observabilityService,
-    super.key,
-  });
+  const MetricsWidget({required this.observabilityService, super.key});
 
   final ObservabilityService observabilityService;
 
@@ -51,8 +48,9 @@ class _MetricsWidgetState extends State<MetricsWidget> {
     await widget.observabilityService.startMetricsUpdates();
 
     // Subscribe to metrics stream
-    _metricsSubscription =
-        widget.observabilityService.metricsStream.listen((snapshot) {
+    _metricsSubscription = widget.observabilityService.metricsStream.listen((
+      snapshot,
+    ) {
       setState(() {
         _previousSnapshot = _currentSnapshot;
         _currentSnapshot = snapshot;
@@ -89,7 +87,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
 
   String _formatLatency(int microseconds) {
     if (microseconds < 1000) {
-      return '${microseconds}μs';
+      return '$microsecondsμs';
     } else if (microseconds < 1000000) {
       return '${(microseconds / 1000).toStringAsFixed(2)}ms';
     } else {
@@ -139,10 +137,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                Text(
-                  'Metrics Dashboard',
-                  style: theme.textTheme.titleMedium,
-                ),
+                Text('Metrics Dashboard', style: theme.textTheme.titleMedium),
                 const Spacer(),
                 // Refresh button
                 Tooltip(
@@ -199,9 +194,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                       _buildInfoCard(
                         context,
                         title: 'Last Updated',
-                        value: _formatTimestamp(
-                          _currentSnapshot!.dateTime,
-                        ),
+                        value: _formatTimestamp(_currentSnapshot!.dateTime),
                         icon: Icons.access_time,
                       ),
                       const SizedBox(height: 8),
@@ -432,11 +425,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        deltaIcon,
-                        size: 14,
-                        color: deltaColor,
-                      ),
+                      Icon(deltaIcon, size: 14, color: deltaColor),
                       const SizedBox(width: 2),
                       Text(
                         _formatCount(delta.abs()),

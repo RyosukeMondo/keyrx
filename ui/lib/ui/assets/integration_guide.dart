@@ -2,6 +2,7 @@
 ///
 /// This file shows practical examples of integrating the generated assets
 /// into your existing KeyRx application components.
+library;
 
 import 'package:flutter/material.dart';
 import 'app_assets.dart';
@@ -23,11 +24,7 @@ class EnhancedAppBar extends StatelessWidget implements PreferredSizeWidget {
       // Use app icon in title
       title: Row(
         children: [
-          Image.asset(
-            AppAssets.appIconBase,
-            width: 32,
-            height: 32,
-          ),
+          Image.asset(AppAssets.appIconBase, width: 32, height: 32),
           const SizedBox(width: 12),
           Text(title),
         ],
@@ -35,18 +32,12 @@ class EnhancedAppBar extends StatelessWidget implements PreferredSizeWidget {
       // Use custom icons in actions
       actions: [
         IconButton(
-          icon: const AssetIcon(
-            type: AssetIconType.profile,
-            size: 24,
-          ),
+          icon: const AssetIcon(type: AssetIconType.profile, size: 24),
           tooltip: 'Profiles',
           onPressed: () {},
         ),
         IconButton(
-          icon: const AssetIcon(
-            type: AssetIconType.settings,
-            size: 24,
-          ),
+          icon: const AssetIcon(type: AssetIconType.settings, size: 24),
           tooltip: 'Settings',
           onPressed: () {},
         ),
@@ -99,10 +90,7 @@ class ConfigurationPanel extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const AssetIcon(
-                  type: AssetIconType.key,
-                  size: 24,
-                ),
+                const AssetIcon(type: AssetIconType.key, size: 24),
                 const SizedBox(width: 12),
                 Text(
                   title,
@@ -187,17 +175,10 @@ class MainAppLayout extends StatelessWidget {
       children: [
         // Background image
         Positioned.fill(
-          child: Image.asset(
-            AppAssets.mainBackground,
-            fit: BoxFit.cover,
-          ),
+          child: Image.asset(AppAssets.mainBackground, fit: BoxFit.cover),
         ),
         // Semi-transparent overlay for better readability
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-        ),
+        Positioned.fill(child: Container(color: Colors.black.withOpacity(0.3))),
         // Content
         child,
       ],
@@ -227,18 +208,12 @@ class AppDrawer extends StatelessWidget {
           children: [
             DrawerHeader(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue, Colors.purple],
-                ),
+                gradient: LinearGradient(colors: [Colors.blue, Colors.purple]),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    AppAssets.appIconBase,
-                    width: 64,
-                    height: 64,
-                  ),
+                  Image.asset(AppAssets.appIconBase, width: 64, height: 64),
                   const SizedBox(height: 8),
                   const Text(
                     'KeyRx',
@@ -288,10 +263,7 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: icon,
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white),
-      ),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
       onTap: onTap,
     );
   }
@@ -327,10 +299,7 @@ class StatusIndicator extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AssetIcon(
-            type: AssetIconType.key,
-            size: 16,
-          ),
+          const AssetIcon(type: AssetIconType.key, size: 16),
           const SizedBox(width: 8),
           Text(
             label,
@@ -391,11 +360,7 @@ class KeyMappingPage extends StatelessWidget {
                 ),
               ),
               // Action buttons
-              FormActions(
-                onSave: () {},
-                onCancel: () {},
-                onDelete: () {},
-              ),
+              FormActions(onSave: () {}, onCancel: () {}, onDelete: () {}),
             ],
           ),
         ),
@@ -438,10 +403,7 @@ class AssetDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const AssetIcon(
-              type: AssetIconType.settings,
-              size: 48,
-            ),
+            const AssetIcon(type: AssetIconType.settings, size: 48),
             const SizedBox(height: 16),
             Text(
               title,

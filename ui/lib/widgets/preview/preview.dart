@@ -1,5 +1,5 @@
 /// Preview-specific widgets
-library preview;
+library;
 
 // Export preview components
 // TODO: Add exports as widgets are extracted

@@ -3,8 +3,6 @@
 // Contains the fl_chart configuration and rendering logic for
 // displaying the tap-hold timeout vs miss rate relationship.
 
-import 'dart:math' as math;
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -150,10 +148,8 @@ class TradeOffChart extends StatelessWidget {
           showTitles: true,
           reservedSize: 40,
           interval: 5,
-          getTitlesWidget: (value, meta) => Text(
-            '${value.toInt()}%',
-            style: theme.textTheme.bodySmall,
-          ),
+          getTitlesWidget: (value, meta) =>
+              Text('${value.toInt()}%', style: theme.textTheme.bodySmall),
         ),
       ),
       bottomTitles: AxisTitles(
@@ -162,18 +158,12 @@ class TradeOffChart extends StatelessWidget {
           showTitles: true,
           reservedSize: 30,
           interval: 200,
-          getTitlesWidget: (value, meta) => Text(
-            '${value.toInt()}',
-            style: theme.textTheme.bodySmall,
-          ),
+          getTitlesWidget: (value, meta) =>
+              Text('${value.toInt()}', style: theme.textTheme.bodySmall),
         ),
       ),
-      topTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
-      rightTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
     );
   }
 
@@ -215,7 +205,10 @@ class TradeOffChart extends StatelessWidget {
       final stdDev = userTypingStdDev ?? 50;
       verticalLines.addAll([
         VerticalLine(
-          x: (userTypingMean! - stdDev).clamp(config.minTimeout, config.maxTimeout),
+          x: (userTypingMean! - stdDev).clamp(
+            config.minTimeout,
+            config.maxTimeout,
+          ),
           color: Colors.purple.withValues(alpha: 0.5),
           strokeWidth: 1,
           dashArray: [3, 3],
@@ -236,7 +229,10 @@ class TradeOffChart extends StatelessWidget {
           ),
         ),
         VerticalLine(
-          x: (userTypingMean! + stdDev).clamp(config.minTimeout, config.maxTimeout),
+          x: (userTypingMean! + stdDev).clamp(
+            config.minTimeout,
+            config.maxTimeout,
+          ),
           color: Colors.purple.withValues(alpha: 0.5),
           strokeWidth: 1,
           dashArray: [3, 3],
@@ -285,7 +281,11 @@ class TradeOffChart extends StatelessWidget {
 
   List<FlSpot> _generateChartData() {
     final spots = <FlSpot>[];
-    for (double timeout = config.minTimeout; timeout <= config.maxTimeout; timeout += 10) {
+    for (
+      double timeout = config.minTimeout;
+      timeout <= config.maxTimeout;
+      timeout += 10
+    ) {
       final missRate = statistics.calculateMissRate(timeout);
       spots.add(FlSpot(timeout, missRate.clamp(0, config.maxMissRate)));
     }

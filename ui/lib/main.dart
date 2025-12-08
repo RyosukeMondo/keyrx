@@ -1,4 +1,5 @@
 /// KeyRx UI - Visual interface for the KeyRx input remapping engine.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -215,10 +216,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildCurrentPage(ServiceRegistry registry, List<Widget> pages) {
     if (_selectedDevTool == null) {
-      return IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      );
+      return IndexedStack(index: _selectedIndex, children: pages);
     }
     return _buildDevToolPage(registry);
   }

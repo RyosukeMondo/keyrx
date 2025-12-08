@@ -10,7 +10,7 @@ use crate::ffi::context::FfiContext;
 use crate::ffi::error::FfiError;
 use crate::ffi::events::EventRegistry;
 use crate::ffi::traits::FfiExportable;
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 
 /// Discovery domain FFI implementation.
 pub struct DiscoveryFfi;
@@ -42,12 +42,6 @@ impl FfiExportable for DiscoveryFfi {
 pub(crate) fn global_event_registry() -> &'static EventRegistry {
     static REGISTRY: OnceLock<EventRegistry> = OnceLock::new();
     REGISTRY.get_or_init(EventRegistry::new)
-}
-
-// Temporary global state - will be replaced with handle-based access in later tasks
-pub(crate) fn global_discovery_context() -> &'static Mutex<Option<FfiContext>> {
-    static CONTEXT: OnceLock<Mutex<Option<FfiContext>>> = OnceLock::new();
-    CONTEXT.get_or_init(|| Mutex::new(Some(FfiContext::new())))
 }
 
 // NOTE: Legacy discovery functions (start_discovery, etc.) have been removed

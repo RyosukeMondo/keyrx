@@ -7,12 +7,14 @@ class SurfaceStyles {
   const SurfaceStyles._();
 
   /// Default padding applied to surfaces.
-  static const EdgeInsets defaultPadding =
-      EdgeInsets.all(UiConstants.defaultPadding);
+  static const EdgeInsets defaultPadding = EdgeInsets.all(
+    UiConstants.defaultPadding,
+  );
 
   /// Default outer margin for separation between surfaces.
-  static const EdgeInsets defaultMargin =
-      EdgeInsets.all(UiConstants.defaultMargin);
+  static const EdgeInsets defaultMargin = EdgeInsets.all(
+    UiConstants.defaultMargin,
+  );
 
   /// Standard border radius for rounded surfaces.
   static const BorderRadius defaultRadius = BorderRadius.all(
@@ -25,7 +27,7 @@ class SurfaceStyles {
   /// Standard surface color that respects the active theme.
   static Color surfaceColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return scheme.surfaceVariant.withOpacity(0.85);
+    return scheme.surfaceContainerHighest.withOpacity(0.85);
   }
 
   /// Border color tuned for dark and light modes.

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/console.dart';
@@ -29,10 +28,9 @@ class _FakeEngineService implements EngineService {
   Future<ConsoleEvalResult> Function(String command)? onEval;
 
   @override
-  Future<ConsoleEvalResult> eval(String command) async =>
-      onEval != null
-          ? await onEval!(command)
-          : ConsoleEvalResult(success: true, output: 'ok: $command');
+  Future<ConsoleEvalResult> eval(String command) async => onEval != null
+      ? await onEval!(command)
+      : ConsoleEvalResult(success: true, output: 'ok: $command');
 
   @override
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
@@ -93,12 +91,14 @@ void main() {
     expect(find.text('OK'), findsWidgets);
   });
 
-  testWidgets('Console renders error styling for error-prefixed output', (tester) async {
+  testWidgets('Console renders error styling for error-prefixed output', (
+    tester,
+  ) async {
     final fakeEngine = _FakeEngineService()
       ..onEval = (_) async => const ConsoleEvalResult(
-            success: false,
-            output: 'error: engine unavailable',
-          );
+        success: false,
+        output: 'error: engine unavailable',
+      );
     final registry = _FakeServiceRegistry(fakeEngine);
     final facade = _FakeFacade(registry);
 

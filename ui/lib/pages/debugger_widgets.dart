@@ -228,9 +228,10 @@ class LayoutsCard extends StatelessWidget {
                       (id) => Chip(
                         label: Text('shared mod$id'),
                         visualDensity: VisualDensity.compact,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                       ),
                     )
                     .toList(),

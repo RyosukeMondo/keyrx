@@ -10,8 +10,6 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/ffi/bridge_discovery.dart';
-import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade_impl.dart';

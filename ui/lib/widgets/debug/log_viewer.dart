@@ -16,10 +16,7 @@ import '../../services/observability_service.dart';
 
 /// Widget for viewing and filtering log entries.
 class LogViewer extends StatefulWidget {
-  const LogViewer({
-    required this.observabilityService,
-    super.key,
-  });
+  const LogViewer({required this.observabilityService, super.key});
 
   final ObservabilityService observabilityService;
 
@@ -155,7 +152,7 @@ class _LogViewerState extends State<LogViewer> {
                     // Level filter
                     Expanded(
                       child: DropdownButtonFormField<LogLevel>(
-                        value: _minLevel,
+                        initialValue: _minLevel,
                         decoration: const InputDecoration(
                           labelText: 'Min Level',
                           isDense: true,
@@ -191,7 +188,7 @@ class _LogViewerState extends State<LogViewer> {
                     // Target filter
                     Expanded(
                       child: DropdownButtonFormField<String?>(
-                        value: _targetFilter,
+                        initialValue: _targetFilter,
                         decoration: const InputDecoration(
                           labelText: 'Target',
                           isDense: true,
@@ -307,9 +304,7 @@ class _LogViewerState extends State<LogViewer> {
           child: _filteredLogs.isEmpty
               ? Center(
                   child: Text(
-                    _allLogs.isEmpty
-                        ? 'No logs yet'
-                        : 'No logs match filters',
+                    _allLogs.isEmpty ? 'No logs yet' : 'No logs match filters',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
@@ -389,11 +384,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Level indicator
-                  Icon(
-                    widget.levelIcon,
-                    size: 16,
-                    color: widget.levelColor,
-                  ),
+                  Icon(widget.levelIcon, size: 16, color: widget.levelColor),
                   const SizedBox(width: 8),
                   // Timestamp
                   Text(
@@ -435,9 +426,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                   // Expand indicator
                   if (canExpand)
                     Icon(
-                      _expanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                      _expanded ? Icons.expand_less : Icons.expand_more,
                       size: 16,
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),

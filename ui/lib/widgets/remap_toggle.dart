@@ -16,11 +16,7 @@ class RemapToggle extends StatelessWidget {
   /// Callback invoked when toggle state changes.
   final ValueChanged<bool>? onChanged;
 
-  const RemapToggle({
-    super.key,
-    required this.enabled,
-    this.onChanged,
-  });
+  const RemapToggle({super.key, required this.enabled, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +37,7 @@ class RemapToggle extends StatelessWidget {
         Switch(
           value: enabled,
           onChanged: onChanged,
-          activeColor: colorScheme.primary,
+          activeThumbColor: colorScheme.primary,
         ),
       ],
     );

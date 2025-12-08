@@ -2,6 +2,7 @@
 ///
 /// Renders a keyboard layout with selectable keys
 /// for the visual keymap editor.
+library;
 
 import 'package:flutter/material.dart';
 
@@ -14,17 +15,10 @@ class KeyboardWidget extends StatelessWidget {
   final void Function(String key)? onKeySelected;
   final String? selectedKey;
 
-  const KeyboardWidget({
-    super.key,
-    this.onKeySelected,
-    this.selectedKey,
-  });
+  const KeyboardWidget({super.key, this.onKeySelected, this.selectedKey});
 
   @override
   Widget build(BuildContext context) {
-    return KeyGrid(
-      onKeySelected: onKeySelected,
-      selectedKey: selectedKey,
-    );
+    return KeyGrid(onKeySelected: onKeySelected, selectedKey: selectedKey);
   }
 }

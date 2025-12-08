@@ -647,7 +647,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
 
   String _formatLatency(int microseconds) {
     if (microseconds < 1000) {
-      return '${microseconds}μs';
+      return '$microsecondsμs';
     } else if (microseconds < 1000000) {
       return '${(microseconds / 1000).toStringAsFixed(1)}ms';
     } else {

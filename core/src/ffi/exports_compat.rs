@@ -8,8 +8,7 @@
 
 use crate::ffi::context::FfiContext;
 use crate::ffi::domains::{
-    analysis, device, diagnostics, discovery, engine, recording, script, testing, DeviceFfi,
-    RecordingFfi,
+    analysis, device, diagnostics, engine, recording, script, testing, DeviceFfi, RecordingFfi,
 };
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;

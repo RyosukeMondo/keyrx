@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/virtual_layout.dart';
+import '../../widgets/virtual_layout_common.dart';
 
 class LayoutVisualEditor extends StatefulWidget {
   const LayoutVisualEditor({
@@ -337,7 +338,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                           children: [
                             Positioned.fill(
                               child: CustomPaint(
-                                painter: _GridPainter(
+                                painter: VirtualLayoutGridPainter(
                                   step: 60.0,
                                   color: Theme.of(
                                     context,
@@ -531,28 +532,10 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                     }).toList();
                     widget.onKeysChanged(newKeys);
                   },
-                  child: Container(
-                    margin: const EdgeInsets.all(2), // Gutter
-                    decoration: BoxDecoration(
-                      color: _selectedIds.contains(key.id)
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: _selectedIds.contains(key.id)
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).dividerColor,
-                        width: _selectedIds.contains(key.id) ? 2 : 1,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      key.label.isEmpty && key.id.isNotEmpty
-                          ? key.id
-                          : key.label,
-                      style: const TextStyle(fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  child: VirtualKeyVisual(
+                    label: key.label,
+                    id: key.id,
+                    isSelected: _selectedIds.contains(key.id),
                   ),
                 ),
               ),
@@ -752,43 +735,4 @@ class _PropertyBar extends StatelessWidget {
       ),
     );
   }
-}
-
-class _GridPainter extends CustomPainter {
-  final double step;
-  final double subStep;
-  final Color color;
-
-  _GridPainter({required this.step, required this.color, this.subStep = 15.0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Minor Grid
-    final paintMinor = Paint()
-      ..color = color.withOpacity(0.1)
-      ..strokeWidth = 1;
-
-    for (double x = 0; x <= size.width; x += subStep) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paintMinor);
-    }
-    for (double y = 0; y <= size.height; y += subStep) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paintMinor);
-    }
-
-    // Major Grid
-    final paintMajor = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-
-    for (double x = 0; x <= size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paintMajor);
-    }
-
-    for (double y = 0; y <= size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paintMajor);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

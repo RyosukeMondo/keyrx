@@ -1,4 +1,4 @@
 /// Metrics widgets
-library metrics;
+library;
 
 export 'metrics_dashboard.dart' show MetricsDashboard;

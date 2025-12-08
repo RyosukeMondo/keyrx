@@ -1,5 +1,5 @@
 /// Widget library exports
-library widgets;
+library;
 
 // Export widget categories
 export 'common/common.dart';

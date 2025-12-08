@@ -1,5 +1,5 @@
 /// Settings-specific widgets
-library settings;
+library;
 
 // Export settings components
 // TODO: Add exports as widgets are extracted

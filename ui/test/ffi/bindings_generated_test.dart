@@ -1,7 +1,7 @@
 import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/ffi/generated/bindings_generated.dart';
+import 'package:keyrx_ui/ffi/generated/bindings_generated.dart';
 
 void main() {
   group('KeyrxBindingsGenerated', () {
@@ -16,8 +16,8 @@ void main() {
       final libPath = Platform.isLinux
           ? 'libkeyrx_core.so'
           : Platform.isWindows
-              ? 'keyrx_core.dll'
-              : 'libkeyrx_core.dylib';
+          ? 'keyrx_core.dll'
+          : 'libkeyrx_core.dylib';
 
       try {
         final lib = DynamicLibrary.open(libPath);
@@ -31,7 +31,9 @@ void main() {
         expect(() => bindings.listDevices, returnsNormally);
       } catch (e) {
         // If library doesn't exist, that's okay - we're just testing code generation
-        print('Library not found (expected during code generation testing): $e');
+        print(
+          'Library not found (expected during code generation testing): $e',
+        );
       }
     });
 

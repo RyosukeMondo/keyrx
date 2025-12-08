@@ -5,11 +5,8 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:rxdart/rxdart.dart';
 
-import '../../models/discovery_progress.dart';
 import '../service_registry.dart';
 import '../test_service.dart';
 import '../../ffi/bridge.dart' hide ScriptValidationResult;
