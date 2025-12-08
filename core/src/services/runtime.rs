@@ -22,7 +22,15 @@ impl RuntimeService {
             config_manager: ConfigManager::default(),
         }
     }
+}
 
+impl Default for RuntimeService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RuntimeService {
     pub fn get_config(&self) -> Result<RuntimeConfig, RuntimeServiceError> {
         self.config_manager
             .load_runtime_config()
@@ -79,7 +87,7 @@ impl RuntimeService {
         slot_id: &str,
     ) -> Result<RuntimeConfig, RuntimeServiceError> {
         self.update_runtime_config(|runtime| {
-             let slots = runtime
+            let slots = runtime
                 .devices
                 .iter_mut()
                 .find(|d| d.device == device)
@@ -104,14 +112,16 @@ impl RuntimeService {
         new_priority: u32,
     ) -> Result<RuntimeConfig, RuntimeServiceError> {
         self.update_runtime_config(|runtime| {
-             let slots = runtime
+            let slots = runtime
                 .devices
                 .iter_mut()
                 .find(|d| d.device == device)
                 .map(|d| &mut d.slots)
                 .ok_or_else(|| RuntimeServiceError::DeviceNotFound(device.clone()))?;
 
-            let slot = slots.iter_mut().find(|s| s.id == slot_id)
+            let slot = slots
+                .iter_mut()
+                .find(|s| s.id == slot_id)
                 .ok_or_else(|| RuntimeServiceError::SlotNotFound(slot_id.to_string()))?;
 
             slot.priority = new_priority;
@@ -125,19 +135,21 @@ impl RuntimeService {
 
     pub fn set_slot_active(
         &self,
-         device: DeviceInstanceId,
+        device: DeviceInstanceId,
         slot_id: &str,
         active: bool,
     ) -> Result<RuntimeConfig, RuntimeServiceError> {
         self.update_runtime_config(|runtime| {
-             let slots = runtime
+            let slots = runtime
                 .devices
                 .iter_mut()
                 .find(|d| d.device == device)
                 .map(|d| &mut d.slots)
                 .ok_or_else(|| RuntimeServiceError::DeviceNotFound(device.clone()))?;
 
-            let slot = slots.iter_mut().find(|s| s.id == slot_id)
+            let slot = slots
+                .iter_mut()
+                .find(|s| s.id == slot_id)
                 .ok_or_else(|| RuntimeServiceError::SlotNotFound(slot_id.to_string()))?;
 
             slot.active = active;

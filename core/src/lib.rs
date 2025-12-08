@@ -11,8 +11,8 @@
 // KeyrxError is intentionally large to include all necessary context
 #![allow(clippy::result_large_err)]
 
-pub mod services;
 pub mod api;
+pub mod services;
 
 /// Global allocator that enables allocation tracking when profiling is active.
 #[global_allocator]

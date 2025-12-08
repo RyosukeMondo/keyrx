@@ -101,7 +101,6 @@ fn exit_1_invalid_command() {
 }
 
 #[test]
-#[ignore] // Run command has tokio runtime issues in tests
 fn exit_1_run_missing_config() {
     let temp_dir = tempdir().expect("Failed to create temp dir");
     let missing_config = temp_dir.path().join("nonexistent.toml");
@@ -203,7 +202,6 @@ fn exit_2_replay_with_verification_failure() {
 // =============================================================================
 
 #[test]
-#[ignore] // Ignore by default as it takes time to run
 fn exit_3_simulate_timeout() {
     // Create a script that takes too long
     let mut file = NamedTempFile::new().expect("Failed to create temp file");
@@ -220,7 +218,6 @@ fn exit_3_simulate_timeout() {
 }
 
 #[test]
-#[ignore] // Ignore by default as it's timing-sensitive
 fn exit_3_test_timeout() {
     // Create a test that takes too long
     let temp_dir = tempdir().expect("Failed to create temp dir");
@@ -276,7 +273,6 @@ fn exit_4_check_parse_error() {
 }
 
 #[test]
-#[ignore] // Run command has tokio runtime issues in tests
 fn exit_4_run_invalid_config_syntax() {
     let temp_dir = tempdir().expect("Failed to create temp dir");
     let config_file = temp_dir.path().join("invalid.toml");

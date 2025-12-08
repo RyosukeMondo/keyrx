@@ -761,9 +761,11 @@ fn parse_hex_or_decimal_u16(value: &str) -> Result<u16, String> {
     {
         u16::from_str_radix(hex, 16).map_err(|err| format!("Invalid hex value '{value}': {err}"))
     } else {
-        trimmed
-            .parse::<u16>()
-            .map_err(|err| format!("Invalid number '{value}': {err}"))
+        match trimmed.parse::<u16>() {
+            Ok(v) => Ok(v),
+            Err(_) => u16::from_str_radix(trimmed, 16)
+                .map_err(|err| format!("Invalid number '{value}': {err}")),
+        }
     }
 }
 

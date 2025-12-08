@@ -1,5 +1,5 @@
+use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::config::{ConfigManager, StorageError};
-use crate::config::models::{VirtualLayout, HardwareProfile, Keymap};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -20,7 +20,15 @@ impl ProfileService {
             config_manager: ConfigManager::default(),
         }
     }
+}
 
+impl Default for ProfileService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ProfileService {
     // Virtual Layouts
     pub fn list_virtual_layouts(&self) -> Result<Vec<VirtualLayout>, ProfileServiceError> {
         self.config_manager
@@ -29,7 +37,10 @@ impl ProfileService {
             .map_err(Into::into)
     }
 
-    pub fn save_virtual_layout(&self, layout: VirtualLayout) -> Result<VirtualLayout, ProfileServiceError> {
+    pub fn save_virtual_layout(
+        &self,
+        layout: VirtualLayout,
+    ) -> Result<VirtualLayout, ProfileServiceError> {
         self.config_manager.save_virtual_layout(&layout)?;
         Ok(layout)
     }
@@ -47,7 +58,10 @@ impl ProfileService {
             .map_err(Into::into)
     }
 
-    pub fn save_hardware_profile(&self, profile: HardwareProfile) -> Result<HardwareProfile, ProfileServiceError> {
+    pub fn save_hardware_profile(
+        &self,
+        profile: HardwareProfile,
+    ) -> Result<HardwareProfile, ProfileServiceError> {
         self.config_manager.save_hardware_profile(&profile)?;
         Ok(profile)
     }
