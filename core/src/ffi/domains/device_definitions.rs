@@ -163,7 +163,6 @@ key_spacing = 4
             device_registry,
             profile_registry,
             library,
-            library,
             Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),
         ))
         .unwrap();

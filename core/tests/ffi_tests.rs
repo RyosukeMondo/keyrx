@@ -84,6 +84,7 @@ fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::Te
         device_registry.clone(),
         profile_registry.clone(),
         device_definitions,
+        Arc::new(std::sync::Mutex::new(keyrx_core::scripting::RhaiRuntime::new().unwrap()))
     ))
     .unwrap();
 
