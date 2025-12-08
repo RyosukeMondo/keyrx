@@ -3,7 +3,7 @@ use crate::ffi::events::EventType;
 use serde::Serialize;
 use std::fmt;
 use tracing::field::{Field, Visit};
-use tracing::{Event, Level, Subscriber};
+use tracing::{Event, Subscriber};
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::Layer;
 

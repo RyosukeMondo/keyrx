@@ -14,7 +14,7 @@ use crate::definitions::DeviceDefinitionLibrary;
 #[cfg(windows)]
 use crate::drivers::windows::WindowsInput;
 use crate::engine::{
-    AdvancedEngine, InputEvent, LayerAction, OutputAction, RemapAction, TimingConfig,
+    LayerAction, RemapAction,
 };
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::domains::engine::global_event_registry as engine_event_registry;
@@ -24,13 +24,11 @@ use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };
 use crate::registry::ProfileRegistry;
-use crate::traits::InputSource;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 static ENGINE_SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
@@ -202,150 +200,11 @@ fn init_revolutionary_runtime() -> i32 {
         }
     }
 
-    // Initialize the engine and start the event loop
-    // This is critical for processing input events
-    #[cfg(windows)]
-    {
-        // Move shared runtime to engine thread
-        let script_runtime_for_engine = shared_script_runtime;
-
-        thread::spawn(move || {
-            tracing::info!(
-                service = "keyrx",
-                component = "ffi_exports",
-                event = "engine_thread_start",
-                "Starting engine event loop on background thread"
-            );
-
-            let mut input = match WindowsInput::new() {
-                Ok(input) => input,
-                Err(e) => {
-                    tracing::error!("Failed to create WindowsInput: {}", e);
-                    return;
-                }
-            };
-
-            // Create engine with dependencies
-            let mut engine =
-                AdvancedEngine::new(script_runtime_for_engine.clone(), TimingConfig::default());
-
-            // Initialize engine with data from script registry
-            // This is required because AdvancedEngine uses internal structures (layers/combos),
-            // not direct script lookups like the basic Engine.
-            {
-                // We lock only briefly to copy the data
-                if let Ok(guard) = script_runtime_for_engine.lock() {
-                    let registry = guard.registry();
-
-                    // 1. Copy layouts
-                    *engine.layouts_mut() = registry.layouts().clone();
-
-                    // 2. Populate base layer mappings
-                    let layers = engine.layers_mut();
-                    if let Some(base_id) = layers.layer_id_by_name("base") {
-                        for (key, action) in registry.mappings() {
-                            if let Some(layer_action) = to_layer_action(action.clone()) {
-                                layers.set_mapping_for_layer(base_id, key, layer_action);
-                            }
-                        }
-
-                        for (key, binding) in registry.tap_holds() {
-                            layers.set_mapping_for_layer(
-                                base_id,
-                                *key,
-                                LayerAction::TapHold {
-                                    tap: binding.tap,
-                                    hold: binding.hold.clone(),
-                                },
-                            );
-                        }
-                    }
-
-                    // 3. Register combos
-                    for combo in registry.combos().all() {
-                        engine
-                            .combos_mut()
-                            .register(&combo.keys, combo.action.clone());
-                    }
-
-                    // 4. Set initial modifiers
-                    engine
-                        .modifiers_mut()
-                        .clone_from(&registry.modifier_state());
-
-                    tracing::info!(
-                        service = "keyrx",
-                        component = "ffi_exports",
-                        event = "engine_configured",
-                        "AdvancedEngine configured with registry data"
-                    );
-                }
-            }
-
-            // Run the engine loop
-            let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
-            runtime.block_on(async {
-                if let Err(e) = input.start().await {
-                    tracing::error!("Failed to start input source: {}", e);
-                    return;
-                }
-
-                tracing::info!("Engine event loop started");
-
-                loop {
-                    match input.poll_events().await {
-                        Ok(events) => {
-                            for event in events {
-                                // Diagnostic logging
-                                global_event_registry().invoke(EventType::RawInput, &event);
-
-                                // Process event through AdvancedEngine
-                                let outputs = engine.process_event(event);
-
-                                // Handle outputs
-                                for output in outputs {
-                                    global_event_registry().invoke(EventType::RawOutput, &output);
-                                    if let Err(e) = input.send_output(output).await {
-                                        tracing::error!("Failed to send output: {}", e);
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            // On Windows, raw input errors might be transient or fatal.
-                            // For now we log and continue, but a disconnect might need a break.
-                            tracing::error!("Error polling events: {}", e);
-                            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-                        }
-                    }
-
-                    // Check for shutdown signal
-                    if ENGINE_SHUTDOWN.load(Ordering::Relaxed) {
-                        tracing::info!(
-                            service = "keyrx",
-                            event = "engine_shutdown_signal",
-                            component = "ffi_exports",
-                            "Shutdown signal received, exiting engine loop"
-                        );
-                        break;
-                    }
-
-                    // Small yield to prevent 100% CPU if polling is busy-wait (though WindowsInput shouldn't be)
-                    tokio::task::yield_now().await;
-                }
-
-                // Ensure input driver is stopped cleanly
-                if let Err(e) = input.stop().await {
-                    tracing::error!("Error stopping input driver: {}", e);
-                }
-            });
-        });
-    }
-
     0
 }
 
 /// Convert a RemapAction to a LayerAction if applicable.
+#[allow(dead_code)]
 fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
     match action {
         RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
@@ -1011,7 +870,7 @@ mod tests {
     fn register_event_callback_rejects_invalid_codes() {
         // Test invalid event type codes
         assert_eq!(keyrx_register_event_callback(-1, None), -1);
-        assert_eq!(keyrx_register_event_callback(16, None), -1);
+        assert_eq!(keyrx_register_event_callback(18, None), -1);
         assert_eq!(keyrx_register_event_callback(100, None), -1);
     }
 

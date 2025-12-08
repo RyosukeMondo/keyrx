@@ -5,11 +5,11 @@
 
 use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat, OutputWriter};
 use crate::ffi::runtime::{with_revolutionary_runtime, RevolutionaryRuntime};
-use crate::services::{DeviceService, DeviceServiceError};
-use crate::services::device::DeviceView;
 use crate::registry::DeviceBindings;
-use std::path::PathBuf;
+use crate::services::device::DeviceView;
+use crate::services::{DeviceService, DeviceServiceError};
 use std::future::Future;
+use std::path::PathBuf;
 use tokio::runtime::{Handle, Runtime};
 use tokio::task;
 
@@ -127,27 +127,33 @@ impl DevicesCommand {
                 DeviceAction::List => {
                     let devices = service.list_devices().await?;
                     Ok(renderer.render_devices(&devices))
-                },
+                }
                 DeviceAction::Show { device_key } => {
                     let device = service.get_device(&device_key).await?;
                     Ok(renderer.render_device(&device))
-                },
-                DeviceAction::Remap { device_key, enabled } => {
+                }
+                DeviceAction::Remap {
+                    device_key,
+                    enabled,
+                } => {
                     let device = service.set_remap_enabled(&device_key, enabled).await?;
                     Ok(renderer.render_device(&device))
-                },
-                DeviceAction::Assign { device_key, profile_id } => {
+                }
+                DeviceAction::Assign {
+                    device_key,
+                    profile_id,
+                } => {
                     let device = service.assign_profile(&device_key, &profile_id).await?;
                     Ok(renderer.render_device(&device))
-                },
+                }
                 DeviceAction::Unassign { device_key } => {
                     let device = service.unassign_profile(&device_key).await?;
                     Ok(renderer.render_device(&device))
-                },
+                }
                 DeviceAction::Label { device_key, label } => {
                     let device = service.set_label(&device_key, label).await?;
                     Ok(renderer.render_device(&device))
-                },
+                }
             };
             res
         });
