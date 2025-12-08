@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeyRx Layouts Prototype</title>
+    <style>
+        :root {
+            --bg-color: #1a1c1e;
+            --surface-color: #2b2d31;
+            --surface-variant: #35383d;
+            --primary-color: #89b4f8;
+            --primary-container: #263c5a;
+            --text-color: #e3e3e3;
+            --text-secondary: #c4c7c5;
+            --border-color: #44474f;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar similar to app */
+        .sidebar {
+            width: 80px;
+            background-color: #111315;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .nav-item {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-container);
+            color: var(--primary-color);
+        }
+
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-bar {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+        }
+
+        .app-bar h1 {
+            font-size: 22px;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        /* Views */
+        .view {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* Bento Grid */
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .bento-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+            height: 250px;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.2s, background-color 0.2s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            background-color: var(--surface-variant);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Specific Cards */
+        .card.freeform {
+            flex: 1;
+            background: linear-gradient(135deg, rgba(66, 133, 244, 0.15), var(--surface-color) 60%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .card.freeform::before {
+            content: '✎';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 40px;
+            color: var(--primary-color);
+            opacity: 0.8;
+        }
+
+        .card.generator {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card.saved {
+            height: 120px;
+            width: 200px;
+            display: inline-block;
+            margin-right: 16px;
+            margin-bottom: 16px;
+            vertical-align: top;
+        }
+
+        /* Grid Generator Interactive */
+        .grid-picker-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        .grid-label {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .grid-matrix {
+            display: grid;
+            gap: 2px;
+            /* 20 cols max */
+            grid-template-columns: repeat(20, 1fr);
+        }
+
+        .grid-cell {
+            width: 18px;
+            height: 18px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            transition: all 0.05s;
+        }
+
+        .grid-cell.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Key Icons placeholder */
+        .key-icon {
+            font-family: monospace;
+            border: 2px solid var(--text-secondary);
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        /* Visual Editor View */
+        .editor-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .canvas {
+            flex: 1;
+            background-color: #202124;
+            position: relative;
+            overflow: hidden;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .key-element {
+            position: absolute;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+        }
+
+        .key-element.selected {
+            border: 2px solid var(--primary-color);
+            background-color: var(--primary-container);
+        }
+
+        .property-bar {
+            width: 250px;
+            background-color: var(--surface-color);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .input-group input {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-text {
+            background: none;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+    <!-- Use FontAwesome for mock icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="nav-item">
+            <i class="fa-solid fa-keyboard"></i>
+            Devices
+        </div>
+        <div class="nav-item active">
+            <i class="fa-solid fa-table-cells-large"></i>
+            Layouts
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-bezier-curve"></i>
+            Wiring
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-border-all"></i>
+            Map
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+        <!-- App Bar -->
+        <div class="app-bar">
+            <h1 id="app-title">Layouts</h1>
+            <div style="flex:1"></div>
+            <button class="nav-item" style="width: 40px; height: 40px; border:none; background:none;">
+                <i class="fa-solid fa-rotate-right" style="font-size: 18px;"></i>
+            </button>
+        </div>
+
+        <!-- Selector View -->
+        <div id="view-selector" class="view active">
+            <div class="section-title">Create New Layout</div>
+
+            <div class="bento-row">
+                <!-- Freeform Card -->
+                <div class="card freeform" onclick="createFreeform()">
+                    <div class="card-title">Freeform Layout</div>
+                    <div class="card-subtitle">Start from scratch</div>
+                </div>
+
+                <!-- Grid Generator Card -->
+                <div class="card generator">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <i class="fa-solid fa-border-none" style="font-size: 24px; color: var(--text-color);"></i>
+                        <div>
+                            <div class="card-title" style="margin:0">Grid Generator</div>
+                            <div class="card-subtitle">Hover to pick size</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-picker-container" id="grid-picker-container">
+                        <div class="grid-label" id="grid-size-label">Select Size</div>
+                        <div class="grid-matrix" id="grid-matrix">
+                            <!-- Cells generated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">Saved Layouts</div>
+            <div id="saved-layouts">
+                <div class="card saved" onclick="openLayout('Gaming Profile')">
+                    <div class="key-icon">Q</div>
+                    <div class="card-title" style="font-size: 16px;">Gaming Profile</div>
+                    <div class="card-subtitle">Matrix • 87 keys</div>
+                </div>
+                <div class="card saved" onclick="openLayout('Work Setup')">
+                    <div class="key-icon">W</div>
+                    <div class="card-title" style="font-size: 16px;">Work Setup</div>
+                    <div class="card-subtitle">Split • 64 keys</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor View -->
+        <div id="view-editor" class="view" style="padding:0; display:none;">
+            <div class="app-bar"
+                style="background-color: var(--surface-color); height: 50px; border-bottom: 1px solid var(--border-color);">
+                <button class="btn btn-text" style="padding: 4px 12px; margin-right: 12px;" onclick="closeEditor()">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
+                <span id="editor-layout-name" style="font-weight:600;">Layout Name</span>
+                <div style="flex:1"></div>
+                <button class="btn"
+                    style="margin-right: 12px; background-color: var(--surface-variant); color: var(--text-color);"
+                    onclick="addKey()">
+                    <i class="fa-solid fa-plus"></i> Add Key
+                </button>
+                <button class="btn">Save</button>
+            </div>
+            <div class="editor-container">
+                <div class="canvas" id="editor-canvas">
+                    <!-- Keys go here -->
+                </div>
+                <div class="property-bar">
+                    <div class="section-title" style="font-size: 16px;">Properties</div>
+                    <div class="input-group">
+                        <label>Label</label>
+                        <input type="text" value="Esc">
+                    </div>
+                    <div class="input-group">
+                        <label>ID</label>
+                        <input type="text" value="K_ESC">
+                    </div>
+                    <div class="input-group">
+                        <label>Position X</label>
+                        <input type="number" value="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Position Y</label>
+                        <input type="number" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const MAX_ROWS = 6;
+        const MAX_COLS = 20;
+        let hoverRows = 0;
+        let hoverCols = 0;
+
+        // Initialize Grid Picker
+        function initGridPicker() {
+            const container = document.getElementById('grid-matrix');
+            const label = document.getElementById('grid-size-label');
+
+            container.innerHTML = ''; // Clear
+
+            for (let i = 0; i < MAX_ROWS * MAX_COLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                const r = Math.floor(i / MAX_COLS);
+                const c = i % MAX_COLS;
+
+                cell.onmouseenter = () => {
+                    hoverRows = r + 1;
+                    hoverCols = c + 1;
+                    updateGridVisuals();
+                    label.innerText = `${hoverRows} x ${hoverCols}`;
+                };
+
+                cell.onclick = () => {
+                    createGrid(hoverRows, hoverCols);
+                };
+
+                container.appendChild(cell);
+            }
+
+            // Reset on exit
+            document.getElementById('grid-picker-container').onmouseleave = () => {
+                hoverRows = 0;
+                hoverCols = 0;
+                updateGridVisuals();
+                label.innerText = 'Select Size';
+            };
+        }
+
+        function updateGridVisuals() {
+            const cells = document.querySelectorAll('.grid-cell');
+            cells.forEach((cell, index) => {
+                const r = Math.floor(index / MAX_COLS);
+                const c = index % MAX_COLS;
+                if (r < hoverRows && c < hoverCols) {
+                    cell.classList.add('active');
+                } else {
+                    cell.classList.remove('active');
+                }
+            });
+        }
+
+        // Navigation
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(el => el.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
+
+            if (viewId === 'view-editor') {
+                document.getElementById('view-editor').style.display = 'flex';
+                document.getElementById('view-editor').style.flexDirection = 'column';
+            }
+        }
+
+        function closeEditor() {
+            showView('view-selector');
+        }
+
+        function createFreeform() {
+            document.getElementById('editor-layout-name').innerText = 'New Custom Layout';
+            document.getElementById('editor-canvas').innerHTML = '';
+            showView('view-editor');
+        }
+
+        function createGrid(rows, cols) {
+            document.getElementById('editor-layout-name').innerText = `New Grid ${rows}x${cols}`;
+            const canvas = document.getElementById('editor-canvas');
+            canvas.innerHTML = '';
+
+            const unit = 60;
+            const startX = 100;
+            const startY = 100;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const key = document.createElement('div');
+                    key.className = 'key-element';
+                    key.style.width = (unit - 4) + 'px';
+                    key.style.height = (unit - 4) + 'px';
+                    key.style.left = (startX + c * unit) + 'px';
+                    key.style.top = (startY + r * unit) + 'px';
+                    key.onclick = (e) => {
+                        document.querySelectorAll('.key-element').forEach(k => k.classList.remove('selected'));
+                        key.classList.add('selected');
+                        e.stopPropagation();
+                    };
+                    canvas.appendChild(key);
+                }
+            }
+            showView('view-editor');
+        }
+
+        function openLayout(name) {
+            alert('Opening ' + name);
+        }
+
+        // Boot
+        initGridPicker();
+        e
+    </script>
+</body>
+
+</html>
