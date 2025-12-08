@@ -30,6 +30,7 @@ class HardwareProfile with _$HardwareProfile {
     required HardwareProfileId id,
     @JsonKey(name: 'vendor_id') required int vendorId,
     @JsonKey(name: 'product_id') required int productId,
+    @JsonKey(name: 'serial_number') String? serialNumber,
     String? name,
     @JsonKey(name: 'virtual_layout_id')
     required VirtualLayoutId virtualLayoutId,
