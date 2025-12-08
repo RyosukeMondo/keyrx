@@ -340,7 +340,6 @@ mod tests {
             device_registry.clone(),
             profile_registry.clone(),
             definitions,
-            definitions,
             Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),
         ))
         .unwrap();

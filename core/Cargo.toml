@@ -12,6 +12,8 @@ name = "keyrx"
 path = "src/bin/keyrx.rs"
 
 [dependencies]
+lazy_static = "1.4.0"
+flutter_rust_bridge = "2"
 tokio.workspace = true
 rhai = { workspace = true, features = ["sync"] }
 serde.workspace = true

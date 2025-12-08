@@ -13,7 +13,7 @@ use table::TableFormatter;
 use yaml::YamlFormatter;
 
 /// Writer for formatted CLI output.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OutputWriter {
     format: OutputFormat,
 }
