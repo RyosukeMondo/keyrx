@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 
@@ -41,7 +42,7 @@ pub struct ResourceBudget {
     memory_limit: usize,
     memory_used: AtomicUsize,
     timeout: Duration,
-    start_time: Instant,
+    start_time: Mutex<Instant>,
 }
 
 impl ResourceBudget {
@@ -55,7 +56,17 @@ impl ResourceBudget {
             memory_limit: config.max_memory,
             memory_used: AtomicUsize::new(0),
             timeout: config.timeout,
-            start_time: Instant::now(),
+            start_time: Mutex::new(Instant::now()),
+        }
+    }
+
+    /// Reset resource usage counters and start time.
+    pub fn reset(&self) {
+        self.instruction_count.store(0, Ordering::Relaxed);
+        self.recursion_depth.store(0, Ordering::Relaxed);
+        self.memory_used.store(0, Ordering::Relaxed);
+        if let Ok(mut start) = self.start_time.lock() {
+            *start = Instant::now();
         }
     }
 
@@ -161,7 +172,12 @@ impl ResourceBudget {
 
     /// Check if execution timeout has been exceeded.
     pub fn check_timeout(&self) -> Result<(), ResourceExhausted> {
-        let elapsed = self.start_time.elapsed();
+        let elapsed = self
+            .start_time
+            .lock()
+            .map(|t| t.elapsed())
+            .unwrap_or(Duration::ZERO);
+
         if elapsed >= self.timeout {
             Err(ResourceExhausted::Timeout {
                 elapsed,
@@ -181,7 +197,11 @@ impl ResourceBudget {
             max_recursion: self.recursion_limit,
             memory_used: self.memory_used.load(Ordering::Relaxed),
             max_memory: self.memory_limit,
-            elapsed: self.start_time.elapsed(),
+            elapsed: self
+                .start_time
+                .lock()
+                .map(|t| t.elapsed())
+                .unwrap_or(Duration::ZERO),
             timeout: self.timeout,
         }
     }

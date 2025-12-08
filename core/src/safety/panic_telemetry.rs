@@ -154,21 +154,27 @@ pub fn record_panic(
 /// }
 /// ```
 pub fn record_recovery() {
-    TOTAL_RECOVERIES.fetch_add(1, Ordering::Relaxed);
+    // Only record recovery if we have outstanding panics
+    let current_panics = TOTAL_PANICS.load(Ordering::Relaxed);
+    let current_recoveries = TOTAL_RECOVERIES.load(Ordering::Relaxed);
 
-    // Mark the most recent panic event as recovered
-    if let Ok(mut events) = PANIC_EVENTS.write() {
-        if let Some(last_event) = events.last_mut() {
-            last_event.recovered = true;
+    if current_recoveries < current_panics {
+        TOTAL_RECOVERIES.fetch_add(1, Ordering::Relaxed);
+
+        // Mark the most recent panic event as recovered
+        if let Ok(mut events) = PANIC_EVENTS.write() {
+            if let Some(last_event) = events.last_mut() {
+                last_event.recovered = true;
+            }
         }
-    }
 
-    tracing::info!(
-        service = "keyrx",
-        event = "panic_recovery",
-        total_recoveries = TOTAL_RECOVERIES.load(Ordering::Relaxed),
-        "Recovery from panic successful"
-    );
+        tracing::info!(
+            service = "keyrx",
+            event = "panic_recovery",
+            total_recoveries = current_recoveries + 1,
+            "Recovery from panic successful"
+        );
+    }
 }
 
 /// Records a circuit breaker opening.

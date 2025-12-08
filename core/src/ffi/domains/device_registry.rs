@@ -388,7 +388,7 @@ mod tests {
     };
     use crate::registry::profile::ProfileRegistry;
     use crate::registry::DeviceRegistry;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use tokio::runtime::Runtime;
 
@@ -541,6 +541,7 @@ mod tests {
             registry.clone(),
             profile_registry,
             definitions,
+            Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),
         ))
         .unwrap();
 

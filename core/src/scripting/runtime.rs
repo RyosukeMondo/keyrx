@@ -358,7 +358,8 @@ fn default_cache() -> ScriptCache {
 
 impl ScriptRuntime for RhaiRuntime {
     fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
-        // Check resources before execution
+        // Reset and check resources before execution
+        self.sandbox.reset_resources();
         self.sandbox
             .check_resources()
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
@@ -372,7 +373,8 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError> {
-        // Check resources before execution
+        // Reset and check resources before execution
+        self.sandbox.reset_resources();
         self.sandbox
             .check_resources()
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;
@@ -426,7 +428,8 @@ impl ScriptRuntime for RhaiRuntime {
     }
 
     fn run_script(&mut self) -> Result<(), KeyrxError> {
-        // Check resources before execution
+        // Reset and check resources before execution
+        self.sandbox.reset_resources();
         self.sandbox
             .check_resources()
             .map_err(|e| keyrx_err!(SCRIPT_EXECUTION_FAILED, error = e.to_string()))?;

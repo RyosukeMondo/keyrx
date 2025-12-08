@@ -115,7 +115,7 @@ mod tests {
     use crate::registry::profile::ProfileRegistry;
     use crate::registry::DeviceRegistry;
     use std::ffi::{CStr, CString};
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use tempfile::TempDir;
 
     fn create_test_definition_toml() -> String {
@@ -163,6 +163,8 @@ key_spacing = 4
             device_registry,
             profile_registry,
             library,
+            library,
+            Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),
         ))
         .unwrap();
 

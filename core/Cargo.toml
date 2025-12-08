@@ -13,7 +13,7 @@ path = "src/bin/keyrx.rs"
 
 [dependencies]
 tokio.workspace = true
-rhai.workspace = true
+rhai = { workspace = true, features = ["sync"] }
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true

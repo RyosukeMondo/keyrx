@@ -9,7 +9,7 @@ use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::registry::{DeviceRegistry, ProfileRegistry};
 use std::future::Future;
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use tracing::{error, info, warn};
 
 /// Runtime state required by revolutionary mapping FFI domains.
@@ -18,6 +18,7 @@ pub struct RevolutionaryRuntime {
     device_registry: DeviceRegistry,
     profile_registry: Arc<ProfileRegistry>,
     device_definitions: Arc<DeviceDefinitionLibrary>,
+    rhai_runtime: Arc<Mutex<crate::scripting::RhaiRuntime>>,
 }
 
 impl RevolutionaryRuntime {
@@ -26,11 +27,13 @@ impl RevolutionaryRuntime {
         device_registry: DeviceRegistry,
         profile_registry: Arc<ProfileRegistry>,
         device_definitions: Arc<DeviceDefinitionLibrary>,
+        rhai_runtime: Arc<Mutex<crate::scripting::RhaiRuntime>>,
     ) -> Self {
         Self {
             device_registry,
             profile_registry,
             device_definitions,
+            rhai_runtime,
         }
     }
 
@@ -42,6 +45,11 @@ impl RevolutionaryRuntime {
     /// Access the shared profile registry.
     pub fn profile_registry(&self) -> &Arc<ProfileRegistry> {
         &self.profile_registry
+    }
+
+    /// Access the shared scripting runtime.
+    pub fn rhai_runtime(&self) -> &Arc<Mutex<crate::scripting::RhaiRuntime>> {
+        &self.rhai_runtime
     }
 
     /// Access the shared device definition library.

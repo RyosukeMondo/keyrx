@@ -1,0 +1,17 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+warning: unused imports: `InputEvent` and `OutputAction`
+  --> core\src\ffi\exports.rs:17:21
+   |
+17 |     AdvancedEngine, InputEvent, LayerAction, OutputAction, RemapAction, TimingConfig,
+   |                     ^^^^^^^^^^               ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Level`
+ --> core\src\ffi\logging.rs:6:22
+  |
+6 | use tracing::{Event, Level, Subscriber};
+  |                      ^^^^^
+
+warning: `keyrx_core` (lib) generated 2 warnings (run `cargo fix --lib -p keyrx_core` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 18.48s

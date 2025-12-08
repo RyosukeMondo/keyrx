@@ -228,6 +228,11 @@ impl ScriptSandbox {
         self.budget.check_timeout()?;
         Ok(())
     }
+
+    /// Reset resource usage for a new execution.
+    pub fn reset_resources(&self) {
+        self.budget.reset();
+    }
 }
 
 /// Sandbox errors.

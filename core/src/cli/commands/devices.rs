@@ -615,7 +615,8 @@ mod tests {
     use crate::ffi::runtime::RevolutionaryRuntimeGuard;
     use crate::identity::DeviceIdentity;
     use crate::registry::{DeviceBindings, DeviceRegistry, ProfileRegistry};
-    use std::sync::Arc;
+    use crate::scripting::RhaiRuntime;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use tokio::runtime::Runtime;
 
@@ -736,10 +737,13 @@ mod tests {
 
         let profile_registry = Arc::new(ProfileRegistry::with_directory(profiles_dir));
         let device_definitions = Arc::new(DeviceDefinitionLibrary::new());
+        let rhai_runtime = Arc::new(Mutex::new(RhaiRuntime::new().unwrap()));
+
         let _guard = RevolutionaryRuntimeGuard::install(RevolutionaryRuntime::new(
             registry.clone(),
             profile_registry.clone(),
             device_definitions.clone(),
+            rhai_runtime,
         ))
         .expect("runtime install");
 

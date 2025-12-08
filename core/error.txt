@@ -1,0 +1,24 @@
+   Compiling ring v0.17.14
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+   Compiling rustls-webpki v0.103.8
+   Compiling rustls v0.23.35
+   Compiling tokio-rustls v0.26.4
+   Compiling hyper-rustls v0.27.7
+   Compiling reqwest v0.12.24
+   Compiling jsonschema v0.18.3
+warning: unused imports: `InputEvent` and `OutputAction`
+  --> core\src\ffi\exports.rs:17:21
+   |
+17 |     AdvancedEngine, InputEvent, LayerAction, OutputAction, RemapAction, TimingConfig,
+   |                     ^^^^^^^^^^               ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Level`
+ --> core\src\ffi\logging.rs:6:22
+  |
+6 | use tracing::{Event, Level, Subscriber};
+  |                      ^^^^^
+
+warning: `keyrx_core` (lib) generated 2 warnings (run `cargo fix --lib -p keyrx_core` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 51.32s

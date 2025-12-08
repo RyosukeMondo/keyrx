@@ -217,6 +217,11 @@ pub unsafe extern "system" fn low_level_keyboard_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    // Temporary debug log
+    // if ncode >= 0 {
+    //    println!("RUST: Hook received ncode={}, wparam={}", ncode, wparam.0);
+    // }
+
     if ncode < 0 {
         return CallNextHookEx(HHOOK::default(), ncode, wparam, lparam);
     }
@@ -316,28 +321,26 @@ fn map_vk_to_keycode(vk_code: u16, is_extended: bool) -> KeyCode {
     }
 
     // Try to get KeyCode from cache first
-    use super::safety::hook::KEYMAP_CACHE;
+    use super::safety::thread_local::ThreadLocalState;
     use crate::drivers::common::cache::KeymapCache;
 
     // Use a fixed device ID for Windows since we don't track individual devices
     const WINDOWS_DEVICE_ID: &str = "windows";
 
-    KEYMAP_CACHE.with(|cache_cell| {
-        if let Some(cache) = cache_cell.borrow().as_ref() {
-            // Try cache first
-            cache
-                .get(vk_code as u32, WINDOWS_DEVICE_ID)
-                .unwrap_or_else(|| {
-                    // Cache miss - perform actual lookup
-                    let keycode = vk_to_keycode(vk_code);
-                    // Store in cache for future lookups
-                    cache.insert(vk_code as u32, WINDOWS_DEVICE_ID, keycode);
-                    keycode
-                })
-        } else {
-            // No cache available (shouldn't happen in normal operation)
-            vk_to_keycode(vk_code)
-        }
+    ThreadLocalState::with_cache(|cache| {
+        cache
+            .get(vk_code as u32, WINDOWS_DEVICE_ID)
+            .unwrap_or_else(|| {
+                // Cache miss - perform actual lookup
+                let keycode = vk_to_keycode(vk_code);
+                // Store in cache for future lookups
+                cache.insert(vk_code as u32, WINDOWS_DEVICE_ID, keycode);
+                keycode
+            })
+    })
+    .unwrap_or_else(|| {
+        // No cache available (shouldn't happen in normal operation)
+        vk_to_keycode(vk_code)
     })
 }
 

@@ -71,6 +71,7 @@
 
 use crate::engine::{KeyCode, RemapAction};
 use crate::errors::KeyrxError;
+use std::sync::{Arc, Mutex};
 
 /// Trait for script execution runtime.
 ///
@@ -334,4 +335,44 @@ pub trait ScriptRuntime {
     /// assert_eq!(runtime.lookup_remap(KeyCode::A), RemapAction::Pass);
     /// ```
     fn lookup_remap(&self, key: KeyCode) -> RemapAction;
+}
+
+impl<T: ScriptRuntime> ScriptRuntime for Arc<Mutex<T>> {
+    fn execute(&mut self, script: &str) -> Result<(), KeyrxError> {
+        self.lock()
+            .map_err(|_| KeyrxError::from(anyhow::anyhow!("ScriptRuntime lock poisoned")))?
+            .execute(script)
+    }
+
+    fn call_hook(&mut self, hook: &str) -> Result<(), KeyrxError> {
+        self.lock()
+            .map_err(|_| KeyrxError::from(anyhow::anyhow!("ScriptRuntime lock poisoned")))?
+            .call_hook(hook)
+    }
+
+    fn load_file(&mut self, path: &str) -> Result<(), KeyrxError> {
+        self.lock()
+            .map_err(|_| KeyrxError::from(anyhow::anyhow!("ScriptRuntime lock poisoned")))?
+            .load_file(path)
+    }
+
+    fn run_script(&mut self) -> Result<(), KeyrxError> {
+        self.lock()
+            .map_err(|_| KeyrxError::from(anyhow::anyhow!("ScriptRuntime lock poisoned")))?
+            .run_script()
+    }
+
+    fn has_hook(&self, hook: &str) -> bool {
+        match self.lock() {
+            Ok(guard) => guard.has_hook(hook),
+            Err(_) => false,
+        }
+    }
+
+    fn lookup_remap(&self, key: KeyCode) -> RemapAction {
+        match self.lock() {
+            Ok(guard) => guard.lookup_remap(key),
+            Err(_) => RemapAction::Pass, // Fallback if lock fails
+        }
+    }
 }

@@ -45,11 +45,13 @@
 //! ThreadLocalState::cleanup();
 //! ```
 
+use crate::drivers::common::cache::LruKeymapCache;
 use crate::engine::InputEvent;
 use crate::identity::DeviceIdentity;
 use crossbeam_channel::Sender;
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 /// Type alias for the hook event sender.
 pub type HookSender = Sender<InputEvent>;
@@ -77,6 +79,11 @@ thread_local! {
 thread_local! {
     /// Thread-local storage for the active device identity (VID:PID:Serial).
     static DEVICE_IDENTITY: RefCell<Option<DeviceIdentity>> = const { RefCell::new(None) };
+}
+
+thread_local! {
+    /// Thread-local storage for the keymap cache.
+    static KEYMAP_CACHE: RefCell<Option<Arc<LruKeymapCache>>> = const { RefCell::new(None) };
 }
 
 /// Safe wrapper around thread-local storage for Windows hooks.
@@ -336,6 +343,9 @@ impl ThreadLocalState {
         DEVICE_IDENTITY.with(|identity| {
             *identity.borrow_mut() = None;
         });
+        KEYMAP_CACHE.with(|cache| {
+            *cache.borrow_mut() = None;
+        });
     }
 
     /// Check if the sender is initialized.
@@ -365,6 +375,23 @@ impl ThreadLocalState {
     /// Get the current device identity for the hook thread.
     pub fn device_identity() -> Option<DeviceIdentity> {
         DEVICE_IDENTITY.with(|slot| (*slot.borrow()).clone())
+    }
+    /// Initialize the thread-local cache.
+    pub fn init_cache(cache: Arc<LruKeymapCache>) {
+        KEYMAP_CACHE.with(|c| {
+            *c.borrow_mut() = Some(cache);
+        });
+    }
+
+    /// Access the thread-local cache with a closure.
+    pub fn with_cache<F, R>(f: F) -> Option<R>
+    where
+        F: FnOnce(&LruKeymapCache) -> R,
+    {
+        KEYMAP_CACHE.with(|c| {
+            let cache_ref = c.borrow();
+            cache_ref.as_ref().map(|cache| f(cache))
+        })
     }
 }
 

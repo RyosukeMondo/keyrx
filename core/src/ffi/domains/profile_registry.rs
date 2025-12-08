@@ -322,7 +322,7 @@ mod tests {
     };
     use crate::registry::profile::{LayoutType, Profile};
     use crate::registry::DeviceRegistry;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
 
     fn test_profile(name: &str, layout: LayoutType) -> Profile {
@@ -340,6 +340,8 @@ mod tests {
             device_registry.clone(),
             profile_registry.clone(),
             definitions,
+            definitions,
+            Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),
         ))
         .unwrap();
 

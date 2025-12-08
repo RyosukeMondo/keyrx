@@ -21,7 +21,7 @@ use std::collections::HashSet;
 use std::env;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use tracing::debug;
@@ -356,10 +356,16 @@ impl RunCommand {
         profile_registry: &Arc<ProfileRegistry>,
         device_definitions: &Arc<DeviceDefinitionLibrary>,
     ) -> Result<RevolutionaryRuntimeGuard> {
+        let rhai_runtime = crate::scripting::RhaiRuntime::new()
+            .map_err(|e| anyhow::anyhow!("Failed to initialize scripting runtime: {}", e))?;
+
+        let shared_runtime = Arc::new(Mutex::new(rhai_runtime));
+
         RevolutionaryRuntimeGuard::install(RevolutionaryRuntime::new(
             device_registry.clone(),
             profile_registry.clone(),
             device_definitions.clone(),
+            shared_runtime,
         ))
         .map_err(|err| anyhow::anyhow!("failed to install revolutionary runtime: {err}"))
     }

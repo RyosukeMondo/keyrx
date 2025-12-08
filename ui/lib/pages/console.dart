@@ -4,12 +4,14 @@
 /// directly into the running engine.
 library;
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/console_parser.dart';
 import '../services/facade/keyrx_facade.dart';
+import '../models/log_entry.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
@@ -30,8 +32,28 @@ class _ConsolePageState extends State<ConsolePage> {
   int _historyIndex = -1;
   bool _isBusy = false;
 
+  StreamSubscription? _logSubscription;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_logSubscription == null) {
+      final facade = Provider.of<KeyrxFacade>(context, listen: false);
+      _logSubscription = facade.logStream.listen((data) {
+        if (data is LogEntry) {
+          if (!mounted) return;
+          setState(() {
+            _history.add(ConsoleEntry(data.message, logData: data));
+          });
+          _scrollToBottom();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _logSubscription?.cancel();
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -114,7 +136,7 @@ class _ConsolePageState extends State<ConsolePage> {
     final parser = widget.parser;
     final entryType = parser.classify(entry.text, isInput: entry.isInput);
     final isError = entry.isError || entryType == ConsoleEntryType.error;
-    final style = _getEntryStyle(entryType, isError);
+    final style = _getEntryStyle(entryType, isError, entry);
     final showInitButton = parser.needsInitButton(entry.text, isError: isError);
     final displayText = entry.isInput
         ? entry.text
@@ -179,11 +201,19 @@ class _ConsolePageState extends State<ConsolePage> {
     );
   }
 
-  _EntryStyle _getEntryStyle(ConsoleEntryType entryType, bool isError) {
+  _EntryStyle _getEntryStyle(
+    ConsoleEntryType entryType,
+    bool isError,
+    ConsoleEntry entry,
+  ) {
     final color = switch (entryType) {
       ConsoleEntryType.command => Colors.blueAccent,
       ConsoleEntryType.error => Colors.redAccent,
       _ when isError => Colors.redAccent,
+      _
+          when ((entryType == ConsoleEntryType.output) ||
+              entry.logData != null) =>
+        Colors.grey,
       _ => Colors.green,
     };
     final label = switch (entryType) {
@@ -313,7 +343,14 @@ class ConsoleEntry {
   final bool isInput;
   final bool isError;
 
-  ConsoleEntry(this.text, {this.isInput = false, this.isError = false});
+  ConsoleEntry(
+    this.text, {
+    this.isInput = false,
+    this.isError = false,
+    this.logData,
+  });
+
+  final LogEntry? logData;
 }
 
 /// Style configuration for a console entry.

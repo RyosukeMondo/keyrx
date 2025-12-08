@@ -75,6 +75,9 @@ abstract class KeyrxFacade {
   /// Useful for checking state in event handlers or one-off queries.
   FacadeState get currentState;
 
+  /// Stream of log entries from the bridge.
+  Stream<dynamic> get logStream;
+
   // === Engine Operations ===
 
   /// Start the engine with the specified script.

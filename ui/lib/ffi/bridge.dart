@@ -109,9 +109,33 @@ class KeyrxBridge
   // Unified event callback handlers
   final Map<EventType, void Function(Uint8List)> _eventHandlers = {};
 
-  KeyrxBridge._({KeyrxBindings? bindings, Object? loadFailure})
-    : _bindings = bindings,
-      _loadFailure = loadFailure {
+  /// Keep NativeCallables alive for the duration of the registration.
+  final Map<EventType, NativeCallable> _nativeCallables = {};
+  NativeCallable<EventCallbackNative>? _stateCallable;
+
+  // Manual binding for memory management
+  late final FreeEventPayload? _freeEventPayload;
+
+  KeyrxBridge._({
+    KeyrxBindings? bindings,
+    Object? loadFailure,
+    DynamicLibrary? lib,
+  }) : _bindings = bindings,
+       _loadFailure = loadFailure {
+    if (lib != null) {
+      try {
+        _freeEventPayload = lib
+            .lookupFunction<FreeEventPayloadNative, FreeEventPayload>(
+              'keyrx_free_event_payload',
+            );
+      } catch (_) {
+        // Function might be missing in older binaries
+        _freeEventPayload = null;
+      }
+    } else {
+      _freeEventPayload = null;
+    }
+
     if (_bindings != null) {
       _setupStateStream();
     }
@@ -126,7 +150,7 @@ class KeyrxBridge
     try {
       final lib = BridgeCoreMixin.loadLibrary();
       final bindings = KeyrxBindings(lib);
-      final bridge = KeyrxBridge._(bindings: bindings);
+      final bridge = KeyrxBridge._(bindings: bindings, lib: lib);
 
       // Perform handshake first to ensure binary compatibility
       bridge._checkProtocolVersion();
@@ -183,10 +207,19 @@ class KeyrxBridge
     await _stateController?.close();
     _stateController = null;
 
+    _stateCallable?.close();
+    _stateCallable = null;
+
     // Unregister all unified event handlers
     for (final eventType in _eventHandlers.keys.toList()) {
       unregisterEventCallback(eventType);
     }
+
+    // Ensure all callables are closed (just in case)
+    for (final callable in _nativeCallables.values) {
+      callable.close();
+    }
+    _nativeCallables.clear();
 
     // Best-effort shutdown of the revolutionary runtime when available.
     final shutdown = _bindings?.revolutionaryRuntimeShutdown;
@@ -211,25 +244,34 @@ class KeyrxBridge
     // Store the handler
     _eventHandlers[eventType] = handler;
 
-    // Register the callback with the native code
-    // All event types use the same static handler
-    final callback = Pointer.fromFunction<EventCallbackNative>(
+    // Close existing callable for this type if any
+    _nativeCallables[eventType]?.close();
+
+    // Create a new NativeCallable.listener which allows the callback to be
+    // invoked from any thread (e.g. background Rust threads).
+    final nativeCallable = NativeCallable<EventCallbackNative>.listener(
       _handleUnifiedEvent,
     );
+    _nativeCallables[eventType] = nativeCallable;
 
-    final result = _bindings!.registerEventCallback(eventType.code, callback);
+    final result = _bindings!.registerEventCallback(
+      eventType.code,
+      nativeCallable.nativeFunction,
+    );
 
     return result == 0;
   }
 
-  /// Unregister a unified event callback for a specific event type.
-  ///
   /// Returns true if unregistration succeeded, false otherwise.
   bool unregisterEventCallback(EventType eventType) {
     if (_bindings == null) return false;
 
     // Remove the handler
     _eventHandlers.remove(eventType);
+
+    // Close the callable
+    _nativeCallables[eventType]?.close();
+    _nativeCallables.remove(eventType);
 
     // Unregister with the native code (pass nullptr)
     final result = _bindings!.registerEventCallback(eventType.code, nullptr);
@@ -249,7 +291,11 @@ class KeyrxBridge
     }
 
     _stateController ??= StreamController<BridgeStateUpdate>.broadcast();
-    _bindings!.onState(Pointer.fromFunction<EventCallbackNative>(_handleState));
+
+    _stateCallable?.close();
+    _stateCallable = NativeCallable<EventCallbackNative>.listener(_handleState);
+
+    _bindings!.onState(_stateCallable!.nativeFunction);
   }
 
   /// Ask the native side to resend the next state update as a full snapshot.
@@ -259,9 +305,11 @@ class KeyrxBridge
     }
 
     try {
-      _bindings!.onState(
-        Pointer.fromFunction<EventCallbackNative>(_handleState),
-      );
+      // We don't need to recreate the callable if it already exists,
+      // but if we want to be robust we can just re-register the existing one.
+      if (_stateCallable != null) {
+        _bindings!.onState(_stateCallable!.nativeFunction);
+      }
     } catch (_) {
       // Ignore resubscribe failures; consumer will retry on next event.
     }
@@ -273,10 +321,12 @@ class KeyrxBridge
       return;
     }
     final code = initFn();
-    if (code != 0) {
-      _loadFailure ??= Exception(
-        'Failed to initialize revolutionary runtime (code $code)',
-      );
+    // We ignore the return code here because it returns -1 if already initialized.
+    // Since we call this blindly in initialize() as a recovery measure,
+    // we don't want to overwrite `_loadFailure` if it was merely "already done".
+    // Real initialization failures will surface when we try to use the runtime.
+    if (code != 0 && _loadFailure == null) {
+      // Optional: log this internally if we had a logger here.
     }
   }
 
@@ -314,6 +364,8 @@ class KeyrxBridge
 
     try {
       final bytes = ptr.asTypedList(length);
+      // Temporary debug log
+      print('DART: Received unified event: ${bytes.length} bytes');
 
       // The Rust core sends events in the format:
       // {"eventType": <code>, "payload": {...}}
@@ -335,6 +387,18 @@ class KeyrxBridge
       }
     } catch (_) {
       // Swallow malformed payloads to avoid crashing listeners.
+    } finally {
+      // CRITICAL: Free the memory allocated by Rust.
+      // Since EventRegistry::invoke leaks the buffer to ensure async safety,
+      // we must explicitly free it here to avoid memory leaks.
+      final free = instance?._freeEventPayload;
+      if (free != null && ptr != nullptr) {
+        free(ptr, length);
+      }
     }
   }
 }
+
+// Manual typedefs for keyrx_free_event_payload
+typedef FreeEventPayloadNative = Void Function(Pointer<Uint8>, IntPtr);
+typedef FreeEventPayload = void Function(Pointer<Uint8>, int);

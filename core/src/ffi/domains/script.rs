@@ -7,7 +7,7 @@
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
 use crate::ffi::traits::FfiExportable;
-use crate::scripting::with_active_runtime;
+use crate::scripting::{with_active_runtime, RhaiRuntime};
 use crate::traits::ScriptRuntime;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::{Deserialize, Serialize};
@@ -59,6 +59,7 @@ pub struct ValidationResult {
 /// * `Ok(())` on success
 /// * `Err(FfiError)` if file not found, invalid UTF-8, syntax error, or engine not initialized
 // #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
+// #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn load_script(path: &str) -> FfiResult<()> {
     let script_name = Path::new(path)
         .file_name()
@@ -73,32 +74,69 @@ pub fn load_script(path: &str) -> FfiResult<()> {
         "Loading script"
     );
 
-    // Load and run the script using the active runtime
-    match with_active_runtime(|runtime| {
+    // Helper to run logic on any runtime
+    let run_logic = |runtime: &mut RhaiRuntime| {
         runtime.load_file(path)?;
         runtime.run_script()
-    }) {
-        Some(Ok(())) => Ok(()),
-        Some(Err(err)) => {
+    };
+
+    // 1. Try active runtime (Test context)
+    if let Some(result) = with_active_runtime(run_logic) {
+        return match result {
+            Ok(()) => Ok(()),
+            Err(err) => {
+                tracing::error!(
+                    service = "keyrx",
+                    event = "ffi_load_script_error",
+                    component = "ffi_exports",
+                    script = script_name,
+                    error = %err,
+                    "Script syntax/execution error (test context)"
+                );
+                Err(FfiError::invalid_input(format!("Script error: {}", err)))
+            }
+        };
+    }
+
+    // 2. Try revolutionary runtime (Production FFI context)
+    use crate::ffi::runtime::with_revolutionary_runtime;
+
+    match with_revolutionary_runtime(|rev_rt| {
+        let mut guard = rev_rt
+            .rhai_runtime()
+            .lock()
+            .map_err(|_| FfiError::internal("Rhai runtime lock poisoned"))?;
+
+        run_logic(&mut guard).map_err(|err| {
             tracing::error!(
                 service = "keyrx",
                 event = "ffi_load_script_error",
                 component = "ffi_exports",
                 script = script_name,
                 error = %err,
-                "Script syntax/execution error"
+                "Script syntax/execution error (prod context)"
             );
-            Err(FfiError::invalid_input(format!("Script error: {}", err)))
-        }
-        None => {
-            tracing::error!(
-                service = "keyrx",
-                event = "ffi_load_script_error",
-                component = "ffi_exports",
-                script = script_name,
-                "Engine not initialized"
-            );
-            Err(FfiError::internal("Engine not initialized"))
+            FfiError::invalid_input(format!("Script error: {}", err))
+        })
+    }) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            // Check if it was "not initialized" error from with_revolutionary_runtime itself
+            if err
+                .message
+                .contains("revolutionary runtime not initialized")
+            {
+                tracing::error!(
+                    service = "keyrx",
+                    event = "ffi_load_script_error",
+                    component = "ffi_exports",
+                    script = script_name,
+                    "Engine not initialized"
+                );
+                Err(FfiError::internal("Engine not initialized"))
+            } else {
+                Err(err)
+            }
         }
     }
 }
@@ -148,10 +186,39 @@ pub fn check_script(path: &str) -> FfiResult<ValidationResult> {
 /// * `Err(FfiError)` if engine not initialized or command fails
 // #[ffi_export] // TODO: Uncomment when exports_*.rs files are removed (task 20)
 pub fn eval(command: &str) -> FfiResult<()> {
-    match with_active_runtime(|runtime| runtime.execute(command)) {
-        Some(Ok(_)) => Ok(()),
-        Some(Err(err)) => Err(FfiError::invalid_input(format!("Eval error: {}", err))),
-        None => Err(FfiError::internal("Engine not initialized")),
+    // Helper to run logic on any runtime
+    let run_logic = |runtime: &mut RhaiRuntime| runtime.execute(command);
+
+    // 1. Try active runtime (Test context)
+    if let Some(result) = with_active_runtime(run_logic) {
+        return match result {
+            Ok(_) => Ok(()),
+            Err(err) => Err(FfiError::invalid_input(format!("Eval error: {}", err))),
+        };
+    }
+
+    // 2. Try revolutionary runtime (Production FFI context)
+    use crate::ffi::runtime::with_revolutionary_runtime;
+
+    match with_revolutionary_runtime(|rev_rt| {
+        let mut guard = rev_rt
+            .rhai_runtime()
+            .lock()
+            .map_err(|_| FfiError::internal("Rhai runtime lock poisoned"))?;
+
+        run_logic(&mut guard).map_err(|err| FfiError::invalid_input(format!("Eval error: {}", err)))
+    }) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            if err
+                .message
+                .contains("revolutionary runtime not initialized")
+            {
+                Err(FfiError::internal("Engine not initialized"))
+            } else {
+                Err(err)
+            }
+        }
     }
 }
 

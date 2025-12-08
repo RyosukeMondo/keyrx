@@ -11,6 +11,11 @@ use crate::config::models::{
 };
 use crate::config::{ConfigManager, StorageError};
 use crate::definitions::DeviceDefinitionLibrary;
+#[cfg(windows)]
+use crate::drivers::windows::WindowsInput;
+use crate::engine::{
+    AdvancedEngine, InputEvent, LayerAction, OutputAction, RemapAction, TimingConfig,
+};
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::domains::engine::global_event_registry as engine_event_registry;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
@@ -19,10 +24,15 @@ use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };
 use crate::registry::ProfileRegistry;
+use crate::traits::InputSource;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+static ENGINE_SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
 /// Initialize the KeyRx engine.
 ///
@@ -30,7 +40,16 @@ use std::sync::Arc;
 /// This function is safe to call from any thread.
 #[no_mangle]
 pub extern "C" fn keyrx_init() -> i32 {
-    let _ = tracing_subscriber::fmt::try_init();
+    use crate::ffi::logging::FfiLoggingLayer;
+    use tracing_subscriber::prelude::*;
+
+    let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
+    let ffi_layer = FfiLoggingLayer;
+
+    let _ = tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(ffi_layer)
+        .try_init();
     tracing::info!(
         service = "keyrx",
         event = "ffi_init",
@@ -69,6 +88,19 @@ pub extern "C" fn keyrx_protocol_version() -> u32 {
 pub unsafe extern "C" fn keyrx_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
         drop(CString::from_raw(ptr));
+    }
+}
+
+/// Free an event payload buffer allocated by KeyRx.
+///
+/// # Safety
+/// `ptr` must be a pointer returned by an event callback.
+/// `len` must match the length passed to the callback.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_free_event_payload(ptr: *mut u8, len: usize) {
+    if !ptr.is_null() && len > 0 {
+        let slice_ptr = std::ptr::slice_from_raw_parts_mut(ptr, len);
+        drop(Box::from_raw(slice_ptr));
     }
 }
 
@@ -130,39 +162,202 @@ fn default_device_definitions() -> Arc<DeviceDefinitionLibrary> {
 }
 
 fn init_revolutionary_runtime() -> i32 {
+    // Reset shutdown signal in case of restart
+    ENGINE_SHUTDOWN.store(false, Ordering::SeqCst);
+
     // Create registries using default locations.
     let (device_registry, _rx) = crate::registry::DeviceRegistry::new();
     let profile_registry = Arc::new(ProfileRegistry::new());
     let device_definitions = default_device_definitions();
 
+    // Create the scripting runtime for FFI usage
+    let rhai_runtime = match crate::scripting::RhaiRuntime::new() {
+        Ok(rt) => rt,
+        Err(e) => {
+            tracing::error!("Failed to create Rhai runtime: {}", e);
+            return -1;
+        }
+    };
+
+    // Wrap RhaiRuntime in a shared mutex for Engine and FFI
+    let shared_script_runtime = Arc::new(Mutex::new(rhai_runtime));
+
     match set_revolutionary_runtime(RevolutionaryRuntime::new(
         device_registry,
         profile_registry,
         device_definitions,
+        shared_script_runtime.clone(),
     )) {
         Ok(_) => {
             tracing::info!(
                 service = "keyrx",
                 component = "ffi_exports",
-                event = "revolutionary_runtime_initialized",
-                "Revolutionary runtime initialized for FFI consumers"
+                event = "revolutionary_runtime_init",
+                "Revolutionary runtime initialized"
             );
-            0
         }
-        Err(err) => {
-            tracing::error!(
+        Err(e) => {
+            tracing::error!("Failed to set revolutionary runtime: {}", e);
+            return -1;
+        }
+    }
+
+    // Initialize the engine and start the event loop
+    // This is critical for processing input events
+    #[cfg(windows)]
+    {
+        // Move shared runtime to engine thread
+        let script_runtime_for_engine = shared_script_runtime;
+
+        thread::spawn(move || {
+            tracing::info!(
                 service = "keyrx",
                 component = "ffi_exports",
-                event = "revolutionary_runtime_init_failed",
-                error = %err,
-                "Failed to initialize revolutionary runtime for FFI consumers"
+                event = "engine_thread_start",
+                "Starting engine event loop on background thread"
             );
-            -1
-        }
+
+            let mut input = match WindowsInput::new() {
+                Ok(input) => input,
+                Err(e) => {
+                    tracing::error!("Failed to create WindowsInput: {}", e);
+                    return;
+                }
+            };
+
+            // Create engine with dependencies
+            let mut engine =
+                AdvancedEngine::new(script_runtime_for_engine.clone(), TimingConfig::default());
+
+            // Initialize engine with data from script registry
+            // This is required because AdvancedEngine uses internal structures (layers/combos),
+            // not direct script lookups like the basic Engine.
+            {
+                // We lock only briefly to copy the data
+                if let Ok(guard) = script_runtime_for_engine.lock() {
+                    let registry = guard.registry();
+
+                    // 1. Copy layouts
+                    *engine.layouts_mut() = registry.layouts().clone();
+
+                    // 2. Populate base layer mappings
+                    let layers = engine.layers_mut();
+                    if let Some(base_id) = layers.layer_id_by_name("base") {
+                        for (key, action) in registry.mappings() {
+                            if let Some(layer_action) = to_layer_action(action.clone()) {
+                                layers.set_mapping_for_layer(base_id, key, layer_action);
+                            }
+                        }
+
+                        for (key, binding) in registry.tap_holds() {
+                            layers.set_mapping_for_layer(
+                                base_id,
+                                *key,
+                                LayerAction::TapHold {
+                                    tap: binding.tap,
+                                    hold: binding.hold.clone(),
+                                },
+                            );
+                        }
+                    }
+
+                    // 3. Register combos
+                    for combo in registry.combos().all() {
+                        engine
+                            .combos_mut()
+                            .register(&combo.keys, combo.action.clone());
+                    }
+
+                    // 4. Set initial modifiers
+                    engine
+                        .modifiers_mut()
+                        .clone_from(&registry.modifier_state());
+
+                    tracing::info!(
+                        service = "keyrx",
+                        component = "ffi_exports",
+                        event = "engine_configured",
+                        "AdvancedEngine configured with registry data"
+                    );
+                }
+            }
+
+            // Run the engine loop
+            let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+            runtime.block_on(async {
+                if let Err(e) = input.start().await {
+                    tracing::error!("Failed to start input source: {}", e);
+                    return;
+                }
+
+                tracing::info!("Engine event loop started");
+
+                loop {
+                    match input.poll_events().await {
+                        Ok(events) => {
+                            for event in events {
+                                // Diagnostic logging
+                                global_event_registry().invoke(EventType::RawInput, &event);
+
+                                // Process event through AdvancedEngine
+                                let outputs = engine.process_event(event);
+
+                                // Handle outputs
+                                for output in outputs {
+                                    global_event_registry().invoke(EventType::RawOutput, &output);
+                                    if let Err(e) = input.send_output(output).await {
+                                        tracing::error!("Failed to send output: {}", e);
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            // On Windows, raw input errors might be transient or fatal.
+                            // For now we log and continue, but a disconnect might need a break.
+                            tracing::error!("Error polling events: {}", e);
+                            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                        }
+                    }
+
+                    // Check for shutdown signal
+                    if ENGINE_SHUTDOWN.load(Ordering::Relaxed) {
+                        tracing::info!(
+                            service = "keyrx",
+                            event = "engine_shutdown_signal",
+                            component = "ffi_exports",
+                            "Shutdown signal received, exiting engine loop"
+                        );
+                        break;
+                    }
+
+                    // Small yield to prevent 100% CPU if polling is busy-wait (though WindowsInput shouldn't be)
+                    tokio::task::yield_now().await;
+                }
+
+                // Ensure input driver is stopped cleanly
+                if let Err(e) = input.stop().await {
+                    tracing::error!("Error stopping input driver: {}", e);
+                }
+            });
+        });
+    }
+
+    0
+}
+
+/// Convert a RemapAction to a LayerAction if applicable.
+fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
+    match action {
+        RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
+        RemapAction::Block => Some(LayerAction::Block),
+        RemapAction::Pass => None,
     }
 }
 
 fn shutdown_revolutionary_runtime() -> i32 {
+    // Signal engine to stop
+    ENGINE_SHUTDOWN.store(true, Ordering::SeqCst);
+
     match clear_revolutionary_runtime() {
         Ok(_) => {
             tracing::info!(
@@ -257,6 +452,8 @@ pub extern "C" fn keyrx_register_event_callback(
         13 => EventType::DiagnosticsMetric,
         14 => EventType::RecordingStarted,
         15 => EventType::RecordingStopped,
+        16 => EventType::RawInput,
+        17 => EventType::RawOutput,
         _ => {
             tracing::warn!(
                 service = "keyrx",

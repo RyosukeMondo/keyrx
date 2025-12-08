@@ -6,6 +6,8 @@ use crate::engine::{
     TimingConfig,
 };
 use crate::errors::KeyrxError;
+use crate::ffi::domains::engine::global_event_registry;
+use crate::ffi::events::EventType;
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
 use crate::metrics::{MetricsCollector, Operation, OtelMetricsCollector};
@@ -267,6 +269,9 @@ where
             let events = self.input.poll_events().await?;
 
             for event in events {
+                println!("RUST: Emitting RawInput event: {:?}", event.key);
+
+                global_event_registry().invoke(EventType::RawInput, &event);
                 let event_start = Instant::now();
 
                 // Track held keys for UI/state streaming.
@@ -300,6 +305,7 @@ where
                 } else {
                     // No coalescing: process immediately
                     let output = Engine::process_event(self, &event);
+                    global_event_registry().invoke(EventType::RawOutput, &output);
                     self.output_queue.enqueue(output);
                     self.output_queue.flush(&mut self.input).await?;
                 }
@@ -342,6 +348,7 @@ where
     async fn process_batch(&mut self, events: Vec<InputEvent>) -> Result<(), KeyrxError> {
         for event in events {
             let output = Engine::process_event(self, &event);
+            global_event_registry().invoke(EventType::RawOutput, &output);
             self.output_queue.enqueue(output);
         }
         self.output_queue.flush(&mut self.input).await

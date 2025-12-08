@@ -50,6 +50,10 @@ pub enum EventType {
     // Recording domain events (future)
     RecordingStarted,
     RecordingStopped,
+
+    // Monitor domain events
+    RawInput,
+    RawOutput,
 }
 
 impl EventType {
@@ -72,6 +76,8 @@ impl EventType {
             EventType::DiagnosticsMetric => "diagnostics_metric",
             EventType::RecordingStarted => "recording_started",
             EventType::RecordingStopped => "recording_stopped",
+            EventType::RawInput => "raw_input",
+            EventType::RawOutput => "raw_output",
         }
     }
 }
@@ -176,10 +182,12 @@ impl EventRegistry {
         // Serialize payload to JSON
         match serde_json::to_vec(payload) {
             Ok(bytes) => {
-                // SAFETY: We're passing a valid pointer and length to the C callback.
-                // The callback must not store the pointer beyond the call duration.
+                // SAFETY: We leak the memory here to ensure it survives the async FFI call.
+                // The Dart side MUST call keyrx_free_event_payload to reclaim this memory.
+                let len = bytes.len();
+                let ptr = Box::into_raw(bytes.into_boxed_slice()) as *const u8;
                 unsafe {
-                    cb(bytes.as_ptr(), bytes.len());
+                    cb(ptr, len);
                 }
             }
             Err(err) => {

@@ -14,7 +14,7 @@ use tracing::{debug, error};
 use windows::core::Error as WinError;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
-    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, VIRTUAL_KEY,
+    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, MAPVK_VK_TO_VSC, VIRTUAL_KEY,
 };
 
 use super::keymap::keycode_to_vk;
@@ -150,10 +150,21 @@ fn build_keyboard_input(key: KeyCode, vk_code: u16, pressed: bool) -> INPUT {
         flags |= KEYEVENTF_EXTENDEDKEY;
     }
 
+    // Get scan code
+    // SAFETY: MapVirtualKeyW is safe and side-effect free
+    let scan_code = unsafe {
+        windows::Win32::UI::Input::KeyboardAndMouse::MapVirtualKeyW(vk_code as u32, MAPVK_VK_TO_VSC)
+    } as u16;
+
+    // Use scan code if available
+    if scan_code != 0 {
+        flags |= KEYEVENTF_SCANCODE;
+    }
+
     // Build the KEYBDINPUT structure
     let kbd_input = KEYBDINPUT {
         wVk: VIRTUAL_KEY(vk_code),
-        wScan: 0, // Let Windows determine scan code from virtual key
+        wScan: scan_code,
         dwFlags: flags,
         time: 0,        // System will fill in the time
         dwExtraInfo: 0, // No extra info

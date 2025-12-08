@@ -287,23 +287,31 @@ mod tests {
 
     #[test]
     fn callback_panic_recovery() {
-        let mut counter = 0;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        let counter = Arc::new(AtomicUsize::new(0));
+        let counter_clone = counter.clone();
+
         let callback = HookCallback::new(move |ncode, _wparam, _lparam| {
             if ncode == 1 {
                 panic!("Intentional panic");
             }
-            counter += 1;
+            counter_clone.fetch_add(1, Ordering::SeqCst);
             HookAction::PassThrough
         });
 
         // First call should succeed
         assert_eq!(callback.invoke(0, WPARAM(0), LPARAM(0)), LRESULT(0));
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
 
         // Second call should panic and recover
         assert_eq!(callback.invoke(1, WPARAM(0), LPARAM(0)), LRESULT(0));
+        assert_eq!(counter.load(Ordering::SeqCst), 1); // Not incremented due to panic
 
         // Third call should succeed again (callback still works after panic)
         assert_eq!(callback.invoke(2, WPARAM(0), LPARAM(0)), LRESULT(0));
+        assert_eq!(counter.load(Ordering::SeqCst), 2);
     }
 
     #[test]

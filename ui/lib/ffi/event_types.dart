@@ -20,7 +20,9 @@ enum EventType {
   diagnosticsLog(12),
   diagnosticsMetric(13),
   recordingStarted(14),
-  recordingStopped(15);
+  recordingStopped(15),
+  rawInput(16),
+  rawOutput(17);
 
   const EventType(this.code);
 

@@ -48,7 +48,6 @@ use crate::drivers::common::cache::LruKeymapCache;
 use crate::drivers::common::error::DriverError;
 use crate::engine::InputEvent;
 use crossbeam_channel::Sender;
-use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Arc;
 use tracing::{debug, error, warn};
@@ -58,53 +57,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::super::hook::low_level_keyboard_proc;
-
-thread_local! {
-    /// Thread-local storage for the event sender used by the hook callback.
-    ///
-    /// This is necessary because the hook callback is a C-style function pointer
-    /// that cannot capture any context. We store the sender in thread-local storage
-    /// and access it from within the callback.
-    ///
-    /// # Safety Invariants
-    ///
-    /// - Must be initialized before hook installation
-    /// - Must be cleared when hook is uninstalled
-    /// - Only accessed from the hook thread
-    pub static HOOK_SENDER: RefCell<Option<Sender<InputEvent>>> = const { RefCell::new(None) };
-}
-
-thread_local! {
-    /// Thread-local storage for tracking key press states (for is_repeat detection).
-    ///
-    /// Maps virtual key codes to their current pressed state. When we receive a key down
-    /// event for a key that's already marked as pressed, it's a repeat event.
-    ///
-    /// # Safety Invariants
-    ///
-    /// - Cleared on hook uninstall to prevent state leakage
-    /// - Only accessed from the hook callback thread
-    pub static KEY_STATES: RefCell<std::collections::HashSet<u16>> = RefCell::new(std::collections::HashSet::new());
-}
-
-thread_local! {
-    /// Thread-local storage for the keymap cache used by the hook callback.
-    ///
-    /// The cache stores VK code to KeyCode mappings to avoid repeated lookups.
-    ///
-    /// # Safety Invariants
-    ///
-    /// - Must be initialized before hook installation
-    /// - Must be cleared when hook is uninstalled
-    /// - Only accessed from the hook thread
-    pub static KEYMAP_CACHE: RefCell<Option<Arc<LruKeymapCache>>> = const { RefCell::new(None) };
-}
-
-/// Safe RAII wrapper for Windows keyboard hooks.
-///
-/// This wrapper ensures that Windows keyboard hooks are properly installed and
-/// uninstalled, with automatic cleanup on Drop. It encapsulates the unsafe
-/// Windows API calls and provides a safe interface.
+use super::thread_local::ThreadLocalState;
 ///
 /// # Lifetime
 ///
@@ -194,14 +147,11 @@ impl SafeHook {
         cache: Arc<LruKeymapCache>,
     ) -> Result<Self, DriverError> {
         // Store the sender in thread-local storage for the callback
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = Some(sender);
-        });
+        // Store the sender in thread-local storage for the callback
+        ThreadLocalState::init_sender(sender);
 
         // Store the cache in thread-local storage for the callback
-        KEYMAP_CACHE.with(|c| {
-            *c.borrow_mut() = Some(cache);
-        });
+        ThreadLocalState::init_cache(cache);
 
         // SAFETY: We are calling SetWindowsHookExW with valid parameters:
         // - WH_KEYBOARD_LL: Standard hook type for low-level keyboard events
@@ -222,11 +172,14 @@ impl SafeHook {
 
         match hook {
             Ok(handle) => {
+                let thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
                 debug!(
                     service = "keyrx",
                     event = "safe_hook_installed",
                     component = "windows_safety",
-                    "SafeHook installed successfully"
+                    handle = ?handle,
+                    thread_id = thread_id,
+                    "SafeHook installed successfully on thread"
                 );
                 Ok(Self {
                     handle: Some(handle),
@@ -241,16 +194,12 @@ impl SafeHook {
                     component = "windows_safety",
                     error = %e,
                     error_code = e.code().0,
-                    "Failed to install SafeHook"
+                    "Failed to install SafeHook: {}", e.message()
                 );
 
                 // Clear the sender and cache since installation failed
-                HOOK_SENDER.with(|s| {
-                    *s.borrow_mut() = None;
-                });
-                KEYMAP_CACHE.with(|c| {
-                    *c.borrow_mut() = None;
-                });
+                // Clear the sender and cache since installation failed
+                ThreadLocalState::cleanup();
 
                 Err(DriverError::HookFailed {
                     code: e.code().0 as u32,
@@ -379,17 +328,7 @@ impl SafeHook {
     /// This clears the sender, cache, and key states to prevent stale data from
     /// being used if the hook is reinstalled later.
     fn cleanup_thread_local_state(&self) {
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = None;
-        });
-
-        KEYMAP_CACHE.with(|c| {
-            *c.borrow_mut() = None;
-        });
-
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
     }
 }
 
@@ -422,7 +361,12 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         // Hook installation may fail if not running on Windows or without proper
         // message loop setup, so we only test the drop behavior if it succeeded
@@ -430,11 +374,14 @@ mod tests {
             drop(hook);
             // After drop, we can't directly verify the hook is uninstalled,
             // but we can verify thread-local state was cleaned
-            let sender_cleared = HOOK_SENDER.with(|s| s.borrow().is_none());
-            let states_cleared = KEY_STATES.with(|states| states.borrow().is_empty());
-
-            assert!(sender_cleared, "Sender should be cleared after drop");
-            assert!(states_cleared, "Key states should be cleared after drop");
+            assert!(
+                !ThreadLocalState::is_sender_initialized(),
+                "Sender should be cleared after drop"
+            );
+            assert!(
+                ThreadLocalState::pressed_key_count() == 0,
+                "Key states should be cleared after drop"
+            );
         }
     }
 
@@ -444,7 +391,12 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         if let Ok(hook) = hook {
             assert!(hook.is_installed());
@@ -457,19 +409,24 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         if let Ok(mut hook) = hook {
             hook.uninstall();
             assert!(!hook.is_installed());
 
             // Verify thread-local state is cleaned
-            let sender_cleared = HOOK_SENDER.with(|s| s.borrow().is_none());
-            let states_cleared = KEY_STATES.with(|states| states.borrow().is_empty());
-
-            assert!(sender_cleared, "Sender should be cleared after uninstall");
             assert!(
-                states_cleared,
+                !ThreadLocalState::is_sender_initialized(),
+                "Sender should be cleared after uninstall"
+            );
+            assert!(
+                ThreadLocalState::pressed_key_count() == 0,
                 "Key states should be cleared after uninstall"
             );
         }
@@ -481,7 +438,12 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         if let Ok(mut hook) = hook {
             hook.uninstall();
@@ -497,7 +459,12 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         if let Ok(hook) = hook {
             assert!(hook.running().load(Ordering::SeqCst));
@@ -512,7 +479,12 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
         let thread_id_store = Arc::new(AtomicU32::new(0));
 
-        let hook = SafeHook::install(sender, running.clone(), thread_id_store.clone());
+        let hook = SafeHook::install(
+            sender,
+            running.clone(),
+            thread_id_store.clone(),
+            Arc::new(crate::drivers::common::cache::LruKeymapCache::new(100).unwrap()),
+        );
 
         if let Ok(hook) = hook {
             assert_eq!(hook.thread_id_store().load(Ordering::SeqCst), 0);
@@ -524,42 +496,30 @@ mod tests {
     #[test]
     fn thread_local_sender_cleaned_on_failed_install() {
         // Set up some initial state
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = None;
-        });
+        ThreadLocalState::cleanup();
 
         // This test verifies that even if hook installation fails,
         // we clean up the thread-local sender. Since we can't easily
         // force a hook installation failure in tests, we just verify
         // the thread-local cleanup behavior.
-        HOOK_SENDER.with(|s| {
-            *s.borrow_mut() = None;
-        });
+        ThreadLocalState::cleanup();
 
-        let sender_cleared = HOOK_SENDER.with(|s| s.borrow().is_none());
-        assert!(sender_cleared);
+        assert!(!ThreadLocalState::is_sender_initialized());
     }
 
     #[test]
     fn key_states_cleaned_on_uninstall() {
         // Simulate some key states
-        KEY_STATES.with(|states| {
-            let mut states = states.borrow_mut();
-            states.insert(0x41); // 'A' key
-            states.insert(0x42); // 'B' key
-        });
+        ThreadLocalState::mark_key_pressed(0x41); // 'A' key
+        ThreadLocalState::mark_key_pressed(0x42); // 'B' key
 
         // Verify states exist
-        let has_states = KEY_STATES.with(|states| !states.borrow().is_empty());
-        assert!(has_states);
+        assert!(ThreadLocalState::pressed_key_count() > 0);
 
         // Clear as done in uninstall
-        KEY_STATES.with(|states| {
-            states.borrow_mut().clear();
-        });
+        ThreadLocalState::cleanup();
 
         // Verify cleared
-        let states_cleared = KEY_STATES.with(|states| states.borrow().is_empty());
-        assert!(states_cleared);
+        assert_eq!(ThreadLocalState::pressed_key_count(), 0);
     }
 }

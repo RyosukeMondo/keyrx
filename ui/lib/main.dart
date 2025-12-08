@@ -12,12 +12,19 @@ import 'pages/developer/profiler_page.dart';
 import 'pages/layouts.dart';
 import 'pages/migration_prompt_page.dart';
 import 'pages/mapping_page.dart';
+import 'pages/trade_off_page.dart';
+import 'pages/run_controls_page.dart';
+import 'pages/calibration_page.dart';
+import 'pages/metrics_dashboard.dart';
+import 'pages/monitor_page.dart';
 import 'pages/wiring.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
+import 'services/facade/keyrx_facade.dart';
+import 'services/facade/facade_state.dart';
 
 void main() {
   runApp(MultiProvider(providers: createProviders(), child: const KeyrxApp()));
@@ -83,6 +90,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
+      const MonitorPage(),
       DevicesPage(
         runtimeService: registry.runtimeService,
         hardwareService: registry.hardwareService,
@@ -96,6 +104,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   final List<NavigationDestination> _destinations = const [
+    NavigationDestination(
+      icon: Icon(Icons.monitor_heart_outlined),
+      selectedIcon: Icon(Icons.monitor_heart),
+      label: 'Monitor',
+    ),
     NavigationDestination(
       icon: Icon(Icons.keyboard_outlined),
       selectedIcon: Icon(Icons.keyboard),
@@ -231,11 +244,15 @@ class _HomePageState extends State<HomePage> {
         return const TestRunnerPage();
       case DeveloperTool.profiler:
         return const ProfilerPage();
-      case DeveloperTool.simulator:
-      case DeveloperTool.analyzer:
       case DeveloperTool.benchmark:
+        return const MetricsDashboardPage();
       case DeveloperTool.doctor:
+        return const CalibrationPage();
       case DeveloperTool.replay:
+        return const RunControlsPage();
+      case DeveloperTool.analyzer:
+        return const TradeOffVisualizerPage();
+      case DeveloperTool.simulator:
       case DeveloperTool.discovery:
         return _buildPlaceholderPage(_selectedDevTool!.label);
     }
@@ -265,21 +282,55 @@ class _HomePageState extends State<HomePage> {
   Widget _buildStatusBar() {
     return Consumer<AppState>(
       builder: (context, appState, _) {
+        final facade = context.read<KeyrxFacade>();
+
         return Container(
           height: 24,
           color: Colors.black87,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Icon(
-                appState.initialized ? Icons.check_circle : Icons.error,
-                size: 14,
-                color: appState.initialized ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                appState.initialized ? 'Engine Ready' : 'Engine Not Ready',
-                style: const TextStyle(fontSize: 12),
+              StreamBuilder<FacadeState>(
+                stream: facade.stateStream,
+                initialData: facade.currentState,
+                builder: (context, snapshot) {
+                  final state = snapshot.data ?? facade.currentState;
+                  final statusText = switch (state.engine) {
+                    EngineStatus.running => 'Engine Running',
+                    EngineStatus.ready => 'Engine Ready',
+                    EngineStatus.uninitialized => 'Engine Not Ready',
+                    EngineStatus.initializing => 'Initializing...',
+                    EngineStatus.loading => 'Loading Script...',
+                    EngineStatus.stopping => 'Stopping...',
+                    EngineStatus.paused => 'Engine Paused',
+                    EngineStatus.error => 'Engine Error',
+                  };
+
+                  final color = switch (state.engine) {
+                    EngineStatus.running => Colors.green,
+                    EngineStatus.ready => Colors.blue,
+                    EngineStatus.error => Colors.red,
+                    _ => Colors.grey,
+                  };
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        state.engine == EngineStatus.error
+                            ? Icons.error
+                            : Icons.check_circle,
+                        size: 14,
+                        color: color,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        statusText,
+                        style: TextStyle(fontSize: 12, color: color),
+                      ),
+                    ],
+                  );
+                },
               ),
               const Spacer(),
               if (appState.loadedScript != null)

@@ -5,11 +5,14 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:rxdart/rxdart.dart';
 
 import '../service_registry.dart';
 import '../test_service.dart';
 import '../../ffi/bridge.dart' hide ScriptValidationResult;
+import '../../models/log_entry.dart';
+import '../../ffi/event_types.dart';
 import 'facade_state.dart';
 import 'keyrx_facade.dart';
 import 'result.dart';
@@ -144,26 +147,27 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         ),
       );
 
-      // Step 2: Initialize engine if not already initialized
-      if (!_services.engineService.isInitialized) {
-        _updateState(currentState.withEngineStatus(EngineStatus.initializing));
-        final initialized = await _services.engineService.initialize();
-        if (!initialized) {
-          final error = FacadeError.operationFailed(
-            'startEngine',
-            'Engine initialization failed',
-            userMessage: 'Failed to initialize the engine. Please try again.',
-          );
-          _updateState(
-            currentState.withEngineStatus(
-              EngineStatus.error,
-              error: error.userMessage,
-            ),
-          );
-          return Result.err(error);
-        }
-        _updateState(currentState.withEngineStatus(EngineStatus.ready));
+      // Step 2: Initialize engine (always ensure runtime is ready)
+      // We call initialize() unconditionally to ensure the revolutionary runtime
+      // is recovered if it was lost (e.g. during hot restart) even if the core bridge
+      // thinks it's initialized. The bridge initialization is idempotent.
+      _updateState(currentState.withEngineStatus(EngineStatus.initializing));
+      final initialized = await _services.engineService.initialize();
+      if (!initialized) {
+        final error = FacadeError.operationFailed(
+          'startEngine',
+          'Engine initialization failed',
+          userMessage: 'Failed to initialize the engine. Please try again.',
+        );
+        _updateState(
+          currentState.withEngineStatus(
+            EngineStatus.error,
+            error: error.userMessage,
+          ),
+        );
+        return Result.err(error);
       }
+      _updateState(currentState.withEngineStatus(EngineStatus.ready));
 
       // Step 3: Load the script
       _updateState(
@@ -589,6 +593,36 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   // === Lifecycle ===
 
   @override
+  Stream<dynamic> get logStream {
+    if (_logController == null) {
+      _logController = StreamController<dynamic>.broadcast(
+        onListen: () {
+          _services.bridge.registerEventCallback(EventType.diagnosticsLog, (
+            payload,
+          ) {
+            try {
+              // Payload is Uint8List, need to decode UTF-8
+              final jsonString = utf8.decode(payload, allowMalformed: true);
+              final json = jsonDecode(jsonString) as Map<String, dynamic>;
+              try {
+                final entry = LogEntry.fromJson(json);
+                _logController?.add(entry);
+              } catch (e) {
+                print('Error parsing log entry: $e');
+              }
+            } catch (e) {
+              // Fail silently to avoid crash loops
+            }
+          });
+        },
+      );
+    }
+    return _logController!.stream;
+  }
+
+  StreamController<dynamic>? _logController;
+
+  @override
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
@@ -601,6 +635,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
     // Close the state subject
     await _stateSubject.close();
+    await _logController?.close();
 
     // Don't dispose the service registry - the caller owns it
     // and may be using it elsewhere
