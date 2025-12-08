@@ -9,7 +9,7 @@
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::FfiError;
 use crate::ffi::traits::FfiExportable;
-use crate::observability::bridge::LogBridge;
+use crate::observability::bridge::GLOBAL_LOG_BRIDGE;
 use crate::observability::entry::CLogEntry;
 #[cfg(test)]
 use crate::observability::metrics_bridge::ThresholdViolation;
@@ -18,9 +18,6 @@ use crate::observability::metrics_bridge::{
 };
 use std::ffi::{c_char, CString};
 use std::sync::{Arc, RwLock};
-
-/// Global log bridge instance for FFI access.
-static LOG_BRIDGE: RwLock<Option<LogBridge>> = RwLock::new(None);
 
 /// Global metrics bridge instance for FFI access.
 static METRICS_BRIDGE: RwLock<Option<Arc<MetricsBridge>>> = RwLock::new(None);
@@ -50,13 +47,10 @@ impl FfiExportable for ObservabilityFfi {
         );
 
         // Clear callbacks and bridges
-        if let Ok(mut bridge) = LOG_BRIDGE.write() {
-            if let Some(b) = bridge.as_ref() {
-                b.clear_callback();
-                b.clear();
-            }
-            *bridge = None;
-        }
+        // For GLOBAL_LOG_BRIDGE, we just clear the callback, but we don't drop the instance
+        // since it's a lazy_static used by tracing.
+        GLOBAL_LOG_BRIDGE.clear_callback();
+        GLOBAL_LOG_BRIDGE.clear();
 
         if let Ok(mut bridge) = METRICS_BRIDGE.write() {
             if let Some(b) = bridge.as_ref() {
@@ -77,47 +71,14 @@ impl FfiExportable for ObservabilityFfi {
 /// This function is thread-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_log_bridge_init() -> i32 {
-    if let Ok(mut bridge) = LOG_BRIDGE.write() {
-        if bridge.is_none() {
-            *bridge = Some(LogBridge::new());
-            tracing::debug!(
-                service = "keyrx",
-                event = "log_bridge_init",
-                component = "ffi_observability",
-                "Log bridge initialized"
-            );
-        }
-        0
-    } else {
-        tracing::error!(
-            service = "keyrx",
-            event = "log_bridge_init_failed",
-            component = "ffi_observability",
-            error = "lock_poisoned",
-            "Failed to acquire log bridge lock"
-        );
-        -1
-    }
-}
-
-/// Get the log bridge instance, initializing if needed.
-fn get_log_bridge() -> Option<LogBridge> {
-    // Try to read first
-    if let Ok(guard) = LOG_BRIDGE.read() {
-        if guard.is_some() {
-            return guard.clone();
-        }
-    }
-
-    // Initialize if not present
-    keyrx_log_bridge_init();
-
-    // Try to read again
-    if let Ok(guard) = LOG_BRIDGE.read() {
-        guard.clone()
-    } else {
-        None
-    }
+    // No-op for global bridge, just return success
+    tracing::debug!(
+        service = "keyrx",
+        event = "log_bridge_init",
+        component = "ffi_observability",
+        "Log bridge initialized (global)"
+    );
+    0
 }
 
 /// Register a callback for real-time log notifications.
@@ -138,35 +99,24 @@ fn get_log_bridge() -> Option<LogBridge> {
 /// the callback invocation - it must not be retained.
 #[no_mangle]
 pub extern "C" fn keyrx_log_set_callback(callback: Option<extern "C" fn(*const CLogEntry)>) -> i32 {
-    if let Some(bridge) = get_log_bridge() {
-        if let Some(cb) = callback {
-            bridge.set_callback(cb);
-            tracing::debug!(
-                service = "keyrx",
-                event = "log_callback_set",
-                component = "ffi_observability",
-                "Log callback registered"
-            );
-        } else {
-            bridge.clear_callback();
-            tracing::debug!(
-                service = "keyrx",
-                event = "log_callback_cleared",
-                component = "ffi_observability",
-                "Log callback unregistered"
-            );
-        }
-        0
-    } else {
-        tracing::error!(
+    if let Some(cb) = callback {
+        GLOBAL_LOG_BRIDGE.set_callback(cb);
+        tracing::debug!(
             service = "keyrx",
-            event = "log_callback_failed",
+            event = "log_callback_set",
             component = "ffi_observability",
-            error = "bridge_unavailable",
-            "Failed to access log bridge"
+            "Log callback registered"
         );
-        -1
+    } else {
+        GLOBAL_LOG_BRIDGE.clear_callback();
+        tracing::debug!(
+            service = "keyrx",
+            event = "log_callback_cleared",
+            component = "ffi_observability",
+            "Log callback unregistered"
+        );
     }
+    0
 }
 
 /// Get the number of buffered log entries.
@@ -175,11 +125,7 @@ pub extern "C" fn keyrx_log_set_callback(callback: Option<extern "C" fn(*const C
 /// Number of log entries in the buffer, or 0 if bridge is unavailable.
 #[no_mangle]
 pub extern "C" fn keyrx_log_count() -> usize {
-    if let Some(bridge) = get_log_bridge() {
-        bridge.len()
-    } else {
-        0
-    }
+    GLOBAL_LOG_BRIDGE.len()
 }
 
 /// Drain buffered log entries into a JSON array string.
@@ -196,52 +142,41 @@ pub extern "C" fn keyrx_log_count() -> usize {
 /// The returned pointer must be freed with `keyrx_free_string`.
 #[no_mangle]
 pub extern "C" fn keyrx_log_drain() -> *mut c_char {
-    if let Some(bridge) = get_log_bridge() {
-        let entries = bridge.drain();
+    let entries = GLOBAL_LOG_BRIDGE.drain();
 
-        match serde_json::to_string(&entries) {
-            Ok(json) => match CString::new(json) {
-                Ok(c_string) => {
-                    tracing::trace!(
-                        service = "keyrx",
-                        event = "log_drain",
-                        component = "ffi_observability",
-                        count = entries.len(),
-                        "Drained log entries"
-                    );
-                    c_string.into_raw()
-                }
-                Err(e) => {
-                    tracing::error!(
-                        service = "keyrx",
-                        event = "log_drain_failed",
-                        component = "ffi_observability",
-                        error = %e,
-                        "Failed to create C string from JSON"
-                    );
-                    std::ptr::null_mut()
-                }
-            },
+    match serde_json::to_string(&entries) {
+        Ok(json) => match CString::new(json) {
+            Ok(c_string) => {
+                tracing::trace!(
+                    service = "keyrx",
+                    event = "log_drain",
+                    component = "ffi_observability",
+                    count = entries.len(),
+                    "Drained log entries"
+                );
+                c_string.into_raw()
+            }
             Err(e) => {
                 tracing::error!(
                     service = "keyrx",
                     event = "log_drain_failed",
                     component = "ffi_observability",
                     error = %e,
-                    "Failed to serialize log entries to JSON"
+                    "Failed to create C string from JSON"
                 );
                 std::ptr::null_mut()
             }
+        },
+        Err(e) => {
+            tracing::error!(
+                service = "keyrx",
+                event = "log_drain_failed",
+                component = "ffi_observability",
+                error = %e,
+                "Failed to serialize log entries to JSON"
+            );
+            std::ptr::null_mut()
         }
-    } else {
-        tracing::error!(
-            service = "keyrx",
-            event = "log_drain_failed",
-            component = "ffi_observability",
-            error = "bridge_unavailable",
-            "Log bridge not available"
-        );
-        std::ptr::null_mut()
     }
 }
 
@@ -252,18 +187,14 @@ pub extern "C" fn keyrx_log_drain() -> *mut c_char {
 /// - -1: Bridge unavailable
 #[no_mangle]
 pub extern "C" fn keyrx_log_clear() -> i32 {
-    if let Some(bridge) = get_log_bridge() {
-        bridge.clear();
-        tracing::debug!(
-            service = "keyrx",
-            event = "log_clear",
-            component = "ffi_observability",
-            "Log buffer cleared"
-        );
-        0
-    } else {
-        -1
-    }
+    GLOBAL_LOG_BRIDGE.clear();
+    tracing::debug!(
+        service = "keyrx",
+        event = "log_clear",
+        component = "ffi_observability",
+        "Log buffer cleared"
+    );
+    0
 }
 
 /// Enable or disable log buffering.
@@ -278,20 +209,16 @@ pub extern "C" fn keyrx_log_clear() -> i32 {
 /// - -1: Bridge unavailable
 #[no_mangle]
 pub extern "C" fn keyrx_log_set_enabled(enabled: i32) -> i32 {
-    if let Some(bridge) = get_log_bridge() {
-        let is_enabled = enabled != 0;
-        bridge.set_enabled(is_enabled);
-        tracing::debug!(
-            service = "keyrx",
-            event = "log_enabled_changed",
-            component = "ffi_observability",
-            enabled = is_enabled,
-            "Log bridge enabled state changed"
-        );
-        0
-    } else {
-        -1
-    }
+    let is_enabled = enabled != 0;
+    GLOBAL_LOG_BRIDGE.set_enabled(is_enabled);
+    tracing::debug!(
+        service = "keyrx",
+        event = "log_enabled_changed",
+        component = "ffi_observability",
+        enabled = is_enabled,
+        "Log bridge enabled state changed"
+    );
+    0
 }
 
 /// Initialize the metrics bridge with the provided collector.
@@ -706,13 +633,8 @@ mod tests {
 
     fn cleanup_test_state() {
         // Clear global state without needing FfiContext
-        if let Ok(mut bridge) = LOG_BRIDGE.write() {
-            if let Some(b) = bridge.as_ref() {
-                b.clear_callback();
-                b.clear();
-            }
-            *bridge = None;
-        }
+        GLOBAL_LOG_BRIDGE.clear_callback();
+        GLOBAL_LOG_BRIDGE.clear();
 
         if let Ok(mut bridge) = METRICS_BRIDGE.write() {
             if let Some(b) = bridge.as_ref() {
@@ -927,6 +849,5 @@ mod tests {
 
         // After cleanup, bridges should be None
         assert!(METRICS_BRIDGE.read().unwrap().is_none());
-        assert!(LOG_BRIDGE.read().unwrap().is_none());
     }
 }

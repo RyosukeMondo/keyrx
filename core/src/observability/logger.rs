@@ -3,6 +3,7 @@
 //! This module provides a structured logging system using the `tracing` crate,
 //! with support for JSON output, file logging, and configurable log levels.
 
+use crate::observability::bridge::GLOBAL_LOG_BRIDGE;
 use std::io;
 use std::path::{Path, PathBuf};
 use tracing::Level;
@@ -168,7 +169,10 @@ impl StructuredLogger {
         };
 
         // Build the subscriber based on format and output destination
-        let registry = Registry::default().with(env_filter);
+        // We always include the GLOBAL_LOG_BRIDGE to support FFI log streaming
+        let registry = Registry::default()
+            .with(env_filter)
+            .with(GLOBAL_LOG_BRIDGE.clone());
 
         match (self.format, &self.file_path) {
             // Pretty format to stdout
