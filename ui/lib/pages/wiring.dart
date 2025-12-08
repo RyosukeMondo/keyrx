@@ -18,6 +18,7 @@ import '../services/hardware_service.dart';
 import '../services/layout_service.dart';
 import '../services/service_registry.dart';
 import '../widgets/visual_keyboard.dart';
+import '../widgets/virtual_layout_renderer.dart';
 
 class WiringPage extends StatefulWidget {
   const WiringPage({super.key});
@@ -584,106 +585,119 @@ class _WiringPageState extends State<WiringPage> {
         ),
         childrenPadding: const EdgeInsets.all(16),
         children: [
-          if (_selectedProfile == null) ...[
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Base Device (Optional)',
-                border: OutlineInputBorder(),
-                helperText: 'Select a connected device to auto-fill details',
-              ),
-              items: [
-                const DropdownMenuItem(
-                  value: '',
-                  child: Text('Manual Entry / None'),
-                ),
-                ..._knownDevices.map(
-                  (d) => DropdownMenuItem(
-                    value: d.identity.toKey(),
-                    child: Text(
-                      d.identity.userLabel ??
-                          '${d.identity.vendorId.toRadixString(16).padLeft(4, '0')}:${d.identity.productId.toRadixString(16).padLeft(4, '0')} (${d.identity.serialNumber})',
-                    ),
-                  ),
-                ),
-              ],
-              onChanged: (value) {
-                if (value == null || value.isEmpty) return;
-                final device = _knownDevices.firstWhere(
-                  (d) => d.identity.toKey() == value,
-                  orElse: () => _knownDevices.first,
-                );
-                setState(() {
-                  _vendorController.text = device.identity.vendorId.toString();
-                  _productController.text = device.identity.productId
-                      .toString();
-                  _serialController.text = device.identity.serialNumber;
-                  if (device.identity.userLabel != null) {
-                    _nameController.text = device.identity.userLabel!;
-                  }
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _idController,
-                  decoration: const InputDecoration(
-                    labelText: 'Profile ID',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _vendorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Vendor ID',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _productController,
-                  decoration: const InputDecoration(
-                    labelText: 'Product ID',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          // 1. Display Name
           TextField(
-            controller: _serialController,
+            controller: _nameController,
             decoration: const InputDecoration(
-              labelText: 'Serial Number (Optional)',
+              labelText: 'Display Name',
               border: OutlineInputBorder(),
-              helperText: 'Leave empty for generic mapping by VID:PID',
             ),
           ),
           const SizedBox(height: 12),
+
+          // 2. Row: Target Device | Hardware Identity
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 5,
+                child: DropdownButtonFormField<String>(
+                  value: _findMatchingDeviceKey(),
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Target Device',
+                    border: OutlineInputBorder(),
+                    helperText: 'Select a connected or virtual device',
+                  ),
+                  items: _knownDevices.map((d) {
+                    final key = d.identity.toKey();
+                    final label =
+                        d.identity.userLabel ??
+                        '${d.identity.vendorId.toRadixString(16).padLeft(4, '0')}:${d.identity.productId.toRadixString(16).padLeft(4, '0')}';
+                    final serial = d.identity.serialNumber.isNotEmpty
+                        ? ' (${d.identity.serialNumber})'
+                        : '';
+                    return DropdownMenuItem(
+                      value: key,
+                      child: Text(
+                        '$label$serial',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    final device = _knownDevices.firstWhere(
+                      (d) => d.identity.toKey() == value,
+                      orElse: () => _knownDevices.first,
+                    );
+                    setState(() {
+                      _vendorController.text = device.identity.vendorId
+                          .toString();
+                      _productController.text = device.identity.productId
+                          .toString();
+                      _serialController.text = device.identity.serialNumber;
+
+                      // Auto-name if empty or default
+                      if (_nameController.text.isEmpty ||
+                          _nameController.text == 'New Hardware') {
+                        _nameController.text =
+                            device.identity.userLabel ??
+                            '${device.identity.toKey()} Profile';
+                      }
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a device' : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hardware Identity',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          _InfoChip(
+                            label:
+                                'VID: ${_vendorController.text.isEmpty ? '?' : int.tryParse(_vendorController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
+                          ),
+                          _InfoChip(
+                            label:
+                                'PID: ${_productController.text.isEmpty ? '?' : int.tryParse(_productController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
+                          ),
+                          _InfoChip(
+                            label:
+                                'SN: ${_serialController.text.isEmpty ? 'None' : _serialController.text}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Virtual Layout
           DropdownButtonFormField<String>(
             value: _selectedLayoutId,
             isExpanded: true,
@@ -748,6 +762,7 @@ class _WiringPageState extends State<WiringPage> {
             SizedBox(
               height: 280,
               child: VisualKeyboard(
+                layout: KeyboardLayout.full(),
                 onKeyTap: _handlePhysicalKeyTap,
                 selectedKeys: _selectedPhysicalKeyId == null
                     ? {}
@@ -775,7 +790,7 @@ class _WiringPageState extends State<WiringPage> {
       );
     }
 
-    final buttons = _buildVirtualKeyButtons(layout);
+    // final buttons = _buildVirtualKeyButtons(layout); // Removed
     final mappedCount = _wiringDraft.length;
 
     return Card(
@@ -798,41 +813,23 @@ class _WiringPageState extends State<WiringPage> {
             if (layout.keys.isEmpty)
               const Text('No keys defined for this layout.')
             else
-              Wrap(children: buttons),
+              Expanded(
+                child: VirtualLayoutRenderer(
+                  layout: layout,
+                  selectedKeyId: _selectedVirtualKeyId,
+                  mappedKeyIds: _allMappedVirtualKeyIds,
+                  onKeyTap: _handleVirtualKeyTap,
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildVirtualKeyButtons(VirtualLayout layout) {
-    final mappedForSelectedPhysical = _selectedPhysicalKeyId != null
-        ? _wiringDraft[keyIdToWindowsScanCode[_selectedPhysicalKeyId] ?? -1]
-        : null;
-
-    final keys = [...layout.keys];
-    keys.sort((a, b) {
-      final ay = a.position?.y ?? 0;
-      final by = b.position?.y ?? 0;
-      final ax = a.position?.x ?? 0;
-      final bx = b.position?.x ?? 0;
-      return ay != by ? ay.compareTo(by) : ax.compareTo(bx);
-    });
-
-    return keys
-        .map(
-          (key) => Padding(
-            padding: const EdgeInsets.all(4),
-            child: ChoiceChip(
-              label: Text(key.label),
-              selected:
-                  _selectedVirtualKeyId == key.id ||
-                  mappedForSelectedPhysical == key.id,
-              onSelected: (_) => _handleVirtualKeyTap(key.id),
-            ),
-          ),
-        )
-        .toList();
+  // Get all virtual keys that are target of some mapping
+  Set<String> get _allMappedVirtualKeyIds {
+    return _wiringDraft.values.toSet();
   }
 
   @override
@@ -846,5 +843,50 @@ class _WiringPageState extends State<WiringPage> {
     }
 
     return _buildDashboard();
+  }
+
+  String? _findMatchingDeviceKey() {
+    final vid = int.tryParse(_vendorController.text);
+    final pid = int.tryParse(_productController.text);
+    final serial = _serialController.text;
+
+    if (vid == null || pid == null) return null;
+
+    try {
+      final match = _knownDevices.firstWhere((d) {
+        return d.identity.vendorId == vid &&
+            d.identity.productId == pid &&
+            d.identity.serialNumber == serial;
+      });
+      return match.identity.toKey();
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+    );
   }
 }
