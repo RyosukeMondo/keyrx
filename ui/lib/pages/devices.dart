@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/device_state.dart';
+import '../models/device_identity.dart';
 import '../models/hardware_profile.dart';
 import '../models/keymap.dart';
 import '../models/runtime_config.dart';
@@ -231,6 +232,11 @@ class _DevicesPageState extends State<DevicesPage> {
       appBar: AppBar(
         title: const Text('Devices'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Virtual Device',
+            onPressed: _isMutating ? null : _showAddVirtualDeviceDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Reload runtime',
@@ -712,6 +718,133 @@ class _DevicesPageState extends State<DevicesPage> {
           _isMutating = false;
           _busySlots.remove(slot.id);
         });
+      }
+    }
+  }
+
+  Future<void> _showAddVirtualDeviceDialog() async {
+    final vidController = TextEditingController();
+    final pidController = TextEditingController();
+    final serialController = TextEditingController();
+    final labelController = TextEditingController();
+
+    final identity = await showDialog<DeviceIdentity>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Virtual Device'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Enter device details to create a virtual hardware profile.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: vidController,
+                        decoration: const InputDecoration(
+                          labelText: 'Vendor ID (Hex)',
+                          hintText: 'e.g. 046D',
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: pidController,
+                        decoration: const InputDecoration(
+                          labelText: 'Product ID (Hex)',
+                          hintText: 'e.g. C52B',
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: serialController,
+                  decoration: const InputDecoration(
+                    labelText: 'Serial Number',
+                    hintText: 'e.g. SN12345678',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: labelController,
+                  decoration: const InputDecoration(
+                    labelText: 'Label (Optional)',
+                    hintText: 'My Custom Keyboard',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                // Basic validation
+                final vidStr = vidController.text.trim();
+                final pidStr = pidController.text.trim();
+                final serial = serialController.text.trim();
+
+                if (vidStr.isEmpty || pidStr.isEmpty || serial.isEmpty) {
+                  return; // Should probably show error but simple return for now
+                }
+
+                int? vid = int.tryParse(vidStr, radix: 16);
+                int? pid = int.tryParse(pidStr, radix: 16);
+
+                if (vid == null || pid == null) {
+                  return;
+                }
+
+                Navigator.of(context).pop(
+                  DeviceIdentity(
+                    vendorId: vid,
+                    productId: pid,
+                    serialNumber: serial,
+                    userLabel: labelController.text.trim().isEmpty
+                        ? null
+                        : labelController.text.trim(),
+                  ),
+                );
+              },
+              child: const Text('Add Device'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (identity == null) return;
+
+    setState(() => _isMutating = true);
+    try {
+      await widget.deviceRegistryService.addVirtualDevice(identity);
+      await _loadAll();
+      _showSnack('Virtual device added', isError: false);
+    } catch (e) {
+      _showSnack('Failed to add virtual device: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isMutating = false);
       }
     }
   }

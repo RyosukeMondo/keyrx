@@ -5,37 +5,22 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ffi/bridge.dart';
 import '../models/device_state.dart';
-
-/// Exception thrown when device listing fails.
-///
-/// Carries a user-friendly message and any cached devices so the UI
-/// can continue to show the last known list instead of dropping to
-/// an empty state.
-class DeviceRegistryFetchException implements Exception {
-  DeviceRegistryFetchException(this.message, {this.fallbackDevices = const []});
-
-  final String message;
-  final List<DeviceState> fallbackDevices;
-
-  @override
-  String toString() => message;
-}
+import '../models/device_identity.dart';
 
 /// Result of a device registry operation.
 class DeviceRegistryOperationResult {
-  const DeviceRegistryOperationResult({
-    required this.success,
-    this.errorMessage,
-  });
+  const DeviceRegistryOperationResult.success()
+    : success = true,
+      errorMessage = null;
 
-  factory DeviceRegistryOperationResult.success() =>
-      const DeviceRegistryOperationResult(success: true);
-
-  factory DeviceRegistryOperationResult.error(String message) =>
-      DeviceRegistryOperationResult(success: false, errorMessage: message);
+  const DeviceRegistryOperationResult.error(this.errorMessage)
+    : success = false;
 
   final bool success;
   final String? errorMessage;
@@ -43,53 +28,37 @@ class DeviceRegistryOperationResult {
 
 /// Abstraction for device registry operations.
 abstract class DeviceRegistryService {
-  /// Get all registered devices.
-  ///
-  /// Returns a list of DeviceState objects representing all connected
-  /// devices that have been registered with the engine.
+  /// Get all registered devices (connected + virtual).
   Future<List<DeviceState>> getDevices();
 
+  /// Register a local virtual device.
+  Future<void> addVirtualDevice(DeviceIdentity identity);
+
+  /// Unregister a local virtual device.
+  Future<void> removeVirtualDevice(String key);
+
   /// Toggle remap enabled state for a device.
-  ///
-  /// [deviceKey] - Device identity key (format: "VID:PID:SERIAL")
-  /// [enabled] - Whether remapping should be enabled
-  ///
-  /// Returns a result indicating success or failure with error details.
   Future<DeviceRegistryOperationResult> toggleRemap(
     String deviceKey,
     bool enabled,
   );
 
   /// Assign a profile to a device.
-  ///
-  /// [deviceKey] - Device identity key (format: "VID:PID:SERIAL")
-  /// [profileId] - Profile ID to assign
-  ///
-  /// Returns a result indicating success or failure with error details.
   Future<DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
   );
 
   /// Set user label for a device.
-  ///
-  /// [deviceKey] - Device identity key (format: "VID:PID:SERIAL")
-  /// [label] - Optional user label (null to clear)
-  ///
-  /// Returns a result indicating success or failure with error details.
   Future<DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
   );
 
   /// Refresh the device list.
-  ///
-  /// Forces a refresh of the device list from the engine.
   Future<List<DeviceState>> refresh();
 
   /// Stream of device list updates.
-  ///
-  /// Emits a new list whenever the device registry changes.
   Stream<List<DeviceState>> get devicesStream;
 
   /// Dispose any held resources.
@@ -104,6 +73,8 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   List<DeviceState>? _cachedDevices;
   final _devicesController = StreamController<List<DeviceState>>.broadcast();
 
+  static const _virtualDevicesKey = 'keyrx_virtual_devices';
+
   @override
   Stream<List<DeviceState>> get devicesStream => _devicesController.stream;
 
@@ -113,6 +84,52 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
       return _cachedDevices!;
     }
     return refresh();
+  }
+
+  @override
+  Future<void> addVirtualDevice(DeviceIdentity identity) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> current = prefs.getStringList(_virtualDevicesKey) ?? [];
+
+    // Check if already exists, update if so
+    final key = identity.toKey();
+    final existingIndex = current.indexWhere((jsonStr) {
+      try {
+        final existing = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+        return existing.toKey() == key;
+      } catch (_) {
+        return false;
+      }
+    });
+
+    final jsonStr = jsonEncode(identity.toJson());
+
+    if (existingIndex >= 0) {
+      current[existingIndex] = jsonStr;
+    } else {
+      current.add(jsonStr);
+    }
+
+    await prefs.setStringList(_virtualDevicesKey, current);
+    await refresh(); // Refresh to include new device
+  }
+
+  @override
+  Future<void> removeVirtualDevice(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> current = prefs.getStringList(_virtualDevicesKey) ?? [];
+
+    current.removeWhere((jsonStr) {
+      try {
+        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+        return identity.toKey() == key;
+      } catch (_) {
+        return false;
+      }
+    });
+
+    await prefs.setStringList(_virtualDevicesKey, current);
+    await refresh();
   }
 
   @override
@@ -188,6 +205,33 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     String deviceKey,
     String? label,
   ) async {
+    // Check if it's a virtual device first
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> virtuals = prefs.getStringList(_virtualDevicesKey) ?? [];
+
+    int virtualIndex = -1;
+    DeviceIdentity? virtualIdentity;
+
+    for (int i = 0; i < virtuals.length; i++) {
+      try {
+        final identity = DeviceIdentity.fromJson(jsonDecode(virtuals[i]));
+        if (identity.toKey() == deviceKey) {
+          virtualIndex = i;
+          virtualIdentity = identity;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (virtualIndex >= 0 && virtualIdentity != null) {
+      // Update local virtual device
+      final updated = virtualIdentity.copyWith(userLabel: label);
+      virtuals[virtualIndex] = jsonEncode(updated.toJson());
+      await prefs.setStringList(_virtualDevicesKey, virtuals);
+      await refresh();
+      return DeviceRegistryOperationResult.success();
+    }
+
     if (_bridge.loadFailure != null) {
       return DeviceRegistryOperationResult.error(
         'Engine unavailable: ${_bridge.loadFailure}',
@@ -217,30 +261,75 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   @override
   Future<List<DeviceState>> refresh() async {
     if (_bridge.loadFailure != null) {
-      throw DeviceRegistryFetchException(
-        'Engine unavailable: ${_bridge.loadFailure}',
-        fallbackDevices: _cachedDevices ?? const [],
+      // Fallback to minimal behavior? Or just throw.
+      // If engine is down, we might still want to show virtual devices?
+      // For now, adhere to existing pattern but maybe we can be more robust.
+      // Let's try to proceed.
+      print(
+        'DeviceRegistryService: Engine unavailable. Proceeding with virtual devices only.',
       );
     }
 
-    print('DeviceRegistryService: refreshing devices via FFI...');
-    final result = _bridge.listRegisteredDevices();
+    List<DeviceState> ffiDevices = [];
+    if (_bridge.loadFailure == null) {
+      // print('DeviceRegistryService: refreshing devices via FFI...');
+      final result = _bridge.listRegisteredDevices();
 
-    if (result.hasError) {
-      final message = _makeUserFriendly(
-        result.errorMessage ?? 'Unknown error',
-        'load devices',
-      );
-      print('DeviceRegistryService: FFI returned error: $message');
-      throw DeviceRegistryFetchException(
-        message,
-        fallbackDevices: _cachedDevices ?? const [],
-      );
+      if (result.hasError) {
+        final message = _makeUserFriendly(
+          result.errorMessage ?? 'Unknown error',
+          'load devices',
+        );
+        print('DeviceRegistryService: FFI returned error: $message');
+        // Don't throw immediately, we want to try loading virtuals
+      } else {
+        ffiDevices = result.data ?? [];
+      }
     }
 
-    final devices = result.data ?? const [];
-    print('DeviceRegistryService: fetched ${devices.length} devices');
-    _cachedDevices = devices;
+    // Load virtual devices
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> virtualsJson =
+        prefs.getStringList(_virtualDevicesKey) ?? [];
+    final List<DeviceState> virtualDevices = [];
+
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    for (final jsonStr in virtualsJson) {
+      try {
+        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+
+        // Should verify if this ID is already in FFI list
+        final isConnected = ffiDevices.any(
+          (d) => d.identity.toKey() == identity.toKey(),
+        );
+
+        if (!isConnected) {
+          // Create a placeholder state for the virtual device
+          virtualDevices.add(
+            DeviceState(
+              identity: identity,
+              remapEnabled: false, // Default for offline/virtual
+              connectedAt: '', // Empty indicates not connected
+              updatedAt: now,
+              profileId:
+                  null, // We don't track virtual assignments here yet? Or could we?
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error parsing virtual device: $e');
+      }
+    }
+
+    // Merge: FFI devices take precedence
+    // Actually, if an FFI device matches a virtual device, we might want to carry over the 'userLabel' from virtual if FFI doesn't have one?
+    // But implementation of setUserLabel handles both. Ideally FFI state is truth.
+
+    final allDevices = [...ffiDevices, ...virtualDevices];
+
+    // print('DeviceRegistryService: fetched ${allDevices.length} devices (${ffiDevices.length} connected, ${virtualDevices.length} virtual)');
+    _cachedDevices = allDevices;
     _devicesController.add(_cachedDevices!);
     return _cachedDevices!;
   }
@@ -253,6 +342,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
   /// Convert technical error messages to user-friendly messages.
   String _makeUserFriendly(String technicalError, String operation) {
+    // ... (existing implementation)
     // Remove technical prefixes
     final cleaned = technicalError
         .replaceFirst('error:', '')
