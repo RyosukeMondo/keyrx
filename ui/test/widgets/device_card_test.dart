@@ -76,6 +76,12 @@ class MockDeviceRegistryService implements DeviceRegistryService {
   Stream<List<DeviceState>> get devicesStream => Stream.value(_devices);
 
   @override
+  Future<void> addVirtualDevice(DeviceIdentity identity) async {}
+
+  @override
+  Future<void> removeVirtualDevice(String key) async {}
+
+  @override
   Future<void> dispose() async {}
 }
 
@@ -159,8 +165,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should display VID:PID since no user label
-      expect(find.text('046d:c52b'), findsOneWidget);
+      // Should display Unnamed device since no user label
+      expect(find.text('Unnamed device'), findsOneWidget);
+      expect(find.text('Vendor 0x046d • Product 0xc52b'), findsOneWidget);
     });
 
     testWidgets('displays user label when set', (WidgetTester tester) async {

@@ -12,6 +12,7 @@ import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
 import 'package:keyrx_ui/models/device_state.dart';
+import 'package:keyrx_ui/models/device_identity.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
 import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/models/validation.dart';
@@ -348,6 +349,12 @@ class FakeDeviceProfileService implements DeviceProfileService {
 class FakeDeviceRegistryService implements DeviceRegistryService {
   @override
   Future<List<DeviceState>> getDevices() async => const [];
+
+  @override
+  Future<void> addVirtualDevice(DeviceIdentity identity) async {}
+
+  @override
+  Future<void> removeVirtualDevice(String key) async {}
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(

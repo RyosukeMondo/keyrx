@@ -118,6 +118,12 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Stream<List<DeviceState>> get devicesStream => Stream.value(devices);
 
   @override
+  Future<void> addVirtualDevice(DeviceIdentity identity) async {}
+
+  @override
+  Future<void> removeVirtualDevice(String key) async {}
+
+  @override
   Future<void> dispose() async {}
 }
 
