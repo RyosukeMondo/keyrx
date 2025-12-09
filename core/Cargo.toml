@@ -24,6 +24,8 @@ thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+tracing-log = "0.2"
+log = "0.4"
 crossbeam-channel.workspace = true
 clap.workspace = true
 async-trait.workspace = true
@@ -57,6 +59,7 @@ opentelemetry-otlp = { workspace = true, optional = true }
 tracing-opentelemetry = { workspace = true, optional = true }
 regex = "1.12.2"
 flate2.workspace = true
+reqwest-tracing = "0.5.8"
 
 [features]
 # Enable platform drivers by default on their respective platforms
@@ -140,4 +143,3 @@ panic = "deny"
 # Enforce structured logging (inherited from workspace)
 print_stdout = "warn"
 print_stderr = "warn"
-tracing-subscriber.workspace = true
