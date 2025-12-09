@@ -12,6 +12,8 @@ Cargo.lock
 /ui/.pub/
 /ui/*.iml
 /ui/.metadata
+.fvm/
+/ui/.fvm/
 
 # IDE
 .idea/
