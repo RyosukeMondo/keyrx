@@ -47,6 +47,8 @@ walkdir.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 keyrx-core-macros = { path = "core-macros" }
 reqwest.workspace = true
+reqwest-middleware.workspace = true
+http = "1"
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }
@@ -79,6 +81,8 @@ serial_test.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 fastrand.workspace = true
+wiremock = "0.6"
+tracing-appender = "0.2"
 
 [[bench]]
 name = "latency"
@@ -136,3 +140,4 @@ panic = "deny"
 # Enforce structured logging (inherited from workspace)
 print_stdout = "warn"
 print_stderr = "warn"
+tracing-subscriber.workspace = true
