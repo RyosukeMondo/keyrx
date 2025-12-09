@@ -44,3 +44,8 @@ core/.keyrx_cache/
 
 # Temporary analysis logs
 analysis_log*.txt
+
+# FVM
+.fvm/
+.fvmrc
+fvmrc
