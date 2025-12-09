@@ -45,6 +45,5 @@ core/.keyrx_cache/
 # Temporary analysis logs
 analysis_log*.txt
 
-# FVM (ignore cache except config)
-.fvm/*
-!.fvm/fvm_config.json
+# FVM (ignore entire .fvm directory, track .fvmrc)
+.fvm/
