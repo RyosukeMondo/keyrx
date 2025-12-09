@@ -14,7 +14,7 @@ use crate::definitions::DeviceDefinitionLibrary;
 #[cfg(windows)]
 use crate::drivers::windows::WindowsInput;
 use crate::engine::{
-    AdvancedEngine, InputEvent, LayerAction, OutputAction, RemapAction, TimingConfig,
+    AdvancedEngine, LayerAction, RemapAction, TimingConfig,
 };
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::domains::engine::global_event_registry as engine_event_registry;

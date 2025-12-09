@@ -426,6 +426,7 @@ class _MappingEditorState extends State<MappingEditor> {
               );
               if (discard != true) return;
             }
+            // ignore: use_build_context_synchronously
             if (mounted) Navigator.pop(context);
           },
         ),

@@ -1,12 +1,9 @@
 use crate::services::{DeviceService, ProfileService, RuntimeService};
 use crate::services::device::DeviceView;
 use crate::config::models::{VirtualLayout, HardwareProfile, Keymap, RuntimeConfig, ProfileSlot, DeviceInstanceId};
-use crate::registry::DeviceRegistry;
 use crate::observability::bridge::GLOBAL_LOG_BRIDGE;
 use crate::observability::entry::LogEntry;
 use crate::observability::logger::{StructuredLogger, OutputFormat};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 
 // Global services

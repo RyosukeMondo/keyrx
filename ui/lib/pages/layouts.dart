@@ -21,7 +21,6 @@ class LayoutsPage extends StatefulWidget {
 class _LayoutsPageState extends State<LayoutsPage> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   List<VirtualLayout> _layouts = const [];
   VirtualLayout? _activeLayout;
@@ -34,7 +33,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
 
   bool _isLoading = true;
   bool _isSaving = false;
-  String? _errorMessage;
 
   LayoutService get _layoutService {
     try {
@@ -60,7 +58,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
   Future<void> _loadLayouts() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     final result = await _layoutService.listLayouts();
@@ -69,7 +66,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
     if (result.hasError) {
       setState(() {
         _isLoading = false;
-        _errorMessage = result.errorMessage;
         _layouts = const [];
       });
       return;
@@ -78,7 +74,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
     setState(() {
       _layouts = result.data ?? [];
       _isLoading = false;
-      _errorMessage = null;
     });
   }
 
@@ -141,7 +136,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
 
     setState(() {
       _isSaving = true;
-      _errorMessage = null;
     });
 
     final result = await _layoutService.saveLayout(layout);
@@ -163,6 +157,7 @@ class _LayoutsPageState extends State<LayoutsPage> {
 
     // Refresh list
     await _loadLayouts();
+    if (!mounted) return;
 
     // Stay open with saved data
     _openLayout(saved);

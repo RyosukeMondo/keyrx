@@ -8,10 +8,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: StyledIconButton(
-              icon: Icons.delete,
-              onPressed: () {},
-            ),
+            body: StyledIconButton(icon: Icons.delete, onPressed: () {}),
           ),
         ),
       );
@@ -67,15 +64,13 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('does not display tooltip when not provided',
-        (WidgetTester tester) async {
+    testWidgets('does not display tooltip when not provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: StyledIconButton(
-              icon: Icons.delete,
-              onPressed: () {},
-            ),
+            body: StyledIconButton(icon: Icons.delete, onPressed: () {}),
           ),
         ),
       );
@@ -83,17 +78,15 @@ void main() {
       expect(find.byType(Tooltip), findsNothing);
     });
 
-    testWidgets('is disabled when onPressed is null',
-        (WidgetTester tester) async {
+    testWidgets('is disabled when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       var pressed = false;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: StyledIconButton(
-              icon: Icons.delete,
-              onPressed: null,
-            ),
+            body: StyledIconButton(icon: Icons.delete, onPressed: null),
           ),
         ),
       );
@@ -104,8 +97,7 @@ void main() {
       expect(pressed, isFalse);
     });
 
-    testWidgets('uses custom color when provided',
-        (WidgetTester tester) async {
+    testWidgets('uses custom color when provided', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -122,8 +114,7 @@ void main() {
       expect(icon.color, equals(Colors.red));
     });
 
-    testWidgets('uses custom size when provided',
-        (WidgetTester tester) async {
+    testWidgets('uses custom size when provided', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -146,10 +137,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CompactIconButton(
-              icon: Icons.edit,
-              onPressed: () {},
-            ),
+            body: CompactIconButton(icon: Icons.edit, onPressed: () {}),
           ),
         ),
       );
@@ -200,10 +188,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: FilledIconButton(
-              icon: Icons.add,
-              onPressed: () {},
-            ),
+            body: FilledIconButton(icon: Icons.add, onPressed: () {}),
           ),
         ),
       );
@@ -247,8 +232,9 @@ void main() {
       expect(find.byType(Tooltip), findsOneWidget);
     });
 
-    testWidgets('uses custom background color when provided',
-        (WidgetTester tester) async {
+    testWidgets('uses custom background color when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -272,8 +258,9 @@ void main() {
       expect(decoration.color, equals(Colors.green));
     });
 
-    testWidgets('uses custom foreground color when provided',
-        (WidgetTester tester) async {
+    testWidgets('uses custom foreground color when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -290,21 +277,19 @@ void main() {
       expect(icon.color, equals(Colors.yellow));
     });
 
-    testWidgets('is disabled when onPressed is null',
-        (WidgetTester tester) async {
+    testWidgets('is disabled when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: FilledIconButton(
-              icon: Icons.add,
-              onPressed: null,
-            ),
+            body: FilledIconButton(icon: Icons.add, onPressed: null),
           ),
         ),
       );
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.add));
-      expect(icon.color!.alpha, lessThan(255));
+      expect(icon.color!.a, lessThan(1.0));
     });
   });
 }

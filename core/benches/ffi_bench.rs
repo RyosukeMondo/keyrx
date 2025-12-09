@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 //! FFI marshaling benchmarks.
 //!
 //! Compares different marshaling strategies (JSON vs C struct) and measures

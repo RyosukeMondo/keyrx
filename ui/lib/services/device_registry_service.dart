@@ -265,9 +265,9 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
       // If engine is down, we might still want to show virtual devices?
       // For now, adhere to existing pattern but maybe we can be more robust.
       // Let's try to proceed.
-      print(
-        'DeviceRegistryService: Engine unavailable. Proceeding with virtual devices only.',
-      );
+      // print(
+      //   'DeviceRegistryService: Engine unavailable. Proceeding with virtual devices only.',
+      // );
     }
 
     List<DeviceState> ffiDevices = [];
@@ -276,11 +276,11 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
       final result = _bridge.listRegisteredDevices();
 
       if (result.hasError) {
-        final message = _makeUserFriendly(
-          result.errorMessage ?? 'Unknown error',
-          'load devices',
-        );
-        print('DeviceRegistryService: FFI returned error: $message');
+        // final message = _makeUserFriendly(
+        //   result.errorMessage ?? 'Unknown error',
+        //   'load devices',
+        // );
+        // print('DeviceRegistryService: FFI returned error: $message');
         // Don't throw immediately, we want to try loading virtuals
       } else {
         ffiDevices = result.data ?? [];
@@ -318,7 +318,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
           );
         }
       } catch (e) {
-        print('Error parsing virtual device: $e');
+        // print('Error parsing virtual device: $e');
       }
     }
 

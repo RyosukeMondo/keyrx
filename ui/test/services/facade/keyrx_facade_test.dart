@@ -483,7 +483,7 @@ void main() {
 
       when(() => mockDevice.refresh()).thenThrow(Exception('USB error'));
 
-      final result = await facade.listDevices();
+      await facade.listDevices();
     });
   });
 

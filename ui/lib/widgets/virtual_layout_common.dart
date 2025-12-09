@@ -101,11 +101,13 @@ class VirtualLayoutGridPainter extends CustomPainter {
     if (subStep != null) {
       final paintMinor = Paint()
         ..color = color
-            .withValues(alpha: 0.1) // Assumes color passed is already low opacity?
+            .withValues(
+              alpha: 0.1,
+            ) // Assumes color passed is already low opacity?
         // Logic in consumers was: color: dividerColor.withValues(alpha: 0.1).
         // Let's assume 'color' is the MAJOR grid color. Minor is dimmer.
         // Or better: Use the color provided for major, and derive minor.
-        ..color = color.withValues(alpha: color.opacity * 0.5)
+        ..color = color.withValues(alpha: color.a * 0.5)
         ..strokeWidth = 1;
 
       for (double x = 0; x <= size.width; x += subStep!) {
@@ -132,4 +134,3 @@ class VirtualLayoutGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

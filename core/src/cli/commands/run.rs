@@ -1,6 +1,5 @@
 //! Engine run command.
 
-use crate::traits::ScriptRuntime;
 use super::run_builder::RuntimeBuilder;
 use super::run_recorder::{RecordingContext, RecordingManager};
 use super::run_tracer::TracingManager;

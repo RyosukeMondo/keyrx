@@ -596,26 +596,26 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   @override
   Stream<dynamic> get logStream {
     _logController ??= StreamController<dynamic>.broadcast(
-        onListen: () {
-          _services.bridge.registerEventCallback(EventType.diagnosticsLog, (
-            payload,
-          ) {
+      onListen: () {
+        _services.bridge.registerEventCallback(EventType.diagnosticsLog, (
+          payload,
+        ) {
+          try {
+            // Payload is Uint8List, need to decode UTF-8
+            final jsonString = utf8.decode(payload, allowMalformed: true);
+            final json = jsonDecode(jsonString) as Map<String, dynamic>;
             try {
-              // Payload is Uint8List, need to decode UTF-8
-              final jsonString = utf8.decode(payload, allowMalformed: true);
-              final json = jsonDecode(jsonString) as Map<String, dynamic>;
-              try {
-                final entry = LogEntry.fromJson(json);
-                _logController?.add(entry);
-              } catch (e) {
-                print('Error parsing log entry: $e');
-              }
+              final entry = LogEntry.fromJson(json);
+              _logController?.add(entry);
             } catch (e) {
-              // Fail silently to avoid crash loops
+              // print('Error parsing log entry: $e');
             }
-          });
-        },
-      );
+          } catch (e) {
+            // Fail silently to avoid crash loops
+          }
+        });
+      },
+    );
     return _logController!.stream;
   }
 

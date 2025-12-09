@@ -3,8 +3,6 @@ use crate::DeviceIdentity;
 use crate::registry::{DeviceRegistry, DeviceRegistryError, DeviceState};
 use crate::ffi::runtime::with_revolutionary_runtime;
 use thiserror::Error;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use std::path::PathBuf;
 
 #[derive(Error, Debug)]

@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 //! FFI exports for Flutter integration.
 //!
 //! ## Architecture Components

@@ -1,15 +1,16 @@
 #!/usr/bin/env dart
-/// Dart wrapper for FFI binding verification
-///
-/// This script can be used as a Flutter pre-build check.
-/// It calls the Python verification script and reports results.
-///
-/// Usage:
-///   dart tool/verify_bindings.dart
-///
-/// Exit codes:
-///   0 - Bindings are in sync
-///   1 - Bindings are out of sync or error occurred
+// ignore_for_file: avoid_print
+// Dart wrapper for FFI binding verification
+//
+// This script can be used as a Flutter pre-build check.
+// It calls the Python verification script and reports results.
+//
+// Usage:
+//   dart tool/verify_bindings.dart
+//
+// Exit codes:
+//   0 - Bindings are in sync
+//   1 - Bindings are out of sync or error occurred
 
 import 'dart:io';
 
@@ -34,11 +35,9 @@ Future<void> main() async {
 
   // Run the Python verification script
   try {
-    final result = await Process.run(
-      'python3',
-      [verifyScript.path],
-      workingDirectory: projectRoot.path,
-    );
+    final result = await Process.run('python3', [
+      verifyScript.path,
+    ], workingDirectory: projectRoot.path);
 
     // Print output
     if (result.stdout.toString().isNotEmpty) {

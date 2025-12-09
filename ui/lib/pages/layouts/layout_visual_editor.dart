@@ -100,7 +100,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
   }
 
   void _addKey({Offset? position}) {
-    print('Adding key...');
+    // print('Adding key...');
     final rc = _getNextRC();
     final newId = 'K_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -108,38 +108,9 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     // Or if position is provided (from double click), use that.
     // Note: position passed here is local to the interactive viewer if we handle it right.
 
-    double x = 100;
-    double y = 100;
+    // Snap to grid (10px) (unused logic removed)
 
-    if (position != null) {
-      // Snap to grid (10px)
-      x = (position.dx / 10).roundToDouble() * 10;
-      y = (position.dy / 10).roundToDouble() * 10;
-    }
-
-    final newKey = VirtualKeyDef(
-      id: newId,
-      label: 'r${rc.r}c${rc.c}',
-      position: KeyPosition(x: x, y: y),
-      size: const KeySize(
-        width: 50,
-        height: 50,
-      ), // Unit? React used 50px. Flutter model expects unitless?
-      // Wait, VirtualKeyDef uses logical units where 1.0 approx 60px or similar?
-      // Let's check _buildKeyCanvas implementation.
-      // It says: const double unitSize = 60.0;
-      // React used 50px fixed size keys on a grid.
-      // If we use VirtualKeyDef size 1.0, it renders as 60px.
-      // Let's use 0.833 (50/60) or just standard 1.0 for now for "1u".
-      // Let's stick to 1.0 = 1u.
-      // Position is also in units.
-      // React x=100 was pixels.
-      // Here x is units?
-      // Checking _buildKeyCanvas: left: (key.position.x) * unitSize + 1000
-      // So key.position.x is in UNITS.
-      // So if we want pixel offset 100, we need 100/60 = 1.66 units.
-      // Let's just put it at 0,0 (center) relative to origin 1000,1000.
-    );
+    // deleted unused newKey definition
 
     // Actually, let's look at the Coordinate System again.
     // _buildKeyCanvas logic: left = (x * 60) + 1000.
@@ -175,7 +146,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     widget.onKeysChanged(newKeys);
     _selectKey(newId);
 
-    print('Key added: $newId at $finalX, $finalY');
+    // print('Key added: $newId at $finalX, $finalY');
   }
 
   void _deleteSelectedKeys() {
@@ -194,8 +165,6 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
         .toList();
 
     if (selectedKeys.isEmpty) return;
-
-    double? targetVal;
 
     // Calculate bounds
     double minX = double.infinity;
@@ -384,7 +353,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
       height: canvasSize,
       child: GestureDetector(
         onTap: () {
-          print('Canvas tapped - clearing selection');
+          // print('Canvas tapped - clearing selection');
           _clearSelection();
         },
         onDoubleTapDown: (details) {
@@ -407,7 +376,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
             );
           });
           // Logic to select keys inside box
-          final box = _selectionBox!;
+          // final box = _selectionBox!;
           // Convert box to unit space relative to 1000,1000
           // Optimization: Do this only on PanEnd? Or live? Live is better.
           // ... (For brevity, maybe on End is safer for perf, but live is "perfect match")
@@ -458,7 +427,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                   onTap: () => _selectKey(key.id),
                   onDoubleTap: () {
                     // Delete key on double tap
-                    print('Double tap key ${key.id} -> deleting');
+                    // print('Double tap key ${key.id} -> deleting');
                     // Need to call a delete function
                     final newKeys = widget.keys
                         .where((k) => k.id != key.id)
@@ -737,4 +706,3 @@ class _PropertyBar extends StatelessWidget {
     );
   }
 }
-
