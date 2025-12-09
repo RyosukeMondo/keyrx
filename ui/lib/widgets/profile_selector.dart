@@ -107,7 +107,7 @@ class ProfileSelector extends StatelessWidget {
           isDense: true,
           underline: Container(
             height: 1,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ),
           icon: Icon(
             Icons.arrow_drop_down,
@@ -120,3 +120,4 @@ class ProfileSelector extends StatelessWidget {
     );
   }
 }
+

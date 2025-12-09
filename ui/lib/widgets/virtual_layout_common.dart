@@ -40,7 +40,7 @@ class VirtualKeyVisual extends StatelessWidget {
       fontWeight = FontWeight.bold;
       textColor = colorScheme.onPrimaryContainer;
     } else if (isMapped) {
-      backgroundColor = colorScheme.secondaryContainer.withOpacity(0.5);
+      backgroundColor = colorScheme.secondaryContainer.withValues(alpha: 0.5);
       borderColor = colorScheme.secondary;
       textColor = colorScheme.onSecondaryContainer;
     } else {
@@ -52,7 +52,7 @@ class VirtualKeyVisual extends StatelessWidget {
       // Lighten/Highlight on hover if needed, or handled by parent InkWell?
       // Since this is just a Container, we can add visual feedback here.
       backgroundColor = Color.alphaBlend(
-        colorScheme.onSurface.withOpacity(0.05),
+        colorScheme.onSurface.withValues(alpha: 0.05),
         backgroundColor,
       );
     }
@@ -101,11 +101,11 @@ class VirtualLayoutGridPainter extends CustomPainter {
     if (subStep != null) {
       final paintMinor = Paint()
         ..color = color
-            .withOpacity(0.1) // Assumes color passed is already low opacity?
-        // Logic in consumers was: color: dividerColor.withOpacity(0.1).
+            .withValues(alpha: 0.1) // Assumes color passed is already low opacity?
+        // Logic in consumers was: color: dividerColor.withValues(alpha: 0.1).
         // Let's assume 'color' is the MAJOR grid color. Minor is dimmer.
         // Or better: Use the color provided for major, and derive minor.
-        ..color = color.withOpacity(color.opacity * 0.5)
+        ..color = color.withValues(alpha: color.opacity * 0.5)
         ..strokeWidth = 1;
 
       for (double x = 0; x <= size.width; x += subStep!) {
@@ -132,3 +132,4 @@ class VirtualLayoutGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+

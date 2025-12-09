@@ -45,7 +45,7 @@ class _GridGeneratorState extends State<GridGenerator> {
         // 1-based indexing for user facing labels/IDs
         final rowIdx = r + 1;
         final colIdx = c + 1;
-        final id = 'r${rowIdx}c${colIdx}';
+        final id = 'r${rowIdx}c$colIdx';
 
         keys.add(
           VirtualKeyDef(

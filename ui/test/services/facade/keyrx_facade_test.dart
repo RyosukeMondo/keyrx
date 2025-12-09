@@ -1,15 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/ffi/bridge_discovery.dart';
-import 'package:keyrx_ui/ffi/bridge_engine.dart' as engine_bridge;
-import 'package:keyrx_ui/models/validation.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade_impl.dart';
-import 'package:keyrx_ui/services/facade/result.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/test_service.dart';
@@ -488,6 +484,8 @@ void main() {
       when(() => mockDevice.refresh()).thenThrow(Exception('USB error'));
 
       final result = await facade.listDevices();
+    });
+  });
 
   group('KeyrxFacadeImpl - Test Operations', () {
     test('discoverTests: success', () async {
@@ -774,21 +772,7 @@ void main() {
       expect(() => facade.saveScript('/path', 'content'), throwsStateError);
       expect(() => facade.listDevices(), throwsStateError);
       expect(() => facade.selectDevice('/dev/input/event0'), throwsStateError);
-      expect(
-        () => facade.startDiscovery(
-          device: const KeyboardDevice(
-            path: '/dev/input/event0',
-            name: 'Test',
-            vendorId: 0x1234,
-            productId: 0x5678,
-            hasProfile: false,
-          ),
-          rows: 5,
-          colsPerRow: [13, 13, 12, 12, 11],
-        ),
-        throwsStateError,
-      );
-      expect(() => facade.cancelDiscovery(), throwsStateError);
+
       expect(() => facade.discoverTests('/path'), throwsStateError);
       expect(() => facade.runTests('/path'), throwsStateError);
       expect(() => facade.cancelTests(), throwsStateError);

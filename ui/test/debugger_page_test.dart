@@ -8,6 +8,7 @@ import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:provider/provider.dart';
 
 import 'helpers/fake_services.dart';
@@ -27,6 +28,10 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     layoutService: LayoutService(bridge: bridge),
     hardwareService: HardwareService(bridge: bridge),
     keymapService: KeymapService(bridge: bridge),
+    deviceProfileService: FakeDeviceProfileService(),
+    deviceRegistryService: FakeDeviceRegistryService(),
+    profileRegistryService: FakeProfileRegistryService(),
+    runtimeService: FakeRuntimeService(),
   );
 }
 
@@ -37,7 +42,9 @@ void main() {
 
     await tester.pumpWidget(
       MultiProvider(
-        providers: [Provider<ServiceRegistry>.value(value: registry)],
+        providers: [
+          Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+        ],
         child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
       ),
     );
@@ -84,7 +91,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -128,7 +137,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -163,7 +174,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -209,7 +222,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -238,7 +253,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -267,7 +284,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -296,7 +315,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -338,7 +359,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -356,7 +379,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -389,7 +414,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -434,7 +461,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -467,7 +496,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -499,7 +530,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -529,7 +562,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -558,7 +593,9 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [Provider<ServiceRegistry>.value(value: registry)],
+          providers: [
+            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
+          ],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );

@@ -306,7 +306,7 @@ class _LogViewerState extends State<LogViewer> {
                   child: Text(
                     _allLogs.isEmpty ? 'No logs yet' : 'No logs match filters',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 )
@@ -391,7 +391,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                     widget.formatTimestamp(widget.log.dateTime),
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontFamily: 'monospace',
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -428,7 +428,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                     Icon(
                       _expanded ? Icons.expand_less : Icons.expand_more,
                       size: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                 ],
               ),
@@ -446,7 +446,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                           'Span: ',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         Text(
@@ -468,7 +468,7 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                           'Fields:',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -511,3 +511,4 @@ class _LogEntryTileState extends State<_LogEntryTile> {
     );
   }
 }
+

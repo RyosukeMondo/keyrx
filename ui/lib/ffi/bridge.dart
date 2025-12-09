@@ -401,7 +401,7 @@ class KeyrxBridge
       // CRITICAL: Free the memory allocated by Rust.
       // Since EventRegistry::invoke leaks the buffer to ensure async safety,
       // we must explicitly free it here to avoid memory leaks.
-      final free = instance?._freeEventPayload;
+      final free = instance._freeEventPayload;
       if (free != null && ptr != nullptr) {
         free(ptr, length);
       }

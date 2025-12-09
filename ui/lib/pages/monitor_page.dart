@@ -314,8 +314,8 @@ class _MonitorPageState extends State<MonitorPage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isRunning
-            ? Colors.green.withOpacity(0.2)
-            : Colors.grey.withOpacity(0.2),
+            ? Colors.green.withValues(alpha: 0.2)
+            : Colors.grey.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isRunning ? Colors.green : Colors.grey),
       ),
@@ -398,8 +398,8 @@ class _MonitorPageState extends State<MonitorPage> {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey[900]!)),
         color: isInput
-            ? Colors.blue.withOpacity(0.05)
-            : Colors.orange.withOpacity(0.05),
+            ? Colors.blue.withValues(alpha: 0.05)
+            : Colors.orange.withValues(alpha: 0.05),
       ),
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: Row(
@@ -508,3 +508,4 @@ class MonitorEvent {
     required this.rawJson,
   });
 }
+

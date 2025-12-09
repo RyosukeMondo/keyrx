@@ -138,7 +138,7 @@ class LayoutGrid extends StatelessWidget {
           Text(
             'Visual representation coming soon',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 16),
@@ -247,8 +247,8 @@ class LayoutGrid extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 10,
                     color: isSelected
-                        ? theme.colorScheme.onPrimary.withOpacity(0.7)
-                        : theme.colorScheme.onSurface.withOpacity(0.5),
+                        ? theme.colorScheme.onPrimary.withValues(alpha: 0.7)
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 if (hasMapping) ...[
@@ -319,3 +319,4 @@ String keyActionLabel(KeyAction action) {
     pass: () => 'PASS',
   );
 }
+

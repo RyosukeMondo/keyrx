@@ -230,7 +230,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         border: Border.all(color: Colors.orange),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -432,7 +432,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
 
   Widget _buildFailuresList(List<MigrationFailure> failures) {
     return Card(
-      color: Colors.red.withOpacity(0.1),
+      color: Colors.red.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -555,3 +555,4 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
     });
   }
 }
+

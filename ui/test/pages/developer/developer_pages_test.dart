@@ -10,6 +10,18 @@ import 'package:keyrx_ui/pages/developer/doctor_page.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 import 'package:keyrx_ui/services/benchmark_service.dart';
 import 'package:keyrx_ui/services/doctor_service.dart';
+import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/services/engine_service.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
+import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
+import 'package:provider/provider.dart';
+
+import '../../helpers/fake_services.dart';
 
 // Mock services
 class MockTestService extends Mock implements TestService {}
@@ -17,6 +29,33 @@ class MockTestService extends Mock implements TestService {}
 class MockBenchmarkService extends Mock implements BenchmarkService {}
 
 class MockDoctorService extends Mock implements DoctorService {}
+
+Widget _buildTestRunner(MockTestService mockService) {
+  final registry = ServiceRegistry.withOverrides(
+    testService: mockService,
+    engineService: FakeEngineService(),
+    scriptFileService: FakeScriptFileService(),
+    deviceService: FakeDeviceService(),
+    bridge: FakeBridge(),
+    apiDocsService: FakeApiDocsService(),
+    deviceProfileService: FakeDeviceProfileService(),
+    deviceRegistryService: FakeDeviceRegistryService(),
+    profileRegistryService: FakeProfileRegistryService(),
+    runtimeService: FakeRuntimeService(),
+    errorTranslator: FakeErrorTranslator(),
+    mappingRepository: MappingRepository(),
+    storagePathResolver: const StoragePathResolver(),
+    layoutService: LayoutService(bridge: FakeBridge()),
+    hardwareService: HardwareService(bridge: FakeBridge()),
+    keymapService: KeymapService(bridge: FakeBridge()),
+  );
+  final facade = KeyrxFacade.real(registry);
+
+  return MultiProvider(
+    providers: [Provider<KeyrxFacade>.value(value: facade)],
+    child: const MaterialApp(home: TestRunnerPage()),
+  );
+}
 
 void main() {
   group('TestRunnerPage', () {
@@ -27,18 +66,14 @@ void main() {
     });
 
     testWidgets('shows empty state initially', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: TestRunnerPage(testService: mockTestService)),
-      );
+      await tester.pumpWidget(_buildTestRunner(mockTestService));
 
       expect(find.text('No tests discovered'), findsOneWidget);
       expect(find.text('Discover'), findsOneWidget);
     });
 
     testWidgets('shows error when script path is empty', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: TestRunnerPage(testService: mockTestService)),
-      );
+      await tester.pumpWidget(_buildTestRunner(mockTestService));
 
       await tester.tap(find.text('Discover'));
       await tester.pumpAndSettle();
@@ -55,9 +90,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        MaterialApp(home: TestRunnerPage(testService: mockTestService)),
-      );
+      await tester.pumpWidget(_buildTestRunner(mockTestService));
 
       await tester.enterText(find.byType(TextField).first, 'script.rhai');
       await tester.tap(find.text('Discover'));
@@ -77,7 +110,9 @@ void main() {
 
     testWidgets('shows configuration card', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
+        MaterialApp(
+          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
+        ),
       );
 
       expect(find.text('Configuration'), findsOneWidget);
@@ -87,7 +122,9 @@ void main() {
 
     testWidgets('shows placeholder when no results', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
+        MaterialApp(
+          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
+        ),
       );
 
       expect(find.text('Run a benchmark to see results'), findsOneWidget);
@@ -108,7 +145,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
+        MaterialApp(
+          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
+        ),
       );
 
       await tester.tap(find.text('Run Benchmark'));
@@ -121,8 +160,9 @@ void main() {
       expect(find.text('Max'), findsOneWidget);
     });
 
-    testWidgets('shows warning banner when latency exceeds threshold',
-        (tester) async {
+    testWidgets('shows warning banner when latency exceeds threshold', (
+      tester,
+    ) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
         (_) async => BenchmarkServiceResult(
           data: const BenchmarkData(
@@ -138,7 +178,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
+        MaterialApp(
+          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
+        ),
       );
 
       await tester.tap(find.text('Run Benchmark'));
@@ -182,8 +224,9 @@ void main() {
 
     testWidgets('shows loading state while running', (tester) async {
       final completer = Completer<DoctorServiceResult>();
-      when(() => mockDoctorService.runDiagnostics())
-          .thenAnswer((_) => completer.future);
+      when(
+        () => mockDoctorService.runDiagnostics(),
+      ).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(
         MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),
@@ -192,14 +235,16 @@ void main() {
       expect(find.text('Running diagnostics...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      completer.complete(DoctorServiceResult(
-        report: const DiagnosticReport(
-          checks: [],
-          passed: 0,
-          failed: 0,
-          warned: 0,
+      completer.complete(
+        DoctorServiceResult(
+          report: const DiagnosticReport(
+            checks: [],
+            passed: 0,
+            failed: 0,
+            warned: 0,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
     });
 
@@ -237,9 +282,9 @@ void main() {
     });
 
     testWidgets('shows error state on failure', (tester) async {
-      when(() => mockDoctorService.runDiagnostics()).thenAnswer(
-        (_) async => DoctorServiceResult.error('Connection failed'),
-      );
+      when(
+        () => mockDoctorService.runDiagnostics(),
+      ).thenAnswer((_) async => DoctorServiceResult.error('Connection failed'));
 
       await tester.pumpWidget(
         MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),

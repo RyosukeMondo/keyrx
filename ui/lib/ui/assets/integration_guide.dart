@@ -76,7 +76,7 @@ class ConfigurationPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -178,7 +178,7 @@ class MainAppLayout extends StatelessWidget {
           child: Image.asset(AppAssets.mainBackground, fit: BoxFit.cover),
         ),
         // Semi-transparent overlay for better readability
-        Positioned.fill(child: Container(color: Colors.black.withOpacity(0.3))),
+        Positioned.fill(child: Container(color: Colors.black.withValues(alpha: 0.3))),
         // Content
         child,
       ],
@@ -456,3 +456,4 @@ class AssetDialog extends StatelessWidget {
 // 7. Use the main background sparingly to avoid overwhelming the UI
 //
 // ============================================================================
+

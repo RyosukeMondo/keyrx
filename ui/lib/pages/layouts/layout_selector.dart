@@ -145,7 +145,7 @@ class _BentoCard extends StatelessWidget {
                         subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: (onColor ?? theme.colorScheme.onSurfaceVariant)
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -165,7 +165,7 @@ class _BentoCard extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     backgroundColor: Colors.transparent,
                     foregroundColor: theme.colorScheme.onSurfaceVariant
-                        .withOpacity(0.7),
+                        .withValues(alpha: 0.7),
                   ),
                   onPressed: onDelete,
                 ),
@@ -240,3 +240,4 @@ class _GridGeneratorCardState extends State<_GridGeneratorCard> {
     );
   }
 }
+

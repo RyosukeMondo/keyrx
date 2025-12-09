@@ -50,7 +50,7 @@ class VirtualLayoutRenderer extends StatelessWidget {
                 child: CustomPaint(
                   painter: VirtualLayoutGridPainter(
                     step: 60,
-                    color: Theme.of(context).dividerColor.withOpacity(0.05),
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
                   ),
                 ),
               ),
@@ -69,7 +69,7 @@ class VirtualLayoutRenderer extends StatelessWidget {
     final color = isSelected
         ? Theme.of(context).colorScheme.primaryContainer
         : isMapped
-        ? Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.5)
+        ? Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5)
         : Theme.of(context).colorScheme.surface;
 
     final borderColor = isSelected
@@ -115,7 +115,7 @@ class VirtualLayoutRenderer extends StatelessWidget {
                   key.id,
                    style: TextStyle(
                     fontSize: 8,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                    ),
                 ),
              */
@@ -126,3 +126,4 @@ class VirtualLayoutRenderer extends StatelessWidget {
     );
   }
 }
+

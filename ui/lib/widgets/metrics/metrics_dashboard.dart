@@ -231,7 +231,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -265,7 +265,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
           Icon(
             Icons.analytics_outlined,
             size: 64,
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -273,7 +273,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                 ? 'Waiting for metrics data...'
                 : 'Click play to start monitoring',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -335,7 +335,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -384,7 +384,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                     horizontalInterval: maxY / 5,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -521,7 +521,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                     horizontalInterval: maxY / 4,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
                         strokeWidth: 1,
                       );
                     },
@@ -582,7 +582,7 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Colors.purple.withOpacity(0.3),
+                        color: Colors.purple.withValues(alpha: 0.3),
                       ),
                     ),
                   ],
@@ -702,3 +702,4 @@ class _MetricsPoint {
   final int latencyP99;
   final int memoryUsed;
 }
+

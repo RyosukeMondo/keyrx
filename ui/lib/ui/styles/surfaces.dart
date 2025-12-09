@@ -27,13 +27,13 @@ class SurfaceStyles {
   /// Standard surface color that respects the active theme.
   static Color surfaceColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return scheme.surfaceContainerHighest.withOpacity(0.85);
+    return scheme.surfaceContainerHighest.withValues(alpha: 0.85);
   }
 
   /// Border color tuned for dark and light modes.
   static Color borderColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return scheme.outlineVariant.withOpacity(0.6);
+    return scheme.outlineVariant.withValues(alpha: 0.6);
   }
 }
 
@@ -77,3 +77,4 @@ class SurfaceContainer extends StatelessWidget {
     );
   }
 }
+

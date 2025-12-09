@@ -6,11 +6,11 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'editor/key_grid.dart';
+import 'visual_keyboard.dart';
 
 /// Visual keyboard widget for keymap editing.
 ///
-/// This is a wrapper around [KeyGrid] for backward compatibility.
+/// This is a wrapper around [VisualKeyboard] for backward compatibility.
 class KeyboardWidget extends StatelessWidget {
   final void Function(String key)? onKeySelected;
   final String? selectedKey;
@@ -19,6 +19,9 @@ class KeyboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KeyGrid(onKeySelected: onKeySelected, selectedKey: selectedKey);
+    return VisualKeyboard(
+      onKeyTap: onKeySelected != null ? (key) => onKeySelected!(key.id) : null,
+      selectedKeys: selectedKey != null ? {selectedKey!} : {},
+    );
   }
 }

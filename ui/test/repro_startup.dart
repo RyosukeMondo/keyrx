@@ -1,9 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
-import 'package:keyrx_ui/services/engine_service_impl.dart';
-import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:logging/logging.dart';
 
 void main() {

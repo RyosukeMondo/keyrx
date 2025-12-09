@@ -338,7 +338,7 @@ class _ProfileSelectionDialogState extends State<_ProfileSelectionDialog> {
     return AlertDialog(
       title: const Text('Select Wiring Profile'),
       content: DropdownButtonFormField<HardwareProfile>(
-        value: _selected,
+        initialValue: _selected,
         decoration: const InputDecoration(
           labelText: 'Profile',
           border: OutlineInputBorder(),

@@ -172,7 +172,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                       Icon(
                         Icons.analytics_outlined,
                         size: 64,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -180,7 +180,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                             ? 'Waiting for metrics...'
                             : 'Click play to start metrics',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -334,7 +334,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
             Text(
               title,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(width: 8),
@@ -401,7 +401,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                   child: Text(
                     label,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -458,3 +458,4 @@ class _MetricsWidgetState extends State<MetricsWidget> {
     super.dispose();
   }
 }
+

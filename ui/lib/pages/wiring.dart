@@ -3,6 +3,7 @@
 /// Interaction model:
 /// - Dashboard: List of hardware profiles.
 /// - Editor: Detailed view for wiring a specific profile.
+library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -602,7 +603,7 @@ class _WiringPageState extends State<WiringPage> {
               Expanded(
                 flex: 5,
                 child: DropdownButtonFormField<String>(
-                  value: _findMatchingDeviceKey(),
+                  initialValue: _findMatchingDeviceKey(),
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Target Device',
@@ -699,7 +700,7 @@ class _WiringPageState extends State<WiringPage> {
 
           // 3. Virtual Layout
           DropdownButtonFormField<String>(
-            value: _selectedLayoutId,
+            initialValue: _selectedLayoutId,
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Virtual layout',

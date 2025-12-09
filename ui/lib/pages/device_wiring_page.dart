@@ -353,7 +353,7 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
         color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -441,7 +441,7 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
               backgroundColor: isMapped
                   ? Theme.of(
                       context,
-                    ).colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                    ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
                   : null,
               onPressed: scanCode == null
                   ? null
@@ -471,3 +471,4 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
   }
 }
+

@@ -3,7 +3,7 @@ library;
 
 // Export widget categories
 export 'common/common.dart';
-export 'editor/editor.dart';
+
 export 'preview/preview.dart';
 export 'settings/settings.dart';
 

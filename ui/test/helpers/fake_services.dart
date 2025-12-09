@@ -24,6 +24,12 @@ import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
+
+import 'package:keyrx_ui/services/config_result.dart';
+import 'package:keyrx_ui/services/runtime_service.dart';
+import 'package:keyrx_ui/models/hardware_profile.dart';
+import 'package:keyrx_ui/models/config_ids.dart';
+import 'package:keyrx_ui/models/runtime_config.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
@@ -125,8 +131,8 @@ class FakeEngineService implements EngineService {
 /// This fake bridge does not load any native library and returns
 /// safe default values for all operations.
 class FakeBridge implements KeyrxBridge {
-  final StreamController<BridgeState> _stateController =
-      StreamController<BridgeState>.broadcast();
+  final StreamController<BridgeStateUpdate> _stateController =
+      StreamController<BridgeStateUpdate>.broadcast();
 
   bool _initialized = true;
   final Map<EventType, void Function(Uint8List)> _eventCallbacks = {};
@@ -135,7 +141,7 @@ class FakeBridge implements KeyrxBridge {
   KeyrxBindings? get bindings => null;
 
   @override
-  StreamController<BridgeState>? get stateController => _stateController;
+  StreamController<BridgeStateUpdate>? get stateController => _stateController;
 
   @override
   bool get initialized => _initialized;
@@ -156,10 +162,10 @@ class FakeBridge implements KeyrxBridge {
   bool initialize() => true;
 
   @override
-  Stream<BridgeState>? get stateStream => _stateController.stream;
+  Stream<BridgeStateUpdate>? get stateStream => _stateController.stream;
 
   /// Emit a state snapshot to listeners.
-  void emitState(BridgeState state) {
+  void emitState(BridgeStateUpdate state) {
     _stateController.add(state);
   }
 
@@ -347,12 +353,18 @@ class FakeScriptFileService implements ScriptFileService {
 class FakeApiDocsService extends ApiDocsService {
   @override
   bool get isLoaded => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Fake DeviceProfileService that returns empty results.
 class FakeDeviceProfileService implements DeviceProfileService {
   @override
   Future<void> dispose() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Fake DeviceRegistryService that returns empty device lists.
@@ -420,4 +432,40 @@ class FakeProfileRegistryService implements ProfileRegistryService {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// Fake RuntimeService that returns empty config.
+class FakeRuntimeService implements RuntimeService {
+  @override
+  Future<ConfigOperationResult<RuntimeConfig>> getConfig() async =>
+      ConfigOperationResult.success(RuntimeConfig(devices: []));
+
+  @override
+  Future<ConfigOperationResult<RuntimeConfig>> addSlot(
+    DeviceInstanceId device,
+    ProfileSlot slot,
+  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+
+  @override
+  Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
+    DeviceInstanceId device,
+    String slotId,
+  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+
+  @override
+  Future<ConfigOperationResult<RuntimeConfig>> reorderSlot(
+    DeviceInstanceId device,
+    String slotId,
+    int priority,
+  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+
+  @override
+  Future<ConfigOperationResult<RuntimeConfig>> setSlotActive(
+    DeviceInstanceId device,
+    String slotId,
+    bool active,
+  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

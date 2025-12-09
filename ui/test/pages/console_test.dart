@@ -5,8 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/console.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/console_parser.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
+import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
+import 'package:provider/provider.dart';
+
+import '../helpers/fake_services.dart';
 
 class _FakeEngineService implements EngineService {
   final StreamController<EngineSnapshot> _stateController =
@@ -67,10 +77,30 @@ void main() {
   });
 
   Widget buildTestWidget({ConsoleParser? parser}) {
-    return MaterialApp(
-      home: ConsolePage(
-        engineService: fakeEngine,
-        parser: parser ?? const ConsoleParser(),
+    final registry = ServiceRegistry.withOverrides(
+      engineService: fakeEngine,
+      testService: FakeTestService(),
+      scriptFileService: FakeScriptFileService(),
+      deviceService: FakeDeviceService(),
+      bridge: FakeBridge(),
+      apiDocsService: FakeApiDocsService(),
+      deviceProfileService: FakeDeviceProfileService(),
+      deviceRegistryService: FakeDeviceRegistryService(),
+      profileRegistryService: FakeProfileRegistryService(),
+      runtimeService: FakeRuntimeService(),
+      errorTranslator: FakeErrorTranslator(),
+      mappingRepository: MappingRepository(),
+      storagePathResolver: const StoragePathResolver(),
+      layoutService: LayoutService(bridge: FakeBridge()),
+      hardwareService: HardwareService(bridge: FakeBridge()),
+      keymapService: KeymapService(bridge: FakeBridge()),
+    );
+    final facade = KeyrxFacade.real(registry);
+
+    return MultiProvider(
+      providers: [Provider<KeyrxFacade>.value(value: facade)],
+      child: MaterialApp(
+        home: ConsolePage(parser: parser ?? const ConsoleParser()),
       ),
     );
   }

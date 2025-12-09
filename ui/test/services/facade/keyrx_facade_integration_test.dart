@@ -63,10 +63,6 @@ void main() {
       () => mockBridge.listDevices(),
     ).thenReturn(const DeviceListResult(devices: []));
     when(() => mockBridge.selectDevice(any())).thenReturn(0);
-    when(
-      () => mockBridge.startDiscovery(any(), any(), any()),
-    ).thenReturn(const DiscoveryStartResult(success: true, totalKeys: 61));
-    when(() => mockBridge.cancelDiscovery()).thenReturn(0);
 
     // Setup stream mocks - return null so services don't try to subscribe
     when(() => mockBridge.stateStream).thenReturn(null);

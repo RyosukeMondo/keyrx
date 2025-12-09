@@ -12,7 +12,6 @@ import '../service_registry.dart';
 import '../test_service.dart';
 import '../../ffi/bridge.dart' hide ScriptValidationResult;
 import '../../models/log_entry.dart';
-import '../../ffi/event_types.dart';
 import 'facade_state.dart';
 import 'keyrx_facade.dart';
 import 'result.dart';
@@ -596,8 +595,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
   @override
   Stream<dynamic> get logStream {
-    if (_logController == null) {
-      _logController = StreamController<dynamic>.broadcast(
+    _logController ??= StreamController<dynamic>.broadcast(
         onListen: () {
           _services.bridge.registerEventCallback(EventType.diagnosticsLog, (
             payload,
@@ -618,7 +616,6 @@ class KeyrxFacadeImpl implements KeyrxFacade {
           });
         },
       );
-    }
     return _logController!.stream;
   }
 

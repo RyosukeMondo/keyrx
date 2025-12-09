@@ -713,7 +713,7 @@ class _DeltaTile extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Chip(
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             label: Text(
               '${delta.toStringAsFixed(1)}${suffix ?? ' ms'}',
               style: TextStyle(color: color),
@@ -794,3 +794,4 @@ class CalibrationComparison {
   final num repeatRateDelta;
   final num scanIntervalDelta;
 }
+

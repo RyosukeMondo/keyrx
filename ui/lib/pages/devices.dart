@@ -124,7 +124,7 @@ class _DevicesPageState extends State<DevicesPage> {
       }
     }
 
-    if (!mounted || result == null) return;
+    if (!mounted) return;
 
     _applyResult(result);
   }
@@ -459,7 +459,7 @@ class _DevicesPageState extends State<DevicesPage> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: hardware?.id,
+                    initialValue: hardware?.id,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Wiring (Hardware Profile)',
@@ -492,7 +492,7 @@ class _DevicesPageState extends State<DevicesPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: keymapValue,
+                    initialValue: keymapValue,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Keymap',
@@ -577,7 +577,7 @@ class _DevicesPageState extends State<DevicesPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: selectedHardware.id,
+                    initialValue: selectedHardware.id,
                     decoration: const InputDecoration(
                       labelText: 'Wiring (Hardware Profile)',
                       border: OutlineInputBorder(),
@@ -601,7 +601,7 @@ class _DevicesPageState extends State<DevicesPage> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedKeymap.id,
+                    initialValue: selectedKeymap.id,
                     decoration: const InputDecoration(
                       labelText: 'Keymap',
                       border: OutlineInputBorder(),
@@ -965,7 +965,7 @@ class _InlineInfoBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.all(12),

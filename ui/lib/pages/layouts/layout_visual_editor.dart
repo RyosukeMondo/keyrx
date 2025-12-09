@@ -342,7 +342,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                                   step: 60.0,
                                   color: Theme.of(
                                     context,
-                                  ).dividerColor.withOpacity(0.1),
+                                  ).dividerColor.withValues(alpha: 0.1),
                                   subStep: 15.0, // Sub-grid for visual hints
                                 ),
                               ),
@@ -489,8 +489,9 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                     });
                   },
                   onPanUpdate: (details) {
-                    if (!_isDraggingKeys || _dragStartLocalPosition == null)
+                    if (!_isDraggingKeys || _dragStartLocalPosition == null) {
                       return;
+                    }
 
                     final totalDelta =
                         details.globalPosition - _dragStartLocalPosition!;
@@ -545,7 +546,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                 rect: _selectionBox!,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.2),
+                    color: Colors.blueAccent.withValues(alpha: 0.2),
                     border: Border.all(color: Colors.blueAccent),
                   ),
                 ),
@@ -736,3 +737,4 @@ class _PropertyBar extends StatelessWidget {
     );
   }
 }
+

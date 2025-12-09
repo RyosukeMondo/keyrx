@@ -251,7 +251,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
           child: Text(
             '${filteredKeys.length} keys',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -336,3 +336,4 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
     );
   }
 }
+

@@ -41,3 +41,6 @@ Thumbs.db
 
 # Application cache
 core/.keyrx_cache/
+
+# Temporary analysis logs
+analysis_log*.txt
