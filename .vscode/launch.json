@@ -46,6 +46,24 @@
       "program": "ui/lib/main.dart",
       "cwd": "${workspaceFolder}/ui",
       "preLaunchTask": "Build Rust Core"
+    },
+    {
+      "type": "lldb",
+      "request": "attach",
+      "name": "Attach to Process",
+      "pid": "${command:pickProcess}",
+      "sourceLanguages": [
+        "rust"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Flutter + Rust",
+      "configurations": [
+        "Flutter",
+        "Attach to Process"
+      ]
     }
   ]
 }

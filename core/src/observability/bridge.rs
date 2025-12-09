@@ -5,6 +5,7 @@
 //! to receive real-time log updates.
 
 use crate::observability::entry::{LogEntry, LogLevel};
+use lazy_static::lazy_static;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -12,6 +13,11 @@ use tracing::field::{Field, Visit};
 use tracing::{Event, Metadata, Subscriber};
 use tracing_subscriber::layer::{Context, Layer};
 use tracing_subscriber::registry::LookupSpan;
+
+lazy_static! {
+    /// Global instance of the log bridge.
+    pub static ref GLOBAL_LOG_BRIDGE: LogBridge = LogBridge::new();
+}
 
 /// Type alias for FFI log callback function.
 ///
@@ -21,6 +27,9 @@ use tracing_subscriber::registry::LookupSpan;
 /// The callback must not retain the pointer after returning, as it
 /// will be freed immediately.
 pub type LogCallback = extern "C" fn(*const super::entry::CLogEntry);
+
+/// Type alias for Rust log callback function (used by FRB).
+pub type RustLogCallback = Box<dyn Fn(LogEntry) + Send + Sync + 'static>;
 
 /// Maximum number of log entries to buffer before dropping oldest.
 const DEFAULT_BUFFER_SIZE: usize = 1000;
@@ -55,8 +64,10 @@ pub struct LogBridge {
 }
 
 struct LogBridgeInner {
-    /// Optional callback for immediate notification.
+    /// Optional C callback for immediate notification.
     callback: Mutex<Option<LogCallback>>,
+    /// Optional Rust callback (for FRB).
+    rust_callback: Mutex<Option<RustLogCallback>>,
     /// Ring buffer for storing log entries.
     buffer: Mutex<VecDeque<LogEntry>>,
     /// Maximum buffer size.
@@ -79,10 +90,18 @@ impl LogBridge {
         Self {
             inner: Arc::new(LogBridgeInner {
                 callback: Mutex::new(None),
+                rust_callback: Mutex::new(None),
                 buffer: Mutex::new(VecDeque::with_capacity(buffer_size)),
                 buffer_size,
                 enabled: AtomicBool::new(true),
             }),
+        }
+    }
+
+    /// Set the Rust callback for logging (used by FRB).
+    pub fn set_rust_callback(&self, callback: RustLogCallback) {
+        if let Ok(mut cb) = self.inner.rust_callback.lock() {
+            *cb = Some(callback);
         }
     }
 
@@ -179,7 +198,14 @@ impl LogBridge {
             buffer.push_back(entry.clone());
         }
 
-        // Invoke callback if set
+        // Invoke Rust callback if set
+        if let Ok(callback) = self.inner.rust_callback.lock() {
+            if let Some(cb) = &*callback {
+                cb(entry.clone());
+            }
+        }
+
+        // Invoke C callback if set
         if let Ok(callback) = self.inner.callback.lock() {
             if let Some(cb) = *callback {
                 if let Ok(ffi_entry) = entry.to_ffi() {
