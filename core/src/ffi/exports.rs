@@ -13,9 +13,8 @@ use crate::config::{ConfigManager, StorageError};
 use crate::definitions::DeviceDefinitionLibrary;
 #[cfg(windows)]
 use crate::drivers::windows::WindowsInput;
-use crate::engine::{
-    AdvancedEngine, LayerAction, RemapAction, TimingConfig,
-};
+#[cfg(windows)]
+use crate::engine::{LayerAction, RemapAction};
 use crate::ffi::domains::discovery::global_event_registry;
 use crate::ffi::domains::engine::global_event_registry as engine_event_registry;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
@@ -24,13 +23,11 @@ use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };
 use crate::registry::ProfileRegistry;
-use crate::traits::InputSource;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 static ENGINE_SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
@@ -346,6 +343,7 @@ fn init_revolutionary_runtime() -> i32 {
 }
 
 /// Convert a RemapAction to a LayerAction if applicable.
+#[cfg(windows)]
 fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
     match action {
         RemapAction::Remap(target) => Some(LayerAction::Remap(target)),
@@ -1011,7 +1009,7 @@ mod tests {
     fn register_event_callback_rejects_invalid_codes() {
         // Test invalid event type codes
         assert_eq!(keyrx_register_event_callback(-1, None), -1);
-        assert_eq!(keyrx_register_event_callback(16, None), -1);
+        assert_eq!(keyrx_register_event_callback(18, None), -1);
         assert_eq!(keyrx_register_event_callback(100, None), -1);
     }
 

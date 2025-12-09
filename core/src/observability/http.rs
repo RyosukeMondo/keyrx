@@ -59,7 +59,9 @@ impl Middleware for LoggingMiddleware {
 }
 
 /// Helper to create a client with the logging middleware.
-pub fn wrap_client_with_logging(client: reqwest::Client) -> reqwest_middleware::ClientWithMiddleware {
+pub fn wrap_client_with_logging(
+    client: reqwest::Client,
+) -> reqwest_middleware::ClientWithMiddleware {
     reqwest_middleware::ClientBuilder::new(client)
         // Add tracing middleware first to propagate context and create spans
         .with(reqwest_tracing::TracingMiddleware::default())

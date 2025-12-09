@@ -12,8 +12,6 @@ Cargo.lock
 /ui/.pub/
 /ui/*.iml
 /ui/.metadata
-.fvm/
-/ui/.fvm/
 
 # IDE
 .idea/
@@ -47,7 +45,5 @@ core/.keyrx_cache/
 # Temporary analysis logs
 analysis_log*.txt
 
-# FVM
+# FVM (ignore cache, track config)
 .fvm/
-.fvmrc
-fvmrc

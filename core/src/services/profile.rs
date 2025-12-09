@@ -1,5 +1,5 @@
+use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::config::{ConfigManager, StorageError};
-use crate::config::models::{VirtualLayout, HardwareProfile, Keymap};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,6 +12,12 @@ pub enum ProfileServiceError {
 
 pub struct ProfileService {
     config_manager: ConfigManager,
+}
+
+impl Default for ProfileService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ProfileService {
@@ -29,7 +35,10 @@ impl ProfileService {
             .map_err(Into::into)
     }
 
-    pub fn save_virtual_layout(&self, layout: VirtualLayout) -> Result<VirtualLayout, ProfileServiceError> {
+    pub fn save_virtual_layout(
+        &self,
+        layout: VirtualLayout,
+    ) -> Result<VirtualLayout, ProfileServiceError> {
         self.config_manager.save_virtual_layout(&layout)?;
         Ok(layout)
     }
@@ -47,7 +56,10 @@ impl ProfileService {
             .map_err(Into::into)
     }
 
-    pub fn save_hardware_profile(&self, profile: HardwareProfile) -> Result<HardwareProfile, ProfileServiceError> {
+    pub fn save_hardware_profile(
+        &self,
+        profile: HardwareProfile,
+    ) -> Result<HardwareProfile, ProfileServiceError> {
         self.config_manager.save_hardware_profile(&profile)?;
         Ok(profile)
     }

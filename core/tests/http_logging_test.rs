@@ -3,12 +3,12 @@ mod tests {
     use keyrx_core::observability::http::LoggingMiddleware;
     // use keyrx_core::observability::bridge::LogBridge;
     use reqwest_middleware::ClientBuilder;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
 
     // Helper to capture logs
     struct TestLogCapture {

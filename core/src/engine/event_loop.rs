@@ -269,7 +269,7 @@ where
             let events = self.input.poll_events().await?;
 
             for event in events {
-                println!("RUST: Emitting RawInput event: {:?}", event.key);
+                tracing::debug!("Emitting RawInput event: {:?}", event.key);
 
                 global_event_registry().invoke(EventType::RawInput, &event);
                 let event_start = Instant::now();
