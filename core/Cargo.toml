@@ -24,6 +24,8 @@ thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+tracing-log = "0.2"
+log = "0.4"
 crossbeam-channel.workspace = true
 clap.workspace = true
 async-trait.workspace = true
@@ -140,4 +142,3 @@ panic = "deny"
 # Enforce structured logging (inherited from workspace)
 print_stdout = "warn"
 print_stderr = "warn"
-tracing-subscriber.workspace = true
