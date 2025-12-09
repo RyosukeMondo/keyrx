@@ -79,6 +79,7 @@ opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.27", features = ["tonic"] }
 tracing-opentelemetry = "0.28"
 reqwest = { version = "0.12", default-features = false, features = ["json", "gzip", "brotli", "deflate", "stream", "rustls-tls"] }
+reqwest-middleware = "0.3"
 
 # Platform-specific: Windows
 windows = { version = "0.52", features = [

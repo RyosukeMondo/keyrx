@@ -3,6 +3,7 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use reqwest::{header, StatusCode};
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use std::{io::ErrorKind, path::PathBuf, time::Duration};
 use tokio::{fs, io::AsyncWriteExt};
@@ -175,7 +176,7 @@ pub trait ProfileClient {
 
 #[derive(Debug, Clone)]
 pub struct HttpProfileClient {
-    client: reqwest::Client,
+    client: ClientWithMiddleware,
     endpoint: String,
     timeout: Duration,
 }
@@ -193,6 +194,8 @@ impl HttpProfileClient {
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
 
+        let client = crate::observability::http::wrap_client_with_logging(client);
+
         Self {
             client,
             endpoint: endpoint.into(),
@@ -200,7 +203,7 @@ impl HttpProfileClient {
         }
     }
 
-    pub fn with_client(client: reqwest::Client, endpoint: impl Into<String>) -> Self {
+    pub fn with_client(client: ClientWithMiddleware, endpoint: impl Into<String>) -> Self {
         Self {
             client,
             endpoint: endpoint.into(),
