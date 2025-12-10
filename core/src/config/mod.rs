@@ -15,7 +15,7 @@ pub mod exit_codes;
 pub mod keys;
 mod limits;
 mod loader;
-mod manager;
+pub mod manager;
 mod migration;
 pub mod models;
 mod paths;
