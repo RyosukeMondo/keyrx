@@ -271,6 +271,17 @@ fn format_output(output: &[crate::engine::OutputAction]) -> String {
     }
 }
 
+impl Command for AnalyzeCommand {
+    fn name(&self) -> &str {
+        "analyze"
+    }
+
+    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
+        // Run and discard the result value since Command trait returns ()
+        self.run().map(|_| ())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -471,13 +482,3 @@ mod tests {
     }
 }
 
-impl Command for AnalyzeCommand {
-    fn name(&self) -> &str {
-        "analyze"
-    }
-
-    fn execute(&mut self, _ctx: &CommandContext) -> CommandResult<()> {
-        // Run and discard the result value since Command trait returns ()
-        self.run().map(|_| ())
-    }
-}

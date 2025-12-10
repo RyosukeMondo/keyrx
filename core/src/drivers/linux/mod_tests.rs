@@ -1,4 +1,3 @@
-#![cfg(test)]
 #![allow(clippy::unwrap_used)] // Tests use unwrap for clarity
 
 use super::*;

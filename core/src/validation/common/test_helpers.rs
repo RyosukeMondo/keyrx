@@ -3,8 +3,6 @@
 //! Provides builder functions for creating PendingOp instances and
 //! assertion helpers for validating warnings and errors in tests.
 
-#![cfg(test)]
-
 use crate::drivers::keycodes::KeyCode;
 use crate::engine::{HoldAction, LayerAction};
 use crate::scripting::{LayerMapAction, PendingOp};

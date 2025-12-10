@@ -270,9 +270,13 @@ key_spacing = 4
     fn test_c_api_list_all() {
         let temp_dir = setup_runtime_with_definition();
         let msg = unsafe { c_string_result(keyrx_definitions_list_all()) };
-        assert!(msg.starts_with("ok:"));
 
-        let payload = msg.trim_start_matches("ok:");
+        let payload = if msg.starts_with("ok:") {
+            msg.trim_start_matches("ok:")
+        } else {
+            // Panic with the actual error message to help debugging
+            panic!("Expected 'ok:' prefix, got: {}", msg);
+        };
         let definitions: Vec<DeviceDefinition> = serde_json::from_str(payload).unwrap();
         assert_eq!(definitions.len(), 1);
 
