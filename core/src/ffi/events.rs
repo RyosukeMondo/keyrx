@@ -80,6 +80,31 @@ impl EventType {
             EventType::RawOutput => "raw_output",
         }
     }
+
+    /// Convert raw integer code to EventType.
+    pub fn from_i32(code: i32) -> Option<Self> {
+        match code {
+            0 => Some(EventType::DiscoveryProgress),
+            1 => Some(EventType::DiscoveryDuplicate),
+            2 => Some(EventType::DiscoverySummary),
+            3 => Some(EventType::EngineState),
+            4 => Some(EventType::ValidationProgress),
+            5 => Some(EventType::ValidationResult),
+            6 => Some(EventType::DeviceConnected),
+            7 => Some(EventType::DeviceDisconnected),
+            8 => Some(EventType::TestProgress),
+            9 => Some(EventType::TestResult),
+            10 => Some(EventType::AnalysisProgress),
+            11 => Some(EventType::AnalysisResult),
+            12 => Some(EventType::DiagnosticsLog),
+            13 => Some(EventType::DiagnosticsMetric),
+            14 => Some(EventType::RecordingStarted),
+            15 => Some(EventType::RecordingStopped),
+            16 => Some(EventType::RawInput),
+            17 => Some(EventType::RawOutput),
+            _ => None,
+        }
+    }
 }
 
 /// Unified registry for all FFI event callbacks.

@@ -48,7 +48,7 @@ class FakeRuntimeService implements RuntimeService {
   ) async => ConfigOperationResult.success(config);
 }
 
-class FakeHardwareService implements HardwareService {
+class FakeHardwareService with ChangeNotifier implements HardwareService {
   FakeHardwareService(this.profiles);
 
   final List<HardwareProfile> profiles;

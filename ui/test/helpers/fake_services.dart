@@ -380,10 +380,18 @@ class FakeDeviceProfileService implements DeviceProfileService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Fake DeviceRegistryService that returns empty device lists.
+/// Fake DeviceRegistryService that returns controlled device lists.
 class FakeDeviceRegistryService implements DeviceRegistryService {
+  final _controller = StreamController<List<DeviceState>>.broadcast();
+  List<DeviceState> _devices = [];
+
+  void emit(List<DeviceState> devices) {
+    _devices = devices;
+    _controller.add(devices);
+  }
+
   @override
-  Future<List<DeviceState>> getDevices() async => const [];
+  Future<List<DeviceState>> getDevices() async => _devices;
 
   @override
   Future<void> addVirtualDevice(DeviceIdentity identity) async {}
@@ -410,13 +418,18 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   ) async => DeviceRegistryOperationResult.success();
 
   @override
-  Future<List<DeviceState>> refresh() async => const [];
+  Future<List<DeviceState>> refresh() async {
+    _controller.add(_devices);
+    return _devices;
+  }
 
   @override
-  Stream<List<DeviceState>> get devicesStream => const Stream.empty();
+  Stream<List<DeviceState>> get devicesStream => _controller.stream;
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    await _controller.close();
+  }
 }
 
 /// Fake ProfileRegistryService that returns empty profile lists.

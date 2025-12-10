@@ -17,11 +17,13 @@ void main() {
   group('RunControlsPage (Dashboard)', () {
     late FakeEngineService fakeEngineService;
     late FakeDeviceService fakeDeviceService;
+    late FakeDeviceRegistryService fakeDeviceRegistryService;
     late KeyrxFacade facade;
 
     setUp(() {
       fakeEngineService = FakeEngineService();
       fakeDeviceService = FakeDeviceService();
+      fakeDeviceRegistryService = FakeDeviceRegistryService();
 
       final registry = ServiceRegistry.withOverrides(
         engineService: fakeEngineService,
@@ -32,7 +34,7 @@ void main() {
         errorTranslator: FakeErrorTranslator(),
         mappingRepository: MappingRepository(),
         deviceProfileService: FakeDeviceProfileService(),
-        deviceRegistryService: FakeDeviceRegistryService(),
+        deviceRegistryService: fakeDeviceRegistryService,
         profileRegistryService: FakeProfileRegistryService(),
         runtimeService: FakeRuntimeService(),
         apiDocsService: FakeApiDocsService(),
@@ -59,11 +61,15 @@ void main() {
       );
     }
 
-    testWidgets('shows device selector and control buttons', (tester) async {
+    testWidgets('shows device list and control buttons', (tester) async {
       await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-      expect(find.text('Device'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget); // Start/Scan
+      // Initial empty state
+      expect(find.text('Devices'), findsOneWidget);
+      expect(find.textContaining('No devices found'), findsOneWidget);
+
+      expect(find.byIcon(Icons.play_arrow), findsWidgets); // Start/Scan
       expect(find.byType(TabBar), findsOneWidget);
       expect(find.text('Monitor'), findsOneWidget);
       expect(find.text('Controls'), findsOneWidget);

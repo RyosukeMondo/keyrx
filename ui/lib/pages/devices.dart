@@ -340,6 +340,33 @@ class _DevicesPageState extends State<DevicesPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Remap Toggle Row
+            Row(
+              children: [
+                const Spacer(),
+                const Text('Remap Enabled'),
+                const SizedBox(width: 8),
+                Switch(
+                  value:
+                      _findRegistryDevice(device.device)?.remapEnabled ?? false,
+                  onChanged: disabled
+                      ? null
+                      : (value) async {
+                          final registryDevice = _findRegistryDevice(
+                            device.device,
+                          );
+                          if (registryDevice != null) {
+                            await widget.deviceRegistryService.toggleRemap(
+                              registryDevice.identity.toKey(),
+                              value,
+                            );
+                            _loadAll();
+                          }
+                        },
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             if (!hasWiring || !hasKeymaps)
               Padding(
