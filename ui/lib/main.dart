@@ -134,25 +134,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Initialize engine and load developer mode on startup
+    // Load developer mode on startup (engine will init on demand)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeEngine();
       context.read<AppState>().loadDeveloperMode();
     });
-  }
-
-  Future<void> _initializeEngine() async {
-    final appState = context.read<AppState>();
-    final success = await appState.initialize();
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to initialize engine: ${appState.error}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   @override

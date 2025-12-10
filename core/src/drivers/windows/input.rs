@@ -28,7 +28,7 @@ pub struct WindowsInput<I: KeyInjector = SendInputInjector> {
     injector: I,
     panic_error: Arc<AtomicBool>,
     thread_id_store: Arc<AtomicU32>,
-    device_identity: Option<DeviceIdentity>,
+    pub(crate) device_identity: Option<DeviceIdentity>,
     metrics: Arc<dyn MetricsCollector>,
     cache: Arc<LruKeymapCache>,
 }

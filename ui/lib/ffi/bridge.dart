@@ -155,9 +155,6 @@ class KeyrxBridge
       // Perform handshake first to ensure binary compatibility
       bridge._checkProtocolVersion();
 
-      if (bridge.loadFailure == null) {
-        bridge._initRevolutionaryRuntime();
-      }
       return bridge;
     } catch (e) {
       return KeyrxBridge._(loadFailure: e);
@@ -228,8 +225,18 @@ class KeyrxBridge
     }
   }
 
+  @override
+  bool initialize() {
+    final result = super.initialize();
+    if (result) {
+      _initRevolutionaryRuntime();
+    }
+    return result;
+  }
+
   /// Shutdown the revolutionary runtime (stop the engine).
   void shutdown() {
+    _initialized = false;
     final shutdownFn = _bindings?.revolutionaryRuntimeShutdown;
     if (shutdownFn != null) {
       shutdownFn();

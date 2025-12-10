@@ -92,20 +92,16 @@ class _MonitorPageState extends State<MonitorPage> {
     final facade = context.read<KeyrxFacade>();
     final bridge = facade.services.bridge;
 
-    // Check if callbacks are already registered to avoid duplicates
-    if (!bridge.isEventCallbackRegistered(EventType.rawInput)) {
-      bridge.registerEventCallback(EventType.rawInput, (payload) {
-        if (!mounted) return;
-        _handleEvent(EventType.rawInput, payload);
-      });
-    }
+    // Always register to ensure this instance receives events
+    bridge.registerEventCallback(EventType.rawInput, (payload) {
+      if (!mounted) return;
+      _handleEvent(EventType.rawInput, payload);
+    });
 
-    if (!bridge.isEventCallbackRegistered(EventType.rawOutput)) {
-      bridge.registerEventCallback(EventType.rawOutput, (payload) {
-        if (!mounted) return;
-        _handleEvent(EventType.rawOutput, payload);
-      });
-    }
+    bridge.registerEventCallback(EventType.rawOutput, (payload) {
+      if (!mounted) return;
+      _handleEvent(EventType.rawOutput, payload);
+    });
   }
 
   void _handleEvent(EventType type, Uint8List payload) {
@@ -216,6 +212,13 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
+    // Unregister callbacks to stop receiving events
+    if (mounted) {
+      final facade = context.read<KeyrxFacade>();
+      final bridge = facade.services.bridge;
+      bridge.unregisterEventCallback(EventType.rawInput);
+      bridge.unregisterEventCallback(EventType.rawOutput);
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -231,82 +234,176 @@ class _MonitorPageState extends State<MonitorPage> {
         final facadeState = snapshot.data ?? facade.currentState;
         final isRunning = facadeState.engine == EngineStatus.running;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              children: [
-                const Icon(Icons.monitor_heart),
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  const Icon(Icons.monitor_heart),
+                  const SizedBox(width: 8),
+                  const Text('Input Monitor'),
+                  const SizedBox(width: 16),
+                  _buildStatusBadge(isRunning),
+                ],
+              ),
+              bottom: const TabBar(
+                tabs: [
+                  Tab(text: 'Visual Table', icon: Icon(Icons.table_chart)),
+                  Tab(text: 'Text Log', icon: Icon(Icons.text_snippet)),
+                ],
+              ),
+              actions: [
+                if (!isRunning)
+                  FilledButton.icon(
+                    onPressed: _startEngine,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start Monitor'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: _stopEngine,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Stop Monitor'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
                 const SizedBox(width: 8),
-                const Text('Input Monitor'),
-                const SizedBox(width: 16),
-                _buildStatusBadge(isRunning),
+                IconButton(
+                  icon: Icon(
+                    _autoScroll
+                        ? Icons.vertical_align_bottom
+                        : Icons.vertical_align_center,
+                  ),
+                  tooltip: _autoScroll
+                      ? 'Disable Auto-scroll'
+                      : 'Enable Auto-scroll',
+                  onPressed: () {
+                    setState(() => _autoScroll = !_autoScroll);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep),
+                  tooltip: 'Clear History',
+                  onPressed: () {
+                    setState(() => _events.clear());
+                  },
+                ),
+                const SizedBox(width: 8),
               ],
             ),
-            actions: [
-              if (!isRunning)
-                FilledButton.icon(
-                  onPressed: _startEngine,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start Monitor'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                )
-              else
-                FilledButton.icon(
-                  onPressed: _stopEngine,
-                  icon: const Icon(Icons.stop),
-                  label: const Text('Stop Monitor'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  _autoScroll
-                      ? Icons.vertical_align_bottom
-                      : Icons.vertical_align_center,
-                ),
-                tooltip: _autoScroll
-                    ? 'Disable Auto-scroll'
-                    : 'Enable Auto-scroll',
-                onPressed: () {
-                  setState(() => _autoScroll = !_autoScroll);
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_sweep),
-                tooltip: 'Clear History',
-                onPressed: () {
-                  setState(() => _events.clear());
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
+            body: TabBarView(
+              children: [
+                // Tab 1: Visual Table
+                _events.isEmpty
+                    ? _buildEmptyState(isRunning)
+                    : _buildTableView(),
+
+                // Tab 2: Text Log
+                _events.isEmpty
+                    ? _buildEmptyState(isRunning)
+                    : _buildTextView(),
+              ],
+            ),
           ),
-          body: _events.isEmpty
-              ? _buildEmptyState(isRunning)
-              : Column(
-                  children: [
-                    _buildHeader(),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(bottom: 100),
-                        itemCount: _events.length,
-                        itemBuilder: (context, index) {
-                          return _buildEventRow(_events[index]);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
         );
       },
     );
+  }
+
+  Widget _buildTableView() {
+    return Column(
+      children: [
+        _buildHeader(),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.only(bottom: 100),
+            itemCount: _events.length,
+            itemBuilder: (context, index) {
+              return _buildEventRow(_events[index]);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextView() {
+    return ListView.builder(
+      controller: _scrollController, // Share scroll controller (optional)
+      padding: const EdgeInsets.all(16),
+      itemCount: _events.length,
+      itemBuilder: (context, index) {
+        final event = _events[index];
+        final isInput = event.type == EventType.rawInput;
+        final typeStr = isInput ? "INPUT " : "OUTPUT";
+        final timeStr =
+            "${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}:${event.timestamp.second.toString().padLeft(2, '0')}.${event.timestamp.millisecond.toString().padLeft(3, '0')}";
+
+        final content = _formatEventText(event);
+
+        return SelectableText.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: "[$timeStr] ",
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+              TextSpan(
+                text: "[$typeStr] ",
+                style: TextStyle(
+                  color: isInput ? Colors.blue[300] : Colors.orange[300],
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+              TextSpan(
+                text: content,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatEventText(MonitorEvent event) {
+    // Parse common fields
+    final data = event.data;
+    if (data is Map) {
+      if (data.containsKey('ScanCode')) {
+        final sc = data['ScanCode'];
+        final state = data['State'];
+        return "ScanCode $sc ($state)";
+      } else if (data.containsKey('VirtualKey')) {
+        final vk = data['VirtualKey'];
+        final state = data['State'];
+        final name = _vkMap[vk] ?? "VK $vk";
+        return "$name ($state)";
+      } else if (data.containsKey('SendInput')) {
+        final input = data['SendInput'];
+        if (input is Map && input.containsKey('wScan')) {
+          final scan = input['wScan'];
+          final flags = input['dwFlags'];
+          final isUp = (flags & 2) != 0;
+          return "Sent ScanCode $scan (${isUp ? "Up" : "Down"})";
+        }
+      }
+    }
+    return event.rawJson;
   }
 
   Widget _buildStatusBadge(bool isRunning) {
@@ -508,4 +605,3 @@ class MonitorEvent {
     required this.rawJson,
   });
 }
-

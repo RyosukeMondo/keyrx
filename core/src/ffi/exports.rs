@@ -13,6 +13,7 @@ use crate::config::{ConfigManager, StorageError};
 use crate::definitions::DeviceDefinitionLibrary;
 #[cfg(windows)]
 use crate::drivers::windows::WindowsInput;
+use crate::engine::{AdvancedEngine, TimingConfig};
 #[cfg(windows)]
 use crate::engine::{LayerAction, RemapAction};
 use crate::ffi::domains::discovery::global_event_registry;
@@ -23,11 +24,13 @@ use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };
 use crate::registry::ProfileRegistry;
+use crate::traits::InputSource;
 use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 static ENGINE_SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
@@ -972,8 +975,11 @@ pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::{AdvancedEngine, TimingConfig};
+    use crate::traits::input_source::InputSource;
     use std::ffi::CStr;
     use std::ptr;
+    use std::thread;
 
     #[test]
     fn init_is_idempotent() {
