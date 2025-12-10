@@ -7,10 +7,7 @@ import '../ffi/bridge.dart';
 
 /// Result of a device selection operation.
 class DeviceSelectionResult {
-  const DeviceSelectionResult({
-    required this.success,
-    this.errorMessage,
-  });
+  const DeviceSelectionResult({required this.success, this.errorMessage});
 
   factory DeviceSelectionResult.success() =>
       const DeviceSelectionResult(success: true);
@@ -81,7 +78,8 @@ class DeviceServiceImpl implements DeviceService {
   Future<bool> hasProfile(String deviceId) async {
     final devices = await listDevices();
     final device = devices.where((d) {
-      final id = '${d.vendorId.toRadixString(16)}:${d.productId.toRadixString(16)}';
+      final id =
+          '${d.vendorId.toRadixString(16)}:${d.productId.toRadixString(16)}';
       return id == deviceId || d.path == deviceId;
     }).firstOrNull;
 
@@ -94,14 +92,33 @@ class DeviceServiceImpl implements DeviceService {
       return const [];
     }
 
-    final result = _bridge.listDevices();
+    // Use the new DeviceRegistry API which uses the Revolutionary Runtime
+    final result = _bridge.listRegisteredDevices();
     if (result.hasError) {
       _cachedDevices = const [];
       return const [];
     }
 
-    _cachedDevices = result.devices;
-    return result.devices;
+    if (result.data == null) {
+      _cachedDevices = const [];
+      return const [];
+    }
+
+    // Map DeviceState to KeyboardDevice
+    final devices = result.data!.map((state) {
+      return KeyboardDevice(
+        name:
+            state.identity.userLabel ??
+            state.identity.serialNumber, // Fallback name
+        vendorId: state.identity.vendorId,
+        productId: state.identity.productId,
+        path: state.identity.toKey(), // Use unique key as path
+        hasProfile: state.profileId != null,
+      );
+    }).toList();
+
+    _cachedDevices = devices;
+    return devices;
   }
 
   @override

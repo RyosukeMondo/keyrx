@@ -7,10 +7,7 @@ import '../ffi/bridge.dart';
 
 /// Input key for simulation.
 class SimulationKeyInput {
-  const SimulationKeyInput({
-    required this.code,
-    this.holdMs,
-  });
+  const SimulationKeyInput({required this.code, this.holdMs});
 
   final String code;
   final int? holdMs;

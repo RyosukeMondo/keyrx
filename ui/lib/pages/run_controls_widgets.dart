@@ -47,18 +47,18 @@ class StatusIndicator extends StatelessWidget {
           width: 80,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
           ),
         ),
         Expanded(
           child: Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-                ),
+              color: color,
+              fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -69,10 +69,7 @@ class StatusIndicator extends StatelessWidget {
 
 /// A loading card showing a progress indicator with message.
 class LoadingCard extends StatelessWidget {
-  const LoadingCard({
-    super.key,
-    this.message = 'Loading...',
-  });
+  const LoadingCard({super.key, this.message = 'Loading...'});
 
   /// The message to display while loading.
   final String message;
@@ -100,11 +97,7 @@ class LoadingCard extends StatelessWidget {
 
 /// An error card with retry button.
 class ErrorCard extends StatelessWidget {
-  const ErrorCard({
-    super.key,
-    required this.error,
-    required this.onRetry,
-  });
+  const ErrorCard({super.key, required this.error, required this.onRetry});
 
   /// The error message to display.
   final String error;
@@ -122,10 +115,7 @@ class ErrorCard extends StatelessWidget {
             const Icon(Icons.error_outline, color: Colors.red),
             const SizedBox(width: 12),
             Expanded(child: Text(error)),
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),
@@ -193,10 +183,7 @@ class StartStopButton extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : Icon(
-                isRunning ? Icons.stop : Icons.play_arrow,
-                size: 32,
-              ),
+            : Icon(isRunning ? Icons.stop : Icons.play_arrow, size: 32),
         label: Text(
           label,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

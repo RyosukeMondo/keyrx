@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/models/device_state.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -32,11 +33,10 @@ void main() {
         return;
       }
 
-      final result = bridge.listDevices();
-
-      // Should return a list (possibly empty) without error
+      final result = bridge.listRegisteredDevices();
       expect(result.hasError, isFalse);
-      expect(result.devices, isA<List<KeyboardDevice>>());
+      expect(result.data, isA<List<DeviceState>>());
+      // Note: The device list might be empty on CI/simulation, which is valid.
     });
 
     testWidgets('checkScript validates Rhai syntax', (tester) async {
@@ -64,12 +64,9 @@ void main() {
         return;
       }
 
-      final result = bridge.simulate(
-        [
-          const KeyInput(code: 'KeyA', holdMs: 50),
-        ],
-        comboMode: false,
-      );
+      final result = bridge.simulate([
+        const KeyInput(code: 'KeyA', holdMs: 50),
+      ], comboMode: false);
 
       // Should return a result without crashing
       expect(result, isNotNull);

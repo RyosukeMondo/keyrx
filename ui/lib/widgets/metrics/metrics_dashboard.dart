@@ -702,4 +702,3 @@ class _MetricsPoint {
   final int latencyP99;
   final int memoryUsed;
 }
-

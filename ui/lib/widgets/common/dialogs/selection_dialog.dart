@@ -60,8 +60,9 @@ class SelectionDialog<T> extends StatelessWidget {
                         ? Icon(option.icon)
                         : (isSelected ? const Icon(Icons.check) : null),
                     title: Text(option.label),
-                    subtitle:
-                        option.description != null ? Text(option.description!) : null,
+                    subtitle: option.description != null
+                        ? Text(option.description!)
+                        : null,
                     selected: isSelected,
                     onTap: () => Navigator.of(context).pop(option.value),
                   );

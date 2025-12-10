@@ -269,10 +269,7 @@ void main() {
         ),
       );
 
-      DialogHelpers.inputPath(
-        testContext,
-        title: 'Enter Path',
-      );
+      DialogHelpers.inputPath(testContext, title: 'Enter Path');
 
       await tester.pumpAndSettle();
 
@@ -295,10 +292,7 @@ void main() {
         ),
       );
 
-      DialogHelpers.inputPath(
-        testContext,
-        title: 'Enter Path',
-      );
+      DialogHelpers.inputPath(testContext, title: 'Enter Path');
 
       await tester.pumpAndSettle();
 

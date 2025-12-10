@@ -113,7 +113,9 @@ class _InputDialogState extends State<InputDialog> {
             Icon(widget.icon, color: scheme.primary),
             const SizedBox(width: 12),
           ],
-          Expanded(child: Text(widget.title, style: theme.textTheme.titleLarge)),
+          Expanded(
+            child: Text(widget.title, style: theme.textTheme.titleLarge),
+          ),
         ],
       ),
       content: SizedBox(

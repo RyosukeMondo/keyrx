@@ -185,9 +185,6 @@ class FakeBridge implements KeyrxBridge {
   void setBypass(bool active) {}
 
   @override
-  DeviceListResult listDevices() => const DeviceListResult(devices: []);
-
-  @override
   int selectDevice(String path) => 0;
 
   @override
@@ -325,6 +322,11 @@ class FakeBridge implements KeyrxBridge {
   @override
   Future<void> dispose() async {
     await _stateController.close();
+  }
+
+  @override
+  void setConfigRoot(String path) {
+    // No-op for fake
   }
 
   @override

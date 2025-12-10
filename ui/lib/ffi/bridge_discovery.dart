@@ -129,35 +129,6 @@ mixin BridgeDiscoveryMixin {
   KeyrxBindings? get bindings;
   Object? get loadFailure;
 
-  /// List available keyboard devices.
-  ///
-  /// Returns a list of [KeyboardDevice] or an error result.
-  DeviceListResult listDevices() {
-    final listFn = bindings?.listDevices;
-    if (listFn == null) {
-      return DeviceListResult.error('listDevices not available');
-    }
-
-    Pointer<Char>? ptr;
-    try {
-      ptr = listFn();
-      if (ptr == nullptr) {
-        return DeviceListResult.error('listDevices returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
-      return DeviceListResult.parse(raw);
-    } catch (e) {
-      return DeviceListResult.error('$e');
-    } finally {
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
-    }
-  }
-
   /// Select a device by path for the engine to use.
   ///
   /// Returns 0 on success, negative on error:

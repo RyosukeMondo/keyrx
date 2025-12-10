@@ -40,10 +40,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
 
   EngineService? _engine;
 
-  TypingStatistics get _statistics => TypingStatistics(
-        mean: _typingMean,
-        stdDev: _typingStdDev,
-      );
+  TypingStatistics get _statistics =>
+      TypingStatistics(mean: _typingMean, stdDev: _typingStdDev);
 
   @override
   void initState() {
@@ -56,14 +54,16 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   void _loadCurrentTiming() {
     final stateStream = _engine?.stateStream;
     if (stateStream != null) {
-      stateStream.first.then((snapshot) {
-        final timing = snapshot.timing;
-        if (timing?.tapTimeoutMs != null && mounted) {
-          setState(() {
-            _currentTimeout = timing!.tapTimeoutMs!.toDouble();
-          });
-        }
-      }).catchError((_) {});
+      stateStream.first
+          .then((snapshot) {
+            final timing = snapshot.timing;
+            if (timing?.tapTimeoutMs != null && mounted) {
+              setState(() {
+                _currentTimeout = timing!.tapTimeoutMs!.toDouble();
+              });
+            }
+          })
+          .catchError((_) {});
     }
   }
 
@@ -116,8 +116,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
               children: [
                 Icon(Icons.info_outline, color: theme.colorScheme.primary),
                 const SizedBox(width: UiConstants.smallPadding),
-                Text('Understanding Tap-Hold Timing',
-                    style: theme.textTheme.titleMedium),
+                Text(
+                  'Understanding Tap-Hold Timing',
+                  style: theme.textTheme.titleMedium,
+                ),
               ],
             ),
             const SizedBox(height: UiConstants.defaultMargin),
@@ -174,10 +176,14 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                 Text('Adjust Timeout', style: theme.textTheme.titleMedium),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: UiConstants.defaultMargin, vertical: 6),
+                    horizontal: UiConstants.defaultMargin,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(UiConstants.smallPadding),
+                    borderRadius: BorderRadius.circular(
+                      UiConstants.smallPadding,
+                    ),
                   ),
                   child: Text(
                     '${_currentTimeout.toInt()} ms',
@@ -192,7 +198,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             const SizedBox(height: UiConstants.defaultPadding),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                activeTrackColor: currentPreset?.color ?? theme.colorScheme.primary,
+                activeTrackColor:
+                    currentPreset?.color ?? theme.colorScheme.primary,
                 thumbColor: currentPreset?.color ?? theme.colorScheme.primary,
               ),
               child: Slider(
@@ -208,10 +215,14 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Faster (${_minTimeout.toInt()}ms)',
-                    style: theme.textTheme.bodySmall),
-                Text('Slower (${_maxTimeout.toInt()}ms)',
-                    style: theme.textTheme.bodySmall),
+                Text(
+                  'Faster (${_minTimeout.toInt()}ms)',
+                  style: theme.textTheme.bodySmall,
+                ),
+                Text(
+                  'Slower (${_maxTimeout.toInt()}ms)',
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ),
             const SizedBox(height: UiConstants.defaultPadding),
@@ -223,7 +234,9 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                     value: '${currentMissRate.toStringAsFixed(1)}%',
                     color: currentMissRate < 5
                         ? Colors.green
-                        : currentMissRate < 15 ? Colors.orange : Colors.red,
+                        : currentMissRate < 15
+                        ? Colors.orange
+                        : Colors.red,
                   ),
                 ),
                 const SizedBox(width: UiConstants.defaultPadding),
@@ -258,11 +271,14 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
           children: [
             Text('Preset Configurations', style: theme.textTheme.titleMedium),
             const SizedBox(height: UiConstants.defaultMargin),
-            ...PresetRegion.defaults.map((preset) => PresetRow(
-                  preset: preset,
-                  isSelected: preset.containsTimeout(_currentTimeout),
-                  onTap: () => setState(() => _currentTimeout = preset.middleValue),
-                )),
+            ...PresetRegion.defaults.map(
+              (preset) => PresetRow(
+                preset: preset,
+                isSelected: preset.containsTimeout(_currentTimeout),
+                onTap: () =>
+                    setState(() => _currentTimeout = preset.middleValue),
+              ),
+            ),
           ],
         ),
       ),
@@ -279,7 +295,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Typing Model Parameters', style: theme.textTheme.titleMedium),
+                Text(
+                  'Typing Model Parameters',
+                  style: theme.textTheme.titleMedium,
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
                   onPressed: _showModelEditDialog,
@@ -321,16 +340,17 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
               RecommendationBanner(
                 recommendedTimeout: _recommendedTimeout!,
                 userTypingMean: _userTypingMean!,
-                onApply: () => setState(() => _currentTimeout = _recommendedTimeout!),
+                onApply: () =>
+                    setState(() => _currentTimeout = _recommendedTimeout!),
               ),
             ],
             const SizedBox(height: UiConstants.defaultMargin),
             Text(
               _hasUserProfile
                   ? 'Profile based on your measured typing speed. '
-                    'The purple band on the chart shows your typing range.'
+                        'The purple band on the chart shows your typing range.'
                   : 'Measure your actual typing speed to get personalized '
-                    'recommendations and see your profile on the chart.',
+                        'recommendations and see your profile on the chart.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -370,7 +390,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             _typingMean = mean;
             _typingStdDev = stdDev;
             _hasUserProfile = true;
-            _recommendedTimeout = (mean + stdDev).clamp(_minTimeout, _maxTimeout);
+            _recommendedTimeout = (mean + stdDev).clamp(
+              _minTimeout,
+              _maxTimeout,
+            );
           });
         },
         onCancel: () {},

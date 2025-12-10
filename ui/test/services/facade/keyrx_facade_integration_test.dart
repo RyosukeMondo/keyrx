@@ -14,6 +14,9 @@ import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade_impl.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
+import 'package:keyrx_ui/models/device_state.dart';
+import 'package:keyrx_ui/models/device_identity.dart';
+import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
@@ -60,8 +63,8 @@ void main() {
       ValidationResult(isValid: true, errors: const [], warnings: const []),
     );
     when(
-      () => mockBridge.listDevices(),
-    ).thenReturn(const DeviceListResult(devices: []));
+      () => mockBridge.listRegisteredDevices(),
+    ).thenReturn(const DeviceRegistryResult(data: []));
     when(() => mockBridge.selectDevice(any())).thenReturn(0);
 
     // Setup stream mocks - return null so services don't try to subscribe
@@ -129,19 +132,21 @@ void main() {
 
   group('KeyrxFacade Integration - Device Operations', () {
     test('list and select device with real DeviceService', () async {
-      final devices = [
-        const KeyboardDevice(
-          path: '/dev/input/event0',
-          name: 'Keyboard 1',
-          vendorId: 0x1234,
-          productId: 0x5678,
-          hasProfile: false,
+      final deviceStates = [
+        const DeviceState(
+          identity: DeviceIdentity(
+            vendorId: 0x1234,
+            productId: 0x5678,
+            serialNumber: '/dev/input/event0', // Using path as serial for test
+            userLabel: 'Keyboard 1',
+          ),
+          remapEnabled: false,
         ),
       ];
 
       when(
-        () => mockBridge.listDevices(),
-      ).thenReturn(DeviceListResult(devices: devices));
+        () => mockBridge.listRegisteredDevices(),
+      ).thenReturn(DeviceRegistryResult.success(deviceStates));
       when(() => mockBridge.selectDevice('/dev/input/event0')).thenReturn(0);
 
       // List devices
@@ -157,7 +162,7 @@ void main() {
       expect(facade.currentState.selectedDevicePath, '/dev/input/event0');
 
       // Verify bridge calls through DeviceService
-      verify(() => mockBridge.listDevices()).called(1);
+      verify(() => mockBridge.listRegisteredDevices()).called(1);
       verify(() => mockBridge.selectDevice('/dev/input/event0')).called(1);
     });
   });
@@ -214,7 +219,7 @@ void main() {
 
       // Bridge methods called through different services
       verify(() => mockBridge.initialize()).called(1);
-      verify(() => mockBridge.listDevices()).called(1);
+      verify(() => mockBridge.listRegisteredDevices()).called(1);
     });
   });
 

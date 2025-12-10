@@ -100,10 +100,7 @@ class SessionReplayData {
 
 /// Result of listing sessions.
 class SessionListServiceResult {
-  const SessionListServiceResult({
-    required this.sessions,
-    this.errorMessage,
-  });
+  const SessionListServiceResult({required this.sessions, this.errorMessage});
 
   factory SessionListServiceResult.error(String message) =>
       SessionListServiceResult(sessions: const [], errorMessage: message);
@@ -116,10 +113,7 @@ class SessionListServiceResult {
 
 /// Result of analyzing a session.
 class SessionAnalysisServiceResult {
-  const SessionAnalysisServiceResult({
-    this.analysis,
-    this.errorMessage,
-  });
+  const SessionAnalysisServiceResult({this.analysis, this.errorMessage});
 
   factory SessionAnalysisServiceResult.error(String message) =>
       SessionAnalysisServiceResult(errorMessage: message);
@@ -132,10 +126,7 @@ class SessionAnalysisServiceResult {
 
 /// Result of replaying a session.
 class SessionReplayServiceResult {
-  const SessionReplayServiceResult({
-    this.data,
-    this.errorMessage,
-  });
+  const SessionReplayServiceResult({this.data, this.errorMessage});
 
   factory SessionReplayServiceResult.error(String message) =>
       SessionReplayServiceResult(errorMessage: message);

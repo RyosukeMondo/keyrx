@@ -102,11 +102,7 @@ class _MigrationWrapperState extends State<MigrationWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isCheckingMigration) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_showMigrationPrompt) {

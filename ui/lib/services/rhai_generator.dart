@@ -101,10 +101,7 @@ class LayerConfig {
 
 /// A mapping within a layer.
 class LayerMapping {
-  const LayerMapping({
-    required this.sourceKey,
-    required this.action,
-  });
+  const LayerMapping({required this.sourceKey, required this.action});
 
   final String sourceKey;
   final String action;
@@ -112,10 +109,7 @@ class LayerMapping {
 
 /// Combo (chord) configuration.
 class ComboConfig {
-  const ComboConfig({
-    required this.keys,
-    required this.output,
-  });
+  const ComboConfig({required this.keys, required this.output});
 
   final List<String> keys;
   final String output;
@@ -288,11 +282,13 @@ class RhaiGenerator {
     // Parse simple remaps: remap("KeyA", "KeyB")
     final remapRegex = RegExp(r'remap\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)');
     for (final match in remapRegex.allMatches(script)) {
-      mappings.add(RemapConfig(
-        sourceKeyId: match.group(1)!,
-        targetKeyId: match.group(2)!,
-        type: MappingType.simple,
-      ));
+      mappings.add(
+        RemapConfig(
+          sourceKeyId: match.group(1)!,
+          targetKeyId: match.group(2)!,
+          type: MappingType.simple,
+        ),
+      );
     }
 
     // Parse tap_hold: tap_hold("Key", "TapAction", "HoldAction")
@@ -300,11 +296,13 @@ class RhaiGenerator {
       r'tap_hold\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)',
     );
     for (final match in tapHoldRegex.allMatches(script)) {
-      tapHoldConfigs.add(TapHoldConfig(
-        triggerKey: match.group(1)!,
-        tapAction: match.group(2)!,
-        holdAction: match.group(3)!,
-      ));
+      tapHoldConfigs.add(
+        TapHoldConfig(
+          triggerKey: match.group(1)!,
+          tapAction: match.group(2)!,
+          holdAction: match.group(3)!,
+        ),
+      );
     }
 
     // Parse layer_define: layer_define("name", true/false)
@@ -411,8 +409,9 @@ class RhaiGenerator {
     }
 
     // Parse set_permissive_hold(bool)
-    final permissiveHoldRegex =
-        RegExp(r'set_permissive_hold\s*\(\s*(true|false)\s*\)');
+    final permissiveHoldRegex = RegExp(
+      r'set_permissive_hold\s*\(\s*(true|false)\s*\)',
+    );
     final permissiveHoldMatch = permissiveHoldRegex.firstMatch(script);
     if (permissiveHoldMatch != null) {
       permissiveHold = permissiveHoldMatch.group(1) == 'true';

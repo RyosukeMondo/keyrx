@@ -69,10 +69,12 @@ class _StyledIconButtonState extends State<StyledIconButton> {
 
     final iconColor = enabled
         ? (_isPressed
-            ? (widget.hoverColor ?? colorScheme.primary).withValues(alpha: 0.7)
-            : _isHovered
-                ? (widget.hoverColor ?? colorScheme.primary)
-                : (widget.color ?? colorScheme.onSurface))
+              ? (widget.hoverColor ?? colorScheme.primary).withValues(
+                  alpha: 0.7,
+                )
+              : _isHovered
+              ? (widget.hoverColor ?? colorScheme.primary)
+              : (widget.color ?? colorScheme.onSurface))
         : colorScheme.onSurface.withValues(alpha: 0.38);
 
     final button = MouseRegion(
@@ -88,21 +90,14 @@ class _StyledIconButtonState extends State<StyledIconButton> {
           padding: widget.padding,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            child: Icon(
-              widget.icon,
-              size: widget.size,
-              color: iconColor,
-            ),
+            child: Icon(widget.icon, size: widget.size, color: iconColor),
           ),
         ),
       ),
     );
 
     if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        child: button,
-      );
+      return Tooltip(message: widget.tooltip!, child: button);
     }
 
     return button;
@@ -222,12 +217,14 @@ class _FilledIconButtonState extends State<FilledIconButton> {
 
     final backgroundColor = enabled
         ? (_isPressed
-            ? (widget.backgroundColor ?? colorScheme.primary)
-                .withValues(alpha: 0.7)
-            : _isHovered
-                ? (widget.backgroundColor ?? colorScheme.primary)
-                    .withValues(alpha: 0.9)
-                : (widget.backgroundColor ?? colorScheme.primary))
+              ? (widget.backgroundColor ?? colorScheme.primary).withValues(
+                  alpha: 0.7,
+                )
+              : _isHovered
+              ? (widget.backgroundColor ?? colorScheme.primary).withValues(
+                  alpha: 0.9,
+                )
+              : (widget.backgroundColor ?? colorScheme.primary))
         : colorScheme.onSurface.withValues(alpha: 0.12);
 
     final foregroundColor = enabled
@@ -250,20 +247,13 @@ class _FilledIconButtonState extends State<FilledIconButton> {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            widget.icon,
-            size: widget.size,
-            color: foregroundColor,
-          ),
+          child: Icon(widget.icon, size: widget.size, color: foregroundColor),
         ),
       ),
     );
 
     if (widget.tooltip != null) {
-      return Tooltip(
-        message: widget.tooltip!,
-        child: button,
-      );
+      return Tooltip(message: widget.tooltip!, child: button);
     }
 
     return button;

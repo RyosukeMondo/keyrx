@@ -9,8 +9,9 @@ import 'package:keyrx_ui/widgets/common/styled_text_field.dart';
 /// Integration tests for dialog helpers and dialog widgets.
 void main() {
   group('Dialog Integration', () {
-    testWidgets('DialogHelpers.confirm shows ConfirmationDialog',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.confirm shows ConfirmationDialog', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -42,8 +43,9 @@ void main() {
       expect(find.text('Confirm this action?'), findsOneWidget);
     });
 
-    testWidgets('DialogHelpers.confirm returns true when confirmed',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.confirm returns true when confirmed', (
+      WidgetTester tester,
+    ) async {
       bool? result;
 
       await tester.pumpWidget(
@@ -77,8 +79,9 @@ void main() {
       expect(result, isTrue);
     });
 
-    testWidgets('DialogHelpers.confirm returns false when cancelled',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.confirm returns false when cancelled', (
+      WidgetTester tester,
+    ) async {
       bool? result;
 
       await tester.pumpWidget(
@@ -112,8 +115,9 @@ void main() {
       expect(result, isFalse);
     });
 
-    testWidgets('DialogHelpers.input shows InputDialog with StyledTextField',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.input shows InputDialog with StyledTextField', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -143,8 +147,9 @@ void main() {
       expect(find.byType(StyledTextField), findsOneWidget);
     });
 
-    testWidgets('DialogHelpers.input returns entered text',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.input returns entered text', (
+      WidgetTester tester,
+    ) async {
       String? result;
 
       await tester.pumpWidget(
@@ -182,8 +187,9 @@ void main() {
       expect(result, equals('John Doe'));
     });
 
-    testWidgets('DialogHelpers.input validates input',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.input validates input', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -222,8 +228,9 @@ void main() {
       expect(find.text('Name is required'), findsOneWidget);
     });
 
-    testWidgets('DialogHelpers.select shows SelectionDialog',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.select shows SelectionDialog', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -257,8 +264,9 @@ void main() {
       expect(find.text('Option 2'), findsOneWidget);
     });
 
-    testWidgets('DialogHelpers.select returns selected value',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.select returns selected value', (
+      WidgetTester tester,
+    ) async {
       String? result;
 
       await tester.pumpWidget(
@@ -295,8 +303,9 @@ void main() {
       expect(result, equals('opt2'));
     });
 
-    testWidgets('DialogHelpers.confirmDelete shows destructive dialog',
-        (WidgetTester tester) async {
+    testWidgets('DialogHelpers.confirmDelete shows destructive dialog', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -326,8 +335,9 @@ void main() {
       expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     });
 
-    testWidgets('Dialog workflow: open, input, validate, submit',
-        (WidgetTester tester) async {
+    testWidgets('Dialog workflow: open, input, validate, submit', (
+      WidgetTester tester,
+    ) async {
       String? result;
       var submitCount = 0;
 
@@ -391,8 +401,7 @@ void main() {
       expect(submitCount, equals(1));
     });
 
-    testWidgets('Multiple dialogs can be chained',
-        (WidgetTester tester) async {
+    testWidgets('Multiple dialogs can be chained', (WidgetTester tester) async {
       bool? confirmed;
       String? name;
 

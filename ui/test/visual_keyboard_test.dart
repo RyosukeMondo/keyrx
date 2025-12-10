@@ -88,16 +88,13 @@ void main() {
       expect(find.text('F'), findsOneWidget);
     });
 
-    testWidgets('renders default ANSI 104 layout when none provided',
-        (tester) async {
+    testWidgets('renders default ANSI 104 layout when none provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: SizedBox(
-              width: 1200,
-              height: 600,
-              child: VisualKeyboard(),
-            ),
+            body: SizedBox(width: 1200, height: 600, child: VisualKeyboard()),
           ),
         ),
       );
@@ -109,7 +106,9 @@ void main() {
       expect(find.text('Enter'), findsOneWidget);
     });
 
-    testWidgets('renders key with secondary label when enabled', (tester) async {
+    testWidgets('renders key with secondary label when enabled', (
+      tester,
+    ) async {
       final layout = KeyboardLayout(
         name: 'Test',
         unitSize: 48.0,
@@ -129,10 +128,9 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        layout: layout,
-        showSecondaryLabels: true,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(layout: layout, showSecondaryLabels: true),
+      );
 
       expect(find.text('1'), findsOneWidget);
       expect(find.text('!'), findsOneWidget);
@@ -158,19 +156,16 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        layout: layout,
-        showSecondaryLabels: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(layout: layout, showSecondaryLabels: false),
+      );
 
       expect(find.text('1'), findsOneWidget);
       expect(find.text('!'), findsNothing);
     });
 
     testWidgets('shows mapped indicator for mapped keys', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappedKeys: {'KeyA'},
-      ));
+      await tester.pumpWidget(_buildTestKeyboard(mappedKeys: {'KeyA'}));
 
       // The mapped indicator is a small circular Container
       // We verify it by checking the key with mapped state has the indicator
@@ -184,10 +179,12 @@ void main() {
       KeyDefinition? tappedKey;
 
       // Disable mapping overlay to allow direct key taps
-      await tester.pumpWidget(_buildTestKeyboard(
-        onKeyTap: (key) => tappedKey = key,
-        showMappingOverlay: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onKeyTap: (key) => tappedKey = key,
+          showMappingOverlay: false,
+        ),
+      );
 
       await tester.tap(find.text('A'));
       await tester.pumpAndSettle();
@@ -200,11 +197,13 @@ void main() {
     testWidgets('does not call onKeyTap when disabled', (tester) async {
       KeyDefinition? tappedKey;
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        onKeyTap: (key) => tappedKey = key,
-        enabled: false,
-        showMappingOverlay: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onKeyTap: (key) => tappedKey = key,
+          enabled: false,
+          showMappingOverlay: false,
+        ),
+      );
 
       await tester.tap(find.text('A'), warnIfMissed: false);
       await tester.pumpAndSettle();
@@ -216,11 +215,13 @@ void main() {
       KeyDefinition? longPressedKey;
 
       // Disable drag-drop to allow long press to work without being captured
-      await tester.pumpWidget(_buildTestKeyboard(
-        onKeyLongPress: (key) => longPressedKey = key,
-        showMappingOverlay: false,
-        enableDragDrop: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onKeyLongPress: (key) => longPressedKey = key,
+          showMappingOverlay: false,
+          enableDragDrop: false,
+        ),
+      );
 
       await tester.longPress(find.text('B'));
       await tester.pumpAndSettle();
@@ -232,10 +233,12 @@ void main() {
     testWidgets('can tap different keys', (tester) async {
       final tappedKeys = <String>[];
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        onKeyTap: (key) => tappedKeys.add(key.id),
-        showMappingOverlay: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onKeyTap: (key) => tappedKeys.add(key.id),
+          showMappingOverlay: false,
+        ),
+      );
 
       await tester.tap(find.text('A'));
       await tester.pumpAndSettle();
@@ -252,37 +255,33 @@ void main() {
 
   group('Key visual states', () {
     testWidgets('selected key has different styling', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        selectedKeys: {'KeyA'},
-      ));
+      await tester.pumpWidget(_buildTestKeyboard(selectedKeys: {'KeyA'}));
 
       // Key A should be rendered, and its styling is applied
       expect(find.text('A'), findsOneWidget);
     });
 
     testWidgets('highlighted key has different styling', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        highlightedKeys: {'KeyB'},
-      ));
+      await tester.pumpWidget(_buildTestKeyboard(highlightedKeys: {'KeyB'}));
 
       expect(find.text('B'), findsOneWidget);
     });
 
     testWidgets('held key has pressed styling', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        heldKeys: {'KeyC'},
-      ));
+      await tester.pumpWidget(_buildTestKeyboard(heldKeys: {'KeyC'}));
 
       expect(find.text('C'), findsOneWidget);
     });
 
     testWidgets('multiple visual states can coexist', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        selectedKeys: {'KeyA'},
-        highlightedKeys: {'KeyB'},
-        mappedKeys: {'KeyC'},
-        heldKeys: {'KeyD'},
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          selectedKeys: {'KeyA'},
+          highlightedKeys: {'KeyB'},
+          mappedKeys: {'KeyC'},
+          heldKeys: {'KeyD'},
+        ),
+      );
 
       expect(find.text('A'), findsOneWidget);
       expect(find.text('B'), findsOneWidget);
@@ -294,10 +293,12 @@ void main() {
   group('Drag creates mapping', () {
     testWidgets('drag creates mapping structure exists', (tester) async {
       // Verify the drag-drop infrastructure is set up correctly
-      await tester.pumpWidget(_buildTestKeyboard(
-        onMappingCreated: (source, target) {},
-        enableDragDrop: true,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onMappingCreated: (source, target) {},
+          enableDragDrop: true,
+        ),
+      );
 
       // Verify DragTarget widgets are created for each key
       expect(find.byType(DragTarget<String>), findsWidgets);
@@ -308,10 +309,12 @@ void main() {
     testWidgets('dragging to same key does not create mapping', (tester) async {
       bool mappingCreated = false;
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        onMappingCreated: (_, __) => mappingCreated = true,
-        showMappingOverlay: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          onMappingCreated: (_, __) => mappingCreated = true,
+          showMappingOverlay: false,
+        ),
+      );
 
       final keyA = find.text('A');
       final keyACenter = tester.getCenter(keyA);
@@ -327,10 +330,10 @@ void main() {
       expect(mappingCreated, isFalse);
     });
 
-    testWidgets('drag is disabled when enableDragDrop is false', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        enableDragDrop: false,
-      ));
+    testWidgets('drag is disabled when enableDragDrop is false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildTestKeyboard(enableDragDrop: false));
 
       // When drag-drop is disabled, no DragTarget or LongPressDraggable should exist
       expect(find.byType(DragTarget<String>), findsNothing);
@@ -340,61 +343,69 @@ void main() {
 
   group('Mapping overlay', () {
     testWidgets('displays mapping arrows when mappings exist', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+          ],
+        ),
+      );
 
       // The MappingOverlay uses CustomPaint, so we verify it's present
       expect(find.byType(CustomPaint), findsWidgets);
     });
 
     testWidgets('hides mapping overlay when disabled', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-        showMappingOverlay: false,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+          ],
+          showMappingOverlay: false,
+        ),
+      );
 
       // MappingOverlay widget should not be present
       expect(find.byType(MappingOverlay), findsNothing);
     });
 
     testWidgets('shows delete button on mapping', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+          ],
+        ),
+      );
 
       // The mapping has an arrow icon button
       expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
     });
 
     testWidgets('tapping mapping selects it', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+          ],
+        ),
+      );
 
       // Tap the mapping button (arrow icon)
       await tester.tap(find.byIcon(Icons.arrow_forward));
@@ -407,16 +418,18 @@ void main() {
     testWidgets('deleting mapping calls onMappingDeleted', (tester) async {
       int? deletedIndex;
 
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-        onMappingDeleted: (index) => deletedIndex = index,
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+          ],
+          onMappingDeleted: (index) => deletedIndex = index,
+        ),
+      );
 
       // First tap to select
       await tester.tap(find.byIcon(Icons.arrow_forward));
@@ -430,20 +443,22 @@ void main() {
     });
 
     testWidgets('multiple mappings show multiple buttons', (tester) async {
-      await tester.pumpWidget(_buildTestKeyboard(
-        mappings: [
-          const RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-          const RemapConfig(
-            sourceKeyId: 'KeyC',
-            targetKeyId: 'KeyD',
-            type: MappingType.simple,
-          ),
-        ],
-      ));
+      await tester.pumpWidget(
+        _buildTestKeyboard(
+          mappings: [
+            const RemapConfig(
+              sourceKeyId: 'KeyA',
+              targetKeyId: 'KeyB',
+              type: MappingType.simple,
+            ),
+            const RemapConfig(
+              sourceKeyId: 'KeyC',
+              targetKeyId: 'KeyD',
+              type: MappingType.simple,
+            ),
+          ],
+        ),
+      );
 
       // Should have two arrow icons (one per mapping)
       expect(find.byIcon(Icons.arrow_forward), findsNWidgets(2));
@@ -451,8 +466,9 @@ void main() {
   });
 
   group('Compact keyboard', () {
-    testWidgets('CompactVisualKeyboard renders with smaller size',
-        (tester) async {
+    testWidgets('CompactVisualKeyboard renders with smaller size', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -470,37 +486,39 @@ void main() {
       expect(find.text('Tab'), findsOneWidget);
     });
 
-    testWidgets('CompactVisualKeyboard creates VisualKeyboard with correct props',
-        (tester) async {
-      KeyDefinition? tappedKey;
+    testWidgets(
+      'CompactVisualKeyboard creates VisualKeyboard with correct props',
+      (tester) async {
+        KeyDefinition? tappedKey;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 800,
-              height: 400,
-              child: CompactVisualKeyboard(
-                onKeyTap: (key) => tappedKey = key,
-                selectedKeys: const {'KeyA'},
-                highlightedKeys: const {'KeyB'},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 400,
+                child: CompactVisualKeyboard(
+                  onKeyTap: (key) => tappedKey = key,
+                  selectedKeys: const {'KeyA'},
+                  highlightedKeys: const {'KeyB'},
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify the underlying VisualKeyboard is created
-      expect(find.byType(VisualKeyboard), findsOneWidget);
+        // Verify the underlying VisualKeyboard is created
+        expect(find.byType(VisualKeyboard), findsOneWidget);
 
-      // Verify keys are rendered
-      expect(find.text('A'), findsOneWidget);
-      expect(find.text('Q'), findsOneWidget);
+        // Verify keys are rendered
+        expect(find.text('A'), findsOneWidget);
+        expect(find.text('Q'), findsOneWidget);
 
-      // Verify the callback is wired up (we can't tap directly due to overlay,
-      // but we verified the widget structure is correct)
-      expect(tappedKey, isNull); // Not tapped yet
-    });
+        // Verify the callback is wired up (we can't tap directly due to overlay,
+        // but we verified the widget structure is correct)
+        expect(tappedKey, isNull); // Not tapped yet
+      },
+    );
 
     testWidgets('CompactVisualKeyboard respects selectedKeys', (tester) async {
       await tester.pumpWidget(
@@ -509,9 +527,7 @@ void main() {
             body: SizedBox(
               width: 800,
               height: 400,
-              child: CompactVisualKeyboard(
-                selectedKeys: {'KeyA'},
-              ),
+              child: CompactVisualKeyboard(selectedKeys: {'KeyA'}),
             ),
           ),
         ),
@@ -542,7 +558,10 @@ void main() {
       final layout = _testLayout();
       final ids = layout.allKeyIds;
 
-      expect(ids, containsAll(['KeyA', 'KeyB', 'KeyC', 'KeyD', 'KeyE', 'KeyF']));
+      expect(
+        ids,
+        containsAll(['KeyA', 'KeyB', 'KeyC', 'KeyD', 'KeyE', 'KeyF']),
+      );
       expect(ids.length, 6);
     });
 
@@ -585,7 +604,13 @@ void main() {
         rows: [
           KeyboardRow(
             keys: [
-              KeyDefinition(id: 'Wide', label: 'Wide', width: 2.0, row: 0, column: 0),
+              KeyDefinition(
+                id: 'Wide',
+                label: 'Wide',
+                width: 2.0,
+                row: 0,
+                column: 0,
+              ),
             ],
           ),
         ],

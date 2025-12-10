@@ -77,7 +77,11 @@ class StatTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: UiConstants.defaultIconSize, color: theme.colorScheme.primary),
+          Icon(
+            icon,
+            size: UiConstants.defaultIconSize,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(width: UiConstants.defaultMargin),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,13 +155,17 @@ class PresetRow extends StatelessWidget {
                     Text(
                       preset.name,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     Text(
                       preset.description,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
                       ),
                     ),
                   ],
@@ -228,10 +236,7 @@ class RecommendationBanner extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: onApply,
-            child: const Text('Apply'),
-          ),
+          TextButton(onPressed: onApply, child: const Text('Apply')),
         ],
       ),
     );
@@ -336,10 +341,7 @@ class TradeOffHelpDialog extends StatelessWidget {
               'hold activation',
             ),
             SizedBox(height: UiConstants.defaultPadding),
-            Text(
-              'Miss Rate',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Miss Rate', style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: UiConstants.smallPadding),
             Text(
               'The estimated percentage of key presses that will be '
@@ -347,10 +349,7 @@ class TradeOffHelpDialog extends StatelessWidget {
               'statistical model of your typing speed.',
             ),
             SizedBox(height: UiConstants.defaultPadding),
-            Text(
-              'Presets',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Presets', style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: UiConstants.smallPadding),
             Text(
               '- Gaming: 100-150ms - Optimized for fast reactions\n'

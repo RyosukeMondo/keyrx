@@ -17,10 +17,7 @@ import 'bindings.dart';
 
 /// Result wrapper for device registry operations.
 class DeviceRegistryResult<T> {
-  const DeviceRegistryResult({
-    this.data,
-    this.errorMessage,
-  });
+  const DeviceRegistryResult({this.data, this.errorMessage});
 
   factory DeviceRegistryResult.success(T data) =>
       DeviceRegistryResult(data: data);
@@ -51,7 +48,8 @@ class _FfiResultParser {
     // Handle error responses
     if (trimmed.toLowerCase().startsWith('error:')) {
       return DeviceRegistryResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     // Handle success responses
@@ -102,14 +100,18 @@ mixin DeviceRegistryFFIMixin {
   DeviceRegistryResult<List<DeviceState>> listRegisteredDevices() {
     final listFn = bindings?.deviceRegistryListDevices;
     if (listFn == null) {
-      return DeviceRegistryResult.error('deviceRegistryListDevices not available');
+      return DeviceRegistryResult.error(
+        'deviceRegistryListDevices not available',
+      );
     }
 
     Pointer<Char>? ptr;
     try {
       ptr = listFn();
       if (ptr == nullptr) {
-        return DeviceRegistryResult.error('listRegisteredDevices returned null');
+        return DeviceRegistryResult.error(
+          'listRegisteredDevices returned null',
+        );
       }
 
       final raw = ptr.cast<Utf8>().toDartString();
@@ -143,13 +145,12 @@ mixin DeviceRegistryFFIMixin {
   /// [enabled] - Whether remapping should be enabled
   ///
   /// Returns success or error.
-  DeviceRegistryResult<void> setRemapEnabled(
-    String deviceKey,
-    bool enabled,
-  ) {
+  DeviceRegistryResult<void> setRemapEnabled(String deviceKey, bool enabled) {
     final setRemapFn = bindings?.deviceRegistrySetRemapEnabled;
     if (setRemapFn == null) {
-      return DeviceRegistryResult.error('deviceRegistrySetRemapEnabled not available');
+      return DeviceRegistryResult.error(
+        'deviceRegistrySetRemapEnabled not available',
+      );
     }
 
     final keyPtr = deviceKey.toNativeUtf8();
@@ -185,13 +186,12 @@ mixin DeviceRegistryFFIMixin {
   /// [profileId] - Profile ID to assign
   ///
   /// Returns success or error.
-  DeviceRegistryResult<void> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) {
+  DeviceRegistryResult<void> assignProfile(String deviceKey, String profileId) {
     final assignFn = bindings?.deviceRegistryAssignProfile;
     if (assignFn == null) {
-      return DeviceRegistryResult.error('deviceRegistryAssignProfile not available');
+      return DeviceRegistryResult.error(
+        'deviceRegistryAssignProfile not available',
+      );
     }
 
     final keyPtr = deviceKey.toNativeUtf8();
@@ -229,13 +229,12 @@ mixin DeviceRegistryFFIMixin {
   /// [label] - Optional user label (null to clear)
   ///
   /// Returns success or error.
-  DeviceRegistryResult<void> setUserLabel(
-    String deviceKey,
-    String? label,
-  ) {
+  DeviceRegistryResult<void> setUserLabel(String deviceKey, String? label) {
     final setLabelFn = bindings?.deviceRegistrySetUserLabel;
     if (setLabelFn == null) {
-      return DeviceRegistryResult.error('deviceRegistrySetUserLabel not available');
+      return DeviceRegistryResult.error(
+        'deviceRegistrySetUserLabel not available',
+      );
     }
 
     final keyPtr = deviceKey.toNativeUtf8();

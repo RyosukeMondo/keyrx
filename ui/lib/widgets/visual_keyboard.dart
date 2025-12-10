@@ -146,8 +146,10 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
     if (layoutWidth <= availableWidth) {
       return 1.0;
     }
-    return (availableWidth / layoutWidth)
-        .clamp(UiConstants.minKeyboardScale, UiConstants.maxKeyboardScale);
+    return (availableWidth / layoutWidth).clamp(
+      UiConstants.minKeyboardScale,
+      UiConstants.maxKeyboardScale,
+    );
   }
 
   KeyboardLayout _createScaledLayout(double scale) {
@@ -168,8 +170,8 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
       for (final key in row.keys) {
         final position = layout.getKeyPosition(key);
         final size = layout.getKeySize(key);
-        final isDragTarget = _dragStartKeyId != null &&
-            _dragStartKeyId != key.id;
+        final isDragTarget =
+            _dragStartKeyId != null && _dragStartKeyId != key.id;
         final isDragSource = _dragStartKeyId == key.id;
 
         final keyWidget = KeyWidget(
@@ -177,17 +179,15 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
           width: size.width,
           height: size.height,
           isSelected: widget.selectedKeys.contains(key.id),
-          isHighlighted: widget.highlightedKeys.contains(key.id) ||
-              isDragTarget,
+          isHighlighted:
+              widget.highlightedKeys.contains(key.id) || isDragTarget,
           isMapped: widget.mappedKeys.contains(key.id),
           isHeld: widget.heldKeys.contains(key.id),
           isHovered: _hoveredKeyId == key.id,
           isDragSource: isDragSource,
           showSecondaryLabel: widget.showSecondaryLabels,
           enabled: widget.enabled,
-          onTap: widget.onKeyTap != null
-              ? () => widget.onKeyTap!(key)
-              : null,
+          onTap: widget.onKeyTap != null ? () => widget.onKeyTap!(key) : null,
           onLongPress: widget.onKeyLongPress != null
               ? () => widget.onKeyLongPress!(key)
               : null,
@@ -204,11 +204,7 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
             : keyWidget;
 
         widgets.add(
-          Positioned(
-            left: position.x,
-            top: position.y,
-            child: wrappedWidget,
-          ),
+          Positioned(left: position.x, top: position.y, child: wrappedWidget),
         );
       }
     }
@@ -268,10 +264,7 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
               ),
             ),
           ),
-          childWhenDragging: Opacity(
-            opacity: 0.4,
-            child: child,
-          ),
+          childWhenDragging: Opacity(opacity: 0.4, child: child),
           onDragStarted: () {
             setState(() {
               _dragStartKeyId = key.id;
@@ -283,8 +276,9 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
             final renderBox = context.findRenderObject() as RenderBox?;
             if (renderBox != null) {
               setState(() {
-                _dragCurrentPosition =
-                    renderBox.globalToLocal(details.globalPosition);
+                _dragCurrentPosition = renderBox.globalToLocal(
+                  details.globalPosition,
+                );
               });
             }
           },
@@ -301,16 +295,17 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: TimingConfig.animationDurationMs),
+            duration: const Duration(
+              milliseconds: TimingConfig.animationDurationMs,
+            ),
             decoration: isAccepting
                 ? BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.4),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),

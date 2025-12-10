@@ -97,15 +97,15 @@ class _BypassIndicatorState extends State<BypassIndicator> {
                     Text(
                       'REMAPPING DISABLED',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'Emergency bypass mode is active',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                     ),
                   ],
                 ),

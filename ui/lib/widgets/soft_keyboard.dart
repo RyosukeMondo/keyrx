@@ -187,8 +187,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
     KeyInfo(variant: 'VolumeUp', display: 'Vol+', category: 'Media'),
     KeyInfo(variant: 'VolumeDown', display: 'Vol-', category: 'Media'),
     KeyInfo(variant: 'VolumeMute', display: 'Mute', category: 'Media'),
-    KeyInfo(
-        variant: 'MediaPlayPause', display: 'Play', category: 'Media'),
+    KeyInfo(variant: 'MediaPlayPause', display: 'Play', category: 'Media'),
     KeyInfo(variant: 'MediaStop', display: 'Stop', category: 'Media'),
     KeyInfo(variant: 'MediaNext', display: 'Next', category: 'Media'),
     KeyInfo(variant: 'MediaPrev', display: 'Prev', category: 'Media'),
@@ -336,4 +335,3 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
     );
   }
 }
-

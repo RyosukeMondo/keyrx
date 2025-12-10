@@ -22,21 +22,15 @@ class SessionInfo {
 
 /// Session list result.
 class SessionListResult {
-  const SessionListResult({
-    required this.sessions,
-    this.errorMessage,
-  });
+  const SessionListResult({required this.sessions, this.errorMessage});
 
-  factory SessionListResult.error(String message) => SessionListResult(
-        sessions: const [],
-        errorMessage: message,
-      );
+  factory SessionListResult.error(String message) =>
+      SessionListResult(sessions: const [], errorMessage: message);
 
   factory SessionListResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
-      return SessionListResult.error(
-          trimmed.substring('error:'.length).trim());
+      return SessionListResult.error(trimmed.substring('error:'.length).trim());
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -49,16 +43,19 @@ class SessionListResult {
         return SessionListResult.error('invalid session list payload');
       }
 
-      final sessions = decoded.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return SessionInfo(
-          path: e['path']?.toString() ?? '',
-          name: e['name']?.toString() ?? '',
-          created: e['created']?.toString() ?? '',
-          eventCount: (e['eventCount'] as num?)?.toInt() ?? 0,
-          durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
-        );
-      }).whereType<SessionInfo>().toList();
+      final sessions = decoded
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return SessionInfo(
+              path: e['path']?.toString() ?? '',
+              name: e['name']?.toString() ?? '',
+              created: e['created']?.toString() ?? '',
+              eventCount: (e['eventCount'] as num?)?.toInt() ?? 0,
+              durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
+            );
+          })
+          .whereType<SessionInfo>()
+          .toList();
 
       return SessionListResult(sessions: sessions);
     } catch (e) {
@@ -118,10 +115,7 @@ class SessionAnalysis {
 
 /// Session analysis result wrapper.
 class SessionAnalysisResult {
-  const SessionAnalysisResult({
-    this.analysis,
-    this.errorMessage,
-  });
+  const SessionAnalysisResult({this.analysis, this.errorMessage});
 
   factory SessionAnalysisResult.error(String message) =>
       SessionAnalysisResult(errorMessage: message);
@@ -130,7 +124,8 @@ class SessionAnalysisResult {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return SessionAnalysisResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -200,13 +195,13 @@ class ReplayResult {
   });
 
   factory ReplayResult.error(String message) => ReplayResult(
-        totalEvents: 0,
-        matched: 0,
-        mismatched: 0,
-        success: false,
-        mismatches: const [],
-        errorMessage: message,
-      );
+    totalEvents: 0,
+    matched: 0,
+    mismatched: 0,
+    success: false,
+    mismatches: const [],
+    errorMessage: message,
+  );
 
   factory ReplayResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -225,14 +220,17 @@ class ReplayResult {
       }
 
       final mismatchList = decoded['mismatches'] as List<dynamic>? ?? [];
-      final mismatches = mismatchList.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return ReplayMismatch(
-          seq: (e['seq'] as num?)?.toInt() ?? 0,
-          recorded: e['recorded']?.toString() ?? '',
-          actual: e['actual']?.toString() ?? '',
-        );
-      }).whereType<ReplayMismatch>().toList();
+      final mismatches = mismatchList
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return ReplayMismatch(
+              seq: (e['seq'] as num?)?.toInt() ?? 0,
+              recorded: e['recorded']?.toString() ?? '',
+              actual: e['actual']?.toString() ?? '',
+            );
+          })
+          .whereType<ReplayMismatch>()
+          .toList();
 
       return ReplayResult(
         totalEvents: (decoded['totalEvents'] as num?)?.toInt() ?? 0,
@@ -264,16 +262,15 @@ class RecordingStartResult {
     this.errorMessage,
   });
 
-  factory RecordingStartResult.error(String message) => RecordingStartResult(
-        success: false,
-        errorMessage: message,
-      );
+  factory RecordingStartResult.error(String message) =>
+      RecordingStartResult(success: false, errorMessage: message);
 
   factory RecordingStartResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return RecordingStartResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -314,17 +311,18 @@ class RecordingStopResult {
   });
 
   factory RecordingStopResult.error(String message) => RecordingStopResult(
-        success: false,
-        eventCount: 0,
-        durationMs: 0,
-        errorMessage: message,
-      );
+    success: false,
+    eventCount: 0,
+    durationMs: 0,
+    errorMessage: message,
+  );
 
   factory RecordingStopResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return RecordingStopResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')

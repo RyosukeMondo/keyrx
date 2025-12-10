@@ -5,8 +5,9 @@ import 'package:keyrx_ui/ui/widgets/app_error_dialog.dart';
 import 'package:keyrx_ui/ui/widgets/loading_overlay.dart';
 
 void main() {
-  testWidgets('AppErrorDialog calls actions and closes dialog',
-      (WidgetTester tester) async {
+  testWidgets('AppErrorDialog calls actions and closes dialog', (
+    WidgetTester tester,
+  ) async {
     var primaryCalled = false;
     var secondaryCalled = false;
 
@@ -53,8 +54,9 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
   });
 
-  testWidgets('LoadingOverlay blocks interaction while loading',
-      (WidgetTester tester) async {
+  testWidgets('LoadingOverlay blocks interaction while loading', (
+    WidgetTester tester,
+  ) async {
     var tapped = false;
 
     await tester.pumpWidget(

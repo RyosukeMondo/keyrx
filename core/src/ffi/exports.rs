@@ -29,10 +29,11 @@ use serde::Serialize;
 use std::ffi::{c_char, CStr, CString};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 
 static ENGINE_SHUTDOWN: AtomicBool = AtomicBool::new(false);
+static CONFIG_ROOT: RwLock<Option<PathBuf>> = RwLock::new(None);
 
 /// Initialize the KeyRx engine.
 ///
@@ -104,6 +105,31 @@ pub unsafe extern "C" fn keyrx_free_event_payload(ptr: *mut u8, len: usize) {
     }
 }
 
+/// Set the configuration root directory.
+///
+/// This allows the host application (e.g. Flutter) to override the default
+/// configuration directory (e.g. to use `~/.keyrx`).
+///
+/// Must be called before `keyrx_revolutionary_runtime_init` or any config operations.
+///
+/// # Safety
+/// `path` must be a valid null-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_set_config_root(path: *const c_char) -> i32 {
+    let path_str = match parse_c_string(path, "config_root") {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    let mut guard = match CONFIG_ROOT.write() {
+        Ok(g) => g,
+        Err(_) => return -2,
+    };
+
+    *guard = Some(PathBuf::from(path_str));
+    0
+}
+
 // ---------------------------------------------------------------------------
 // Revolutionary runtime lifecycle (for FFI consumers like Flutter)
 // ---------------------------------------------------------------------------
@@ -119,6 +145,14 @@ fn default_device_definitions() -> Arc<DeviceDefinitionLibrary> {
     if let Ok(cwd) = std::env::current_dir() {
         paths.push(cwd.join("device_definitions"));
     }
+
+    if let Ok(guard) = CONFIG_ROOT.read() {
+        if let Some(root) = guard.as_ref() {
+            paths.push(root.join("device_definitions"));
+        }
+    }
+
+    // Always include the default config directory as a fallback
     paths.push(config::config_dir().join("device_definitions"));
 
     for path in paths {
@@ -167,7 +201,18 @@ fn init_revolutionary_runtime() -> i32 {
 
     // Create registries using default locations.
     let (device_registry, _rx) = crate::registry::DeviceRegistry::new();
-    let profile_registry = Arc::new(ProfileRegistry::new());
+
+    // Check for config root override
+    let profile_registry = if let Ok(guard) = CONFIG_ROOT.read() {
+        if let Some(root) = guard.as_ref() {
+            Arc::new(ProfileRegistry::with_directory(root.join("profiles")))
+        } else {
+            Arc::new(ProfileRegistry::new())
+        }
+    } else {
+        Arc::new(ProfileRegistry::new())
+    };
+
     let device_definitions = default_device_definitions();
 
     // Create the scripting runtime for FFI usage
@@ -536,6 +581,11 @@ unsafe fn parse_c_string(ptr: *const c_char, name: &str) -> FfiResult<String> {
 }
 
 fn config_manager() -> ConfigManager {
+    if let Ok(guard) = CONFIG_ROOT.read() {
+        if let Some(root) = guard.as_ref() {
+            return ConfigManager::new(root);
+        }
+    }
     ConfigManager::default()
 }
 

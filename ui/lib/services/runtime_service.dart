@@ -161,7 +161,9 @@ class RuntimeServiceImpl implements RuntimeService {
           priority,
         );
         if (resultPtr == nullptr) {
-          return ConfigOperationResult.error('runtimeReorderSlot returned null');
+          return ConfigOperationResult.error(
+            'runtimeReorderSlot returned null',
+          );
         }
         final raw = resultPtr.cast<Utf8>().toDartString();
         return _parseRuntime(raw);
@@ -226,7 +228,7 @@ class RuntimeServiceImpl implements RuntimeService {
   Future<ConfigOperationResult<RuntimeConfig>> _guard(
     String operation,
     ConfigOperationResult<RuntimeConfig> Function(KeyrxBindings bindings)
-        action,
+    action,
   ) async {
     final loadFailure = _bridge.loadFailure;
     if (loadFailure != null) {

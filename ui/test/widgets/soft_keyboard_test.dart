@@ -8,11 +8,7 @@ void main() {
   group('SoftKeyboard Widget', () {
     testWidgets('renders with all keys initially', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Should show the count of all keys (110 total)
@@ -28,11 +24,7 @@ void main() {
 
     testWidgets('displays search icon and placeholder', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search icon should be visible
@@ -44,11 +36,7 @@ void main() {
 
     testWidgets('filters keys based on search query', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Enter search query
@@ -64,11 +52,7 @@ void main() {
 
     testWidgets('search is case-insensitive', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search with uppercase
@@ -81,11 +65,7 @@ void main() {
 
     testWidgets('search filters by display name', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for arrow keys using symbol
@@ -98,11 +78,7 @@ void main() {
 
     testWidgets('search filters by category', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search by category
@@ -115,11 +91,7 @@ void main() {
 
     testWidgets('shows empty state when no keys match', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Enter query that matches nothing
@@ -134,11 +106,7 @@ void main() {
 
     testWidgets('clear button resets search', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Enter search query
@@ -185,11 +153,7 @@ void main() {
     testWidgets('highlights selected key', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(
-              selectedKey: 'Enter',
-            ),
-          ),
+          home: Scaffold(body: SoftKeyboard(selectedKey: 'Enter')),
         ),
       );
 
@@ -202,10 +166,9 @@ void main() {
 
       // The selected key should have elevated Material
       final material = tester.widget<Material>(
-        find.ancestor(
-          of: find.text('Enter'),
-          matching: find.byType(Material),
-        ).first,
+        find
+            .ancestor(of: find.text('Enter'), matching: find.byType(Material))
+            .first,
       );
 
       // Selected keys have elevation of 4.0
@@ -215,11 +178,7 @@ void main() {
     testWidgets('non-selected key has lower elevation', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(
-              selectedKey: 'Enter',
-            ),
-          ),
+          home: Scaffold(body: SoftKeyboard(selectedKey: 'Enter')),
         ),
       );
 
@@ -231,10 +190,9 @@ void main() {
       expect(find.text('Space'), findsOneWidget);
 
       final material = tester.widget<Material>(
-        find.ancestor(
-          of: find.text('Space'),
-          matching: find.byType(Material),
-        ).first,
+        find
+            .ancestor(of: find.text('Space'), matching: find.byType(Material))
+            .first,
       );
 
       // Non-selected keys have elevation of 1.0
@@ -243,11 +201,7 @@ void main() {
 
     testWidgets('includes all letter keys A-Z', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for letters category
@@ -260,11 +214,7 @@ void main() {
 
     testWidgets('includes all number keys 0-9', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for numbers category
@@ -277,11 +227,7 @@ void main() {
 
     testWidgets('includes all function keys F1-F12', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for function category
@@ -294,11 +240,7 @@ void main() {
 
     testWidgets('includes all modifier keys', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for modifiers category
@@ -311,11 +253,7 @@ void main() {
 
     testWidgets('includes all navigation keys', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for navigation category
@@ -328,11 +266,7 @@ void main() {
 
     testWidgets('includes numpad keys', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for numpad category
@@ -345,11 +279,7 @@ void main() {
 
     testWidgets('includes media control keys', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard())),
       );
 
       // Search for media category
@@ -362,13 +292,7 @@ void main() {
 
     testWidgets('respects custom keySize parameter', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(
-              keySize: 80.0,
-            ),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySize: 80.0))),
       );
 
       // Get the GridView delegate
@@ -382,13 +306,7 @@ void main() {
 
     testWidgets('respects custom keySpacing parameter', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SoftKeyboard(
-              keySpacing: 12.0,
-            ),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySpacing: 12.0))),
       );
 
       // Get the GridView delegate

@@ -42,9 +42,7 @@ class InfoDialog extends StatelessWidget {
       ),
       content: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        child: SingleChildScrollView(
-          child: content,
-        ),
+        child: SingleChildScrollView(child: content),
       ),
       actions: [
         TextButton(

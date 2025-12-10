@@ -16,5 +16,6 @@ class AppAssets {
 
   // Backgrounds
   static const String mainBackground = 'assets/backgrounds/main_background.png';
-  static const String panelBackground = 'assets/backgrounds/panel_background.png';
+  static const String panelBackground =
+      'assets/backgrounds/panel_background.png';
 }

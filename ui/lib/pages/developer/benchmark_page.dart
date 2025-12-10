@@ -35,7 +35,9 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
       _result = null;
     });
 
-    final result = await widget.benchmarkService.runBenchmark(_iterations.toInt());
+    final result = await widget.benchmarkService.runBenchmark(
+      _iterations.toInt(),
+    );
 
     setState(() {
       _isRunning = false;
@@ -78,7 +80,10 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Configuration', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Configuration',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -94,14 +99,22 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
               max: _maxIterations.toDouble(),
               divisions: 99,
               label: _formatNumber(_iterations.toInt()),
-              onChanged: _isRunning ? null : (value) => setState(() => _iterations = value),
+              onChanged: _isRunning
+                  ? null
+                  : (value) => setState(() => _iterations = value),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_formatNumber(_minIterations), style: Theme.of(context).textTheme.bodySmall),
-                Text(_formatNumber(_maxIterations), style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  _formatNumber(_minIterations),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Text(
+                  _formatNumber(_maxIterations),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -113,7 +126,10 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.speed),
                 label: Text(_isRunning ? 'Running...' : 'Run Benchmark'),
@@ -137,7 +153,9 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
             Expanded(
               child: Text(
                 _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
               ),
             ),
             IconButton(
@@ -162,7 +180,10 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
             const Icon(Icons.warning, color: Colors.orange),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(warning, style: const TextStyle(color: Colors.black87)),
+              child: Text(
+                warning,
+                style: const TextStyle(color: Colors.black87),
+              ),
             ),
           ],
         ),
@@ -180,17 +201,33 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildMetricCard('Min', result.minUs, Colors.green)),
+            Expanded(
+              child: _buildMetricCard('Min', result.minUs, Colors.green),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildMetricCard('Mean', result.meanUs, Colors.blue)),
+            Expanded(
+              child: _buildMetricCard('Mean', result.meanUs, Colors.blue),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildMetricCard('P99', result.p99Us, _getP99Color(result.p99Us))),
+            Expanded(
+              child: _buildMetricCard(
+                'P99',
+                result.p99Us,
+                _getP99Color(result.p99Us),
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildMetricCard('Max', result.maxUs, _getMaxColor(result.maxUs))),
+            Expanded(
+              child: _buildMetricCard(
+                'Max',
+                result.maxUs,
+                _getMaxColor(result.maxUs),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -213,9 +250,9 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
             Text(
               _formatLatency(valueUs),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (isHighLatency)
               Padding(
@@ -238,8 +275,14 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
             Text('Summary', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             _buildSummaryRow('Iterations', _formatNumber(result.iterations)),
-            _buildSummaryRow('Range', '${_formatLatency(result.minUs)} - ${_formatLatency(result.maxUs)}'),
-            _buildSummaryRow('Jitter', _formatLatency(result.maxUs - result.minUs)),
+            _buildSummaryRow(
+              'Range',
+              '${_formatLatency(result.minUs)} - ${_formatLatency(result.maxUs)}',
+            ),
+            _buildSummaryRow(
+              'Jitter',
+              _formatLatency(result.maxUs - result.minUs),
+            ),
           ],
         ),
       ),

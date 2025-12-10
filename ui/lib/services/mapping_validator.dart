@@ -8,17 +8,14 @@ import 'key_mappings_util.dart';
 
 /// Result of a mapping validation operation.
 class ValidationResult {
-  const ValidationResult._({
-    required this.isValid,
-    this.errorMessage,
-  });
+  const ValidationResult._({required this.isValid, this.errorMessage});
 
   /// Creates a successful validation result.
   const ValidationResult.valid() : this._(isValid: true);
 
   /// Creates a failed validation result with an error message.
   const ValidationResult.invalid(String message)
-      : this._(isValid: false, errorMessage: message);
+    : this._(isValid: false, errorMessage: message);
 
   /// Whether the validation passed.
   final bool isValid;

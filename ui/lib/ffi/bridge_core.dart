@@ -27,7 +27,8 @@ mixin BridgeCoreMixin {
       return DynamicLibrary.open('keyrx_core.dll');
     } else {
       throw UnsupportedError(
-          'Platform not supported: ${Platform.operatingSystem}');
+        'Platform not supported: ${Platform.operatingSystem}',
+      );
     }
   }
 
@@ -41,6 +42,20 @@ mixin BridgeCoreMixin {
     final result = bindings!.init();
     initialized = result == 0;
     return initialized;
+  }
+
+  /// Set the configuration root directory.
+  ///
+  /// Must be called before [initialize] to take effect for runtime initialization.
+  void setConfigRoot(String path) {
+    if (bindings == null || bindings!.setConfigRoot == null) return;
+
+    final pathPtr = path.toNativeUtf8().cast<Char>();
+    try {
+      bindings!.setConfigRoot!(pathPtr);
+    } finally {
+      malloc.free(pathPtr);
+    }
   }
 
   /// Get the core library version.

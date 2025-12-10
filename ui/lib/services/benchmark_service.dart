@@ -40,10 +40,7 @@ class BenchmarkData {
 
 /// Result of a benchmark operation.
 class BenchmarkServiceResult {
-  const BenchmarkServiceResult({
-    this.data,
-    this.errorMessage,
-  });
+  const BenchmarkServiceResult({this.data, this.errorMessage});
 
   factory BenchmarkServiceResult.error(String message) =>
       BenchmarkServiceResult(errorMessage: message);

@@ -66,10 +66,6 @@ unsafe fn cstr_to_str(ptr: *const c_char) -> Result<&'static str, i32> {
 // ── Device ────────────────────────────────────────────────────────────────────
 
 #[no_mangle]
-pub extern "C" fn keyrx_list_devices() -> *mut c_char {
-    std::panic::catch_unwind(|| ffi_json(device::list_devices()))
-        .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_list_devices")))
-}
 
 /// # Safety
 ///

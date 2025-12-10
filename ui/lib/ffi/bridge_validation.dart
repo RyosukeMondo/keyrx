@@ -56,7 +56,9 @@ mixin BridgeValidationMixin {
   }
 
   ValidationResult _validateWithOptions(
-      String script, ValidationOptions options) {
+    String script,
+    ValidationOptions options,
+  ) {
     final validateFn = bindings?.validateScriptWithOptions;
     if (validateFn == null) {
       // Fall back to basic validation if options variant not available
@@ -71,7 +73,8 @@ mixin BridgeValidationMixin {
       ptr = validateFn(scriptPtr.cast<Char>(), optionsPtr.cast<Char>());
       if (ptr == nullptr) {
         return ValidationResult.error(
-            'validateScriptWithOptions returned null');
+          'validateScriptWithOptions returned null',
+        );
       }
 
       final raw = ptr.cast<Utf8>().toDartString();
@@ -154,8 +157,7 @@ mixin BridgeValidationMixin {
     final trimmed = raw.trim();
 
     if (trimmed.toLowerCase().startsWith('error:')) {
-      return ValidationResult.error(
-          trimmed.substring('error:'.length).trim());
+      return ValidationResult.error(trimmed.substring('error:'.length).trim());
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')

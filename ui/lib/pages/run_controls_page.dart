@@ -4,12 +4,15 @@
 /// and prominent start/stop controls with status indicators.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../ffi/bridge.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
+import 'monitor_view.dart';
 import 'run_controls_widgets.dart';
 
 /// Engine running state.
@@ -17,9 +20,7 @@ enum EngineRunState { stopped, starting, running, stopping }
 
 /// Central page for engine run controls.
 class RunControlsPage extends StatefulWidget {
-  const RunControlsPage({
-    super.key,
-  });
+  const RunControlsPage({super.key});
 
   @override
   State<RunControlsPage> createState() => _RunControlsPageState();
@@ -117,8 +118,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
           err: (error) {
             setState(() => _runState = EngineRunState.stopped);
             if (mounted) {
-              _showSnackBar('Failed to start engine: ${error.userMessage}',
-                  isError: true);
+              _showSnackBar(
+                'Failed to start engine: ${error.userMessage}',
+                isError: true,
+              );
             }
           },
         );
@@ -126,8 +129,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
       err: (error) {
         setState(() => _runState = EngineRunState.stopped);
         if (mounted) {
-          _showSnackBar('Failed to select device: ${error.userMessage}',
-              isError: true);
+          _showSnackBar(
+            'Failed to select device: ${error.userMessage}',
+            isError: true,
+          );
         }
       },
     );
@@ -155,8 +160,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
       err: (error) {
         if (mounted) {
           setState(() => _runState = EngineRunState.stopped);
-          _showSnackBar('Failed to stop engine: ${error.userMessage}',
-              isError: true);
+          _showSnackBar(
+            'Failed to stop engine: ${error.userMessage}',
+            isError: true,
+          );
         }
       },
     );
@@ -178,8 +185,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
     final bridge = facade.services.bridge;
     final result = bridge.startRecording(path);
     if (result.hasError) {
-      _showSnackBar('Failed to start recording: ${result.errorMessage}',
-          isError: true);
+      _showSnackBar(
+        'Failed to start recording: ${result.errorMessage}',
+        isError: true,
+      );
       return;
     }
 
@@ -195,8 +204,10 @@ class _RunControlsPageState extends State<RunControlsPage> {
     final bridge = facade.services.bridge;
     final result = bridge.stopRecording();
     if (result.hasError) {
-      _showSnackBar('Failed to stop recording: ${result.errorMessage}',
-          isError: true);
+      _showSnackBar(
+        'Failed to stop recording: ${result.errorMessage}',
+        isError: true,
+      );
       return;
     }
 
@@ -220,36 +231,55 @@ class _RunControlsPageState extends State<RunControlsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch AppState for changes
     final appState = context.watch<AppState>();
     final isRunning = _runState == EngineRunState.running;
-    final isBusy = _runState == EngineRunState.starting ||
+    final isBusy =
+        _runState == EngineRunState.starting ||
         _runState == EngineRunState.stopping;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Run Controls'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDevices,
-            tooltip: 'Refresh devices',
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Dashboard'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Controls', icon: Icon(Icons.tune)),
+              Tab(text: 'Monitor', icon: Icon(Icons.monitor_heart)),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadDevices,
+              tooltip: 'Refresh devices',
+            ),
+          ],
+        ),
+        body: TabBarView(
           children: [
-            _buildStatusCard(appState, isRunning),
-            const SizedBox(height: 24),
-            _buildDeviceSelector(),
-            const SizedBox(height: 16),
-            _buildScriptInfo(appState),
-            const SizedBox(height: 16),
-            _buildRecordingToggle(),
-            const SizedBox(height: 32),
-            _buildStartStopButton(isRunning, isBusy),
+            // Tab 1: Controls
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildStatusCard(appState, isRunning),
+                  const SizedBox(height: 24),
+                  _buildDeviceSelector(),
+                  const SizedBox(height: 16),
+                  _buildScriptInfo(appState),
+                  const SizedBox(height: 16),
+                  _buildRecordingToggle(),
+                  const SizedBox(height: 32),
+                  _buildStartStopButton(isRunning, isBusy),
+                ],
+              ),
+            ),
+
+            // Tab 2: Monitor (Integrated)
+            const MonitorView(),
           ],
         ),
       ),
@@ -263,15 +293,12 @@ class _RunControlsPageState extends State<RunControlsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Status',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Status', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             StatusIndicator(
               icon: Icons.power_settings_new,
               label: 'Engine',
-              value: _runState.name,
+              value: _runState.name.toUpperCase(),
               isActive: isRunning,
             ),
             const SizedBox(height: 8),
@@ -285,7 +312,9 @@ class _RunControlsPageState extends State<RunControlsPage> {
             StatusIndicator(
               icon: Icons.description,
               label: 'Script',
-              value: appState.loadedScript ?? 'None loaded',
+              value: appState.loadedScript != null
+                  ? appState.loadedScript!.split(Platform.pathSeparator).last
+                  : 'None loaded',
               isActive: appState.loadedScript != null,
             ),
             const SizedBox(height: 8),
@@ -321,10 +350,7 @@ class _RunControlsPageState extends State<RunControlsPage> {
               children: [
                 const Icon(Icons.keyboard, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Device',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Device', style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 12),
@@ -335,7 +361,7 @@ class _RunControlsPageState extends State<RunControlsPage> {
               )
             else
               DropdownButtonFormField<KeyboardDevice>(
-                initialValue: _selectedDevice,
+                value: _selectedDevice,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
@@ -348,7 +374,13 @@ class _RunControlsPageState extends State<RunControlsPage> {
                     value: device,
                     child: Row(
                       children: [
-                        Expanded(child: Text(device.name)),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 200),
+                          child: Text(
+                            device.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         if (device.hasProfile)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
@@ -373,7 +405,9 @@ class _RunControlsPageState extends State<RunControlsPage> {
                   );
                 }).toList(),
                 onChanged: (device) {
-                  setState(() => _selectedDevice = device);
+                  if (device != null) {
+                    setState(() => _selectedDevice = device);
+                  }
                 },
               ),
           ],
@@ -395,10 +429,7 @@ class _RunControlsPageState extends State<RunControlsPage> {
               children: [
                 const Icon(Icons.description, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Script',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Script', style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 12),
@@ -449,13 +480,14 @@ class _RunControlsPageState extends State<RunControlsPage> {
                     'Recording',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  if (_isRecording && _recordingPath != null)
+                  if (_isRecording)
                     Text(
-                      _recordingPath!,
+                      _recordingPath ?? 'Recording...',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            color: Colors.grey,
-                          ),
+                        fontFamily: 'monospace',
+                        color: Colors.grey,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),

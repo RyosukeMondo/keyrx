@@ -32,8 +32,4 @@ class AssetIcon extends StatelessWidget {
   }
 }
 
-enum AssetIconType {
-  key,
-  settings,
-  profile,
-}
+enum AssetIconType { key, settings, profile }

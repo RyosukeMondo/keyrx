@@ -7,10 +7,7 @@ import 'dart:io';
 
 /// Result of a script file operation.
 class ScriptFileResult {
-  const ScriptFileResult({
-    required this.success,
-    this.errorMessage,
-  });
+  const ScriptFileResult({required this.success, this.errorMessage});
 
   /// Whether the operation succeeded.
   final bool success;
@@ -36,10 +33,7 @@ class ScriptFileService {
       await file.writeAsString(content);
       return const ScriptFileResult(success: true);
     } catch (e) {
-      return ScriptFileResult(
-        success: false,
-        errorMessage: e.toString(),
-      );
+      return ScriptFileResult(success: false, errorMessage: e.toString());
     }
   }
 

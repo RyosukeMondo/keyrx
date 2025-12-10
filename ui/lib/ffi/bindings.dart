@@ -21,6 +21,9 @@ typedef KeyrxFreeString = void Function(Pointer<Char> ptr);
 typedef KeyrxProtocolVersionNative = Uint32 Function();
 typedef KeyrxProtocolVersion = int Function();
 
+typedef KeyrxSetConfigRootNative = Int32 Function(Pointer<Char> path);
+typedef KeyrxSetConfigRoot = int Function(Pointer<Char> path);
+
 // ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
@@ -42,6 +45,9 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   // Protocol version (optional but recommended)
   late final KeyrxProtocolVersion? protocolVersion;
 
+  // Config root override (optional)
+  late final KeyrxSetConfigRoot? setConfigRoot;
+
   KeyrxBindings(this._lib) : super(_lib) {
     // Required functions
     freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
@@ -50,6 +56,17 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
 
     setBypass = _tryLookupSetBypass();
     protocolVersion = _tryLookupProtocolVersion();
+    setConfigRoot = _tryLookupSetConfigRoot();
+  }
+
+  KeyrxSetConfigRoot? _tryLookupSetConfigRoot() {
+    try {
+      return _lib.lookupFunction<KeyrxSetConfigRootNative, KeyrxSetConfigRoot>(
+        'keyrx_set_config_root',
+      );
+    } on ArgumentError {
+      return null;
+    }
   }
 
   KeyrxSetBypass? _tryLookupSetBypass() {

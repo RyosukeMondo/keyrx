@@ -35,11 +35,11 @@ class PhysicalKey {
   final String? alias;
 
   Map<String, dynamic> toJson() => {
-        'scan_code': scanCode,
-        'row': row,
-        'col': col,
-        if (alias != null) 'alias': alias,
-      };
+    'scan_code': scanCode,
+    'row': row,
+    'col': col,
+    if (alias != null) 'alias': alias,
+  };
 }
 
 /// Profile source enum.
@@ -81,8 +81,9 @@ class DeviceProfile {
     final keymap = <int, PhysicalKey>{};
     for (final entry in keymapJson.entries) {
       final scanCode = int.parse(entry.key);
-      keymap[scanCode] =
-          PhysicalKey.fromJson(entry.value as Map<String, dynamic>);
+      keymap[scanCode] = PhysicalKey.fromJson(
+        entry.value as Map<String, dynamic>,
+      );
     }
 
     final aliasesJson = json['aliases'] as Map<String, dynamic>? ?? {};
@@ -92,8 +93,7 @@ class DeviceProfile {
     }
 
     final colsPerRowJson = json['cols_per_row'] as List? ?? [];
-    final colsPerRow =
-        colsPerRowJson.map((e) => (e as num).toInt()).toList();
+    final colsPerRow = colsPerRowJson.map((e) => (e as num).toInt()).toList();
 
     return DeviceProfile(
       schemaVersion: (json['schema_version'] as num?)?.toInt() ?? 1,
@@ -105,8 +105,7 @@ class DeviceProfile {
       colsPerRow: colsPerRow,
       keymap: keymap,
       aliases: aliases,
-      source: ProfileSource.fromString(
-          json['source']?.toString() ?? 'Default'),
+      source: ProfileSource.fromString(json['source']?.toString() ?? 'Default'),
     );
   }
 
@@ -129,26 +128,24 @@ class DeviceProfile {
   int get totalKeys => colsPerRow.fold(0, (sum, cols) => sum + cols);
 
   Map<String, dynamic> toJson() => {
-        'schema_version': schemaVersion,
-        'vendor_id': vendorId,
-        'product_id': productId,
-        if (name != null) 'name': name,
-        'discovered_at': discoveredAt.toIso8601String(),
-        'rows': rows,
-        'cols_per_row': colsPerRow,
-        'keymap': keymap.map(
-            (key, value) => MapEntry(key.toString(), value.toJson())),
-        'aliases': aliases,
-        'source': source.label,
-      };
+    'schema_version': schemaVersion,
+    'vendor_id': vendorId,
+    'product_id': productId,
+    if (name != null) 'name': name,
+    'discovered_at': discoveredAt.toIso8601String(),
+    'rows': rows,
+    'cols_per_row': colsPerRow,
+    'keymap': keymap.map(
+      (key, value) => MapEntry(key.toString(), value.toJson()),
+    ),
+    'aliases': aliases,
+    'source': source.label,
+  };
 }
 
 /// Result of getting a device profile.
 class DeviceProfileResult {
-  const DeviceProfileResult({
-    this.profile,
-    this.errorMessage,
-  });
+  const DeviceProfileResult({this.profile, this.errorMessage});
 
   factory DeviceProfileResult.success(DeviceProfile profile) =>
       DeviceProfileResult(profile: profile);
@@ -160,7 +157,8 @@ class DeviceProfileResult {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return DeviceProfileResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')

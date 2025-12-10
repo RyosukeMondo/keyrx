@@ -138,7 +138,9 @@ class LayoutGrid extends StatelessWidget {
           Text(
             'Visual representation coming soon',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 16),
@@ -319,4 +321,3 @@ String keyActionLabel(KeyAction action) {
     pass: () => 'PASS',
   );
 }
-

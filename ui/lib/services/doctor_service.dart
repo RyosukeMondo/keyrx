@@ -44,10 +44,7 @@ class DiagnosticReport {
 
 /// Result of a diagnostics operation.
 class DoctorServiceResult {
-  const DoctorServiceResult({
-    this.report,
-    this.errorMessage,
-  });
+  const DoctorServiceResult({this.report, this.errorMessage});
 
   factory DoctorServiceResult.error(String message) =>
       DoctorServiceResult(errorMessage: message);

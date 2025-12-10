@@ -36,10 +36,7 @@ class ConfirmationDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
-            Icon(
-              icon,
-              color: isDestructive ? scheme.error : scheme.primary,
-            ),
+            Icon(icon, color: isDestructive ? scheme.error : scheme.primary),
             const SizedBox(width: 12),
           ],
           Expanded(child: Text(title, style: theme.textTheme.titleLarge)),

@@ -178,7 +178,10 @@ class _SimulatorPageState extends State<SimulatorPage> {
         label: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(simKey.code, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              simKey.code,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             GestureDetector(
               onTap: () => _showHoldDurationDialog(index, simKey),
               child: Text(
@@ -266,7 +269,11 @@ class _SimulatorPageState extends State<SimulatorPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.keyboard_alt_outlined, size: 48, color: Colors.grey[600]),
+            Icon(
+              Icons.keyboard_alt_outlined,
+              size: 48,
+              color: Colors.grey[600],
+            ),
             const SizedBox(height: 8),
             Text(
               'Results will appear here',
@@ -333,7 +340,10 @@ class _SimulatorPageState extends State<SimulatorPage> {
           Text('Pending: ${result.pending.join(", ")}'),
         ],
         if (result.activeLayers.isEmpty && result.pending.isEmpty)
-          Text('Base layer, no pending keys', style: TextStyle(color: Colors.grey[500])),
+          Text(
+            'Base layer, no pending keys',
+            style: TextStyle(color: Colors.grey[500]),
+          ),
       ],
     );
   }
@@ -380,9 +390,6 @@ class _SimulatorPageState extends State<SimulatorPage> {
   }
 
   Widget _buildKeyboard() {
-    return SizedBox(
-      height: 280,
-      child: KeyboardWidget(onKeySelected: _addKey),
-    );
+    return SizedBox(height: 280, child: KeyboardWidget(onKeySelected: _addKey));
   }
 }

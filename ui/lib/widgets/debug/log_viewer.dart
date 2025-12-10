@@ -446,7 +446,9 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                           'Span: ',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                         Text(
@@ -468,7 +470,9 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                           'Fields:',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -511,4 +515,3 @@ class _LogEntryTileState extends State<_LogEntryTile> {
     );
   }
 }
-

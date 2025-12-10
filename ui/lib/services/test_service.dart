@@ -7,10 +7,7 @@ import '../ffi/bridge.dart';
 
 /// Result of a test discovery operation.
 class TestDiscoveryServiceResult {
-  const TestDiscoveryServiceResult({
-    required this.tests,
-    this.errorMessage,
-  });
+  const TestDiscoveryServiceResult({required this.tests, this.errorMessage});
 
   factory TestDiscoveryServiceResult.error(String message) =>
       TestDiscoveryServiceResult(tests: const [], errorMessage: message);
@@ -23,11 +20,7 @@ class TestDiscoveryServiceResult {
 
 /// Test case discovered from a script.
 class TestCase {
-  const TestCase({
-    required this.name,
-    required this.file,
-    this.line,
-  });
+  const TestCase({required this.name, required this.file, this.line});
 
   final String name;
   final String file;
@@ -46,13 +39,13 @@ class TestRunServiceResult {
   });
 
   factory TestRunServiceResult.error(String message) => TestRunServiceResult(
-        total: 0,
-        passed: 0,
-        failed: 0,
-        durationMs: 0,
-        results: const [],
-        errorMessage: message,
-      );
+    total: 0,
+    passed: 0,
+    failed: 0,
+    durationMs: 0,
+    results: const [],
+    errorMessage: message,
+  );
 
   final int total;
   final int passed;

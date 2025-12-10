@@ -117,11 +117,7 @@ void main() {
       test('generates layer definition', () {
         const config = VisualConfig(
           layerConfigs: [
-            LayerConfig(
-              name: 'nav',
-              isTransparent: true,
-              mappings: [],
-            ),
+            LayerConfig(name: 'nav', isTransparent: true, mappings: []),
           ],
         );
 
@@ -295,9 +291,7 @@ void main() {
             LayerConfig(
               name: 'nav',
               isTransparent: true,
-              mappings: [
-                LayerMapping(sourceKey: 'KeyH', action: 'Left'),
-              ],
+              mappings: [LayerMapping(sourceKey: 'KeyH', action: 'Left')],
             ),
           ],
           comboConfigs: [
@@ -674,9 +668,7 @@ fn on_init() {
             LayerConfig(
               name: 'nav',
               isTransparent: true,
-              mappings: [
-                LayerMapping(sourceKey: 'KeyH', action: 'Left'),
-              ],
+              mappings: [LayerMapping(sourceKey: 'KeyH', action: 'Left')],
             ),
           ],
         );
@@ -759,9 +751,7 @@ fn on_init() {
 
     test('isEmpty returns false when layers exist', () {
       const config = VisualConfig(
-        layerConfigs: [
-          LayerConfig(name: 'test', mappings: []),
-        ],
+        layerConfigs: [LayerConfig(name: 'test', mappings: [])],
       );
       expect(config.isEmpty, false);
     });

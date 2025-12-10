@@ -794,4 +794,3 @@ class CalibrationComparison {
   final num repeatRateDelta;
   final num scanIntervalDelta;
 }
-

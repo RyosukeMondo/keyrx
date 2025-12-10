@@ -95,7 +95,10 @@ class _DoctorPageState extends State<DoctorPage> {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 4),
-          Text('$count', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -133,7 +136,10 @@ class _DoctorPageState extends State<DoctorPage> {
         children: [
           Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
           const SizedBox(height: 16),
-          Text('Diagnostics failed', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Diagnostics failed',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -262,9 +268,9 @@ class _DoctorPageState extends State<DoctorPage> {
             const SizedBox(height: 12),
             Text(
               'How to fix',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.blue,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: Colors.blue),
             ),
             const SizedBox(height: 4),
             Container(

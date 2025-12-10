@@ -87,19 +87,21 @@ class AppState extends ChangeNotifier {
 
   /// Load a script file.
   Future<bool> loadScript(String path) async {
+    // Always update local state so UI reflects the selection
+    _loadedScript = path;
+
     if (!initialized) {
-      _error = _errorTranslator.translate(StateError('Engine not ready')).body;
+      // If engine is not ready, we just buffer the script path.
+      // It will be loaded when the engine starts.
       notifyListeners();
-      return false;
+      return true;
     }
 
     try {
       _error = null;
       final success = await _engineService.loadScript(path);
 
-      if (success) {
-        _loadedScript = path;
-      } else {
+      if (!success) {
         _error = _errorTranslator
             .translate(StateError('Failed to load $path'))
             .body;

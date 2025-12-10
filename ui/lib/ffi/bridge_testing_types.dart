@@ -5,11 +5,7 @@ import 'dart:convert';
 
 /// Discovered test function.
 class DiscoveredTest {
-  const DiscoveredTest({
-    required this.name,
-    required this.file,
-    this.line,
-  });
+  const DiscoveredTest({required this.name, required this.file, this.line});
 
   final String name;
   final String file;
@@ -18,21 +14,17 @@ class DiscoveredTest {
 
 /// Test discovery result.
 class TestDiscoveryResult {
-  const TestDiscoveryResult({
-    required this.tests,
-    this.errorMessage,
-  });
+  const TestDiscoveryResult({required this.tests, this.errorMessage});
 
-  factory TestDiscoveryResult.error(String message) => TestDiscoveryResult(
-        tests: const [],
-        errorMessage: message,
-      );
+  factory TestDiscoveryResult.error(String message) =>
+      TestDiscoveryResult(tests: const [], errorMessage: message);
 
   factory TestDiscoveryResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
       return TestDiscoveryResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -45,14 +37,17 @@ class TestDiscoveryResult {
         return TestDiscoveryResult.error('invalid test list payload');
       }
 
-      final tests = decoded.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return DiscoveredTest(
-          name: e['name']?.toString() ?? '',
-          file: e['file']?.toString() ?? '',
-          line: (e['line'] as num?)?.toInt(),
-        );
-      }).whereType<DiscoveredTest>().toList();
+      final tests = decoded
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return DiscoveredTest(
+              name: e['name']?.toString() ?? '',
+              file: e['file']?.toString() ?? '',
+              line: (e['line'] as num?)?.toInt(),
+            );
+          })
+          .whereType<DiscoveredTest>()
+          .toList();
 
       return TestDiscoveryResult(tests: tests);
     } catch (e) {
@@ -93,13 +88,13 @@ class TestRunResult {
   });
 
   factory TestRunResult.error(String message) => TestRunResult(
-        total: 0,
-        passed: 0,
-        failed: 0,
-        durationMs: 0,
-        results: const [],
-        errorMessage: message,
-      );
+    total: 0,
+    passed: 0,
+    failed: 0,
+    durationMs: 0,
+    results: const [],
+    errorMessage: message,
+  );
 
   factory TestRunResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -118,15 +113,18 @@ class TestRunResult {
       }
 
       final resultsList = decoded['results'] as List<dynamic>? ?? [];
-      final results = resultsList.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return TestResult(
-          name: e['name']?.toString() ?? '',
-          passed: e['passed'] as bool? ?? false,
-          error: e['error']?.toString(),
-          durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
-        );
-      }).whereType<TestResult>().toList();
+      final results = resultsList
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return TestResult(
+              name: e['name']?.toString() ?? '',
+              passed: e['passed'] as bool? ?? false,
+              error: e['error']?.toString(),
+              durationMs: (e['durationMs'] as num?)?.toDouble() ?? 0,
+            );
+          })
+          .whereType<TestResult>()
+          .toList();
 
       return TestRunResult(
         total: (decoded['total'] as num?)?.toInt() ?? 0,
@@ -152,18 +150,15 @@ class TestRunResult {
 
 /// Key input for simulation.
 class KeyInput {
-  const KeyInput({
-    required this.code,
-    this.holdMs,
-  });
+  const KeyInput({required this.code, this.holdMs});
 
   final String code;
   final int? holdMs;
 
   Map<String, dynamic> toJson() => {
-        'code': code,
-        if (holdMs != null) 'holdMs': holdMs,
-      };
+    'code': code,
+    if (holdMs != null) 'holdMs': holdMs,
+  };
 }
 
 /// Key mapping from simulation.
@@ -189,11 +184,11 @@ class SimulationResult {
   });
 
   factory SimulationResult.error(String message) => SimulationResult(
-        mappings: const [],
-        activeLayers: const [],
-        pending: const [],
-        errorMessage: message,
-      );
+    mappings: const [],
+    activeLayers: const [],
+    pending: const [],
+    errorMessage: message,
+  );
 
   factory SimulationResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -212,20 +207,25 @@ class SimulationResult {
       }
 
       final mappingsList = decoded['mappings'] as List<dynamic>? ?? [];
-      final mappings = mappingsList.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return SimulationMapping(
-          input: e['input']?.toString() ?? '',
-          output: e['output']?.toString() ?? '',
-          decision: e['decision']?.toString() ?? '',
-        );
-      }).whereType<SimulationMapping>().toList();
+      final mappings = mappingsList
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return SimulationMapping(
+              input: e['input']?.toString() ?? '',
+              output: e['output']?.toString() ?? '',
+              decision: e['decision']?.toString() ?? '',
+            );
+          })
+          .whereType<SimulationMapping>()
+          .toList();
 
-      final layers = (decoded['activeLayers'] as List<dynamic>?)
+      final layers =
+          (decoded['activeLayers'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const <String>[];
-      final pending = (decoded['pending'] as List<dynamic>?)
+      final pending =
+          (decoded['pending'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const <String>[];
@@ -262,14 +262,14 @@ class BenchmarkResult {
   });
 
   factory BenchmarkResult.error(String message) => BenchmarkResult(
-        minNs: 0,
-        maxNs: 0,
-        meanNs: 0,
-        p99Ns: 0,
-        iterations: 0,
-        hasWarning: false,
-        errorMessage: message,
-      );
+    minNs: 0,
+    maxNs: 0,
+    meanNs: 0,
+    p99Ns: 0,
+    iterations: 0,
+    hasWarning: false,
+    errorMessage: message,
+  );
 
   factory BenchmarkResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -339,12 +339,12 @@ class DoctorResult {
   });
 
   factory DoctorResult.error(String message) => DoctorResult(
-        checks: const [],
-        passed: 0,
-        failed: 0,
-        warned: 0,
-        errorMessage: message,
-      );
+    checks: const [],
+    passed: 0,
+    failed: 0,
+    warned: 0,
+    errorMessage: message,
+  );
 
   factory DoctorResult.parse(String raw) {
     final trimmed = raw.trim();
@@ -363,15 +363,18 @@ class DoctorResult {
       }
 
       final checksList = decoded['checks'] as List<dynamic>? ?? [];
-      final checks = checksList.map((e) {
-        if (e is! Map<String, dynamic>) return null;
-        return DiagnosticCheck(
-          name: e['name']?.toString() ?? '',
-          status: e['status']?.toString() ?? '',
-          details: e['details']?.toString(),
-          remediation: e['remediation']?.toString(),
-        );
-      }).whereType<DiagnosticCheck>().toList();
+      final checks = checksList
+          .map((e) {
+            if (e is! Map<String, dynamic>) return null;
+            return DiagnosticCheck(
+              name: e['name']?.toString() ?? '',
+              status: e['status']?.toString() ?? '',
+              details: e['details']?.toString(),
+              remediation: e['remediation']?.toString(),
+            );
+          })
+          .whereType<DiagnosticCheck>()
+          .toList();
 
       return DoctorResult(
         checks: checks,

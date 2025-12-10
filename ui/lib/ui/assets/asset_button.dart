@@ -65,8 +65,4 @@ class AssetButton extends StatelessWidget {
   }
 }
 
-enum AssetButtonType {
-  primary,
-  secondary,
-  danger,
-}
+enum AssetButtonType { primary, secondary, danger }

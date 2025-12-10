@@ -14,7 +14,6 @@ enum DeveloperTool {
   ),
   benchmark('Benchmark', Icons.speed_outlined, Icons.speed),
   doctor('Doctor', Icons.health_and_safety_outlined, Icons.health_and_safety),
-  replay('Replay', Icons.replay_outlined, Icons.replay),
   discovery('Discovery', Icons.explore_outlined, Icons.explore);
 
   const DeveloperTool(this.label, this.icon, this.selectedIcon);

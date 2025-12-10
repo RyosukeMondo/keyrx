@@ -10,8 +10,13 @@ import '../../models/keymap.dart';
 import '../../models/virtual_layout.dart';
 import '../../services/keymap_service.dart';
 import '../../services/service_registry.dart';
+import '../../state/app_state.dart';
 import '../../widgets/soft_keyboard.dart';
 import '../../widgets/virtual_layout_renderer.dart';
+import '../../services/keymap_converter.dart';
+import '../../services/rhai_generator.dart';
+import '../../services/script_file_service.dart';
+import '../../services/storage_path_resolver.dart';
 
 class MappingEditor extends StatefulWidget {
   const MappingEditor({
@@ -125,28 +130,81 @@ class _MappingEditorState extends State<MappingEditor> {
   Future<void> _saveKeymap() async {
     setState(() => _isSaving = true);
 
+    // 1. Save the Keymap JSON (UI Model)
     final toSave = _workingKeymap.copyWith(name: _nameController.text.trim());
-
-    final result = await _keymapService.saveKeymap(toSave);
+    final saveResult = await _keymapService.saveKeymap(toSave);
 
     if (!mounted) return;
-    setState(() => _isSaving = false);
 
-    if (result.hasError) {
+    if (saveResult.hasError) {
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save: ${result.errorMessage}'),
+          content: Text('Failed to save keymap: ${saveResult.errorMessage}'),
           backgroundColor: Colors.red,
         ),
       );
-    } else {
+      return;
+    }
+
+    final savedKeymap = saveResult.data ?? toSave;
+
+    // 2. Convert to VisualConfig and Generate Rhai Script
+    try {
+      final converter = const KeymapConverter();
+      final config = converter.convert(savedKeymap);
+
+      final generator = RhaiGenerator();
+      final scriptContent = generator.generateScript(config);
+
+      // 3. Save Script File
+      final pathResolver = StoragePathResolver();
+      final profilesDir = await pathResolver.ensureProfilesDirectory();
+      // Use a sanitized name + id for the filename
+      final filename =
+          '${savedKeymap.name.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_${savedKeymap.id}.rhai';
+      final scriptPath = '$profilesDir/$filename';
+
+      final fileService = const ScriptFileService();
+      final fileResult = await fileService.saveScript(
+        scriptPath,
+        scriptContent,
+      );
+
+      if (!fileResult.success) {
+        throw Exception(
+          'Failed to write script file: ${fileResult.errorMessage}',
+        );
+      }
+
+      // 4. Load Script into Engine
+      final appState = context.read<AppState>();
+      final loadSuccess = await appState.loadScript(scriptPath);
+
+      if (!loadSuccess) {
+        throw Exception('Failed to load script into engine: ${appState.error}');
+      }
+
       setState(() {
-        _workingKeymap = result.data ?? toSave;
+        _workingKeymap = savedKeymap;
         _isDirty = false;
+        _isSaving = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Keymap saved')));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Keymap saved and loaded: $scriptPath'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error generating/loading script: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

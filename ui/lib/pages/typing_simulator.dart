@@ -79,8 +79,8 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
     // Calculate inter-key delays
     final delays = <double>[];
     for (int i = 1; i < _keyPressTimestamps.length; i++) {
-      final delay =
-          (_keyPressTimestamps[i] - _keyPressTimestamps[i - 1]).toDouble();
+      final delay = (_keyPressTimestamps[i] - _keyPressTimestamps[i - 1])
+          .toDouble();
       // Filter out unreasonable delays (> pause threshold = likely pause)
       if (delay > 0 && delay < ThresholdConstants.pauseThresholdMs) {
         delays.add(delay);
@@ -91,8 +91,9 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Not enough valid keystrokes. Please type more continuously.'),
+          content: Text(
+            'Not enough valid keystrokes. Please type more continuously.',
+          ),
         ),
       );
       widget.onCancel();
@@ -101,9 +102,8 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
 
     // Calculate mean and standard deviation
     final mean = delays.reduce((a, b) => a + b) / delays.length;
-    final variance = delays
-            .map((d) => (d - mean) * (d - mean))
-            .reduce((a, b) => a + b) /
+    final variance =
+        delays.map((d) => (d - mean) * (d - mean)).reduce((a, b) => a + b) /
         delays.length;
     final stdDev = math.sqrt(variance);
 
@@ -141,12 +141,14 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
           const Expanded(child: Text('Typing Speed Simulation')),
           Container(
             padding: EdgeInsets.symmetric(
-                horizontal: UiConstants.smallPadding,
-                vertical: UiConstants.tinyPadding),
+              horizontal: UiConstants.smallPadding,
+              vertical: UiConstants.tinyPadding,
+            ),
             decoration: BoxDecoration(
               color: _secondsRemaining <= 10 ? Colors.red : Colors.grey,
-              borderRadius:
-                  BorderRadius.circular(UiConstants.defaultBorderRadius),
+              borderRadius: BorderRadius.circular(
+                UiConstants.defaultBorderRadius,
+              ),
             ),
             child: Text(
               '${_secondsRemaining}s',
@@ -174,8 +176,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
               padding: const EdgeInsets.all(UiConstants.defaultMargin),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius:
-                    BorderRadius.circular(UiConstants.smallPadding),
+                borderRadius: BorderRadius.circular(UiConstants.smallPadding),
               ),
               child: Text(
                 widget.sampleText,
@@ -241,7 +242,8 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _keyPressTimestamps.length >= ThresholdConstants.minKeystrokes
+          onPressed:
+              _keyPressTimestamps.length >= ThresholdConstants.minKeystrokes
               ? _finishSimulation
               : null,
           child: const Text('Finish Early'),
@@ -253,10 +255,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
 
 /// Statistics calculator for typing speed analysis.
 class TypingStatistics {
-  TypingStatistics({
-    required this.mean,
-    required this.stdDev,
-  });
+  TypingStatistics({required this.mean, required this.stdDev});
 
   final double mean;
   final double stdDev;
@@ -309,7 +308,10 @@ class TypingStatistics {
 
     final t = 1.0 / (1.0 + p * absX);
     final y =
-        1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-absX * absX);
+        1.0 -
+        (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
+            t *
+            math.exp(-absX * absX);
 
     return sign * y;
   }

@@ -47,3 +47,10 @@ analysis_log*.txt
 
 # FVM (ignore entire .fvm directory, track .fvmrc)
 .fvm/
+*.dll
+*.dylib
+*.so
+check_output*.txt
+build_log*.txt
+test_output*.log
+clippy*.log

@@ -10,11 +10,9 @@ class MockProfileRegistryService implements ProfileRegistryService {
   final List<String> _profiles;
   final bool _shouldThrow;
 
-  MockProfileRegistryService({
-    List<String>? profiles,
-    bool shouldThrow = false,
-  })  : _profiles = profiles ?? [],
-        _shouldThrow = shouldThrow;
+  MockProfileRegistryService({List<String>? profiles, bool shouldThrow = false})
+    : _profiles = profiles ?? [],
+      _shouldThrow = shouldThrow;
 
   @override
   Future<List<String>> listProfiles() async {
@@ -55,17 +53,14 @@ class MockProfileRegistryService implements ProfileRegistryService {
 
 void main() {
   group('ProfileSelector', () {
-    testWidgets('displays loading state initially',
-        (WidgetTester tester) async {
+    testWidgets('displays loading state initially', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(profiles: ['profile-1']);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -74,19 +69,16 @@ void main() {
       expect(find.text('Loading profiles...'), findsOneWidget);
     });
 
-    testWidgets('displays dropdown with profiles after loading',
-        (WidgetTester tester) async {
+    testWidgets('displays dropdown with profiles after loading', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(
         profiles: ['profile-1', 'profile-2', 'profile-3'],
       );
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -98,19 +90,14 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('dropdown includes "No Profile" option',
-        (WidgetTester tester) async {
-      final service = MockProfileRegistryService(
-        profiles: ['profile-1'],
-      );
+    testWidgets('dropdown includes "No Profile" option', (
+      WidgetTester tester,
+    ) async {
+      final service = MockProfileRegistryService(profiles: ['profile-1']);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -124,19 +111,16 @@ void main() {
       expect(find.text('No Profile'), findsOneWidget);
     });
 
-    testWidgets('dropdown includes all profile IDs',
-        (WidgetTester tester) async {
+    testWidgets('dropdown includes all profile IDs', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(
         profiles: ['alpha', 'beta', 'gamma'],
       );
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -171,13 +155,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final dropdown =
-          tester.widget<DropdownButton<String?>>(find.byType(DropdownButton<String?>));
+      final dropdown = tester.widget<DropdownButton<String?>>(
+        find.byType(DropdownButton<String?>),
+      );
       expect(dropdown.value, 'profile-2');
     });
 
-    testWidgets('calls onChanged when selection changes',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when selection changes', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(
         profiles: ['profile-1', 'profile-2'],
       );
@@ -208,11 +194,10 @@ void main() {
       expect(selectedProfile, 'profile-1');
     });
 
-    testWidgets('calls onChanged with null when "No Profile" selected',
-        (WidgetTester tester) async {
-      final service = MockProfileRegistryService(
-        profiles: ['profile-1'],
-      );
+    testWidgets('calls onChanged with null when "No Profile" selected', (
+      WidgetTester tester,
+    ) async {
+      final service = MockProfileRegistryService(profiles: ['profile-1']);
 
       String? selectedProfile = 'profile-1';
 
@@ -241,17 +226,14 @@ void main() {
       expect(selectedProfile, isNull);
     });
 
-    testWidgets('displays error state when loading fails',
-        (WidgetTester tester) async {
+    testWidgets('displays error state when loading fails', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(shouldThrow: true);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -263,17 +245,14 @@ void main() {
       expect(find.byType(DropdownButton<String?>), findsNothing);
     });
 
-    testWidgets('displays empty state when no profiles available',
-        (WidgetTester tester) async {
+    testWidgets('displays empty state when no profiles available', (
+      WidgetTester tester,
+    ) async {
       final service = MockProfileRegistryService(profiles: []);
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-            ),
-          ),
+          home: Scaffold(body: ProfileSelector(profileService: service)),
         ),
       );
 
@@ -285,35 +264,31 @@ void main() {
       expect(find.byType(DropdownButton<String?>), findsNothing);
     });
 
-    testWidgets('disables dropdown when enabled is false',
-        (WidgetTester tester) async {
-      final service = MockProfileRegistryService(
-        profiles: ['profile-1'],
-      );
+    testWidgets('disables dropdown when enabled is false', (
+      WidgetTester tester,
+    ) async {
+      final service = MockProfileRegistryService(profiles: ['profile-1']);
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-              enabled: false,
-            ),
+            body: ProfileSelector(profileService: service, enabled: false),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      final dropdown =
-          tester.widget<DropdownButton<String?>>(find.byType(DropdownButton<String?>));
+      final dropdown = tester.widget<DropdownButton<String?>>(
+        find.byType(DropdownButton<String?>),
+      );
       expect(dropdown.onChanged, isNull);
     });
 
-    testWidgets('enables dropdown when enabled is true',
-        (WidgetTester tester) async {
-      final service = MockProfileRegistryService(
-        profiles: ['profile-1'],
-      );
+    testWidgets('enables dropdown when enabled is true', (
+      WidgetTester tester,
+    ) async {
+      final service = MockProfileRegistryService(profiles: ['profile-1']);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -329,8 +304,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final dropdown =
-          tester.widget<DropdownButton<String?>>(find.byType(DropdownButton<String?>));
+      final dropdown = tester.widget<DropdownButton<String?>>(
+        find.byType(DropdownButton<String?>),
+      );
       expect(dropdown.onChanged, isNotNull);
     });
   });

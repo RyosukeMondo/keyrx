@@ -19,10 +19,7 @@ import 'bindings.dart';
 
 /// Result wrapper for profile registry operations.
 class ProfileRegistryResult<T> {
-  const ProfileRegistryResult({
-    this.data,
-    this.errorMessage,
-  });
+  const ProfileRegistryResult({this.data, this.errorMessage});
 
   factory ProfileRegistryResult.success(T data) =>
       ProfileRegistryResult(data: data);
@@ -53,7 +50,8 @@ class _FfiResultParser {
     // Handle error responses
     if (trimmed.toLowerCase().startsWith('error:')) {
       return ProfileRegistryResult.error(
-          trimmed.substring('error:'.length).trim());
+        trimmed.substring('error:'.length).trim(),
+      );
     }
 
     // Handle success responses
@@ -104,7 +102,9 @@ mixin ProfileRegistryFFIMixin {
   ProfileRegistryResult<List<String>> listProfiles() {
     final listFn = bindings?.profileRegistryListProfiles;
     if (listFn == null) {
-      return ProfileRegistryResult.error('profileRegistryListProfiles not available');
+      return ProfileRegistryResult.error(
+        'profileRegistryListProfiles not available',
+      );
     }
 
     Pointer<Char>? ptr;
@@ -125,9 +125,7 @@ mixin ProfileRegistryFFIMixin {
       }
 
       // Convert JSON array to list of strings
-      final profileIds = result.data!
-          .map((item) => item as String)
-          .toList();
+      final profileIds = result.data!.map((item) => item as String).toList();
 
       return ProfileRegistryResult.success(profileIds);
     } catch (e) {
@@ -147,7 +145,9 @@ mixin ProfileRegistryFFIMixin {
   ProfileRegistryResult<Profile> getProfile(String profileId) {
     final getFn = bindings?.profileRegistryGetProfile;
     if (getFn == null) {
-      return ProfileRegistryResult.error('profileRegistryGetProfile not available');
+      return ProfileRegistryResult.error(
+        'profileRegistryGetProfile not available',
+      );
     }
 
     final idPtr = profileId.toNativeUtf8();
@@ -190,7 +190,9 @@ mixin ProfileRegistryFFIMixin {
   ProfileRegistryResult<void> saveProfile(Profile profile) {
     final saveFn = bindings?.profileRegistrySaveProfile;
     if (saveFn == null) {
-      return ProfileRegistryResult.error('profileRegistrySaveProfile not available');
+      return ProfileRegistryResult.error(
+        'profileRegistrySaveProfile not available',
+      );
     }
 
     Pointer<Utf8>? jsonPtr;
@@ -234,7 +236,9 @@ mixin ProfileRegistryFFIMixin {
   ProfileRegistryResult<void> deleteProfile(String profileId) {
     final deleteFn = bindings?.profileRegistryDeleteProfile;
     if (deleteFn == null) {
-      return ProfileRegistryResult.error('profileRegistryDeleteProfile not available');
+      return ProfileRegistryResult.error(
+        'profileRegistryDeleteProfile not available',
+      );
     }
 
     final idPtr = profileId.toNativeUtf8();
@@ -275,7 +279,8 @@ mixin ProfileRegistryFFIMixin {
     final findFn = bindings?.profileRegistryFindCompatibleProfiles;
     if (findFn == null) {
       return ProfileRegistryResult.error(
-          'profileRegistryFindCompatibleProfiles not available');
+        'profileRegistryFindCompatibleProfiles not available',
+      );
     }
 
     // Convert LayoutType to string
@@ -286,7 +291,9 @@ mixin ProfileRegistryFFIMixin {
     try {
       resultPtr = findFn(typePtr.cast<Char>());
       if (resultPtr == nullptr) {
-        return ProfileRegistryResult.error('findCompatibleProfiles returned null');
+        return ProfileRegistryResult.error(
+          'findCompatibleProfiles returned null',
+        );
       }
 
       final raw = resultPtr.cast<Utf8>().toDartString();
@@ -306,7 +313,9 @@ mixin ProfileRegistryFFIMixin {
 
       return ProfileRegistryResult.success(profiles);
     } catch (e) {
-      return ProfileRegistryResult.error('findCompatibleProfiles exception: $e');
+      return ProfileRegistryResult.error(
+        'findCompatibleProfiles exception: $e',
+      );
     } finally {
       calloc.free(typePtr);
       if (resultPtr != null && resultPtr != nullptr) {

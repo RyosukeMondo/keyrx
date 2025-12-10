@@ -76,17 +76,11 @@ class _ApiBrowserState extends State<ApiBrowser> {
           result.name,
         );
       } else if (result.type == 'type') {
-        _selectedItem = widget.docsService.getType(
-          result.module,
-          result.name,
-        );
+        _selectedItem = widget.docsService.getType(result.module, result.name);
       } else if (result.type == 'method') {
         final parts = result.name.split('.');
         if (parts.length == 2) {
-          _selectedItem = widget.docsService.getType(
-            result.module,
-            parts[0],
-          );
+          _selectedItem = widget.docsService.getType(result.module, parts[0]);
         }
       }
     });
@@ -139,14 +133,9 @@ class _ApiBrowserState extends State<ApiBrowser> {
               ? _buildSearchResults()
               : Row(
                   children: [
-                    SizedBox(
-                      width: 250,
-                      child: _buildModuleBrowser(),
-                    ),
+                    SizedBox(width: 250, child: _buildModuleBrowser()),
                     const VerticalDivider(width: 1),
-                    Expanded(
-                      child: _buildContentViewer(),
-                    ),
+                    Expanded(child: _buildContentViewer()),
                   ],
                 ),
         ),
@@ -160,9 +149,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
       child: TextField(
@@ -180,9 +167,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 12,
@@ -195,9 +180,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
 
   Widget _buildSearchResults() {
     if (_searchResults.isEmpty) {
-      return const Center(
-        child: Text('No results found'),
-      );
+      return const Center(child: Text('No results found'));
     }
 
     return ListView.builder(
@@ -233,9 +216,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).dividerColor,
-              ),
+              bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
           child: Text(
@@ -278,9 +259,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Functions',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
+                          style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -288,10 +267,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
                     ...module.functions.map((func) {
                       return ListTile(
                         contentPadding: const EdgeInsets.only(left: 48),
-                        leading: const Icon(
-                          Icons.functions,
-                          size: 18,
-                        ),
+                        leading: const Icon(Icons.functions, size: 18),
                         title: Text(func.name),
                         dense: true,
                         selected: _selectedItem == func,
@@ -306,9 +282,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Types',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
+                          style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -316,10 +290,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
                     ...module.types.map((type) {
                       return ListTile(
                         contentPadding: const EdgeInsets.only(left: 48),
-                        leading: const Icon(
-                          Icons.class_outlined,
-                          size: 18,
-                        ),
+                        leading: const Icon(Icons.class_outlined, size: 18),
                         title: Text(type.name),
                         dense: true,
                         selected: _selectedItem == type,
@@ -381,10 +352,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            module.name,
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
+          Text(module.name, style: Theme.of(context).textTheme.headlineMedium),
           if (module.description != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -476,37 +444,25 @@ class _ApiBrowserState extends State<ApiBrowser> {
           ],
           const SizedBox(height: 24),
           if (function.parameters.isNotEmpty) ...[
-            Text(
-              'Parameters',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...function.parameters.map((param) => _buildParameterCard(param)),
             const SizedBox(height: 24),
           ],
           if (function.returns != null) ...[
-            Text(
-              'Returns',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Returns', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             _buildReturnCard(function.returns!),
             const SizedBox(height: 24),
           ],
           if (function.examples.isNotEmpty) ...[
-            Text(
-              'Examples',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Examples', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...function.examples.map((example) => _buildCodeExample(example)),
           ],
           if (function.notes != null) ...[
             const SizedBox(height: 24),
-            Text(
-              'Notes',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Notes', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
@@ -526,8 +482,9 @@ class _ApiBrowserState extends State<ApiBrowser> {
                     child: Text(
                       function.notes!,
                       style: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onSecondaryContainer,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSecondaryContainer,
                       ),
                     ),
                   ),
@@ -559,43 +516,28 @@ class _ApiBrowserState extends State<ApiBrowser> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            type.description,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text(type.description, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 24),
           if (type.properties.isNotEmpty) ...[
-            Text(
-              'Properties',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Properties', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...type.properties.map((prop) => _buildPropertyCard(prop)),
             const SizedBox(height: 24),
           ],
           if (type.constructors.isNotEmpty) ...[
-            Text(
-              'Constructors',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Constructors', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...type.constructors.map((ctor) => _buildMethodCard(ctor)),
             const SizedBox(height: 24),
           ],
           if (type.methods.isNotEmpty) ...[
-            Text(
-              'Methods',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Methods', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...type.methods.map((method) => _buildMethodCard(method)),
             const SizedBox(height: 24),
           ],
           if (type.examples.isNotEmpty) ...[
-            Text(
-              'Examples',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Examples', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             ...type.examples.map((example) => _buildCodeExample(example)),
           ],
@@ -794,9 +736,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -862,10 +802,7 @@ class _ApiBrowserState extends State<ApiBrowser> {
 class SyntaxHighlightedCode extends StatelessWidget {
   final String code;
 
-  const SyntaxHighlightedCode({
-    super.key,
-    required this.code,
-  });
+  const SyntaxHighlightedCode({super.key, required this.code});
 
   @override
   Widget build(BuildContext context) {
@@ -926,7 +863,10 @@ class SyntaxHighlightedCode extends StatelessWidget {
           spans.add(
             TextSpan(
               text: line.substring(pos),
-              style: TextStyle(color: commentColor, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                color: commentColor,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           );
           break;
@@ -957,8 +897,7 @@ class SyntaxHighlightedCode extends StatelessWidget {
         // Numbers
         if (RegExp(r'[0-9]').hasMatch(line[pos])) {
           final start = pos;
-          while (pos < line.length &&
-              RegExp(r'[0-9._]').hasMatch(line[pos])) {
+          while (pos < line.length && RegExp(r'[0-9._]').hasMatch(line[pos])) {
             pos++;
           }
           spans.add(

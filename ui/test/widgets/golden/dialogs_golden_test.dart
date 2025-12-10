@@ -5,7 +5,9 @@ import 'package:keyrx_ui/widgets/common/dialogs/input_dialog.dart';
 
 void main() {
   group('ConfirmationDialog Golden Tests', () {
-    testWidgets('renders basic confirmation dialog', (WidgetTester tester) async {
+    testWidgets('renders basic confirmation dialog', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
@@ -25,7 +27,9 @@ void main() {
       );
     });
 
-    testWidgets('renders destructive confirmation dialog', (WidgetTester tester) async {
+    testWidgets('renders destructive confirmation dialog', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
@@ -48,7 +52,9 @@ void main() {
       );
     });
 
-    testWidgets('renders confirmation dialog with icon', (WidgetTester tester) async {
+    testWidgets('renders confirmation dialog with icon', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
@@ -71,7 +77,9 @@ void main() {
       );
     });
 
-    testWidgets('renders confirmation dialog in light theme', (WidgetTester tester) async {
+    testWidgets('renders confirmation dialog in light theme', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
@@ -114,7 +122,9 @@ void main() {
       );
     });
 
-    testWidgets('renders input dialog with message', (WidgetTester tester) async {
+    testWidgets('renders input dialog with message', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
@@ -180,7 +190,9 @@ void main() {
       );
     });
 
-    testWidgets('renders input dialog in light theme', (WidgetTester tester) async {
+    testWidgets('renders input dialog in light theme', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),

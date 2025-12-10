@@ -136,8 +136,12 @@ class _TestRunnerPageState extends State<TestRunnerPage> {
           _isRunning = false;
           if (result.results.isNotEmpty) {
             _testResults[test.name] = result.results.first;
-            _passed = _testResults.values.where((r) => r?.passed == true).length;
-            _failed = _testResults.values.where((r) => r?.passed == false).length;
+            _passed = _testResults.values
+                .where((r) => r?.passed == true)
+                .length;
+            _failed = _testResults.values
+                .where((r) => r?.passed == false)
+                .length;
           }
         });
       },

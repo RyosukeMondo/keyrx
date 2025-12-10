@@ -16,8 +16,9 @@ import '../services/engine_service.dart';
 class LatencyThresholds {
   static const int warningUs = ThresholdConstants.latencyWarningUs;
   static const int cautionUs = ThresholdConstants.latencyCautionUs;
-  static const Duration animationDuration =
-      Duration(milliseconds: TimingConfig.animationDurationMs);
+  static const Duration animationDuration = Duration(
+    milliseconds: TimingConfig.animationDurationMs,
+  );
 }
 
 /// Builds the latency card with animated meter.
@@ -70,15 +71,16 @@ class LatencyMeterCard extends StatelessWidget {
     final label = latencyUs! >= LatencyThresholds.warningUs
         ? 'High'
         : latencyUs! >= LatencyThresholds.cautionUs
-            ? 'Caution'
-            : 'Healthy';
+        ? 'Caution'
+        : 'Healthy';
 
     // Calculate meter progress (0-1, capped at warning threshold * 2)
     final maxLatency = LatencyThresholds.warningUs * 2;
     final progress = (latencyUs! / maxLatency).clamp(0.0, 1.0);
 
     // Detect latency change for animation
-    final latencyChanged = previousLatency != null && latencyUs != previousLatency;
+    final latencyChanged =
+        previousLatency != null && latencyUs != previousLatency;
     final latencyIncreased =
         previousLatency != null && latencyUs! > previousLatency!;
 
@@ -105,8 +107,10 @@ class LatencyMeterCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 AnimatedContainer(
                   duration: animationDuration,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -186,9 +190,13 @@ class LatencyMeterCard extends StatelessWidget {
               children: [
                 _buildThresholdMarker('0', Colors.green),
                 _buildThresholdMarker(
-                    '${LatencyThresholds.cautionUs ~/ 1000}k', Colors.orange),
+                  '${LatencyThresholds.cautionUs ~/ 1000}k',
+                  Colors.orange,
+                ),
                 _buildThresholdMarker(
-                    '${LatencyThresholds.warningUs ~/ 1000}k', Colors.red),
+                  '${LatencyThresholds.warningUs ~/ 1000}k',
+                  Colors.red,
+                ),
               ],
             ),
           ],
@@ -211,10 +219,7 @@ class LatencyMeterCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: color),
-        ),
+        Text(label, style: TextStyle(fontSize: 10, color: color)),
       ],
     );
   }
@@ -290,12 +295,15 @@ class _PendingTapHoldWidgetState extends State<PendingTapHoldWidget> {
                   strokeWidth: 3,
                   backgroundColor: Colors.grey.withValues(alpha: 0.2),
                   valueColor: AlwaysStoppedAnimation(
-                      _progress > 0.3 ? Colors.orange : Colors.red),
+                    _progress > 0.3 ? Colors.orange : Colors.red,
+                  ),
                 ),
                 Text(
                   '${(_progress * ms).round()}',
                   style: const TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.bold),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -307,8 +315,7 @@ class _PendingTapHoldWidgetState extends State<PendingTapHoldWidget> {
               decoration: BoxDecoration(
                 color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
-                border:
-                    Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: [
@@ -355,9 +362,7 @@ class PendingComboWidget extends StatelessWidget {
             child: Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: [
-                for (final key in keys) _buildKeyChip(key),
-              ],
+              children: [for (final key in keys) _buildKeyChip(key)],
             ),
           ),
         ],
@@ -385,7 +390,10 @@ class PendingComboWidget extends StatelessWidget {
       child: Text(
         key,
         style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
       ),
     );
   }

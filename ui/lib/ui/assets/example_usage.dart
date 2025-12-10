@@ -42,11 +42,7 @@ class AssetDemoPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // App Icon
-                  Image.asset(
-                    AppAssets.appIconBase,
-                    width: 120,
-                    height: 120,
-                  ),
+                  Image.asset(AppAssets.appIconBase, width: 120, height: 120),
                   const SizedBox(height: 24),
 
                   // Title
@@ -125,10 +121,7 @@ class AssetDemoPage extends StatelessWidget {
     );
   }
 
-  Widget _buildIconCard({
-    required Widget icon,
-    required String label,
-  }) {
+  Widget _buildIconCard({required Widget icon, required String label}) {
     return Column(
       children: [
         Container(
@@ -142,10 +135,7 @@ class AssetDemoPage extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
       ],
     );
@@ -162,21 +152,14 @@ class IntegratedExample extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              AppAssets.appIconBase,
-              width: 32,
-              height: 32,
-            ),
+            Image.asset(AppAssets.appIconBase, width: 32, height: 32),
             const SizedBox(width: 12),
             const Text('KeyRx'),
           ],
         ),
         actions: [
           IconButton(
-            icon: const AssetIcon(
-              type: AssetIconType.settings,
-              size: 24,
-            ),
+            icon: const AssetIcon(type: AssetIconType.settings, size: 24),
             onPressed: () {},
           ),
         ],
@@ -195,10 +178,7 @@ class IntegratedExample extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AssetIcon(
-                  type: AssetIconType.key,
-                  size: 64,
-                ),
+                const AssetIcon(type: AssetIconType.key, size: 64),
                 const SizedBox(height: 24),
                 AssetButton(
                   text: 'Configure Keys',
@@ -256,4 +236,3 @@ class CustomAssetButton extends StatelessWidget {
     );
   }
 }
-

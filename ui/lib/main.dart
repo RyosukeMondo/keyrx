@@ -16,7 +16,6 @@ import 'pages/trade_off_page.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/calibration_page.dart';
 import 'pages/metrics_dashboard.dart';
-import 'pages/monitor_page.dart';
 import 'pages/wiring.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
@@ -90,7 +89,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
-      const MonitorPage(),
+      const RunControlsPage(),
       DevicesPage(
         runtimeService: registry.runtimeService,
         hardwareService: registry.hardwareService,
@@ -105,9 +104,9 @@ class _HomePageState extends State<HomePage> {
 
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(
-      icon: Icon(Icons.monitor_heart_outlined),
-      selectedIcon: Icon(Icons.monitor_heart),
-      label: 'Monitor',
+      icon: Icon(Icons.dashboard_outlined),
+      selectedIcon: Icon(Icons.dashboard),
+      label: 'Dashboard',
     ),
     NavigationDestination(
       icon: Icon(Icons.keyboard_outlined),
@@ -233,8 +232,6 @@ class _HomePageState extends State<HomePage> {
         return const MetricsDashboardPage();
       case DeveloperTool.doctor:
         return const CalibrationPage();
-      case DeveloperTool.replay:
-        return const RunControlsPage();
       case DeveloperTool.analyzer:
         return const TradeOffVisualizerPage();
       case DeveloperTool.simulator:

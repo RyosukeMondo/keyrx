@@ -55,10 +55,7 @@ class AutosaveStatus {
 
   /// Convenience factory for queued state.
   factory AutosaveStatus.queued(String profileId) {
-    return AutosaveStatus(
-      state: AutosaveState.queued,
-      profileId: profileId,
-    );
+    return AutosaveStatus(state: AutosaveState.queued, profileId: profileId);
   }
 
   /// Convenience factory for saving state.
@@ -119,18 +116,16 @@ class ProfileAutosaveService {
     Future<void> Function(Duration duration)? delayFn,
     DateTime Function()? now,
     Future<ProfileRegistryOperationResult> Function(Profile profile)?
-        saveOperation,
-  })  : _storagePathResolver = storagePathResolver,
-        _debounceDuration =
-            debounceDuration ??
-            const Duration(milliseconds: TimingConfig.debounceMs),
-        _initialBackoff =
-            initialBackoff ?? const Duration(milliseconds: 200),
-        _maxRetries = maxRetries,
-        _delayFn = delayFn ?? Future.delayed,
-        _now = now ?? DateTime.now,
-        _saveOperation =
-            saveOperation ?? profileRegistryService.saveProfile {
+    saveOperation,
+  }) : _storagePathResolver = storagePathResolver,
+       _debounceDuration =
+           debounceDuration ??
+           const Duration(milliseconds: TimingConfig.debounceMs),
+       _initialBackoff = initialBackoff ?? const Duration(milliseconds: 200),
+       _maxRetries = maxRetries,
+       _delayFn = delayFn ?? Future.delayed,
+       _now = now ?? DateTime.now,
+       _saveOperation = saveOperation ?? profileRegistryService.saveProfile {
     _emit(AutosaveStatus.idle());
   }
 
@@ -141,7 +136,7 @@ class ProfileAutosaveService {
   final Future<void> Function(Duration duration) _delayFn;
   final DateTime Function() _now;
   final Future<ProfileRegistryOperationResult> Function(Profile profile)
-      _saveOperation;
+  _saveOperation;
 
   Timer? _debounceTimer;
   Profile? _pendingProfile;

@@ -77,7 +77,8 @@ class StyledTextField extends StatelessWidget {
       obscureText: obscureText,
       autocorrect: autocorrect,
       focusNode: focusNode,
-      decoration: decoration ??
+      decoration:
+          decoration ??
           InputDecoration(
             labelText: labelText,
             hintText: hintText,
@@ -187,11 +188,8 @@ class ExpandingTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final bgColor =
         backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerLowest;
-    final textStyle = style ??
-        const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-        );
+    final textStyle =
+        style ?? const TextStyle(fontFamily: 'monospace', fontSize: 13);
 
     return Container(
       color: bgColor,
@@ -252,9 +250,7 @@ class NumberTextField extends StatelessWidget {
       if (!allowDecimal && !allowNegative)
         FilteringTextInputFormatter.digitsOnly
       else
-        FilteringTextInputFormatter.allow(
-          RegExp(_buildNumberPattern()),
-        ),
+        FilteringTextInputFormatter.allow(RegExp(_buildNumberPattern())),
     ];
 
     final decoration = InputDecoration(

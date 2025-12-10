@@ -125,7 +125,9 @@ void main() {
         isTrue,
       );
       expect(
-        FacadeState.initial().copyWith(device: DeviceStatus.selected).isDeviceReady,
+        FacadeState.initial()
+            .copyWith(device: DeviceStatus.selected)
+            .isDeviceReady,
         isFalse,
       );
     });
@@ -161,7 +163,9 @@ void main() {
         isTrue,
       );
       expect(
-        FacadeState.initial().copyWith(discovery: DiscoveryStatus.error).hasError,
+        FacadeState.initial()
+            .copyWith(discovery: DiscoveryStatus.error)
+            .hasError,
         isTrue,
       );
       expect(FacadeState.initial().hasError, isFalse);

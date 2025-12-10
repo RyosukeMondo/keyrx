@@ -91,15 +91,10 @@ class _ReplayPageState extends State<ReplayPage> {
       body: Row(
         children: [
           // Session list panel
-          SizedBox(
-            width: 280,
-            child: _buildSessionList(),
-          ),
+          SizedBox(width: 280, child: _buildSessionList()),
           const VerticalDivider(width: 1),
           // Replay panel
-          Expanded(
-            child: _buildReplayPanel(),
-          ),
+          Expanded(child: _buildReplayPanel()),
         ],
       ),
     );
@@ -127,7 +122,11 @@ class _ReplayPageState extends State<ReplayPage> {
         return ListTile(
           selected: isSelected,
           leading: const Icon(Icons.play_circle_outline),
-          title: Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            session.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(
             '${session.eventCount} events • ${_formatDuration(session.durationMs)}',
             style: Theme.of(context).textTheme.bodySmall,
@@ -195,7 +194,10 @@ class _ReplayPageState extends State<ReplayPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Session Info', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Session Info',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             _buildInfoRow('Name', session.name),
             _buildInfoRow('Events', '${session.eventCount}'),
@@ -227,13 +229,20 @@ class _ReplayPageState extends State<ReplayPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Playback Controls', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Playback Controls',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Verify Mode'),
-              subtitle: const Text('Compare replay output against recorded decisions'),
+              subtitle: const Text(
+                'Compare replay output against recorded decisions',
+              ),
               value: _verifyMode,
-              onChanged: _isReplaying ? null : (value) => setState(() => _verifyMode = value),
+              onChanged: _isReplaying
+                  ? null
+                  : (value) => setState(() => _verifyMode = value),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -244,7 +253,10 @@ class _ReplayPageState extends State<ReplayPage> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.play_arrow),
                 label: Text(_isReplaying ? 'Replaying...' : 'Replay Session'),
@@ -269,7 +281,9 @@ class _ReplayPageState extends State<ReplayPage> {
             Expanded(
               child: Text(
                 _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
               ),
             ),
             IconButton(
@@ -309,8 +323,16 @@ class _ReplayPageState extends State<ReplayPage> {
             ),
             const SizedBox(height: 16),
             _buildResultRow('Total Events', '${result.totalEvents}'),
-            _buildResultRow('Matched', '${result.matched}', color: Colors.green),
-            _buildResultRow('Mismatched', '${result.mismatched}', color: result.mismatched > 0 ? Colors.red : null),
+            _buildResultRow(
+              'Matched',
+              '${result.matched}',
+              color: Colors.green,
+            ),
+            _buildResultRow(
+              'Mismatched',
+              '${result.mismatched}',
+              color: result.mismatched > 0 ? Colors.red : null,
+            ),
             if (result.mismatches.isNotEmpty) ...[
               const Divider(height: 24),
               Text('Mismatches', style: Theme.of(context).textTheme.titleSmall),
@@ -321,7 +343,10 @@ class _ReplayPageState extends State<ReplayPage> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     '...and ${result.mismatches.length - 10} more',
-                    style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
             ],
@@ -358,10 +383,19 @@ class _ReplayPageState extends State<ReplayPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Event #${mismatch.seq}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Event #${mismatch.seq}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          Text('Expected: ${mismatch.recorded}', style: Theme.of(context).textTheme.bodySmall),
-          Text('Actual: ${mismatch.actual}', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            'Expected: ${mismatch.recorded}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          Text(
+            'Actual: ${mismatch.actual}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );

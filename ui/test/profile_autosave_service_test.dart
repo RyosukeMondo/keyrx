@@ -24,8 +24,9 @@ class _StubProfileRegistryService implements ProfileRegistryService {
   Future<List<String>> refresh() async => const <String>[];
 
   @override
-  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async =>
-      const ProfileRegistryOperationResult(success: true);
+  Future<ProfileRegistryOperationResult> deleteProfile(
+    String profileId,
+  ) async => const ProfileRegistryOperationResult(success: true);
 
   @override
   Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async =>

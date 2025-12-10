@@ -162,12 +162,12 @@ class FacadeState with _$FacadeState {
   ///
   /// All subsystems start in their idle/uninitialized state.
   factory FacadeState.initial() => FacadeState(
-        engine: EngineStatus.uninitialized,
-        device: DeviceStatus.none,
-        validation: ValidationStatus.none,
-        discovery: DiscoveryStatus.idle,
-        timestamp: DateTime.now(),
-      );
+    engine: EngineStatus.uninitialized,
+    device: DeviceStatus.none,
+    validation: ValidationStatus.none,
+    discovery: DiscoveryStatus.idle,
+    timestamp: DateTime.now(),
+  );
 
   /// Check if the engine is in a state where it can be started.
   bool get canStartEngine =>

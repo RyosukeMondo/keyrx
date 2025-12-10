@@ -7,12 +7,7 @@ library;
 import 'package:flutter/material.dart';
 
 /// Migration status enum
-enum MigrationStatus {
-  notStarted,
-  inProgress,
-  completed,
-  failed,
-}
+enum MigrationStatus { notStarted, inProgress, completed, failed }
 
 /// Migration report data model
 class MigrationReport {
@@ -36,7 +31,8 @@ class MigrationReport {
       migratedCount: json['migrated_count'] as int,
       failedCount: json['failed_count'] as int,
       backupPath: json['backup_path'] as String?,
-      failures: (json['failures'] as List<dynamic>?)
+      failures:
+          (json['failures'] as List<dynamic>?)
               ?.map((f) => MigrationFailure.fromJson(f as Map<String, dynamic>))
               .toList() ??
           [],
@@ -54,10 +50,7 @@ class MigrationFailure {
   final String path;
   final String error;
 
-  MigrationFailure({
-    required this.path,
-    required this.error,
-  });
+  MigrationFailure({required this.path, required this.error});
 
   factory MigrationFailure.fromJson(Map<String, dynamic> json) {
     return MigrationFailure(
@@ -134,11 +127,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(
-          Icons.upgrade,
-          size: 64,
-          color: Colors.blue,
-        ),
+        const Icon(Icons.upgrade, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
         Text(
           'Welcome to Revolutionary Mapping',
@@ -169,9 +158,9 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
           children: [
             Text(
               'What\'s new in Revolutionary Mapping:',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             _buildFeatureItem(
@@ -213,10 +202,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
                 ),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[400],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
               ],
             ),
@@ -269,10 +255,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        TextButton(
-          onPressed: _handleSkip,
-          child: const Text('Skip'),
-        ),
+        TextButton(onPressed: _handleSkip, child: const Text('Skip')),
         const SizedBox(width: 16),
         ElevatedButton.icon(
           onPressed: _handleMigrate,
@@ -297,9 +280,9 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
         const SizedBox(height: 12),
         Text(
           'Please wait while we convert your profiles to the new format.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[400],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
           textAlign: TextAlign.center,
         ),
       ],
@@ -324,22 +307,22 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
           isSuccess
               ? Icons.check_circle
               : isPartial
-                  ? Icons.warning
-                  : Icons.error,
+              ? Icons.warning
+              : Icons.error,
           size: 64,
           color: isSuccess
               ? Colors.green
               : isPartial
-                  ? Colors.orange
-                  : Colors.red,
+              ? Colors.orange
+              : Colors.red,
         ),
         const SizedBox(height: 24),
         Text(
           isSuccess
               ? 'Migration Completed'
               : isPartial
-                  ? 'Migration Partially Completed'
-                  : 'Migration Failed',
+              ? 'Migration Partially Completed'
+              : 'Migration Failed',
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 16),
@@ -368,13 +351,21 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSummaryRow('Total Profiles', '${report.totalCount}'),
-            _buildSummaryRow('Migrated', '${report.migratedCount}',
-                color: Colors.green),
-            if (report.failedCount > 0)
-              _buildSummaryRow('Failed', '${report.failedCount}',
-                  color: Colors.red),
             _buildSummaryRow(
-                'Success Rate', '${report.successRate.toStringAsFixed(1)}%'),
+              'Migrated',
+              '${report.migratedCount}',
+              color: Colors.green,
+            ),
+            if (report.failedCount > 0)
+              _buildSummaryRow(
+                'Failed',
+                '${report.failedCount}',
+                color: Colors.red,
+              ),
+            _buildSummaryRow(
+              'Success Rate',
+              '${report.successRate.toStringAsFixed(1)}%',
+            ),
             if (report.backupPath != null) ...[
               const Divider(height: 24),
               Row(
@@ -420,10 +411,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
           Text(label),
           Text(
             value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
@@ -452,28 +440,27 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
               ],
             ),
             const SizedBox(height: 12),
-            ...failures.map((failure) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        failure.path,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
+            ...failures.map(
+              (failure) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      failure.path,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
                       ),
-                      Text(
-                        failure.error,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
+                    ),
+                    Text(
+                      failure.error,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -506,10 +493,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
               child: const Text('Skip Migration'),
             ),
             const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: _handleRetry,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _handleRetry, child: const Text('Retry')),
           ],
         ),
       ],
@@ -555,4 +539,3 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
     });
   }
 }
-

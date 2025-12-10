@@ -128,11 +128,17 @@ class MappingOverlay extends StatelessWidget {
     final targetSize = layout.getKeySize(targetKey);
 
     // Position delete button at midpoint of arrow
-    final midX = (sourcePos.x + sourceSize.width / 2 +
-            targetPos.x + targetSize.width / 2) /
+    final midX =
+        (sourcePos.x +
+            sourceSize.width / 2 +
+            targetPos.x +
+            targetSize.width / 2) /
         2;
-    final midY = (sourcePos.y + sourceSize.height / 2 +
-            targetPos.y + targetSize.height / 2) /
+    final midY =
+        (sourcePos.y +
+            sourceSize.height / 2 +
+            targetPos.y +
+            targetSize.height / 2) /
         2;
 
     return Positioned(
@@ -214,7 +220,11 @@ class _MappingPainter extends CustomPainter {
     }
   }
 
-  void _drawMapping(Canvas canvas, RemapConfig mapping, {bool isSelected = false}) {
+  void _drawMapping(
+    Canvas canvas,
+    RemapConfig mapping, {
+    bool isSelected = false,
+  }) {
     final sourceKey = layout.findKey(mapping.sourceKeyId);
     final targetKey = layout.findKey(mapping.targetKeyId);
 

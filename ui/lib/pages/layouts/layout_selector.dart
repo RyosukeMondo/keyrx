@@ -240,4 +240,3 @@ class _GridGeneratorCardState extends State<_GridGeneratorCard> {
     );
   }
 }
-

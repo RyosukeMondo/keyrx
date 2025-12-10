@@ -471,4 +471,3 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
   }
 }
-

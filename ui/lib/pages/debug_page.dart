@@ -16,10 +16,7 @@ import '../widgets/metrics/metrics_dashboard.dart';
 
 /// Debug page for performance metrics and diagnostics.
 class DebugPage extends StatefulWidget {
-  const DebugPage({
-    required this.metricsService,
-    super.key,
-  });
+  const DebugPage({required this.metricsService, super.key});
 
   final MetricsService metricsService;
 
@@ -68,7 +65,9 @@ class _DebugPageState extends State<DebugPage>
       return;
     }
 
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
+    final jsonStr = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(snapshot.toJson());
 
     await Clipboard.setData(ClipboardData(text: jsonStr));
 
@@ -129,14 +128,8 @@ class _DebugPageState extends State<DebugPage>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(
-              icon: Icon(Icons.dashboard),
-              text: 'Dashboard',
-            ),
-            Tab(
-              icon: Icon(Icons.info_outline),
-              text: 'Info',
-            ),
+            Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
+            Tab(icon: Icon(Icons.info_outline), text: 'Info'),
           ],
         ),
       ),
@@ -165,7 +158,10 @@ class _DebugPageState extends State<DebugPage>
             title: 'About Metrics',
             icon: Icons.analytics,
             children: [
-              _buildInfoRow('Purpose', 'Monitor KeyRx performance in real-time'),
+              _buildInfoRow(
+                'Purpose',
+                'Monitor KeyRx performance in real-time',
+              ),
               _buildInfoRow(
                 'Latency',
                 'Tracks event processing time (P50, P95, P99 percentiles)',
@@ -210,14 +206,8 @@ class _DebugPageState extends State<DebugPage>
             title: 'Export',
             icon: Icons.download,
             children: [
-              _buildInfoRow(
-                'Format',
-                'JSON with all metric values',
-              ),
-              _buildInfoRow(
-                'Destination',
-                'Clipboard (ready to paste)',
-              ),
+              _buildInfoRow('Format', 'JSON with all metric values'),
+              _buildInfoRow('Destination', 'Clipboard (ready to paste)'),
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: _exportMetrics,
@@ -273,14 +263,10 @@ class _DebugPageState extends State<DebugPage>
             width: 140,
             child: Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Expanded(
-            child: Text(value),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );
@@ -464,10 +450,7 @@ class _ThresholdSettingsDialogState extends State<_ThresholdSettingsDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        ElevatedButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }

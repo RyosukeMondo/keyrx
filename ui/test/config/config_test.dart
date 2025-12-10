@@ -71,7 +71,10 @@ void main() {
     });
 
     test('keyboard scale range is valid', () {
-      expect(UiConstants.minKeyboardScale, lessThan(UiConstants.maxKeyboardScale));
+      expect(
+        UiConstants.minKeyboardScale,
+        lessThan(UiConstants.maxKeyboardScale),
+      );
       expect(UiConstants.minKeyboardScale, greaterThan(0));
       expect(UiConstants.maxKeyboardScale, greaterThan(0));
     });
@@ -96,9 +99,7 @@ void main() {
     });
 
     test('storage keys are unique', () {
-      final keys = [
-        StorageKeys.developerModeKey,
-      ];
+      final keys = [StorageKeys.developerModeKey];
       expect(keys.toSet().length, equals(keys.length));
     });
   });
@@ -243,7 +244,10 @@ void main() {
     });
 
     test('tempValidationPath has correct value', () {
-      expect(PathConstants.tempValidationPath, equals('/tmp/keyrx_validation.rhai'));
+      expect(
+        PathConstants.tempValidationPath,
+        equals('/tmp/keyrx_validation.rhai'),
+      );
     });
 
     test('scriptsDir has correct value', () {

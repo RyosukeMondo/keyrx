@@ -7,14 +7,13 @@ import 'package:path/path.dart' as p;
 void main() {
   group('StoragePathResolver', () {
     test('resolves linux home path', () async {
-      final tempHome = await Directory.systemTemp.createTemp('keyrx_home_linux');
+      final tempHome = await Directory.systemTemp.createTemp(
+        'keyrx_home_linux',
+      );
       addTearDown(() async => tempHome.delete(recursive: true));
 
       final resolver = StoragePathResolver(
-        environment: {
-          'HOME': tempHome.path,
-          'USERPROFILE': '/should/not/use',
-        },
+        environment: {'HOME': tempHome.path, 'USERPROFILE': '/should/not/use'},
       );
 
       final resolved = resolver.resolveProfilesPath();
@@ -28,10 +27,7 @@ void main() {
       final userProfile = p.join(tempHome.path, 'Users', 'tester');
 
       final resolver = StoragePathResolver(
-        environment: {
-          'USERPROFILE': userProfile,
-          'HOME': '/should/not/use',
-        },
+        environment: {'USERPROFILE': userProfile, 'HOME': '/should/not/use'},
       );
 
       final resolved = resolver.resolveProfilesPath();
@@ -40,11 +36,14 @@ void main() {
     }, testOn: 'windows');
 
     test('ensureProfilesDirectory creates directory', () async {
-      final tempHome =
-          await Directory.systemTemp.createTemp('keyrx_home_create');
+      final tempHome = await Directory.systemTemp.createTemp(
+        'keyrx_home_create',
+      );
       addTearDown(() async => tempHome.delete(recursive: true));
 
-      final resolver = StoragePathResolver(environment: {'HOME': tempHome.path});
+      final resolver = StoragePathResolver(
+        environment: {'HOME': tempHome.path},
+      );
 
       final resolved = await resolver.ensureProfilesDirectory();
 

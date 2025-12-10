@@ -4,6 +4,7 @@
 /// - Dashboard: List of hardware profiles.
 /// - Editor: Detailed view for wiring a specific profile.
 library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
