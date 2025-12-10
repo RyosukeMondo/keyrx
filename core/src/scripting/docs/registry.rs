@@ -336,10 +336,6 @@ fn read_registry() -> RwLockReadGuard<'static, Option<DocRegistry>> {
 mod tests {
     use super::*;
     use crate::scripting::docs::types::{FunctionSignature, ParamDoc, PropertyDoc, ReturnDoc};
-    use std::sync::Mutex;
-
-    // Test-only mutex to serialize access to global registry during tests
-    static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     fn create_test_function(name: &str, module: &str) -> FunctionDoc {
         FunctionDoc {

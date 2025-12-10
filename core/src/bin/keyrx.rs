@@ -1,8 +1,7 @@
-//! KeyRx CLI entry point.
+#![allow(clippy::print_stdout, clippy::print_stderr, clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //!
 //! This binary uses println! and eprintln! for user-facing output,
 //! which is intentional and distinct from internal logging.
-#![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use keyrx_core::cli::{
@@ -761,63 +760,13 @@ fn parse_hex_or_decimal_u16(value: &str) -> Result<u16, String> {
     {
         u16::from_str_radix(hex, 16).map_err(|err| format!("Invalid hex value '{value}': {err}"))
     } else {
-        trimmed
-            .parse::<u16>()
-            .map_err(|err| format!("Invalid number '{value}': {err}"))
+        trimmed.parse::<u16>().or_else(|_| {
+            u16::from_str_radix(trimmed, 16)
+                .map_err(|err| format!("Invalid number or hex value '{value}': {err}"))
+        })
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use clap::Parser;
-
-    #[test]
-    fn parses_output_format_flag_and_alias() {
-        let cli = Cli::try_parse_from(["keyrx", "check", "--output-format", "yaml", "script.rhai"])
-            .expect("output-format flag should parse globally");
-        assert_eq!(cli.output_format, "yaml");
-
-        let cli = Cli::try_parse_from(["keyrx", "check", "--format", "json", "script.rhai"])
-            .expect("format alias should still work");
-        assert_eq!(cli.output_format, "json");
-    }
-
-    #[test]
-    fn parses_json_shortcut_after_subcommand() {
-        let cli = Cli::try_parse_from(["keyrx", "check", "script.rhai", "--json"])
-            .expect("--json should be accepted globally");
-        assert!(cli.json);
-    }
-
-    #[test]
-    fn parse_format_defaults_to_human_on_unknown_values() {
-        assert_eq!(parse_format("human", false), OutputFormat::Human);
-        assert_eq!(parse_format("unknown", false), OutputFormat::Human);
-    }
-
-    #[test]
-    fn parse_format_respects_json_flag_priority() {
-        assert_eq!(parse_format("yaml", true), OutputFormat::Json);
-        assert_eq!(parse_format("json", true), OutputFormat::Json);
-    }
-
-    #[test]
-    fn parses_hex_or_decimal() {
-        assert_eq!(parse_hex_or_decimal_u16("0x1b1c").unwrap(), 0x1b1c);
-        assert_eq!(parse_hex_or_decimal_u16("1b1c").unwrap(), 0x1b1c);
-        assert_eq!(parse_hex_or_decimal_u16("7000").unwrap(), 7000);
-    }
-}
-
-/// Install a panic handler that logs panic info and ensures proper exit code.
-///
-/// When a panic occurs, this handler:
-/// 1. Logs the panic information at error level using tracing
-/// 2. Ensures the process exits with code 101 (Rust panic convention)
-///
-/// This provides graceful panic handling and consistent exit codes even
-/// when unrecoverable errors occur.
 fn install_panic_handler() {
     std::panic::set_hook(Box::new(|panic_info| {
         // Extract panic location
@@ -1380,5 +1329,48 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
             let cmd = MigrateCommand::new(ctx.output_format(), from, backup);
             cmd.run().await
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn parses_output_format_flag_and_alias() {
+        let cli = Cli::try_parse_from(["keyrx", "check", "--output-format", "yaml", "script.rhai"])
+            .expect("output-format flag should parse globally");
+        assert_eq!(cli.output_format, "yaml");
+
+        let cli = Cli::try_parse_from(["keyrx", "check", "--format", "json", "script.rhai"])
+            .expect("format alias should still work");
+        assert_eq!(cli.output_format, "json");
+    }
+
+    #[test]
+    fn parses_json_shortcut_after_subcommand() {
+        let cli = Cli::try_parse_from(["keyrx", "check", "script.rhai", "--json"])
+            .expect("--json should be accepted globally");
+        assert!(cli.json);
+    }
+
+    #[test]
+    fn parse_format_defaults_to_human_on_unknown_values() {
+        assert_eq!(parse_format("human", false), OutputFormat::Human);
+        assert_eq!(parse_format("unknown", false), OutputFormat::Human);
+    }
+
+    #[test]
+    fn parse_format_respects_json_flag_priority() {
+        assert_eq!(parse_format("yaml", true), OutputFormat::Json);
+        assert_eq!(parse_format("json", true), OutputFormat::Json);
+    }
+
+    #[test]
+    fn parses_hex_or_decimal() {
+        assert_eq!(parse_hex_or_decimal_u16("0x1b1c").unwrap(), 0x1b1c);
+        assert_eq!(parse_hex_or_decimal_u16("1b1c").unwrap(), 0x1b1c);
+        assert_eq!(parse_hex_or_decimal_u16("7000").unwrap(), 7000);
     }
 }

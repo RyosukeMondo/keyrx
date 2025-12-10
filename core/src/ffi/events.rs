@@ -392,7 +392,7 @@ mod tests {
     fn event_type_names_are_unique() {
         use std::collections::HashSet;
 
-        let names: HashSet<_> = vec![
+        let names: HashSet<_> = [
             EventType::DiscoveryProgress,
             EventType::DiscoveryDuplicate,
             EventType::DiscoverySummary,

@@ -23,6 +23,7 @@ use rhai::EvalAltResult;
 /// # Notes
 /// This is just a test function
 #[rhai_doc(module = "test", since = "0.1.0")]
+#[allow(dead_code)]
 pub fn test_greet(name: &str, count: i64) -> Result<String, Box<EvalAltResult>> {
     Ok(format!("Hello, {}! (x{})", name, count))
 }
