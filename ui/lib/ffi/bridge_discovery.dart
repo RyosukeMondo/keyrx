@@ -25,6 +25,18 @@ class KeyboardDevice {
   final int productId;
   final String path;
   final bool hasProfile;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is KeyboardDevice &&
+          runtimeType == other.runtimeType &&
+          vendorId == other.vendorId &&
+          productId == other.productId &&
+          path == other.path;
+
+  @override
+  int get hashCode => Object.hash(vendorId, productId, path);
 }
 
 /// Result of listing keyboard devices.

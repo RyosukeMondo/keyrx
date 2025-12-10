@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:ffi';
 
+import 'package:flutter/foundation.dart';
 import 'package:ffi/ffi.dart';
 
 import '../ffi/bridge.dart';
@@ -11,7 +12,7 @@ import '../ffi/bindings.dart';
 import '../models/virtual_layout.dart';
 import 'config_result.dart';
 
-class LayoutService {
+class LayoutService with ChangeNotifier {
   LayoutService({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
@@ -51,7 +52,7 @@ class LayoutService {
   Future<ConfigOperationResult<VirtualLayout>> saveLayout(
     VirtualLayout layout,
   ) async {
-    return _guard('save layout', (bindings) {
+    final result = await _guard<VirtualLayout>('save layout', (bindings) {
       Pointer<Utf8>? jsonPtr;
       Pointer<Char>? resultPtr;
       try {
@@ -80,11 +81,16 @@ class LayoutService {
         }
       }
     });
+
+    if (!result.hasError) {
+      notifyListeners();
+    }
+    return result;
   }
 
   /// Delete a virtual layout by id.
   Future<ConfigOperationResult<void>> deleteLayout(String id) async {
-    return _guard('delete layout', (bindings) {
+    final result = await _guard<void>('delete layout', (bindings) {
       final idPtr = id.toNativeUtf8();
       Pointer<Char>? resultPtr;
 
@@ -107,6 +113,11 @@ class LayoutService {
         }
       }
     });
+
+    if (!result.hasError) {
+      notifyListeners();
+    }
+    return result;
   }
 
   Future<ConfigOperationResult<T>> _guard<T>(

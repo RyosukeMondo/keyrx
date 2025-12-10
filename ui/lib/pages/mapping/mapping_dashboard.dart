@@ -26,6 +26,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
   List<VirtualLayout> _layouts = [];
   bool _isLoading = true;
   String? _errorMessage;
+  HardwareService? _cachedHardwareService;
 
   HardwareService get _hardwareService {
     try {
@@ -57,7 +58,17 @@ class _MappingDashboardState extends State<MappingDashboard> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+      _cachedHardwareService = _hardwareService;
+      _cachedHardwareService?.addListener(_loadData);
+    });
+  }
+
+  @override
+  void dispose() {
+    _cachedHardwareService?.removeListener(_loadData);
+    super.dispose();
   }
 
   Future<void> _loadData() async {

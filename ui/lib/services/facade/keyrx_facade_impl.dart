@@ -191,7 +191,10 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         return Result.err(error);
       }
 
-      // Step 4: Mark engine as running
+      // Step 4: Start the engine loop
+      await _services.engineService.start();
+
+      // Step 5: Mark engine as running
       _updateState(
         currentState.withEngineStatus(
           EngineStatus.running,

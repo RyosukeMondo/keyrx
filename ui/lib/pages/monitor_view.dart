@@ -282,7 +282,28 @@ class _MonitorViewState extends State<MonitorView>
 
     final data = event.data;
     if (data is Map) {
-      if (data.containsKey('ScanCode')) {
+      // New InputEvent format
+      if (data.containsKey('key') && data.containsKey('pressed')) {
+        final key = data['key'];
+        final pressed = data['pressed'] == true;
+        final state = pressed ? "Down" : "Up";
+        summary = "$key ($state)";
+      }
+      // New OutputAction format (Enum)
+      else if (data.containsKey('KeyDown')) {
+        summary = "Press ${data['KeyDown']}";
+      } else if (data.containsKey('KeyUp')) {
+        summary = "Release ${data['KeyUp']}";
+      } else if (data.containsKey('KeyTap')) {
+        summary = "Tap ${data['KeyTap']}";
+      } else if (data['Block'] != null || data.containsKey('Block')) {
+        summary = "Blocked";
+      } else if (data['PassThrough'] != null ||
+          data.containsKey('PassThrough')) {
+        summary = "Pass Through";
+      }
+      // Legacy / Raw formats
+      else if (data.containsKey('ScanCode')) {
         final sc = data['ScanCode'];
         final state = data['State'];
         summary = "SC $sc ($state)";

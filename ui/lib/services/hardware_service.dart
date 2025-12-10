@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:ffi';
 
+import 'package:flutter/foundation.dart';
 import 'package:ffi/ffi.dart';
 
 import '../ffi/bridge.dart';
@@ -11,7 +12,7 @@ import '../ffi/bindings.dart';
 import '../models/hardware_profile.dart';
 import 'config_result.dart';
 
-class HardwareService {
+class HardwareService with ChangeNotifier {
   HardwareService({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
@@ -52,7 +53,9 @@ class HardwareService {
   Future<ConfigOperationResult<HardwareProfile>> saveProfile(
     HardwareProfile profile,
   ) async {
-    return _guard('save hardware profile', (bindings) {
+    final result = await _guard<HardwareProfile>('save hardware profile', (
+      bindings,
+    ) {
       Pointer<Utf8>? jsonPtr;
       Pointer<Char>? resultPtr;
       try {
@@ -81,11 +84,16 @@ class HardwareService {
         }
       }
     });
+
+    if (!result.hasError) {
+      notifyListeners();
+    }
+    return result;
   }
 
   /// Delete a hardware profile by id.
   Future<ConfigOperationResult<void>> deleteProfile(String id) async {
-    return _guard('delete hardware profile', (bindings) {
+    final result = await _guard<void>('delete hardware profile', (bindings) {
       final idPtr = id.toNativeUtf8();
       Pointer<Char>? resultPtr;
 
@@ -110,6 +118,11 @@ class HardwareService {
         }
       }
     });
+
+    if (!result.hasError) {
+      notifyListeners();
+    }
+    return result;
   }
 
   Future<ConfigOperationResult<T>> _guard<T>(

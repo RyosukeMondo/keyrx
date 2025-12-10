@@ -247,6 +247,24 @@ fn init_revolutionary_runtime() -> i32 {
         }
     }
 
+    0
+}
+
+fn engine_start_loop() -> i32 {
+    use crate::ffi::runtime::get_revolutionary_runtime;
+
+    // Reset shutdown signal
+    ENGINE_SHUTDOWN.store(false, Ordering::SeqCst);
+
+    // Get shared script runtime from global runtime state
+    let shared_script_runtime = match get_revolutionary_runtime() {
+        Some(rt) => rt.rhai_runtime().clone(),
+        None => {
+            tracing::error!("Revolutionary runtime not initialized, cannot start engine loop");
+            return -1;
+        }
+    };
+
     // Initialize the engine and start the event loop
     // This is critical for processing input events
     #[cfg(windows)]
@@ -275,8 +293,6 @@ fn init_revolutionary_runtime() -> i32 {
                 AdvancedEngine::new(script_runtime_for_engine.clone(), TimingConfig::default());
 
             // Initialize engine with data from script registry
-            // This is required because AdvancedEngine uses internal structures (layers/combos),
-            // not direct script lookups like the basic Engine.
             {
                 // We lock only briefly to copy the data
                 if let Ok(guard) = script_runtime_for_engine.lock() {
@@ -289,8 +305,8 @@ fn init_revolutionary_runtime() -> i32 {
                     let layers = engine.layers_mut();
                     if let Some(base_id) = layers.layer_id_by_name("base") {
                         for (key, action) in registry.mappings() {
-                            if let Some(layer_action) = to_layer_action(action.clone()) {
-                                layers.set_mapping_for_layer(base_id, key, layer_action);
+                            if let Some(layout_action) = to_layer_action(action.clone()) {
+                                layers.set_mapping_for_layer(base_id, key.clone(), layout_action);
                             }
                         }
 
@@ -390,6 +406,11 @@ fn init_revolutionary_runtime() -> i32 {
     0
 }
 
+fn engine_stop_loop() -> i32 {
+    ENGINE_SHUTDOWN.store(true, Ordering::SeqCst);
+    0
+}
+
 /// Convert a RemapAction to a LayerAction if applicable.
 #[cfg(windows)]
 fn to_layer_action(action: RemapAction) -> Option<LayerAction> {
@@ -433,6 +454,20 @@ fn shutdown_revolutionary_runtime() -> i32 {
 #[no_mangle]
 pub extern "C" fn keyrx_revolutionary_runtime_init() -> i32 {
     std::panic::catch_unwind(init_revolutionary_runtime).unwrap_or(-2)
+}
+
+/// Start the engine loop (input capturing).
+///
+/// Must be called AFTER `keyrx_revolutionary_runtime_init` and loading a script.
+#[no_mangle]
+pub extern "C" fn keyrx_engine_start_loop() -> i32 {
+    std::panic::catch_unwind(engine_start_loop).unwrap_or(-2)
+}
+
+/// Stop the engine loop (input capturing) but keep runtime alive.
+#[no_mangle]
+pub extern "C" fn keyrx_engine_stop_loop() -> i32 {
+    std::panic::catch_unwind(engine_stop_loop).unwrap_or(-2)
 }
 
 /// Shutdown/clear the revolutionary runtime.

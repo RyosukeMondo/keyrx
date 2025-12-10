@@ -65,8 +65,6 @@ unsafe fn cstr_to_str(ptr: *const c_char) -> Result<&'static str, i32> {
 
 // ── Device ────────────────────────────────────────────────────────────────────
 
-#[no_mangle]
-
 /// # Safety
 ///
 /// The `path` pointer must be a valid, non-null, nul-terminated C string.

@@ -88,7 +88,7 @@ pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceS
         let serial = extract_serial(&device.path);
         let identity = DeviceIdentity::new(device.vendor_id, device.product_id, serial);
         found_identities.insert(identity.clone());
-        let new_reg = registry.register_device(identity).await;
+        let _new_reg = registry.register_device(identity).await;
     }
 
     // 3. Unregister disconnected devices only if we successfully scanned hardware

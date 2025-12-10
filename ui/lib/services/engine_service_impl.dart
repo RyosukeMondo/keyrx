@@ -102,9 +102,15 @@ class EngineServiceImpl implements EngineService {
   }
 
   @override
+  Future<void> start() async {
+    if (!isInitialized) return;
+    _bridge.startEngineLoop();
+  }
+
+  @override
   Future<void> stop() async {
     if (_bridge.isInitialized) {
-      _bridge.shutdown();
+      _bridge.stopEngineLoop();
     }
   }
 

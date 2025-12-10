@@ -112,6 +112,9 @@ abstract class EngineService {
   /// Dispose any held resources.
   Future<void> dispose();
 
+  /// Start the engine execution (input capturing).
+  Future<void> start();
+
   /// Stop the engine execution.
   Future<void> stop();
 }

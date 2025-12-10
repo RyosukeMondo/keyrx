@@ -121,6 +121,11 @@ class FakeEngineService implements EngineService {
   }
 
   @override
+  Future<void> start() async {
+    // No-op for fake
+  }
+
+  @override
   Future<void> stop() async {
     // No-op for fake
   }
@@ -139,6 +144,12 @@ class FakeBridge implements KeyrxBridge {
 
   @override
   KeyrxBindings? get bindings => null;
+
+  @override
+  bool startEngineLoop() => true;
+
+  @override
+  bool stopEngineLoop() => true;
 
   @override
   StreamController<BridgeStateUpdate>? get stateController => _stateController;

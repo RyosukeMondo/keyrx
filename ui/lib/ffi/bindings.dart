@@ -24,6 +24,12 @@ typedef KeyrxProtocolVersion = int Function();
 typedef KeyrxSetConfigRootNative = Int32 Function(Pointer<Char> path);
 typedef KeyrxSetConfigRoot = int Function(Pointer<Char> path);
 
+typedef KeyrxEngineStartLoopNative = Int32 Function();
+typedef KeyrxEngineStartLoop = int Function();
+
+typedef KeyrxEngineStopLoopNative = Int32 Function();
+typedef KeyrxEngineStopLoop = int Function();
+
 // ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
@@ -37,9 +43,10 @@ typedef KeyrxSetConfigRoot = int Function(Pointer<Char> path);
 class KeyrxBindings extends KeyrxBindingsGenerated {
   final DynamicLibrary _lib;
 
-  late final KeyrxSetBypass? setBypass;
+  late final KeyrxEngineStartLoop? startLoop;
+  late final KeyrxEngineStopLoop? stopLoop;
 
-  // Memory management (required)
+  late final KeyrxSetBypass? setBypass;
   late final KeyrxFreeString freeString;
 
   KeyrxBindings(this._lib) : super(_lib) {
@@ -49,6 +56,8 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     );
 
     setBypass = _tryLookupSetBypass();
+    startLoop = _tryLookupStartLoop();
+    stopLoop = _tryLookupStopLoop();
   }
 
   KeyrxSetBypass? _tryLookupSetBypass() {
@@ -56,6 +65,28 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
       return _lib.lookupFunction<KeyrxSetBypassNative, KeyrxSetBypass>(
         'keyrx_set_bypass',
       );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxEngineStartLoop? _tryLookupStartLoop() {
+    try {
+      return _lib
+          .lookupFunction<KeyrxEngineStartLoopNative, KeyrxEngineStartLoop>(
+            'keyrx_engine_start_loop',
+          );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  KeyrxEngineStopLoop? _tryLookupStopLoop() {
+    try {
+      return _lib
+          .lookupFunction<KeyrxEngineStopLoopNative, KeyrxEngineStopLoop>(
+            'keyrx_engine_stop_loop',
+          );
     } on ArgumentError {
       return null;
     }

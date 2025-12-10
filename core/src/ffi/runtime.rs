@@ -147,6 +147,11 @@ where
     f(runtime)
 }
 
+/// Get a clone of the current revolutionary runtime if initialized.
+pub fn get_revolutionary_runtime() -> Option<Arc<RevolutionaryRuntime>> {
+    runtime_slot().read().ok().and_then(|g| g.clone())
+}
+
 /// Guard that clears the shared runtime when dropped.
 pub struct RevolutionaryRuntimeGuard;
 

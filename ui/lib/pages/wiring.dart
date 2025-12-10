@@ -50,6 +50,7 @@ class _WiringPageState extends State<WiringPage> {
   bool _isSaving = false;
   String? _errorMessage;
   StreamSubscription<List<DeviceState>>? _deviceSubscription;
+  LayoutService? _cachedLayoutService;
 
   HardwareService get _hardwareService {
     try {
@@ -87,6 +88,8 @@ class _WiringPageState extends State<WiringPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
       _subscribeToDevices();
+      _cachedLayoutService = _layoutService;
+      _cachedLayoutService?.addListener(_loadData);
     });
   }
 
@@ -105,6 +108,7 @@ class _WiringPageState extends State<WiringPage> {
 
   @override
   void dispose() {
+    _cachedLayoutService?.removeListener(_loadData);
     _deviceSubscription?.cancel();
     _idController.dispose();
     _nameController.dispose();
@@ -746,35 +750,37 @@ class _WiringPageState extends State<WiringPage> {
       margin: const EdgeInsets.all(12),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Physical Keys',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _selectedPhysicalKeyId == null
-                  ? 'Tap a physical key to start wiring'
-                  : 'Selected: $_selectedPhysicalKeyId',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 280,
-              child: VisualKeyboard(
-                layout: KeyboardLayout.full(),
-                onKeyTap: _handlePhysicalKeyTap,
-                selectedKeys: _selectedPhysicalKeyId == null
-                    ? {}
-                    : {_selectedPhysicalKeyId!},
-                mappedKeys: _mappedPhysicalKeyIds,
-                showMappingOverlay: false,
-                enableDragDrop: false,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Physical Keys',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                _selectedPhysicalKeyId == null
+                    ? 'Tap a physical key to start wiring'
+                    : 'Selected: $_selectedPhysicalKeyId',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 280,
+                child: VisualKeyboard(
+                  layout: KeyboardLayout.full(),
+                  onKeyTap: _handlePhysicalKeyTap,
+                  selectedKeys: _selectedPhysicalKeyId == null
+                      ? {}
+                      : {_selectedPhysicalKeyId!},
+                  mappedKeys: _mappedPhysicalKeyIds,
+                  showMappingOverlay: false,
+                  enableDragDrop: false,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

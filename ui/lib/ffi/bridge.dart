@@ -234,6 +234,30 @@ class KeyrxBridge
     }
   }
 
+  /// Start the engine loop (input capturing).
+  bool startEngineLoop() {
+    final startFn = bindings!.startLoop;
+    if (startFn == null) {
+      _loadFailure = 'startLoop function not found in shared library';
+      return false;
+    }
+
+    final result = startFn();
+    return result == 0;
+  }
+
+  /// Stop the engine loop (input capturing).
+  bool stopEngineLoop() {
+    final stopFn = bindings!.stopLoop;
+    if (stopFn == null) {
+      _loadFailure = 'stopLoop function not found in shared library';
+      return false;
+    }
+
+    final result = stopFn();
+    return result == 0;
+  }
+
   /// Register a unified event callback for a specific event type.
   ///
   /// This is the new unified API that replaces domain-specific callback
