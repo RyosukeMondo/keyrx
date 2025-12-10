@@ -65,9 +65,12 @@ pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceS
 
     // 1. Scan for physical devices
     // We use spawn_blocking because list_keyboards might do I/O
-    let scan_result = tokio::task::spawn_blocking(drivers::list_keyboards)
-        .await
-        .map_err(|e| FfiError::internal(format!("JoinError in list_devices: {}", e)))?;
+    let scan_result = tokio::task::spawn_blocking(|| {
+        let devices = drivers::list_keyboards();
+        devices
+    })
+    .await
+    .map_err(|e| FfiError::internal(format!("JoinError in list_devices: {}", e)))?;
 
     let (physical_devices, scan_succeeded) = match scan_result {
         Ok(devices) => (devices, true),
@@ -85,7 +88,7 @@ pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceS
         let serial = extract_serial(&device.path);
         let identity = DeviceIdentity::new(device.vendor_id, device.product_id, serial);
         found_identities.insert(identity.clone());
-        registry.register_device(identity).await;
+        let new_reg = registry.register_device(identity).await;
     }
 
     // 3. Unregister disconnected devices only if we successfully scanned hardware

@@ -48,11 +48,11 @@ mixin BridgeCoreMixin {
   ///
   /// Must be called before [initialize] to take effect for runtime initialization.
   void setConfigRoot(String path) {
-    if (bindings == null || bindings!.setConfigRoot == null) return;
+    if (bindings == null) return;
 
     final pathPtr = path.toNativeUtf8().cast<Char>();
     try {
-      bindings!.setConfigRoot!(pathPtr);
+      bindings!.setConfigRoot(pathPtr);
     } finally {
       malloc.free(pathPtr);
     }

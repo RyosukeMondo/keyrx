@@ -72,6 +72,9 @@ class ServiceRegistry {
       // (bridge handles null bindings gracefully)
     }
 
+    // Initialize the bridge (and revolutionary runtime)
+    effectiveBridge.initialize();
+
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
     final deviceProfile =

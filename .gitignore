@@ -54,3 +54,5 @@ check_output*.txt
 build_log*.txt
 test_output*.log
 clippy*.log
+target_*/
+check_log.txt

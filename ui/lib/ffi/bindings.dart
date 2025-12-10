@@ -42,12 +42,6 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   // Memory management (required)
   late final KeyrxFreeString freeString;
 
-  // Protocol version (optional but recommended)
-  late final KeyrxProtocolVersion? protocolVersion;
-
-  // Config root override (optional)
-  late final KeyrxSetConfigRoot? setConfigRoot;
-
   KeyrxBindings(this._lib) : super(_lib) {
     // Required functions
     freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
@@ -55,18 +49,6 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     );
 
     setBypass = _tryLookupSetBypass();
-    protocolVersion = _tryLookupProtocolVersion();
-    setConfigRoot = _tryLookupSetConfigRoot();
-  }
-
-  KeyrxSetConfigRoot? _tryLookupSetConfigRoot() {
-    try {
-      return _lib.lookupFunction<KeyrxSetConfigRootNative, KeyrxSetConfigRoot>(
-        'keyrx_set_config_root',
-      );
-    } on ArgumentError {
-      return null;
-    }
   }
 
   KeyrxSetBypass? _tryLookupSetBypass() {
@@ -74,17 +56,6 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
       return _lib.lookupFunction<KeyrxSetBypassNative, KeyrxSetBypass>(
         'keyrx_set_bypass',
       );
-    } on ArgumentError {
-      return null;
-    }
-  }
-
-  KeyrxProtocolVersion? _tryLookupProtocolVersion() {
-    try {
-      return _lib
-          .lookupFunction<KeyrxProtocolVersionNative, KeyrxProtocolVersion>(
-            'keyrx_protocol_version',
-          );
     } on ArgumentError {
       return null;
     }

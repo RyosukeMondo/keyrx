@@ -162,16 +162,9 @@ class KeyrxBridge
   }
 
   void _checkProtocolVersion() {
-    final versionFn = _bindings?.protocolVersion;
-    // If the function is missing, it implies an old binary (pre-versioning).
-    if (versionFn == null) {
-      _loadFailure ??= Exception(
-        'Native library is outdated (missing protocol version check). '
-        'Please run "flutter clean" and rebuild.',
-      );
-      return;
-    }
+    if (_bindings == null) return;
 
+    final versionFn = _bindings!.protocolVersion;
     final version = versionFn();
     if (version != expectedProtocolVersion) {
       _loadFailure ??= Exception(
@@ -219,9 +212,8 @@ class KeyrxBridge
     _nativeCallables.clear();
 
     // Best-effort shutdown of the revolutionary runtime when available.
-    final shutdown = _bindings?.revolutionaryRuntimeShutdown;
-    if (shutdown != null) {
-      shutdown();
+    if (_bindings != null) {
+      _bindings!.revolutionaryRuntimeShutdown();
     }
   }
 
@@ -237,9 +229,8 @@ class KeyrxBridge
   /// Shutdown the revolutionary runtime (stop the engine).
   void shutdown() {
     _initialized = false;
-    final shutdownFn = _bindings?.revolutionaryRuntimeShutdown;
-    if (shutdownFn != null) {
-      shutdownFn();
+    if (_bindings != null) {
+      _bindings!.revolutionaryRuntimeShutdown();
     }
   }
 
@@ -331,11 +322,10 @@ class KeyrxBridge
   }
 
   void _initRevolutionaryRuntime() {
-    final initFn = _bindings?.revolutionaryRuntimeInit;
-    if (initFn == null) {
+    if (_bindings == null) {
       return;
     }
-    final code = initFn();
+    final code = _bindings!.revolutionaryRuntimeInit();
     // We ignore the return code here because it returns -1 if already initialized.
     // Since we call this blindly in initialize() as a recovery measure,
     // we don't want to overwrite `_loadFailure` if it was merely "already done".
