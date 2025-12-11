@@ -199,6 +199,122 @@ impl std::fmt::Display for ValidationError {
 
 impl std::error::Error for ValidationError {}
 
+use super::parser::{ParsedFunction, ParsedParam, ParsedType};
+use super::type_mapper::{is_error_pointer_str, map_contract_to_rust, validate_type_match};
+use keyrx_core::ffi::contract::FunctionContract;
+
+/// Validates that a parsed Rust function matches its contract definition.
+///
+/// Checks parameter count (accounting for error pointer), parameter types,
+/// and return type. Returns the first validation error found.
+pub fn validate_function(
+    contract: &FunctionContract,
+    parsed: &ParsedFunction,
+) -> Result<(), ValidationError> {
+    let location = FileLocation::new(parsed.file_path.clone(), parsed.line_number);
+
+    // Get contract parameters and parsed parameters
+    let contract_params = &contract.parameters;
+
+    // Count non-error-pointer params in parsed function
+    let parsed_params: Vec<&ParsedParam> = parsed
+        .params
+        .iter()
+        .filter(|p| !is_error_pointer_str(&p.rust_type))
+        .collect();
+
+    // Check parameter count (contract params should match non-error params)
+    if contract_params.len() != parsed_params.len() {
+        return Err(ValidationError::ParameterCountMismatch {
+            function: parsed.name.clone(),
+            expected: contract_params.len(),
+            found: parsed_params.len(),
+            location,
+        });
+    }
+
+    // Validate each parameter type
+    for (i, (contract_param, parsed_param)) in
+        contract_params.iter().zip(parsed_params.iter()).enumerate()
+    {
+        let parsed_type = param_to_parsed_type(parsed_param);
+        if let Err(mismatch) = validate_type_match(&contract_param.param_type, &parsed_type) {
+            return Err(ValidationError::ParameterTypeMismatch {
+                function: parsed.name.clone(),
+                param_name: contract_param.name.clone(),
+                param_index: i,
+                expected_type: map_contract_to_rust(&contract_param.param_type).to_display_string(),
+                found_type: mismatch.found,
+                location,
+            });
+        }
+    }
+
+    // Validate return type
+    let contract_return_type = contract.returns.type_name();
+    if let Err(mismatch) = validate_type_match(contract_return_type, &parsed.return_type) {
+        return Err(ValidationError::ReturnTypeMismatch {
+            function: parsed.name.clone(),
+            expected_type: map_contract_to_rust(contract_return_type).to_display_string(),
+            found_type: mismatch.found,
+            location,
+        });
+    }
+
+    // Validate error pointer exists (all FFI functions should have one as last param)
+    if !parsed.has_error_pointer() && !parsed.params.is_empty() {
+        // Check if the last parameter looks like an error pointer
+        if let Some(last_param) = parsed.params.last() {
+            if !is_error_pointer_str(&last_param.rust_type) {
+                return Err(ValidationError::MissingErrorPointer {
+                    function: parsed.name.clone(),
+                    location,
+                });
+            }
+        }
+    } else if parsed.params.is_empty() && !contract_params.is_empty() {
+        // If parsed has no params but contract has params, error pointer is missing
+        return Err(ValidationError::MissingErrorPointer {
+            function: parsed.name.clone(),
+            location,
+        });
+    }
+
+    Ok(())
+}
+
+/// Convert a ParsedParam to a ParsedType for type validation.
+fn param_to_parsed_type(param: &ParsedParam) -> ParsedType {
+    if !param.is_pointer {
+        return ParsedType::Primitive(param.rust_type.clone());
+    }
+
+    // Parse pointer type from rust_type string
+    if param.rust_type.starts_with("*mut ") {
+        let target = param
+            .rust_type
+            .strip_prefix("*mut ")
+            .unwrap_or("")
+            .to_string();
+        ParsedType::Pointer {
+            target,
+            is_mut: true,
+        }
+    } else if param.rust_type.starts_with("*const ") {
+        let target = param
+            .rust_type
+            .strip_prefix("*const ")
+            .unwrap_or("")
+            .to_string();
+        ParsedType::Pointer {
+            target,
+            is_mut: false,
+        }
+    } else {
+        ParsedType::Primitive(param.rust_type.clone())
+    }
+}
+
 impl ValidationError {
     /// Returns a suggested fix for the error.
     pub fn fix_suggestion(&self) -> String {
@@ -407,5 +523,223 @@ mod tests {
             location: loc,
         };
         assert!(err.fix_suggestion().contains("Remove 2 extra"));
+    }
+
+    // Tests for validate_function
+    use keyrx_core::ffi::contract::{ParameterContract, TypeDefinition};
+
+    fn make_contract(name: &str, params: Vec<(&str, &str)>, return_type: &str) -> FunctionContract {
+        FunctionContract {
+            name: name.to_string(),
+            description: "Test function".to_string(),
+            rust_name: Some(name.to_string()),
+            parameters: params
+                .into_iter()
+                .map(|(n, t)| ParameterContract {
+                    name: n.to_string(),
+                    param_type: t.to_string(),
+                    description: "Test param".to_string(),
+                    required: true,
+                    constraints: None,
+                })
+                .collect(),
+            returns: TypeDefinition::Primitive {
+                type_name: return_type.to_string(),
+                description: None,
+                constraints: None,
+            },
+            errors: vec![],
+            events_emitted: vec![],
+            example: None,
+            deprecated: false,
+            since_version: None,
+        }
+    }
+
+    fn make_parsed_fn(
+        name: &str,
+        params: Vec<(&str, &str, bool, bool)>,
+        return_type: ParsedType,
+    ) -> ParsedFunction {
+        ParsedFunction::new(
+            name.to_string(),
+            params
+                .into_iter()
+                .map(|(n, t, is_ptr, is_mut)| {
+                    ParsedParam::new(n.to_string(), t.to_string(), is_ptr, is_mut)
+                })
+                .collect(),
+            return_type,
+            PathBuf::from("test.rs"),
+            10,
+        )
+    }
+
+    #[test]
+    fn test_validate_function_matching_signatures() {
+        let contract = make_contract("keyrx_test", vec![("input", "string")], "int");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![
+                ("input", "*const c_char", true, false),
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Primitive("i32".to_string()),
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(result.is_ok(), "Expected Ok, got {:?}", result);
+    }
+
+    #[test]
+    fn test_validate_function_parameter_count_mismatch() {
+        let contract = make_contract("keyrx_test", vec![("a", "string"), ("b", "int")], "void");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![
+                ("a", "*const c_char", true, false),
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Unit,
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(matches!(
+            result,
+            Err(ValidationError::ParameterCountMismatch {
+                expected: 2,
+                found: 1,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn test_validate_function_parameter_type_mismatch() {
+        let contract = make_contract("keyrx_test", vec![("input", "string")], "void");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![
+                ("input", "i32", false, false), // Should be *const c_char
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Unit,
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(matches!(
+            result,
+            Err(ValidationError::ParameterTypeMismatch { param_index: 0, .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_function_return_type_mismatch() {
+        let contract = make_contract("keyrx_test", vec![], "int");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![("error_out", "*mut *mut c_char", true, true)],
+            ParsedType::Unit, // Should be i32
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(matches!(
+            result,
+            Err(ValidationError::ReturnTypeMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_function_missing_error_pointer() {
+        let contract = make_contract("keyrx_test", vec![("input", "string")], "void");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![("input", "*const c_char", true, false)], // No error pointer
+            ParsedType::Unit,
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(matches!(
+            result,
+            Err(ValidationError::MissingErrorPointer { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_function_void_return() {
+        let contract = make_contract("keyrx_test", vec![], "void");
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![("error_out", "*mut *mut c_char", true, true)],
+            ParsedType::Unit,
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_function_complex_params() {
+        let contract = make_contract(
+            "keyrx_test",
+            vec![("config", "object"), ("count", "int"), ("enabled", "bool")],
+            "string",
+        );
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![
+                ("config", "*const c_char", true, false),
+                ("count", "i32", false, false),
+                ("enabled", "bool", false, false),
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Pointer {
+                target: "c_char".to_string(),
+                is_mut: false,
+            },
+        );
+
+        let result = validate_function(&contract, &parsed);
+        assert!(result.is_ok(), "Expected Ok, got {:?}", result);
+    }
+
+    #[test]
+    fn test_param_to_parsed_type_primitive() {
+        let param = ParsedParam::new("x".to_string(), "i32".to_string(), false, false);
+        let parsed = param_to_parsed_type(&param);
+        assert_eq!(parsed, ParsedType::Primitive("i32".to_string()));
+    }
+
+    #[test]
+    fn test_param_to_parsed_type_const_pointer() {
+        let param = ParsedParam::new("s".to_string(), "*const c_char".to_string(), true, false);
+        let parsed = param_to_parsed_type(&param);
+        assert_eq!(
+            parsed,
+            ParsedType::Pointer {
+                target: "c_char".to_string(),
+                is_mut: false
+            }
+        );
+    }
+
+    #[test]
+    fn test_param_to_parsed_type_mut_pointer() {
+        let param = ParsedParam::new("out".to_string(), "*mut c_char".to_string(), true, true);
+        let parsed = param_to_parsed_type(&param);
+        assert_eq!(
+            parsed,
+            ParsedType::Pointer {
+                target: "c_char".to_string(),
+                is_mut: true
+            }
+        );
     }
 }
