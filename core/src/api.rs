@@ -35,8 +35,6 @@ use lazy_static::lazy_static;
 pub struct ApiContext {
     device_service: Arc<dyn DeviceServiceTrait>,
     profile_service: Arc<dyn ProfileServiceTrait>,
-    // TODO: Remove #[allow(dead_code)] after implementing runtime methods in task 4.4
-    #[allow(dead_code)]
     runtime_service: Arc<dyn RuntimeServiceTrait>,
 }
 
@@ -207,6 +205,64 @@ impl ApiContext {
     #[tracing::instrument(skip(self, id))]
     pub fn delete_keymap(&self, id: String) -> anyhow::Result<()> {
         self.profile_service.delete_keymap(&id).map_err(Into::into)
+    }
+
+    // Runtime Service API methods
+
+    /// Gets the current runtime configuration.
+    #[tracing::instrument(skip(self))]
+    pub fn get_runtime_config(&self) -> anyhow::Result<RuntimeConfig> {
+        self.runtime_service.get_config().map_err(Into::into)
+    }
+
+    /// Adds a profile slot to a device's configuration.
+    #[tracing::instrument(skip(self, device, slot))]
+    pub fn runtime_add_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot: ProfileSlot,
+    ) -> anyhow::Result<RuntimeConfig> {
+        self.runtime_service
+            .add_slot(device, slot)
+            .map_err(Into::into)
+    }
+
+    /// Removes a profile slot from a device's configuration.
+    #[tracing::instrument(skip(self, device, slot_id))]
+    pub fn runtime_remove_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: String,
+    ) -> anyhow::Result<RuntimeConfig> {
+        self.runtime_service
+            .remove_slot(device, &slot_id)
+            .map_err(Into::into)
+    }
+
+    /// Reorders a profile slot's priority for a device.
+    #[tracing::instrument(skip(self, device, slot_id))]
+    pub fn runtime_reorder_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: String,
+        new_priority: u32,
+    ) -> anyhow::Result<RuntimeConfig> {
+        self.runtime_service
+            .reorder_slot(device, &slot_id, new_priority)
+            .map_err(Into::into)
+    }
+
+    /// Sets whether a profile slot is active for a device.
+    #[tracing::instrument(skip(self, device, slot_id))]
+    pub fn runtime_set_slot_active(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: String,
+        active: bool,
+    ) -> anyhow::Result<RuntimeConfig> {
+        self.runtime_service
+            .set_slot_active(device, &slot_id, active)
+            .map_err(Into::into)
     }
 }
 
