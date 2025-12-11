@@ -227,6 +227,7 @@ mod tests {
     use super::*;
     use crate::drivers::keycodes::KeyCode;
     use crate::engine::RemapAction;
+    use crate::ffi::runtime::clear_revolutionary_runtime;
     use crate::scripting::{clear_active_runtime, set_active_runtime, RhaiRuntime};
     use crate::traits::ScriptRuntime;
     use serial_test::serial;
@@ -234,9 +235,10 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    #[serial]
+    #[serial(ffi_runtime)]
     fn load_script_returns_error_without_runtime() {
         clear_active_runtime();
+        let _ = clear_revolutionary_runtime();
         let result = load_script("script.rhai");
         assert!(result.is_err());
         assert!(result
@@ -246,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[serial(ffi_runtime)]
     fn load_script_returns_error_for_missing_file() {
         clear_active_runtime();
         let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
@@ -259,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[serial(ffi_runtime)]
     fn load_script_loads_valid_script() {
         clear_active_runtime();
         let mut runtime = RhaiRuntime::new().expect("runtime should initialize");
@@ -313,9 +315,10 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[serial(ffi_runtime)]
     fn eval_returns_error_when_runtime_missing() {
         clear_active_runtime();
+        let _ = clear_revolutionary_runtime();
         let result = eval(r#"remap("A","B");"#);
         assert!(result.is_err());
         assert!(result
@@ -325,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
+    #[serial(ffi_runtime)]
     fn eval_executes_against_shared_runtime() {
         clear_active_runtime();
         let mut runtime = RhaiRuntime::new().expect("runtime should initialize");

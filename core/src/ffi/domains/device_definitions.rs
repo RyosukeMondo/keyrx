@@ -114,6 +114,7 @@ mod tests {
     };
     use crate::registry::profile::ProfileRegistry;
     use crate::registry::DeviceRegistry;
+    use serial_test::serial;
     use std::ffi::{CStr, CString};
     use std::sync::{Arc, Mutex};
     use tempfile::TempDir;
@@ -267,6 +268,7 @@ key_spacing = 4
     }
 
     #[test]
+    #[serial(ffi_runtime)]
     fn test_c_api_list_all() {
         let temp_dir = setup_runtime_with_definition();
         let msg = unsafe { c_string_result(keyrx_definitions_list_all()) };
@@ -285,6 +287,7 @@ key_spacing = 4
     }
 
     #[test]
+    #[serial(ffi_runtime)]
     fn test_c_api_get_for_device() {
         let temp_dir = setup_runtime_with_definition();
         let msg = unsafe { c_string_result(keyrx_definitions_get_for_device(0x1234, 0x5678)) };
@@ -300,6 +303,7 @@ key_spacing = 4
     }
 
     #[test]
+    #[serial(ffi_runtime)]
     fn test_c_api_get_for_device_valid_ids() {
         let temp_dir = setup_runtime_with_definition();
         let msg = unsafe { c_string_result(keyrx_definitions_get_for_device(0x0001, 0x0001)) };

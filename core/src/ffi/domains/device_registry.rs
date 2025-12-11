@@ -392,6 +392,7 @@ mod tests {
     };
     use crate::registry::profile::ProfileRegistry;
     use crate::registry::DeviceRegistry;
+    use serial_test::serial;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use tokio::runtime::Runtime;
@@ -531,7 +532,7 @@ mod tests {
     }
 
     #[test]
-    #[serial_test::serial]
+    #[serial(ffi_runtime)]
     fn test_c_api_null_label_clears() {
         let (registry, _rx) = DeviceRegistry::new();
         let temp_dir = tempdir().unwrap();

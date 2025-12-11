@@ -323,6 +323,7 @@ mod tests {
     };
     use crate::registry::profile::{LayoutType, Profile};
     use crate::registry::DeviceRegistry;
+    use serial_test::serial;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
 
@@ -545,6 +546,7 @@ mod tests {
     }
 
     #[test]
+    #[serial(ffi_runtime)]
     fn test_c_api_valid_layout_type() {
         let (_device_registry, _profile_registry, _temp_dir) = setup_runtime();
 
