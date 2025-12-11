@@ -58,8 +58,9 @@
 
 use proc_macro::TokenStream;
 
+mod parse;
+
 // Future modules will be added here as the implementation progresses:
-// mod parse;           // Task 8: Attribute parsing
 // mod contract_loader; // Task 9: Contract loading
 // mod type_mapper;     // Task 10: Type mapping
 // mod codegen;         // Tasks 11-13: Code generation
