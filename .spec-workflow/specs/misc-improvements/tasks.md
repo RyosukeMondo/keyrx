@@ -167,7 +167,7 @@ After completing:
 
 ## Phase 4: Test Coverage Improvements
 
-- [ ] 4.1 Add tests for critical path gaps (<90%)
+- [x] 4.1 Add tests for critical path gaps (<90%)
   - Files: Test files for services/, api.rs, engine/, ffi/
   - Write targeted tests to cover uncovered lines in critical paths
   - Focus on error paths and edge cases
@@ -187,7 +187,7 @@ Success: Critical paths reach ≥90% coverage. New tests are meaningful and valu
 After completing:
 1. Mark [-], write tests, measure coverage, use log-implementation with test details, mark [x]_
 
-- [ ] 4.2 Add tests for overall coverage gaps (<80%)
+- [x] 4.2 Add tests for overall coverage gaps (<80%)
   - Files: Test files across codebase
   - Write tests to bring overall coverage to 80%
   - Purpose: Meet minimum coverage standard
