@@ -1,19 +1,54 @@
+//! Runtime configuration service.
+//!
+//! This module provides the [`RuntimeService`] for managing runtime configuration,
+//! including device-to-profile slot assignments and their priorities.
+
 use crate::config::models::{DeviceInstanceId, DeviceSlots, ProfileSlot, RuntimeConfig};
 use crate::config::{ConfigManager, StorageError};
 use thiserror::Error;
 
 use super::traits::RuntimeServiceTrait;
 
+/// Errors that can occur during runtime service operations.
+///
+/// This error type covers failures when managing runtime configuration,
+/// such as storage errors and invalid references.
 #[derive(Error, Debug)]
 pub enum RuntimeServiceError {
+    /// Error from the underlying storage layer.
     #[error("Storage error: {0}")]
     Storage(#[from] StorageError),
+
+    /// The specified device was not found in the runtime configuration.
     #[error("Device not found: {0:?}")]
     DeviceNotFound(DeviceInstanceId),
+
+    /// The specified profile slot was not found for the device.
     #[error("Slot not found: {0}")]
     SlotNotFound(String),
 }
 
+/// Service for managing runtime configuration.
+///
+/// The runtime service manages the relationship between devices and profile slots,
+/// controlling which profiles are active for each device and their priority ordering.
+///
+/// # Dependency Injection
+///
+/// Use [`RuntimeService::new`] to inject a custom [`ConfigManager`] for testing,
+/// or [`RuntimeService::with_defaults`] for production use.
+///
+/// # Example
+///
+/// ```no_run
+/// use keyrx_core::services::{RuntimeService, RuntimeServiceTrait};
+///
+/// let service = RuntimeService::with_defaults();
+/// let config = service.get_config().expect("Failed to load config");
+/// for device in &config.devices {
+///     println!("Device: {:?}, {} slots", device.device, device.slots.len());
+/// }
+/// ```
 pub struct RuntimeService {
     config_manager: ConfigManager,
 }
@@ -25,10 +60,22 @@ impl Default for RuntimeService {
 }
 
 impl RuntimeService {
+    /// Creates a new RuntimeService with the provided ConfigManager.
+    ///
+    /// Use this constructor for dependency injection, allowing tests to
+    /// inject mock or custom ConfigManager implementations.
+    ///
+    /// # Arguments
+    ///
+    /// * `config_manager` - The configuration manager to use for storage
     pub fn new(config_manager: ConfigManager) -> Self {
         Self { config_manager }
     }
 
+    /// Creates a RuntimeService with default dependencies.
+    ///
+    /// This is the convenience constructor for production use, creating
+    /// a ConfigManager with default settings.
     pub fn with_defaults() -> Self {
         Self::new(ConfigManager::default())
     }

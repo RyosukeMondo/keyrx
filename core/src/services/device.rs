@@ -1,3 +1,8 @@
+//! Device management service.
+//!
+//! This module provides the [`DeviceService`] for managing input devices,
+//! including device discovery, binding configuration, and profile assignment.
+
 use async_trait::async_trait;
 
 use crate::registry::{DeviceBinding, DeviceBindings};
@@ -7,14 +12,27 @@ use thiserror::Error;
 
 use super::traits::DeviceServiceTrait;
 
+/// Errors that can occur during device service operations.
+///
+/// This error type encompasses all failure modes for device management,
+/// from registry errors to serialization issues.
 #[derive(Error, Debug)]
 pub enum DeviceServiceError {
+    /// Error from the underlying device registry.
     #[error("Registry error: {0}")]
     Registry(#[from] DeviceRegistryError),
+
+    /// The requested device was not found.
+    ///
+    /// The string contains the device key that was not found.
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
+
+    /// I/O error during device operations.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// JSON serialization/deserialization error.
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 }
@@ -224,16 +242,34 @@ impl DeviceServiceTrait for DeviceService {
     }
 }
 
-/// Unified view of a device (state + config).
+/// Unified view of a device combining live state and persisted configuration.
+///
+/// This struct provides a consistent representation of a device regardless of
+/// whether it's currently connected. It merges data from:
+/// - Live [`DeviceState`] from the registry (when connected)
+/// - Persisted [`DeviceBinding`] configuration (always available)
+///
+/// # Fields
+///
+/// - `key`: Unique identifier in format `{vendor_id:04x}:{product_id:04x}:{serial_number}`
+/// - `connected`: Whether the device is currently active in the registry
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct DeviceView {
+    /// Unique device identifier (vendor:product:serial format).
     pub key: String,
+    /// USB vendor ID.
     pub vendor_id: u16,
+    /// USB product ID.
     pub product_id: u16,
+    /// Device serial number (may be empty if device doesn't report one).
     pub serial_number: String,
+    /// User-assigned label for easier identification.
     pub label: Option<String>,
+    /// Whether remapping is enabled for this device.
     pub remap_enabled: bool,
+    /// ID of the currently assigned profile, if any.
     pub profile_id: Option<String>,
+    /// Whether the device is currently connected and active.
     pub connected: bool,
 }
 

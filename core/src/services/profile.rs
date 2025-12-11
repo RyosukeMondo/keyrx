@@ -1,17 +1,54 @@
+//! Profile management service.
+//!
+//! This module provides the [`ProfileService`] for managing keymaps, hardware profiles,
+//! and virtual layouts. It provides CRUD operations for all profile-related data.
+
 use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::config::{ConfigManager, StorageError};
 use thiserror::Error;
 
 use super::traits::ProfileServiceTrait;
 
+/// Errors that can occur during profile service operations.
+///
+/// This error type covers failures when managing profiles, keymaps,
+/// and virtual layouts.
 #[derive(Error, Debug)]
 pub enum ProfileServiceError {
+    /// Error from the underlying storage layer.
     #[error("Storage error: {0}")]
     Storage(#[from] StorageError),
+
+    /// The requested resource was not found.
+    ///
+    /// The string contains the ID of the resource that was not found.
     #[error("Not found: {0}")]
     NotFound(String),
 }
 
+/// Service for managing profiles, keymaps, and virtual layouts.
+///
+/// The profile service provides CRUD operations for:
+/// - **Virtual Layouts**: Define the logical key arrangement
+/// - **Hardware Profiles**: Map physical keys to virtual layout positions
+/// - **Keymaps**: Define key bindings and layers
+///
+/// # Dependency Injection
+///
+/// Use [`ProfileService::new`] to inject a custom [`ConfigManager`] for testing,
+/// or [`ProfileService::with_defaults`] for production use.
+///
+/// # Example
+///
+/// ```no_run
+/// use keyrx_core::services::{ProfileService, ProfileServiceTrait};
+///
+/// let service = ProfileService::with_defaults();
+/// let keymaps = service.list_keymaps().expect("Failed to list keymaps");
+/// for keymap in &keymaps {
+///     println!("Keymap: {} ({})", keymap.name, keymap.id);
+/// }
+/// ```
 pub struct ProfileService {
     config_manager: ConfigManager,
 }
