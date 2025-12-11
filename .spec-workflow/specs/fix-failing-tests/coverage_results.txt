@@ -1,0 +1,37 @@
+# Code Coverage Report
+Date: 2025-12-11
+
+## Summary
+- Overall Line Coverage: 81.28%
+- Function Coverage: 78.36%  
+- Region Coverage: 79.85%
+
+## Target vs Actual
+- Target: 80% minimum overall
+- Actual: 81.28% ✓ (PASSED)
+- Critical paths target: 90%
+
+## Critical Path Coverage (approximated from key modules)
+- src/ffi/: 73-97% (varies by module)
+- src/engine/: 75-99% (varies by module)
+- src/api.rs: High coverage (~95%)
+- src/services/: High coverage
+
+## Low Coverage Areas (below 50%)
+- src/bin/keyrx/: 0% (CLI entry point, hard to test)
+- src/validation/common/issue.rs: 0%
+- src/validation/common/visitor.rs: 0%
+- src/validation/conflicts.rs: 37.50%
+- src/uat/golden.rs: 47.67%
+- src/validation/engine/rhai_engine.rs: 55.04%
+
+## Observations
+1. Core business logic has good coverage (>80%)
+2. CLI entry points and some validation utilities have lower coverage
+3. Some UAT/golden test infrastructure has lower coverage as expected
+4. FFI modules have variable coverage - some at 97%, others at ~73%
+
+## Recommendations
+1. Add tests for validation/common utilities
+2. Improve FFI test coverage for edge cases
+3. UAT golden test infrastructure could benefit from more unit tests
