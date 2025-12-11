@@ -53,11 +53,11 @@ clippy:
 
 # Run all tests
 test:
-    cd core && cargo nextest run
+    cd core && KEYRX_SKIP_DEVICE_SCAN=1 cargo nextest run
 
 # Run tests with standard cargo (fallback)
 test-cargo:
-    cd core && cargo test
+    cd core && KEYRX_SKIP_DEVICE_SCAN=1 cargo test
 
 # Run benchmarks
 bench:
