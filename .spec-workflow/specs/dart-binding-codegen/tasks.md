@@ -51,7 +51,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Dart FFI knowledge | Task: Implement type mapper following requirement REQ-2, converting contract types to Dart FFI and native types | Restrictions: Must handle all contract types, return clear errors for unknown types, function under 50 lines | Success: All contract types map correctly to Dart types, mappings are accurate, errors are helpful | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include type mapping table), then mark the task as completed in tasks.md_
 
-- [ ] 6. Add unit tests for type mapper
+- [x] 6. Add unit tests for type mapper
   - File: `core/tools/generate_dart_bindings/src/type_mapper_tests.rs`
   - Test all type mappings
   - Test nullable type handling
