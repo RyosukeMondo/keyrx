@@ -170,7 +170,7 @@ impl<T> FfiArray<T> {
 // Implement CRepr for FfiArray of any C-representable type
 impl<T: CRepr> CRepr for FfiArray<T> {}
 
-/// Implementation of FfiMarshaler for Vec<T>.
+/// Implementation of FfiMarshaler for `Vec<T>`.
 ///
 /// Converts Rust Vec to C-compatible array and back.
 /// Each element is marshaled using its FfiMarshaler implementation.

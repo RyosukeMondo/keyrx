@@ -131,7 +131,7 @@ pub enum KeymapCommands {
         #[arg(long = "virtual-key")]
         virtual_key: String,
 
-        /// Action binding to apply (key:<code>, macro:<text>, layer-toggle:<layer>, or transparent)
+        /// Action binding to apply (`key:<code>`, `macro:<text>`, `layer-toggle:<layer>`, or `transparent`)
         #[arg(long, required_unless_present = "clear")]
         action: Option<String>,
 

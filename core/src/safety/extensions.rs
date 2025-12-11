@@ -271,7 +271,7 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
 /// This provides a convenient way to convert standard Results with CriticalError
 /// into the CriticalResult wrapper.
 pub trait CriticalResultExt<T> {
-    /// Converts a Result<T, CriticalError> to a CriticalResult<T>.
+    /// Converts a `Result<T, CriticalError>` to a `CriticalResult<T>`.
     ///
     /// # Example
     ///

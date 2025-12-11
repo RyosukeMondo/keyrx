@@ -1,14 +1,14 @@
 //! FfiMarshaler implementations for common types.
 //!
-//! This module provides ready-to-use implementations of the [`FfiMarshaler`]
+//! This module provides ready-to-use implementations of the [`super::traits::FfiMarshaler`]
 //! trait for standard Rust types. These implementations handle the conversion
 //! between Rust types and their C-compatible representations.
 //!
 //! # Modules
 //!
 //! - [`primitives`]: Zero-copy marshaling for primitive types (u8, u16, u32, u64, bool, f32, f64, etc.)
-//! - [`string`]: String and &str marshaling with null-terminated C strings
-//! - [`array`]: Vec<T> marshaling with length-prefixed arrays
+//! - [`string`]: String and `&str` marshaling with null-terminated C strings
+//! - `array`: `Vec<T>` marshaling with length-prefixed arrays
 //! - [`json`]: JSON-based marshaling for complex types
 //! - [`session`]: Streaming marshaling for large session data (recording/replay)
 //!

@@ -65,9 +65,9 @@ pub const MODELS_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 /// Template for native FFI function typedef (C signature)
 ///
 /// Placeholders:
-/// - `{{function_name}}` - Full FFI function name (e.g., keyrx_config_save_profile)
-/// - `{{return_type}}` - FFI return type (e.g., Pointer<Utf8>)
-/// - `{{native_params}}` - Native parameter list (e.g., Pointer<Utf8> json, Pointer<Pointer<Utf8>> error)
+/// - `{{function_name}}` - Full FFI function name (e.g., `keyrx_config_save_profile`)
+/// - `{{return_type}}` - FFI return type (e.g., `Pointer<Utf8>`)
+/// - `{{native_params}}` - Native parameter list (e.g., `Pointer<Utf8> json, Pointer<Pointer<Utf8>> error`)
 pub const NATIVE_TYPEDEF_TEMPLATE: &str =
     "typedef _{{function_name}}_native = {{return_type}} Function({{native_params}});";
 

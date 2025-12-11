@@ -20,7 +20,7 @@
 //! Following established patterns from [`FfiExportable`](crate::ffi::traits::FfiExportable):
 //!
 //! - **Associated Types**: Use `type CRepr` to define C representation
-//! - **Result Types**: All conversions return [`FfiResult`](crate::ffi::error::FfiResult)
+//! - **Result Types**: All conversions return [`FfiResult`]
 //! - **Size Awareness**: Types can opt into streaming based on size
 //! - **Thread Safety**: All marshalers must be `Send + Sync`
 //!

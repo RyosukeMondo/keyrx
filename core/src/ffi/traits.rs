@@ -82,7 +82,7 @@
 //! - **Clear Lifecycle**: Explicit `init()` and `cleanup()` methods
 //! - **Comprehensive Docs**: Document lifecycle, thread safety, error handling
 //! - **Thread Safety**: Domain state is wrapped in `Arc<RwLock<>>` by `FfiContext`
-//! - **Error Handling**: Use [`FfiError`](crate::ffi::error::FfiError) for all failures
+//! - **Error Handling**: Use [`FfiError`] for all failures
 
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::FfiError;
