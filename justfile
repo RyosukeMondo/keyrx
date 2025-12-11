@@ -82,17 +82,27 @@ docs-api:
 docs: docs-errors docs-api
     @echo "All documentation generated!"
 
-# Generate Dart FFI bindings from Rust exports
-gen-bindings:
+# Generate Dart FFI bindings using Rust code generator
+gen-dart-bindings:
     @echo "Generating Dart FFI bindings..."
+    cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --verbose
+    @echo "Dart FFI bindings generated successfully!"
+
+# Check if Dart FFI bindings are up-to-date (fails if regeneration needed)
+check-dart-bindings:
+    @echo "Checking Dart FFI bindings are up-to-date..."
+    cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --check
+
+# Legacy: Generate Dart FFI bindings using Python script (deprecated)
+gen-bindings-legacy:
+    @echo "Generating Dart FFI bindings (legacy)..."
     python3 scripts/generate_dart_bindings.py
     @echo "Formatting generated Dart code..."
     cd ui && dart format lib/ffi/generated/bindings_generated.dart
 
 # Verify Dart FFI bindings are in sync with Rust exports
-verify-bindings:
-    @echo "Verifying Dart FFI bindings..."
-    python3 scripts/verify_bindings.py
+verify-bindings: check-dart-bindings
+    @echo "Dart FFI bindings are up-to-date!"
 
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
@@ -104,7 +114,7 @@ ci-check: fmt-check clippy test verify-bindings
     @echo "CI checks passed!"
 
 # Build release binary for current platform
-build: docs gen-bindings
+build: docs gen-dart-bindings
     cd core && cargo build --release
 
 # Build for all supported platforms
