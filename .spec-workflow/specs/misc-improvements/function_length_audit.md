@@ -243,3 +243,86 @@ The 50-line rule targets **complex logic**, not:
 - Well-organized state machines (match with clear branches)
 
 Functions that are long due to data rather than logic should be evaluated differently.
+
+## Refactoring Analysis (Task 3.2)
+
+### Refactored Functions
+
+#### `print_human_result` (114 → 12 lines) ✅
+Split into 6 focused helper functions:
+- `format_location`: shared location formatting (12 lines)
+- `print_validation_errors`: error output with suggestions (24 lines)
+- `print_validation_warnings`: warning output with categories (24 lines)
+- `print_coverage_report`: coverage stats display (22 lines)
+- `print_visual_keyboard`: keyboard visualization (9 lines)
+- `print_validation_summary`: final status summary (17 lines)
+
+Main function now clearly shows output flow: errors → warnings → coverage → visual → summary.
+
+#### `evaluate` (100 → 11 lines) ✅
+Split into 3 threshold check helpers:
+- `check_latency_alerts`: checks p99 latency thresholds (32 lines)
+- `check_error_rate_alerts`: checks error rate thresholds (34 lines)
+- `check_memory_alerts`: checks memory and leak thresholds (45 lines)
+
+Main function now clearly shows alert evaluation flow.
+
+#### `from_streaming_file` (100 → 26 lines) ✅
+Split into 4 I/O helpers:
+- `read_streaming_header`: reads and decodes header (9 lines)
+- `read_streaming_metadata`: seeks to and reads metadata (12 lines)
+- `read_streaming_index`: seeks to and reads block index (16 lines)
+- `build_streaming_manifest`: constructs manifest from parsed data (17 lines)
+
+Main function now clearly shows streaming file loading flow.
+
+### Functions NOT Refactored (With Justification)
+
+#### `validate_session_transition` (131 lines) - NOT REFACTORED
+**Reason**: State machine match dispatch, similar to `apply`.
+- Each branch handles a specific `StateTransition` variant
+- Logic within each branch is repetitive but clear (error construction)
+- Well-organized idiomatic Rust state machine pattern
+**Recommendation**: Accept as-is. State machine dispatchers are acceptable.
+
+#### `build_function_registry` (124 lines) - NOT REFACTORED
+**Reason**: Pure data registration with no complex logic.
+- 100% of the code is `registry.register(FunctionCapability::new(...))` calls
+- Similar pattern to `render_ascii_keyboard` - data-driven
+- Breaking into pieces would just scatter related data
+**Recommendation**: Accept as-is. Data registration functions are acceptable.
+
+#### `html_scripts` (112 lines) - NOT REFACTORED
+**Reason**: Raw JavaScript string template.
+- Similar to `html_header` - static content, not logic
+- Template functions are inherently long due to embedded code
+**Recommendation**: Accept as-is. Template functions are exempt.
+
+#### `migrate` (112 lines) - NOT REFACTORED
+**Reason**: Linear flow with extensive logging.
+- Clear linear structure: backup → scan → convert each → log summary
+- Length is due to verbose structured logging (good practice)
+- Logic is already simple and readable
+**Recommendation**: Accept as-is. Verbose logging is acceptable for migration code.
+
+#### `calibrate` (108 lines) - NOT REFACTORED
+**Reason**: Linear CLI command handler.
+- Validates input → loads samples → runs calibration → outputs results
+- Already delegates to `Calibrator` for core logic
+- Length is due to output formatting (human vs JSON)
+**Recommendation**: Accept as-is. CLI handlers with output formatting are acceptable.
+
+### Task 3.2 Summary
+
+| Function | Before | After | Status |
+|----------|--------|-------|--------|
+| print_human_result | 114 | 12 | ✅ Refactored |
+| evaluate | 100 | 11 | ✅ Refactored |
+| from_streaming_file | 100 | 26 | ✅ Refactored |
+| validate_session_transition | 131 | 131 | ⏭ Accepted (state machine) |
+| build_function_registry | 124 | 124 | ⏭ Accepted (data registration) |
+| html_scripts | 112 | 112 | ⏭ Accepted (template) |
+| migrate | 112 | 112 | ⏭ Accepted (verbose logging) |
+| calibrate | 108 | 108 | ⏭ Accepted (CLI handler) |
+
+**3 functions refactored, 5 functions accepted as-is with justification.**

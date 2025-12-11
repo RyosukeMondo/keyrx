@@ -146,7 +146,7 @@ Success: Top 5 functions refactored. All under 50 lines. Helpers are clear and l
 After completing:
 1. Mark [-], refactor carefully, test after each, use log-implementation with detailed artifacts, mark [x]_
 
-- [ ] 3.2 Refactor functions 6-15 if time permits
+- [x] 3.2 Refactor functions 6-15 if time permits
   - Files: Next 10 from audit
   - Continue refactoring pattern from 3.1
   - Purpose: Further reduce function length violations
