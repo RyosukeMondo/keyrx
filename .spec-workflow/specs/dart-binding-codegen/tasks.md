@@ -4,7 +4,7 @@
 
 ### Phase 1: CLI Tool Setup
 
-- [-] 1. Create generate_dart_bindings binary crate
+- [x] 1. Create generate_dart_bindings binary crate
   - Files: `core/tools/generate_dart_bindings/Cargo.toml`, `core/tools/generate_dart_bindings/src/main.rs`
   - Create new binary crate for code generator
   - Add dependencies: clap, serde_json, walkdir
@@ -13,7 +13,7 @@
   - _Requirements: REQ-1, REQ-6_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in CLI tools | Task: Create generate_dart_bindings binary crate following requirements REQ-1 and REQ-6, setting up project structure and dependencies | Restrictions: Must use clap for CLI, add necessary dependencies, follow tool naming conventions | Success: Binary crate compiles, dependencies configured, ready for implementation | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include crate structure, dependencies), then mark the task as completed in tasks.md_
 
-- [ ] 2. Implement CLI argument parsing
+- [x] 2. Implement CLI argument parsing
   - File: `core/tools/generate_dart_bindings/src/cli.rs`
   - Parse command-line arguments (--domain, --check, --verbose)
   - Define CLI structure with clap
