@@ -34,3 +34,4 @@
 //! Unit tests for API layer with dependency injection.
 
 mod device_api_tests;
+mod profile_api_tests;
