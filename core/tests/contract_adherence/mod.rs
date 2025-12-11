@@ -4,6 +4,7 @@
 //! against their JSON contract definitions using AST parsing.
 
 pub mod parser;
+pub mod reporter;
 pub mod type_mapper;
 pub mod validator;
 
