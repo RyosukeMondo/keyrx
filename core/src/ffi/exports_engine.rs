@@ -176,19 +176,28 @@ mod tests {
 
 // ─── Engine Loop Lifecycle ────────────────────────────────────────────────
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::drivers::WindowsInput;
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::engine::{AdvancedEngine, TimingConfig};
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::ffi::runtime::with_revolutionary_runtime;
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::InputSource;
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use std::sync::Mutex;
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use std::thread;
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 static STOP_SIGNAL: OnceLock<Mutex<Option<tokio::sync::mpsc::Sender<()>>>> = OnceLock::new();
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 fn get_stop_sender() -> &'static Mutex<Option<tokio::sync::mpsc::Sender<()>>> {
     STOP_SIGNAL.get_or_init(|| Mutex::new(None))
 }
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
     let mut guard = get_stop_sender().lock().unwrap();
@@ -222,6 +231,7 @@ pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
     0
 }
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
     let guard = get_stop_sender().lock().unwrap();
@@ -237,6 +247,7 @@ pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
     }
 }
 
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyhow::Result<()> {
     tracing::info!("Starting engine loop from FFI");
 

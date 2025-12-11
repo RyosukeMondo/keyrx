@@ -1,3 +1,5 @@
+mod contract_adherence;
+
 use keyrx_core::ffi::contract::ContractRegistry;
 use std::collections::HashSet;
 use std::path::PathBuf;

@@ -15,6 +15,7 @@ use crate::registry::{
 };
 use crate::scripting::RhaiRuntime;
 use crate::traits::InputSource;
+use crate::traits::ScriptRuntime;
 use anyhow::Result;
 use chrono::Utc;
 use std::collections::HashSet;
