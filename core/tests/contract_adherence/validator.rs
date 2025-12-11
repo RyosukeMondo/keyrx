@@ -201,7 +201,7 @@ impl std::error::Error for ValidationError {}
 
 use super::parser::{ParsedFunction, ParsedParam, ParsedType};
 use super::type_mapper::{is_error_pointer_str, map_contract_to_rust, validate_type_match};
-use keyrx_core::ffi::contract::FunctionContract;
+use keyrx_core::ffi::contract::{FfiContract, FunctionContract};
 
 /// Validates that a parsed Rust function matches its contract definition.
 ///
@@ -281,6 +281,110 @@ pub fn validate_function(
     }
 
     Ok(())
+}
+
+/// Result of batch validation containing all errors and statistics.
+#[derive(Debug, Clone)]
+pub struct ValidationReport {
+    /// All validation errors found during batch validation.
+    pub errors: Vec<ValidationError>,
+    /// Number of functions validated successfully.
+    pub passed: usize,
+    /// Total number of contract functions checked.
+    pub total_contracts: usize,
+    /// Total number of parsed functions checked.
+    pub total_parsed: usize,
+}
+
+impl ValidationReport {
+    /// Creates a new empty ValidationReport.
+    pub fn new() -> Self {
+        Self {
+            errors: Vec::new(),
+            passed: 0,
+            total_contracts: 0,
+            total_parsed: 0,
+        }
+    }
+
+    /// Returns true if validation passed with no errors.
+    pub fn is_success(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    /// Returns the number of failed validations.
+    pub fn failed_count(&self) -> usize {
+        self.errors.len()
+    }
+}
+
+impl Default for ValidationReport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Validates all contract functions against parsed Rust functions.
+///
+/// Collects all validation errors instead of failing fast, detecting:
+/// - Functions in contracts without implementations (MissingFunction)
+/// - Functions in implementations without contracts (UncontractedFunction)
+/// - Signature mismatches for matching function names
+pub fn validate_all_functions(
+    contracts: &[FfiContract],
+    parsed: &[ParsedFunction],
+) -> ValidationReport {
+    let mut report = ValidationReport::new();
+
+    // Build lookup map for parsed functions by name
+    let parsed_by_name: std::collections::HashMap<&str, &ParsedFunction> =
+        parsed.iter().map(|f| (f.name.as_str(), f)).collect();
+
+    // Track which parsed functions have been matched to contracts
+    let mut matched_parsed: std::collections::HashSet<&str> = std::collections::HashSet::new();
+
+    // Validate each contract function
+    for contract in contracts {
+        report.total_contracts += contract.functions.len();
+
+        for func_contract in &contract.functions {
+            let rust_name = func_contract
+                .rust_name
+                .as_deref()
+                .unwrap_or(&func_contract.name);
+
+            if let Some(parsed_fn) = parsed_by_name.get(rust_name) {
+                matched_parsed.insert(rust_name);
+
+                // Validate the function signature
+                if let Err(err) = validate_function(func_contract, parsed_fn) {
+                    report.errors.push(err);
+                } else {
+                    report.passed += 1;
+                }
+            } else {
+                // Function defined in contract but not found in implementation
+                report.errors.push(ValidationError::MissingFunction {
+                    name: rust_name.to_string(),
+                    contract_file: format!("{}.ffi-contract.json", contract.domain),
+                });
+            }
+        }
+    }
+
+    // Detect uncontracted functions (in implementation but not in any contract)
+    report.total_parsed = parsed.len();
+    for parsed_fn in parsed {
+        if !matched_parsed.contains(parsed_fn.name.as_str()) {
+            let location = FileLocation::new(parsed_fn.file_path.clone(), parsed_fn.line_number);
+            report.errors.push(ValidationError::UncontractedFunction {
+                name: parsed_fn.name.clone(),
+                location,
+            });
+        }
+    }
+
+    report
 }
 
 /// Convert a ParsedParam to a ParsedType for type validation.
@@ -741,5 +845,184 @@ mod tests {
                 is_mut: true
             }
         );
+    }
+
+    // Tests for ValidationReport and validate_all_functions
+    use std::collections::HashMap;
+
+    fn make_ffi_contract(domain: &str, functions: Vec<FunctionContract>) -> FfiContract {
+        FfiContract {
+            schema: "".to_string(),
+            version: "1.0.0".to_string(),
+            domain: domain.to_string(),
+            description: "Test contract".to_string(),
+            protocol_version: 1,
+            functions,
+            types: HashMap::new(),
+            events: vec![],
+        }
+    }
+
+    #[test]
+    fn test_validation_report_new() {
+        let report = ValidationReport::new();
+        assert!(report.is_success());
+        assert_eq!(report.passed, 0);
+        assert_eq!(report.failed_count(), 0);
+        assert_eq!(report.total_contracts, 0);
+        assert_eq!(report.total_parsed, 0);
+    }
+
+    #[test]
+    fn test_validate_all_functions_matching() {
+        let contract = make_contract("keyrx_test", vec![("input", "string")], "int");
+        let ffi_contract = make_ffi_contract("test", vec![contract]);
+
+        let parsed = make_parsed_fn(
+            "keyrx_test",
+            vec![
+                ("input", "*const c_char", true, false),
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Primitive("i32".to_string()),
+        );
+
+        let report = validate_all_functions(&[ffi_contract], &[parsed]);
+
+        assert!(report.is_success());
+        assert_eq!(report.passed, 1);
+        assert_eq!(report.total_contracts, 1);
+        assert_eq!(report.total_parsed, 1);
+    }
+
+    #[test]
+    fn test_validate_all_functions_missing_implementation() {
+        let contract = make_contract("keyrx_missing", vec![], "void");
+        let ffi_contract = make_ffi_contract("test", vec![contract]);
+
+        let report = validate_all_functions(&[ffi_contract], &[]);
+
+        assert!(!report.is_success());
+        assert_eq!(report.failed_count(), 1);
+        assert!(matches!(
+            &report.errors[0],
+            ValidationError::MissingFunction { name, .. } if name == "keyrx_missing"
+        ));
+    }
+
+    #[test]
+    fn test_validate_all_functions_uncontracted() {
+        let ffi_contract = make_ffi_contract("test", vec![]);
+
+        let parsed = make_parsed_fn(
+            "keyrx_orphan",
+            vec![("error_out", "*mut *mut c_char", true, true)],
+            ParsedType::Unit,
+        );
+
+        let report = validate_all_functions(&[ffi_contract], &[parsed]);
+
+        assert!(!report.is_success());
+        assert_eq!(report.failed_count(), 1);
+        assert!(matches!(
+            &report.errors[0],
+            ValidationError::UncontractedFunction { name, .. } if name == "keyrx_orphan"
+        ));
+    }
+
+    #[test]
+    fn test_validate_all_functions_collects_all_errors() {
+        // Two contracts: one missing, one with type mismatch
+        let missing_contract = make_contract("keyrx_missing", vec![], "void");
+        let mismatch_contract = make_contract("keyrx_mismatch", vec![("x", "string")], "void");
+        let ffi_contract = make_ffi_contract("test", vec![missing_contract, mismatch_contract]);
+
+        // Provide only the mismatch function with wrong type
+        let parsed = make_parsed_fn(
+            "keyrx_mismatch",
+            vec![
+                ("x", "i32", false, false), // Wrong type
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Unit,
+        );
+
+        let report = validate_all_functions(&[ffi_contract], &[parsed]);
+
+        assert!(!report.is_success());
+        assert_eq!(report.failed_count(), 2); // Missing + type mismatch
+
+        // Verify both error types are collected
+        let has_missing = report
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::MissingFunction { .. }));
+        let has_type_mismatch = report
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::ParameterTypeMismatch { .. }));
+
+        assert!(has_missing, "Should have MissingFunction error");
+        assert!(has_type_mismatch, "Should have ParameterTypeMismatch error");
+    }
+
+    #[test]
+    fn test_validate_all_functions_multiple_contracts() {
+        let contract1 = make_contract("keyrx_a", vec![], "void");
+        let contract2 = make_contract("keyrx_b", vec![("x", "int")], "int");
+
+        let ffi_contract1 = make_ffi_contract("domain1", vec![contract1]);
+        let ffi_contract2 = make_ffi_contract("domain2", vec![contract2]);
+
+        let parsed_a = make_parsed_fn(
+            "keyrx_a",
+            vec![("error_out", "*mut *mut c_char", true, true)],
+            ParsedType::Unit,
+        );
+        let parsed_b = make_parsed_fn(
+            "keyrx_b",
+            vec![
+                ("x", "i32", false, false),
+                ("error_out", "*mut *mut c_char", true, true),
+            ],
+            ParsedType::Primitive("i32".to_string()),
+        );
+
+        let report = validate_all_functions(&[ffi_contract1, ffi_contract2], &[parsed_a, parsed_b]);
+
+        assert!(report.is_success());
+        assert_eq!(report.passed, 2);
+        assert_eq!(report.total_contracts, 2);
+        assert_eq!(report.total_parsed, 2);
+    }
+
+    #[test]
+    fn test_validate_all_functions_bidirectional_detection() {
+        // Contract has one function, implementation has a different one
+        let contract = make_contract("keyrx_in_contract", vec![], "void");
+        let ffi_contract = make_ffi_contract("test", vec![contract]);
+
+        let parsed = make_parsed_fn(
+            "keyrx_in_impl",
+            vec![("error_out", "*mut *mut c_char", true, true)],
+            ParsedType::Unit,
+        );
+
+        let report = validate_all_functions(&[ffi_contract], &[parsed]);
+
+        assert!(!report.is_success());
+        assert_eq!(report.failed_count(), 2); // Missing + uncontracted
+
+        let has_missing = report
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::MissingFunction { name, .. } if name == "keyrx_in_contract"));
+        let has_uncontracted = report
+            .errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::UncontractedFunction { name, .. } if name == "keyrx_in_impl"));
+
+        assert!(has_missing);
+        assert!(has_uncontracted);
     }
 }
