@@ -1,3 +1,58 @@
+//! KeyRx Public API Module
+//!
+//! This module provides the public API for interacting with KeyRx services.
+//! It offers two usage patterns:
+//!
+//! ## 1. Dependency Injection (Recommended for Testing)
+//!
+//! Use [`ApiContext`] for explicit dependency injection, which enables:
+//! - Fast, isolated unit testing with mock services
+//! - Custom service configurations
+//! - Clear dependency relationships
+//!
+//! ```rust,ignore
+//! use std::sync::Arc;
+//! use keyrx_core::api::ApiContext;
+//! use keyrx_core::services::{MockDeviceService, MockProfileService, MockRuntimeService};
+//!
+//! // Create API with mock services for testing
+//! let api = ApiContext::new(
+//!     Arc::new(MockDeviceService::new().with_devices(vec![test_device])),
+//!     Arc::new(MockProfileService::new()),
+//!     Arc::new(MockRuntimeService::new()),
+//! );
+//!
+//! // Use API methods
+//! let devices = api.list_devices().await?;
+//! ```
+//!
+//! ## 2. Global Functions (Backward Compatible)
+//!
+//! Standalone functions like [`list_devices()`] delegate to a global [`ApiContext`]
+//! with default production services. These are convenient for simple usage:
+//!
+//! ```rust,ignore
+//! use keyrx_core::api::{list_devices, save_keymap};
+//!
+//! // Simple global function calls
+//! let devices = list_devices().await?;
+//! let keymap = save_keymap(my_keymap)?;
+//! ```
+//!
+//! ## Service Categories
+//!
+//! The API is organized into three service categories:
+//!
+//! - **Device API**: Device discovery, configuration, profile assignment
+//! - **Profile API**: Virtual layouts, hardware profiles, keymaps (CRUD)
+//! - **Runtime API**: Runtime configuration, slot management
+//!
+//! ## Observability
+//!
+//! The module also provides observability functions:
+//! - [`init_logger()`]: Initialize the structured logger
+//! - [`create_log_stream()`]: Create a callback-based log stream for Flutter integration
+
 use std::sync::Arc;
 
 use crate::config::models::{
@@ -20,17 +75,38 @@ use lazy_static::lazy_static;
 /// - Clear separation between API layer and service implementations
 ///
 /// # Production Usage
-/// ```ignore
+///
+/// ```rust,ignore
 /// let api = ApiContext::with_defaults();
 /// let devices = api.list_devices().await?;
 /// ```
 ///
 /// # Testing Usage
-/// ```ignore
-/// let mock_device = Arc::new(MockDeviceService::new());
-/// let mock_profile = Arc::new(MockProfileService::new());
-/// let mock_runtime = Arc::new(MockRuntimeService::new());
-/// let api = ApiContext::new(mock_device, mock_profile, mock_runtime);
+///
+/// ```rust,ignore
+/// use std::sync::Arc;
+/// use keyrx_core::api::ApiContext;
+/// use keyrx_core::services::{MockDeviceService, MockProfileService, MockRuntimeService};
+///
+/// #[tokio::test]
+/// async fn test_list_devices() {
+///     // Arrange: Create mock with test data
+///     let mock_device = MockDeviceService::new()
+///         .with_devices(vec![DeviceView { key: "test".into(), ..Default::default() }]);
+///
+///     let api = ApiContext::new(
+///         Arc::new(mock_device),
+///         Arc::new(MockProfileService::new()),
+///         Arc::new(MockRuntimeService::new()),
+///     );
+///
+///     // Act
+///     let devices = api.list_devices().await.unwrap();
+///
+///     // Assert
+///     assert_eq!(devices.len(), 1);
+///     assert_eq!(devices[0].key, "test");
+/// }
 /// ```
 pub struct ApiContext {
     device_service: Arc<dyn DeviceServiceTrait>,
@@ -42,11 +118,24 @@ impl ApiContext {
     /// Creates a new `ApiContext` with injected service dependencies.
     ///
     /// This constructor enables dependency injection for testing and custom configurations.
+    /// Use this when you need to inject mock services for testing or custom service
+    /// implementations.
     ///
     /// # Arguments
-    /// * `device_service` - Implementation of `DeviceServiceTrait`
-    /// * `profile_service` - Implementation of `ProfileServiceTrait`
-    /// * `runtime_service` - Implementation of `RuntimeServiceTrait`
+    ///
+    /// * `device_service` - Implementation of [`DeviceServiceTrait`] for device operations
+    /// * `profile_service` - Implementation of [`ProfileServiceTrait`] for profile management
+    /// * `runtime_service` - Implementation of [`RuntimeServiceTrait`] for runtime configuration
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let api = ApiContext::new(
+    ///     Arc::new(DeviceService::with_defaults(None)),
+    ///     Arc::new(ProfileService::with_defaults()),
+    ///     Arc::new(RuntimeService::with_defaults()),
+    /// );
+    /// ```
     pub fn new(
         device_service: Arc<dyn DeviceServiceTrait>,
         profile_service: Arc<dyn ProfileServiceTrait>,
@@ -62,7 +151,17 @@ impl ApiContext {
     /// Creates a new `ApiContext` with default production services.
     ///
     /// This convenience constructor creates the standard service implementations
-    /// suitable for production use.
+    /// suitable for production use. It initializes:
+    /// - `DeviceService` with no pre-loaded registry
+    /// - `ProfileService` with default configuration paths
+    /// - `RuntimeService` with default configuration
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let api = ApiContext::with_defaults();
+    /// let devices = api.list_devices().await?;
+    /// ```
     pub fn with_defaults() -> Self {
         Self::new(
             Arc::new(DeviceService::with_defaults(None)),

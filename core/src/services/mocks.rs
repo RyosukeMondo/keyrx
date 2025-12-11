@@ -5,16 +5,90 @@
 //! - Configurable success and error responses
 //! - Call tracking for verification
 //!
-//! # Example
+//! # Overview
+//!
+//! Three mock services are available:
+//! - [`MockDeviceService`] - Mock for device operations
+//! - [`MockProfileService`] - Mock for profile/layout/keymap management
+//! - [`MockRuntimeService`] - Mock for runtime configuration
+//!
+//! # Usage Pattern
+//!
+//! All mocks follow a builder pattern for configuration:
+//!
+//! 1. Create with `new()`
+//! 2. Configure data with `with_*()` methods
+//! 3. Optionally configure errors with `with_*_error()` methods
+//! 4. Wrap in `Arc` and inject into [`ApiContext`](crate::api::ApiContext)
+//!
+//! # Example: Basic Test Setup
 //!
 //! ```rust,ignore
-//! use keyrx_core::services::MockDeviceService;
+//! use std::sync::Arc;
+//! use keyrx_core::api::ApiContext;
+//! use keyrx_core::services::{MockDeviceService, MockProfileService, MockRuntimeService};
 //!
-//! let mock = MockDeviceService::new()
-//!     .with_devices(vec![test_device])
-//!     .with_list_error(Some(DeviceServiceError::Io(std::io::Error::other("test"))));
+//! #[tokio::test]
+//! async fn test_list_devices() {
+//!     // Create mock with test data
+//!     let mock_device = MockDeviceService::new()
+//!         .with_devices(vec![test_device("1234:5678:serial")]);
 //!
-//! let api = ApiContext::new(Arc::new(mock), ...);
+//!     // Inject into API context
+//!     let api = ApiContext::new(
+//!         Arc::new(mock_device),
+//!         Arc::new(MockProfileService::new()),
+//!         Arc::new(MockRuntimeService::new()),
+//!     );
+//!
+//!     // Test the API
+//!     let devices = api.list_devices().await.unwrap();
+//!     assert_eq!(devices.len(), 1);
+//! }
+//! ```
+//!
+//! # Example: Testing Error Handling
+//!
+//! ```rust,ignore
+//! #[tokio::test]
+//! async fn test_device_error_handling() {
+//!     // Configure mock to return an error
+//!     let mock_device = MockDeviceService::new()
+//!         .with_list_error(DeviceServiceError::Io(std::io::Error::other("connection failed")));
+//!
+//!     let api = ApiContext::new(
+//!         Arc::new(mock_device),
+//!         Arc::new(MockProfileService::new()),
+//!         Arc::new(MockRuntimeService::new()),
+//!     );
+//!
+//!     // Verify error is propagated
+//!     let result = api.list_devices().await;
+//!     assert!(result.is_err());
+//! }
+//! ```
+//!
+//! # Example: Verifying Method Calls
+//!
+//! ```rust,ignore
+//! #[tokio::test]
+//! async fn test_method_called() {
+//!     let mock_device = MockDeviceService::new().with_devices(vec![test_device("key")]);
+//!     let mock_device = Arc::new(mock_device);
+//!
+//!     let api = ApiContext::new(
+//!         mock_device.clone(),
+//!         Arc::new(MockProfileService::new()),
+//!         Arc::new(MockRuntimeService::new()),
+//!     );
+//!
+//!     // Call the API
+//!     let _ = api.list_devices().await;
+//!     let _ = api.list_devices().await;
+//!
+//!     // Verify call count
+//!     assert_eq!(mock_device.get_call_count("list_devices"), 2);
+//! }
 //! ```
 
 use std::collections::HashMap;
@@ -32,10 +106,32 @@ use super::profile::ProfileServiceError;
 use super::runtime::RuntimeServiceError;
 use super::traits::{DeviceServiceTrait, ProfileServiceTrait, RuntimeServiceTrait};
 
-/// Mock implementation of DeviceServiceTrait for testing.
+/// Mock implementation of [`DeviceServiceTrait`] for testing.
 ///
 /// Provides configurable responses and call tracking for all device operations.
 /// All operations are pure in-memory with no I/O.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let mock = MockDeviceService::new()
+///     .with_devices(vec![
+///         DeviceView { key: "device1".into(), ..Default::default() },
+///         DeviceView { key: "device2".into(), ..Default::default() },
+///     ]);
+///
+/// // list_devices() will return the configured devices
+/// let devices = mock.list_devices().await.unwrap();
+/// assert_eq!(devices.len(), 2);
+///
+/// // get_device() will find by key
+/// let device = mock.get_device("device1").await.unwrap();
+/// assert_eq!(device.key, "device1");
+///
+/// // get_device() returns DeviceNotFound for unknown keys
+/// let result = mock.get_device("unknown").await;
+/// assert!(result.is_err());
+/// ```
 pub struct MockDeviceService {
     /// Devices to return from list_devices and get_device
     devices: Vec<DeviceView>,
@@ -211,10 +307,36 @@ fn make_io_error(msg: &str) -> DeviceServiceError {
     DeviceServiceError::Io(std::io::Error::other(msg.to_string()))
 }
 
-/// Mock implementation of ProfileServiceTrait for testing.
+/// Mock implementation of [`ProfileServiceTrait`] for testing.
 ///
 /// Provides configurable responses and call tracking for all profile operations.
 /// All operations are pure in-memory with no I/O.
+///
+/// This mock supports actual CRUD operations in memory:
+/// - `save_*` methods add or update items in internal collections
+/// - `delete_*` methods remove items from collections
+/// - `list_*` methods return the current collection state
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let mock = MockProfileService::new()
+///     .with_virtual_layouts(vec![test_layout("layout-1")]);
+///
+/// // List returns configured data
+/// let layouts = mock.list_virtual_layouts().unwrap();
+/// assert_eq!(layouts.len(), 1);
+///
+/// // Save adds to the collection
+/// mock.save_virtual_layout(test_layout("layout-2")).unwrap();
+/// let layouts = mock.list_virtual_layouts().unwrap();
+/// assert_eq!(layouts.len(), 2);
+///
+/// // Delete removes from the collection
+/// mock.delete_virtual_layout("layout-1").unwrap();
+/// let layouts = mock.list_virtual_layouts().unwrap();
+/// assert_eq!(layouts.len(), 1);
+/// ```
 pub struct MockProfileService {
     /// Virtual layouts to store and return
     virtual_layouts: Arc<Mutex<Vec<VirtualLayout>>>,
@@ -468,10 +590,34 @@ fn make_profile_error(msg: &str) -> ProfileServiceError {
     ProfileServiceError::NotFound(msg.to_string())
 }
 
-/// Mock implementation of RuntimeServiceTrait for testing.
+/// Mock implementation of [`RuntimeServiceTrait`] for testing.
 ///
 /// Provides configurable responses and call tracking for all runtime operations.
 /// All operations are pure in-memory with no I/O.
+///
+/// This mock maintains actual state for slot operations:
+/// - `add_slot` adds slots to devices (creating device entries as needed)
+/// - `remove_slot` removes slots from devices
+/// - `reorder_slot` updates slot priorities and re-sorts
+/// - `set_slot_active` toggles slot active state
+/// - Slots are automatically sorted by priority (descending)
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let mock = MockRuntimeService::new();
+/// let device = DeviceInstanceId { vendor_id: 0x1234, product_id: 0x5678, serial: None };
+/// let slot = ProfileSlot { id: "slot-1".into(), priority: 100, active: true, .. };
+///
+/// // Add a slot - device entry is created automatically
+/// let config = mock.add_slot(device.clone(), slot).unwrap();
+/// assert_eq!(config.devices.len(), 1);
+/// assert_eq!(config.devices[0].slots.len(), 1);
+///
+/// // Remove the slot
+/// let config = mock.remove_slot(device.clone(), "slot-1").unwrap();
+/// assert_eq!(config.devices[0].slots.len(), 0);
+/// ```
 pub struct MockRuntimeService {
     /// Runtime config state (devices and their slots)
     config: Arc<Mutex<RuntimeConfig>>,
