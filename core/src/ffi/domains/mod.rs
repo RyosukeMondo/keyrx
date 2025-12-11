@@ -4,6 +4,7 @@
 //! domain of functionality (discovery, validation, engine, etc.).
 
 pub mod analysis;
+pub mod config;
 pub mod device;
 pub mod device_definitions;
 pub mod device_registry;

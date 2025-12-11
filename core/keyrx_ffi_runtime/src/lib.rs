@@ -14,6 +14,8 @@
 //! callers to ensure pointer validity.
 
 #![deny(unsafe_op_in_unsafe_fn)]
+// FFI code requires unsafe - this is intentional and reviewed
+#![allow(unsafe_code)]
 
 pub mod json;
 pub mod panic;

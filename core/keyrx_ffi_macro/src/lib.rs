@@ -1,3 +1,7 @@
+// Allow dead code for contract fields that are parsed but not yet used
+// (e.g., description, errors, types) - they are part of the contract schema
+#![allow(dead_code)]
+
 //! Procedural macro for generating FFI code from contracts.
 //!
 //! This crate provides the `#[keyrx_ffi]` attribute macro that generates FFI wrapper

@@ -48,6 +48,8 @@ jsonschema.workspace = true
 walkdir.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 keyrx-core-macros = { path = "core-macros" }
+keyrx_ffi_macro = { path = "keyrx_ffi_macro" }
+keyrx_ffi_runtime = { path = "keyrx_ffi_runtime" }
 reqwest.workspace = true
 reqwest-middleware.workspace = true
 http = "1"

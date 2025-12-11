@@ -3,7 +3,6 @@
 #![allow(clippy::unwrap_used)]
 
 use crate::config::models::DeviceInstanceId;
-use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::definitions::DeviceDefinitionLibrary;
 use crate::ffi::domains::engine::global_event_registry;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
@@ -147,140 +146,7 @@ pub unsafe extern "C" fn keyrx_free_event_payload(ptr: *mut u8, len: usize) {
     }
 }
 
-use crate::config::manager::ConfigManager;
-use std::sync::OnceLock;
-
-/// Global config manager instance.
-///
-/// Stores configuration in `~/.keyrx` (or platform equivalent).
-pub(crate) fn global_config_manager() -> &'static ConfigManager {
-    static MANAGER: OnceLock<ConfigManager> = OnceLock::new();
-    MANAGER.get_or_init(|| {
-        let home = dirs::home_dir().expect("failed to determine home directory");
-        let config_root = home.join(".keyrx");
-        ConfigManager::new(config_root)
-    })
-}
-
-// Helper for JSON response
-fn ffi_json<T: serde::Serialize>(result: FfiResult<T>) -> *mut c_char {
-    let payload = serialize_ffi_result(&result).unwrap_or_else(|e| {
-        format!("error:{{\"code\":\"SERIALIZATION_FAILED\",\"message\":\"{e}\"}}")
-    });
-    CString::new(payload)
-        .unwrap_or(
-            CString::new(r#"error:{"code":"INTERNAL_ERROR","message":"Nul byte in JSON"}"#)
-                .unwrap(),
-        )
-        .into_raw()
-}
-
-// Config Exports
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_list_virtual_layouts() -> *mut c_char {
-    let result = global_config_manager()
-        .load_virtual_layouts()
-        .map(|map| map.into_values().collect::<Vec<_>>())
-        .map_err(|e| FfiError::internal(e.to_string()));
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_save_virtual_layout(json: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
-        let json_str = parse_c_string(json, "json")?;
-        let layout: VirtualLayout =
-            serde_json::from_str(&json_str).map_err(|e| FfiError::invalid_input(e.to_string()))?;
-        global_config_manager()
-            .save_virtual_layout(&layout)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
-    })();
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_delete_virtual_layout(id: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
-        let id_str = parse_c_string(id, "id")?;
-        global_config_manager()
-            .delete_virtual_layout(&id_str)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
-    })();
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_list_hardware_profiles() -> *mut c_char {
-    let result = global_config_manager()
-        .load_hardware_profiles()
-        .map(|map| map.into_values().collect::<Vec<_>>())
-        .map_err(|e| FfiError::internal(e.to_string()));
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_save_hardware_profile(json: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<HardwareProfile> {
-        let json_str = parse_c_string(json, "json")?;
-        let profile: HardwareProfile =
-            serde_json::from_str(&json_str).map_err(|e| FfiError::invalid_input(e.to_string()))?;
-        global_config_manager()
-            .save_hardware_profile(&profile)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(profile)
-    })();
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_delete_hardware_profile(id: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
-        let id_str = parse_c_string(id, "id")?;
-        global_config_manager()
-            .delete_hardware_profile(&id_str)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
-    })();
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_list_keymaps() -> *mut c_char {
-    let result = global_config_manager()
-        .load_keymaps()
-        .map(|map| map.into_values().collect::<Vec<_>>())
-        .map_err(|e| FfiError::internal(e.to_string()));
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_save_keymap(json: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
-        let json_str = parse_c_string(json, "json")?;
-        let keymap: Keymap =
-            serde_json::from_str(&json_str).map_err(|e| FfiError::invalid_input(e.to_string()))?;
-        global_config_manager()
-            .save_keymap(&keymap)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
-    })();
-    ffi_json(result)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn keyrx_config_delete_keymap(id: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
-        let id_str = parse_c_string(id, "id")?;
-        global_config_manager()
-            .delete_keymap(&id_str)
-            .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
-    })();
-    ffi_json(result)
-}
+// Config FFI exports are now generated by the keyrx_ffi macro in domains/config.rs
 
 #[cfg(test)]
 mod tests {
