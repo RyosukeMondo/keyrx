@@ -215,7 +215,7 @@ Success: Coverage successfully measured. Overall percentage known. Critical path
 After completing:
 1. Mark [-], measure coverage, document results, log findings, mark [x]_
 
-- [ ] 4.2 Document coverage gaps if any
+- [x] 4.2 Document coverage gaps if any
   - File: .spec-workflow/specs/fix-failing-tests/coverage_gaps.md
   - Identify modules below 80% coverage
   - Identify critical paths below 90% coverage
