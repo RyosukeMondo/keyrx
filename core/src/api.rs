@@ -266,163 +266,162 @@ impl ApiContext {
     }
 }
 
-// Global services
+// Global API context for backward compatibility with standalone functions
 lazy_static! {
-    static ref DEVICE_SERVICE: DeviceService = DeviceService::with_defaults(None); // TODO: Hook up live registry
-    static ref PROFILE_SERVICE: ProfileService = ProfileService::with_defaults();
-    static ref RUNTIME_SERVICE: RuntimeService = RuntimeService::with_defaults();
+    /// Global API instance using default production services.
+    ///
+    /// This static instance provides backward compatibility for existing code
+    /// that uses standalone functions like `list_devices()` instead of
+    /// `ApiContext::new().list_devices()`.
+    static ref GLOBAL_API: ApiContext = ApiContext::with_defaults();
 }
 
-// Device Service API
+// Device Service API - standalone functions delegating to GLOBAL_API
+
+/// Lists all connected devices.
 #[tracing::instrument]
 pub async fn list_devices() -> anyhow::Result<Vec<DeviceView>> {
-    DEVICE_SERVICE.list_devices().await.map_err(Into::into)
+    GLOBAL_API.list_devices().await
 }
 
+/// Gets a specific device by its key.
 #[tracing::instrument(skip(device_key))]
 pub async fn get_device(device_key: String) -> anyhow::Result<DeviceView> {
-    DEVICE_SERVICE
-        .get_device(&device_key)
-        .await
-        .map_err(Into::into)
+    GLOBAL_API.get_device(device_key).await
 }
 
+/// Enables or disables remapping for a device.
 #[tracing::instrument(skip(device_key))]
 pub async fn set_device_remap(device_key: String, enabled: bool) -> anyhow::Result<DeviceView> {
-    DEVICE_SERVICE
-        .set_remap_enabled(&device_key, enabled)
-        .await
-        .map_err(Into::into)
+    GLOBAL_API.set_device_remap(device_key, enabled).await
 }
 
+/// Assigns a profile to a device.
 #[tracing::instrument(skip(device_key, profile_id))]
 pub async fn assign_device_profile(
     device_key: String,
     profile_id: String,
 ) -> anyhow::Result<DeviceView> {
-    DEVICE_SERVICE
-        .assign_profile(&device_key, &profile_id)
+    GLOBAL_API
+        .assign_device_profile(device_key, profile_id)
         .await
-        .map_err(Into::into)
 }
 
+/// Unassigns the current profile from a device.
 #[tracing::instrument(skip(device_key))]
 pub async fn unassign_device_profile(device_key: String) -> anyhow::Result<DeviceView> {
-    DEVICE_SERVICE
-        .unassign_profile(&device_key)
-        .await
-        .map_err(Into::into)
+    GLOBAL_API.unassign_device_profile(device_key).await
 }
 
+/// Sets or clears a label for a device.
 #[tracing::instrument(skip(device_key))]
 pub async fn set_device_label(
     device_key: String,
     label: Option<String>,
 ) -> anyhow::Result<DeviceView> {
-    DEVICE_SERVICE
-        .set_label(&device_key, label)
-        .await
-        .map_err(Into::into)
+    GLOBAL_API.set_device_label(device_key, label).await
 }
 
-// Profile Service API
+// Profile Service API - standalone functions delegating to GLOBAL_API
+
+/// Lists all virtual layouts.
 #[tracing::instrument]
 pub fn list_virtual_layouts() -> anyhow::Result<Vec<VirtualLayout>> {
-    PROFILE_SERVICE.list_virtual_layouts().map_err(Into::into)
+    GLOBAL_API.list_virtual_layouts()
 }
 
+/// Saves a virtual layout.
 #[tracing::instrument(skip(layout))]
 pub fn save_virtual_layout(layout: VirtualLayout) -> anyhow::Result<VirtualLayout> {
-    PROFILE_SERVICE
-        .save_virtual_layout(layout)
-        .map_err(Into::into)
+    GLOBAL_API.save_virtual_layout(layout)
 }
 
+/// Deletes a virtual layout by ID.
 #[tracing::instrument(skip(id))]
 pub fn delete_virtual_layout(id: String) -> anyhow::Result<()> {
-    PROFILE_SERVICE
-        .delete_virtual_layout(&id)
-        .map_err(Into::into)
+    GLOBAL_API.delete_virtual_layout(id)
 }
 
+/// Lists all hardware profiles.
 #[tracing::instrument]
 pub fn list_hardware_profiles() -> anyhow::Result<Vec<HardwareProfile>> {
-    PROFILE_SERVICE.list_hardware_profiles().map_err(Into::into)
+    GLOBAL_API.list_hardware_profiles()
 }
 
+/// Saves a hardware profile.
 #[tracing::instrument(skip(profile))]
 pub fn save_hardware_profile(profile: HardwareProfile) -> anyhow::Result<HardwareProfile> {
-    PROFILE_SERVICE
-        .save_hardware_profile(profile)
-        .map_err(Into::into)
+    GLOBAL_API.save_hardware_profile(profile)
 }
 
+/// Deletes a hardware profile by ID.
 #[tracing::instrument(skip(id))]
 pub fn delete_hardware_profile(id: String) -> anyhow::Result<()> {
-    PROFILE_SERVICE
-        .delete_hardware_profile(&id)
-        .map_err(Into::into)
+    GLOBAL_API.delete_hardware_profile(id)
 }
 
+/// Lists all keymaps.
 #[tracing::instrument]
 pub fn list_keymaps() -> anyhow::Result<Vec<Keymap>> {
-    PROFILE_SERVICE.list_keymaps().map_err(Into::into)
+    GLOBAL_API.list_keymaps()
 }
 
+/// Saves a keymap.
 #[tracing::instrument(skip(keymap))]
 pub fn save_keymap(keymap: Keymap) -> anyhow::Result<Keymap> {
-    PROFILE_SERVICE.save_keymap(keymap).map_err(Into::into)
+    GLOBAL_API.save_keymap(keymap)
 }
 
+/// Deletes a keymap by ID.
 #[tracing::instrument(skip(id))]
 pub fn delete_keymap(id: String) -> anyhow::Result<()> {
-    PROFILE_SERVICE.delete_keymap(&id).map_err(Into::into)
+    GLOBAL_API.delete_keymap(id)
 }
 
-// Runtime Service API
+// Runtime Service API - standalone functions delegating to GLOBAL_API
+
+/// Gets the current runtime configuration.
 #[tracing::instrument]
 pub fn get_runtime_config() -> anyhow::Result<RuntimeConfig> {
-    RUNTIME_SERVICE.get_config().map_err(Into::into)
+    GLOBAL_API.get_runtime_config()
 }
 
+/// Adds a profile slot to a device's configuration.
 #[tracing::instrument(skip(device, slot))]
 pub fn runtime_add_slot(
     device: DeviceInstanceId,
     slot: ProfileSlot,
 ) -> anyhow::Result<RuntimeConfig> {
-    RUNTIME_SERVICE.add_slot(device, slot).map_err(Into::into)
+    GLOBAL_API.runtime_add_slot(device, slot)
 }
 
+/// Removes a profile slot from a device's configuration.
 #[tracing::instrument(skip(device, slot_id))]
 pub fn runtime_remove_slot(
     device: DeviceInstanceId,
     slot_id: String,
 ) -> anyhow::Result<RuntimeConfig> {
-    RUNTIME_SERVICE
-        .remove_slot(device, &slot_id)
-        .map_err(Into::into)
+    GLOBAL_API.runtime_remove_slot(device, slot_id)
 }
 
+/// Reorders a profile slot's priority for a device.
 #[tracing::instrument(skip(device, slot_id))]
 pub fn runtime_reorder_slot(
     device: DeviceInstanceId,
     slot_id: String,
     new_priority: u32,
 ) -> anyhow::Result<RuntimeConfig> {
-    RUNTIME_SERVICE
-        .reorder_slot(device, &slot_id, new_priority)
-        .map_err(Into::into)
+    GLOBAL_API.runtime_reorder_slot(device, slot_id, new_priority)
 }
 
+/// Sets whether a profile slot is active for a device.
 #[tracing::instrument(skip(device, slot_id))]
 pub fn runtime_set_slot_active(
     device: DeviceInstanceId,
     slot_id: String,
     active: bool,
 ) -> anyhow::Result<RuntimeConfig> {
-    RUNTIME_SERVICE
-        .set_slot_active(device, &slot_id, active)
-        .map_err(Into::into)
+    GLOBAL_API.runtime_set_slot_active(device, slot_id, active)
 }
 
 // Observability API
