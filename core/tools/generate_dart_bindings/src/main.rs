@@ -11,34 +11,52 @@
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
+mod pipeline;
+
 use anyhow::Result;
 use clap::Parser;
 use generate_dart_bindings::cli::Cli;
+use pipeline::GenerationPipeline;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let pipeline = GenerationPipeline::new(&cli);
 
     if cli.verbose {
         eprintln!("Dart Binding Code Generator");
         eprintln!("Contracts directory: {:?}", cli.contracts_dir());
         eprintln!("Output directory: {:?}", cli.output_dir());
         if let Some(domain) = &cli.domain {
-            eprintln!("Domain filter: {}", domain);
+            eprintln!("Domain filter: {domain}");
         }
         if cli.check {
             eprintln!("Check mode: enabled (will not write files)");
         }
     }
 
-    // TODO: Implement generation pipeline in subsequent tasks
-    // 1. Load contracts from directory
-    // 2. Map types to Dart FFI types
-    // 3. Generate bindings code
-    // 4. Generate model classes
-    // 5. Write files (unless --check mode)
-    // 6. Format with dart format
+    let result = pipeline.run()?;
 
-    eprintln!("Dart bindings generator initialized successfully");
+    if cli.verbose {
+        eprintln!("Generated {} bindings file(s)", result.bindings_generated);
+        eprintln!("Generated {} models file(s)", result.models_generated);
+        if result.files_skipped > 0 {
+            eprintln!("Skipped {} unchanged file(s)", result.files_skipped);
+        }
+    }
+
+    if cli.check && result.needs_regeneration {
+        eprintln!("Error: Generated bindings are out of date. Run without --check to regenerate.");
+        std::process::exit(1);
+    }
+
+    if !cli.check {
+        eprintln!(
+            "Successfully generated Dart bindings ({} file(s) written)",
+            result.files_written
+        );
+    } else {
+        eprintln!("Bindings are up to date.");
+    }
 
     Ok(())
 }

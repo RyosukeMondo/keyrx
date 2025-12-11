@@ -152,13 +152,13 @@ fn generate_function_pointer(ffi_name: &str, lookup_name: &str) -> String {
     render(FUNCTION_POINTER_TEMPLATE, &ctx)
 }
 
-/// Generate all typedefs for a contract as a single string
+/// Generate all typedefs for a contract as a single string (no indentation, for file-level)
 pub fn generate_typedefs_block(signatures: &[FfiSignature]) -> String {
     let mut lines = Vec::new();
 
     for sig in signatures {
-        lines.push(format!("  {}", sig.native_typedef));
-        lines.push(format!("  {}", sig.dart_typedef));
+        lines.push(sig.native_typedef.clone());
+        lines.push(sig.dart_typedef.clone());
         lines.push(String::new());
     }
 

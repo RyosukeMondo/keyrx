@@ -85,7 +85,7 @@ pub const DART_TYPEDEF_TEMPLATE: &str =
 /// Placeholders:
 /// - `{{function_name}}` - Full FFI function name
 /// - `{{lookup_name}}` - Name for the late final variable
-pub const FUNCTION_POINTER_TEMPLATE: &str = r#"late final _{{lookup_name}} = _dylib
+pub const FUNCTION_POINTER_TEMPLATE: &str = r#"late final _{{lookup_name}} = _lib
     .lookup<NativeFunction<_{{function_name}}_native>>('{{function_name}}')
     .asFunction<_{{function_name}}>();"#;
 
@@ -267,12 +267,12 @@ class FfiException implements Exception {
 /// - `{{wrapper_functions}}` - All wrapper function implementations
 pub const BINDINGS_CLASS_TEMPLATE: &str = r#"/// FFI bindings for {{domain}} domain
 class {{class_name}} {
-  final DynamicLibrary _dylib;
+  final DynamicLibrary _lib;
 
-  {{class_name}}(this._dylib);
+  {{class_name}}(this._lib);
 
   // Free string function lookup
-  late final _keyrx_free_string = _dylib
+  late final _keyrx_free_string = _lib
       .lookup<NativeFunction<Void Function(Pointer<Utf8>)>>('keyrx_free_string')
       .asFunction<void Function(Pointer<Utf8>)>();
 

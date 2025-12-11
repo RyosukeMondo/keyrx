@@ -33,15 +33,18 @@ pub fn load_contracts_for_domain(
     Ok(contracts)
 }
 
-/// Load all contracts as a vector
+/// Load all contracts as a vector, sorted by domain for deterministic output
 pub fn load_all_contracts(contracts_dir: &Path) -> Result<Vec<FfiContract>> {
     let registry = load_contracts(contracts_dir)?;
 
-    let contracts: Vec<FfiContract> = registry.all_contracts().values().cloned().collect();
+    let mut contracts: Vec<FfiContract> = registry.all_contracts().values().cloned().collect();
 
     if contracts.is_empty() {
         anyhow::bail!("No contracts found in {:?}", contracts_dir);
     }
+
+    // Sort by domain name for deterministic output
+    contracts.sort_by(|a, b| a.domain.cmp(&b.domain));
 
     Ok(contracts)
 }

@@ -3,7 +3,9 @@
 //! This module provides functionality to generate file headers with warnings,
 //! timestamps, and source contract information for generated Dart FFI bindings.
 
-use crate::templates::{context, render, BINDINGS_FILE_HEADER, MODELS_FILE_HEADER};
+use crate::templates::{
+    context, render, BINDINGS_FILE_HEADER, FFI_EXCEPTION_CLASS, MODELS_FILE_HEADER,
+};
 use chrono::{DateTime, Utc};
 
 /// Generate a header for bindings files with the current timestamp
@@ -15,7 +17,9 @@ pub fn generate_bindings_header() -> String {
 pub fn generate_bindings_header_with_time(timestamp: DateTime<Utc>) -> String {
     let mut ctx = context();
     ctx.insert("timestamp".to_string(), format_timestamp(timestamp));
-    render(BINDINGS_FILE_HEADER, &ctx)
+    let header = render(BINDINGS_FILE_HEADER, &ctx);
+    // Append FfiException class
+    format!("{header}\n{FFI_EXCEPTION_CLASS}\n")
 }
 
 /// Generate a header for models files with the current timestamp

@@ -33,8 +33,10 @@ thiserror = { workspace = true }
 # Date/time handling
 chrono = { workspace = true }
 
-[dev-dependencies]
+# Temp files for check mode
 tempfile = "3"
+
+[dev-dependencies]
 
 [lints]
 workspace = true
