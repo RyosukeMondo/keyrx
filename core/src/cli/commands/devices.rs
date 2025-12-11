@@ -115,7 +115,8 @@ impl DevicesCommand {
 
     pub fn run(&self) -> CommandResult<()> {
         let registry = self.live_runtime().map(|rt| rt.device_registry().clone());
-        let service = DeviceService::new(registry).with_bindings_path(self.bindings_path.clone());
+        let bindings = DeviceBindings::with_path(self.bindings_path.clone());
+        let service = DeviceService::new(registry, bindings);
 
         let renderer = DevicesRenderer {
             output: self.output.clone(),

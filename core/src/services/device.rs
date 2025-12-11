@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 
-use crate::ffi::runtime::with_revolutionary_runtime;
 use crate::registry::{DeviceBinding, DeviceBindings};
 use crate::registry::{DeviceRegistry, DeviceRegistryError, DeviceState};
 use crate::DeviceIdentity;
-use std::path::PathBuf;
 use thiserror::Error;
 
 use super::traits::DeviceServiceTrait;
@@ -25,27 +23,35 @@ pub enum DeviceServiceError {
 /// It interacts with the live `DeviceRegistry` (if available) AND the persisted `DeviceBindings`.
 /// It acts as the SSOT for device operations.
 pub struct DeviceService {
-    // Optional because the runtime might not be active (e.g. CLI in offline mode)
+    /// Optional because the runtime might not be active (e.g. CLI in offline mode)
     registry: Option<DeviceRegistry>,
-    bindings_path: PathBuf,
+    /// Device bindings for persistence
+    bindings: DeviceBindings,
 }
 
 impl DeviceService {
-    pub fn new(registry: Option<DeviceRegistry>) -> Self {
-        Self {
-            registry,
-            bindings_path: DeviceBindings::default_path(),
-        }
+    /// Creates a new DeviceService with injected dependencies.
+    ///
+    /// # Arguments
+    /// * `registry` - Optional device registry for live device state
+    /// * `bindings` - Device bindings for persistence
+    pub fn new(registry: Option<DeviceRegistry>, bindings: DeviceBindings) -> Self {
+        Self { registry, bindings }
     }
 
-    pub fn with_bindings_path(mut self, path: PathBuf) -> Self {
-        self.bindings_path = path;
-        self
+    /// Creates a DeviceService with default bindings path.
+    ///
+    /// This is a convenience constructor for production use.
+    ///
+    /// # Arguments
+    /// * `registry` - Optional device registry for live device state
+    pub fn with_defaults(registry: Option<DeviceRegistry>) -> Self {
+        Self::new(registry, DeviceBindings::new())
     }
 
     fn load_bindings(&self) -> Result<DeviceBindings, DeviceServiceError> {
-        let mut bindings = DeviceBindings::with_path(self.bindings_path.clone());
-        if self.bindings_path.exists() {
+        let mut bindings = DeviceBindings::with_path(self.bindings.path().to_path_buf());
+        if self.bindings.path().exists() {
             bindings
                 .load()
                 .map_err(|e| std::io::Error::other(e.to_string()))?;
@@ -54,17 +60,7 @@ impl DeviceService {
     }
 
     fn get_registry(&self) -> Option<DeviceRegistry> {
-        if let Some(reg) = &self.registry {
-            return Some(reg.clone());
-        }
-
-        // Try global runtime
-        let mut registry = None;
-        let _ = with_revolutionary_runtime(|rt| {
-            registry = Some(rt.device_registry().clone());
-            Ok(())
-        });
-        registry
+        self.registry.clone()
     }
 }
 
