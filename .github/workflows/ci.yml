@@ -35,6 +35,39 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: ./core
 
+  check-dart-bindings:
+    name: Check Dart Bindings
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: check-dart-bindings
+          cache-on-failure: true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+          cache: true
+      - name: Build binding generator
+        run: cargo build --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml
+      - name: Check bindings are up-to-date
+        run: |
+          cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --check --verbose
+        env:
+          RUST_BACKTRACE: 1
+      - name: Show diff if bindings are stale
+        if: failure()
+        run: |
+          echo "Bindings are out of date. Regenerating to show diff..."
+          cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --verbose
+          git diff --color=always
+          echo ""
+          echo "::error::Dart FFI bindings are out of sync with contracts. Run 'just gen-dart-bindings' locally and commit the changes."
+
   test-unit:
     name: Unit Tests (${{ matrix.os }})
     needs: check
