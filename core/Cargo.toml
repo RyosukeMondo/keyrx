@@ -75,6 +75,9 @@ linux-driver = ["evdev", "nix", "signal-hook"]
 transition-logging = []
 
 [dev-dependencies]
+syn = { version = "2.0", features = ["full", "parsing", "visit"] }
+quote = "1.0"
+proc-macro2 = { version = "1.0", features = ["span-locations"] }
 proptest.workspace = true
 criterion.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
