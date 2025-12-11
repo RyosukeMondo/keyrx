@@ -1,4 +1,63 @@
-//! Layer and modifier state management.
+//! Unified engine state management.
+//!
+//! This module provides a cohesive state container for the KeyRx remapping engine,
+//! combining key tracking, layer management, modifier state, and pending decisions
+//! into a single, transactional structure with version tracking.
+//!
+//! # Module Structure
+//!
+//! - `keys` - Physical key press tracking with timestamps
+//! - `layers` - Layer stack management and activation states
+//! - `modifiers` - Standard and virtual modifier tracking
+//! - `pending` - Pending tap-hold and combo decision management
+//! - `mutation` - Mutation types for transactional state changes
+//! - [`change`] - State change events and effects
+//! - [`delta`] - Incremental state deltas for FFI streaming
+//! - [`tracker`] - Delta version tracking
+//! - [`history`] - State history for debugging and replay
+//! - [`persistence`] - State serialization/deserialization
+//! - [`snapshot`] - Serializable state snapshots
+//!
+//! # Key Concepts
+//!
+//! ## Version Tracking
+//!
+//! Every state mutation increments a version counter, enabling:
+//! - Detection of stale state references
+//! - Ordering of concurrent changes
+//! - Cache invalidation strategies
+//!
+//! ## Transactional Mutations
+//!
+//! State changes are applied through [`Mutation`] types using the [`EngineState::apply`]
+//! method, which ensures atomicity and produces [`StateChange`] events with effects.
+//!
+//! ## State Invariants
+//!
+//! The state enforces key invariants:
+//! - Base layer is always active
+//! - No duplicate layers in the stack
+//! - Version counter never decreases
+//!
+//! # Example
+//!
+//! ```no_run
+//! use keyrx_core::engine::state::{EngineState, Mutation};
+//! use keyrx_core::engine::decision::timing::TimingConfig;
+//! use keyrx_core::engine::KeyCode;
+//!
+//! let mut state = EngineState::new(TimingConfig::default());
+//!
+//! // Apply a key press mutation
+//! let change = state.apply(Mutation::KeyDown {
+//!     key: KeyCode::A,
+//!     timestamp_us: 1000,
+//!     is_repeat: false,
+//! }).expect("valid mutation");
+//!
+//! assert!(state.is_key_pressed(KeyCode::A));
+//! assert_eq!(state.version(), 1);
+//! ```
 
 pub mod change;
 pub mod delta;
