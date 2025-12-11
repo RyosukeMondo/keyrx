@@ -20,15 +20,17 @@ pub struct RuntimeService {
 
 impl Default for RuntimeService {
     fn default() -> Self {
-        Self::new()
+        Self::with_defaults()
     }
 }
 
 impl RuntimeService {
-    pub fn new() -> Self {
-        Self {
-            config_manager: ConfigManager::default(),
-        }
+    pub fn new(config_manager: ConfigManager) -> Self {
+        Self { config_manager }
+    }
+
+    pub fn with_defaults() -> Self {
+        Self::new(ConfigManager::default())
     }
 
     fn update_runtime_config<F>(&self, mutate: F) -> Result<RuntimeConfig, RuntimeServiceError>

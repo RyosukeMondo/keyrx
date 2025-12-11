@@ -13,7 +13,7 @@ use lazy_static::lazy_static;
 lazy_static! {
     static ref DEVICE_SERVICE: DeviceService = DeviceService::with_defaults(None); // TODO: Hook up live registry
     static ref PROFILE_SERVICE: ProfileService = ProfileService::with_defaults();
-    static ref RUNTIME_SERVICE: RuntimeService = RuntimeService::new();
+    static ref RUNTIME_SERVICE: RuntimeService = RuntimeService::with_defaults();
 }
 
 // Device Service API
