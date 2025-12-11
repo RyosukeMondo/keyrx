@@ -16,3 +16,6 @@ pub mod writer;
 
 #[cfg(test)]
 mod type_mapper_tests;
+
+#[cfg(test)]
+mod tests;
