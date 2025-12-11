@@ -295,6 +295,34 @@ impl ReplaySession {
     }
 
     fn from_streaming_file(path: PathBuf, mut file: File) -> Result<Self, KeyrxError> {
+        let header = Self::read_streaming_header(&mut file, &path)?;
+        let metadata = Self::read_streaming_metadata(&mut file, &header, &path)?;
+        let index = Self::read_streaming_index(&mut file, &header, &path)?;
+
+        let manifest = Self::build_streaming_manifest(&header, &metadata, &index);
+
+        let mut session = Self {
+            emitted: Vec::new(),
+            consumed: 0,
+            source: ReplaySource::Streaming {
+                path,
+                file,
+                header,
+                index,
+                current_block: 0,
+                buffer: VecDeque::new(),
+            },
+            manifest,
+            session_state: crate::engine::SessionState::new(),
+            speed_multiplier: 1.0,
+        };
+
+        // Eagerly load the first block so peek_next and counts behave correctly.
+        let _ = session.load_next_block_if_needed();
+        Ok(session)
+    }
+
+    fn read_streaming_header(file: &mut File, path: &Path) -> Result<RecordingHeader, KeyrxError> {
         let mut header_buf = [0u8; RECORDING_HEADER_SIZE];
         file.read_exact(&mut header_buf).map_err(|e| {
             keyrx_err!(
@@ -303,14 +331,20 @@ impl ReplaySession {
                 error = e.to_string()
             )
         })?;
-        let header = RecordingHeader::decode(&header_buf).map_err(|e| {
+        RecordingHeader::decode(&header_buf).map_err(|e| {
             keyrx_err!(
                 SESSION_FILE_CORRUPT,
                 path = path.display().to_string(),
                 error = e.to_string()
             )
-        })?;
+        })
+    }
 
+    fn read_streaming_metadata(
+        file: &mut File,
+        header: &RecordingHeader,
+        path: &Path,
+    ) -> Result<RecordingMetadata, KeyrxError> {
         file.seek(SeekFrom::Start(header.metadata_offset))
             .map_err(|e| {
                 keyrx_err!(
@@ -327,14 +361,20 @@ impl ReplaySession {
                 error = e.to_string()
             )
         })?;
-        let metadata: RecordingMetadata = serde_json::from_slice(&metadata_buf).map_err(|e| {
+        serde_json::from_slice(&metadata_buf).map_err(|e| {
             keyrx_err!(
                 SESSION_FILE_CORRUPT,
                 path = path.display().to_string(),
                 error = e.to_string()
             )
-        })?;
+        })
+    }
 
+    fn read_streaming_index(
+        file: &mut File,
+        header: &RecordingHeader,
+        path: &Path,
+    ) -> Result<Vec<BlockIndex>, KeyrxError> {
         file.seek(SeekFrom::Start(header.index_offset))
             .map_err(|e| {
                 keyrx_err!(
@@ -362,7 +402,14 @@ impl ReplaySession {
                 )
             })?);
         }
+        Ok(index)
+    }
 
+    fn build_streaming_manifest(
+        header: &RecordingHeader,
+        metadata: &RecordingMetadata,
+        index: &[BlockIndex],
+    ) -> ReplayManifest {
         let total_events: usize = index
             .iter()
             .map(|entry| (entry.end_seq - entry.start_seq + 1) as usize)
@@ -372,7 +419,7 @@ impl ReplaySession {
             .map(|entry| entry.end_timestamp_us)
             .unwrap_or_default();
 
-        let manifest = ReplayManifest {
+        ReplayManifest {
             total_events,
             duration_us,
             script_path: None,
@@ -380,27 +427,7 @@ impl ReplaySession {
             compression: Some(header.compression),
             created_at_ms: Some(metadata.created_at_ms),
             engine_version: Some(metadata.engine_version.clone()),
-        };
-
-        let mut session = Self {
-            emitted: Vec::new(),
-            consumed: 0,
-            source: ReplaySource::Streaming {
-                path,
-                file,
-                header,
-                index,
-                current_block: 0,
-                buffer: VecDeque::new(),
-            },
-            manifest,
-            session_state: crate::engine::SessionState::new(),
-            speed_multiplier: 1.0,
-        };
-
-        // Eagerly load the first block so peek_next and counts behave correctly.
-        let _ = session.load_next_block_if_needed();
-        Ok(session)
+        }
     }
 
     fn elapsed_us(&self) -> u64 {
