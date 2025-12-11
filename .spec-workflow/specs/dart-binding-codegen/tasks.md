@@ -33,7 +33,7 @@
 
 ### Phase 2: Type Mapping
 
-- [ ] 4. Create DartType enum
+- [x] 4. Create DartType enum
   - File: `core/tools/generate_dart_bindings/src/types.rs`
   - Define enum for Dart FFI types (Pointer<Utf8>, Int32, Bool, etc.)
   - Include methods for code generation
@@ -42,7 +42,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with type system expertise | Task: Create DartType enum following requirement REQ-2, modeling all Dart FFI types with code generation methods | Restrictions: Must cover all FFI types, include to_string() for code gen, derive Debug/Clone | Success: Enum covers all Dart FFI types, code generation methods work, type-safe representation | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool, then mark the task as completed in tasks.md_
 
-- [ ] 5. Implement contract to Dart type mapper
+- [x] 5. Implement contract to Dart type mapper
   - File: `core/tools/generate_dart_bindings/src/type_mapper.rs`
   - Implement `map_to_dart_ffi_type(contract_type: &str) -> DartType`
   - Implement `map_to_dart_native_type(contract_type: &str) -> String`
