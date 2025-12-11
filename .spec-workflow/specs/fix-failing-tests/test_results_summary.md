@@ -45,3 +45,17 @@ Both tests that were originally failing are now passing:
 ## Full Test Output
 
 See `test_results_all.txt` for complete test output.
+
+## Clippy Results
+
+**Command**: `cargo clippy --all-targets -- -D warnings`
+
+### Core Library
+- **Status**: PASS
+- `cargo clippy --lib -p keyrx_core -- -D warnings` passes with no warnings
+
+### Examples and Tools
+- **Status**: Pre-existing issues (out of scope)
+- `core/examples/test_definitions.rs`: Uses println!, expect() (expected for examples)
+- `core/tools/generate_dart_bindings`: Minor format! and print issues
+- These are not regressions from our fixes
