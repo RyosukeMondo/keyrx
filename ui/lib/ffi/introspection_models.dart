@@ -31,11 +31,11 @@ class IntrospectionData {
   }
 
   Map<String, dynamic> toJson() => {
-        'protocol_version': protocolVersion,
-        'domains': domains.map((d) => d.toJson()).toList(),
-        'total_functions': totalFunctions,
-        'total_events': totalEvents,
-      };
+    'protocol_version': protocolVersion,
+    'domains': domains.map((d) => d.toJson()).toList(),
+    'total_functions': totalFunctions,
+    'total_events': totalEvents,
+  };
 }
 
 /// Domain metadata
@@ -69,12 +69,12 @@ class DomainMetadata {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'description': description,
-        'version': version,
-        'functions': functions.map((f) => f.toJson()).toList(),
-        'events': events.map((e) => e.toJson()).toList(),
-      };
+    'name': name,
+    'description': description,
+    'version': version,
+    'functions': functions.map((f) => f.toJson()).toList(),
+    'events': events.map((e) => e.toJson()).toList(),
+  };
 }
 
 /// Function metadata
@@ -120,16 +120,16 @@ class FunctionMetadata {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'rust_name': rustName,
-        'description': description,
-        'parameters': parameters.map((p) => p.toJson()).toList(),
-        'returns': returns.toJson(),
-        'errors': errors,
-        'events_emitted': eventsEmitted,
-        'deprecated': deprecated,
-        if (example != null) 'example': example!.toJson(),
-      };
+    'name': name,
+    'rust_name': rustName,
+    'description': description,
+    'parameters': parameters.map((p) => p.toJson()).toList(),
+    'returns': returns.toJson(),
+    'errors': errors,
+    'events_emitted': eventsEmitted,
+    'deprecated': deprecated,
+    if (example != null) 'example': example!.toJson(),
+  };
 }
 
 /// Parameter metadata
@@ -159,12 +159,12 @@ class ParameterMetadata {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'type_name': typeName,
-        'description': description,
-        'required': required,
-        if (constraints != null) 'constraints': constraints,
-      };
+    'name': name,
+    'type_name': typeName,
+    'description': description,
+    'required': required,
+    if (constraints != null) 'constraints': constraints,
+  };
 }
 
 /// Type metadata
@@ -200,14 +200,13 @@ class TypeMetadata {
   }
 
   Map<String, dynamic> toJson() => {
-        'type_name': typeName,
-        'kind': kind,
-        if (description != null) 'description': description,
-        if (properties != null)
-          'properties':
-              properties!.map((k, v) => MapEntry(k, v.toJson())),
-        if (items != null) 'items': items!.toJson(),
-      };
+    'type_name': typeName,
+    'kind': kind,
+    if (description != null) 'description': description,
+    if (properties != null)
+      'properties': properties!.map((k, v) => MapEntry(k, v.toJson())),
+    if (items != null) 'items': items!.toJson(),
+  };
 }
 
 /// Event metadata
@@ -231,33 +230,24 @@ class EventMetadata {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'description': description,
-        'payload': payload.toJson(),
-      };
+    'name': name,
+    'description': description,
+    'payload': payload.toJson(),
+  };
 }
 
 /// Example metadata
 class ExampleMetadata {
-  final Map<String, dynamic> input;
-  final Map<String, dynamic> output;
+  final dynamic input;
+  final dynamic output;
 
-  ExampleMetadata({
-    required this.input,
-    required this.output,
-  });
+  ExampleMetadata({required this.input, required this.output});
 
   factory ExampleMetadata.fromJson(Map<String, dynamic> json) {
-    return ExampleMetadata(
-      input: json['input'] as Map<String, dynamic>,
-      output: json['output'] as Map<String, dynamic>,
-    );
+    return ExampleMetadata(input: json['input'], output: json['output']);
   }
 
-  Map<String, dynamic> toJson() => {
-        'input': input,
-        'output': output,
-      };
+  Map<String, dynamic> toJson() => {'input': input, 'output': output};
 }
 
 /// FFI Result wrapper
@@ -266,13 +256,9 @@ class FfiResult<T> {
   final T? data;
   final FfiError? error;
 
-  FfiResult.ok(this.data)
-      : success = true,
-        error = null;
+  FfiResult.ok(this.data) : success = true, error = null;
 
-  FfiResult.err(this.error)
-      : success = false,
-        data = null;
+  FfiResult.err(this.error) : success = false, data = null;
 
   factory FfiResult.fromJson(
     String json,
@@ -298,11 +284,7 @@ class FfiError {
   final String message;
   final Map<String, dynamic>? details;
 
-  FfiError({
-    required this.code,
-    required this.message,
-    this.details,
-  });
+  FfiError({required this.code, required this.message, this.details});
 
   factory FfiError.fromJson(Map<String, dynamic> json) {
     return FfiError(
@@ -313,10 +295,10 @@ class FfiError {
   }
 
   Map<String, dynamic> toJson() => {
-        'code': code,
-        'message': message,
-        if (details != null) 'details': details,
-      };
+    'code': code,
+    'message': message,
+    if (details != null) 'details': details,
+  };
 
   @override
   String toString() => 'FfiError($code): $message';

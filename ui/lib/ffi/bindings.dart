@@ -30,6 +30,11 @@ typedef KeyrxEngineStartLoop = int Function();
 typedef KeyrxEngineStopLoopNative = Int32 Function();
 typedef KeyrxEngineStopLoop = int Function();
 
+typedef KeyrxRegisterEventCallbackNative =
+    Int32 Function(Int32, Pointer<NativeFunction<EventCallbackNative>>);
+typedef KeyrxRegisterEventCallback =
+    int Function(int, Pointer<NativeFunction<EventCallbackNative>>);
+
 // ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
@@ -58,7 +63,14 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
     setBypass = _tryLookupSetBypass();
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
+    registerEventCallback = _lib
+        .lookupFunction<
+          KeyrxRegisterEventCallbackNative,
+          KeyrxRegisterEventCallback
+        >('keyrx_register_event_callback');
   }
+
+  late final KeyrxRegisterEventCallback registerEventCallback;
 
   KeyrxSetBypass? _tryLookupSetBypass() {
     try {

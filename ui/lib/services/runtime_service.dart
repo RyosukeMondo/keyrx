@@ -81,6 +81,7 @@ class RuntimeServiceImpl implements RuntimeService {
         resultPtr = bindings.runtimeAddSlot(
           devicePtr.cast<Char>(),
           slotPtr.cast<Char>(),
+          0,
         );
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error('runtimeAddSlot returned null');

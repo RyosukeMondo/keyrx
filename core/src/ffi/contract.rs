@@ -435,4 +435,18 @@ mod tests {
         assert_eq!(registry.domains().len(), 1);
         assert!(registry.get("discovery").is_some());
     }
+
+    #[test]
+    fn test_load_engine_contract() {
+        let contract_json = include_str!("contracts/engine.ffi-contract.json");
+        let contract =
+            FfiContract::from_json(contract_json).expect("Failed to parse engine contract");
+
+        assert_eq!(contract.domain, "engine");
+        assert_eq!(contract.protocol_version, 1);
+        assert!(contract.validate().is_ok());
+
+        assert!(contract.get_function("start_loop").is_some());
+        assert!(contract.get_function("stop_loop").is_some());
+    }
 }

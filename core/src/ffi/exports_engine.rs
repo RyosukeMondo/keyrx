@@ -173,3 +173,149 @@ mod tests {
         assert_eq!(event.latency_us, Some(500));
     }
 }
+
+// ─── Engine Loop Lifecycle ────────────────────────────────────────────────
+
+use crate::drivers::WindowsInput;
+use crate::engine::{AdvancedEngine, TimingConfig};
+use crate::ffi::runtime::with_revolutionary_runtime;
+use crate::InputSource;
+use std::sync::Mutex;
+use std::thread;
+
+static STOP_SIGNAL: OnceLock<Mutex<Option<tokio::sync::mpsc::Sender<()>>>> = OnceLock::new();
+
+fn get_stop_sender() -> &'static Mutex<Option<tokio::sync::mpsc::Sender<()>>> {
+    STOP_SIGNAL.get_or_init(|| Mutex::new(None))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
+    let mut guard = get_stop_sender().lock().unwrap();
+    if guard.is_some() {
+        return -1; // Already running
+    }
+
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+    *guard = Some(tx);
+
+    thread::spawn(move || {
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(rt) => rt,
+            Err(e) => {
+                tracing::error!("Failed to create runtime: {}", e);
+                return;
+            }
+        };
+
+        rt.block_on(async move {
+            if let Err(e) = run_engine_loop(&mut rx).await {
+                tracing::error!("Engine loop failed: {}", e);
+            }
+        });
+
+        // Cleanup
+        let mut guard = get_stop_sender().lock().unwrap();
+        *guard = None;
+    });
+
+    0
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
+    let guard = get_stop_sender().lock().unwrap();
+    if let Some(tx) = guard.as_ref() {
+        let tx = tx.clone();
+        // Spawn a thread to send the signal to avoid blocking FFI if channel is full (unlikely)
+        thread::spawn(move || {
+            let _ = tx.blocking_send(());
+        });
+        0
+    } else {
+        -1 // Not running
+    }
+}
+
+async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyhow::Result<()> {
+    tracing::info!("Starting engine loop from FFI");
+
+    // 1. Get Runtime
+    let runtime_arc = with_revolutionary_runtime(|rt| Ok(rt.rhai_runtime().clone()))
+        .map_err(|e| anyhow::anyhow!("Runtime not initialized: {}", e))?;
+
+    // 2. Setup Input
+    let mut input = WindowsInput::new()
+        .map_err(|e| anyhow::anyhow!("Failed to initialize WindowsInput: {}", e))?;
+    input.start().await?;
+
+    // 3. Build Engine
+    // Note: We're not fully initializing the engine with device registry/profiles here yet
+    // because that requires more intricate setup that is done in `RunCommand`.
+    // For now, this is sufficient to capture keys and run the script.
+    let mut engine = AdvancedEngine::new(runtime_arc, TimingConfig::default());
+
+    // We can try to attach device registry if available in RevolutionaryRuntime
+    let device_registry = with_revolutionary_runtime(|rt| Ok(rt.device_registry().clone())).ok();
+    if let Some(reg) = device_registry {
+        engine = engine.with_device_registry(reg);
+    }
+
+    tracing::info!("Engine loop running");
+
+    // 4. Loop
+    let mut last_timestamp = 0u64;
+
+    loop {
+        tokio::select! {
+            _ = stop_rx.recv() => {
+                tracing::info!("Stop signal received");
+                break;
+            }
+            res = input.poll_events() => {
+                let events = match res {
+                    Ok(e) => e,
+                    Err(e) => {
+                        tracing::error!("Input polling error: {}", e);
+                         break;
+                    }
+                };
+
+                for event in events {
+                    // Update engine time
+                    if event.timestamp_us > last_timestamp {
+                         for action in engine.tick(event.timestamp_us) {
+                             if let Err(e) = input.send_output(action).await {
+                                 tracing::error!("Failed to send output: {}", e);
+                             }
+                         }
+                         last_timestamp = event.timestamp_us;
+                    }
+
+                    // Emit RawInput for Monitor
+                    use crate::ffi::domains::engine::global_event_registry;
+                    use crate::ffi::events::EventType;
+                    global_event_registry().invoke(EventType::RawInput, &event);
+
+                    // Pass to discovery session (if active)
+                    crate::ffi::domains::discovery::process_discovery_event(&event);
+
+                    // Process
+                    let outputs = engine.process_event(event.clone());
+
+                    for action in outputs {
+                         // Emit RawOutput for Monitor
+                         global_event_registry().invoke(EventType::RawOutput, &action);
+                         if let Err(e) = input.send_output(action).await {
+                            tracing::error!("Failed to send output: {}", e);
+                         }
+                    }
+                }
+            }
+        }
+    }
+
+    input.stop().await?;
+    tracing::info!("Engine loop stopped");
+    Ok(())
+}

@@ -219,14 +219,14 @@ pub unsafe extern "C" fn keyrx_config_list_hardware_profiles() -> *mut c_char {
 
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_config_save_hardware_profile(json: *const c_char) -> *mut c_char {
-    let result = (|| -> FfiResult<()> {
+    let result = (|| -> FfiResult<HardwareProfile> {
         let json_str = parse_c_string(json, "json")?;
         let profile: HardwareProfile =
             serde_json::from_str(&json_str).map_err(|e| FfiError::invalid_input(e.to_string()))?;
         global_config_manager()
             .save_hardware_profile(&profile)
             .map_err(|e| FfiError::internal(e.to_string()))?;
-        Ok(())
+        Ok(profile)
     })();
     ffi_json(result)
 }

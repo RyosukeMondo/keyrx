@@ -10,10 +10,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 import '../../services/ffi_introspection_service.dart';
 import '../../ffi/introspection_models.dart';
-import '../../ffi/bindings.dart';
+
+import '../../services/service_registry.dart';
 
 /// FFI Tools page for developer introspection
 class FfiToolsPage extends StatefulWidget {
@@ -67,7 +70,11 @@ class _FfiToolsPageState extends State<FfiToolsPage>
     });
 
     try {
-      final bindings = context.read<KeyrxBindings>();
+      final registry = context.read<ServiceRegistry>();
+      final bindings = registry.bridge.bindings;
+      if (bindings == null) {
+        throw Exception('KeyRx bindings not initialized');
+      }
       final service = FfiIntrospectionService(bindings);
       final data = await service.getMetadata();
 
@@ -111,30 +118,36 @@ class _FfiToolsPageState extends State<FfiToolsPage>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 64, color: Colors.red[300]),
-                      const SizedBox(height: 16),
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadMetadata,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : TabBarView(
-                  controller: _tabController,
+          ? Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildFunctionBrowser(),
-                    _buildCallHistory(),
-                    _buildEventMonitor(),
+                    Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadMetadata,
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
+              ),
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildFunctionBrowser(),
+                _buildCallHistory(),
+                _buildEventMonitor(),
+              ],
+            ),
     );
   }
 
@@ -164,11 +177,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
-                Expanded(
-                  child: ListView(
-                    children: _buildFunctionList(),
-                  ),
-                ),
+                Expanded(child: ListView(children: _buildFunctionList())),
               ],
             ),
           ),
@@ -176,9 +185,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
         // Right panel: Function details and tester
         Expanded(
           child: _selectedFunction == null
-              ? const Center(
-                  child: Text('Select a function to test'),
-                )
+              ? const Center(child: Text('Select a function to test'))
               : _buildFunctionTester(),
         ),
       ],
@@ -190,10 +197,12 @@ class _FfiToolsPageState extends State<FfiToolsPage>
     final widgets = <Widget>[];
 
     for (final domain in _metadata!.domains) {
-      final matchingFunctions = domain.functions.where((f) =>
-          query.isEmpty ||
-          f.name.toLowerCase().contains(query) ||
-          f.description.toLowerCase().contains(query));
+      final matchingFunctions = domain.functions.where(
+        (f) =>
+            query.isEmpty ||
+            f.name.toLowerCase().contains(query) ||
+            f.description.toLowerCase().contains(query),
+      );
 
       if (matchingFunctions.isEmpty) continue;
 
@@ -206,7 +215,8 @@ class _FfiToolsPageState extends State<FfiToolsPage>
           subtitle: Text('${matchingFunctions.length} functions'),
           initiallyExpanded: _selectedDomain == domain.name,
           children: matchingFunctions.map((func) {
-            final isSelected = _selectedFunction?.name == func.name &&
+            final isSelected =
+                _selectedFunction?.name == func.name &&
                 _selectedDomain == domain.name;
 
             return ListTile(
@@ -226,8 +236,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
               },
               trailing: func.deprecated
                   ? const Chip(
-                      label: Text('Deprecated',
-                          style: TextStyle(fontSize: 10)),
+                      label: Text('Deprecated', style: TextStyle(fontSize: 10)),
                       backgroundColor: Colors.orange,
                     )
                   : null,
@@ -274,10 +283,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                       const SizedBox(height: 4),
                       Text(
                         func.description,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -299,10 +305,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
             if (func.parameters.isNotEmpty) ...[
               const Text(
                 'Parameters',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -316,9 +319,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
               ),
             ] else
               const Expanded(
-                child: Center(
-                  child: Text('No parameters required'),
-                ),
+                child: Center(child: Text('No parameters required')),
               ),
 
             const Divider(height: 32),
@@ -327,31 +328,32 @@ class _FfiToolsPageState extends State<FfiToolsPage>
             if (func.example != null) ...[
               const Text(
                 'Example',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Input:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Input:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(
                       jsonEncode(func.example!.input),
                       style: const TextStyle(fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 8),
-                    const Text('Output:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Output:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(
                       jsonEncode(func.example!.output),
                       style: const TextStyle(fontFamily: 'monospace'),
@@ -410,8 +412,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
               if (param.required) ...[
                 const SizedBox(width: 8),
                 const Chip(
-                  label: Text('Required',
-                      style: TextStyle(fontSize: 11)),
+                  label: Text('Required', style: TextStyle(fontSize: 11)),
                   backgroundColor: Colors.orange,
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
@@ -422,10 +423,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
           const SizedBox(height: 4),
           Text(
             param.description,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -476,39 +474,130 @@ class _FfiToolsPageState extends State<FfiToolsPage>
   }
 
   Future<void> _invokeFunction(FunctionMetadata func) async {
-    // TODO: Implement actual FFI function invocation
-    // For now, just add to call history
-    final record = FfiCallRecord(
-      timestamp: DateTime.now(),
-      domain: _selectedDomain!,
-      function: func.name,
-      parameters: Map.fromEntries(
-        func.parameters.map((p) => MapEntry(
-              p.name,
-              _paramControllers[p.name]!.text,
-            )),
-      ),
-      result: 'Not implemented yet',
-      success: false,
-    );
-
     setState(() {
-      _callHistory.insert(0, record);
+      _isLoading = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Function invocation not yet implemented'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    try {
+      final registry = context.read<ServiceRegistry>();
+      final bindings = registry.bridge.bindings;
+      if (bindings == null) throw Exception('Bindings not initialized');
+
+      String resultStr;
+      dynamic result;
+
+      // Dispatch based on domain/function
+      // Note: In a real system, we might use code generation or mirrors (if not Flutter) to map this.
+      // Here we manually map the "considerable" functions for developer testing.
+
+      switch ('${_selectedDomain}.${func.name}') {
+        // --- Engine Domain ---
+        case 'engine.start_loop':
+          final ret = bindings.startLoop!();
+          result = ret;
+          resultStr = 'Returned: $ret';
+          break;
+
+        case 'engine.stop_loop':
+          final ret = bindings.stopLoop!();
+          result = ret;
+          resultStr = 'Returned: $ret';
+          break;
+
+        // --- Device Registry Domain ---
+        case 'device_registry.list_devices':
+          // Use the raw binding
+          final ptr = bindings.deviceRegistryListDevices();
+          final str = ptr.cast<Utf8>().toDartString();
+          // We do NOT free the string here if the contract says it returns a static/managed buffer
+          // OR if it returns a new string we must free.
+          // Looking at logs, it usually returns "ok:..." or "error:...".
+          // Rust implementation `ffi_json` uses `CString::into_raw`.
+          // So we MUST free it.
+          bindings.freeString(ptr);
+
+          result = str;
+          resultStr = str;
+          break;
+
+        case 'device_registry.set_remap_enabled':
+          final key = _paramControllers['device_key']!.text;
+          final enabled =
+              _paramControllers['enabled']!.text.toLowerCase() == 'true';
+
+          final keyPtr = key.toNativeUtf8();
+          final retPtr = bindings.deviceRegistrySetRemapEnabled(
+            keyPtr.cast<Char>(),
+            enabled ? 1 : 0,
+          );
+          calloc.free(keyPtr);
+
+          final str = retPtr.cast<Utf8>().toDartString();
+          bindings.freeString(retPtr);
+
+          result = str;
+          resultStr = str;
+          break;
+
+        // --- Discovery Domain (Legacy/Stub) ---
+        case 'discovery.start_discovery':
+          // ... (If we keep this)
+          throw Exception(
+            'Discovery functions are deprecated. Use Device Registry.',
+          );
+
+        default:
+          throw Exception(
+            'Function ${func.name} not implemented in FFI Tools dispatcher',
+          );
+      }
+
+      final record = FfiCallRecord(
+        timestamp: DateTime.now(),
+        domain: _selectedDomain!,
+        function: func.name,
+        parameters: Map.fromEntries(
+          func.parameters.map(
+            (p) => MapEntry(p.name, _paramControllers[p.name]!.text),
+          ),
+        ),
+        result: resultStr,
+        success: true,
+      );
+
+      setState(() {
+        _callHistory.insert(0, record);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+
+      // Add failed record
+      final record = FfiCallRecord(
+        timestamp: DateTime.now(),
+        domain: _selectedDomain ?? 'unknown',
+        function: func.name,
+        parameters: {},
+        result: 'Error: $e',
+        success: false,
+      );
+      setState(() {
+        _callHistory.insert(0, record);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildCallHistory() {
     if (_callHistory.isEmpty) {
-      return const Center(
-        child: Text('No function calls yet'),
-      );
+      return const Center(child: Text('No function calls yet'));
     }
 
     return ListView.builder(
@@ -587,9 +676,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
         return ListTile(
           leading: const Icon(Icons.notifications_active),
           title: Text(event.name),
-          subtitle: Text(
-            'Received at ${event.timestamp.toLocal().toString()}',
-          ),
+          subtitle: Text('Received at ${event.timestamp.toLocal().toString()}'),
           trailing: IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
