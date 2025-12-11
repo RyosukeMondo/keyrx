@@ -49,7 +49,7 @@ type CacheKey = (u16, u16);
 /// # Cache Strategy
 ///
 /// Translation maps are built lazily on first use and cached by (VID, PID).
-/// The cache uses Arc<HashMap> for zero-copy sharing across pipeline stages.
+/// The cache uses `Arc<HashMap>` for zero-copy sharing across pipeline stages.
 pub struct CoordinateTranslator {
     /// Reference to the device definition library
     library: Arc<DeviceDefinitionLibrary>,

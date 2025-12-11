@@ -24,7 +24,7 @@ pub enum ProfileResolverError {
 /// Resolves profile IDs to Profile instances with caching.
 ///
 /// The ProfileResolver is optimized for the hot path in the event processing
-/// pipeline. It wraps the ProfileRegistry and uses Arc<Profile> for zero-copy
+/// pipeline. It wraps the ProfileRegistry and uses `Arc<Profile>` for zero-copy
 /// sharing across the pipeline stages.
 ///
 /// # Performance Characteristics
@@ -34,7 +34,7 @@ pub enum ProfileResolverError {
 /// - Cache invalidation: O(1) removal from cache
 ///
 /// The ProfileRegistry already maintains an internal cache using
-/// Arc<RwLock<HashMap>>, so this resolver simply provides a convenient
+/// `Arc<RwLock<HashMap>>`, so this resolver simply provides a convenient
 /// interface for the pipeline with explicit invalidation semantics.
 #[derive(Clone)]
 pub struct ProfileResolver {
@@ -55,7 +55,7 @@ impl ProfileResolver {
     /// - Cache misses load from disk (cold path: <10ms)
     /// - Results are cached automatically for subsequent lookups
     ///
-    /// Returns an Arc<Profile> for zero-copy sharing across pipeline stages.
+    /// Returns an `Arc<Profile>` for zero-copy sharing across pipeline stages.
     ///
     /// # Errors
     ///

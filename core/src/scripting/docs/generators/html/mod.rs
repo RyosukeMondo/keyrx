@@ -6,8 +6,8 @@
 //!
 //! # Submodules
 //!
-//! - [`templates`]: HTML templates (header with CSS, scripts with JavaScript)
-//! - [`rendering`]: Rendering functions for modules, types, functions, etc.
+//! - **templates**: HTML templates (header with CSS, scripts with JavaScript)
+//! - **rendering**: Rendering functions for modules, types, functions, etc.
 
 mod rendering;
 mod templates;

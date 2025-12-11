@@ -56,7 +56,7 @@ pub const MAX_CHUNK_SIZE: usize = 1024 * 1024;
 
 /// Iterator for breaking byte slices into fixed-size chunks.
 ///
-/// This iterator is useful for implementing [`FfiStreamMarshaler::get_chunk`]
+/// This iterator is useful for implementing streaming marshalers
 /// by providing a zero-copy view into the underlying data.
 ///
 /// # Example
@@ -188,7 +188,7 @@ impl ExactSizeIterator for ChunkIterator<'_> {
 
 /// Collector for reassembling data from chunks.
 ///
-/// This type is useful for implementing [`FfiStreamMarshaler::from_chunks`]
+/// This type is useful for implementing streaming marshalers
 /// by providing a stateful buffer that collects chunks.
 ///
 /// # Example

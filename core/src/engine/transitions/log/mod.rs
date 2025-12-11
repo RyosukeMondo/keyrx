@@ -21,9 +21,9 @@
 //!
 //! # Module Structure
 //!
-//! - [`entry`] - The `TransitionEntry` type for capturing individual transitions
-//! - [`ring_buffer`] - The `TransitionLog` ring buffer (when feature enabled)
-//! - [`stub`] - Zero-overhead stub implementation (when feature disabled)
+//! - **entry** - The [`TransitionEntry`] type for capturing individual transitions
+//! - **ring_buffer** - The [`TransitionLog`] ring buffer (when feature enabled)
+//! - **stub** - Zero-overhead stub implementation (when feature disabled)
 
 mod entry;
 

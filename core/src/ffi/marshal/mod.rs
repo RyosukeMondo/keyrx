@@ -10,7 +10,7 @@
 //!
 //! The marshaling system is organized into:
 //!
-//! - [`traits`]: Core traits ([`FfiMarshaler`], [`FfiStreamMarshaler`])
+//! - [`traits`]: Core traits (`FfiMarshaler`, `FfiStreamMarshaler`)
 //! - [`error`]: Comprehensive error types with hint and context
 //! - [`result`]: FFI result types
 //! - `impls`: Implementations for common types (primitives, strings, arrays, JSON)

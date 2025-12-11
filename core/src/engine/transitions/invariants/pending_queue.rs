@@ -31,7 +31,7 @@ const MAX_PENDING_DECISIONS: usize = 32;
 ///
 /// # Bounds
 ///
-/// - Maximum: [`MAX_PENDING_DECISIONS`] (32)
+/// - Maximum: `MAX_PENDING_DECISIONS` (32)
 /// - Normal usage: < 5 pending decisions
 /// - Warning threshold: > 16 pending decisions
 ///

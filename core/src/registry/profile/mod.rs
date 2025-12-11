@@ -6,8 +6,8 @@
 //!
 //! # Submodules
 //!
-//! - [`storage`]: File I/O, persistence, and atomic write operations
-//! - [`resolution`]: Profile resolution, queries, cache management, and validation
+//! - **storage**: File I/O, persistence, and atomic write operations
+//! - **resolution**: Profile resolution, queries, cache management, and validation
 
 mod resolution;
 mod storage;

@@ -5,8 +5,8 @@
 //!
 //! # Submodules
 //!
-//! - [`context`]: Script context and operation location types
-//! - [`rhai_engine`]: Rhai engine configuration for validation
+//! - **context**: Script context and operation location types
+//! - **rhai_engine**: Rhai engine configuration for validation
 
 mod context;
 mod rhai_engine;

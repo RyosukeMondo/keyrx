@@ -1,6 +1,6 @@
 //! Common validators for script function inputs.
 //!
-//! This module provides reusable validators that implement the [`InputValidator`]
+//! This module provides reusable validators that implement the `InputValidator`
 //! trait. These validators can be composed using the `and()` and `or()` methods.
 
 mod keycode;
