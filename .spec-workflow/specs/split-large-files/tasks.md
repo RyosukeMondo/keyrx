@@ -261,7 +261,7 @@ Success: advanced/ with 3 modules. mod.rs ~200 lines. Others 300-400 lines. Adva
 After completing:
 1. Mark [-], implement, test, log, mark [x]_
 
-- [ ] 4.3 Split cli/commands/run.rs (899 lines → 3 modules)
+- [x] 4.3 Split cli/commands/run.rs (899 lines → 3 modules)
   - File: core/src/cli/commands/run.rs
   - Create run/ directory with mod.rs, setup.rs, execution.rs
   - Move setup logic to setup.rs
