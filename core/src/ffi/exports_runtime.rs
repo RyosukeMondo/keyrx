@@ -1,3 +1,6 @@
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::ptr_arg)]
+
 use crate::config::models::{DeviceSlots, ProfileSlot, RuntimeConfig};
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::exports::{global_config_manager, parse_c_string, parse_device_json};

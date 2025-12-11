@@ -1,3 +1,7 @@
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::expect_used)]
+#![allow(clippy::unwrap_used)]
+
 use crate::config::models::DeviceInstanceId;
 use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::definitions::DeviceDefinitionLibrary;

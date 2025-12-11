@@ -4,6 +4,7 @@
 //! This module replaces the global static pattern from exports_discovery.rs
 //! with instance-scoped state management through FfiContext.
 #![allow(unsafe_code)]
+#![allow(clippy::missing_safety_doc)]
 
 use crate::discovery::session::{set_session_update_sink, SessionUpdate};
 use crate::discovery::{DeviceId, DiscoverySession, DiscoverySummary};

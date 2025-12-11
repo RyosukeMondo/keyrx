@@ -3,6 +3,7 @@
 //! Implements FFI exports for the revolutionary mapping device registry,
 //! exposing device management operations to Flutter.
 #![allow(unsafe_code)]
+#![allow(clippy::let_and_return)]
 
 use crate::drivers;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};

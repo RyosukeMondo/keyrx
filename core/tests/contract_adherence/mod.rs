@@ -5,6 +5,7 @@
 
 pub mod parser;
 pub mod type_mapper;
+pub mod validator;
 
 #[cfg(test)]
 mod parser_tests;

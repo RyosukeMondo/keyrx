@@ -231,15 +231,21 @@ fn type_def_to_metadata(type_def: &crate::ffi::contract::TypeDefinition) -> Type
 mod tests {
     use super::*;
 
+    /// Initialize contracts, ignoring "already initialized" error.
+    /// This handles test ordering issues with the global OnceLock.
+    fn ensure_contracts_initialized() {
+        let _ = init_contracts(); // Ignore error if already initialized
+    }
+
     #[test]
     fn test_init_contracts() {
-        init_contracts().expect("Failed to initialize contracts");
+        ensure_contracts_initialized();
         assert!(get_registry().is_some());
     }
 
     #[test]
     fn test_generate_introspection_data() {
-        init_contracts().expect("Failed to initialize contracts");
+        ensure_contracts_initialized();
         let data = generate_introspection_data().expect("Failed to generate introspection data");
 
         assert!(data.total_functions > 0);
