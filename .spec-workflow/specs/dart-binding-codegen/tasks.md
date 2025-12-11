@@ -80,7 +80,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart FFI code generator expert | Task: Generate FFI signature declarations following requirement REQ-1, creating typedef and lookup code | Restrictions: Must generate valid Dart FFI code, follow naming conventions, function under 50 lines | Success: Generated signatures are valid Dart, typedef naming is correct, lookups work | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include generated code examples), then mark the task as completed in tasks.md_
 
-- [ ] 9. Implement wrapper function generator
+- [x] 9. Implement wrapper function generator
   - File: `core/tools/generate_dart_bindings/src/bindings_gen.rs`
   - Generate high-level wrapper functions with error handling
   - Add parameter marshaling and result deserialization
@@ -89,7 +89,7 @@
   - _Requirements: REQ-3, REQ-4_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart developer with FFI and error handling expertise | Task: Generate wrapper functions following requirements REQ-3 and REQ-4, creating functions with automatic error handling and marshaling | Restrictions: Must handle error pointers, free memory correctly, follow Dart conventions, function under 50 lines | Success: Generated wrappers handle errors, memory management is correct, code is idiomatic Dart | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include wrapper template, error handling), then mark the task as completed in tasks.md_
 
-- [ ] 10. Implement model class generator
+- [x] 10. Implement model class generator
   - File: `core/tools/generate_dart_bindings/src/models_gen.rs`
   - Generate Dart classes from contract type definitions
   - Generate fromJson and toJson methods
@@ -98,7 +98,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart model generator expert | Task: Generate Dart model classes following requirement REQ-5, creating classes with JSON serialization | Restrictions: Must handle nested types, generate valid JSON methods, follow Dart class conventions | Success: Generated classes are valid Dart, fromJson/toJson work correctly, nested types supported | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include class template, JSON methods), then mark the task as completed in tasks.md_
 
-- [ ] 11. Add file header generator
+- [x] 11. Add file header generator
   - File: `core/tools/generate_dart_bindings/src/header.rs`
   - Generate warning header for generated files
   - Include generation timestamp and source info
@@ -109,7 +109,7 @@
 
 ### Phase 4: File Writing & Formatting
 
-- [ ] 12. Implement file writer
+- [x] 12. Implement file writer
   - File: `core/tools/generate_dart_bindings/src/writer.rs`
   - Write generated code to files
   - Check if regeneration is needed (timestamps)
@@ -118,7 +118,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust file I/O developer | Task: Implement file writer following requirement REQ-6, writing generated code only when needed | Restrictions: Must check timestamps, handle write errors, create directories if needed, function under 50 lines | Success: Writes files correctly, skips unnecessary writes, handles errors gracefully | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include file writing logic), then mark the task as completed in tasks.md_
 
-- [ ] 13. Implement Dart formatter integration
+- [x] 13. Implement Dart formatter integration
   - File: `core/tools/generate_dart_bindings/src/formatter.rs`
   - Run `dart format` on generated files
   - Handle formatting errors
@@ -127,7 +127,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Process integration developer | Task: Integrate dart format command to format generated code, handling success and failure | Restrictions: Must check if dart command exists, handle stderr, continue on format failure with warning | Success: Runs dart format correctly, handles errors, formatted code is valid | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include command execution), then mark the task as completed in tasks.md_
 
-- [ ] 14. Orchestrate full generation pipeline
+- [x] 14. Orchestrate full generation pipeline
   - File: `core/tools/generate_dart_bindings/src/main.rs`
   - Connect all components (load → generate → write → format)
   - Handle errors at each stage
@@ -138,7 +138,7 @@
 
 ### Phase 5: Testing & Integration
 
-- [ ] 15. Add unit tests for code generators
+- [x] 15. Add unit tests for code generators
   - File: `core/tools/generate_dart_bindings/src/tests.rs`
   - Test FFI signature generation
   - Test wrapper function generation
@@ -148,7 +148,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with code generation testing expertise | Task: Create unit tests for all code generators, verifying generated Dart code is correct | Restrictions: Test with various contract types, verify generated code structure, maintain test clarity | Success: All generators tested, output verified correct, edge cases covered | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool, then mark the task as completed in tasks.md_
 
-- [ ] 16. Create integration test
+- [x] 16. Create integration test
   - File: `core/tools/generate_dart_bindings/tests/integration_test.rs`
   - Run generator with real contracts
   - Verify output files exist and are valid
@@ -158,7 +158,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration test engineer | Task: Create integration test running full generation pipeline with real contracts, verifying output | Restrictions: Must use real contracts, verify files created, run dart analyze, clean up after test | Success: Generator works with real contracts, output is valid Dart, analyze passes | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include test scenarios), then mark the task as completed in tasks.md_
 
-- [ ] 17. Add justfile recipes for generation
+- [x] 17. Add justfile recipes for generation
   - File: `justfile` (project root)
   - Add `gen-dart-bindings` recipe
   - Update `build` recipe to include generation
@@ -167,7 +167,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Build system engineer | Task: Add justfile recipes for Dart binding generation following requirement REQ-7, integrating with existing build workflow | Restrictions: Must follow existing justfile patterns, add clear comments, make recipes reusable | Success: Recipes work correctly, integrate with build, easy to use | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include recipes added), then mark the task as completed in tasks.md_
 
-- [ ] 18. Add CI check for up-to-date bindings
+- [x] 18. Add CI check for up-to-date bindings
   - File: `.github/workflows/ci.yml` (or CI config)
   - Add step to check if bindings are current
   - Fail CI if regeneration needed
@@ -176,7 +176,7 @@
   - _Requirements: REQ-7_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CI/CD engineer | Task: Add CI check following requirement REQ-7, verifying Dart bindings are up-to-date with contracts | Restrictions: Must run generator and check git diff, fail if bindings outdated, provide clear error | Success: CI catches stale bindings, error message is helpful, check is reliable | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include CI step), then mark the task as completed in tasks.md_
 
-- [ ] 19. Generate bindings for all domains
+- [x] 19. Generate bindings for all domains
   - Files: `ui/lib/ffi/generated_bindings.dart`, `ui/lib/models/generated_models.dart`
   - Run generator on all existing contracts
   - Verify generated code compiles
@@ -185,7 +185,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Dart developer | Task: Generate bindings for all domains and verify they compile with Flutter, fixing any issues discovered | Restrictions: Must generate for all contracts, fix compilation errors, test bindings work | Success: Bindings generated successfully, Flutter compiles, bindings are usable | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include generated files, any fixes), then mark the task as completed in tasks.md_
 
-- [ ] 20. Add documentation and examples
+- [x] 20. Add documentation and examples
   - Files: `core/tools/generate_dart_bindings/README.md`, inline docs
   - Document generator usage
   - Provide examples of using generated bindings
