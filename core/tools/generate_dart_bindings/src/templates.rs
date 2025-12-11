@@ -39,10 +39,9 @@ pub const BINDINGS_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 // To regenerate: cargo run --bin generate-dart-bindings
 // Or: just gen-dart-bindings
 
-// ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types
+// ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types, unused_field
 
 import 'dart:ffi';
-import 'dart:convert';
 import 'package:ffi/ffi.dart';
 "#;
 
