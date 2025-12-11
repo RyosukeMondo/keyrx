@@ -5,6 +5,7 @@
 
 pub mod cli;
 pub mod loader;
+pub mod templates;
 pub mod type_mapper;
 pub mod types;
 
