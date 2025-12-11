@@ -1,0 +1,40 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "engine",
+    "description": "Core engine operations",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "start_loop",
+            "description": "Start the input capture loop",
+            "parameters": [],
+            "returns": {
+                "type": "int32",
+                "description": "0 on success"
+            },
+            "errors": [],
+            "events_emitted": [],
+            "example": {
+                "input": {},
+                "output": 0
+            }
+        },
+        {
+            "name": "stop_loop",
+            "description": "Stop the input capture loop",
+            "parameters": [],
+            "returns": {
+                "type": "int32",
+                "description": "0 on success"
+            },
+            "errors": [],
+            "events_emitted": [],
+            "example": {
+                "input": {},
+                "output": 0
+            }
+        }
+    ],
+    "events": []
+}

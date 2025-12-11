@@ -1,0 +1,85 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "device_registry",
+    "description": "Device registry operations",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "list_devices",
+            "description": "List all registered devices",
+            "parameters": [],
+            "returns": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "vendor_id": {
+                            "type": "uint16"
+                        },
+                        "product_id": {
+                            "type": "uint16"
+                        }
+                    }
+                }
+            },
+            "errors": [],
+            "events_emitted": [],
+            "example": {
+                "input": {},
+                "output": [
+                    {
+                        "id": "1234:5678:0001",
+                        "name": "KeyRx One",
+                        "vendor_id": 4660,
+                        "product_id": 22136
+                    }
+                ]
+            }
+        },
+        {
+            "name": "set_remap_enabled",
+            "description": "Enable/Disable remapping for a device",
+            "parameters": [
+                {
+                    "name": "device_key",
+                    "type": "string",
+                    "description": "Device unique key",
+                    "required": true
+                },
+                {
+                    "name": "enabled",
+                    "type": "bool",
+                    "description": "True to enable remapping",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    }
+                }
+            },
+            "errors": [],
+            "events_emitted": [],
+            "example": {
+                "input": {
+                    "device_key": "1234:5678:0001",
+                    "enabled": true
+                },
+                "output": {
+                    "status": "ok"
+                }
+            }
+        }
+    ],
+    "events": []
+}
