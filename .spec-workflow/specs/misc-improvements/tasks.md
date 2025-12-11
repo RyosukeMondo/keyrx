@@ -83,7 +83,7 @@ Success: Doc coverage comprehensively audited. All missing docs identified. Prio
 After completing:
 1. Mark [-], audit, document, log, mark [x]_
 
-- [ ] 1.5 Calculate code complexity (optional)
+- [x] 1.5 Calculate code complexity (optional)
   - Identify functions with high cyclomatic complexity
   - Find functions >10 complexity needing simplification
   - Purpose: Identify overly complex code
