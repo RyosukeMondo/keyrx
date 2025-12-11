@@ -79,6 +79,8 @@ class _MonitorViewState extends State<MonitorView>
   @override
   bool get wantKeepAlive => true;
 
+  KeyrxBridge? _bridge;
+
   @override
   void initState() {
     super.initState();
@@ -88,15 +90,16 @@ class _MonitorViewState extends State<MonitorView>
   }
 
   void _registerCallbacks() {
+    if (!mounted) return;
     final facade = context.read<KeyrxFacade>();
-    final bridge = facade.services.bridge;
+    _bridge = facade.services.bridge;
 
-    bridge.registerEventCallback(EventType.rawInput, (payload) {
+    _bridge?.registerEventCallback(EventType.rawInput, (payload) {
       if (!mounted) return;
       _handleEvent(EventType.rawInput, payload);
     });
 
-    bridge.registerEventCallback(EventType.rawOutput, (payload) {
+    _bridge?.registerEventCallback(EventType.rawOutput, (payload) {
       if (!mounted) return;
       _handleEvent(EventType.rawOutput, payload);
     });
@@ -137,11 +140,9 @@ class _MonitorViewState extends State<MonitorView>
 
   @override
   void dispose() {
-    if (mounted) {
-      final facade = context.read<KeyrxFacade>();
-      final bridge = facade.services.bridge;
-      bridge.unregisterEventCallback(EventType.rawInput);
-      bridge.unregisterEventCallback(EventType.rawOutput);
+    if (_bridge != null) {
+      _bridge!.unregisterEventCallback(EventType.rawInput);
+      _bridge!.unregisterEventCallback(EventType.rawOutput);
     }
     _scrollController.dispose();
     super.dispose();
