@@ -39,6 +39,7 @@ pub use keyrx_core::mocks::MockInput;
 pub use keyrx_core::traits::InputSource;
 
 // Submodules
+pub mod api_integration_tests;
 pub mod channel_tests;
 pub mod drivers;
 pub mod phases;

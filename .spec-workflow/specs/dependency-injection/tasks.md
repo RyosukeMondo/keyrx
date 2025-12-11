@@ -376,7 +376,7 @@ After completing implementation:
 
 ## Phase 5: Create Mock Service Implementations
 
-- [ ] 5.1 Create services/mocks.rs with MockDeviceService
+- [x] 5.1 Create services/mocks.rs with MockDeviceService
   - File: core/src/services/mocks.rs (new file)
   - Create `MockDeviceService` struct with fields for test data and configured errors
   - Implement builder pattern methods: `new()`, `with_devices()`, `with_get_error()`, `with_list_error()`, etc.
@@ -401,7 +401,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 5.2 Add MockProfileService to mocks.rs
+- [x] 5.2 Add MockProfileService to mocks.rs
   - File: core/src/services/mocks.rs (continue from 5.1)
   - Create `MockProfileService` struct with fields for layouts, hardware profiles, keymaps, and errors
   - Implement builder pattern methods for configuration
@@ -426,7 +426,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 5.3 Add MockRuntimeService to mocks.rs
+- [x] 5.3 Add MockRuntimeService to mocks.rs
   - File: core/src/services/mocks.rs (continue from 5.2)
   - Create `MockRuntimeService` struct with fields for runtime config and errors
   - Implement builder pattern methods for configuration
@@ -451,7 +451,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 5.4 Export mocks from services/mod.rs for tests
+- [x] 5.4 Export mocks from services/mod.rs for tests
   - File: core/src/services/mod.rs
   - Add `#[cfg(test)] pub mod mocks;` conditional module declaration
   - Add re-exports for all three mock types under cfg(test)
@@ -477,7 +477,7 @@ After completing implementation:
 
 ## Phase 6: Write Unit Tests with Mocks
 
-- [ ] 6.1 Create unit tests for device API with mocks
+- [x] 6.1 Create unit tests for device API with mocks
   - File: core/tests/unit/api/device_api_tests.rs (new file, create directory if needed)
   - Write 8-10 unit tests for device API methods using MockDeviceService
   - Test success cases: list_devices, get_device, set_remap_enabled, etc.
@@ -502,7 +502,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 6.2 Create unit tests for profile API with mocks
+- [x] 6.2 Create unit tests for profile API with mocks
   - File: core/tests/unit/api/profile_api_tests.rs (new file)
   - Write 8-10 unit tests for profile API methods using MockProfileService
   - Test CRUD operations for layouts, hardware profiles, and keymaps
@@ -527,7 +527,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 6.3 Create unit tests for runtime API with mocks
+- [x] 6.3 Create unit tests for runtime API with mocks
   - File: core/tests/unit/api/runtime_api_tests.rs (new file)
   - Write 6-8 unit tests for runtime API methods using MockRuntimeService
   - Test slot management operations
@@ -552,7 +552,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 6.4 Create integration tests with real services
+- [-] 6.4 Create integration tests with real services
   - File: core/tests/integration/api_integration_tests.rs (new file)
   - Write 5-8 integration tests using real services with temporary filesystem
   - Test ApiContext::with_defaults() in realistic scenarios
