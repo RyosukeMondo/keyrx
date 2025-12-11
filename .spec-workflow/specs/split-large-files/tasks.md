@@ -129,7 +129,7 @@ After completing:
 
 ## Phase 3: Split Files 4-7
 
-- [ ] 3.1 Split bin/keyrx.rs (1,382 lines → 4 modules)
+- [x] 3.1 Split bin/keyrx.rs (1,382 lines → 4 modules)
   - File: core/src/bin/keyrx.rs
   - Create commands_core.rs, commands_config.rs, commands_test.rs modules
   - Keep main() and CLI arg parsing in keyrx.rs
