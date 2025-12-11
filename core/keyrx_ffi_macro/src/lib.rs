@@ -107,14 +107,43 @@ mod type_mapper;
 /// - Invalid domain parameter
 #[proc_macro_attribute]
 pub fn keyrx_ffi(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Placeholder implementation - will be completed in Task 14
-    // For now, just return the item unchanged to allow the crate to compile
-    let _ = attr; // Suppress unused warning
+    match keyrx_ffi_impl(attr.into(), item.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
+}
 
-    // Parse the item to validate it's an impl block
-    let input = syn::parse_macro_input!(item as syn::ItemImpl);
+/// Internal implementation that returns syn::Result for clean error handling.
+fn keyrx_ffi_impl(
+    attr: proc_macro2::TokenStream,
+    item: proc_macro2::TokenStream,
+) -> syn::Result<proc_macro2::TokenStream> {
+    // Parse the attribute to extract domain
+    let config = parse::parse_macro_attr(attr)?;
 
-    // Return the original impl unchanged for now
-    // Full implementation will be added in subsequent tasks
-    quote::quote! { #input }.into()
+    // Parse the item - must be an impl block
+    let input: syn::ItemImpl = syn::parse2(item)?;
+
+    // Validate: must not have a trait (we only support inherent impls)
+    if input.trait_.is_some() {
+        return Err(syn::Error::new_spanned(
+            &input,
+            "keyrx_ffi cannot be applied to trait implementations",
+        ));
+    }
+
+    // Get the span for error reporting
+    let span = proc_macro2::Span::call_site();
+
+    // Load the contract for this domain
+    let contract = contract_loader::load_contract_for_domain(&config.domain, span)?;
+
+    // Generate FFI functions for all contract functions
+    let ffi_functions = codegen::generate_all_ffi_functions(&contract);
+
+    // Return the original impl plus the generated FFI functions
+    Ok(quote::quote! {
+        #input
+        #ffi_functions
+    })
 }

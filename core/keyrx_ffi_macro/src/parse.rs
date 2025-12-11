@@ -2,9 +2,6 @@
 //!
 //! This module handles parsing of the `#[keyrx_ffi(domain = "...")]` attribute.
 
-// Allow dead_code until Task 14 integrates this module
-#![allow(dead_code)]
-
 use proc_macro2::TokenStream;
 use syn::{
     parse::{Parse, ParseStream},

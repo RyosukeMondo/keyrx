@@ -3,9 +3,6 @@
 //! This module generates Rust code for FFI functions based on contract definitions.
 //! It handles parameter parsing, result serialization, and full function generation.
 
-// Allow dead_code until Task 14 integrates this module
-#![allow(dead_code)]
-
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 

@@ -3,9 +3,6 @@
 //! This module handles loading and parsing of `.ffi-contract.json` files
 //! during macro expansion.
 
-// Allow dead_code until Task 14 integrates this module
-#![allow(dead_code)]
-
 use proc_macro2::Span;
 use serde::Deserialize;
 use std::collections::HashMap;
