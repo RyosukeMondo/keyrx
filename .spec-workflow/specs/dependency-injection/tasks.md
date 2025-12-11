@@ -626,7 +626,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 7.2 Add doc comments to all public trait methods
+- [x] 7.2 Add doc comments to all public trait methods
   - Files: core/src/services/traits.rs
   - Add comprehensive doc comments to every public trait method
   - Include parameter descriptions, return value descriptions, error conditions
@@ -650,7 +650,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 7.3 Add doc comments to ApiContext and mocks
+- [x] 7.3 Add doc comments to ApiContext and mocks
   - Files: core/src/api.rs, core/src/services/mocks.rs
   - Add doc comments to ApiContext struct, constructors, and key methods
   - Add doc comments to mock structs and builder methods
