@@ -2,6 +2,8 @@ use crate::config::models::{DeviceInstanceId, DeviceSlots, ProfileSlot, RuntimeC
 use crate::config::{ConfigManager, StorageError};
 use thiserror::Error;
 
+use super::traits::RuntimeServiceTrait;
+
 #[derive(Error, Debug)]
 pub enum RuntimeServiceError {
     #[error("Storage error: {0}")]
@@ -29,13 +31,7 @@ impl RuntimeService {
         }
     }
 
-    pub fn get_config(&self) -> Result<RuntimeConfig, RuntimeServiceError> {
-        self.config_manager
-            .load_runtime_config()
-            .map_err(Into::into)
-    }
-
-    pub fn update_runtime_config<F>(&self, mutate: F) -> Result<RuntimeConfig, RuntimeServiceError>
+    fn update_runtime_config<F>(&self, mutate: F) -> Result<RuntimeConfig, RuntimeServiceError>
     where
         F: FnOnce(&mut RuntimeConfig) -> Result<(), RuntimeServiceError>,
     {
@@ -44,8 +40,16 @@ impl RuntimeService {
         self.config_manager.save_runtime_config(&runtime)?;
         Ok(runtime)
     }
+}
 
-    pub fn add_slot(
+impl RuntimeServiceTrait for RuntimeService {
+    fn get_config(&self) -> Result<RuntimeConfig, RuntimeServiceError> {
+        self.config_manager
+            .load_runtime_config()
+            .map_err(Into::into)
+    }
+
+    fn add_slot(
         &self,
         device: DeviceInstanceId,
         slot: ProfileSlot,
@@ -79,7 +83,7 @@ impl RuntimeService {
         })
     }
 
-    pub fn remove_slot(
+    fn remove_slot(
         &self,
         device: DeviceInstanceId,
         slot_id: &str,
@@ -103,7 +107,7 @@ impl RuntimeService {
         })
     }
 
-    pub fn reorder_slot(
+    fn reorder_slot(
         &self,
         device: DeviceInstanceId,
         slot_id: &str,
@@ -131,7 +135,7 @@ impl RuntimeService {
         })
     }
 
-    pub fn set_slot_active(
+    fn set_slot_active(
         &self,
         device: DeviceInstanceId,
         slot_id: &str,
