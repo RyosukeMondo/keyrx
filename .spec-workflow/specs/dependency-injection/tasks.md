@@ -700,7 +700,7 @@ After completing implementation:
 3. Use log-implementation tool to record results
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 8.2 Verify test coverage with cargo-llvm-cov
+- [x] 8.2 Verify test coverage with cargo-llvm-cov
   - Command: `cargo llvm-cov --lib --summary-only`
   - Measure code coverage percentage
   - Verify meets 80% overall minimum
