@@ -5,7 +5,7 @@ use crate::observability::bridge::GLOBAL_LOG_BRIDGE;
 use crate::observability::entry::LogEntry;
 use crate::observability::logger::{OutputFormat, StructuredLogger};
 use crate::services::device::DeviceView;
-use crate::services::traits::DeviceServiceTrait;
+use crate::services::traits::{DeviceServiceTrait, ProfileServiceTrait};
 use crate::services::{DeviceService, ProfileService, RuntimeService};
 use lazy_static::lazy_static;
 

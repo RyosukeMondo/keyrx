@@ -2,6 +2,8 @@ use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
 use crate::config::{ConfigManager, StorageError};
 use thiserror::Error;
 
+use super::traits::ProfileServiceTrait;
+
 #[derive(Error, Debug)]
 pub enum ProfileServiceError {
     #[error("Storage error: {0}")]
@@ -26,16 +28,17 @@ impl ProfileService {
             config_manager: ConfigManager::default(),
         }
     }
+}
 
-    // Virtual Layouts
-    pub fn list_virtual_layouts(&self) -> Result<Vec<VirtualLayout>, ProfileServiceError> {
+impl ProfileServiceTrait for ProfileService {
+    fn list_virtual_layouts(&self) -> Result<Vec<VirtualLayout>, ProfileServiceError> {
         self.config_manager
             .load_virtual_layouts()
             .map(|m| m.into_values().collect())
             .map_err(Into::into)
     }
 
-    pub fn save_virtual_layout(
+    fn save_virtual_layout(
         &self,
         layout: VirtualLayout,
     ) -> Result<VirtualLayout, ProfileServiceError> {
@@ -43,20 +46,19 @@ impl ProfileService {
         Ok(layout)
     }
 
-    pub fn delete_virtual_layout(&self, id: &str) -> Result<(), ProfileServiceError> {
+    fn delete_virtual_layout(&self, id: &str) -> Result<(), ProfileServiceError> {
         self.config_manager.delete_virtual_layout(id)?;
         Ok(())
     }
 
-    // Hardware Profiles
-    pub fn list_hardware_profiles(&self) -> Result<Vec<HardwareProfile>, ProfileServiceError> {
+    fn list_hardware_profiles(&self) -> Result<Vec<HardwareProfile>, ProfileServiceError> {
         self.config_manager
             .load_hardware_profiles()
             .map(|m| m.into_values().collect())
             .map_err(Into::into)
     }
 
-    pub fn save_hardware_profile(
+    fn save_hardware_profile(
         &self,
         profile: HardwareProfile,
     ) -> Result<HardwareProfile, ProfileServiceError> {
@@ -64,25 +66,24 @@ impl ProfileService {
         Ok(profile)
     }
 
-    pub fn delete_hardware_profile(&self, id: &str) -> Result<(), ProfileServiceError> {
+    fn delete_hardware_profile(&self, id: &str) -> Result<(), ProfileServiceError> {
         self.config_manager.delete_hardware_profile(id)?;
         Ok(())
     }
 
-    // Keymaps
-    pub fn list_keymaps(&self) -> Result<Vec<Keymap>, ProfileServiceError> {
+    fn list_keymaps(&self) -> Result<Vec<Keymap>, ProfileServiceError> {
         self.config_manager
             .load_keymaps()
             .map(|m| m.into_values().collect())
             .map_err(Into::into)
     }
 
-    pub fn save_keymap(&self, keymap: Keymap) -> Result<Keymap, ProfileServiceError> {
+    fn save_keymap(&self, keymap: Keymap) -> Result<Keymap, ProfileServiceError> {
         self.config_manager.save_keymap(&keymap)?;
         Ok(keymap)
     }
 
-    pub fn delete_keymap(&self, id: &str) -> Result<(), ProfileServiceError> {
+    fn delete_keymap(&self, id: &str) -> Result<(), ProfileServiceError> {
         self.config_manager.delete_keymap(id)?;
         Ok(())
     }
