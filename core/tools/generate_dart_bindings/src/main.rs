@@ -13,6 +13,7 @@ use anyhow::Result;
 use clap::Parser;
 
 mod cli;
+mod loader;
 
 use cli::Cli;
 

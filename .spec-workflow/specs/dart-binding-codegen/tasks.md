@@ -22,7 +22,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust CLI developer | Task: Implement CLI argument parsing following requirement REQ-6, using clap to define command structure and options | Restrictions: Must support all required flags, provide help text, validate arguments | Success: CLI parses all arguments correctly, help text is clear, validation works | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include CLI structure, arguments), then mark the task as completed in tasks.md_
 
-- [ ] 3. Implement contract loading
+- [x] 3. Implement contract loading
   - File: `core/tools/generate_dart_bindings/src/loader.rs`
   - Load all contracts from core/src/ffi/contracts directory
   - Handle missing files and parse errors
