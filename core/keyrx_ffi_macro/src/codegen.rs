@@ -172,6 +172,72 @@ pub fn generate_call_args(params: &[ParsedParam]) -> TokenStream {
     }
 }
 
+/// Generate code for serializing a return value to FFI format.
+///
+/// Handles different return types:
+/// - Void: Returns null pointer
+/// - Primitives (int32, bool, etc.): Direct return after wrapping
+/// - Strings: Convert to C string
+/// - Complex types (objects, arrays): Serialize to JSON C string
+///
+/// # Arguments
+///
+/// * `return_type` - The FFI type of the return value
+///
+/// # Returns
+///
+/// A `TokenStream` with the serialization code.
+pub fn generate_result_serializer(return_type: &FfiType) -> TokenStream {
+    match return_type {
+        FfiType::Void => {
+            // Void returns null pointer
+            quote! {
+                std::ptr::null()
+            }
+        }
+        FfiType::CString => {
+            // String result - allocate C string
+            quote! {
+                ::keyrx_ffi_runtime::serialize_to_c_string(&result)?
+            }
+        }
+        FfiType::JsonReturn => {
+            // Complex types - serialize to JSON
+            quote! {
+                ::keyrx_ffi_runtime::serialize_to_c_string(&result)?
+            }
+        }
+        FfiType::Int32 | FfiType::Uint8 | FfiType::Uint32 | FfiType::Uint64 | FfiType::Float64 => {
+            // Numeric primitives - return directly (wrapped in JSON for consistency)
+            quote! {
+                ::keyrx_ffi_runtime::serialize_to_c_string(&result)?
+            }
+        }
+        FfiType::Bool => {
+            // Boolean - serialize for FFI
+            quote! {
+                ::keyrx_ffi_runtime::serialize_to_c_string(&result)?
+            }
+        }
+    }
+}
+
+/// Generate the FFI return type tokens.
+///
+/// # Arguments
+///
+/// * `return_type` - The FFI return type
+///
+/// # Returns
+///
+/// A `TokenStream` representing the return type declaration.
+pub fn generate_return_type(return_type: &FfiType) -> TokenStream {
+    match return_type {
+        FfiType::Void => quote! { () },
+        _ => quote! { *const ::std::os::raw::c_char },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,5 +338,66 @@ mod tests {
         let output = args.to_string();
         assert!(output.contains("a"));
         assert!(output.contains("b"));
+    }
+
+    #[test]
+    fn result_serializer_void() {
+        let serializer = generate_result_serializer(&FfiType::Void);
+        let output = serializer.to_string();
+        assert!(output.contains("null"));
+    }
+
+    #[test]
+    fn result_serializer_string() {
+        let serializer = generate_result_serializer(&FfiType::CString);
+        let output = serializer.to_string();
+        assert!(output.contains("serialize_to_c_string"));
+    }
+
+    #[test]
+    fn result_serializer_json() {
+        let serializer = generate_result_serializer(&FfiType::JsonReturn);
+        let output = serializer.to_string();
+        assert!(output.contains("serialize_to_c_string"));
+    }
+
+    #[test]
+    fn result_serializer_primitives() {
+        // All numeric types use serialization
+        let int_serializer = generate_result_serializer(&FfiType::Int32);
+        assert!(int_serializer.to_string().contains("serialize_to_c_string"));
+
+        let uint_serializer = generate_result_serializer(&FfiType::Uint32);
+        assert!(uint_serializer.to_string().contains("serialize_to_c_string"));
+
+        let float_serializer = generate_result_serializer(&FfiType::Float64);
+        assert!(float_serializer.to_string().contains("serialize_to_c_string"));
+    }
+
+    #[test]
+    fn result_serializer_bool() {
+        let serializer = generate_result_serializer(&FfiType::Bool);
+        let output = serializer.to_string();
+        assert!(output.contains("serialize_to_c_string"));
+    }
+
+    #[test]
+    fn return_type_void() {
+        let ret = generate_return_type(&FfiType::Void);
+        let output = ret.to_string();
+        assert!(output.contains("()"));
+    }
+
+    #[test]
+    fn return_type_non_void() {
+        // All non-void types return *const c_char
+        let string_ret = generate_return_type(&FfiType::CString);
+        assert!(string_ret.to_string().contains("c_char"));
+
+        let json_ret = generate_return_type(&FfiType::JsonReturn);
+        assert!(json_ret.to_string().contains("c_char"));
+
+        let int_ret = generate_return_type(&FfiType::Int32);
+        assert!(int_ret.to_string().contains("c_char"));
     }
 }
