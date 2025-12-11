@@ -7,10 +7,13 @@
 
 use async_trait::async_trait;
 
-use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
+use crate::config::models::{
+    DeviceInstanceId, HardwareProfile, Keymap, ProfileSlot, RuntimeConfig, VirtualLayout,
+};
 
 use super::device::{DeviceServiceError, DeviceView};
 use super::profile::ProfileServiceError;
+use super::runtime::RuntimeServiceError;
 
 /// Trait defining the contract for device service operations.
 ///
@@ -229,4 +232,102 @@ pub trait ProfileServiceTrait: Send + Sync {
     /// # Errors
     /// Returns `ProfileServiceError::Storage` if deletion fails.
     fn delete_keymap(&self, id: &str) -> Result<(), ProfileServiceError>;
+}
+
+/// Trait defining the contract for runtime service operations.
+///
+/// This trait abstracts runtime configuration operations for managing
+/// profile slots assigned to devices. Profile slots allow multiple profiles
+/// to be stacked on a device with priority-based activation.
+///
+/// All methods are synchronous. The trait requires `Send + Sync` for thread-safe usage.
+pub trait RuntimeServiceTrait: Send + Sync {
+    /// Retrieves the current runtime configuration.
+    ///
+    /// # Returns
+    /// The `RuntimeConfig` containing all device slot assignments.
+    ///
+    /// # Errors
+    /// Returns `RuntimeServiceError::Storage` if loading fails.
+    fn get_config(&self) -> Result<RuntimeConfig, RuntimeServiceError>;
+
+    /// Adds or updates a profile slot for a device.
+    ///
+    /// If a slot with the same ID already exists, it is updated.
+    /// Slots are automatically sorted by priority (descending).
+    ///
+    /// # Arguments
+    /// * `device` - The device instance identifier
+    /// * `slot` - The profile slot to add or update
+    ///
+    /// # Returns
+    /// The updated `RuntimeConfig`.
+    ///
+    /// # Errors
+    /// Returns `RuntimeServiceError::Storage` if persistence fails.
+    fn add_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot: ProfileSlot,
+    ) -> Result<RuntimeConfig, RuntimeServiceError>;
+
+    /// Removes a profile slot from a device.
+    ///
+    /// # Arguments
+    /// * `device` - The device instance identifier
+    /// * `slot_id` - The unique identifier of the slot to remove
+    ///
+    /// # Returns
+    /// The updated `RuntimeConfig`.
+    ///
+    /// # Errors
+    /// Returns `RuntimeServiceError::DeviceNotFound` if the device is not configured.
+    /// Returns `RuntimeServiceError::SlotNotFound` if the slot does not exist.
+    fn remove_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: &str,
+    ) -> Result<RuntimeConfig, RuntimeServiceError>;
+
+    /// Changes the priority of a profile slot.
+    ///
+    /// After updating, slots are automatically re-sorted by priority.
+    ///
+    /// # Arguments
+    /// * `device` - The device instance identifier
+    /// * `slot_id` - The unique identifier of the slot to reorder
+    /// * `new_priority` - The new priority value (higher = evaluated first)
+    ///
+    /// # Returns
+    /// The updated `RuntimeConfig`.
+    ///
+    /// # Errors
+    /// Returns `RuntimeServiceError::DeviceNotFound` if the device is not configured.
+    /// Returns `RuntimeServiceError::SlotNotFound` if the slot does not exist.
+    fn reorder_slot(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: &str,
+        new_priority: u32,
+    ) -> Result<RuntimeConfig, RuntimeServiceError>;
+
+    /// Enables or disables a profile slot.
+    ///
+    /// # Arguments
+    /// * `device` - The device instance identifier
+    /// * `slot_id` - The unique identifier of the slot
+    /// * `active` - Whether the slot should be active
+    ///
+    /// # Returns
+    /// The updated `RuntimeConfig`.
+    ///
+    /// # Errors
+    /// Returns `RuntimeServiceError::DeviceNotFound` if the device is not configured.
+    /// Returns `RuntimeServiceError::SlotNotFound` if the slot does not exist.
+    fn set_slot_active(
+        &self,
+        device: DeviceInstanceId,
+        slot_id: &str,
+        active: bool,
+    ) -> Result<RuntimeConfig, RuntimeServiceError>;
 }
