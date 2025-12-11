@@ -50,7 +50,7 @@ After completing:
 
 ## Phase 2: Split Top 3 Files (Highest Impact)
 
-- [ ] 2.1 Split scripting/bindings.rs (1,893 lines → 6 modules)
+- [x] 2.1 Split scripting/bindings.rs (1,893 lines → 8 modules)
   - File: core/src/scripting/bindings.rs
   - Create bindings/ directory with mod.rs, keyboard.rs, layers.rs, modifiers.rs, timing.rs, row_col.rs
   - Move register_* functions to appropriate submodules
