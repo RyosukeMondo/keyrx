@@ -4,3 +4,6 @@
 //! against their JSON contract definitions using AST parsing.
 
 pub mod parser;
+
+#[cfg(test)]
+mod parser_tests;
