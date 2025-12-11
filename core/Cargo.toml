@@ -9,7 +9,7 @@ doctest = false
 
 [[bin]]
 name = "keyrx"
-path = "src/bin/keyrx.rs"
+path = "src/bin/keyrx/main.rs"
 
 [dependencies]
 lazy_static = "1.4.0"
