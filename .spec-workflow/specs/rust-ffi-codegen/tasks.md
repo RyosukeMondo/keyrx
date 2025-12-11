@@ -96,7 +96,7 @@
   - _Requirements: REQ-2, REQ-4_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust macro developer with quote and FFI expertise | Task: Implement type mapper for code generation following requirements REQ-2 and REQ-4, converting contract types to Rust token streams | Restrictions: Must handle all contract types, generate correct FFI types, function under 50 lines | Success: Generates correct Rust FFI types for all contract types, token streams compile correctly | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include type mappings, token generation), then mark the task as completed in tasks.md_
 
-- [ ] 11. Implement parameter parser generation
+- [x] 11. Implement parameter parser generation
   - File: `core/keyrx_ffi_macro/src/codegen.rs`
   - Generate code for parsing FFI parameters
   - Handle string, int, bool, and JSON types
@@ -105,7 +105,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust code generation expert | Task: Generate parameter parsing code following requirement REQ-2, creating code that converts FFI parameters to Rust types | Restrictions: Must use runtime helpers, handle all parameter types, generate safe code, function under 50 lines | Success: Generated parsing code compiles and works correctly, handles all parameter types, uses runtime helpers appropriately | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include code generation logic), then mark the task as completed in tasks.md_
 
-- [ ] 12. Implement result serializer generation
+- [x] 12. Implement result serializer generation
   - File: `core/keyrx_ffi_macro/src/codegen.rs`
   - Generate code for serializing return values
   - Handle void, primitives, and custom types
@@ -114,7 +114,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust code generation expert | Task: Generate result serialization code following requirement REQ-2, creating code that converts Rust return values to FFI types | Restrictions: Must handle void returns, use serialization helpers, generate correct code, function under 50 lines | Success: Generated serialization code works for all return types, handles void correctly, uses runtime helpers | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include code templates), then mark the task as completed in tasks.md_
 
-- [ ] 13. Implement FFI function generation
+- [x] 13. Implement FFI function generation
   - File: `core/keyrx_ffi_macro/src/codegen.rs`
   - Generate complete `extern "C"` function wrapper
   - Include #[no_mangle], error pointer, panic handling
@@ -123,7 +123,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-3, REQ-4_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust macro developer with comprehensive FFI expertise | Task: Implement complete FFI function generation following all requirements, creating extern C wrappers with panic handling and error management | Restrictions: Must use ffi_wrapper from runtime, follow contract signatures exactly, function under 50 lines | Success: Generated FFI functions compile correctly, match contract signatures, handle all error scenarios | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include generated function template, key features), then mark the task as completed in tasks.md_
 
-- [ ] 14. Implement macro entry point
+- [x] 14. Implement macro entry point
   - File: `core/keyrx_ffi_macro/src/lib.rs`
   - Implement `#[proc_macro_attribute]` for keyrx_ffi
   - Orchestrate parsing, loading, and code generation
@@ -134,7 +134,7 @@
 
 ### Phase 3: Testing & Integration
 
-- [ ] 15. Add trybuild tests for macro
+- [x] 15. Add trybuild tests for macro
   - File: `core/keyrx_ffi_macro/tests/compile_tests.rs`
   - Create trybuild tests for successful expansions
   - Create trybuild tests for error cases
@@ -143,7 +143,7 @@
   - _Requirements: REQ-1, REQ-6_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with Rust macro testing expertise | Task: Create trybuild tests for macro following requirements REQ-1 and REQ-6, testing both successful and failing compilations | Restrictions: Test valid and invalid macro usage, verify error messages, organize test files clearly | Success: Macro behavior is fully tested, error cases produce expected errors, tests catch regressions | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool, then mark the task as completed in tasks.md_
 
-- [ ] 16. Create integration test with real contract
+- [-] 16. Create integration test with real contract
   - File: `core/tests/ffi_macro_integration.rs`
   - Use macro with config domain contract
   - Verify generated code compiles and works

@@ -1,4 +1,4 @@
-error: failed to load contract for domain 'nonexistent_domain_xyz' at $WORKSPACE/target/tests/trybuild/src/ffi/contracts/nonexistent_domain_xyz.ffi-contract.json: No such file or directory (os error 2)
+error: failed to load contract for domain 'nonexistent_domain_xyz'. Searched: $WORKSPACE/target/tests/trybuild/keyrx_ffi_macro/src/ffi/contracts/nonexistent_domain_xyz.ffi-contract.json, $WORKSPACE/target/tests/trybuild/src/ffi/contracts/nonexistent_domain_xyz.ffi-contract.json
  --> tests/ui/fail_nonexistent_domain.rs:7:1
   |
 7 | #[keyrx_ffi(domain = "nonexistent_domain_xyz")]

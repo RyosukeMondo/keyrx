@@ -128,7 +128,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer and Rust Developer | Task: Run enhanced validation test against real contracts, identify and fix any mismatches discovered | Restrictions: Must fix real FFI code issues, not skip validation errors, document all changes made | Success: Test passes with all real contracts, any discovered issues fixed, validation proves effective | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include issues found, fixes applied), then mark the task as completed in tasks.md_
 
-- [ ] 15. Add documentation and examples
+- [x] 15. Add documentation and examples
   - Files: `core/tests/contract_adherence/README.md`, inline code docs
   - Document how the enhanced validation works
   - Add examples of common errors and fixes

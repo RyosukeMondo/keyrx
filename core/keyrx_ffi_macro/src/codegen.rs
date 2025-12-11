@@ -248,6 +248,7 @@ pub fn generate_return_type(return_type: &FfiType) -> TokenStream {
 /// * `func` - The function contract definition
 /// * `domain` - The domain name for the FFI function
 /// * `impl_method` - The name of the implementation method to call
+/// * `impl_type` - The type that the methods are implemented on
 ///
 /// # Returns
 ///
@@ -256,6 +257,7 @@ pub fn generate_ffi_function(
     func: &FunctionContract,
     domain: &str,
     impl_method: &Ident,
+    impl_type: &syn::Type,
 ) -> TokenStream {
     let ffi_name = Ident::new(&func.ffi_name(domain), Span::call_site());
 
@@ -282,7 +284,7 @@ pub fn generate_ffi_function(
             unsafe {
                 ::keyrx_ffi_runtime::ffi_wrapper(error, || {
                     #param_parsers
-                    Self::#impl_method(#call_args)?;
+                    #impl_type::#impl_method(#call_args)?;
                     Ok(())
                 })
             }
@@ -293,7 +295,7 @@ pub fn generate_ffi_function(
             unsafe {
                 ::keyrx_ffi_runtime::ffi_wrapper(error, || {
                     #param_parsers
-                    let result = Self::#impl_method(#call_args)?;
+                    let result = #impl_type::#impl_method(#call_args)?;
                     Ok(result)
                 })
             }
@@ -314,18 +316,19 @@ pub fn generate_ffi_function(
 /// # Arguments
 ///
 /// * `contract` - The FFI contract
+/// * `impl_type` - The type that the methods are implemented on
 ///
 /// # Returns
 ///
 /// A `TokenStream` containing all generated FFI functions.
-pub fn generate_all_ffi_functions(contract: &FfiContract) -> TokenStream {
+pub fn generate_all_ffi_functions(contract: &FfiContract, impl_type: &syn::Type) -> TokenStream {
     let domain = &contract.domain;
     let functions: Vec<TokenStream> = contract
         .functions
         .iter()
         .map(|func| {
             let impl_method = Ident::new(&func.name, Span::call_site());
-            generate_ffi_function(func, domain, &impl_method)
+            generate_ffi_function(func, domain, &impl_method, impl_type)
         })
         .collect();
 
@@ -372,6 +375,10 @@ mod tests {
             functions,
             types: HashMap::new(),
         }
+    }
+
+    fn make_test_type() -> syn::Type {
+        syn::parse_quote!(TestDomain)
     }
 
     #[test]
@@ -527,7 +534,8 @@ mod tests {
     fn generate_ffi_function_no_params_void_return() {
         let func = make_function("do_something", vec![], "void");
         let impl_method = Ident::new("do_something", Span::call_site());
-        let output = generate_ffi_function(&func, "test", &impl_method);
+        let impl_type = make_test_type();
+        let output = generate_ffi_function(&func, "test", &impl_method, &impl_type);
         let code = output.to_string();
 
         // Check function signature
@@ -541,6 +549,9 @@ mod tests {
 
         // Check void return
         assert!(code.contains("Ok (())"));
+
+        // Check it calls the method on the impl type
+        assert!(code.contains("TestDomain"));
     }
 
     #[test]
@@ -554,7 +565,8 @@ mod tests {
             "string",
         );
         let impl_method = Ident::new("get_value", Span::call_site());
-        let output = generate_ffi_function(&func, "config", &impl_method);
+        let impl_type = make_test_type();
+        let output = generate_ffi_function(&func, "config", &impl_method, &impl_type);
         let code = output.to_string();
 
         // Check function name follows convention
@@ -573,7 +585,8 @@ mod tests {
         let mut func = make_function("list_items", vec![], "object");
         func.rust_name = Some("keyrx_custom_list_items".to_string());
         let impl_method = Ident::new("list_items", Span::call_site());
-        let output = generate_ffi_function(&func, "config", &impl_method);
+        let impl_type = make_test_type();
+        let output = generate_ffi_function(&func, "config", &impl_method, &impl_type);
         let code = output.to_string();
 
         // Check custom rust_name is used
@@ -585,7 +598,8 @@ mod tests {
     fn generate_ffi_function_json_return() {
         let func = make_function("get_data", vec![], "object");
         let impl_method = Ident::new("get_data", Span::call_site());
-        let output = generate_ffi_function(&func, "data", &impl_method);
+        let impl_type = make_test_type();
+        let output = generate_ffi_function(&func, "data", &impl_method, &impl_type);
         let code = output.to_string();
 
         // Check result is returned
@@ -602,7 +616,8 @@ mod tests {
                 make_function("func_two", vec![make_param("x", "string")], "string"),
             ],
         );
-        let output = generate_all_ffi_functions(&contract);
+        let impl_type = make_test_type();
+        let output = generate_all_ffi_functions(&contract, &impl_type);
         let code = output.to_string();
 
         // Check both functions are generated

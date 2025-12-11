@@ -102,8 +102,13 @@ pub struct ErrorContract {
 
 /// Load contract file for a domain at compile time.
 ///
-/// Searches for the contract file in the standard location relative to
-/// `CARGO_MANIFEST_DIR`.
+/// Searches for the contract file in multiple possible locations relative to
+/// `CARGO_MANIFEST_DIR`:
+/// - Direct: `{MANIFEST_DIR}/src/ffi/contracts/{domain}.ffi-contract.json`
+/// - Parent: `{MANIFEST_DIR}/../src/ffi/contracts/{domain}.ffi-contract.json`
+///
+/// This allows the macro to work when invoked from the `core` crate directly
+/// or from the `keyrx_ffi_macro` subcrate.
 ///
 /// # Arguments
 ///
@@ -119,28 +124,46 @@ pub fn load_contract_for_domain(domain: &str, span: Span) -> syn::Result<FfiCont
         syn::Error::new(span, "CARGO_MANIFEST_DIR not set - cannot locate contracts")
     })?;
 
-    // Contracts are in core/src/ffi/contracts/{domain}.ffi-contract.json
-    // We're in core/keyrx_ffi_macro, so go up and into core/src/ffi/contracts
-    let contract_path = std::path::Path::new(&manifest_dir)
-        .parent()
-        .map(|p| p.join("src/ffi/contracts"))
-        .ok_or_else(|| syn::Error::new(span, "cannot determine contract directory"))?
-        .join(format!("{domain}.ffi-contract.json"));
+    let manifest_path = std::path::Path::new(&manifest_dir);
+    let contract_filename = format!("{domain}.ffi-contract.json");
 
-    let content = std::fs::read_to_string(&contract_path).map_err(|e| {
-        syn::Error::new(
-            span,
-            format!(
-                "failed to load contract for domain '{domain}' at {}: {e}",
-                contract_path.display()
-            ),
-        )
-    })?;
+    // Try multiple possible locations for the contract file
+    let candidate_paths = [
+        // Direct: when called from core crate
+        manifest_path.join("src/ffi/contracts").join(&contract_filename),
+        // Parent: when called from keyrx_ffi_macro subcrate
+        manifest_path
+            .parent()
+            .map(|p| p.join("src/ffi/contracts").join(&contract_filename))
+            .unwrap_or_default(),
+    ];
+
+    let (contract_path, content) = candidate_paths
+        .iter()
+        .filter(|p| !p.as_os_str().is_empty())
+        .find_map(|path| std::fs::read_to_string(path).ok().map(|c| (path.clone(), c)))
+        .ok_or_else(|| {
+            let paths: Vec<_> = candidate_paths
+                .iter()
+                .filter(|p| !p.as_os_str().is_empty())
+                .map(|p| p.display().to_string())
+                .collect();
+            syn::Error::new(
+                span,
+                format!(
+                    "failed to load contract for domain '{domain}'. Searched: {}",
+                    paths.join(", ")
+                ),
+            )
+        })?;
 
     serde_json::from_str(&content).map_err(|e| {
         syn::Error::new(
             span,
-            format!("failed to parse contract for domain '{domain}': {e}"),
+            format!(
+                "failed to parse contract for domain '{domain}' at {}: {e}",
+                contract_path.display()
+            ),
         )
     })
 }

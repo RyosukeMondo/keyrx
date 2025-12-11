@@ -132,6 +132,9 @@ fn keyrx_ffi_impl(
         ));
     }
 
+    // Extract the type being implemented
+    let impl_type = &input.self_ty;
+
     // Get the span for error reporting
     let span = proc_macro2::Span::call_site();
 
@@ -139,7 +142,7 @@ fn keyrx_ffi_impl(
     let contract = contract_loader::load_contract_for_domain(&config.domain, span)?;
 
     // Generate FFI functions for all contract functions
-    let ffi_functions = codegen::generate_all_ffi_functions(&contract);
+    let ffi_functions = codegen::generate_all_ffi_functions(&contract, impl_type);
 
     // Return the original impl plus the generated FFI functions
     Ok(quote::quote! {
