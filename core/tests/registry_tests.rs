@@ -44,7 +44,7 @@ use keyrx_core::drivers::keycodes::KeyCode;
 use keyrx_core::identity::DeviceIdentity;
 use keyrx_core::registry::{
     DeviceBinding, DeviceBindings, DeviceEvent, DeviceRegistry, DeviceState, KeyAction, LayoutType,
-    PhysicalPosition, Profile, ProfileRegistry,
+    PhysicalPosition, Profile, ProfileRegistry, ProfileRegistryResolution, ProfileRegistryStorage,
 };
 use serial_test::serial;
 use std::sync::Arc;

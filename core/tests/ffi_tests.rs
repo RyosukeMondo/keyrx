@@ -52,7 +52,7 @@ use keyrx_core::ffi::domains::device_registry;
 use keyrx_core::ffi::domains::profile_registry;
 use keyrx_core::identity::DeviceIdentity;
 use keyrx_core::registry::profile::{LayoutType, Profile, ProfileRegistry};
-use keyrx_core::registry::DeviceRegistry;
+use keyrx_core::registry::{DeviceRegistry, ProfileRegistryResolution, ProfileRegistryStorage};
 use keyrx_core::{clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime};
 use serde_json::Value;
 use serial_test::serial;

@@ -13,7 +13,7 @@ use keyrx_core::engine::{CoordinateTranslator, DeviceResolver, InputEvent, Profi
 use keyrx_core::identity::DeviceIdentity;
 use keyrx_core::registry::device::DeviceRegistry;
 use keyrx_core::registry::profile::{KeyAction, LayoutType, PhysicalPosition, Profile};
-use keyrx_core::registry::ProfileRegistry;
+use keyrx_core::registry::{ProfileRegistry, ProfileRegistryStorage};
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::runtime::Runtime;

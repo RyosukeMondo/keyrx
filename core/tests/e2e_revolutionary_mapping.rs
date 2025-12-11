@@ -56,7 +56,7 @@ use keyrx_core::engine::{CoordinateTranslator, DeviceResolver, InputEvent, Profi
 use keyrx_core::identity::DeviceIdentity;
 use keyrx_core::registry::{
     DeviceBinding, DeviceBindings, DeviceRegistry, KeyAction, LayoutType, PhysicalPosition,
-    Profile, ProfileRegistry,
+    Profile, ProfileRegistry, ProfileRegistryStorage,
 };
 use serial_test::serial;
 use std::sync::Arc;

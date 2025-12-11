@@ -43,6 +43,7 @@
 use keyrx_core::discovery::types::{DeviceProfile, PhysicalKey, ProfileSource};
 use keyrx_core::migration::{MigrationReport, MigrationV1ToV2};
 use keyrx_core::registry::profile::{LayoutType, ProfileRegistry};
+use keyrx_core::registry::{ProfileRegistryResolution, ProfileRegistryStorage};
 use serial_test::serial;
 use std::collections::HashMap;
 use std::path::PathBuf;
