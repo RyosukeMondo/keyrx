@@ -32,7 +32,8 @@
     unexpected_cfgs
 )]
 //! Unit tests for API layer with dependency injection.
+//!
+//! This test file includes all unit tests for the API layer,
+//! testing device, profile, and runtime API methods with mocked services.
 
-mod device_api_tests;
-mod profile_api_tests;
-mod runtime_api_tests;
+mod unit;
