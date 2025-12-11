@@ -269,7 +269,7 @@ After completing:
 
 ## Phase 6: Verification and Enforcement
 
-- [ ] 6.1 Run full test suite and verify all passing
+- [x] 6.1 Run full test suite and verify all passing
   - Command: `cargo test --all`
   - Ensure all improvements didn't break anything
   - Purpose: Verify no regressions
@@ -288,7 +288,7 @@ Success: All tests pass. No regressions from improvements. Test suite stable.
 After completing:
 1. Mark [-], run tests, verify, log results, mark [x]_
 
-- [ ] 6.2 Measure final coverage and verify targets met
+- [-] 6.2 Measure final coverage and verify targets met
   - Command: `cargo llvm-cov --lib --summary-only`
   - Verify ≥80% overall, ≥90% critical paths
   - Purpose: Confirm coverage targets achieved

@@ -137,6 +137,7 @@ where
         file.write_all(&encoded)
             .await
             .context("failed to write cache file")?;
+        file.flush().await.context("failed to flush cache file")?;
         Ok(())
     }
 }
