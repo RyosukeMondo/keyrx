@@ -58,12 +58,10 @@
 
 use proc_macro::TokenStream;
 
+mod codegen;
 mod contract_loader;
 mod parse;
 mod type_mapper;
-
-// Future modules will be added here as the implementation progresses:
-// mod codegen;         // Tasks 11-13: Code generation
 
 /// Attribute macro to generate FFI wrappers from contract definitions.
 ///
