@@ -7,6 +7,7 @@ use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat,
 use crate::ffi::runtime::{with_revolutionary_runtime, RevolutionaryRuntime};
 use crate::registry::DeviceBindings;
 use crate::services::device::DeviceView;
+use crate::services::traits::DeviceServiceTrait;
 use crate::services::{DeviceService, DeviceServiceError};
 use std::future::Future;
 use std::path::PathBuf;

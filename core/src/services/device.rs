@@ -1,9 +1,13 @@
+use async_trait::async_trait;
+
 use crate::ffi::runtime::with_revolutionary_runtime;
 use crate::registry::{DeviceBinding, DeviceBindings};
 use crate::registry::{DeviceRegistry, DeviceRegistryError, DeviceState};
 use crate::DeviceIdentity;
 use std::path::PathBuf;
 use thiserror::Error;
+
+use super::traits::DeviceServiceTrait;
 
 #[derive(Error, Debug)]
 pub enum DeviceServiceError {
@@ -62,8 +66,11 @@ impl DeviceService {
         });
         registry
     }
+}
 
-    pub async fn list_devices(&self) -> Result<Vec<DeviceView>, DeviceServiceError> {
+#[async_trait]
+impl DeviceServiceTrait for DeviceService {
+    async fn list_devices(&self) -> Result<Vec<DeviceView>, DeviceServiceError> {
         let bindings = self.load_bindings()?;
         let mut views = Vec::new();
         let mut bound_identities = std::collections::HashSet::new();
@@ -89,7 +96,7 @@ impl DeviceService {
         Ok(views)
     }
 
-    pub async fn get_device(&self, device_key: &str) -> Result<DeviceView, DeviceServiceError> {
+    async fn get_device(&self, device_key: &str) -> Result<DeviceView, DeviceServiceError> {
         let identity =
             DeviceIdentity::from_key(device_key).map_err(DeviceServiceError::DeviceNotFound)?;
 
@@ -109,7 +116,7 @@ impl DeviceService {
         }
     }
 
-    pub async fn set_remap_enabled(
+    async fn set_remap_enabled(
         &self,
         device_key: &str,
         enabled: bool,
@@ -138,7 +145,7 @@ impl DeviceService {
         self.get_device(device_key).await
     }
 
-    pub async fn assign_profile(
+    async fn assign_profile(
         &self,
         device_key: &str,
         profile_id: &str,
@@ -168,10 +175,7 @@ impl DeviceService {
         self.get_device(device_key).await
     }
 
-    pub async fn unassign_profile(
-        &self,
-        device_key: &str,
-    ) -> Result<DeviceView, DeviceServiceError> {
+    async fn unassign_profile(&self, device_key: &str) -> Result<DeviceView, DeviceServiceError> {
         let identity =
             DeviceIdentity::from_key(device_key).map_err(DeviceServiceError::DeviceNotFound)?;
 
@@ -195,7 +199,7 @@ impl DeviceService {
         self.get_device(device_key).await
     }
 
-    pub async fn set_label(
+    async fn set_label(
         &self,
         device_key: &str,
         label: Option<String>,
