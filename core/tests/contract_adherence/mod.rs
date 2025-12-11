@@ -8,3 +8,6 @@ pub mod type_mapper;
 
 #[cfg(test)]
 mod parser_tests;
+
+#[cfg(test)]
+mod type_mapper_tests;
