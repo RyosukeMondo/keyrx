@@ -11,6 +11,7 @@ pub mod models_gen;
 pub mod templates;
 pub mod type_mapper;
 pub mod types;
+pub mod writer;
 
 #[cfg(test)]
 mod type_mapper_tests;
