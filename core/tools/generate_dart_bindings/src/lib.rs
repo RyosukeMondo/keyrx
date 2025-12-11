@@ -6,6 +6,7 @@
 pub mod bindings_gen;
 pub mod cli;
 pub mod loader;
+pub mod models_gen;
 pub mod templates;
 pub mod type_mapper;
 pub mod types;
