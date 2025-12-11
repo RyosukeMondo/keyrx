@@ -12,3 +12,6 @@ mod parser_tests;
 
 #[cfg(test)]
 mod type_mapper_tests;
+
+#[cfg(test)]
+mod validator_tests;
