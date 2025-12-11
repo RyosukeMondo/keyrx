@@ -101,7 +101,7 @@ After completing:
 4. Use log-implementation with artifacts detailing types/functions moved
 5. Mark [x] after tests pass_
 
-- [ ] 2.3 Split engine/transitions/log.rs (1,403 lines → 4 modules)
+- [x] 2.3 Split engine/transitions/log.rs (1,403 lines → 4 modules)
   - File: core/src/engine/transitions/log.rs
   - Create log/ directory with mod.rs, entry.rs, query.rs, analysis.rs
   - Move TransitionLog entry types to entry.rs
