@@ -1,0 +1,240 @@
+{
+  "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+  "version": "1.0.0",
+  "domain": "discovery",
+  "description": "Keyboard discovery operations for detecting matrix rows and columns",
+  "protocol_version": 1,
+  "functions": [
+    {
+      "name": "start_discovery",
+      "description": "Start keyboard matrix discovery process",
+      "parameters": [
+        {
+          "name": "device_id",
+          "type": "string",
+          "description": "USB device ID in format vendor:product (e.g., '1234:5678')",
+          "required": true,
+          "constraints": {
+            "min_length": 9,
+            "max_length": 9,
+            "pattern": "^[0-9a-f]{4}:[0-9a-f]{4}$"
+          }
+        },
+        {
+          "name": "rows",
+          "type": "uint8",
+          "description": "Number of keyboard matrix rows to scan",
+          "required": true,
+          "constraints": {
+            "min": 1,
+            "max": 32
+          }
+        }
+      ],
+      "returns": {
+        "type": "object",
+        "description": "Discovery result summary",
+        "properties": {
+          "device_count": {
+            "type": "uint32",
+            "description": "Number of devices discovered"
+          },
+          "duration_ms": {
+            "type": "uint64",
+            "description": "Discovery duration in milliseconds"
+          },
+          "matrix_detected": {
+            "type": "bool",
+            "description": "Whether a valid matrix was detected"
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "INVALID_INPUT",
+          "description": "Invalid device ID format or row count out of range"
+        },
+        {
+          "code": "DEVICE_NOT_FOUND",
+          "description": "USB device not found or not accessible"
+        },
+        {
+          "code": "DISCOVERY_FAILED",
+          "description": "Discovery process failed or was interrupted"
+        },
+        {
+          "code": "INTERNAL_ERROR",
+          "description": "Unexpected internal error during discovery"
+        }
+      ],
+      "events_emitted": ["DiscoveryProgress", "DiscoverySummary"],
+      "example": {
+        "input": {
+          "device_id": "1234:5678",
+          "rows": 6
+        },
+        "output": {
+          "device_count": 3,
+          "duration_ms": 1234,
+          "matrix_detected": true
+        }
+      }
+    },
+    {
+      "name": "stop_discovery",
+      "description": "Stop ongoing discovery process",
+      "parameters": [],
+      "returns": {
+        "type": "object",
+        "description": "Stop result",
+        "properties": {
+          "stopped": {
+            "type": "bool",
+            "description": "Whether discovery was successfully stopped"
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "NOT_FOUND",
+          "description": "No active discovery process to stop"
+        },
+        {
+          "code": "INTERNAL_ERROR",
+          "description": "Failed to stop discovery process"
+        }
+      ],
+      "events_emitted": ["DiscoverySummary"],
+      "example": {
+        "input": {},
+        "output": {
+          "stopped": true
+        }
+      }
+    },
+    {
+      "name": "get_discovery_status",
+      "description": "Get current discovery status",
+      "parameters": [],
+      "returns": {
+        "type": "object",
+        "description": "Current discovery status",
+        "properties": {
+          "active": {
+            "type": "bool",
+            "description": "Whether discovery is currently active"
+          },
+          "progress": {
+            "type": "float64",
+            "description": "Progress percentage (0.0 to 1.0)"
+          },
+          "elapsed_ms": {
+            "type": "uint64",
+            "description": "Elapsed time in milliseconds"
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "INTERNAL_ERROR",
+          "description": "Failed to retrieve status"
+        }
+      ],
+      "events_emitted": [],
+      "example": {
+        "input": {},
+        "output": {
+          "active": true,
+          "progress": 0.65,
+          "elapsed_ms": 850
+        }
+      }
+    }
+  ],
+  "types": {
+    "DeviceId": {
+      "type": "string",
+      "description": "USB device ID in vendor:product format",
+      "constraints": {
+        "pattern": "^[0-9a-f]{4}:[0-9a-f]{4}$"
+      }
+    },
+    "RowCount": {
+      "type": "uint8",
+      "description": "Number of keyboard matrix rows",
+      "constraints": {
+        "min": 1,
+        "max": 32
+      }
+    }
+  },
+  "events": [
+    {
+      "name": "DiscoveryProgress",
+      "description": "Periodic progress update during discovery",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "progress": {
+            "type": "float64",
+            "description": "Progress percentage (0.0 to 1.0)",
+            "constraints": {
+              "min": 0.0,
+              "max": 1.0
+            }
+          },
+          "current_row": {
+            "type": "uint8",
+            "description": "Currently scanning row number"
+          },
+          "keys_found": {
+            "type": "uint32",
+            "description": "Number of keys found so far"
+          }
+        }
+      }
+    },
+    {
+      "name": "DiscoverySummary",
+      "description": "Final discovery result summary",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "total_keys": {
+            "type": "uint32",
+            "description": "Total keys discovered"
+          },
+          "duration_ms": {
+            "type": "uint64",
+            "description": "Total discovery duration"
+          },
+          "matrix_rows": {
+            "type": "uint8",
+            "description": "Detected matrix rows"
+          },
+          "matrix_cols": {
+            "type": "uint8",
+            "description": "Detected matrix columns"
+          }
+        }
+      }
+    },
+    {
+      "name": "DiscoveryDuplicate",
+      "description": "Duplicate key position detected",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "string",
+            "description": "Key position (e.g., 'R2C5')"
+          },
+          "count": {
+            "type": "uint32",
+            "description": "Number of times detected"
+          }
+        }
+      }
+    }
+  ]
+}
