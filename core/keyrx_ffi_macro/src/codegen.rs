@@ -9,8 +9,8 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use crate::contract_loader::ParameterContract;
-use crate::type_mapper::{map_param_type, FfiType};
+use crate::contract_loader::{FfiContract, FunctionContract, ParameterContract};
+use crate::type_mapper::{map_param_type, map_return_type, FfiType};
 
 /// Parsed parameter ready for code generation.
 #[derive(Debug)]
@@ -238,10 +238,110 @@ pub fn generate_return_type(return_type: &FfiType) -> TokenStream {
     }
 }
 
+/// Generate a complete FFI function wrapper.
+///
+/// Creates an `extern "C"` function with `#[no_mangle]` that:
+/// - Accepts an error pointer and parameters from the contract
+/// - Parses parameters using runtime helpers
+/// - Calls the implementation method
+/// - Serializes the result and handles errors via `ffi_wrapper`
+///
+/// # Arguments
+///
+/// * `func` - The function contract definition
+/// * `domain` - The domain name for the FFI function
+/// * `impl_method` - The name of the implementation method to call
+///
+/// # Returns
+///
+/// A `TokenStream` containing the complete FFI function definition.
+pub fn generate_ffi_function(
+    func: &FunctionContract,
+    domain: &str,
+    impl_method: &Ident,
+) -> TokenStream {
+    let ffi_name = Ident::new(&func.ffi_name(domain), Span::call_site());
+
+    // Parse parameters from contract
+    let params: Vec<ParsedParam> = func.parameters.iter().map(ParsedParam::from_contract).collect();
+
+    // Generate parameter declarations
+    let param_decls = generate_param_declarations(&params);
+
+    // Generate parameter parsers
+    let param_parsers = generate_all_param_parsers(&params);
+
+    // Generate call arguments
+    let call_args = generate_call_args(&params);
+
+    // Determine return type
+    let return_ffi_type = map_return_type(&func.returns);
+    let return_type = generate_return_type(&return_ffi_type);
+
+    // Generate the function body based on whether it returns void
+    let body = if matches!(return_ffi_type, FfiType::Void) {
+        // Void return - no serialization needed
+        quote! {
+            unsafe {
+                ::keyrx_ffi_runtime::ffi_wrapper(error, || {
+                    #param_parsers
+                    Self::#impl_method(#call_args)?;
+                    Ok(())
+                })
+            }
+        }
+    } else {
+        // Non-void return - serialize result
+        quote! {
+            unsafe {
+                ::keyrx_ffi_runtime::ffi_wrapper(error, || {
+                    #param_parsers
+                    let result = Self::#impl_method(#call_args)?;
+                    Ok(result)
+                })
+            }
+        }
+    };
+
+    // Generate the complete function
+    quote! {
+        #[no_mangle]
+        pub unsafe extern "C" fn #ffi_name(#param_decls) -> #return_type {
+            #body
+        }
+    }
+}
+
+/// Generate FFI functions for all functions in a contract.
+///
+/// # Arguments
+///
+/// * `contract` - The FFI contract
+///
+/// # Returns
+///
+/// A `TokenStream` containing all generated FFI functions.
+pub fn generate_all_ffi_functions(contract: &FfiContract) -> TokenStream {
+    let domain = &contract.domain;
+    let functions: Vec<TokenStream> = contract
+        .functions
+        .iter()
+        .map(|func| {
+            let impl_method = Ident::new(&func.name, Span::call_site());
+            generate_ffi_function(func, domain, &impl_method)
+        })
+        .collect();
+
+    quote! {
+        #(#functions)*
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::contract_loader::ParameterContract;
+    use crate::contract_loader::{ParameterContract, TypeDefinition};
+    use std::collections::HashMap;
 
     fn make_param(name: &str, param_type: &str) -> ParameterContract {
         ParameterContract {
@@ -249,6 +349,31 @@ mod tests {
             param_type: param_type.to_string(),
             description: "test".to_string(),
             required: true,
+        }
+    }
+
+    fn make_function(name: &str, params: Vec<ParameterContract>, return_type: &str) -> FunctionContract {
+        FunctionContract {
+            name: name.to_string(),
+            description: "Test function".to_string(),
+            rust_name: None,
+            parameters: params,
+            returns: TypeDefinition::Simple {
+                type_name: return_type.to_string(),
+                description: None,
+            },
+            errors: vec![],
+        }
+    }
+
+    fn make_contract(domain: &str, functions: Vec<FunctionContract>) -> FfiContract {
+        FfiContract {
+            version: "1.0.0".to_string(),
+            domain: domain.to_string(),
+            description: "Test contract".to_string(),
+            protocol_version: 1,
+            functions,
+            types: HashMap::new(),
         }
     }
 
@@ -399,5 +524,92 @@ mod tests {
 
         let int_ret = generate_return_type(&FfiType::Int32);
         assert!(int_ret.to_string().contains("c_char"));
+    }
+
+    #[test]
+    fn generate_ffi_function_no_params_void_return() {
+        let func = make_function("do_something", vec![], "void");
+        let impl_method = Ident::new("do_something", Span::call_site());
+        let output = generate_ffi_function(&func, "test", &impl_method);
+        let code = output.to_string();
+
+        // Check function signature
+        assert!(code.contains("no_mangle"));
+        assert!(code.contains("pub unsafe extern \"C\""));
+        assert!(code.contains("keyrx_test_do_something"));
+        assert!(code.contains("error"));
+
+        // Check it uses ffi_wrapper
+        assert!(code.contains("ffi_wrapper"));
+
+        // Check void return
+        assert!(code.contains("Ok (())"));
+    }
+
+    #[test]
+    fn generate_ffi_function_with_params() {
+        let func = make_function(
+            "get_value",
+            vec![
+                make_param("key", "string"),
+                make_param("default", "int32"),
+            ],
+            "string",
+        );
+        let impl_method = Ident::new("get_value", Span::call_site());
+        let output = generate_ffi_function(&func, "config", &impl_method);
+        let code = output.to_string();
+
+        // Check function name follows convention
+        assert!(code.contains("keyrx_config_get_value"));
+
+        // Check parameters are declared
+        assert!(code.contains("key"));
+        assert!(code.contains("default"));
+
+        // Check string parsing is generated
+        assert!(code.contains("parse_c_string"));
+    }
+
+    #[test]
+    fn generate_ffi_function_with_rust_name() {
+        let mut func = make_function("list_items", vec![], "object");
+        func.rust_name = Some("keyrx_custom_list_items".to_string());
+        let impl_method = Ident::new("list_items", Span::call_site());
+        let output = generate_ffi_function(&func, "config", &impl_method);
+        let code = output.to_string();
+
+        // Check custom rust_name is used
+        assert!(code.contains("keyrx_custom_list_items"));
+        assert!(!code.contains("keyrx_config_list_items"));
+    }
+
+    #[test]
+    fn generate_ffi_function_json_return() {
+        let func = make_function("get_data", vec![], "object");
+        let impl_method = Ident::new("get_data", Span::call_site());
+        let output = generate_ffi_function(&func, "data", &impl_method);
+        let code = output.to_string();
+
+        // Check result is returned
+        assert!(code.contains("let result"));
+        assert!(code.contains("Ok (result)"));
+    }
+
+    #[test]
+    fn generate_all_ffi_functions_generates_multiple() {
+        let contract = make_contract(
+            "mydom",
+            vec![
+                make_function("func_one", vec![], "void"),
+                make_function("func_two", vec![make_param("x", "string")], "string"),
+            ],
+        );
+        let output = generate_all_ffi_functions(&contract);
+        let code = output.to_string();
+
+        // Check both functions are generated
+        assert!(code.contains("keyrx_mydom_func_one"));
+        assert!(code.contains("keyrx_mydom_func_two"));
     }
 }
