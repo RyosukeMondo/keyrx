@@ -196,7 +196,7 @@ Success: engine/ with 3 modules. mod.rs ~200 lines. Others 300-400 lines. Valida
 After completing:
 1. Mark [-], implement, test, log, mark [x]_
 
-- [ ] 3.4 Split config/loader.rs (949 lines → 3 modules)
+- [-] 3.4 Split config/loader.rs (949 lines → 3 modules)
   - File: core/src/config/loader.rs
   - Create loader/ directory with mod.rs, parsing.rs, validation.rs
   - Move parsing logic to parsing.rs

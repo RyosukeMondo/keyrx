@@ -3,6 +3,11 @@
 //! This module provides functionality for loading and validating
 //! configuration from TOML files, with support for CLI overrides.
 //!
+//! # Submodules
+//!
+//! - [`parsing`]: TOML parsing, file I/O, and schema validation
+//! - [`validation`]: Configuration validation and value clamping
+//!
 //! # Example
 //!
 //! ```no_run
@@ -15,15 +20,17 @@
 //! merge_cli_overrides(&mut config, Some(150), Some(40), None);
 //! ```
 
+mod parsing;
+mod validation;
+
 use super::limits::{DEFAULT_EVENT_GAP_US, DEFAULT_REGRESSION_THRESHOLD_US, LATENCY_THRESHOLD_NS};
-use super::migration::{migrate_config_file, CURRENT_CONFIG_VERSION};
-use super::paths::config_dir;
+use super::migration::CURRENT_CONFIG_VERSION;
 use super::timing::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
-use crate::validation::{SchemaError, SchemaRegistry, ValidationFailure, CONFIG_SCHEMA_NAME};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
+
+pub use parsing::load_config;
+pub use validation::{merge_cli_overrides, validate_and_clamp};
 
 // =============================================================================
 // Configuration Structures
@@ -262,372 +269,22 @@ impl Default for PathsSection {
 }
 
 // =============================================================================
-// Loading Functions
-// =============================================================================
-
-/// Load configuration from a TOML file.
-///
-/// If `path` is `Some`, loads from the specified path.
-/// If `path` is `None`, attempts to load from the default path
-/// (`~/.config/keyrx/config.toml` or `$XDG_CONFIG_HOME/keyrx/config.toml`).
-///
-/// If the file doesn't exist or fails to parse, returns default configuration
-/// and logs a warning.
-///
-/// # Arguments
-///
-/// * `path` - Optional path to config file. If None, uses default location.
-///
-/// # Returns
-///
-/// The loaded configuration, falling back to defaults on error.
-///
-/// # Example
-///
-/// ```no_run
-/// use keyrx_core::config::load_config;
-///
-/// // Load from default location
-/// let config = load_config(None);
-///
-/// // Load from specific path
-/// let config = load_config(Some(std::path::Path::new("/etc/keyrx/config.toml")));
-/// ```
-pub fn load_config(path: Option<&Path>) -> Config {
-    let config_path = path
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| config_dir().join("config.toml"));
-
-    match fs::read_to_string(&config_path) {
-        Ok(content) => {
-            let mut toml_value = match toml::from_str::<toml::Value>(&content) {
-                Ok(value) => value,
-                Err(e) => {
-                    tracing::warn!(
-                        service = "keyrx",
-                        event = "config_parse_error",
-                        component = "config",
-                        path = %config_path.display(),
-                        error = %e,
-                        "Failed to parse config file, using defaults"
-                    );
-                    return Config::default();
-                }
-            };
-
-            let migration_result = match migrate_config_file(&config_path, &mut toml_value) {
-                Ok(result) => result,
-                Err(e) => {
-                    tracing::error!(
-                        service = "keyrx",
-                        event = "config_migration_failed",
-                        component = "config",
-                        path = %config_path.display(),
-                        error = %e,
-                        "Failed to migrate config, using defaults"
-                    );
-                    return Config::default();
-                }
-            };
-
-            if let Some(outcome) = migration_result {
-                tracing::info!(
-                    service = "keyrx",
-                    event = "config_migrated",
-                    component = "config",
-                    path = %config_path.display(),
-                    from_version = outcome.from,
-                    to_version = outcome.to,
-                    backup = outcome
-                        .backup_path
-                        .as_ref()
-                        .map(|p| p.display().to_string())
-                        .unwrap_or_default(),
-                    "Config migrated to current version"
-                );
-            }
-
-            if let Err(err) = validate_config_schema(&config_path, &toml_value) {
-                log_config_validation_error(&config_path, &err);
-                if should_abort_load(&err) {
-                    return Config::default();
-                }
-            }
-
-            match toml_value.try_into::<Config>() {
-                Ok(mut config) => {
-                    validate_and_clamp(&mut config);
-                    tracing::debug!(
-                        service = "keyrx",
-                        event = "config_loaded",
-                        component = "config",
-                        path = %config_path.display(),
-                        "Configuration loaded from file"
-                    );
-                    config
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        service = "keyrx",
-                        event = "config_parse_error",
-                        component = "config",
-                        path = %config_path.display(),
-                        error = %e,
-                        "Failed to parse config file, using defaults"
-                    );
-                    Config::default()
-                }
-            }
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            tracing::debug!(
-                service = "keyrx",
-                event = "config_not_found",
-                component = "config",
-                path = %config_path.display(),
-                "Config file not found, using defaults"
-            );
-            Config::default()
-        }
-        Err(e) => {
-            tracing::warn!(
-                service = "keyrx",
-                event = "config_read_error",
-                component = "config",
-                path = %config_path.display(),
-                error = %e,
-                "Failed to read config file, using defaults"
-            );
-            Config::default()
-        }
-    }
-}
-
-fn validate_config_schema(
-    config_path: &Path,
-    toml_value: &toml::Value,
-) -> Result<(), ValidationFailure> {
-    let instance = serde_json::to_value(toml_value).map_err(|source| {
-        ValidationFailure::Schema(SchemaError::Serialize {
-            name: CONFIG_SCHEMA_NAME.to_string(),
-            source,
-        })
-    })?;
-
-    tracing::debug!(
-        service = "keyrx",
-        event = "config_schema_validation_started",
-        component = "config",
-        path = %config_path.display(),
-        "Validating config against schema"
-    );
-
-    SchemaRegistry::global().validate(CONFIG_SCHEMA_NAME, &instance)
-}
-
-fn log_config_validation_error(path: &Path, error: &ValidationFailure) {
-    match error {
-        ValidationFailure::Invalid { issues, .. } => {
-            tracing::error!(
-                service = "keyrx",
-                event = "config_schema_invalid",
-                component = "config",
-                path = %path.display(),
-                issue_count = issues.len(),
-                "Config schema validation failed"
-            );
-
-            for issue in issues {
-                tracing::error!(
-                    service = "keyrx",
-                    event = "config_schema_issue",
-                    component = "config",
-                    path = %path.display(),
-                    instance_path = %issue.instance_path,
-                    schema_path = %issue.schema_path,
-                    message = %issue.message,
-                    "Schema validation error"
-                );
-            }
-        }
-        ValidationFailure::Schema(SchemaError::Missing { .. }) => {
-            tracing::warn!(
-                service = "keyrx",
-                event = "config_schema_missing",
-                component = "config",
-                path = %path.display(),
-                "Config schema not found, skipping schema validation"
-            );
-        }
-        ValidationFailure::Schema(SchemaError::Serialize { source, .. }) => {
-            tracing::warn!(
-                service = "keyrx",
-                event = "config_schema_serialize_error",
-                component = "config",
-                path = %path.display(),
-                error = %source,
-                "Failed to serialize config schema for validation, continuing without schema check"
-            );
-        }
-        ValidationFailure::Schema(SchemaError::Compile { message, .. }) => {
-            tracing::error!(
-                service = "keyrx",
-                event = "config_schema_compile_error",
-                component = "config",
-                path = %path.display(),
-                error = %message,
-                "Failed to compile config schema, continuing without schema check"
-            );
-        }
-    }
-}
-
-fn should_abort_load(error: &ValidationFailure) -> bool {
-    matches!(error, ValidationFailure::Invalid { .. })
-}
-
-// =============================================================================
-// Validation
-// =============================================================================
-
-/// Validate configuration and clamp values to valid ranges.
-///
-/// This function modifies the config in place, clamping any out-of-range
-/// values and logging warnings for invalid inputs.
-pub fn validate_and_clamp(config: &mut Config) {
-    // Timing validation
-    config.timing.tap_timeout_ms =
-        clamp_with_warning(config.timing.tap_timeout_ms, 50, 1000, "tap_timeout_ms");
-
-    config.timing.combo_timeout_ms =
-        clamp_with_warning(config.timing.combo_timeout_ms, 10, 200, "combo_timeout_ms");
-
-    config.timing.hold_delay_ms =
-        clamp_with_warning(config.timing.hold_delay_ms, 0, 500, "hold_delay_ms");
-
-    // UI validation
-    config.ui.max_events_history =
-        clamp_with_warning(config.ui.max_events_history, 50, 1000, "max_events_history");
-
-    config.ui.animation_duration_ms = clamp_with_warning(
-        config.ui.animation_duration_ms,
-        50,
-        500,
-        "animation_duration_ms",
-    );
-
-    // Performance validation
-    config.performance.regression_threshold_us = clamp_with_warning(
-        config.performance.regression_threshold_us,
-        10,
-        1000,
-        "regression_threshold_us",
-    );
-
-    // Ensure caution < warning for latency thresholds
-    if config.performance.latency_caution_us >= config.performance.latency_warning_us {
-        tracing::warn!(
-            service = "keyrx",
-            event = "config_validation",
-            component = "config",
-            field = "latency_caution_us",
-            "latency_caution_us must be less than latency_warning_us, adjusting"
-        );
-        config.performance.latency_caution_us = config.performance.latency_warning_us / 2;
-    }
-}
-
-/// Clamp a value to a range and log a warning if clamping occurred.
-fn clamp_with_warning<T: Ord + Copy + std::fmt::Display>(
-    value: T,
-    min: T,
-    max: T,
-    field_name: &str,
-) -> T {
-    if value < min {
-        tracing::warn!(
-            service = "keyrx",
-            event = "config_clamped",
-            component = "config",
-            field = field_name,
-            value = %value,
-            min = %min,
-            "Value below minimum, clamping to minimum"
-        );
-        min
-    } else if value > max {
-        tracing::warn!(
-            service = "keyrx",
-            event = "config_clamped",
-            component = "config",
-            field = field_name,
-            value = %value,
-            max = %max,
-            "Value above maximum, clamping to maximum"
-        );
-        max
-    } else {
-        value
-    }
-}
-
-// =============================================================================
-// CLI Overrides
-// =============================================================================
-
-/// Merge CLI argument overrides into configuration.
-///
-/// Any `Some` value will override the corresponding config value.
-/// `None` values leave the config unchanged.
-///
-/// # Arguments
-///
-/// * `config` - Configuration to modify
-/// * `tap_timeout_ms` - Override for tap timeout
-/// * `combo_timeout_ms` - Override for combo timeout
-/// * `hold_delay_ms` - Override for hold delay
-///
-/// # Example
-///
-/// ```
-/// use keyrx_core::config::{Config, merge_cli_overrides};
-///
-/// let mut config = Config::default();
-/// merge_cli_overrides(&mut config, Some(150), None, Some(10));
-///
-/// assert_eq!(config.timing.tap_timeout_ms, 150);
-/// assert_eq!(config.timing.combo_timeout_ms, 50); // unchanged
-/// assert_eq!(config.timing.hold_delay_ms, 10);
-/// ```
-pub fn merge_cli_overrides(
-    config: &mut Config,
-    tap_timeout_ms: Option<u32>,
-    combo_timeout_ms: Option<u32>,
-    hold_delay_ms: Option<u32>,
-) {
-    if let Some(tap) = tap_timeout_ms {
-        config.timing.tap_timeout_ms = tap;
-    }
-    if let Some(combo) = combo_timeout_ms {
-        config.timing.combo_timeout_ms = combo;
-    }
-    if let Some(hold) = hold_delay_ms {
-        config.timing.hold_delay_ms = hold;
-    }
-
-    // Re-validate after merging CLI overrides
-    validate_and_clamp(config);
-}
-
-// =============================================================================
 // Tests
 // =============================================================================
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::limits::{
+        DEFAULT_EVENT_GAP_US, DEFAULT_REGRESSION_THRESHOLD_US, LATENCY_THRESHOLD_NS,
+    };
+    use crate::config::migration::CURRENT_CONFIG_VERSION;
+    use crate::config::timing::{
+        DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS,
+    };
     use crate::discovery::test_utils::config_env_lock;
     use std::env;
+    use std::fs;
     use tempfile::tempdir;
 
     #[test]
