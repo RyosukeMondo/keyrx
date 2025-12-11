@@ -134,7 +134,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   // === Engine Operations ===
 
   @override
-  Future<Result<void>> startEngine(String scriptPath) async {
+  Future<Result<void>> startEngine([String? scriptPath]) async {
     _checkDisposed();
 
     try {
@@ -168,27 +168,30 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
       _updateState(currentState.withEngineStatus(EngineStatus.ready));
 
-      // Step 3: Load the script
-      _updateState(
-        currentState.withEngineStatus(
-          EngineStatus.loading,
-          scriptPath: scriptPath,
-        ),
-      );
-      final loaded = await _services.engineService.loadScript(scriptPath);
-      if (!loaded) {
-        final error = FacadeError.operationFailed(
-          'startEngine',
-          'Script loading failed',
-          userMessage: 'Failed to load the script. Please check the file path.',
-        );
+      // Step 3: Load the script (if provided)
+      if (scriptPath != null) {
         _updateState(
           currentState.withEngineStatus(
-            EngineStatus.error,
-            error: error.userMessage,
+            EngineStatus.loading,
+            scriptPath: scriptPath,
           ),
         );
-        return Result.err(error);
+        final loaded = await _services.engineService.loadScript(scriptPath);
+        if (!loaded) {
+          final error = FacadeError.operationFailed(
+            'startEngine',
+            'Script loading failed',
+            userMessage:
+                'Failed to load the script. Please check the file path.',
+          );
+          _updateState(
+            currentState.withEngineStatus(
+              EngineStatus.error,
+              error: error.userMessage,
+            ),
+          );
+          return Result.err(error);
+        }
       }
 
       // Step 4: Start the engine loop

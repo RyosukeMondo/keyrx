@@ -90,10 +90,13 @@ abstract class KeyrxFacade {
   ///
   /// If any step fails, the operation is rolled back and an error returned.
   ///
+  /// If [scriptPath] is null, the engine starts without loading a new script,
+  /// relying on previously loaded state or active runtime configuration.
+  ///
   /// Returns:
   /// - `Result.ok(void)` if engine started successfully
   /// - `Result.err(error)` if validation, loading, or initialization failed
-  Future<Result<void>> startEngine(String scriptPath);
+  Future<Result<void>> startEngine([String? scriptPath]);
 
   /// Stop the running engine.
   ///

@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../models/device_state.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
+import '../models/runtime_config.dart';
 import 'monitor_view.dart';
 import 'run_controls_widgets.dart';
 
@@ -30,6 +31,7 @@ class _RunControlsPageState extends State<RunControlsPage> {
   EngineRunState _runState = EngineRunState.stopped;
   bool _isRecording = false;
   String? _recordingPath;
+  RuntimeConfig? _runtimeConfig;
 
   @override
   void initState() {
@@ -44,6 +46,12 @@ class _RunControlsPageState extends State<RunControlsPage> {
     final facade = Provider.of<KeyrxFacade>(context, listen: false);
     // Refreshing the registry updates the stream
     await facade.services.deviceRegistryService.refresh();
+
+    // Also fetch runtime config to check for active slots
+    final runtimeRes = await facade.services.runtimeService.getConfig();
+    if (mounted && runtimeRes.data != null) {
+      setState(() => _runtimeConfig = runtimeRes.data);
+    }
   }
 
   Future<void> _toggleEngine() async {
@@ -68,10 +76,28 @@ class _RunControlsPageState extends State<RunControlsPage> {
     // Note: We no longer enforce a single "selected device" before starting.
     // The engine runs and processes inputs from all enabled devices.
 
+    // Determine if we should start using active slots or fallback to a script
+    bool hasActiveSlots = false;
+    if (_runtimeConfig != null) {
+      // Create a set of configured devices to match against
+      final configuredDevices = _runtimeConfig!.devices
+          .where((d) => d.slots.any((s) => s.active))
+          .toList();
+
+      if (configuredDevices.isNotEmpty) {
+        // Technically this just means we have configured active slots.
+        // The engine will use them if the device is connected.
+        // We assume trust that the user intends to use the configuration.
+        hasActiveSlots = true;
+      }
+    }
+
     String? scriptPath = appState.loadedScript;
 
-    if (scriptPath == null) {
-      // No script loaded, try to use/create default monitor.rhai
+    // If no script is loaded AND we don't have active slots, fallback to monitor.rhai
+    if (scriptPath == null && !hasActiveSlots) {
+      // No script loaded, and no active slots confgured.
+      // Try to use/create default monitor.rhai for basic monitoring.
       try {
         final profilesPath = facade.services.storagePathResolver
             .resolveProfilesPath();
@@ -116,11 +142,8 @@ class _RunControlsPageState extends State<RunControlsPage> {
       }
     }
 
-    if (scriptPath == null) {
-      setState(() => _runState = EngineRunState.stopped);
-      return;
-    }
-
+    // Pass null if we are relying on slots and have no script
+    // This allows KeyrxFacade.startEngine to start without loading a script file.
     final startResult = await facade.startEngine(scriptPath);
     await startResult.when(
       ok: (_) {
@@ -404,13 +427,45 @@ class _RunControlsPageState extends State<RunControlsPage> {
   }
 
   Widget _buildDeviceListItem(DeviceState device, KeyrxFacade facade) {
-    final isActive = device.remapEnabled && device.hasProfile;
+    // Check for active slots in runtime config
+    String profileText = device.profileId ?? 'No Profile';
+    bool hasActiveSlots = false;
+
+    if (_runtimeConfig != null) {
+      DeviceSlots? match;
+      for (final d in _runtimeConfig!.devices) {
+        // Serial match is strict if config has serial, otherwise loose on VID:PID
+        // But for connected devices (DeviceState), we want to find the specific config.
+        // DeviceState ALWAYS has serial. DeviceInstanceId MAY have serial.
+        // If DeviceInstanceId has serial, it must match.
+        // If DeviceInstanceId has NO serial, it applies to all devices of that VID:PID.
+        if (d.device.vendorId == device.identity.vendorId &&
+            d.device.productId == device.identity.productId) {
+          if (d.device.serial == null ||
+              d.device.serial == device.identity.serialNumber) {
+            match = d;
+            break;
+          }
+        }
+      }
+
+      if (match != null) {
+        final activeSlots = match.slots.where((s) => s.active).length;
+        if (activeSlots > 0) {
+          hasActiveSlots = true;
+          profileText = 'Active ($activeSlots slots)';
+        }
+      }
+    }
+
+    final isActive =
+        device.remapEnabled && (device.hasProfile || hasActiveSlots);
     final isPassthrough = !device.remapEnabled;
 
     Color statusColor = Colors.grey;
     if (isActive) {
       statusColor = Colors.green;
-    } else if (device.remapEnabled && !device.hasProfile) {
+    } else if (device.remapEnabled && !hasActiveSlots && !device.hasProfile) {
       statusColor = Colors.orange; // Enabled but no profile
     }
 
@@ -439,9 +494,7 @@ class _RunControlsPageState extends State<RunControlsPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  isPassthrough
-                      ? 'Passthrough'
-                      : (device.profileId ?? 'No Profile'),
+                  isPassthrough ? 'Passthrough' : profileText,
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).textTheme.bodySmall?.color,
