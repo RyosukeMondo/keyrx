@@ -32,11 +32,13 @@ use lazy_static::lazy_static;
 /// let mock_runtime = Arc::new(MockRuntimeService::new());
 /// let api = ApiContext::new(mock_device, mock_profile, mock_runtime);
 /// ```
-// TODO: Remove #[allow(dead_code)] after implementing ApiContext methods in tasks 4.2-4.4
-#[allow(dead_code)]
 pub struct ApiContext {
     device_service: Arc<dyn DeviceServiceTrait>,
+    // TODO: Remove #[allow(dead_code)] after implementing profile methods in task 4.3
+    #[allow(dead_code)]
     profile_service: Arc<dyn ProfileServiceTrait>,
+    // TODO: Remove #[allow(dead_code)] after implementing runtime methods in task 4.4
+    #[allow(dead_code)]
     runtime_service: Arc<dyn RuntimeServiceTrait>,
 }
 
@@ -71,6 +73,71 @@ impl ApiContext {
             Arc::new(ProfileService::with_defaults()),
             Arc::new(RuntimeService::with_defaults()),
         )
+    }
+
+    // Device Service API methods
+
+    /// Lists all connected devices.
+    #[tracing::instrument(skip(self))]
+    pub async fn list_devices(&self) -> anyhow::Result<Vec<DeviceView>> {
+        self.device_service.list_devices().await.map_err(Into::into)
+    }
+
+    /// Gets a specific device by its key.
+    #[tracing::instrument(skip(self, device_key))]
+    pub async fn get_device(&self, device_key: String) -> anyhow::Result<DeviceView> {
+        self.device_service
+            .get_device(&device_key)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Enables or disables remapping for a device.
+    #[tracing::instrument(skip(self, device_key))]
+    pub async fn set_device_remap(
+        &self,
+        device_key: String,
+        enabled: bool,
+    ) -> anyhow::Result<DeviceView> {
+        self.device_service
+            .set_remap_enabled(&device_key, enabled)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Assigns a profile to a device.
+    #[tracing::instrument(skip(self, device_key, profile_id))]
+    pub async fn assign_device_profile(
+        &self,
+        device_key: String,
+        profile_id: String,
+    ) -> anyhow::Result<DeviceView> {
+        self.device_service
+            .assign_profile(&device_key, &profile_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Unassigns the current profile from a device.
+    #[tracing::instrument(skip(self, device_key))]
+    pub async fn unassign_device_profile(&self, device_key: String) -> anyhow::Result<DeviceView> {
+        self.device_service
+            .unassign_profile(&device_key)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Sets or clears a label for a device.
+    #[tracing::instrument(skip(self, device_key))]
+    pub async fn set_device_label(
+        &self,
+        device_key: String,
+        label: Option<String>,
+    ) -> anyhow::Result<DeviceView> {
+        self.device_service
+            .set_label(&device_key, label)
+            .await
+            .map_err(Into::into)
     }
 }
 
