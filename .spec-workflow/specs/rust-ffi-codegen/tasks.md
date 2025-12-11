@@ -60,7 +60,7 @@
 
 ### Phase 2: Procedural Macro Crate
 
-- [ ] 7. Create keyrx_ffi_macro crate
+- [x] 7. Create keyrx_ffi_macro crate
   - Files: `core/keyrx_ffi_macro/Cargo.toml`, `core/keyrx_ffi_macro/src/lib.rs`
   - Create proc-macro crate with `proc-macro = true`
   - Add dependencies: syn, quote, proc-macro2, serde_json
