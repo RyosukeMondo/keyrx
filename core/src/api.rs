@@ -34,8 +34,6 @@ use lazy_static::lazy_static;
 /// ```
 pub struct ApiContext {
     device_service: Arc<dyn DeviceServiceTrait>,
-    // TODO: Remove #[allow(dead_code)] after implementing profile methods in task 4.3
-    #[allow(dead_code)]
     profile_service: Arc<dyn ProfileServiceTrait>,
     // TODO: Remove #[allow(dead_code)] after implementing runtime methods in task 4.4
     #[allow(dead_code)]
@@ -138,6 +136,77 @@ impl ApiContext {
             .set_label(&device_key, label)
             .await
             .map_err(Into::into)
+    }
+
+    // Profile Service API methods
+
+    /// Lists all virtual layouts.
+    #[tracing::instrument(skip(self))]
+    pub fn list_virtual_layouts(&self) -> anyhow::Result<Vec<VirtualLayout>> {
+        self.profile_service
+            .list_virtual_layouts()
+            .map_err(Into::into)
+    }
+
+    /// Saves a virtual layout.
+    #[tracing::instrument(skip(self, layout))]
+    pub fn save_virtual_layout(&self, layout: VirtualLayout) -> anyhow::Result<VirtualLayout> {
+        self.profile_service
+            .save_virtual_layout(layout)
+            .map_err(Into::into)
+    }
+
+    /// Deletes a virtual layout by ID.
+    #[tracing::instrument(skip(self, id))]
+    pub fn delete_virtual_layout(&self, id: String) -> anyhow::Result<()> {
+        self.profile_service
+            .delete_virtual_layout(&id)
+            .map_err(Into::into)
+    }
+
+    /// Lists all hardware profiles.
+    #[tracing::instrument(skip(self))]
+    pub fn list_hardware_profiles(&self) -> anyhow::Result<Vec<HardwareProfile>> {
+        self.profile_service
+            .list_hardware_profiles()
+            .map_err(Into::into)
+    }
+
+    /// Saves a hardware profile.
+    #[tracing::instrument(skip(self, profile))]
+    pub fn save_hardware_profile(
+        &self,
+        profile: HardwareProfile,
+    ) -> anyhow::Result<HardwareProfile> {
+        self.profile_service
+            .save_hardware_profile(profile)
+            .map_err(Into::into)
+    }
+
+    /// Deletes a hardware profile by ID.
+    #[tracing::instrument(skip(self, id))]
+    pub fn delete_hardware_profile(&self, id: String) -> anyhow::Result<()> {
+        self.profile_service
+            .delete_hardware_profile(&id)
+            .map_err(Into::into)
+    }
+
+    /// Lists all keymaps.
+    #[tracing::instrument(skip(self))]
+    pub fn list_keymaps(&self) -> anyhow::Result<Vec<Keymap>> {
+        self.profile_service.list_keymaps().map_err(Into::into)
+    }
+
+    /// Saves a keymap.
+    #[tracing::instrument(skip(self, keymap))]
+    pub fn save_keymap(&self, keymap: Keymap) -> anyhow::Result<Keymap> {
+        self.profile_service.save_keymap(keymap).map_err(Into::into)
+    }
+
+    /// Deletes a keymap by ID.
+    #[tracing::instrument(skip(self, id))]
+    pub fn delete_keymap(&self, id: String) -> anyhow::Result<()> {
+        self.profile_service.delete_keymap(&id).map_err(Into::into)
     }
 }
 
