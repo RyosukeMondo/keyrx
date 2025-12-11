@@ -143,7 +143,7 @@
   - _Requirements: REQ-1, REQ-6_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with Rust macro testing expertise | Task: Create trybuild tests for macro following requirements REQ-1 and REQ-6, testing both successful and failing compilations | Restrictions: Test valid and invalid macro usage, verify error messages, organize test files clearly | Success: Macro behavior is fully tested, error cases produce expected errors, tests catch regressions | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool, then mark the task as completed in tasks.md_
 
-- [-] 16. Create integration test with real contract
+- [x] 16. Create integration test with real contract
   - File: `core/tests/ffi_macro_integration.rs`
   - Use macro with config domain contract
   - Verify generated code compiles and works
@@ -152,7 +152,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration test engineer with Rust expertise | Task: Create integration test using real contracts, verifying generated FFI functions work correctly end-to-end | Restrictions: Must use real contracts, test actual FFI calls, verify results, test under 100 lines | Success: Generated code works with real contracts, FFI calls succeed, demonstrates full functionality | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include test scenarios), then mark the task as completed in tasks.md_
 
-- [ ] 17. Apply macro to config domain
+- [x] 17. Apply macro to config domain
   - File: `core/src/ffi/domains/config.rs`
   - Replace manual FFI functions with macro-generated ones
   - Verify all config functions work identically
@@ -161,7 +161,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with migration expertise | Task: Migrate config domain to use keyrx_ffi macro, replacing manual FFI with generated code while maintaining identical behavior | Restrictions: Must not break existing functionality, test thoroughly, keep implementation clean | Success: Config domain uses macro, all functions work identically, code is cleaner and shorter | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include migration changes, before/after comparison), then mark the task as completed in tasks.md_
 
-- [ ] 18. Add documentation and examples
+- [x] 18. Add documentation and examples
   - Files: `core/keyrx_ffi_macro/README.md`, inline docs
   - Document macro usage with examples
   - Create migration guide from manual FFI
