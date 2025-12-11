@@ -770,7 +770,7 @@ After completing implementation:
 3. Use log-implementation tool to record results
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 8.5 Run formatter and ensure consistency
+- [x] 8.5 Run formatter and ensure consistency
   - Command: `cargo fmt --check`
   - Verify all code is properly formatted
   - Run `cargo fmt` if needed to auto-format
