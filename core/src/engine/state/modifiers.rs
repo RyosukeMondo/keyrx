@@ -4,18 +4,30 @@ use crate::config::MAX_MODIFIER_ID;
 use crate::traits::ModifierProvider;
 
 /// Identifies a modifier, either a standard OS modifier or a virtual one.
+///
+/// Modifiers can be either:
+/// - Standard OS modifiers (Shift, Control, Alt, Meta)
+/// - Virtual modifiers (user-defined, identified by a u8 ID)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Modifier {
+    /// A standard OS modifier key.
     Standard(StandardModifier),
+    /// A virtual modifier identified by its unique ID (0-255).
     Virtual(u8),
 }
 
 /// Standard OS modifiers tracked with a compact bitmask.
+///
+/// These are the four common modifier keys found on most keyboards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StandardModifier {
+    /// The Shift key.
     Shift,
+    /// The Control key.
     Control,
+    /// The Alt key (Option on macOS).
     Alt,
+    /// The Meta key (Windows key or Command on macOS).
     Meta,
 }
 
@@ -31,19 +43,23 @@ impl StandardModifiers {
     const ALT: u8 = 1 << 2;
     const META: u8 = 1 << 3;
 
+    /// Activates the specified modifier.
     pub fn activate(&mut self, modifier: StandardModifier) {
         self.bits |= Self::mask(modifier);
     }
 
+    /// Deactivates the specified modifier.
     pub fn deactivate(&mut self, modifier: StandardModifier) {
         self.bits &= !Self::mask(modifier);
     }
 
+    /// Returns `true` if the specified modifier is currently active.
     #[inline]
     pub fn is_active(&self, modifier: StandardModifier) -> bool {
         self.bits & Self::mask(modifier) != 0
     }
 
+    /// Clears all active modifiers.
     pub fn clear(&mut self) {
         self.bits = 0;
     }
@@ -60,6 +76,9 @@ impl StandardModifiers {
 }
 
 /// Fixed-size bitmap for 256 virtual modifiers.
+///
+/// Virtual modifiers are user-defined modifiers stored as a compact bitmap.
+/// Each modifier is identified by a u8 ID (0-255).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct VirtualModifiers {
     bits: [u64; 4],
@@ -69,22 +88,26 @@ impl VirtualModifiers {
     /// Maximum virtual modifier ID (re-exported from config for convenience).
     pub const MAX_ID: u8 = MAX_MODIFIER_ID;
 
+    /// Activates the virtual modifier with the given ID.
     pub fn activate(&mut self, id: u8) {
         let (idx, mask) = Self::index_mask(id);
         self.bits[idx] |= mask;
     }
 
+    /// Deactivates the virtual modifier with the given ID.
     pub fn deactivate(&mut self, id: u8) {
         let (idx, mask) = Self::index_mask(id);
         self.bits[idx] &= !mask;
     }
 
+    /// Returns `true` if the virtual modifier with the given ID is active.
     #[inline]
     pub fn is_active(&self, id: u8) -> bool {
         let (idx, mask) = Self::index_mask(id);
         self.bits[idx] & mask != 0
     }
 
+    /// Clears all active virtual modifiers.
     pub fn clear(&mut self) {
         self.bits = [0; 4];
     }
@@ -98,6 +121,9 @@ impl VirtualModifiers {
 }
 
 /// Tracks one-shot (sticky) modifiers that apply to the next event only.
+///
+/// One-shot modifiers are "armed" and then consumed on the next key event,
+/// providing temporary modifier behavior without holding down the key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct OneShotState {
     standard: StandardModifiers,
@@ -105,6 +131,7 @@ pub struct OneShotState {
 }
 
 impl OneShotState {
+    /// Arms a one-shot modifier so it will be active for the next event.
     pub fn arm(&mut self, modifier: Modifier) {
         match modifier {
             Modifier::Standard(m) => self.standard.activate(m),
@@ -128,6 +155,7 @@ impl OneShotState {
         }
     }
 
+    /// Returns `true` if the specified modifier is armed as a one-shot.
     #[inline]
     pub fn is_armed(&self, modifier: Modifier) -> bool {
         match modifier {
@@ -136,6 +164,7 @@ impl OneShotState {
         }
     }
 
+    /// Clears all armed one-shot modifiers.
     pub fn clear(&mut self) {
         self.standard.clear();
         self.virtual_mods.clear();
@@ -143,6 +172,9 @@ impl OneShotState {
 }
 
 /// Combines standard, virtual, and one-shot modifiers into a single state.
+///
+/// This is the main modifier tracking structure that handles all types of modifiers
+/// and their interactions, including one-shot behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ModifierState {
     standard: StandardModifiers,
@@ -151,10 +183,12 @@ pub struct ModifierState {
 }
 
 impl ModifierState {
+    /// Creates a new empty modifier state.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Activates the specified modifier and clears any pending one-shot for it.
     pub fn activate(&mut self, modifier: Modifier) {
         match modifier {
             Modifier::Standard(m) => self.standard.activate(m),
@@ -164,6 +198,7 @@ impl ModifierState {
         self.one_shot.consume(modifier);
     }
 
+    /// Deactivates the specified modifier and clears any pending one-shot for it.
     pub fn deactivate(&mut self, modifier: Modifier) {
         match modifier {
             Modifier::Standard(m) => self.standard.deactivate(m),
@@ -173,6 +208,7 @@ impl ModifierState {
         self.one_shot.consume(modifier);
     }
 
+    /// Returns `true` if the modifier is active (either held or one-shot armed).
     #[inline]
     pub fn is_active(&self, modifier: Modifier) -> bool {
         if self.one_shot.is_armed(modifier) {
@@ -185,25 +221,29 @@ impl ModifierState {
         }
     }
 
+    /// Arms the modifier as a one-shot (active for the next event only).
     pub fn arm_one_shot(&mut self, modifier: Modifier) {
         self.one_shot.arm(modifier);
     }
 
-    /// Consumes a one-shot modifier. Returns true if one was cleared.
+    /// Consumes a one-shot modifier. Returns `true` if one was cleared.
     pub fn consume_one_shot(&mut self, modifier: Modifier) -> bool {
         self.one_shot.consume(modifier)
     }
 
+    /// Clears all modifier state including one-shots.
     pub fn clear(&mut self) {
         self.standard.clear();
         self.virtual_mods.clear();
         self.one_shot.clear();
     }
 
+    /// Returns the current standard modifiers state.
     pub fn standard(&self) -> StandardModifiers {
         self.standard
     }
 
+    /// Returns the current virtual modifiers state.
     pub fn virtual_mods(&self) -> VirtualModifiers {
         self.virtual_mods
     }
