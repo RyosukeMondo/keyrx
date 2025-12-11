@@ -1,5 +1,5 @@
 [workspace]
-members = ["core", "core/ffi-macros", "core/core-macros", "core/keyrx_ffi_runtime"]
+members = ["core", "core/ffi-macros", "core/core-macros", "core/keyrx_ffi_runtime", "core/keyrx_ffi_macro"]
 resolver = "2"
 
 [workspace.package]
