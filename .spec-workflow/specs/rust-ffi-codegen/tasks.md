@@ -69,7 +69,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in procedural macros | Task: Create keyrx_ffi_macro proc-macro crate following requirement REQ-1, configuring Cargo.toml for proc-macro type | Restrictions: Must set proc-macro = true, add correct dependencies, follow macro crate conventions | Success: Proc-macro crate compiles, dependencies correct, ready for macro implementation | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include crate structure), then mark the task as completed in tasks.md_
 
-- [ ] 8. Implement macro attribute parsing
+- [x] 8. Implement macro attribute parsing
   - File: `core/keyrx_ffi_macro/src/parse.rs`
   - Parse `#[keyrx_ffi(domain = "...")]` attribute
   - Extract domain parameter
@@ -78,7 +78,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust macro developer with syn expertise | Task: Implement attribute parsing for keyrx_ffi macro following requirement REQ-1, extracting domain parameter from macro attributes | Restrictions: Must validate domain parameter exists, provide clear errors for invalid usage, function under 50 lines | Success: Parses domain parameter correctly, validates input, provides helpful error messages | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include function signature, parsing logic), then mark the task as completed in tasks.md_
 
-- [ ] 9. Implement contract loader
+- [x] 9. Implement contract loader
   - File: `core/keyrx_ffi_macro/src/contract_loader.rs`
   - Implement `load_contract_for_domain(domain: &str) -> Result<FfiContract, syn::Error>`
   - Load and parse JSON contract files at compile time
@@ -87,7 +87,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Implement the task for spec rust-ffi-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with compile-time file I/O and macro expertise | Task: Implement contract loader following requirement REQ-1, reading and parsing JSON contracts during macro expansion | Restrictions: Must use CARGO_MANIFEST_DIR, handle file not found, provide clear compile errors, function under 50 lines | Success: Loads contracts at compile time, parses JSON correctly, provides helpful errors for missing/invalid files | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include function signature, file loading logic), then mark the task as completed in tasks.md_
 
-- [ ] 10. Create type mapping for code generation
+- [x] 10. Create type mapping for code generation
   - File: `core/keyrx_ffi_macro/src/type_mapper.rs`
   - Implement `map_contract_type_to_ffi(contract_type: &str) -> TokenStream`
   - Generate Rust FFI type tokens from contract types
