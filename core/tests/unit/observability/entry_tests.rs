@@ -33,9 +33,9 @@
 )]
 //! Comprehensive tests for LogEntry and FFI conversion.
 
+use chrono::Utc;
 use keyrx_core::observability::entry::{LogEntry, LogLevel};
 use std::ffi::{CStr, CString};
-use std::time::SystemTime;
 
 #[test]
 fn test_log_level_conversions() {
@@ -77,22 +77,17 @@ fn test_log_entry_basic_creation() {
     assert_eq!(entry.message, "Test message");
     assert!(entry.fields.is_empty());
     assert!(entry.span.is_none());
-    assert!(entry.timestamp > 0);
+    // Timestamp should be set to current time
+    assert!(entry.timestamp_millis() > 0);
 }
 
 #[test]
 fn test_log_entry_timestamp_is_recent() {
-    let before = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
+    let before = Utc::now();
 
     let entry = LogEntry::new(LogLevel::Info, "test", "Message");
 
-    let after = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
+    let after = Utc::now();
 
     assert!(entry.timestamp >= before);
     assert!(entry.timestamp <= after);
@@ -144,9 +139,10 @@ fn test_log_entry_json_serialization() {
 
     let json = entry.to_json().expect("Serialization failed");
 
-    assert!(json.contains("\"level\":\"Info\""));
-    assert!(json.contains("\"target\":\"test::module\""));
-    assert!(json.contains("\"message\":\"Test message\""));
+    // Structured logging compliance: level is uppercase, target->service, message->event
+    assert!(json.contains("\"level\":\"INFO\""));
+    assert!(json.contains("\"service\":\"test::module\""));
+    assert!(json.contains("\"event\":\"Test message\""));
     assert!(json.contains("\"user_id\":\"42\""));
     assert!(json.contains("\"timestamp\""));
 }
@@ -183,7 +179,8 @@ fn test_log_entry_to_ffi_conversion() {
     let c_entry = entry.to_ffi().expect("FFI conversion failed");
 
     assert_eq!(c_entry.level, LogLevel::Error);
-    assert_eq!(c_entry.timestamp, entry.timestamp);
+    // CLogEntry.timestamp is u64 millis, LogEntry.timestamp is DateTime
+    assert_eq!(c_entry.timestamp, entry.timestamp_millis());
 
     unsafe {
         assert!(!c_entry.target.is_null());
@@ -197,7 +194,7 @@ fn test_log_entry_to_ffi_conversion() {
         assert_eq!(message_str, "FFI test message");
 
         let json_str = CStr::from_ptr(c_entry.json).to_str().unwrap();
-        assert!(json_str.contains("\"level\":\"Error\""));
+        assert!(json_str.contains("\"level\":\"ERROR\""));
 
         // Clean up
         let _ = CString::from_raw(c_entry.target);
