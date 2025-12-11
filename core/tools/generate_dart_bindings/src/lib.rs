@@ -3,6 +3,7 @@
 //! This library provides functionality for generating type-safe Dart FFI bindings
 //! from JSON contracts.
 
+pub mod bindings_gen;
 pub mod cli;
 pub mod loader;
 pub mod templates;
