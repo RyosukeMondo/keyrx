@@ -274,7 +274,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [-] 4.2 Convert device API functions to ApiContext methods (part 1 of 3)
+- [x] 4.2 Convert device API functions to ApiContext methods (part 1 of 3)
   - File: core/src/api.rs
   - Convert 6 device-related functions to ApiContext methods: list_devices, get_device, set_device_remap, assign_device_profile, unassign_device_profile, set_device_label
   - Change function signatures from `pub async fn list_devices()` to `pub async fn list_devices(&self)`
