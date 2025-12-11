@@ -1,62 +1,56 @@
 mod contract_adherence;
 
+use contract_adherence::parser::parse_ffi_exports;
+use contract_adherence::reporter::generate_full_report;
+use contract_adherence::validator::validate_all_functions;
 use keyrx_core::ffi::contract::ContractRegistry;
-use std::collections::HashSet;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
 #[test]
 fn verify_ffi_contract_adherence() {
-    // 1. Load all contracts
+    // 1. Load all contracts from the contracts directory
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let contracts_dir = manifest_dir.join("src/ffi/contracts");
     let registry =
         ContractRegistry::load_from_dir(&contracts_dir).expect("Failed to load contracts");
 
-    // 2. Collect all expected Rust function names from contracts
-    let mut expected_functions = HashSet::new();
-    for contract in registry.all_contracts().values() {
-        for func in &contract.functions {
-            // "keyrx_domain_name" is the default convention unless overridden
-            let rust_name = func
-                .rust_name
-                .clone()
-                .unwrap_or_else(|| format!("keyrx_{}_{}", contract.domain, func.name));
-            expected_functions.insert(rust_name);
-        }
-    }
-
-    // 3. Scan codebase for #[no_mangle] exports matching these names
-    // This is a heuristic check (static analysis) to ensure implementation exists.
+    // 2. Parse all FFI exports from Rust source files using AST parsing
     let src_dir = manifest_dir.join("src");
-    let mut found_functions = HashSet::new();
+    let mut parsed_functions = Vec::new();
 
-    for entry in WalkDir::new(src_dir).into_iter().filter_map(|e| e.ok()) {
-        if entry.path().extension().map_or(false, |ext| ext == "rs") {
-            let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
-
-            // Simple string matching for now.
-            // A more robust solution would use `syn` to parse AST, but this catches 99% of cases
-            // where we simply forgot to implement the function or mistyped the name.
-            for expected in &expected_functions {
-                if content.contains(&format!("fn {}(", expected))
-                    && content.contains("#[no_mangle]")
-                {
-                    found_functions.insert(expected.clone());
+    for entry in WalkDir::new(&src_dir).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.extension().map_or(false, |ext| ext == "rs") {
+            match parse_ffi_exports(path) {
+                Ok(funcs) => parsed_functions.extend(funcs),
+                Err(e) => {
+                    // Log parse errors but continue - some files may have syntax issues
+                    eprintln!("Warning: Failed to parse {}: {}", path.display(), e);
                 }
             }
         }
     }
 
-    // 4. Report missing implementations
-    let missing: Vec<&String> = expected_functions.difference(&found_functions).collect();
+    // 3. Collect all contracts for validation
+    let contracts: Vec<_> = registry.all_contracts().values().cloned().collect();
 
-    if !missing.is_empty() {
+    // 4. Run enhanced validation comparing contracts against parsed implementations
+    let report = validate_all_functions(&contracts, &parsed_functions);
+
+    // 5. Generate and display report if validation failed
+    if !report.is_success() {
+        let error_report = generate_full_report(&report);
         panic!(
-            "Missing FFI implementations for contract functions:\n{:#?}\n\n\
-            These functions are defined in .ffi-contract.json files but could not be found \
-            exported in the Rust codebase. Please implement them or check naming conventions.",
-            missing
+            "\n{}\n\nFFI contract validation failed. \
+             Fix the errors above to ensure contract compliance.",
+            error_report
         );
     }
+
+    // Success: print summary
+    println!(
+        "FFI Contract Validation: {} functions validated successfully",
+        report.passed
+    );
 }
