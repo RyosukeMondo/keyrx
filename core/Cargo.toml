@@ -79,6 +79,8 @@ linux-driver = ["evdev", "nix", "signal-hook"]
 transition-logging = []
 
 [dev-dependencies]
+# Enable test-utils feature when running tests (for mock services)
+keyrx_core = { path = ".", features = ["test-utils"] }
 syn = { version = "2.0", features = ["full", "parsing", "visit"] }
 quote = "1.0"
 proc-macro2 = { version = "1.0", features = ["span-locations"] }
