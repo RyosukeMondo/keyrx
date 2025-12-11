@@ -349,7 +349,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 4.5 Add GLOBAL_API and update standalone functions for backward compatibility
+- [x] 4.5 Add GLOBAL_API and update standalone functions for backward compatibility
   - File: core/src/api.rs (continue from 4.4)
   - Add `lazy_static! { static ref GLOBAL_API: ApiContext = ApiContext::with_defaults(); }`
   - Update all 20 standalone functions to delegate to `GLOBAL_API.method()`
