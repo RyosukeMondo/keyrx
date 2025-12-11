@@ -7,7 +7,10 @@
 
 use async_trait::async_trait;
 
+use crate::config::models::{HardwareProfile, Keymap, VirtualLayout};
+
 use super::device::{DeviceServiceError, DeviceView};
+use super::profile::ProfileServiceError;
 
 /// Trait defining the contract for device service operations.
 ///
@@ -114,4 +117,116 @@ pub trait DeviceServiceTrait: Send + Sync {
         device_key: &str,
         label: Option<String>,
     ) -> Result<DeviceView, DeviceServiceError>;
+}
+
+/// Trait defining the contract for profile service operations.
+///
+/// This trait abstracts profile management operations for:
+/// - Virtual layouts (keyboard layout definitions)
+/// - Hardware profiles (device-specific configurations)
+/// - Keymaps (key remapping definitions)
+///
+/// All methods are synchronous. The trait requires `Send + Sync` for thread-safe usage.
+pub trait ProfileServiceTrait: Send + Sync {
+    /// Lists all virtual layouts.
+    ///
+    /// # Returns
+    /// A vector of all stored `VirtualLayout` configurations.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if loading fails.
+    fn list_virtual_layouts(&self) -> Result<Vec<VirtualLayout>, ProfileServiceError>;
+
+    /// Saves a virtual layout.
+    ///
+    /// Creates a new layout or updates an existing one with the same ID.
+    ///
+    /// # Arguments
+    /// * `layout` - The virtual layout to save
+    ///
+    /// # Returns
+    /// The saved `VirtualLayout`.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if saving fails.
+    fn save_virtual_layout(
+        &self,
+        layout: VirtualLayout,
+    ) -> Result<VirtualLayout, ProfileServiceError>;
+
+    /// Deletes a virtual layout by ID.
+    ///
+    /// # Arguments
+    /// * `id` - The unique identifier of the layout to delete
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if deletion fails.
+    fn delete_virtual_layout(&self, id: &str) -> Result<(), ProfileServiceError>;
+
+    /// Lists all hardware profiles.
+    ///
+    /// # Returns
+    /// A vector of all stored `HardwareProfile` configurations.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if loading fails.
+    fn list_hardware_profiles(&self) -> Result<Vec<HardwareProfile>, ProfileServiceError>;
+
+    /// Saves a hardware profile.
+    ///
+    /// Creates a new profile or updates an existing one with the same ID.
+    ///
+    /// # Arguments
+    /// * `profile` - The hardware profile to save
+    ///
+    /// # Returns
+    /// The saved `HardwareProfile`.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if saving fails.
+    fn save_hardware_profile(
+        &self,
+        profile: HardwareProfile,
+    ) -> Result<HardwareProfile, ProfileServiceError>;
+
+    /// Deletes a hardware profile by ID.
+    ///
+    /// # Arguments
+    /// * `id` - The unique identifier of the profile to delete
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if deletion fails.
+    fn delete_hardware_profile(&self, id: &str) -> Result<(), ProfileServiceError>;
+
+    /// Lists all keymaps.
+    ///
+    /// # Returns
+    /// A vector of all stored `Keymap` configurations.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if loading fails.
+    fn list_keymaps(&self) -> Result<Vec<Keymap>, ProfileServiceError>;
+
+    /// Saves a keymap.
+    ///
+    /// Creates a new keymap or updates an existing one with the same ID.
+    ///
+    /// # Arguments
+    /// * `keymap` - The keymap to save
+    ///
+    /// # Returns
+    /// The saved `Keymap`.
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if saving fails.
+    fn save_keymap(&self, keymap: Keymap) -> Result<Keymap, ProfileServiceError>;
+
+    /// Deletes a keymap by ID.
+    ///
+    /// # Arguments
+    /// * `id` - The unique identifier of the keymap to delete
+    ///
+    /// # Errors
+    /// Returns `ProfileServiceError::Storage` if deletion fails.
+    fn delete_keymap(&self, id: &str) -> Result<(), ProfileServiceError>;
 }
