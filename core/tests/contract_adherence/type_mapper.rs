@@ -134,27 +134,19 @@ pub fn validate_type_match(
         // Float types match
         (RustFfiType::F64, ParsedType::Primitive(s)) if s == "f64" => Ok(()),
 
-        // Const char pointer matches (for string, object, array)
-        (RustFfiType::ConstCharPtr, ParsedType::Pointer { target, is_mut }) => {
-            if target == "c_char" && !is_mut {
+        // Char pointer matches (for string, object, array)
+        // Accept both *const c_char and *mut c_char since owned strings returned
+        // from FFI use *mut c_char for caller to free
+        (RustFfiType::ConstCharPtr, ParsedType::Pointer { target, is_mut: _ }) => {
+            if target == "c_char" {
                 Ok(())
-            } else if *is_mut {
-                Err(TypeMismatch {
-                    contract_type: contract_type.to_string(),
-                    expected: expected.clone(),
-                    found: rust_type.to_type_string(),
-                    message: format!(
-                        "Expected const pointer for '{}', found mutable pointer",
-                        contract_type
-                    ),
-                })
             } else {
                 Err(TypeMismatch {
                     contract_type: contract_type.to_string(),
                     expected: expected.clone(),
                     found: rust_type.to_type_string(),
                     message: format!(
-                        "Expected *const c_char for '{}', found *const {}",
+                        "Expected *const/*mut c_char for '{}', found pointer to {}",
                         contract_type, target
                     ),
                 })

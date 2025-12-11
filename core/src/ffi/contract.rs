@@ -420,7 +420,8 @@ mod tests {
             .get_function("start_discovery")
             .expect("Function not found");
         assert_eq!(func.name, "start_discovery");
-        assert_eq!(func.parameters.len(), 2);
+        // Contract takes a single JSON params_json parameter containing device_id and rows
+        assert_eq!(func.parameters.len(), 1);
     }
 
     #[test]

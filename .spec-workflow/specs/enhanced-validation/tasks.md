@@ -81,7 +81,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in validation logic and error handling | Task: Implement function signature validator following requirement REQ-2, comparing contract definitions against parsed Rust functions and detecting all types of mismatches | Restrictions: Must validate parameter count, each parameter type, and return type, handle error pointer parameter, function under 50 lines | Success: All signature mismatches detected, error pointer handled correctly, validation is thorough and accurate | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include function signature, validation checks), then mark the task as completed in tasks.md_
 
-- [ ] 10. Implement batch validation
+- [x] 10. Implement batch validation
   - File: `core/tests/contract_adherence/validator.rs`
   - Implement `validate_all_functions(contracts: &[FfiContract], parsed: &[ParsedFunction]) -> ValidationReport`
   - Collect all validation errors instead of failing fast
@@ -91,7 +91,7 @@
   - _Requirements: REQ-2, REQ-5_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in batch processing and validation pipelines | Task: Implement batch validation following requirements REQ-2 and REQ-5, validating all contract functions and detecting missing/uncontracted functions | Restrictions: Must collect all errors not fail fast, detect bidirectional mismatches (contract without impl, impl without contract), function under 50 lines | Success: All functions validated in single pass, all errors collected, missing and uncontracted functions detected | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include function details, validation logic), then mark the task as completed in tasks.md_
 
-- [ ] 11. Add unit tests for validator
+- [x] 11. Add unit tests for validator
   - File: `core/tests/contract_adherence/validator_tests.rs`
   - Test validation with matching and mismatched signatures
   - Test missing function detection
@@ -101,7 +101,7 @@
   - _Requirements: REQ-2, REQ-5_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in validation testing | Task: Create comprehensive unit tests for validator following requirements REQ-2 and REQ-5, testing all validation scenarios including matches, mismatches, and missing functions | Restrictions: Test both positive and negative cases, use clear test data, maintain test independence | Success: All validation logic tested, edge cases covered, tests provide clear failure messages | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool, then mark the task as completed in tasks.md_
 
-- [ ] 12. Create error reporter module
+- [x] 12. Create error reporter module
   - File: `core/tests/contract_adherence/reporter.rs`
   - Implement `generate_full_report(errors: Vec<ValidationError>) -> String`
   - Format errors with file locations, expected vs found, and fix suggestions
@@ -110,7 +110,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in error reporting and user experience | Task: Create error reporter following requirement REQ-4, generating comprehensive, actionable error messages with file locations and fix suggestions | Restrictions: Must include all error context, provide clear formatting, suggest fixes for common errors, function under 50 lines | Success: Error reports are clear and actionable, include all relevant context, easy to understand and follow | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include function signature, report format), then mark the task as completed in tasks.md_
 
-- [ ] 13. Integrate enhanced validation into contract_adherence test
+- [x] 13. Integrate enhanced validation into contract_adherence test
   - File: `core/tests/contract_adherence.rs`
   - Replace simple string matching with AST-based validation
   - Load contracts, parse exports.rs, run validation, report errors
@@ -119,7 +119,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec enhanced-validation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in test infrastructure and integration | Task: Integrate all enhanced validation components into the existing contract_adherence test, replacing string matching with comprehensive AST validation | Restrictions: Must maintain existing test structure, fail test on validation errors, provide clear output, test function under 50 lines | Success: Test uses AST parsing, validates all contracts, provides detailed errors on mismatch, passes with current correct code | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include integration points, test flow), then mark the task as completed in tasks.md_
 
-- [ ] 14. Run integration test with real contracts
+- [x] 14. Run integration test with real contracts
   - File: `core/tests/contract_adherence.rs`
   - Run test against all existing contracts
   - Fix any discovered issues in FFI code

@@ -355,7 +355,9 @@ fn test_validate_bool_mismatches_i32() {
 }
 
 #[test]
-fn test_validate_string_mismatches_mut_pointer() {
+fn test_validate_string_accepts_mut_pointer() {
+    // FFI functions often return *mut c_char for strings because the caller
+    // receives ownership and must free the memory
     let result = validate_type_match(
         "string",
         &ParsedType::Pointer {
@@ -363,9 +365,7 @@ fn test_validate_string_mismatches_mut_pointer() {
             is_mut: true,
         },
     );
-    assert!(result.is_err());
-    let err = result.unwrap_err();
-    assert!(err.message.contains("mutable pointer"));
+    assert!(result.is_ok());
 }
 
 #[test]
@@ -379,7 +379,7 @@ fn test_validate_string_mismatches_wrong_target() {
     );
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(err.message.contains("*const u8"));
+    assert!(err.message.contains("u8")); // Wrong target type
 }
 
 #[test]

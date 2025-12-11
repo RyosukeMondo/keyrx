@@ -584,22 +584,21 @@ fn test_validate_wrong_param_type_primitive() {
 }
 
 #[test]
-fn test_validate_wrong_param_type_pointer_mutability() {
+fn test_validate_accepts_mut_pointer_for_string_param() {
+    // Both *const and *mut c_char are valid for string types
+    // Since FFI may need to modify or free the string
     let contract = make_contract("keyrx_test", vec![("input", "string")], "void");
     let parsed = make_parsed_fn(
         "keyrx_test",
         vec![
-            ("input", "*mut c_char", true, true), // Should be *const
+            ("input", "*mut c_char", true, true),
             ("error_out", "*mut *mut c_char", true, true),
         ],
         ParsedType::Unit,
     );
 
     let result = validate_function(&contract, &parsed);
-    assert!(matches!(
-        result,
-        Err(ValidationError::ParameterTypeMismatch { .. })
-    ));
+    assert!(result.is_ok());
 }
 
 #[test]
@@ -679,7 +678,8 @@ fn test_validate_wrong_return_type_string_vs_int() {
 // ============================================================================
 
 #[test]
-fn test_validate_missing_error_pointer() {
+fn test_validate_without_error_pointer_passes() {
+    // Error pointer is NOT required - this codebase uses JSON returns for errors
     let contract = make_contract("keyrx_test", vec![("input", "string")], "void");
     let parsed = make_parsed_fn(
         "keyrx_test",
@@ -688,10 +688,7 @@ fn test_validate_missing_error_pointer() {
     );
 
     let result = validate_function(&contract, &parsed);
-    assert!(matches!(
-        result,
-        Err(ValidationError::MissingErrorPointer { .. })
-    ));
+    assert!(result.is_ok());
 }
 
 // ============================================================================

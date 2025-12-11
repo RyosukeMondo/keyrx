@@ -1,95 +1,150 @@
 {
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
     "domain": "config",
+    "description": "Configuration management operations for virtual layouts, hardware profiles, and keymaps",
+    "protocol_version": 1,
     "functions": [
         {
-            "name": "keyrx_config_list_virtual_layouts",
+            "name": "list_virtual_layouts",
+            "rust_name": "keyrx_config_list_virtual_layouts",
             "description": "List all saved virtual layouts.",
             "parameters": [],
-            "returns": "Vec<VirtualLayout>"
+            "returns": {
+                "type": "string",
+                "description": "JSON array of virtual layouts"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_save_virtual_layout",
+            "name": "save_virtual_layout",
+            "rust_name": "keyrx_config_save_virtual_layout",
             "description": "Save or update a virtual layout.",
             "parameters": [
                 {
                     "name": "json",
-                    "type": "VirtualLayout",
-                    "description": "JSON representation of the virtual layout"
+                    "type": "string",
+                    "description": "JSON representation of the virtual layout",
+                    "required": true
                 }
             ],
-            "returns": "void"
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_delete_virtual_layout",
+            "name": "delete_virtual_layout",
+            "rust_name": "keyrx_config_delete_virtual_layout",
             "description": "Delete a virtual layout by ID.",
             "parameters": [
                 {
                     "name": "id",
                     "type": "string",
-                    "description": "ID of the layout to delete"
+                    "description": "ID of the layout to delete",
+                    "required": true
                 }
             ],
-            "returns": "void"
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_list_hardware_profiles",
+            "name": "list_hardware_profiles",
+            "rust_name": "keyrx_config_list_hardware_profiles",
             "description": "List all saved hardware profiles.",
             "parameters": [],
-            "returns": "Vec<HardwareProfile>"
+            "returns": {
+                "type": "string",
+                "description": "JSON array of hardware profiles"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_save_hardware_profile",
+            "name": "save_hardware_profile",
+            "rust_name": "keyrx_config_save_hardware_profile",
             "description": "Save or update a hardware profile.",
             "parameters": [
                 {
                     "name": "json",
-                    "type": "HardwareProfile",
-                    "description": "JSON representation of the hardware profile"
+                    "type": "string",
+                    "description": "JSON representation of the hardware profile",
+                    "required": true
                 }
             ],
-            "returns": "HardwareProfile"
+            "returns": {
+                "type": "string",
+                "description": "JSON result with saved profile"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_delete_hardware_profile",
+            "name": "delete_hardware_profile",
+            "rust_name": "keyrx_config_delete_hardware_profile",
             "description": "Delete a hardware profile by ID.",
             "parameters": [
                 {
                     "name": "id",
                     "type": "string",
-                    "description": "ID of the hardware profile to delete"
+                    "description": "ID of the hardware profile to delete",
+                    "required": true
                 }
             ],
-            "returns": "void"
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_list_keymaps",
+            "name": "list_keymaps",
+            "rust_name": "keyrx_config_list_keymaps",
             "description": "List all saved keymaps.",
             "parameters": [],
-            "returns": "Vec<Keymap>"
+            "returns": {
+                "type": "string",
+                "description": "JSON array of keymaps"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_save_keymap",
+            "name": "save_keymap",
+            "rust_name": "keyrx_config_save_keymap",
             "description": "Save or update a keymap.",
             "parameters": [
                 {
                     "name": "json",
-                    "type": "Keymap",
-                    "description": "JSON representation of the keymap"
+                    "type": "string",
+                    "description": "JSON representation of the keymap",
+                    "required": true
                 }
             ],
-            "returns": "void"
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_config_delete_keymap",
+            "name": "delete_keymap",
+            "rust_name": "keyrx_config_delete_keymap",
             "description": "Delete a keymap by ID.",
             "parameters": [
                 {
                     "name": "id",
                     "type": "string",
-                    "description": "ID of the keymap to delete"
+                    "description": "ID of the keymap to delete",
+                    "required": true
                 }
             ],
-            "returns": "void"
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": []
         }
     ],
     "events": []

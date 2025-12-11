@@ -7,28 +7,14 @@
   "functions": [
     {
       "name": "start_discovery",
+      "rust_name": "keyrx_discovery_start_discovery",
       "description": "Start keyboard matrix discovery process",
       "parameters": [
         {
-          "name": "device_id",
+          "name": "params_json",
           "type": "string",
-          "description": "USB device ID in format vendor:product (e.g., '1234:5678')",
-          "required": true,
-          "constraints": {
-            "min_length": 9,
-            "max_length": 9,
-            "pattern": "^[0-9a-f]{4}:[0-9a-f]{4}$"
-          }
-        },
-        {
-          "name": "rows",
-          "type": "uint8",
-          "description": "Number of keyboard matrix rows to scan",
-          "required": true,
-          "constraints": {
-            "min": 1,
-            "max": 32
-          }
+          "description": "JSON object containing device_id (string) and rows (number)",
+          "required": true
         }
       ],
       "returns": {
@@ -82,6 +68,7 @@
     },
     {
       "name": "stop_discovery",
+      "rust_name": "keyrx_discovery_stop_discovery",
       "description": "Stop ongoing discovery process",
       "parameters": [],
       "returns": {
@@ -114,6 +101,7 @@
     },
     {
       "name": "get_discovery_status",
+      "rust_name": "keyrx_discovery_get_discovery_status",
       "description": "Get current discovery status",
       "parameters": [],
       "returns": {

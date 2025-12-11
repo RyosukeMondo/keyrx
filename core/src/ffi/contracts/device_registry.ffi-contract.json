@@ -7,30 +7,14 @@
     "functions": [
         {
             "name": "list_devices",
+            "rust_name": "keyrx_device_registry_list_devices",
             "description": "List all registered devices",
             "parameters": [],
             "returns": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "id": {
-                            "type": "string"
-                        },
-                        "name": {
-                            "type": "string"
-                        },
-                        "vendor_id": {
-                            "type": "uint16"
-                        },
-                        "product_id": {
-                            "type": "uint16"
-                        }
-                    }
-                }
+                "type": "string",
+                "description": "JSON array of device objects"
             },
             "errors": [],
-            "events_emitted": [],
             "example": {
                 "input": {},
                 "output": [
@@ -45,6 +29,7 @@
         },
         {
             "name": "set_remap_enabled",
+            "rust_name": "keyrx_device_registry_set_remap_enabled",
             "description": "Enable/Disable remapping for a device",
             "parameters": [
                 {
@@ -55,21 +40,16 @@
                 },
                 {
                     "name": "enabled",
-                    "type": "bool",
-                    "description": "True to enable remapping",
+                    "type": "i32",
+                    "description": "Non-zero to enable remapping, zero to disable",
                     "required": true
                 }
             ],
             "returns": {
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "type": "string"
-                    }
-                }
+                "type": "string",
+                "description": "JSON result object"
             },
             "errors": [],
-            "events_emitted": [],
             "example": {
                 "input": {
                     "device_key": "1234:5678:0001",

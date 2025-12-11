@@ -1,94 +1,134 @@
 {
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
     "domain": "runtime",
+    "description": "Runtime configuration management for device slots and profiles",
+    "protocol_version": 1,
     "functions": [
         {
-            "name": "keyrx_runtime_get_config",
+            "name": "get_config",
+            "rust_name": "keyrx_runtime_get_config",
             "description": "Get the current runtime configuration.",
             "parameters": [],
-            "returns": "RuntimeConfig"
+            "returns": {
+                "type": "string",
+                "description": "JSON runtime configuration"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_runtime_add_slot",
+            "name": "add_slot",
+            "rust_name": "keyrx_runtime_add_slot",
             "description": "Add a new runtime slot for a device (or update existing).",
             "parameters": [
                 {
                     "name": "device_json",
-                    "type": "DeviceInstanceId",
-                    "description": "JSON representation of the device instance"
+                    "type": "string",
+                    "description": "JSON representation of the device instance",
+                    "required": true
                 },
                 {
                     "name": "slot_json",
-                    "type": "ProfileSlot",
-                    "description": "JSON representation of the profile slot to add/update"
+                    "type": "string",
+                    "description": "JSON representation of the profile slot to add/update",
+                    "required": true
                 },
                 {
                     "name": "priority",
-                    "type": "u32",
-                    "description": "Priority of the slot (depreciated/ignored in favor of slot_json.priority)"
+                    "type": "uint32",
+                    "description": "Priority of the slot (deprecated/ignored in favor of slot_json.priority)",
+                    "required": true
                 }
             ],
-            "returns": "RuntimeConfig"
+            "returns": {
+                "type": "string",
+                "description": "JSON runtime configuration"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_runtime_remove_slot",
+            "name": "remove_slot",
+            "rust_name": "keyrx_runtime_remove_slot",
             "description": "Remove a runtime slot for a device.",
             "parameters": [
                 {
                     "name": "device_json",
-                    "type": "DeviceInstanceId",
-                    "description": "JSON representation of the device instance"
+                    "type": "string",
+                    "description": "JSON representation of the device instance",
+                    "required": true
                 },
                 {
                     "name": "slot_id",
                     "type": "string",
-                    "description": "ID of the slot to remove"
+                    "description": "ID of the slot to remove",
+                    "required": true
                 }
             ],
-            "returns": "RuntimeConfig"
+            "returns": {
+                "type": "string",
+                "description": "JSON runtime configuration"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_runtime_reorder_slot",
+            "name": "reorder_slot",
+            "rust_name": "keyrx_runtime_reorder_slot",
             "description": "Update slot priority.",
             "parameters": [
                 {
                     "name": "device_json",
-                    "type": "DeviceInstanceId",
-                    "description": "JSON representation of the device instance"
+                    "type": "string",
+                    "description": "JSON representation of the device instance",
+                    "required": true
                 },
                 {
                     "name": "slot_id",
                     "type": "string",
-                    "description": "ID of the slot to reorder"
+                    "description": "ID of the slot to reorder",
+                    "required": true
                 },
                 {
                     "name": "priority",
-                    "type": "u32",
-                    "description": "New priority value"
+                    "type": "uint32",
+                    "description": "New priority value",
+                    "required": true
                 }
             ],
-            "returns": "RuntimeConfig"
+            "returns": {
+                "type": "string",
+                "description": "JSON runtime configuration"
+            },
+            "errors": []
         },
         {
-            "name": "keyrx_runtime_set_slot_active",
+            "name": "set_slot_active",
+            "rust_name": "keyrx_runtime_set_slot_active",
             "description": "Toggle a runtime slot active flag.",
             "parameters": [
                 {
                     "name": "device_json",
-                    "type": "DeviceInstanceId",
-                    "description": "JSON representation of the device instance"
+                    "type": "string",
+                    "description": "JSON representation of the device instance",
+                    "required": true
                 },
                 {
                     "name": "slot_id",
                     "type": "string",
-                    "description": "ID of the slot to toggle"
+                    "description": "ID of the slot to toggle",
+                    "required": true
                 },
                 {
                     "name": "active",
                     "type": "bool",
-                    "description": "New active state"
+                    "description": "New active state",
+                    "required": true
                 }
             ],
-            "returns": "RuntimeConfig"
+            "returns": {
+                "type": "string",
+                "description": "JSON runtime configuration"
+            },
+            "errors": []
         }
     ],
     "events": []

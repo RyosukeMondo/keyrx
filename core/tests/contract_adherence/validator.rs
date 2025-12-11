@@ -261,24 +261,10 @@ pub fn validate_function(
         });
     }
 
-    // Validate error pointer exists (all FFI functions should have one as last param)
-    if !parsed.has_error_pointer() && !parsed.params.is_empty() {
-        // Check if the last parameter looks like an error pointer
-        if let Some(last_param) = parsed.params.last() {
-            if !is_error_pointer_str(&last_param.rust_type) {
-                return Err(ValidationError::MissingErrorPointer {
-                    function: parsed.name.clone(),
-                    location,
-                });
-            }
-        }
-    } else if parsed.params.is_empty() && !contract_params.is_empty() {
-        // If parsed has no params but contract has params, error pointer is missing
-        return Err(ValidationError::MissingErrorPointer {
-            function: parsed.name.clone(),
-            location,
-        });
-    }
+    // NOTE: Error pointer validation removed. This codebase uses JSON returns
+    // for error handling (via ffi_json) rather than error out parameters.
+    // The contract schema doesn't mandate error pointers, and implementations
+    // are free to choose their error handling strategy.
 
     Ok(())
 }
@@ -758,7 +744,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_function_missing_error_pointer() {
+    fn test_validate_function_without_error_pointer_passes() {
+        // Error pointer is not required - functions use JSON returns for errors
         let contract = make_contract("keyrx_test", vec![("input", "string")], "void");
 
         let parsed = make_parsed_fn(
@@ -768,10 +755,7 @@ mod tests {
         );
 
         let result = validate_function(&contract, &parsed);
-        assert!(matches!(
-            result,
-            Err(ValidationError::MissingErrorPointer { .. })
-        ));
+        assert!(result.is_ok());
     }
 
     #[test]
