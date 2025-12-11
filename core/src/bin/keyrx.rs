@@ -5,28 +5,33 @@
     clippy::expect_used,
     clippy::panic
 )]
+//! KeyRx CLI binary
 //!
 //! This binary uses println! and eprintln! for user-facing output,
 //! which is intentional and distinct from internal logging.
+//!
+//! # Module Organization
+//! - `commands_core`: Core engine commands (run, simulate, check, discover)
+//! - `commands_config`: Configuration commands (devices, hardware, layout, keymap, runtime)
+//! - `commands_test`: Testing commands (test, replay, analyze, uat, regression, doctor, repl)
+
+mod commands_config;
+mod commands_core;
+mod commands_test;
 
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
-use keyrx_core::cli::{
-    commands::{
-        AnalyzeCommand, BenchCommand, CheckCommand, CiCheckCommand, DeviceAction, DevicesCommand,
-        DiscoverCommand, DocFormat, DocsCommand, DoctorCommand, ExitCodesCommand, GoldenCommand,
-        GoldenSubcommand, HardwareAction, HardwareCommand, HardwareSource, KeymapAction,
-        KeymapCommand, LayoutAction, LayoutCommand, LayoutSource, MapRequest, MigrateCommand,
-        RegressionCommand, ReplCommand, ReplayCommand, RunCommand, RuntimeAction, RuntimeCommand,
-        SimulateCommand, StateCommand, TestCommand, UatCommand,
-    },
-    Command, CommandContext, CommandResult, HasExitCode, OutputFormat, Verbosity,
-};
-use keyrx_core::config::{load_config, merge_cli_overrides, Config};
+use keyrx_core::cli::{CommandContext, CommandResult, OutputFormat, Verbosity};
+use keyrx_core::config::{load_config, Config};
 use keyrx_core::observability::StructuredLogger;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::str::FromStr;
 use tracing::{debug, error, info};
+
+use commands_config::{
+    DeviceCommandAction, HardwareCommandAction, KeymapCommandAction, LayoutCommandAction,
+    RuntimeCommandAction,
+};
+use commands_test::{CiCheckOptions, GoldenCommandAction, UatOptions};
 
 #[derive(Parser)]
 #[command(name = "keyrx")]
@@ -872,10 +877,317 @@ async fn main() -> ExitCode {
 }
 
 async fn run_command(command: Commands, ctx: &CommandContext, config: Config) -> CommandResult<()> {
-    use keyrx_core::cli::ExitCode;
-
     // Log command execution start
-    let command_name = match &command {
+    let command_name = get_command_name(&command);
+    debug!(command = command_name, "Executing command");
+
+    match command {
+        // Core commands
+        Commands::Check { script } => commands_core::execute_check(script, ctx),
+        Commands::Run {
+            script,
+            debug,
+            no_capture,
+            validate_only,
+            device,
+            record,
+            trace,
+            tap_timeout,
+            combo_timeout,
+            hold_delay,
+            no_cache,
+            clear_cache,
+        } => commands_core::execute_run(
+            script,
+            debug,
+            no_capture,
+            validate_only,
+            device,
+            record,
+            trace,
+            tap_timeout,
+            combo_timeout,
+            hold_delay,
+            no_cache,
+            clear_cache,
+            config,
+            ctx,
+        ),
+        Commands::Simulate {
+            input,
+            script,
+            hold_ms,
+            combo,
+            interactive,
+        } => commands_core::execute_simulate(input, script, hold_ms, combo, interactive, ctx).await,
+        Commands::Discover { device, force, yes } => {
+            commands_core::execute_discover(device, force, yes, ctx).await
+        }
+        Commands::Docs { format, output } => commands_core::execute_docs(format, output, ctx),
+        Commands::State {
+            layers,
+            modifiers,
+            pending,
+            script,
+        } => commands_core::execute_state(layers, modifiers, pending, script, ctx),
+        Commands::Bench {
+            iterations,
+            script,
+            flamegraph,
+            allocations,
+        } => commands_core::execute_bench(iterations, script, flamegraph, allocations, ctx),
+        Commands::ExitCodes => commands_core::execute_exit_codes(ctx),
+
+        // Config commands
+        Commands::Devices { command } => {
+            let device_cmd = command.unwrap_or_default();
+            let action = match device_cmd {
+                DeviceCommands::List => DeviceCommandAction::List,
+                DeviceCommands::Show { device } => DeviceCommandAction::Show { device },
+                DeviceCommands::Label {
+                    device,
+                    label,
+                    clear,
+                } => DeviceCommandAction::Label {
+                    device,
+                    label,
+                    clear,
+                },
+                DeviceCommands::Remap { device, state } => DeviceCommandAction::Remap {
+                    device,
+                    enabled: state.enabled(),
+                },
+                DeviceCommands::Assign { device, profile } => {
+                    DeviceCommandAction::Assign { device, profile }
+                }
+                DeviceCommands::Unassign { device } => DeviceCommandAction::Unassign { device },
+            };
+            commands_config::execute_devices(action, ctx)
+        }
+        Commands::Hardware { command } => {
+            let action = match command {
+                HardwareCommands::List => HardwareCommandAction::List,
+                HardwareCommands::Define { source } => HardwareCommandAction::Define { source },
+                HardwareCommands::Wire {
+                    profile,
+                    scancode,
+                    virtual_key,
+                    clear,
+                } => HardwareCommandAction::Wire {
+                    profile,
+                    scancode,
+                    virtual_key,
+                    clear,
+                },
+                HardwareCommands::Detect => HardwareCommandAction::Detect,
+                HardwareCommands::Profile {
+                    vendor_id,
+                    product_id,
+                } => HardwareCommandAction::Profile {
+                    vendor_id,
+                    product_id,
+                },
+                HardwareCommands::Calibrate {
+                    vendor_id,
+                    product_id,
+                    warmup_samples,
+                    sample_count,
+                    max_duration_secs,
+                    latencies,
+                    samples_file,
+                } => HardwareCommandAction::Calibrate {
+                    vendor_id,
+                    product_id,
+                    warmup_samples,
+                    sample_count,
+                    max_duration_secs,
+                    latencies,
+                    samples_file,
+                },
+            };
+            commands_config::execute_hardware(action, ctx)
+        }
+        Commands::Layout { command } => {
+            let layout_cmd = command.unwrap_or_default();
+            let action = match layout_cmd {
+                LayoutCommands::List => LayoutCommandAction::List,
+                LayoutCommands::Show { id } => LayoutCommandAction::Show { id },
+                LayoutCommands::Create { source } => LayoutCommandAction::Create { source },
+            };
+            commands_config::execute_layout(action, ctx)
+        }
+        Commands::Keymap { command } => {
+            let keymap_cmd = command.unwrap_or_default();
+            let action = match keymap_cmd {
+                KeymapCommands::List => KeymapCommandAction::List,
+                KeymapCommands::Show { id } => KeymapCommandAction::Show { id },
+                KeymapCommands::Map {
+                    keymap,
+                    layer,
+                    virtual_key,
+                    action,
+                    clear,
+                } => KeymapCommandAction::Map {
+                    keymap,
+                    layer,
+                    virtual_key,
+                    action,
+                    clear,
+                },
+            };
+            commands_config::execute_keymap(action, ctx)
+        }
+        Commands::Runtime { command } => {
+            let runtime_cmd = command.unwrap_or_default();
+            let action = match runtime_cmd {
+                RuntimeCommands::Devices => RuntimeCommandAction::Devices,
+                RuntimeCommands::SlotAdd {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    hardware_profile,
+                    keymap,
+                    priority,
+                    active,
+                } => RuntimeCommandAction::SlotAdd {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    hardware_profile,
+                    keymap,
+                    priority,
+                    active,
+                },
+                RuntimeCommands::SlotRemove {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                } => RuntimeCommandAction::SlotRemove {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                },
+                RuntimeCommands::SlotActive {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    active,
+                } => RuntimeCommandAction::SlotActive {
+                    vendor_id,
+                    product_id,
+                    serial,
+                    slot,
+                    active,
+                },
+            };
+            commands_config::execute_runtime(action, ctx)
+        }
+        Commands::Migrate { from, backup } => {
+            commands_config::execute_migrate(from, backup, ctx).await
+        }
+
+        // Test commands
+        Commands::Doctor { verbose } => commands_test::execute_doctor(verbose, ctx),
+        Commands::Repl => commands_test::execute_repl(ctx),
+        Commands::Test {
+            script,
+            filter,
+            watch,
+        } => commands_test::execute_test(script, filter, watch, ctx),
+        Commands::Replay {
+            session,
+            verify,
+            speed,
+        } => commands_test::execute_replay(session, verify, speed, ctx).await,
+        Commands::Analyze { session, diagram } => {
+            commands_test::execute_analyze(session, diagram, ctx)
+        }
+        Commands::Uat {
+            category,
+            priority,
+            json,
+            fail_fast,
+            perf,
+            fuzz,
+            fuzz_duration,
+            fuzz_count,
+            coverage,
+            report,
+            report_format,
+            report_output,
+            gate,
+        } => {
+            let options = UatOptions {
+                category,
+                priority,
+                json,
+                fail_fast,
+                perf,
+                fuzz,
+                fuzz_duration,
+                fuzz_count,
+                coverage,
+                report,
+                report_format,
+                report_output,
+                gate,
+            };
+            commands_test::execute_uat(options, ctx)
+        }
+        Commands::Golden { command } => {
+            let action = match command {
+                GoldenCommands::Record { name, script } => {
+                    GoldenCommandAction::Record { name, script }
+                }
+                GoldenCommands::Verify { name, script } => {
+                    GoldenCommandAction::Verify { name, script }
+                }
+                GoldenCommands::Update {
+                    name,
+                    script,
+                    confirm,
+                } => GoldenCommandAction::Update {
+                    name,
+                    script,
+                    confirm,
+                },
+                GoldenCommands::List => GoldenCommandAction::List,
+            };
+            commands_test::execute_golden(action, ctx)
+        }
+        Commands::Regression { golden_dir, json } => {
+            commands_test::execute_regression(golden_dir, json, ctx)
+        }
+        Commands::CiCheck {
+            gate,
+            json,
+            skip_unit,
+            skip_integration,
+            skip_uat,
+            skip_regression,
+            skip_perf,
+        } => {
+            let options = CiCheckOptions {
+                gate,
+                json,
+                skip_unit,
+                skip_integration,
+                skip_uat,
+                skip_regression,
+                skip_perf,
+            };
+            commands_test::execute_ci_check(options, ctx)
+        }
+    }
+}
+
+fn get_command_name(command: &Commands) -> &'static str {
+    match command {
         Commands::Check { .. } => "check",
         Commands::Devices { .. } => "devices",
         Commands::Hardware { .. } => "hardware",
@@ -899,442 +1211,6 @@ async fn run_command(command: Commands, ctx: &CommandContext, config: Config) ->
         Commands::Regression { .. } => "regression",
         Commands::CiCheck { .. } => "ci-check",
         Commands::Migrate { .. } => "migrate",
-    };
-
-    debug!(command = command_name, "Executing command");
-
-    // Helper to convert anyhow::Result to CommandResult
-    let convert_result = |res: anyhow::Result<()>| -> CommandResult<()> {
-        match res {
-            Ok(()) => CommandResult::success(()),
-            Err(err) => {
-                let exit_code = err.exit_code();
-                CommandResult::failure(exit_code, format!("{err:#}"))
-            }
-        }
-    };
-
-    match command {
-        Commands::Check { script } => {
-            let mut cmd = CheckCommand::new(script, ctx.output_format());
-            cmd.execute(ctx)
-        }
-        Commands::Devices { command } => {
-            let device_cmd = command.unwrap_or_default();
-            let action = match device_cmd {
-                DeviceCommands::List => DeviceAction::List,
-                DeviceCommands::Show { device } => DeviceAction::Show { device_key: device },
-                DeviceCommands::Label {
-                    device,
-                    label,
-                    clear,
-                } => DeviceAction::Label {
-                    device_key: device,
-                    label: if clear { None } else { label },
-                },
-                DeviceCommands::Remap { device, state } => DeviceAction::Remap {
-                    device_key: device,
-                    enabled: state.enabled(),
-                },
-                DeviceCommands::Assign { device, profile } => DeviceAction::Assign {
-                    device_key: device,
-                    profile_id: profile,
-                },
-                DeviceCommands::Unassign { device } => {
-                    DeviceAction::Unassign { device_key: device }
-                }
-            };
-            let mut cmd = DevicesCommand::new(ctx.output_format(), action);
-            cmd.execute(ctx)
-        }
-        Commands::Hardware { command } => {
-            let action = match command {
-                HardwareCommands::List => HardwareAction::List,
-                HardwareCommands::Define { source } => {
-                    let src = if source.as_os_str() == "-" {
-                        HardwareSource::Stdin
-                    } else {
-                        HardwareSource::File(source)
-                    };
-                    HardwareAction::Define { source: src }
-                }
-                HardwareCommands::Wire {
-                    profile,
-                    scancode,
-                    virtual_key,
-                    clear,
-                } => HardwareAction::Wire {
-                    profile_id: profile,
-                    scancode,
-                    virtual_key,
-                    clear,
-                },
-                HardwareCommands::Detect => HardwareAction::Detect,
-                HardwareCommands::Profile {
-                    vendor_id,
-                    product_id,
-                } => HardwareAction::Profile {
-                    vendor_id,
-                    product_id,
-                },
-                HardwareCommands::Calibrate {
-                    vendor_id,
-                    product_id,
-                    warmup_samples,
-                    sample_count,
-                    max_duration_secs,
-                    latencies,
-                    samples_file,
-                } => HardwareAction::Calibrate {
-                    vendor_id,
-                    product_id,
-                    warmup_samples,
-                    sample_count,
-                    max_duration_secs,
-                    latencies_us: latencies,
-                    samples_file: samples_file.map(|p| p.display().to_string()),
-                },
-            };
-            let mut cmd = HardwareCommand::new(ctx.output_format(), action);
-            cmd.execute(ctx)
-        }
-        Commands::Layout { command } => {
-            let layout_cmd = command.unwrap_or_default();
-            let action = match layout_cmd {
-                LayoutCommands::List => LayoutAction::List,
-                LayoutCommands::Show { id } => LayoutAction::Show { id },
-                LayoutCommands::Create { source } => {
-                    let src = if source.as_os_str() == "-" {
-                        LayoutSource::Stdin
-                    } else {
-                        LayoutSource::File(source)
-                    };
-                    LayoutAction::Create { source: src }
-                }
-            };
-            let mut cmd = LayoutCommand::new(ctx.output_format(), action);
-            cmd.execute(ctx)
-        }
-        Commands::Keymap { command } => {
-            let keymap_cmd = command.unwrap_or_default();
-            let action = match keymap_cmd {
-                KeymapCommands::List => KeymapAction::List,
-                KeymapCommands::Show { id } => KeymapAction::Show { id },
-                KeymapCommands::Map {
-                    keymap,
-                    layer,
-                    virtual_key,
-                    action,
-                    clear,
-                } => KeymapAction::Map {
-                    request: MapRequest {
-                        keymap_id: keymap,
-                        layer,
-                        virtual_key,
-                        action,
-                        clear,
-                    },
-                },
-            };
-            let mut cmd = KeymapCommand::new(ctx.output_format(), action);
-            cmd.execute(ctx)
-        }
-        Commands::Runtime { command } => {
-            let runtime_cmd = command.unwrap_or_default();
-            let action = match runtime_cmd {
-                RuntimeCommands::Devices => RuntimeAction::ListDevices,
-                RuntimeCommands::SlotAdd {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot,
-                    hardware_profile,
-                    keymap,
-                    priority,
-                    active,
-                } => RuntimeAction::AddSlot {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot_id: slot,
-                    hardware_profile_id: hardware_profile,
-                    keymap_id: keymap,
-                    active,
-                    priority,
-                },
-                RuntimeCommands::SlotRemove {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot,
-                } => RuntimeAction::RemoveSlot {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot_id: slot,
-                },
-                RuntimeCommands::SlotActive {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot,
-                    active,
-                } => RuntimeAction::SetSlotActive {
-                    vendor_id,
-                    product_id,
-                    serial,
-                    slot_id: slot,
-                    active,
-                },
-            };
-            let mut cmd = RuntimeCommand::new(ctx.output_format(), action);
-            cmd.execute(ctx)
-        }
-        Commands::ExitCodes => {
-            let mut cmd = ExitCodesCommand::new();
-            cmd.execute(ctx)
-        }
-        Commands::Docs { format, output } => {
-            let doc_format = DocFormat::from_str(&format).unwrap_or_else(|_| {
-                eprintln!("Warning: Unknown format '{}', using markdown", format);
-                DocFormat::Markdown
-            });
-            let mut cmd = DocsCommand::new(doc_format, output, ctx.output_format());
-            cmd.execute(ctx)
-        }
-        Commands::Run {
-            script,
-            debug,
-            no_capture,
-            validate_only,
-            device,
-            record,
-            trace,
-            tap_timeout,
-            combo_timeout,
-            hold_delay,
-            no_cache,
-            clear_cache,
-        } => {
-            use keyrx_core::cli::Command;
-            let mut config = config;
-            merge_cli_overrides(&mut config, tap_timeout, combo_timeout, hold_delay);
-            let mut cmd = RunCommand::new(script, debug, no_capture, device, ctx.output_format())
-                .with_record_path(record)
-                .with_trace_path(trace)
-                .with_config(config)
-                .with_validate_only(validate_only)
-                .with_cache_options(no_cache, clear_cache);
-            cmd.execute(ctx)
-        }
-        Commands::State {
-            layers,
-            modifiers,
-            pending,
-            script,
-        } => {
-            let mut cmd =
-                StateCommand::new(layers, modifiers, pending, script, ctx.output_format());
-            cmd.execute(ctx)
-        }
-        Commands::Doctor { verbose } => {
-            let mut cmd = DoctorCommand::new(verbose, ctx.output_format());
-            cmd.execute(ctx)
-        }
-        Commands::Repl => {
-            let mut cmd = ReplCommand::new(ctx.output_format());
-            cmd.execute(ctx)
-        }
-        Commands::Bench {
-            iterations,
-            script,
-            flamegraph,
-            allocations,
-        } => {
-            let mut cmd = BenchCommand::new(iterations, script, ctx.output_format());
-            if flamegraph {
-                cmd = cmd.with_flamegraph_output(None);
-            }
-
-            if allocations {
-                cmd = cmd.with_allocation_report_output(None);
-            }
-            Command::execute(&mut cmd, ctx)
-        }
-        Commands::Simulate {
-            input,
-            script,
-            hold_ms,
-            combo,
-            interactive,
-        } => {
-            let result = if interactive {
-                SimulateCommand::run_interactive(script, ctx.output_format())
-            } else if let Some(input) = input {
-                SimulateCommand::new(input, script, ctx.output_format())
-                    .with_hold_ms(hold_ms)
-                    .with_combo(combo)
-                    .run()
-                    .await
-            } else {
-                Err(anyhow::anyhow!(
-                    "--input is required when not using --interactive"
-                ))
-            };
-            convert_result(result)
-        }
-        Commands::Discover { device, force, yes } => {
-            let result = DiscoverCommand::new(device, force, yes, ctx.output_format())
-                .run()
-                .await;
-            convert_result(result)
-        }
-        Commands::Test {
-            script,
-            filter,
-            watch,
-        } => match TestCommand::new(script, ctx.output_format())
-            .with_filter(filter)
-            .with_watch(watch)
-            .run()
-        {
-            Ok(0) => CommandResult::success(()),
-            Ok(code) => CommandResult::failure(
-                ExitCode::from_u8(code as u8).unwrap_or(ExitCode::GeneralError),
-                format!("Tests failed with exit code {code}"),
-            ),
-            Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-        },
-        Commands::Replay {
-            session,
-            verify,
-            speed,
-        } => {
-            match ReplayCommand::new(session, ctx.output_format())
-                .with_verify(verify)
-                .with_speed(speed)
-                .run()
-                .await
-            {
-                Ok(result) if verify && !result.all_matched() => {
-                    CommandResult::failure(ExitCode::AssertionFailed, "Replay verification failed")
-                }
-                Ok(_) => CommandResult::success(()),
-                Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-            }
-        }
-        Commands::Analyze { session, diagram } => {
-            let mut cmd = AnalyzeCommand::new(session, ctx.output_format()).with_diagram(diagram);
-            cmd.execute(ctx)
-        }
-        Commands::Uat {
-            category,
-            priority,
-            json,
-            fail_fast,
-            perf,
-            fuzz,
-            fuzz_duration,
-            fuzz_count,
-            coverage,
-            report,
-            report_format,
-            report_output,
-            gate,
-        } => match UatCommand::new(ctx.output_format())
-            .with_categories(category)
-            .with_priorities(priority)
-            .with_json(json)
-            .with_fail_fast(fail_fast)
-            .with_perf(perf)
-            .with_fuzz(fuzz)
-            .with_fuzz_duration(fuzz_duration)
-            .with_fuzz_count(fuzz_count)
-            .with_coverage_report(coverage)
-            .with_report(report)
-            .with_report_format(report_format)
-            .with_report_output(report_output)
-            .with_gate(gate)
-            .run()
-        {
-            Ok(0) => CommandResult::success(()),
-            Ok(code) => CommandResult::failure(
-                ExitCode::from_u8(code as u8).unwrap_or(ExitCode::GeneralError),
-                format!("UAT failed with exit code {code}"),
-            ),
-            Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-        },
-        Commands::Golden { command } => {
-            let subcommand = match command {
-                GoldenCommands::Record { name, script } => {
-                    GoldenSubcommand::Record { name, script }
-                }
-                GoldenCommands::Verify { name, script } => {
-                    GoldenSubcommand::Verify { name, script }
-                }
-                GoldenCommands::Update {
-                    name,
-                    script,
-                    confirm,
-                } => GoldenSubcommand::Update {
-                    name,
-                    script,
-                    confirm,
-                },
-                GoldenCommands::List => GoldenSubcommand::List,
-            };
-            match GoldenCommand::new(subcommand, ctx.output_format()).run() {
-                Ok(0) => CommandResult::success(()),
-                Ok(code) => CommandResult::failure(
-                    ExitCode::from_u8(code as u8).unwrap_or(ExitCode::GeneralError),
-                    format!("Golden command failed with exit code {code}"),
-                ),
-                Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-            }
-        }
-        Commands::Regression { golden_dir, json } => {
-            match RegressionCommand::new(ctx.output_format())
-                .with_golden_dir(golden_dir)
-                .with_json(json)
-                .run()
-            {
-                Ok(0) => CommandResult::success(()),
-                Ok(code) => CommandResult::failure(
-                    ExitCode::from_u8(code as u8).unwrap_or(ExitCode::GeneralError),
-                    format!("Regression tests failed with exit code {code}"),
-                ),
-                Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-            }
-        }
-        Commands::CiCheck {
-            gate,
-            json,
-            skip_unit,
-            skip_integration,
-            skip_uat,
-            skip_regression,
-            skip_perf,
-        } => match CiCheckCommand::new(ctx.output_format())
-            .with_gate(gate)
-            .with_json(json)
-            .with_skip_unit(skip_unit)
-            .with_skip_integration(skip_integration)
-            .with_skip_uat(skip_uat)
-            .with_skip_regression(skip_regression)
-            .with_skip_perf(skip_perf)
-            .run()
-        {
-            Ok(0) => CommandResult::success(()),
-            Ok(code) => CommandResult::failure(
-                ExitCode::from_u8(code as u8).unwrap_or(ExitCode::GeneralError),
-                format!("CI check failed with exit code {code}"),
-            ),
-            Err(err) => CommandResult::failure(err.exit_code(), format!("{err:#}")),
-        },
-        Commands::Migrate { from, backup } => {
-            let cmd = MigrateCommand::new(ctx.output_format(), from, backup);
-            cmd.run().await
-        }
     }
 }
 
