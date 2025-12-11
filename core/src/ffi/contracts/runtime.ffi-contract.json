@@ -1,0 +1,95 @@
+{
+    "domain": "runtime",
+    "functions": [
+        {
+            "name": "keyrx_runtime_get_config",
+            "description": "Get the current runtime configuration.",
+            "parameters": [],
+            "returns": "RuntimeConfig"
+        },
+        {
+            "name": "keyrx_runtime_add_slot",
+            "description": "Add a new runtime slot for a device (or update existing).",
+            "parameters": [
+                {
+                    "name": "device_json",
+                    "type": "DeviceInstanceId",
+                    "description": "JSON representation of the device instance"
+                },
+                {
+                    "name": "slot_json",
+                    "type": "ProfileSlot",
+                    "description": "JSON representation of the profile slot to add/update"
+                },
+                {
+                    "name": "priority",
+                    "type": "u32",
+                    "description": "Priority of the slot (depreciated/ignored in favor of slot_json.priority)"
+                }
+            ],
+            "returns": "RuntimeConfig"
+        },
+        {
+            "name": "keyrx_runtime_remove_slot",
+            "description": "Remove a runtime slot for a device.",
+            "parameters": [
+                {
+                    "name": "device_json",
+                    "type": "DeviceInstanceId",
+                    "description": "JSON representation of the device instance"
+                },
+                {
+                    "name": "slot_id",
+                    "type": "string",
+                    "description": "ID of the slot to remove"
+                }
+            ],
+            "returns": "RuntimeConfig"
+        },
+        {
+            "name": "keyrx_runtime_reorder_slot",
+            "description": "Update slot priority.",
+            "parameters": [
+                {
+                    "name": "device_json",
+                    "type": "DeviceInstanceId",
+                    "description": "JSON representation of the device instance"
+                },
+                {
+                    "name": "slot_id",
+                    "type": "string",
+                    "description": "ID of the slot to reorder"
+                },
+                {
+                    "name": "priority",
+                    "type": "u32",
+                    "description": "New priority value"
+                }
+            ],
+            "returns": "RuntimeConfig"
+        },
+        {
+            "name": "keyrx_runtime_set_slot_active",
+            "description": "Toggle a runtime slot active flag.",
+            "parameters": [
+                {
+                    "name": "device_json",
+                    "type": "DeviceInstanceId",
+                    "description": "JSON representation of the device instance"
+                },
+                {
+                    "name": "slot_id",
+                    "type": "string",
+                    "description": "ID of the slot to toggle"
+                },
+                {
+                    "name": "active",
+                    "type": "bool",
+                    "description": "New active state"
+                }
+            ],
+            "returns": "RuntimeConfig"
+        }
+    ],
+    "events": []
+}

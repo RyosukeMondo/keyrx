@@ -1,0 +1,96 @@
+{
+    "domain": "config",
+    "functions": [
+        {
+            "name": "keyrx_config_list_virtual_layouts",
+            "description": "List all saved virtual layouts.",
+            "parameters": [],
+            "returns": "Vec<VirtualLayout>"
+        },
+        {
+            "name": "keyrx_config_save_virtual_layout",
+            "description": "Save or update a virtual layout.",
+            "parameters": [
+                {
+                    "name": "json",
+                    "type": "VirtualLayout",
+                    "description": "JSON representation of the virtual layout"
+                }
+            ],
+            "returns": "void"
+        },
+        {
+            "name": "keyrx_config_delete_virtual_layout",
+            "description": "Delete a virtual layout by ID.",
+            "parameters": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "ID of the layout to delete"
+                }
+            ],
+            "returns": "void"
+        },
+        {
+            "name": "keyrx_config_list_hardware_profiles",
+            "description": "List all saved hardware profiles.",
+            "parameters": [],
+            "returns": "Vec<HardwareProfile>"
+        },
+        {
+            "name": "keyrx_config_save_hardware_profile",
+            "description": "Save or update a hardware profile.",
+            "parameters": [
+                {
+                    "name": "json",
+                    "type": "HardwareProfile",
+                    "description": "JSON representation of the hardware profile"
+                }
+            ],
+            "returns": "HardwareProfile"
+        },
+        {
+            "name": "keyrx_config_delete_hardware_profile",
+            "description": "Delete a hardware profile by ID.",
+            "parameters": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "ID of the hardware profile to delete"
+                }
+            ],
+            "returns": "void"
+        },
+        {
+            "name": "keyrx_config_list_keymaps",
+            "description": "List all saved keymaps.",
+            "parameters": [],
+            "returns": "Vec<Keymap>"
+        },
+        {
+            "name": "keyrx_config_save_keymap",
+            "description": "Save or update a keymap.",
+            "parameters": [
+                {
+                    "name": "json",
+                    "type": "Keymap",
+                    "description": "JSON representation of the keymap"
+                }
+            ],
+            "returns": "void"
+        },
+        {
+            "name": "keyrx_config_delete_keymap",
+            "description": "Delete a keymap by ID.",
+            "parameters": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "ID of the keymap to delete"
+                }
+            ],
+            "returns": "void"
+        }
+    ],
+    "events": []
+}
