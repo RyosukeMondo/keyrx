@@ -550,3 +550,453 @@ pub fn create_log_stream(
     );
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::models::{DeviceSlots, LayoutType, ProfileSlot};
+    use crate::services::device::DeviceView;
+    use crate::services::mocks::{MockDeviceService, MockProfileService, MockRuntimeService};
+    use std::collections::HashMap;
+
+    // Helper to create test device views
+    fn test_device(key: &str) -> DeviceView {
+        DeviceView {
+            key: key.to_string(),
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial_number: "SN001".to_string(),
+            connected: true,
+            remap_enabled: true,
+            profile_id: None,
+            label: None,
+        }
+    }
+
+    // Helper to create a test virtual layout
+    fn test_layout(id: &str) -> VirtualLayout {
+        VirtualLayout {
+            id: id.into(),
+            name: format!("Layout {}", id),
+            layout_type: LayoutType::Matrix,
+            keys: vec![],
+        }
+    }
+
+    // Helper to create a test hardware profile
+    fn test_hardware_profile(id: &str) -> HardwareProfile {
+        HardwareProfile {
+            id: id.into(),
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            name: Some(format!("Profile {}", id)),
+            virtual_layout_id: "layout-1".into(),
+            wiring: HashMap::new(),
+        }
+    }
+
+    // Helper to create a test keymap
+    fn test_keymap(id: &str) -> Keymap {
+        Keymap {
+            id: id.into(),
+            name: format!("Keymap {}", id),
+            virtual_layout_id: "layout-1".into(),
+            layers: vec![],
+        }
+    }
+
+    // Helper to create a test profile slot
+    fn test_slot(id: &str) -> ProfileSlot {
+        ProfileSlot {
+            id: id.into(),
+            hardware_profile_id: "profile-1".into(),
+            keymap_id: "keymap-1".into(),
+            priority: 100,
+            active: true,
+        }
+    }
+
+    // Helper to create a test ApiContext with mocks
+    fn api_with_mocks(
+        device_svc: MockDeviceService,
+        profile_svc: MockProfileService,
+        runtime_svc: MockRuntimeService,
+    ) -> ApiContext {
+        ApiContext::new(
+            Arc::new(device_svc),
+            Arc::new(profile_svc),
+            Arc::new(runtime_svc),
+        )
+    }
+
+    // ========== Device Service Tests ==========
+
+    #[tokio::test]
+    async fn list_devices_returns_configured_devices() {
+        let devices = vec![test_device("dev-1"), test_device("dev-2")];
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(devices.clone()),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_devices().await.unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "dev-1");
+        assert_eq!(result[1].key, "dev-2");
+    }
+
+    #[tokio::test]
+    async fn list_devices_returns_empty_when_no_devices() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_devices().await.unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_device_returns_matching_device() {
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(vec![test_device("my-device")]),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.get_device("my-device".into()).await.unwrap();
+        assert_eq!(result.key, "my-device");
+    }
+
+    #[tokio::test]
+    async fn get_device_returns_error_for_unknown_device() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.get_device("unknown".into()).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn set_device_remap_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(vec![test_device("dev-1")]),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.set_device_remap("dev-1".into(), false).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn assign_device_profile_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(vec![test_device("dev-1")]),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api
+            .assign_device_profile("dev-1".into(), "profile-1".into())
+            .await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn unassign_device_profile_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(vec![test_device("dev-1")]),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.unassign_device_profile("dev-1".into()).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn set_device_label_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new().with_devices(vec![test_device("dev-1")]),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api
+            .set_device_label("dev-1".into(), Some("My Keyboard".into()))
+            .await;
+        assert!(result.is_ok());
+    }
+
+    // ========== Profile Service Tests ==========
+
+    #[test]
+    fn list_virtual_layouts_returns_configured_layouts() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new().with_virtual_layouts(vec![test_layout("layout-1")]),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_virtual_layouts().unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].id, "layout-1");
+    }
+
+    #[test]
+    fn save_virtual_layout_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.save_virtual_layout(test_layout("new-layout")).unwrap();
+        assert_eq!(result.id, "new-layout");
+    }
+
+    #[test]
+    fn delete_virtual_layout_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.delete_virtual_layout("layout-1".into());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn list_hardware_profiles_returns_configured_profiles() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new()
+                .with_hardware_profiles(vec![test_hardware_profile("profile-1")]),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_hardware_profiles().unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].id, "profile-1");
+    }
+
+    #[test]
+    fn save_hardware_profile_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api
+            .save_hardware_profile(test_hardware_profile("new-profile"))
+            .unwrap();
+        assert_eq!(result.id, "new-profile");
+    }
+
+    #[test]
+    fn delete_hardware_profile_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.delete_hardware_profile("profile-1".into());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn list_keymaps_returns_configured_keymaps() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new().with_keymaps(vec![test_keymap("keymap-1")]),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_keymaps().unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].id, "keymap-1");
+    }
+
+    #[test]
+    fn save_keymap_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.save_keymap(test_keymap("new-keymap")).unwrap();
+        assert_eq!(result.id, "new-keymap");
+    }
+
+    #[test]
+    fn delete_keymap_calls_service() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.delete_keymap("keymap-1".into());
+        assert!(result.is_ok());
+    }
+
+    // ========== Runtime Service Tests ==========
+
+    #[test]
+    fn get_runtime_config_returns_configured_config() {
+        let device_id = DeviceInstanceId {
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial: None,
+        };
+        let config = RuntimeConfig {
+            devices: vec![DeviceSlots {
+                device: device_id.clone(),
+                slots: vec![],
+            }],
+        };
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new().with_config(config.clone()),
+        );
+
+        let result = api.get_runtime_config().unwrap();
+        assert_eq!(result.devices.len(), 1);
+    }
+
+    #[test]
+    fn runtime_add_slot_calls_service() {
+        let device_id = DeviceInstanceId {
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial: None,
+        };
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.runtime_add_slot(device_id, test_slot("slot-1"));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().devices.len(), 1);
+    }
+
+    #[test]
+    fn runtime_remove_slot_calls_service() {
+        let device_id = DeviceInstanceId {
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial: None,
+        };
+        let config = RuntimeConfig {
+            devices: vec![DeviceSlots {
+                device: device_id.clone(),
+                slots: vec![test_slot("slot-1")],
+            }],
+        };
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new().with_config(config),
+        );
+
+        let result = api.runtime_remove_slot(device_id, "slot-1".into());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn runtime_reorder_slot_calls_service() {
+        let device_id = DeviceInstanceId {
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial: None,
+        };
+        let config = RuntimeConfig {
+            devices: vec![DeviceSlots {
+                device: device_id.clone(),
+                slots: vec![test_slot("slot-1")],
+            }],
+        };
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new().with_config(config),
+        );
+
+        let result = api.runtime_reorder_slot(device_id, "slot-1".into(), 200);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn runtime_set_slot_active_calls_service() {
+        let device_id = DeviceInstanceId {
+            vendor_id: 0x1234,
+            product_id: 0x5678,
+            serial: None,
+        };
+        let config = RuntimeConfig {
+            devices: vec![DeviceSlots {
+                device: device_id.clone(),
+                slots: vec![test_slot("slot-1")],
+            }],
+        };
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new().with_config(config),
+        );
+
+        let result = api.runtime_set_slot_active(device_id, "slot-1".into(), false);
+        assert!(result.is_ok());
+    }
+
+    // ========== Error Handling Tests ==========
+
+    #[test]
+    fn list_virtual_layouts_error_propagates() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new().with_list_layouts_error("storage error"),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.list_virtual_layouts();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn save_virtual_layout_error_propagates() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new().with_save_layout_error("save failed"),
+            MockRuntimeService::new(),
+        );
+
+        let result = api.save_virtual_layout(test_layout("test"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_runtime_config_error_propagates() {
+        let api = api_with_mocks(
+            MockDeviceService::new(),
+            MockProfileService::new(),
+            MockRuntimeService::new().with_get_config_error("config error"),
+        );
+
+        let result = api.get_runtime_config();
+        assert!(result.is_err());
+    }
+}
