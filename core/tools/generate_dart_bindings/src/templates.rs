@@ -41,6 +41,7 @@ pub const BINDINGS_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 
 // ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types, unused_field
 
+import 'dart:convert';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 "#;
@@ -139,7 +140,8 @@ void {{dart_function_name}}({{dart_params_signature}}) {
 }"#;
 
 /// Template for parameter conversion (string to native)
-pub const PARAM_TO_NATIVE_UTF8: &str = "    final {{param_name}}Ptr = {{param_name}}.toNativeUtf8();";
+pub const PARAM_TO_NATIVE_UTF8: &str =
+    "    final {{param_name}}Ptr = {{param_name}}.toNativeUtf8();";
 
 /// Template for freeing a native string parameter
 pub const PARAM_FREE_UTF8: &str = "    calloc.free({{param_name}}Ptr);";
@@ -379,7 +381,10 @@ mod tests {
     #[test]
     fn test_to_camel_case() {
         assert_eq!(to_camel_case("hello_world"), "helloWorld");
-        assert_eq!(to_camel_case("save_hardware_profile"), "saveHardwareProfile");
+        assert_eq!(
+            to_camel_case("save_hardware_profile"),
+            "saveHardwareProfile"
+        );
         assert_eq!(to_camel_case("already"), "already");
         assert_eq!(to_camel_case("a_b_c"), "aBC");
     }
@@ -402,10 +407,7 @@ mod tests {
     #[test]
     fn test_native_typedef_template() {
         let mut ctx = context();
-        ctx.insert(
-            "function_name".to_string(),
-            "keyrx_config_save".to_string(),
-        );
+        ctx.insert("function_name".to_string(), "keyrx_config_save".to_string());
         ctx.insert("return_type".to_string(), "Pointer<Utf8>".to_string());
         ctx.insert(
             "native_params".to_string(),
@@ -421,10 +423,7 @@ mod tests {
     #[test]
     fn test_dart_typedef_template() {
         let mut ctx = context();
-        ctx.insert(
-            "function_name".to_string(),
-            "keyrx_config_save".to_string(),
-        );
+        ctx.insert("function_name".to_string(), "keyrx_config_save".to_string());
         ctx.insert("return_type".to_string(), "Pointer<Utf8>".to_string());
         ctx.insert(
             "dart_params".to_string(),
@@ -439,10 +438,7 @@ mod tests {
     #[test]
     fn test_function_pointer_template() {
         let mut ctx = context();
-        ctx.insert(
-            "function_name".to_string(),
-            "keyrx_config_save".to_string(),
-        );
+        ctx.insert("function_name".to_string(), "keyrx_config_save".to_string());
         ctx.insert("lookup_name".to_string(), "save".to_string());
 
         let result = render(FUNCTION_POINTER_TEMPLATE, &ctx);
