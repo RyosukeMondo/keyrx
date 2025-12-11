@@ -219,7 +219,7 @@ After completing:
 
 ## Phase 4: Split Files 8-10
 
-- [ ] 4.1 Split registry/profile.rs (918 lines → 3 modules)
+- [-] 4.1 Split registry/profile.rs (918 lines → 3 modules)
   - File: core/src/registry/profile.rs
   - Create profile/ directory with mod.rs, storage.rs, resolution.rs
   - Move persistence logic to storage.rs

@@ -7,6 +7,7 @@
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::runtime::{block_on_ffi, with_revolutionary_runtime};
 use crate::registry::profile::{Profile, ProfileRegistry};
+use crate::registry::{ProfileRegistryResolution, ProfileRegistryStorage};
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 

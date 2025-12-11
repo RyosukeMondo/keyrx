@@ -12,6 +12,7 @@ use crate::identity::DeviceIdentity;
 use crate::mocks::MockInput;
 use crate::registry::{
     DeviceBinding, DeviceBindings, DeviceEvent, DeviceRegistry, ProfileRegistry,
+    ProfileRegistryStorage,
 };
 use crate::scripting::RhaiRuntime;
 use crate::traits::InputSource;

@@ -5,6 +5,7 @@
 //! cache layer to meet the <100μs lookup target for hot paths.
 
 use crate::registry::profile::{Profile, ProfileId, ProfileRegistry, ProfileRegistryError};
+use crate::registry::ProfileRegistryResolution;
 use std::sync::Arc;
 #[cfg(debug_assertions)]
 use std::time::Instant;
@@ -159,6 +160,7 @@ mod tests {
     use super::*;
     use crate::drivers::keycodes::KeyCode;
     use crate::registry::profile::{LayoutType, PhysicalPosition};
+    use crate::registry::ProfileRegistryStorage;
     use serial_test::serial;
     use tempfile::tempdir;
 

@@ -7,6 +7,9 @@ pub mod bindings;
 pub mod device;
 pub mod profile;
 
+// Re-export profile extension traits for convenient usage
+pub use profile::{ProfileRegistryResolution, ProfileRegistryStorage};
+
 // Re-export commonly used types
 pub use bindings::{DeviceBinding, DeviceBindings, DeviceBindingsError};
 pub use device::{DeviceEvent, DeviceRegistry, DeviceRegistryError, DeviceState};

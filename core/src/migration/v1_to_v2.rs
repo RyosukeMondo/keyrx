@@ -6,6 +6,7 @@
 use super::{MigrationError, MigrationFailure, MigrationReport};
 use crate::discovery::types::DeviceProfile;
 use crate::registry::profile::{KeyAction, LayoutType, PhysicalPosition, Profile, ProfileRegistry};
+use crate::registry::ProfileRegistryStorage;
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
