@@ -1,4 +1,10 @@
-#![allow(clippy::print_stdout, clippy::print_stderr, clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic
+)]
 //!
 //! This binary uses println! and eprintln! for user-facing output,
 //! which is intentional and distinct from internal logging.

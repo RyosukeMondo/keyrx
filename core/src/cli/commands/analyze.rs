@@ -481,4 +481,3 @@ mod tests {
         assert_eq!(result.max_latency_us, 0);
     }
 }
-

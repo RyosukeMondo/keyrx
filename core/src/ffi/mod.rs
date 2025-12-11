@@ -9,8 +9,10 @@
 //! - `marshal`: Unified marshaling layer for FFI data transfer
 //! - `domains`: Domain implementations using FfiExportable trait
 //! - `exports`: Core init/common functions
+//! - `contract`: Contract schema for FFI functions (runtime introspection)
 
 pub mod context;
+pub mod contract;
 pub mod domains;
 pub mod error;
 pub mod events;
@@ -18,6 +20,7 @@ mod exports;
 mod exports_compat;
 mod exports_engine;
 mod exports_metrics;
+pub mod introspection;
 
 mod exports_runtime;
 mod exports_telemetry;

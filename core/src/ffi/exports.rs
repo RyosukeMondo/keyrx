@@ -89,6 +89,34 @@ pub unsafe extern "C" fn keyrx_protocol_version() -> u32 {
     1
 }
 
+/// Get FFI introspection metadata (developer tools)
+///
+/// Returns JSON with all available FFI functions, parameters, and events.
+/// This enables runtime discovery of FFI capabilities.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_introspection_metadata() -> *mut c_char {
+    use crate::ffi::introspection::{generate_introspection_data, init_contracts};
+
+    // Initialize contracts if not already done
+    if let Err(e) = init_contracts() {
+        // Already initialized is OK
+        if !e.to_string().contains("already initialized") {
+            let err_result: FfiResult<()> = Err(e);
+            return match serialize_ffi_result(&err_result) {
+                Ok(json) => CString::new(json).unwrap_or_default().into_raw(),
+                Err(_) => ptr::null_mut(),
+            };
+        }
+    }
+
+    // Generate introspection data
+    let result = generate_introspection_data();
+    match serialize_ffi_result(&result) {
+        Ok(json) => CString::new(json).unwrap_or_default().into_raw(),
+        Err(_) => ptr::null_mut(),
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_set_config_root(_path: *const c_char) -> i32 {
     // TODO: Implement config root override
