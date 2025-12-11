@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'pages/debugger.dart';
 import 'pages/console.dart';
 import 'pages/devices.dart';
+import 'pages/developer/ffi_tools_page.dart';
 import 'pages/developer/test_runner_page.dart';
 import 'pages/developer/profiler_page.dart';
 import 'pages/layouts.dart';
@@ -234,6 +235,8 @@ class _HomePageState extends State<HomePage> {
         return const CalibrationPage();
       case DeveloperTool.analyzer:
         return const TradeOffVisualizerPage();
+      case DeveloperTool.ffiTools:
+        return const FfiToolsPage();
       case DeveloperTool.simulator:
       case DeveloperTool.discovery:
         return _buildPlaceholderPage(_selectedDevTool!.label);

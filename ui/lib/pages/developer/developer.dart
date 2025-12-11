@@ -5,8 +5,8 @@ library;
 
 export 'analyzer_page.dart';
 export 'benchmark_page.dart';
-
 export 'doctor_page.dart';
+export 'ffi_tools_page.dart';
 export 'profiler_page.dart';
 export 'replay_page.dart';
 export 'simulator_page.dart';

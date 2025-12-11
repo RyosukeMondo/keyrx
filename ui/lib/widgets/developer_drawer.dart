@@ -14,7 +14,8 @@ enum DeveloperTool {
   ),
   benchmark('Benchmark', Icons.speed_outlined, Icons.speed),
   doctor('Doctor', Icons.health_and_safety_outlined, Icons.health_and_safety),
-  discovery('Discovery', Icons.explore_outlined, Icons.explore);
+  discovery('Discovery', Icons.explore_outlined, Icons.explore),
+  ffiTools('FFI Tools', Icons.code_outlined, Icons.code);
 
   const DeveloperTool(this.label, this.icon, this.selectedIcon);
 
