@@ -324,7 +324,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 4.4 Convert runtime API functions to ApiContext methods (part 3 of 3)
+- [x] 4.4 Convert runtime API functions to ApiContext methods (part 3 of 3)
   - File: core/src/api.rs (continue from 4.3)
   - Convert 5 runtime-related functions to ApiContext methods: get_runtime_config, runtime_add_slot, runtime_remove_slot, runtime_reorder_slot, runtime_set_slot_active
   - Change function signatures to accept `&self`
