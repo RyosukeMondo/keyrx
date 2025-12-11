@@ -576,7 +576,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 6.5 Update existing service tests to use dependency injection
+- [x] 6.5 Update existing service tests to use dependency injection
   - File: core/src/services/tests/test_services.rs (if exists, or individual test files)
   - Review existing service tests and identify tests using global state
   - Refactor service tests to inject dependencies via constructors
@@ -602,7 +602,7 @@ After completing implementation:
 
 ## Phase 7: Documentation and Examples
 
-- [ ] 7.1 Create services/README.md with DI documentation
+- [x] 7.1 Create services/README.md with DI documentation
   - File: core/src/services/README.md (new file)
   - Write comprehensive documentation explaining DI pattern in KeyRx
   - Include sections: Overview, Architecture, Using ApiContext, Writing Tests, Migration Guide, Best Practices
