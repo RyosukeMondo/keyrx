@@ -22,6 +22,22 @@ use super::runtime::RuntimeServiceError;
 /// - Mock implementations for testing without I/O
 ///
 /// All methods are async and the trait requires `Send + Sync` for thread-safe usage.
+///
+/// # Example
+///
+/// ```ignore
+/// use std::sync::Arc;
+/// use keyrx_core::services::{DeviceService, DeviceServiceTrait};
+///
+/// // Using with dependency injection
+/// let service: Arc<dyn DeviceServiceTrait> = Arc::new(DeviceService::with_defaults(None));
+///
+/// // List all devices
+/// let devices = service.list_devices().await?;
+///
+/// // Enable remapping on a device
+/// let device = service.set_remap_enabled("0001:0002:serial123", true).await?;
+/// ```
 #[async_trait]
 pub trait DeviceServiceTrait: Send + Sync {
     /// Lists all known devices (both connected and previously bound).
@@ -130,6 +146,24 @@ pub trait DeviceServiceTrait: Send + Sync {
 /// - Keymaps (key remapping definitions)
 ///
 /// All methods are synchronous. The trait requires `Send + Sync` for thread-safe usage.
+///
+/// # Example
+///
+/// ```ignore
+/// use std::sync::Arc;
+/// use keyrx_core::services::{ProfileService, ProfileServiceTrait};
+/// use keyrx_core::config::models::VirtualLayout;
+///
+/// // Using with dependency injection
+/// let service: Arc<dyn ProfileServiceTrait> = Arc::new(ProfileService::with_defaults());
+///
+/// // List all virtual layouts
+/// let layouts = service.list_virtual_layouts()?;
+///
+/// // Save a new layout
+/// let layout = VirtualLayout { id: "my-layout".into(), ..Default::default() };
+/// let saved = service.save_virtual_layout(layout)?;
+/// ```
 pub trait ProfileServiceTrait: Send + Sync {
     /// Lists all virtual layouts.
     ///
@@ -241,6 +275,25 @@ pub trait ProfileServiceTrait: Send + Sync {
 /// to be stacked on a device with priority-based activation.
 ///
 /// All methods are synchronous. The trait requires `Send + Sync` for thread-safe usage.
+///
+/// # Example
+///
+/// ```ignore
+/// use std::sync::Arc;
+/// use keyrx_core::services::{RuntimeService, RuntimeServiceTrait};
+/// use keyrx_core::config::models::{DeviceInstanceId, ProfileSlot};
+///
+/// // Using with dependency injection
+/// let service: Arc<dyn RuntimeServiceTrait> = Arc::new(RuntimeService::with_defaults());
+///
+/// // Get current runtime configuration
+/// let config = service.get_config()?;
+///
+/// // Add a slot to a device
+/// let device = DeviceInstanceId::from("0001:0002:serial123");
+/// let slot = ProfileSlot { id: "slot-1".into(), priority: 100, ..Default::default() };
+/// let config = service.add_slot(device, slot)?;
+/// ```
 pub trait RuntimeServiceTrait: Send + Sync {
     /// Retrieves the current runtime configuration.
     ///
