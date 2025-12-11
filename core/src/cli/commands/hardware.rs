@@ -21,28 +21,48 @@ use tokio::runtime::Handle;
 /// Actions supported by the hardware command.
 #[derive(Debug, Clone)]
 pub enum HardwareAction {
+    /// List all defined hardware profiles.
     List,
+    /// Define a new hardware profile from a JSON source.
     Define {
+        /// Source for the hardware profile definition.
         source: HardwareSource,
     },
+    /// Wire a scancode to a virtual key in a hardware profile.
     Wire {
+        /// Profile ID to modify.
         profile_id: String,
+        /// Hardware scancode to map.
         scancode: u16,
+        /// Virtual key name to map to (None if clearing).
         virtual_key: Option<String>,
+        /// If true, clears the mapping instead of setting it.
         clear: bool,
     },
+    /// Detect connected keyboard hardware.
     Detect,
+    /// Resolve hardware profiles for connected or specified devices.
     Profile {
+        /// Vendor ID for manual device specification.
         vendor_id: Option<u16>,
+        /// Product ID for manual device specification.
         product_id: Option<u16>,
     },
+    /// Run calibration to determine optimal timing parameters.
     Calibrate {
+        /// Vendor ID for the device being calibrated.
         vendor_id: Option<u16>,
+        /// Product ID for the device being calibrated.
         product_id: Option<u16>,
+        /// Number of warmup samples to discard.
         warmup_samples: usize,
+        /// Number of samples to collect for calibration.
         sample_count: usize,
+        /// Maximum duration in seconds for calibration.
         max_duration_secs: u64,
+        /// Pre-recorded latency samples in microseconds.
         latencies_us: Vec<u64>,
+        /// File path containing latency samples (one per line).
         samples_file: Option<String>,
     },
 }
@@ -61,11 +81,16 @@ struct CalibrationRequest {
 /// Source for hardware profile creation (file path or stdin).
 #[derive(Debug, Clone)]
 pub enum HardwareSource {
+    /// Read profile JSON from a file.
     File(PathBuf),
+    /// Read profile JSON from standard input.
     Stdin,
 }
 
 /// Hardware command entry point.
+///
+/// Provides subcommands for hardware detection, profile management,
+/// and keyboard calibration.
 pub struct HardwareCommand {
     output: OutputWriter,
     action: HardwareAction,
@@ -73,6 +98,7 @@ pub struct HardwareCommand {
 }
 
 impl HardwareCommand {
+    /// Creates a new hardware command with the specified output format and action.
     pub fn new(format: OutputFormat, action: HardwareAction) -> Self {
         Self {
             output: OutputWriter::new(format),
