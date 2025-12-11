@@ -4,6 +4,9 @@ pub mod runtime;
 pub mod traits;
 
 #[cfg(test)]
+pub mod mocks;
+
+#[cfg(test)]
 mod tests;
 
 pub use device::{DeviceService, DeviceServiceError};
