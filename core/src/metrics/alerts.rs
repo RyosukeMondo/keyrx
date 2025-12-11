@@ -213,6 +213,20 @@ impl AlertManager {
         let timestamp = snapshot.timestamp;
         let mut alerts = Vec::new();
 
+        self.check_latency_alerts(snapshot, &thresholds, timestamp, &mut alerts);
+        self.check_error_rate_alerts(snapshot, &thresholds, timestamp, &mut alerts);
+        self.check_memory_alerts(snapshot, &thresholds, timestamp, &mut alerts);
+
+        alerts
+    }
+
+    fn check_latency_alerts(
+        &self,
+        snapshot: &MetricsSnapshot,
+        thresholds: &AlertThresholds,
+        timestamp: u64,
+        alerts: &mut Vec<Alert>,
+    ) {
         for (operation, stats) in &snapshot.latencies {
             if stats.count == 0 {
                 continue;
@@ -248,51 +262,69 @@ impl AlertManager {
                 ));
             }
         }
+    }
 
-        if snapshot.errors.rate_per_minute >= thresholds.error_rate_critical_per_minute {
+    fn check_error_rate_alerts(
+        &self,
+        snapshot: &MetricsSnapshot,
+        thresholds: &AlertThresholds,
+        timestamp: u64,
+        alerts: &mut Vec<Alert>,
+    ) {
+        let rate = snapshot.errors.rate_per_minute;
+        if rate >= thresholds.error_rate_critical_per_minute {
             alerts.push(Alert::new(
                 timestamp,
                 AlertLevel::Critical,
                 AlertKind::ErrorRate,
-                snapshot.errors.rate_per_minute,
+                rate,
                 thresholds.error_rate_critical_per_minute,
                 format!(
-                    "Error rate {:.1} errs/min exceeds critical {:.1}",
-                    snapshot.errors.rate_per_minute, thresholds.error_rate_critical_per_minute
+                    "Error rate {rate:.1} errs/min exceeds critical {:.1}",
+                    thresholds.error_rate_critical_per_minute
                 ),
             ));
-        } else if snapshot.errors.rate_per_minute >= thresholds.error_rate_warn_per_minute {
+        } else if rate >= thresholds.error_rate_warn_per_minute {
             alerts.push(Alert::new(
                 timestamp,
                 AlertLevel::Warning,
                 AlertKind::ErrorRate,
-                snapshot.errors.rate_per_minute,
+                rate,
                 thresholds.error_rate_warn_per_minute,
                 format!(
-                    "Error rate {:.1} errs/min exceeds warning {:.1}",
-                    snapshot.errors.rate_per_minute, thresholds.error_rate_warn_per_minute
+                    "Error rate {rate:.1} errs/min exceeds warning {:.1}",
+                    thresholds.error_rate_warn_per_minute
                 ),
             ));
         }
+    }
 
-        if snapshot.memory.current as f64 >= thresholds.memory_critical_bytes as f64 {
+    fn check_memory_alerts(
+        &self,
+        snapshot: &MetricsSnapshot,
+        thresholds: &AlertThresholds,
+        timestamp: u64,
+        alerts: &mut Vec<Alert>,
+    ) {
+        let memory = snapshot.memory.current as f64;
+        if memory >= thresholds.memory_critical_bytes as f64 {
             alerts.push(Alert::new(
                 timestamp,
                 AlertLevel::Critical,
                 AlertKind::MemoryUsage,
-                snapshot.memory.current as f64,
+                memory,
                 thresholds.memory_critical_bytes as f64,
                 format!(
                     "Memory usage {} bytes exceeds critical {} bytes",
                     snapshot.memory.current, thresholds.memory_critical_bytes
                 ),
             ));
-        } else if snapshot.memory.current as f64 >= thresholds.memory_warn_bytes as f64 {
+        } else if memory >= thresholds.memory_warn_bytes as f64 {
             alerts.push(Alert::new(
                 timestamp,
                 AlertLevel::Warning,
                 AlertKind::MemoryUsage,
-                snapshot.memory.current as f64,
+                memory,
                 thresholds.memory_warn_bytes as f64,
                 format!(
                     "Memory usage {} bytes exceeds warning {} bytes",
@@ -311,8 +343,6 @@ impl AlertManager {
                 "Potential memory leak detected from rolling samples".to_string(),
             ));
         }
-
-        alerts
     }
 }
 
