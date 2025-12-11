@@ -390,7 +390,10 @@ fn test_model_field_types() {
     let contract = create_contract_with_types();
     let models = generate_all_models(&contract).unwrap();
 
-    let complex = models.iter().find(|m| m.class_name == "ComplexType").unwrap();
+    let complex = models
+        .iter()
+        .find(|m| m.class_name == "ComplexType")
+        .unwrap();
 
     // Check field type mappings
     assert!(complex.code.contains("final int count"));
@@ -404,7 +407,10 @@ fn test_model_json_serialization() {
     let contract = create_contract_with_types();
     let models = generate_all_models(&contract).unwrap();
 
-    let simple = models.iter().find(|m| m.class_name == "SimpleType").unwrap();
+    let simple = models
+        .iter()
+        .find(|m| m.class_name == "SimpleType")
+        .unwrap();
 
     // Check fromJson
     assert!(simple.code.contains("factory SimpleType.fromJson"));
@@ -422,7 +428,10 @@ fn test_model_constructor() {
     let contract = create_contract_with_types();
     let models = generate_all_models(&contract).unwrap();
 
-    let complex = models.iter().find(|m| m.class_name == "ComplexType").unwrap();
+    let complex = models
+        .iter()
+        .find(|m| m.class_name == "ComplexType")
+        .unwrap();
 
     // Required fields should have 'required' keyword
     assert!(complex.code.contains("required this.count"));
@@ -453,7 +462,9 @@ fn test_models_block_generation() {
 #[test]
 fn test_type_mapping_all_integers() {
     // Test all integer types map correctly
-    let types = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"];
+    let types = [
+        "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+    ];
 
     for t in types {
         let ffi = map_to_dart_ffi_type(t).expect(&format!("Should map {}", t));
@@ -644,8 +655,12 @@ fn test_full_contract_code_generation() {
 
     // Verify signatures
     assert_eq!(signatures.len(), 2);
-    assert!(signatures.iter().any(|s| s.ffi_name == "keyrx_device_get_status"));
-    assert!(signatures.iter().any(|s| s.ffi_name == "keyrx_device_connect"));
+    assert!(signatures
+        .iter()
+        .any(|s| s.ffi_name == "keyrx_device_get_status"));
+    assert!(signatures
+        .iter()
+        .any(|s| s.ffi_name == "keyrx_device_connect"));
 
     // Verify wrappers
     assert_eq!(wrappers.len(), 2);

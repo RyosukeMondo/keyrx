@@ -1,5 +1,8 @@
 //! Mock implementation of RuntimeServiceTrait for testing.
 
+// Allow unwrap on mutex locks in mocks - poison panic is acceptable in test infrastructure
+#![allow(clippy::unwrap_used)]
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

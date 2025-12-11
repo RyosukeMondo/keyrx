@@ -1,3 +1,6 @@
+// Allow test-specific lints - tests need panic/unwrap/expect for failure assertions
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 //! Integration tests for the Dart binding code generator
 //!
 //! These tests run the full generation pipeline with real contracts
@@ -118,7 +121,9 @@ fn test_generate_models_for_all_contracts() {
 #[test]
 fn test_full_generation_pipeline_produces_valid_dart() {
     use generate_dart_bindings::{
-        bindings_gen::{generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block},
+        bindings_gen::{
+            generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block,
+        },
         header::{generate_bindings_header, generate_models_header},
         models_gen::generate_models_block,
     };
@@ -176,14 +181,8 @@ fn test_full_generation_pipeline_produces_valid_dart() {
         std::fs::read_to_string(&bindings_path).expect("Failed to read bindings");
     let models_content = std::fs::read_to_string(&models_path).expect("Failed to read models");
 
-    assert!(
-        !bindings_content.is_empty(),
-        "Bindings file is empty"
-    );
-    assert!(
-        !models_content.is_empty(),
-        "Models file is empty"
-    );
+    assert!(!bindings_content.is_empty(), "Bindings file is empty");
+    assert!(!models_content.is_empty(), "Models file is empty");
 
     // Check for expected Dart code patterns
     assert!(
@@ -217,7 +216,9 @@ fn test_dart_analyze_on_generated_code() {
     }
 
     use generate_dart_bindings::{
-        bindings_gen::{generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block},
+        bindings_gen::{
+            generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block,
+        },
         header::{generate_bindings_header, generate_models_header},
         models_gen::generate_models_block,
     };
@@ -292,7 +293,8 @@ fn test_dart_analyze_on_generated_code() {
     let models_stderr = String::from_utf8_lossy(&models_analyze.stderr);
 
     // dart analyze returns errors in stderr, check that there are no error-level issues
-    let has_bindings_errors = bindings_stderr.contains("error •") || bindings_stderr.contains("error -");
+    let has_bindings_errors =
+        bindings_stderr.contains("error •") || bindings_stderr.contains("error -");
     let has_models_errors = models_stderr.contains("error •") || models_stderr.contains("error -");
 
     if has_bindings_errors {
@@ -386,7 +388,9 @@ fn test_generated_typedefs_naming_convention() {
 #[test]
 fn test_idempotent_generation() {
     use generate_dart_bindings::{
-        bindings_gen::{generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block},
+        bindings_gen::{
+            generate_function_pointers_block, generate_typedefs_block, generate_wrappers_block,
+        },
         header::generate_bindings_header,
     };
 
@@ -398,11 +402,13 @@ fn test_idempotent_generation() {
         parts.push(generate_bindings_header());
 
         for contract in &contracts {
-            let signatures = generate_ffi_signatures(contract).expect("Failed to generate signatures");
+            let signatures =
+                generate_ffi_signatures(contract).expect("Failed to generate signatures");
             parts.push(generate_typedefs_block(&signatures));
             parts.push(generate_function_pointers_block(&signatures));
 
-            let wrappers = generate_wrapper_functions(contract).expect("Failed to generate wrappers");
+            let wrappers =
+                generate_wrapper_functions(contract).expect("Failed to generate wrappers");
             parts.push(generate_wrappers_block(&wrappers));
         }
 

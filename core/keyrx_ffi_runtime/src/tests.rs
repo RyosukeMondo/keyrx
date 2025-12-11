@@ -1,5 +1,9 @@
 //! Unit tests for FFI runtime helpers.
 
+// Allow unwrap and panic in tests - panics are the expected behavior for test failures
+// and the panic tests specifically test panic handling infrastructure
+#![allow(clippy::unwrap_used, clippy::panic)]
+
 use std::ffi::{c_char, CString};
 
 // ============================================================================
@@ -43,7 +47,10 @@ mod parse_c_string_tests {
     fn error_message_includes_parameter_name() {
         let result = unsafe { parse_c_string(std::ptr::null(), "profile_id") };
         let err = result.unwrap_err();
-        assert!(err.contains("profile_id"), "Error should contain param name");
+        assert!(
+            err.contains("profile_id"),
+            "Error should contain param name"
+        );
     }
 
     #[test]
@@ -209,7 +216,11 @@ mod handle_panic_tests {
             panic!("oops");
         });
         let err = result.unwrap_err();
-        assert!(err.starts_with("Panic:"), "Error should start with 'Panic:': {}", err);
+        assert!(
+            err.starts_with("Panic:"),
+            "Error should start with 'Panic:': {}",
+            err
+        );
     }
 }
 

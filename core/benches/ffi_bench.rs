@@ -4,6 +4,9 @@
 //! Compares different marshaling strategies (JSON vs C struct) and measures
 //! the overhead of converting between Rust and C representations.
 
+// Allow unwrap/expect in benchmarks - panics are acceptable for setup code
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use keyrx_core::ffi::marshal::impls::array::free_ffi_array;
 use keyrx_core::ffi::marshal::impls::json::{free_ffi_json, JsonWrapper};

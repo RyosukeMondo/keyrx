@@ -50,7 +50,9 @@ pub struct GeneratedModel {
 }
 
 /// Generate model classes from contract's custom types
-pub fn generate_models_from_types(contract: &FfiContract) -> Result<Vec<GeneratedModel>, ModelGenError> {
+pub fn generate_models_from_types(
+    contract: &FfiContract,
+) -> Result<Vec<GeneratedModel>, ModelGenError> {
     contract
         .types
         .iter()
@@ -65,7 +67,9 @@ pub fn generate_models_from_types(contract: &FfiContract) -> Result<Vec<Generate
 }
 
 /// Generate model classes from function return types that are objects
-pub fn generate_models_from_returns(contract: &FfiContract) -> Result<Vec<GeneratedModel>, ModelGenError> {
+pub fn generate_models_from_returns(
+    contract: &FfiContract,
+) -> Result<Vec<GeneratedModel>, ModelGenError> {
     let mut models = Vec::new();
 
     for func in &contract.functions {
@@ -90,7 +94,10 @@ pub fn generate_all_models(contract: &FfiContract) -> Result<Vec<GeneratedModel>
 }
 
 /// Generate a Dart model class from a named type definition
-fn generate_model_class(name: &str, type_def: &TypeDefinition) -> Result<GeneratedModel, ModelGenError> {
+fn generate_model_class(
+    name: &str,
+    type_def: &TypeDefinition,
+) -> Result<GeneratedModel, ModelGenError> {
     let class_name = to_pascal_case(name);
 
     match type_def {
@@ -136,7 +143,10 @@ fn generate_model_from_properties(
     ctx.insert("class_name".to_string(), class_name.to_string());
     ctx.insert("doc_comment".to_string(), doc_comment.to_string());
     ctx.insert("fields".to_string(), fields.join("\n"));
-    ctx.insert("constructor_params".to_string(), constructor_params.join("\n"));
+    ctx.insert(
+        "constructor_params".to_string(),
+        constructor_params.join("\n"),
+    );
     ctx.insert("from_json_body".to_string(), from_json_body.join("\n"));
     ctx.insert("to_json_body".to_string(), to_json_body.join("\n"));
 
@@ -195,7 +205,10 @@ fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldIn
         let mut json_ctx = context();
         json_ctx.insert("field_name".to_string(), field_name.clone());
         json_ctx.insert("json_key".to_string(), json_key.clone());
-        json_ctx.insert("dart_cast_nullable".to_string(), format!("as {}?", dart_type));
+        json_ctx.insert(
+            "dart_cast_nullable".to_string(),
+            format!("as {}?", dart_type),
+        );
         render(FROM_JSON_OPTIONAL, &json_ctx)
     } else {
         let mut json_ctx = context();
@@ -220,7 +233,10 @@ fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldIn
 }
 
 /// Map a property type to its Dart type string
-fn map_dart_type_for_property(base_type: &str, type_def: &TypeDefinition) -> Result<String, ModelGenError> {
+fn map_dart_type_for_property(
+    base_type: &str,
+    type_def: &TypeDefinition,
+) -> Result<String, ModelGenError> {
     // Handle nested objects
     if type_def.is_object() {
         return Ok("Map<String, dynamic>".to_string());

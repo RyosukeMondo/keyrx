@@ -130,7 +130,9 @@ pub fn load_contract_for_domain(domain: &str, span: Span) -> syn::Result<FfiCont
     // Try multiple possible locations for the contract file
     let candidate_paths = [
         // Direct: when called from core crate
-        manifest_path.join("src/ffi/contracts").join(&contract_filename),
+        manifest_path
+            .join("src/ffi/contracts")
+            .join(&contract_filename),
         // Parent: when called from keyrx_ffi_macro subcrate
         manifest_path
             .parent()
@@ -141,7 +143,11 @@ pub fn load_contract_for_domain(domain: &str, span: Span) -> syn::Result<FfiCont
     let (contract_path, content) = candidate_paths
         .iter()
         .filter(|p| !p.as_os_str().is_empty())
-        .find_map(|path| std::fs::read_to_string(path).ok().map(|c| (path.clone(), c)))
+        .find_map(|path| {
+            std::fs::read_to_string(path)
+                .ok()
+                .map(|c| (path.clone(), c))
+        })
         .ok_or_else(|| {
             let paths: Vec<_> = candidate_paths
                 .iter()
@@ -169,6 +175,7 @@ pub fn load_contract_for_domain(domain: &str, span: Span) -> syn::Result<FfiCont
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

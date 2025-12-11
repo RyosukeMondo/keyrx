@@ -5,6 +5,10 @@
 //! - Verifies latency improvements over uncached operations
 //! - Tests concurrent access patterns
 
+// Allow unwrap/expect and unit_arg in benchmarks - panics are acceptable for setup,
+// and black_box(unit) patterns are common in criterion benchmarks
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::unit_arg)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use keyrx_core::drivers::common::cache::{KeymapCache, LruKeymapCache};
 use keyrx_core::drivers::keycodes::KeyCode;

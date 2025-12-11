@@ -1,4 +1,10 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, unsafe_code)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    unsafe_code,
+    static_mut_refs
+)]
 //! Integration tests for the keyrx_ffi_macro procedural macro.
 //!
 //! Tests that the macro correctly generates FFI functions from real contracts.

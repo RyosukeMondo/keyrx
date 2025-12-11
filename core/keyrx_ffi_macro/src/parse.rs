@@ -36,10 +36,7 @@ impl Parse for MacroArgs {
         let domain: LitStr = input.parse()?;
 
         if domain.value().is_empty() {
-            return Err(syn::Error::new(
-                domain.span(),
-                "domain cannot be empty",
-            ));
+            return Err(syn::Error::new(domain.span(), "domain cannot be empty"));
         }
 
         Ok(MacroArgs { domain })
@@ -72,6 +69,7 @@ pub fn parse_macro_attr(attr: TokenStream) -> syn::Result<MacroConfig> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use quote::quote;

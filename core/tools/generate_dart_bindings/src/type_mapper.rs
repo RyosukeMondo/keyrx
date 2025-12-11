@@ -94,9 +94,8 @@ pub fn map_to_dart_native_type(contract_type: &str) -> Result<String, TypeMappin
         "bool" | "boolean" => "bool",
 
         // All integers map to Dart's int type
-        "int8" | "i8" | "int16" | "i16" | "int32" | "i32" | "int" |
-        "int64" | "i64" | "uint8" | "u8" | "byte" | "uint16" | "u16" |
-        "uint32" | "u32" | "uint64" | "u64" => "int",
+        "int8" | "i8" | "int16" | "i16" | "int32" | "i32" | "int" | "int64" | "i64" | "uint8"
+        | "u8" | "byte" | "uint16" | "u16" | "uint32" | "u32" | "uint64" | "u64" => "int",
 
         // Floating point maps to double
         "float" | "float32" | "f32" | "double" | "float64" | "f64" => "double",
@@ -179,7 +178,10 @@ mod tests {
         assert_eq!(map_to_dart_ffi_type("float").unwrap(), DartFfiType::Float);
         assert_eq!(map_to_dart_ffi_type("float32").unwrap(), DartFfiType::Float);
         assert_eq!(map_to_dart_ffi_type("double").unwrap(), DartFfiType::Double);
-        assert_eq!(map_to_dart_ffi_type("float64").unwrap(), DartFfiType::Double);
+        assert_eq!(
+            map_to_dart_ffi_type("float64").unwrap(),
+            DartFfiType::Double
+        );
     }
 
     #[test]
@@ -217,15 +219,24 @@ mod tests {
 
     #[test]
     fn test_case_insensitive_mapping() {
-        assert_eq!(map_to_dart_ffi_type("STRING").unwrap(), DartFfiType::PointerUtf8);
+        assert_eq!(
+            map_to_dart_ffi_type("STRING").unwrap(),
+            DartFfiType::PointerUtf8
+        );
         assert_eq!(map_to_dart_ffi_type("Int32").unwrap(), DartFfiType::Int32);
         assert_eq!(map_to_dart_ffi_type("BOOL").unwrap(), DartFfiType::Bool);
     }
 
     #[test]
     fn test_whitespace_trimming() {
-        assert_eq!(map_to_dart_ffi_type("  string  ").unwrap(), DartFfiType::PointerUtf8);
-        assert_eq!(map_to_dart_ffi_type("\tint32\n").unwrap(), DartFfiType::Int32);
+        assert_eq!(
+            map_to_dart_ffi_type("  string  ").unwrap(),
+            DartFfiType::PointerUtf8
+        );
+        assert_eq!(
+            map_to_dart_ffi_type("\tint32\n").unwrap(),
+            DartFfiType::Int32
+        );
     }
 
     // Native type mapping tests
@@ -264,10 +275,7 @@ mod tests {
             map_to_dart_native_type("object").unwrap(),
             "Map<String, dynamic>"
         );
-        assert_eq!(
-            map_to_dart_native_type("array").unwrap(),
-            "List<dynamic>"
-        );
+        assert_eq!(map_to_dart_native_type("array").unwrap(), "List<dynamic>");
     }
 
     // Utility function tests

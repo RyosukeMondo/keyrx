@@ -10,7 +10,7 @@ use keyrx_ffi_macros::FfiMarshaler;
 #[test]
 fn test_macro_is_exported() {
     // If this test compiles, the FfiMarshaler derive macro is properly exported
-    assert!(true);
+    // The compilation itself is the assertion - no runtime check needed
 }
 
 #[test]
@@ -24,5 +24,6 @@ fn test_readme_documented() {
     // #[derive(FfiMarshaler)]
     // #[ffi(strategy = "c_struct")]
     // struct MyStruct { ... }
-    assert!(true);
+    //
+    // This test documents usage patterns - compilation is the assertion
 }

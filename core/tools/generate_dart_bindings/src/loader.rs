@@ -13,10 +13,7 @@ pub fn load_contracts(contracts_dir: &Path) -> Result<ContractRegistry> {
 }
 
 /// Load contracts filtered by domain
-pub fn load_contracts_for_domain(
-    contracts_dir: &Path,
-    domain: &str,
-) -> Result<Vec<FfiContract>> {
+pub fn load_contracts_for_domain(contracts_dir: &Path, domain: &str) -> Result<Vec<FfiContract>> {
     let registry = load_contracts(contracts_dir)?;
 
     let contracts: Vec<FfiContract> = registry

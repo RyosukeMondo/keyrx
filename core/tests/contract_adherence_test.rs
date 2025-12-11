@@ -1,3 +1,13 @@
+// Allow test-specific lints - tests need panic/unwrap/expect for failure assertions
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unnecessary_map_or
+)]
+
 mod contract_adherence;
 
 use contract_adherence::parser::parse_ffi_exports;

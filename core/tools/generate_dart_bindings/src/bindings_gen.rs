@@ -5,9 +5,8 @@
 
 use crate::templates::{
     context, render, to_camel_case, DART_TYPEDEF_TEMPLATE, FUNCTION_POINTER_TEMPLATE,
-    NATIVE_TYPEDEF_TEMPLATE, PARAM_FREE_UTF8, PARAM_TO_NATIVE_UTF8,
-    RESULT_JSON_DECODE_CONVERSION, RESULT_STRING_CONVERSION, RESULT_VOID_TEMPLATE,
-    WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE,
+    NATIVE_TYPEDEF_TEMPLATE, PARAM_FREE_UTF8, PARAM_TO_NATIVE_UTF8, RESULT_JSON_DECODE_CONVERSION,
+    RESULT_STRING_CONVERSION, RESULT_VOID_TEMPLATE, WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE,
 };
 use crate::type_mapper::{map_to_dart_ffi_type, map_to_dart_native_type, TypeMappingError};
 use crate::types::DartFfiType;
@@ -55,7 +54,9 @@ pub struct FfiSignature {
 }
 
 /// Generate FFI signatures for all functions in a contract
-pub fn generate_ffi_signatures(contract: &FfiContract) -> Result<Vec<FfiSignature>, BindingGenError> {
+pub fn generate_ffi_signatures(
+    contract: &FfiContract,
+) -> Result<Vec<FfiSignature>, BindingGenError> {
     contract
         .functions
         .iter()
@@ -100,9 +101,7 @@ fn map_return_type(
 }
 
 /// Build native and Dart parameter lists for a function
-fn build_parameter_lists(
-    func: &FunctionContract,
-) -> Result<(String, String), BindingGenError> {
+fn build_parameter_lists(func: &FunctionContract) -> Result<(String, String), BindingGenError> {
     let mut native_params = Vec::new();
     let mut dart_params = Vec::new();
 
@@ -113,7 +112,11 @@ fn build_parameter_lists(
         })?;
 
         native_params.push(format!("{} {}", ffi_type.ffi_type(), param.name));
-        dart_params.push(format!("{} {}", ffi_type.dart_ffi_function_type(), param.name));
+        dart_params.push(format!(
+            "{} {}",
+            ffi_type.dart_ffi_function_type(),
+            param.name
+        ));
     }
 
     // Add error pointer parameter (convention: all FFI functions take error ptr)
@@ -127,7 +130,10 @@ fn build_parameter_lists(
 fn generate_native_typedef(ffi_name: &str, return_type: &DartFfiType, params: &str) -> String {
     let mut ctx = context();
     ctx.insert("function_name".to_string(), ffi_name.to_string());
-    ctx.insert("return_type".to_string(), return_type.ffi_type().to_string());
+    ctx.insert(
+        "return_type".to_string(),
+        return_type.ffi_type().to_string(),
+    );
     ctx.insert("native_params".to_string(), params.to_string());
     render(NATIVE_TYPEDEF_TEMPLATE, &ctx)
 }
@@ -228,10 +234,7 @@ fn generate_wrapper_function(
         result_conversion: result_conv,
     });
 
-    Ok(WrapperFunction {
-        dart_name,
-        code,
-    })
+    Ok(WrapperFunction { dart_name, code })
 }
 
 /// Context for rendering wrapper functions
@@ -271,10 +274,11 @@ fn build_dart_params_signature(func: &FunctionContract) -> Result<String, Bindin
         .parameters
         .iter()
         .map(|p| {
-            let dart_type = map_to_dart_native_type(&p.param_type).map_err(|e| BindingGenError {
-                function_name: func.name.clone(),
-                message: format!("Invalid parameter type for '{}': {}", p.name, e),
-            })?;
+            let dart_type =
+                map_to_dart_native_type(&p.param_type).map_err(|e| BindingGenError {
+                    function_name: func.name.clone(),
+                    message: format!("Invalid parameter type for '{}': {}", p.name, e),
+                })?;
             Ok(format!("{} {}", dart_type, p.name))
         })
         .collect();

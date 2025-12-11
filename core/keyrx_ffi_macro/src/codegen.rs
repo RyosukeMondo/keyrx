@@ -262,7 +262,11 @@ pub fn generate_ffi_function(
     let ffi_name = Ident::new(&func.ffi_name(domain), Span::call_site());
 
     // Parse parameters from contract
-    let params: Vec<ParsedParam> = func.parameters.iter().map(ParsedParam::from_contract).collect();
+    let params: Vec<ParsedParam> = func
+        .parameters
+        .iter()
+        .map(ParsedParam::from_contract)
+        .collect();
 
     // Generate parameter declarations
     let param_decls = generate_param_declarations(&params);
@@ -352,7 +356,11 @@ mod tests {
         }
     }
 
-    fn make_function(name: &str, params: Vec<ParameterContract>, return_type: &str) -> FunctionContract {
+    fn make_function(
+        name: &str,
+        params: Vec<ParameterContract>,
+        return_type: &str,
+    ) -> FunctionContract {
         FunctionContract {
             name: name.to_string(),
             description: "Test function".to_string(),
@@ -497,10 +505,14 @@ mod tests {
         assert!(int_serializer.to_string().contains("serialize_to_c_string"));
 
         let uint_serializer = generate_result_serializer(&FfiType::Uint32);
-        assert!(uint_serializer.to_string().contains("serialize_to_c_string"));
+        assert!(uint_serializer
+            .to_string()
+            .contains("serialize_to_c_string"));
 
         let float_serializer = generate_result_serializer(&FfiType::Float64);
-        assert!(float_serializer.to_string().contains("serialize_to_c_string"));
+        assert!(float_serializer
+            .to_string()
+            .contains("serialize_to_c_string"));
     }
 
     #[test]
@@ -558,10 +570,7 @@ mod tests {
     fn generate_ffi_function_with_params() {
         let func = make_function(
             "get_value",
-            vec![
-                make_param("key", "string"),
-                make_param("default", "int32"),
-            ],
+            vec![make_param("key", "string"), make_param("default", "int32")],
             "string",
         );
         let impl_method = Ident::new("get_value", Span::call_site());

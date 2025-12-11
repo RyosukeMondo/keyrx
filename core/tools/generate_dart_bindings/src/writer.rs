@@ -129,10 +129,8 @@ mod tests {
         let path1 = temp_dir.path().join("file1.dart");
         let path2 = temp_dir.path().join("file2.dart");
 
-        let files: Vec<(&Path, &str)> = vec![
-            (path1.as_path(), "content1"),
-            (path2.as_path(), "content2"),
-        ];
+        let files: Vec<(&Path, &str)> =
+            vec![(path1.as_path(), "content1"), (path2.as_path(), "content2")];
         let results = write_files(&files).unwrap();
 
         assert_eq!(results.len(), 2);

@@ -6,6 +6,9 @@
 //! - Resource tracking: < 50 nanoseconds per operation
 //! - Combined overhead: < 200 nanoseconds total
 
+// Allow unwrap/expect in benchmarks - panics are acceptable for setup code
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use keyrx_core::drivers::keycodes::KeyCode;
 use keyrx_core::scripting::sandbox::validation::InputValidator;

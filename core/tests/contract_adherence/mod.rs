@@ -1,3 +1,12 @@
+// Allow test-specific lints - tests need panic/unwrap/expect for failure assertions
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::print_stdout,
+    clippy::print_stderr
+)]
+
 //! Enhanced FFI Contract Adherence Validation
 //!
 //! This module provides comprehensive validation of FFI function signatures

@@ -98,7 +98,10 @@ mod ffi_type_mapping {
         #[test]
         fn double_variants() {
             assert_eq!(map_to_dart_ffi_type("double").unwrap(), DartFfiType::Double);
-            assert_eq!(map_to_dart_ffi_type("float64").unwrap(), DartFfiType::Double);
+            assert_eq!(
+                map_to_dart_ffi_type("float64").unwrap(),
+                DartFfiType::Double
+            );
             assert_eq!(map_to_dart_ffi_type("f64").unwrap(), DartFfiType::Double);
         }
     }
@@ -209,10 +212,7 @@ mod native_type_mapping {
 
     #[test]
     fn array_maps_to_list() {
-        assert_eq!(
-            map_to_dart_native_type("array").unwrap(),
-            "List<dynamic>"
-        );
+        assert_eq!(map_to_dart_native_type("array").unwrap(), "List<dynamic>");
     }
 }
 
@@ -299,13 +299,19 @@ mod case_insensitivity {
         );
         assert_eq!(map_to_dart_ffi_type("Int32").unwrap(), DartFfiType::Int32);
         assert_eq!(map_to_dart_ffi_type("UInt64").unwrap(), DartFfiType::Uint64);
-        assert_eq!(map_to_dart_ffi_type("Float64").unwrap(), DartFfiType::Double);
+        assert_eq!(
+            map_to_dart_ffi_type("Float64").unwrap(),
+            DartFfiType::Double
+        );
     }
 
     #[test]
     fn native_mapping_case_insensitive() {
         assert_eq!(map_to_dart_native_type("STRING").unwrap(), "String");
-        assert_eq!(map_to_dart_native_type("OBJECT").unwrap(), "Map<String, dynamic>");
+        assert_eq!(
+            map_to_dart_native_type("OBJECT").unwrap(),
+            "Map<String, dynamic>"
+        );
         assert_eq!(map_to_dart_native_type("ARRAY").unwrap(), "List<dynamic>");
     }
 }
@@ -427,7 +433,11 @@ mod nullable_types {
         ];
 
         for (nullable, expected_ffi, expected_native) in nullable_types {
-            assert!(is_nullable(nullable), "Expected {} to be nullable", nullable);
+            assert!(
+                is_nullable(nullable),
+                "Expected {} to be nullable",
+                nullable
+            );
             let base = base_type(nullable);
             assert_eq!(
                 map_to_dart_ffi_type(base).unwrap(),

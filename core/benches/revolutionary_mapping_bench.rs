@@ -6,6 +6,9 @@
 //! - Coordinate translation (cached): <20μs
 //! - Full pipeline: <1ms
 
+// Allow unwrap/expect in benchmarks - panics are acceptable for setup code
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use keyrx_core::definitions::library::DeviceDefinitionLibrary;
 use keyrx_core::drivers::keycodes::KeyCode;

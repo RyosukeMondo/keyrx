@@ -58,9 +58,9 @@ impl<'a> GenerationPipeline<'a> {
 
         if self.cli.check {
             // Check mode: verify files match without writing
-            result.needs_regeneration =
-                self.check_needs_regeneration(&bindings_path, &bindings_code)?
-                    || self.check_needs_regeneration(&models_path, &models_code)?;
+            result.needs_regeneration = self
+                .check_needs_regeneration(&bindings_path, &bindings_code)?
+                || self.check_needs_regeneration(&models_path, &models_code)?;
             result.bindings_generated = 1;
             result.models_generated = 1;
         } else {
@@ -84,8 +84,9 @@ impl<'a> GenerationPipeline<'a> {
             load_contracts_for_domain(&contracts_dir, domain)
                 .with_context(|| format!("Failed to load contracts for domain: {domain}"))
         } else {
-            load_all_contracts(&contracts_dir)
-                .with_context(|| format!("Failed to load contracts from: {}", contracts_dir.display()))
+            load_all_contracts(&contracts_dir).with_context(|| {
+                format!("Failed to load contracts from: {}", contracts_dir.display())
+            })
         }
     }
 
@@ -144,7 +145,10 @@ impl<'a> GenerationPipeline<'a> {
 
         // Generate class wrapper for the domain
         let class_name = format!("{}Bindings", to_pascal_case(&contract.domain));
-        output.push(format!("/// FFI bindings for the {} domain", contract.domain));
+        output.push(format!(
+            "/// FFI bindings for the {} domain",
+            contract.domain
+        ));
         output.push(format!("class {class_name} {{"));
         output.push("  final DynamicLibrary _lib;".to_string());
         output.push(String::new());
@@ -194,11 +198,9 @@ impl<'a> GenerationPipeline<'a> {
         }
 
         // Write to temp file
-        let temp_dir =
-            tempfile::tempdir().with_context(|| "Failed to create temp directory")?;
+        let temp_dir = tempfile::tempdir().with_context(|| "Failed to create temp directory")?;
         let temp_path = temp_dir.path().join("check.dart");
-        std::fs::write(&temp_path, content)
-            .with_context(|| "Failed to write temp file")?;
+        std::fs::write(&temp_path, content).with_context(|| "Failed to write temp file")?;
 
         // Format the temp file
         if is_dart_available() {
@@ -319,11 +321,7 @@ fn normalize_for_comparison(content: &str) -> String {
         .lines()
         .filter(|line| !line.contains("Generation time:"))
         // Normalize whitespace: trim lines and collapse multiple spaces
-        .map(|line| {
-            line.split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
+        .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
         // Remove empty lines from comparison
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
