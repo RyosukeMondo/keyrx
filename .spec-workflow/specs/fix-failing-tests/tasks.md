@@ -300,7 +300,7 @@ After completing:
 
 ## Phase 6: Cleanup and Final Steps
 
-- [ ] 6.1 Remove temporary debug code if any
+- [x] 6.1 Remove temporary debug code if any
   - Files: Any files with debug output added during investigation
   - Clean up println!, eprintln!, dbg! macros added for debugging
   - Ensure no debug artifacts remain
@@ -320,7 +320,7 @@ Success: No debug artifacts remain. Code is clean. Codebase ready for commit.
 After completing:
 1. Mark [-], clean code, verify clean, log cleanup, mark [x]_
 
-- [ ] 6.2 Format code and verify consistency
+- [x] 6.2 Format code and verify consistency
   - Command: `cargo fmt`
   - Ensure all modified code properly formatted
   - Verify formatting check passes
