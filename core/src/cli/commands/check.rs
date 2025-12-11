@@ -6,7 +6,10 @@ use crate::cli::{Command, CommandContext, CommandResult, ExitCode, OutputFormat,
 use crate::validation::config::ValidationConfig;
 use crate::validation::coverage::render_ascii_keyboard;
 use crate::validation::engine::ValidationEngine;
-use crate::validation::types::{ValidationOptions, ValidationResult, WarningCategory};
+use crate::validation::types::{
+    CoverageReport, SourceLocation, ValidationError, ValidationOptions, ValidationResult,
+    ValidationWarning, WarningCategory,
+};
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -172,22 +175,30 @@ impl CheckCommand {
         result: &ValidationResult,
         engine: &ValidationEngine,
     ) -> Result<()> {
+        self.print_validation_errors(&result.errors, engine);
+        self.print_validation_warnings(&result.warnings);
+        self.print_coverage_report(result.coverage.as_ref());
+        self.print_visual_keyboard(result.coverage.as_ref());
+        self.print_validation_summary(result);
+        Ok(())
+    }
+
+    fn format_location(&self, location: Option<&SourceLocation>) -> String {
         let path_str = self.script_path.display();
+        location
+            .map(|l| {
+                if let Some(col) = l.column {
+                    format!("{}:{}:{}", path_str, l.line, col)
+                } else {
+                    format!("{}:{}", path_str, l.line)
+                }
+            })
+            .unwrap_or_else(|| path_str.to_string())
+    }
 
-        // Print errors
-        for error in &result.errors {
-            let location = error
-                .location
-                .as_ref()
-                .map(|l| {
-                    if let Some(col) = l.column {
-                        format!("{}:{}:{}", path_str, l.line, col)
-                    } else {
-                        format!("{}:{}", path_str, l.line)
-                    }
-                })
-                .unwrap_or_else(|| path_str.to_string());
-
+    fn print_validation_errors(&self, errors: &[ValidationError], engine: &ValidationEngine) {
+        for error in errors {
+            let location = self.format_location(error.location.as_ref());
             println!(
                 "\x1b[31merror[{}]\x1b[0m: {} ({})",
                 error.code, error.message, location
@@ -212,74 +223,72 @@ impl CheckCommand {
                 );
             }
         }
+    }
 
-        // Print warnings (unless suppressed)
-        if !self.no_warnings {
-            for warning in &result.warnings {
-                let category = match warning.category {
-                    WarningCategory::Conflict => "conflict",
-                    WarningCategory::Safety => "safety",
-                    WarningCategory::Performance => "performance",
-                };
+    fn print_validation_warnings(&self, warnings: &[ValidationWarning]) {
+        if self.no_warnings {
+            return;
+        }
 
-                let location = warning
-                    .location
-                    .as_ref()
-                    .map(|l| {
-                        if let Some(col) = l.column {
-                            format!("{}:{}:{}", path_str, l.line, col)
-                        } else {
-                            format!("{}:{}", path_str, l.line)
-                        }
-                    })
-                    .unwrap_or_else(|| path_str.to_string());
+        for warning in warnings {
+            let category = match warning.category {
+                WarningCategory::Conflict => "conflict",
+                WarningCategory::Safety => "safety",
+                WarningCategory::Performance => "performance",
+            };
+            let location = self.format_location(warning.location.as_ref());
 
+            println!(
+                "\x1b[33mwarning[{}]\x1b[0m: [{}] {} ({})",
+                warning.code, category, warning.message, location
+            );
+
+            if let Some(ref loc) = warning.location {
+                if let Some(ref context) = loc.context {
+                    println!("  | {}", context);
+                }
+            }
+        }
+    }
+
+    fn print_coverage_report(&self, coverage: Option<&CoverageReport>) {
+        if !self.coverage {
+            return;
+        }
+        let Some(coverage) = coverage else { return };
+
+        println!("\n\x1b[1mCoverage Report:\x1b[0m");
+        println!("  Remapped: {} keys", coverage.remapped.len());
+        println!("  Blocked: {} keys", coverage.blocked.len());
+        println!("  Tap-Hold: {} keys", coverage.tap_hold.len());
+        println!("  Combo triggers: {} keys", coverage.combo_triggers.len());
+        println!("  Total affected: {} keys", coverage.affected_count());
+
+        if !coverage.layers.is_empty() {
+            println!("\n  Per-layer coverage:");
+            for (layer, layer_cov) in &coverage.layers {
                 println!(
-                    "\x1b[33mwarning[{}]\x1b[0m: [{}] {} ({})",
-                    warning.code, category, warning.message, location
+                    "    {}: {} remapped, {} blocked",
+                    layer,
+                    layer_cov.remapped.len(),
+                    layer_cov.blocked.len()
                 );
-
-                if let Some(ref loc) = warning.location {
-                    if let Some(ref context) = loc.context {
-                        println!("  | {}", context);
-                    }
-                }
             }
         }
+    }
 
-        // Print coverage if requested
-        if self.coverage {
-            if let Some(ref coverage) = result.coverage {
-                println!("\n\x1b[1mCoverage Report:\x1b[0m");
-                println!("  Remapped: {} keys", coverage.remapped.len());
-                println!("  Blocked: {} keys", coverage.blocked.len());
-                println!("  Tap-Hold: {} keys", coverage.tap_hold.len());
-                println!("  Combo triggers: {} keys", coverage.combo_triggers.len());
-                println!("  Total affected: {} keys", coverage.affected_count());
-
-                if !coverage.layers.is_empty() {
-                    println!("\n  Per-layer coverage:");
-                    for (layer, layer_cov) in &coverage.layers {
-                        println!(
-                            "    {}: {} remapped, {} blocked",
-                            layer,
-                            layer_cov.remapped.len(),
-                            layer_cov.blocked.len()
-                        );
-                    }
-                }
-            }
+    fn print_visual_keyboard(&self, coverage: Option<&CoverageReport>) {
+        if !self.visual {
+            return;
         }
+        let Some(coverage) = coverage else { return };
 
-        // Print visual keyboard if requested
-        if self.visual {
-            if let Some(ref coverage) = result.coverage {
-                println!("\n\x1b[1mKeyboard Visualization:\x1b[0m");
-                println!("{}", render_ascii_keyboard(coverage));
-            }
-        }
+        println!("\n\x1b[1mKeyboard Visualization:\x1b[0m");
+        println!("{}", render_ascii_keyboard(coverage));
+    }
 
-        // Print summary
+    fn print_validation_summary(&self, result: &ValidationResult) {
+        let path_str = self.script_path.display();
         let error_count = result.errors.len();
         let warning_count = result.warnings.len();
 
@@ -297,8 +306,6 @@ impl CheckCommand {
                 path_str, error_count, warning_count
             );
         }
-
-        Ok(())
     }
 
     fn result_to_command_result(&self, result: ValidationResult) -> CommandResult<()> {
