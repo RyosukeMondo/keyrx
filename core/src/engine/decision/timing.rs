@@ -91,3 +91,165 @@ impl TimingConfigBuilder {
         self.config
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{DEFAULT_COMBO_TIMEOUT_MS, DEFAULT_HOLD_DELAY_MS, DEFAULT_TAP_TIMEOUT_MS};
+
+    #[test]
+    fn default_timing_config_uses_defaults() {
+        let config = TimingConfig::default();
+        assert_eq!(config.tap_timeout_ms, DEFAULT_TAP_TIMEOUT_MS);
+        assert_eq!(config.combo_timeout_ms, DEFAULT_COMBO_TIMEOUT_MS);
+        assert_eq!(config.hold_delay_ms, DEFAULT_HOLD_DELAY_MS);
+        assert!(!config.eager_tap);
+        assert!(config.permissive_hold);
+        assert!(!config.retro_tap);
+    }
+
+    #[test]
+    fn builder_starts_with_defaults() {
+        let builder = TimingConfigBuilder::new();
+        let config = builder.build();
+        assert_eq!(config.tap_timeout_ms, DEFAULT_TAP_TIMEOUT_MS);
+        assert_eq!(config.combo_timeout_ms, DEFAULT_COMBO_TIMEOUT_MS);
+        assert_eq!(config.hold_delay_ms, DEFAULT_HOLD_DELAY_MS);
+    }
+
+    #[test]
+    fn builder_default_trait() {
+        let builder = TimingConfigBuilder::default();
+        let config = builder.build();
+        assert_eq!(config, TimingConfig::default());
+    }
+
+    #[test]
+    fn builder_from_timing_config() {
+        let builder = TimingConfig::builder();
+        let config = builder.build();
+        assert_eq!(config, TimingConfig::default());
+    }
+
+    #[test]
+    fn builder_tap_timeout_ms() {
+        let config = TimingConfig::builder().tap_timeout_ms(300).build();
+        assert_eq!(config.tap_timeout_ms, 300);
+        assert_eq!(config.combo_timeout_ms, DEFAULT_COMBO_TIMEOUT_MS);
+    }
+
+    #[test]
+    fn builder_combo_timeout_ms() {
+        let config = TimingConfig::builder().combo_timeout_ms(100).build();
+        assert_eq!(config.combo_timeout_ms, 100);
+        assert_eq!(config.tap_timeout_ms, DEFAULT_TAP_TIMEOUT_MS);
+    }
+
+    #[test]
+    fn builder_hold_delay_ms() {
+        let config = TimingConfig::builder().hold_delay_ms(50).build();
+        assert_eq!(config.hold_delay_ms, 50);
+        assert_eq!(config.tap_timeout_ms, DEFAULT_TAP_TIMEOUT_MS);
+    }
+
+    #[test]
+    fn builder_eager_tap() {
+        let config = TimingConfig::builder().eager_tap(true).build();
+        assert!(config.eager_tap);
+        assert!(config.permissive_hold);
+    }
+
+    #[test]
+    fn builder_permissive_hold() {
+        let config = TimingConfig::builder().permissive_hold(false).build();
+        assert!(!config.permissive_hold);
+        assert!(!config.eager_tap);
+    }
+
+    #[test]
+    fn builder_retro_tap() {
+        let config = TimingConfig::builder().retro_tap(true).build();
+        assert!(config.retro_tap);
+        assert!(!config.eager_tap);
+    }
+
+    #[test]
+    fn builder_chaining() {
+        let config = TimingConfig::builder()
+            .tap_timeout_ms(150)
+            .combo_timeout_ms(75)
+            .hold_delay_ms(25)
+            .eager_tap(true)
+            .permissive_hold(false)
+            .retro_tap(true)
+            .build();
+
+        assert_eq!(config.tap_timeout_ms, 150);
+        assert_eq!(config.combo_timeout_ms, 75);
+        assert_eq!(config.hold_delay_ms, 25);
+        assert!(config.eager_tap);
+        assert!(!config.permissive_hold);
+        assert!(config.retro_tap);
+    }
+
+    #[test]
+    fn timing_config_equality() {
+        let config1 = TimingConfig::default();
+        let config2 = TimingConfig::default();
+        assert_eq!(config1, config2);
+    }
+
+    #[test]
+    fn timing_config_clone() {
+        let config = TimingConfig::builder().tap_timeout_ms(123).build();
+        let cloned = config.clone();
+        assert_eq!(config, cloned);
+    }
+
+    #[test]
+    fn timing_config_debug() {
+        let config = TimingConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("TimingConfig"));
+        assert!(debug_str.contains("tap_timeout_ms"));
+    }
+
+    #[test]
+    fn timing_config_builder_debug() {
+        let builder = TimingConfig::builder();
+        let debug_str = format!("{:?}", builder);
+        assert!(debug_str.contains("TimingConfigBuilder"));
+    }
+
+    #[test]
+    fn timing_config_serialization() {
+        let config = TimingConfig::builder()
+            .tap_timeout_ms(100)
+            .eager_tap(true)
+            .build();
+
+        let json = serde_json::to_string(&config).expect("serialize");
+        let deserialized: TimingConfig = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(config, deserialized);
+    }
+
+    #[test]
+    fn timing_config_deserialization_from_json() {
+        let json = r#"{
+            "tap_timeout_ms": 250,
+            "combo_timeout_ms": 60,
+            "hold_delay_ms": 10,
+            "eager_tap": true,
+            "permissive_hold": false,
+            "retro_tap": true
+        }"#;
+
+        let config: TimingConfig = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(config.tap_timeout_ms, 250);
+        assert_eq!(config.combo_timeout_ms, 60);
+        assert_eq!(config.hold_delay_ms, 10);
+        assert!(config.eager_tap);
+        assert!(!config.permissive_hold);
+        assert!(config.retro_tap);
+    }
+}
