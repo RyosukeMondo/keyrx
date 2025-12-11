@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::config::models::{
     DeviceInstanceId, HardwareProfile, Keymap, ProfileSlot, RuntimeConfig, VirtualLayout,
 };
@@ -8,6 +10,69 @@ use crate::services::device::DeviceView;
 use crate::services::traits::{DeviceServiceTrait, ProfileServiceTrait, RuntimeServiceTrait};
 use crate::services::{DeviceService, ProfileService, RuntimeService};
 use lazy_static::lazy_static;
+
+/// API context providing dependency-injected access to all services.
+///
+/// `ApiContext` is the primary entry point for interacting with KeyRx services.
+/// It enables:
+/// - Dependency injection for flexible service composition
+/// - Mock implementations for fast, isolated unit testing
+/// - Clear separation between API layer and service implementations
+///
+/// # Production Usage
+/// ```ignore
+/// let api = ApiContext::with_defaults();
+/// let devices = api.list_devices().await?;
+/// ```
+///
+/// # Testing Usage
+/// ```ignore
+/// let mock_device = Arc::new(MockDeviceService::new());
+/// let mock_profile = Arc::new(MockProfileService::new());
+/// let mock_runtime = Arc::new(MockRuntimeService::new());
+/// let api = ApiContext::new(mock_device, mock_profile, mock_runtime);
+/// ```
+// TODO: Remove #[allow(dead_code)] after implementing ApiContext methods in tasks 4.2-4.4
+#[allow(dead_code)]
+pub struct ApiContext {
+    device_service: Arc<dyn DeviceServiceTrait>,
+    profile_service: Arc<dyn ProfileServiceTrait>,
+    runtime_service: Arc<dyn RuntimeServiceTrait>,
+}
+
+impl ApiContext {
+    /// Creates a new `ApiContext` with injected service dependencies.
+    ///
+    /// This constructor enables dependency injection for testing and custom configurations.
+    ///
+    /// # Arguments
+    /// * `device_service` - Implementation of `DeviceServiceTrait`
+    /// * `profile_service` - Implementation of `ProfileServiceTrait`
+    /// * `runtime_service` - Implementation of `RuntimeServiceTrait`
+    pub fn new(
+        device_service: Arc<dyn DeviceServiceTrait>,
+        profile_service: Arc<dyn ProfileServiceTrait>,
+        runtime_service: Arc<dyn RuntimeServiceTrait>,
+    ) -> Self {
+        Self {
+            device_service,
+            profile_service,
+            runtime_service,
+        }
+    }
+
+    /// Creates a new `ApiContext` with default production services.
+    ///
+    /// This convenience constructor creates the standard service implementations
+    /// suitable for production use.
+    pub fn with_defaults() -> Self {
+        Self::new(
+            Arc::new(DeviceService::with_defaults(None)),
+            Arc::new(ProfileService::with_defaults()),
+            Arc::new(RuntimeService::with_defaults()),
+        )
+    }
+}
 
 // Global services
 lazy_static! {
