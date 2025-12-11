@@ -1,0 +1,30 @@
+[package]
+name = "generate_dart_bindings"
+version.workspace = true
+edition.workspace = true
+description = "CLI tool for generating Dart FFI bindings from JSON contracts"
+
+[[bin]]
+name = "generate-dart-bindings"
+path = "src/main.rs"
+
+[dependencies]
+# Core crate for contract types
+keyrx_core = { path = "../.." }
+
+# CLI argument parsing
+clap = { workspace = true }
+
+# JSON serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Directory walking
+walkdir = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

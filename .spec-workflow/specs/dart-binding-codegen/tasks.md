@@ -4,7 +4,7 @@
 
 ### Phase 1: CLI Tool Setup
 
-- [ ] 1. Create generate_dart_bindings binary crate
+- [-] 1. Create generate_dart_bindings binary crate
   - Files: `core/tools/generate_dart_bindings/Cargo.toml`, `core/tools/generate_dart_bindings/src/main.rs`
   - Create new binary crate for code generator
   - Add dependencies: clap, serde_json, walkdir
