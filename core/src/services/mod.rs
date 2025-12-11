@@ -7,6 +7,9 @@ pub mod traits;
 pub mod mocks;
 
 #[cfg(test)]
+pub use mocks::{MockDeviceService, MockProfileService, MockRuntimeService};
+
+#[cfg(test)]
 mod tests;
 
 pub use device::{DeviceService, DeviceServiceError};
