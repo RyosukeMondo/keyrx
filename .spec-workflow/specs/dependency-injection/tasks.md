@@ -747,7 +747,7 @@ After completing implementation:
 3. Use log-implementation tool to record results
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 8.4 Verify file size compliance (max 500 lines)
+- [x] 8.4 Verify file size compliance (max 500 lines)
   - Command: `find core/src -name "*.rs" -exec wc -l {} + | awk '$1 > 500 {print}'`
   - Check all modified files are under 500-line limit
   - Check specifically: traits.rs, mocks.rs, api.rs
