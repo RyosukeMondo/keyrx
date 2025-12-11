@@ -240,7 +240,7 @@ Success: profile/ with 3 modules. mod.rs ~200 lines. Others 300-400 lines. Regis
 After completing:
 1. Mark [-], implement, test, log, mark [x]_
 
-- [-] 4.2 Split engine/advanced.rs (906 lines → 3 modules)
+- [x] 4.2 Split engine/advanced.rs (906 lines → 3 modules)
   - File: core/src/engine/advanced.rs
   - Create advanced/ directory with mod.rs, combos.rs, sequences.rs
   - Move combo detection to combos.rs
