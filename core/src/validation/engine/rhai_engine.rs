@@ -24,10 +24,18 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
     engine.set_max_expr_depths(64, 64);
     engine.set_max_operations(100_000);
 
-    let ops = pending_ops.clone();
+    register_key_mapping_functions(&mut engine, pending_ops);
+    register_layer_functions(&mut engine, pending_ops);
+    register_modifier_functions(&mut engine, pending_ops);
+    register_timing_functions(&mut engine, pending_ops);
+    register_combo_functions(&mut engine, pending_ops);
 
-    // remap(from, to)
-    let ops_remap = Arc::clone(&ops);
+    engine
+}
+
+/// Register key mapping functions: remap, block, pass, tap_hold.
+fn register_key_mapping_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+    let ops_remap = Arc::clone(pending_ops);
     engine.register_fn(
         "remap",
         move |from: &str, to: &str| -> Result<(), Box<EvalAltResult>> {
@@ -43,8 +51,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         },
     );
 
-    // block(key)
-    let ops_block = Arc::clone(&ops);
+    let ops_block = Arc::clone(pending_ops);
     engine.register_fn(
         "block",
         move |key: &str| -> Result<(), Box<EvalAltResult>> {
@@ -56,8 +63,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         },
     );
 
-    // pass(key)
-    let ops_pass = Arc::clone(&ops);
+    let ops_pass = Arc::clone(pending_ops);
     engine.register_fn("pass", move |key: &str| -> Result<(), Box<EvalAltResult>> {
         let key_code = parse_key_or_error(key, "pass")?;
         if let Ok(mut guard) = ops_pass.lock() {
@@ -66,8 +72,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         Ok(())
     });
 
-    // tap_hold(key, tap, hold)
-    let ops_tap_hold = Arc::clone(&ops);
+    let ops_tap_hold = Arc::clone(pending_ops);
     engine.register_fn(
         "tap_hold",
         move |key: &str, tap: &str, hold: &str| -> Result<(), Box<EvalAltResult>> {
@@ -84,9 +89,11 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
             Ok(())
         },
     );
+}
 
-    // define_layer(name)
-    let ops_layer = Arc::clone(&ops);
+/// Register layer functions: define_layer, layer_push, layer_toggle, layer_pop.
+fn register_layer_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+    let ops_layer = Arc::clone(pending_ops);
     engine.register_fn("define_layer", move |name: &str| {
         if let Ok(mut guard) = ops_layer.lock() {
             guard.push(PendingOp::LayerDefine {
@@ -96,8 +103,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // define_layer(name, transparent)
-    let ops_layer_t = Arc::clone(&ops);
+    let ops_layer_t = Arc::clone(pending_ops);
     engine.register_fn("define_layer", move |name: &str, transparent: bool| {
         if let Ok(mut guard) = ops_layer_t.lock() {
             guard.push(PendingOp::LayerDefine {
@@ -107,8 +113,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // layer_push(name)
-    let ops_push = Arc::clone(&ops);
+    let ops_push = Arc::clone(pending_ops);
     engine.register_fn("layer_push", move |name: &str| {
         if let Ok(mut guard) = ops_push.lock() {
             guard.push(PendingOp::LayerPush {
@@ -117,8 +122,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // layer_toggle(name)
-    let ops_toggle = Arc::clone(&ops);
+    let ops_toggle = Arc::clone(pending_ops);
     engine.register_fn("layer_toggle", move |name: &str| {
         if let Ok(mut guard) = ops_toggle.lock() {
             guard.push(PendingOp::LayerToggle {
@@ -127,16 +131,17 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // layer_pop()
-    let ops_pop = Arc::clone(&ops);
+    let ops_pop = Arc::clone(pending_ops);
     engine.register_fn("layer_pop", move || {
         if let Ok(mut guard) = ops_pop.lock() {
             guard.push(PendingOp::LayerPop);
         }
     });
+}
 
-    // define_modifier(name)
-    let ops_mod = Arc::clone(&ops);
+/// Register modifier functions: define_modifier, modifier_activate/deactivate/one_shot.
+fn register_modifier_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+    let ops_mod = Arc::clone(pending_ops);
     engine.register_fn("define_modifier", move |name: &str| {
         if let Ok(mut guard) = ops_mod.lock() {
             guard.push(PendingOp::DefineModifier {
@@ -146,8 +151,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // modifier_activate(name)
-    let ops_act = Arc::clone(&ops);
+    let ops_act = Arc::clone(pending_ops);
     engine.register_fn("modifier_activate", move |name: &str| {
         if let Ok(mut guard) = ops_act.lock() {
             guard.push(PendingOp::ModifierActivate {
@@ -157,8 +161,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // modifier_deactivate(name)
-    let ops_deact = Arc::clone(&ops);
+    let ops_deact = Arc::clone(pending_ops);
     engine.register_fn("modifier_deactivate", move |name: &str| {
         if let Ok(mut guard) = ops_deact.lock() {
             guard.push(PendingOp::ModifierDeactivate {
@@ -168,8 +171,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // modifier_one_shot(name)
-    let ops_os = Arc::clone(&ops);
+    let ops_os = Arc::clone(pending_ops);
     engine.register_fn("modifier_one_shot", move |name: &str| {
         if let Ok(mut guard) = ops_os.lock() {
             guard.push(PendingOp::ModifierOneShot {
@@ -178,33 +180,35 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
             });
         }
     });
+}
 
-    // tap_timeout(ms)
-    let ops_tap_to = Arc::clone(&ops);
+/// Register timing functions: tap_timeout, combo_timeout, hold_delay.
+fn register_timing_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+    let ops_tap_to = Arc::clone(pending_ops);
     engine.register_fn("tap_timeout", move |ms: i64| {
         if let Ok(mut guard) = ops_tap_to.lock() {
             guard.push(PendingOp::SetTiming(TimingUpdate::TapTimeout(ms as u32)));
         }
     });
 
-    // combo_timeout(ms)
-    let ops_combo_to = Arc::clone(&ops);
+    let ops_combo_to = Arc::clone(pending_ops);
     engine.register_fn("combo_timeout", move |ms: i64| {
         if let Ok(mut guard) = ops_combo_to.lock() {
             guard.push(PendingOp::SetTiming(TimingUpdate::ComboTimeout(ms as u32)));
         }
     });
 
-    // hold_delay(ms)
-    let ops_hold = Arc::clone(&ops);
+    let ops_hold = Arc::clone(pending_ops);
     engine.register_fn("hold_delay", move |ms: i64| {
         if let Ok(mut guard) = ops_hold.lock() {
             guard.push(PendingOp::SetTiming(TimingUpdate::HoldDelay(ms as u32)));
         }
     });
+}
 
-    // combo(keys, action)
-    let ops_combo = Arc::clone(&ops);
+/// Register combo and layer_map functions.
+fn register_combo_functions(engine: &mut Engine, pending_ops: &PendingOps) {
+    let ops_combo = Arc::clone(pending_ops);
     engine.register_fn("combo", move |keys: rhai::Array, action: &str| {
         let mut key_codes = Vec::new();
         for key in keys {
@@ -230,8 +234,7 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
         }
     });
 
-    // layer_map(layer, key, action)
-    let ops_map = ops;
+    let ops_map = Arc::clone(pending_ops);
     engine.register_fn("layer_map", move |layer: &str, key: &str, action: &str| {
         let key_code = match KeyCode::from_name(key) {
             Some(k) => k,
@@ -255,8 +258,6 @@ pub fn create_validation_engine(pending_ops: &PendingOps) -> Engine {
             });
         }
     });
-
-    engine
 }
 
 /// Convert a Rhai parse error to a ValidationError.
