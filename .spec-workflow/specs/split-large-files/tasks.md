@@ -175,7 +175,7 @@ Success: html/ directory with 3 modules. mod.rs ~200 lines. Submodules 350-450 l
 After completing:
 1. Mark [-], implement, test, log, mark [x]_
 
-- [ ] 3.3 Split validation/engine.rs (968 lines → 3 modules)
+- [x] 3.3 Split validation/engine.rs (968 lines → 3 modules)
   - File: core/src/validation/engine.rs
   - Create engine/ directory with mod.rs, rules.rs, report.rs
   - Move validation rules to rules.rs
