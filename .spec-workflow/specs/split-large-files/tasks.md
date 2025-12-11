@@ -344,7 +344,7 @@ Success: Clippy results documented. Either all clean, or warnings listed for cle
 After completing:
 1. Mark [-], run clippy, document, log, mark [x]_
 
-- [ ] 5.4 Verify all files under 500-line limit
+- [x] 5.4 Verify all files under 500-line limit
   - Command: `find core/src -name "*.rs" -exec wc -l {} + | awk '$1 > 500'`
   - Ensure no files exceed limit after splits
   - Document compliance
