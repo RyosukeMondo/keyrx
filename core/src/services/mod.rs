@@ -3,10 +3,10 @@ pub mod profile;
 pub mod runtime;
 pub mod traits;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-utils"))]
 pub mod mocks;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-utils"))]
 pub use mocks::{MockDeviceService, MockProfileService, MockRuntimeService};
 
 #[cfg(test)]

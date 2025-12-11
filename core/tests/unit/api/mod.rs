@@ -31,13 +31,6 @@
     clippy::bool_comparison,
     unexpected_cfgs
 )]
-//! Unit tests for KeyRx core functionality.
-//!
-//! This module organizes unit tests by component.
+//! Unit tests for API layer with dependency injection.
 
-pub mod api;
-pub mod engine;
-pub mod metrics;
-pub mod observability;
-pub mod scripting;
-pub mod validation;
+mod device_api_tests;

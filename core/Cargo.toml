@@ -66,6 +66,8 @@ reqwest-tracing = "0.5.8"
 [features]
 # Enable platform drivers by default on their respective platforms
 default = ["windows-driver", "linux-driver", "transition-logging"]
+# Test utilities - enables mock services for integration testing
+test-utils = []
 otel-tracing = [
     "opentelemetry",
     "opentelemetry_sdk",
