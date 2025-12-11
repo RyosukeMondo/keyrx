@@ -1,0 +1,18 @@
+[package]
+name = "keyrx_ffi_runtime"
+version.workspace = true
+edition.workspace = true
+description = "FFI runtime helpers for KeyRx generated FFI code"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+[lints.rust]
+unsafe_code = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
