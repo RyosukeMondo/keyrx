@@ -552,7 +552,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [-] 6.4 Create integration tests with real services
+- [x] 6.4 Create integration tests with real services
   - File: core/tests/integration/api_integration_tests.rs (new file)
   - Write 5-8 integration tests using real services with temporary filesystem
   - Test ApiContext::with_defaults() in realistic scenarios
