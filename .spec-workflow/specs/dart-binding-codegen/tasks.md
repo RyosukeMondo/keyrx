@@ -62,7 +62,7 @@
 
 ### Phase 3: Code Generation
 
-- [ ] 7. Create code generation templates
+- [x] 7. Create code generation templates
   - File: `core/tools/generate_dart_bindings/src/templates.rs`
   - Define string templates for FFI signatures, wrappers, and classes
   - Include placeholder replacement logic
@@ -71,7 +71,7 @@
   - _Requirements: REQ-1, REQ-3_
   - _Prompt: Implement the task for spec dart-binding-codegen, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Code generation expert | Task: Create code templates following requirements REQ-1 and REQ-3, defining Dart code templates with placeholder replacement | Restrictions: Templates must produce valid Dart code, placeholders clearly marked, keep templates readable | Success: Templates generate valid Dart code, placeholders work correctly, code is properly formatted | Instructions: Mark this task as in-progress in tasks.md before starting. After completion, log the implementation with detailed artifacts using the log-implementation tool (include template examples), then mark the task as completed in tasks.md_
 
-- [ ] 8. Implement FFI signature generator
+- [x] 8. Implement FFI signature generator
   - File: `core/tools/generate_dart_bindings/src/bindings_gen.rs`
   - Generate typedef declarations for native and Dart signatures
   - Generate function pointer lookups
