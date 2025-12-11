@@ -69,15 +69,15 @@ pub extern "C" fn keyrx_runtime_get_config() -> *mut c_char {
 /// Add a new runtime slot for a device (or update existing).
 pub unsafe extern "C" fn keyrx_runtime_add_slot(
     device_json: *const c_char,
-    slot_id: *const c_char,
-    priority: u32,
+    slot_json: *const c_char,
+    _priority: u32,
 ) -> *mut c_char {
     std::panic::catch_unwind(|| {
         let device_json = match parse_c_string(device_json, "device_json") {
             Ok(s) => s,
             Err(err) => return ffi_json::<()>(Err(err)),
         };
-        let slot_id = match parse_c_string(slot_id, "slot_id") {
+        let slot_json_str = match parse_c_string(slot_json, "slot_json") {
             Ok(s) => s,
             Err(err) => return ffi_json::<()>(Err(err)),
         };
@@ -85,6 +85,16 @@ pub unsafe extern "C" fn keyrx_runtime_add_slot(
         let device = match parse_device_json(&device_json) {
             Ok(d) => d,
             Err(err) => return ffi_json::<()>(Err(err)),
+        };
+
+        let slot: ProfileSlot = match serde_json::from_str(&slot_json_str) {
+            Ok(s) => s,
+            Err(e) => {
+                return ffi_json::<()>(Err(FfiError::invalid_input(format!(
+                    "Invalid profile slot JSON: {}",
+                    e
+                ))))
+            }
         };
 
         let result: FfiResult<RuntimeConfig> = update_runtime_config(|config| {
@@ -102,26 +112,7 @@ pub unsafe extern "C" fn keyrx_runtime_add_slot(
 
             let slots = &mut config.devices[device_entry_idx].slots;
 
-            // Define new slot
-            // Since we don't receive keymap_id/hardware_profile_id from FFI here (legacy signature?),
-            // we assume defaults or placeholder IDs?
-            // The original signature: add_slot(device, slot_id, priority).
-            // It seems the original implementation might have had a lighter slot definition or assumed valid IDs.
-            // For now, I'll use placeholders as this seems to be managing "active" state mostly?
-            // Wait, this function might be legacy or incorrect for the new `ProfileSlot`.
-            // `ProfileSlot` needs `hardware_profile_id`, `keymap_id`.
-            // I'll populate them with the `slot_id` as a placeholder for now to satisfy the type.
-            let slot = ProfileSlot {
-                id: slot_id.clone(),
-                hardware_profile_id: "default".into(), // Placeholder
-                keymap_id: "default".into(),           // Placeholder
-                active: true,
-                priority,
-            };
-
             if let Some(existing_idx) = slots.iter().position(|s| s.id == slot.id) {
-                // Preserve things? Or overwrite?
-                // Overwrite core fields but maybe keep others in real impl.
                 slots[existing_idx] = slot;
             } else {
                 slots.push(slot);
