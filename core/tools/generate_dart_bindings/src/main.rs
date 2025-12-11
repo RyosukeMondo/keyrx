@@ -13,12 +13,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-
-mod cli;
-mod loader;
-mod types;
-
-use cli::Cli;
+use generate_dart_bindings::cli::Cli;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();

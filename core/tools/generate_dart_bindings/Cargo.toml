@@ -4,6 +4,10 @@ version.workspace = true
 edition.workspace = true
 description = "CLI tool for generating Dart FFI bindings from JSON contracts"
 
+[lib]
+name = "generate_dart_bindings"
+path = "src/lib.rs"
+
 [[bin]]
 name = "generate-dart-bindings"
 path = "src/main.rs"
