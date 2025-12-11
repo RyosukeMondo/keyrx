@@ -18,15 +18,25 @@ pub struct ProfileService {
 
 impl Default for ProfileService {
     fn default() -> Self {
-        Self::new()
+        Self::with_defaults()
     }
 }
 
 impl ProfileService {
-    pub fn new() -> Self {
-        Self {
-            config_manager: ConfigManager::default(),
-        }
+    /// Creates a new ProfileService with the provided ConfigManager.
+    ///
+    /// Use this constructor for dependency injection, allowing tests to
+    /// inject mock or custom ConfigManager implementations.
+    pub fn new(config_manager: ConfigManager) -> Self {
+        Self { config_manager }
+    }
+
+    /// Creates a ProfileService with default dependencies.
+    ///
+    /// This is the convenience constructor for production use, creating
+    /// a ConfigManager with default settings.
+    pub fn with_defaults() -> Self {
+        Self::new(ConfigManager::default())
     }
 }
 

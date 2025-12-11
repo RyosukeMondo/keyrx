@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 // Global services
 lazy_static! {
     static ref DEVICE_SERVICE: DeviceService = DeviceService::with_defaults(None); // TODO: Hook up live registry
-    static ref PROFILE_SERVICE: ProfileService = ProfileService::new();
+    static ref PROFILE_SERVICE: ProfileService = ProfileService::with_defaults();
     static ref RUNTIME_SERVICE: RuntimeService = RuntimeService::new();
 }
 
