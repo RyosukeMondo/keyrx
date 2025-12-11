@@ -22,7 +22,7 @@ Success: Complete audit with all long functions identified. Ranked by size. Loca
 After completing:
 1. Mark [-], run analysis, document results, use log-implementation, mark [x]_
 
-- [ ] 1.2 Measure test coverage and identify gaps
+- [x] 1.2 Measure test coverage and identify gaps
   - Prerequisites: Spec #3 (fix-failing-tests) must be complete
   - Command: `cargo llvm-cov --lib --html`
   - Analyze coverage report and identify modules below targets
