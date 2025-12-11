@@ -299,7 +299,7 @@ After completing implementation:
 3. Use log-implementation tool to record implementation details with comprehensive artifacts field
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 4.3 Convert profile API functions to ApiContext methods (part 2 of 3)
+- [x] 4.3 Convert profile API functions to ApiContext methods (part 2 of 3)
   - File: core/src/api.rs (continue from 4.2)
   - Convert 9 profile-related functions to ApiContext methods: list_virtual_layouts, save_virtual_layout, delete_virtual_layout, list_hardware_profiles, save_hardware_profile, delete_hardware_profile, list_keymaps, save_keymap, delete_keymap
   - Change function signatures to accept `&self`
