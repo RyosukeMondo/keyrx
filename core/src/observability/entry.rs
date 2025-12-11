@@ -3,14 +3,17 @@
 //! This module provides structured log entry types with FFI-compatible
 //! representations for bridging logs to the Flutter UI.
 
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use std::time::SystemTime;
 
 /// Log level enum compatible with tracing levels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Serializes to uppercase strings (TRACE, DEBUG, INFO, WARN, ERROR) for
+/// structured logging compliance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[repr(C)]
 pub enum LogLevel {
     /// Trace-level logging (most verbose).
@@ -23,6 +26,15 @@ pub enum LogLevel {
     Warn = 3,
     /// Error-level logging (least verbose).
     Error = 4,
+}
+
+impl Serialize for LogLevel {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl From<&tracing::Level> for LogLevel {
@@ -51,10 +63,15 @@ impl std::fmt::Display for LogLevel {
 
 /// Structured log entry containing all required fields.
 ///
+/// Fields are serialized with compliant names for structured logging:
+/// - `timestamp`: ISO 8601 format (e.g., "2025-12-12T10:30:45.123Z")
+/// - `level`: Uppercase (TRACE, DEBUG, INFO, WARN, ERROR)
+/// - `service`: Service/module name (serialized from `target`)
+/// - `event`: Event description (serialized from `message`)
+///
 /// # Example
 /// ```rust
 /// use keyrx_core::observability::entry::{LogEntry, LogLevel};
-/// use std::time::SystemTime;
 ///
 /// let entry = LogEntry::new(
 ///     LogLevel::Info,
@@ -67,20 +84,36 @@ impl std::fmt::Display for LogLevel {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
-    /// Unix timestamp in milliseconds when the log was created.
-    pub timestamp: u64,
-    /// Log level (trace, debug, info, warn, error).
+    /// ISO 8601 timestamp when the log was created.
+    #[serde(serialize_with = "serialize_timestamp")]
+    pub timestamp: DateTime<Utc>,
+
+    /// Log level (TRACE, DEBUG, INFO, WARN, ERROR).
     pub level: LogLevel,
-    /// Target module or component that generated the log.
+
+    /// Service/module that generated the log (serializes as "service").
+    #[serde(rename = "service")]
     pub target: String,
-    /// Log message content.
+
+    /// Event description (serializes as "event").
+    #[serde(rename = "event")]
     pub message: String,
+
     /// Optional structured context fields.
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub fields: HashMap<String, String>,
+
     /// Optional span name if logged within a span.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<String>,
+}
+
+/// Serialize DateTime to ISO 8601 string format.
+fn serialize_timestamp<S>(timestamp: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&timestamp.to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
 }
 
 impl LogEntry {
@@ -88,14 +121,32 @@ impl LogEntry {
     ///
     /// # Arguments
     /// * `level` - Log level
+    /// * `target` - Target module/component (serializes as "service")
+    /// * `message` - Log message (serializes as "event")
+    pub fn new(level: LogLevel, target: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            timestamp: Utc::now(),
+            level,
+            target: target.into(),
+            message: message.into(),
+            fields: HashMap::new(),
+            span: None,
+        }
+    }
+
+    /// Create a log entry with a specific timestamp.
+    ///
+    /// # Arguments
+    /// * `timestamp` - The timestamp for this log entry
+    /// * `level` - Log level
     /// * `target` - Target module/component
     /// * `message` - Log message
-    pub fn new(level: LogLevel, target: impl Into<String>, message: impl Into<String>) -> Self {
-        let timestamp = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
-
+    pub fn with_timestamp(
+        timestamp: DateTime<Utc>,
+        level: LogLevel,
+        target: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
         Self {
             timestamp,
             level,
@@ -141,12 +192,17 @@ impl LogEntry {
         let json = self.to_json().unwrap_or_else(|_| String::from("{}"));
 
         Ok(CLogEntry {
-            timestamp: self.timestamp,
+            timestamp: self.timestamp.timestamp_millis() as u64,
             level: self.level,
             target: CString::new(self.target.clone())?.into_raw(),
             message: CString::new(self.message.clone())?.into_raw(),
             json: CString::new(json)?.into_raw(),
         })
+    }
+
+    /// Get the timestamp as Unix milliseconds for FFI compatibility.
+    pub fn timestamp_millis(&self) -> u64 {
+        self.timestamp.timestamp_millis() as u64
     }
 }
 
@@ -203,6 +259,12 @@ pub unsafe extern "C" fn c_log_entry_free(entry: *mut CLogEntry) {
 
 /// Create a log entry from FFI components.
 ///
+/// # Arguments
+/// * `timestamp` - Unix timestamp in milliseconds
+/// * `level` - Log level
+/// * `target` - Target module/component (null-terminated C string)
+/// * `message` - Log message (null-terminated C string)
+///
 /// # Safety
 /// - `target` and `message` must be valid null-terminated C strings
 /// - The returned pointer must be freed with `c_log_entry_free`
@@ -228,8 +290,9 @@ pub unsafe extern "C" fn c_log_entry_create(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    let mut entry = LogEntry::new(level, target_str, message_str);
-    entry.timestamp = timestamp;
+    // Convert timestamp from milliseconds to DateTime<Utc>
+    let datetime = DateTime::from_timestamp_millis(timestamp as i64).unwrap_or_else(Utc::now);
+    let entry = LogEntry::with_timestamp(datetime, level, target_str, message_str);
 
     match entry.to_ffi() {
         Ok(c_entry) => Box::into_raw(Box::new(c_entry)),
@@ -269,7 +332,11 @@ mod tests {
         assert_eq!(entry.message, "Test message");
         assert!(entry.fields.is_empty());
         assert!(entry.span.is_none());
-        assert!(entry.timestamp > 0);
+        // Timestamp should be recent (within last minute)
+        assert!(entry.timestamp_millis() > 0);
+        let now = Utc::now().timestamp_millis() as u64;
+        assert!(entry.timestamp_millis() <= now);
+        assert!(entry.timestamp_millis() >= now - 60000);
     }
 
     #[test]
@@ -297,11 +364,54 @@ mod tests {
 
         let json = entry.to_json().expect("Failed to serialize");
 
-        assert!(json.contains("\"level\":\"Info\""));
-        assert!(json.contains("\"target\":\"test\""));
-        assert!(json.contains("\"message\":\"Test message\""));
+        // Verify compliant field names
+        assert!(
+            json.contains("\"level\":\"INFO\""),
+            "Level should be uppercase"
+        );
+        assert!(
+            json.contains("\"service\":\"test\""),
+            "target should be renamed to service"
+        );
+        assert!(
+            json.contains("\"event\":\"Test message\""),
+            "message should be renamed to event"
+        );
         assert!(json.contains("\"fields\""));
         assert!(json.contains("\"user_id\":\"123\""));
+        // Verify ISO 8601 timestamp format
+        assert!(
+            json.contains("\"timestamp\":\"202"),
+            "Timestamp should be ISO 8601 string"
+        );
+        assert!(json.contains("T"), "Timestamp should have T separator");
+        assert!(json.contains("Z\""), "Timestamp should end with Z");
+    }
+
+    #[test]
+    fn test_log_entry_json_compliance() {
+        // Test full compliance with requirements 3.1-3.7
+        let entry = LogEntry::new(LogLevel::Warn, "keyrx::engine", "device_connected")
+            .with_field("device_id", "usb:1234:5678")
+            .with_field("component", "device_registry");
+
+        let json = entry.to_json().expect("Failed to serialize");
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Valid JSON");
+
+        // Req 3.1: JSON format - verified by successful parse above
+        // Req 3.2: ISO 8601 timestamp
+        let ts = parsed["timestamp"].as_str().expect("timestamp is string");
+        assert!(ts.ends_with('Z'), "Timestamp should be UTC");
+        assert!(ts.contains('T'), "Timestamp should have T separator");
+        // Req 3.3: Level field
+        assert_eq!(parsed["level"], "WARN");
+        // Req 3.4: Service field (was target)
+        assert_eq!(parsed["service"], "keyrx::engine");
+        // Req 3.5: Event field (was message)
+        assert_eq!(parsed["event"], "device_connected");
+        // Req 3.6: Context fields
+        assert_eq!(parsed["fields"]["device_id"], "usb:1234:5678");
+        assert_eq!(parsed["fields"]["component"], "device_registry");
     }
 
     #[test]
@@ -311,7 +421,7 @@ mod tests {
         let c_entry = entry.to_ffi().expect("Failed to convert to FFI");
 
         assert_eq!(c_entry.level, LogLevel::Error);
-        assert_eq!(c_entry.timestamp, entry.timestamp);
+        assert_eq!(c_entry.timestamp, entry.timestamp_millis());
 
         // Verify strings are valid
         unsafe {
