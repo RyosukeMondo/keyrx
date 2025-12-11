@@ -27,7 +27,7 @@ pub mod tracing;
 pub mod transitions;
 mod types;
 
-pub use advanced::AdvancedEngine;
+pub use advanced::{AdvancedEngine, KeyStateView};
 pub use coalescing::{CoalescingConfig, CoalescingEngine, EventBuffer};
 pub use coordinate_translator::{CoordinateTranslator, CoordinateTranslatorError};
 pub use decision::{
