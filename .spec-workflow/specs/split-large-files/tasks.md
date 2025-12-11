@@ -76,7 +76,7 @@ After completing:
 4. Use log-implementation with comprehensive artifacts (files created/modified, functions moved to each module)
 5. Mark [x] when tests pass_
 
-- [ ] 2.2 Split engine/state/mod.rs (1,570 lines → 4 modules)
+- [x] 2.2 Split engine/state/mod.rs (1,570 lines → 4 modules)
   - File: core/src/engine/state/mod.rs
   - Create key_state.rs, layer_state.rs, modifier_state.rs submodules
   - Keep EngineState struct in mod.rs, move state implementations to submodules
