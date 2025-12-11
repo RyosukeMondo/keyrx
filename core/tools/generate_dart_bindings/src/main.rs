@@ -9,11 +9,14 @@
 //!   cargo run --bin generate-dart-bindings --check
 //!   cargo run --bin generate-dart-bindings --verbose
 
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use anyhow::Result;
 use clap::Parser;
 
 mod cli;
 mod loader;
+mod types;
 
 use cli::Cli;
 
