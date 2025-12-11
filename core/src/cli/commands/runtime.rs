@@ -16,28 +16,49 @@ use std::path::PathBuf;
 /// Actions supported by the runtime command.
 #[derive(Debug, Clone)]
 pub enum RuntimeAction {
+    /// List all devices and their profile slots.
     ListDevices,
+    /// Add or update a profile slot for a device.
     AddSlot {
+        /// USB vendor ID of the target device.
         vendor_id: u16,
+        /// USB product ID of the target device.
         product_id: u16,
+        /// Optional serial number to distinguish identical devices.
         serial: Option<String>,
+        /// Unique identifier for this slot.
         slot_id: String,
+        /// Hardware profile to use for this slot.
         hardware_profile_id: String,
+        /// Keymap to use for this slot.
         keymap_id: String,
+        /// Whether this slot is active.
         active: bool,
+        /// Priority for slot ordering (higher = more important).
         priority: Option<u32>,
     },
+    /// Remove a profile slot from a device.
     RemoveSlot {
+        /// USB vendor ID of the target device.
         vendor_id: u16,
+        /// USB product ID of the target device.
         product_id: u16,
+        /// Optional serial number to distinguish identical devices.
         serial: Option<String>,
+        /// ID of the slot to remove.
         slot_id: String,
     },
+    /// Set a slot's active state.
     SetSlotActive {
+        /// USB vendor ID of the target device.
         vendor_id: u16,
+        /// USB product ID of the target device.
         product_id: u16,
+        /// Optional serial number to distinguish identical devices.
         serial: Option<String>,
+        /// ID of the slot to modify.
         slot_id: String,
+        /// New active state for the slot.
         active: bool,
     },
 }
@@ -50,6 +71,9 @@ struct DeviceSelector {
 }
 
 /// Runtime command entry point.
+///
+/// Manages runtime profile slots that associate hardware profiles and keymaps
+/// with specific keyboard devices.
 pub struct RuntimeCommand {
     output: OutputWriter,
     action: RuntimeAction,
@@ -87,6 +111,7 @@ struct RuntimeUpdateOutput {
 }
 
 impl RuntimeCommand {
+    /// Creates a new runtime command with the specified output format and action.
     pub fn new(format: OutputFormat, action: RuntimeAction) -> Self {
         Self {
             output: OutputWriter::new(format),
