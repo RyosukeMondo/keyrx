@@ -34,9 +34,11 @@ mod tests {
     use crate::scripting::docs::registry;
 
     #[test]
+    #[serial_test::serial]
     fn test_macro_generates_doc() {
         // Initialize registry
         registry::initialize();
+        registry::clear(); // Clear any previous state
 
         // Call the generated registration function
         __register_doc_test_greet();
@@ -56,5 +58,7 @@ mod tests {
         assert_eq!(doc.examples.len(), 1);
         assert!(doc.notes.is_some());
         assert_eq!(doc.since, Some("0.1.0".to_string()));
+
+        registry::clear();
     }
 }
