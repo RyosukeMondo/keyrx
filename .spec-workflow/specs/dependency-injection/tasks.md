@@ -936,7 +936,7 @@ After completing implementation:
 3. Use log-implementation tool to record the update
 4. Edit `.spec-workflow/specs/dependency-injection/tasks.md` and change `[-]` to `[x]` when complete_
 
-- [ ] 10.3 Create migration guide for remaining code
+- [x] 10.3 Create migration guide for remaining code
   - File: core/docs/MIGRATION_TO_DI.md (new file)
   - Write guide for migrating remaining global API usage to ApiContext
   - Provide examples for CLI, FFI, and other consumers
