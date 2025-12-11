@@ -1,0 +1,7 @@
+error: unexpected end of input, expected identifier
+ --> tests/ui/fail_missing_domain.rs:7:1
+  |
+7 | #[keyrx_ffi]
+  | ^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)

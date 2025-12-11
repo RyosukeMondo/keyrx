@@ -1,0 +1,5 @@
+error: domain cannot be empty
+ --> tests/ui/fail_empty_domain.rs:7:22
+  |
+7 | #[keyrx_ffi(domain = "")]
+  |                      ^^

@@ -1,0 +1,9 @@
+error: keyrx_ffi cannot be applied to trait implementations
+  --> tests/ui/fail_trait_impl.rs:12:1
+   |
+12 | / impl SomeTrait for TestDomain {
+13 | |     fn do_something() -> Result<String, String> {
+14 | |         Ok("done".to_string())
+15 | |     }
+16 | | }
+   | |_^

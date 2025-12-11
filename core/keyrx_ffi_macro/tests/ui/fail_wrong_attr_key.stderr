@@ -1,0 +1,5 @@
+error: expected `domain`, found `module`
+ --> tests/ui/fail_wrong_attr_key.rs:7:13
+  |
+7 | #[keyrx_ffi(module = "config")]
+  |             ^^^^^^
