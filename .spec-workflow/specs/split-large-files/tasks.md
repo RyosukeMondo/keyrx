@@ -154,7 +154,7 @@ After completing:
 4. Use log-implementation with artifacts
 5. Mark [x] when verified_
 
-- [ ] 3.2 Split scripting/docs/generators/html.rs (1,069 lines → 3 modules)
+- [x] 3.2 Split scripting/docs/generators/html.rs (1,069 lines → 3 modules)
   - File: core/src/scripting/docs/generators/html.rs
   - Create html/ directory with mod.rs, templates.rs, rendering.rs
   - Move HTML template functions to templates.rs
