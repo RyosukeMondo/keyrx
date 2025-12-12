@@ -15,6 +15,8 @@ use crate::drivers::keycodes::evdev_to_keycode;
 
 #[cfg(target_os = "windows")]
 use crate::drivers::keycodes::vk_to_keycode;
+#[cfg(target_os = "windows")]
+use crate::drivers::windows::safety::keyboard_layout::scan_code_to_vk;
 
 /// Errors that can occur during row-col resolution.
 #[derive(Debug, Error)]
@@ -146,11 +148,15 @@ impl RowColResolver {
 
         #[cfg(target_os = "windows")]
         {
-            // On Windows, we need to handle this differently
-            // Note: Windows device profiles store scan codes differently
-            // For now, we'll use a placeholder. This needs proper Windows implementation.
-            // TODO: Implement proper Windows scan_code → VK → KeyCode conversion
-            let key_code = vk_to_keycode(scan_code);
+            // Note: Windows device profiles store hardware scan codes
+            // We first convert scan code to Virtual Key (VK) using system layout
+            let vk = scan_code_to_vk(scan_code);
+            if vk == 0 {
+                return Err(ResolverError::ScanCodeConversionFailed(scan_code));
+            }
+
+            // Then convert VK to internal KeyCode
+            let key_code = vk_to_keycode(vk);
             if matches!(key_code, KeyCode::Unknown(_)) {
                 return Err(ResolverError::ScanCodeConversionFailed(scan_code));
             }
