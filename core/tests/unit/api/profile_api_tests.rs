@@ -42,6 +42,7 @@ fn test_keymap(id: &str) -> Keymap {
             name: "base".to_string(),
             bindings: HashMap::new(),
         }],
+        combos: vec![],
     }
 }
 

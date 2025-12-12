@@ -181,7 +181,12 @@ impl From<MetricsSnapshot> for MetricsSnapshotFfi {
 ///
 /// This bridge connects the metrics collector to Flutter via FFI,
 /// supporting both callback-based real-time updates and polling-based access.
+#[derive(Clone)]
 pub struct MetricsBridge {
+    inner: Arc<MetricsBridgeInner>,
+}
+
+struct MetricsBridgeInner {
     /// The metrics collector to read from
     collector: Arc<dyn MetricsCollector>,
     /// Optional callback for metrics updates
@@ -200,12 +205,14 @@ impl MetricsBridge {
     /// Create a new metrics bridge with the given collector.
     pub fn new(collector: Arc<dyn MetricsCollector>) -> Self {
         Self {
-            collector,
-            callback: RwLock::new(None),
-            threshold_callback: RwLock::new(None),
-            thresholds: RwLock::new(MetricsThresholds::default()),
-            update_interval: RwLock::new(Duration::from_secs(1)),
-            updates_enabled: Mutex::new(false),
+            inner: Arc::new(MetricsBridgeInner {
+                collector,
+                callback: RwLock::new(None),
+                threshold_callback: RwLock::new(None),
+                thresholds: RwLock::new(MetricsThresholds::default()),
+                update_interval: RwLock::new(Duration::from_secs(1)),
+                updates_enabled: Mutex::new(false),
+            }),
         }
     }
 
@@ -213,7 +220,7 @@ impl MetricsBridge {
     ///
     /// The callback will be invoked periodically when background updates are enabled.
     pub fn set_callback(&self, callback: MetricsCallback) {
-        if let Ok(mut guard) = self.callback.write() {
+        if let Ok(mut guard) = self.inner.callback.write() {
             *guard = Some(callback);
         } else {
             tracing::error!("Failed to acquire callback lock");
@@ -222,7 +229,7 @@ impl MetricsBridge {
 
     /// Clear the callback, disabling metrics updates.
     pub fn clear_callback(&self) {
-        if let Ok(mut guard) = self.callback.write() {
+        if let Ok(mut guard) = self.inner.callback.write() {
             *guard = None;
         } else {
             tracing::error!("Failed to acquire callback lock");
@@ -233,7 +240,7 @@ impl MetricsBridge {
     ///
     /// The callback will be invoked when metrics exceed configured thresholds.
     pub fn set_threshold_callback(&self, callback: ThresholdCallback) {
-        if let Ok(mut guard) = self.threshold_callback.write() {
+        if let Ok(mut guard) = self.inner.threshold_callback.write() {
             *guard = Some(callback);
         } else {
             tracing::error!("Failed to acquire threshold callback lock");
@@ -242,7 +249,7 @@ impl MetricsBridge {
 
     /// Clear the threshold callback.
     pub fn clear_threshold_callback(&self) {
-        if let Ok(mut guard) = self.threshold_callback.write() {
+        if let Ok(mut guard) = self.inner.threshold_callback.write() {
             *guard = None;
         } else {
             tracing::error!("Failed to acquire threshold callback lock");
@@ -254,7 +261,7 @@ impl MetricsBridge {
     /// # Arguments
     /// * `thresholds` - New threshold configuration
     pub fn set_thresholds(&self, thresholds: MetricsThresholds) {
-        if let Ok(mut guard) = self.thresholds.write() {
+        if let Ok(mut guard) = self.inner.thresholds.write() {
             *guard = thresholds;
         } else {
             tracing::error!("Failed to acquire thresholds lock");
@@ -263,7 +270,7 @@ impl MetricsBridge {
 
     /// Get current threshold values.
     pub fn get_thresholds(&self) -> MetricsThresholds {
-        if let Ok(guard) = self.thresholds.read() {
+        if let Ok(guard) = self.inner.thresholds.read() {
             guard.clone()
         } else {
             tracing::error!("Failed to acquire thresholds lock");
@@ -276,13 +283,13 @@ impl MetricsBridge {
     /// This is called automatically during metrics updates but can also
     /// be called manually for immediate checking.
     pub fn check_thresholds(&self, snapshot: &MetricsSnapshot) {
-        let thresholds = if let Ok(guard) = self.thresholds.read() {
+        let thresholds = if let Ok(guard) = self.inner.thresholds.read() {
             guard.clone()
         } else {
             return;
         };
 
-        let callback = if let Ok(guard) = self.threshold_callback.read() {
+        let callback = if let Ok(guard) = self.inner.threshold_callback.read() {
             *guard
         } else {
             return;
@@ -376,7 +383,7 @@ impl MetricsBridge {
     ///
     /// This only affects callback-based updates, not polling.
     pub fn set_interval(&self, interval: Duration) {
-        if let Ok(mut guard) = self.update_interval.write() {
+        if let Ok(mut guard) = self.inner.update_interval.write() {
             *guard = interval;
         } else {
             tracing::error!("Failed to acquire interval lock");
@@ -387,36 +394,64 @@ impl MetricsBridge {
     ///
     /// This can be called at any time for polling-based access.
     pub fn snapshot(&self) -> MetricsSnapshot {
-        self.collector.snapshot()
+        self.inner.collector.snapshot()
     }
 
     /// Start background updates (if a callback is set).
     ///
     /// This spawns a background thread that periodically invokes the callback
     /// with updated metrics. The thread will run until `stop_updates` is called.
-    ///
-    /// # Note
-    ///
-    /// This is a placeholder for the actual implementation. In a real system,
-    /// you would spawn a background thread here. For now, we just set a flag.
     pub fn start_updates(&self) {
-        if let Ok(mut guard) = self.updates_enabled.lock() {
-            *guard = true;
-            tracing::debug!("Metrics bridge background updates enabled");
-        } else {
-            tracing::error!("Failed to acquire updates_enabled lock");
+        {
+            if let Ok(mut guard) = self.inner.updates_enabled.lock() {
+                if *guard {
+                    tracing::debug!("Metrics bridge updates already running");
+                    return;
+                }
+                *guard = true;
+                tracing::debug!("Metrics bridge background updates enabled");
+            } else {
+                tracing::error!("Failed to acquire updates_enabled lock");
+                return;
+            }
         }
-        // TODO: Spawn background thread that periodically:
-        // 1. Calls self.snapshot()
-        // 2. Converts to MetricsSnapshotFfi
-        // 3. Invokes callback if set
+
+        let bridge = self.clone();
+        std::thread::spawn(move || {
+            loop {
+                // Check if we should continue
+                {
+                    match bridge.inner.updates_enabled.lock() {
+                        Ok(guard) => {
+                            if !*guard {
+                                break;
+                            }
+                        }
+                        Err(_) => break, // Lock poisoned, stop thread
+                    }
+                }
+
+                // Get interval
+                let interval = match bridge.inner.update_interval.read() {
+                    Ok(guard) => *guard,
+                    Err(_) => Duration::from_secs(1), // Default on error
+                };
+
+                // Sleep
+                std::thread::sleep(interval);
+
+                // Trigger callback
+                bridge.trigger_callback();
+            }
+            tracing::debug!("Metrics bridge background thread stopped");
+        });
     }
 
     /// Stop background updates.
     ///
     /// This stops the background update thread if it's running.
     pub fn stop_updates(&self) {
-        if let Ok(mut guard) = self.updates_enabled.lock() {
+        if let Ok(mut guard) = self.inner.updates_enabled.lock() {
             *guard = false;
             tracing::debug!("Metrics bridge background updates disabled");
         } else {
@@ -435,7 +470,7 @@ impl MetricsBridge {
         self.check_thresholds(&snapshot);
 
         // Then trigger the regular metrics callback if set
-        if let Ok(guard) = self.callback.read() {
+        if let Ok(guard) = self.inner.callback.read() {
             if let Some(callback) = *guard {
                 let ffi_snapshot = MetricsSnapshotFfi::from(snapshot);
                 callback(&ffi_snapshot as *const MetricsSnapshotFfi);
@@ -530,7 +565,7 @@ mod tests {
         let collector: Arc<dyn MetricsCollector> = Arc::new(NoOpMetricsCollector);
         let bridge = MetricsBridge::new(collector);
         bridge.set_interval(Duration::from_millis(500));
-        let guard = bridge.update_interval.read();
+        let guard = bridge.inner.update_interval.read();
         if let Ok(g) = guard {
             assert_eq!(*g, Duration::from_millis(500));
         } else {
@@ -544,21 +579,25 @@ mod tests {
         let bridge = MetricsBridge::new(collector);
 
         {
-            let guard = bridge.updates_enabled.lock();
+            let guard = bridge.inner.updates_enabled.lock();
             if let Ok(g) = guard {
                 assert!(!*g);
             }
         }
         bridge.start_updates();
         {
-            let guard = bridge.updates_enabled.lock();
+            let guard = bridge.inner.updates_enabled.lock();
             if let Ok(g) = guard {
                 assert!(*g);
             }
         }
+        
+        // Let the thread run for a bit
+        std::thread::sleep(Duration::from_millis(100));
+        
         bridge.stop_updates();
         {
-            let guard = bridge.updates_enabled.lock();
+            let guard = bridge.inner.updates_enabled.lock();
             if let Ok(g) = guard {
                 assert!(!*g);
             }
