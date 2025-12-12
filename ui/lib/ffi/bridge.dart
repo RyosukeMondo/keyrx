@@ -13,6 +13,7 @@ import 'bridge_core.dart';
 import 'bridge_device_profile.dart';
 import 'bridge_discovery.dart';
 import 'bridge_engine.dart';
+import 'bridge_migration.dart';
 import 'bridge_session.dart';
 import 'bridge_testing.dart';
 import 'bridge_validation.dart';
@@ -86,6 +87,7 @@ export 'bridge_validation.dart'
 /// - [BridgeValidationMixin]: Script validation and key suggestions
 /// - [DeviceRegistryFFIMixin]: Device registry for revolutionary mapping
 /// - [ProfileRegistryFFIMixin]: Profile registry for revolutionary mapping
+/// - [BridgeMigrationMixin]: Migration from V1 to V2 profiles
 class KeyrxBridge
     with
         BridgeCoreMixin,
@@ -96,7 +98,8 @@ class KeyrxBridge
         BridgeTestingMixin,
         BridgeValidationMixin,
         DeviceRegistryFFIMixin,
-        ProfileRegistryFFIMixin {
+        ProfileRegistryFFIMixin,
+        BridgeMigrationMixin {
   static const int expectedProtocolVersion = 1;
 
   static KeyrxBridge? _currentInstance;

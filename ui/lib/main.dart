@@ -2,6 +2,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import 'pages/debugger.dart';
@@ -45,33 +49,55 @@ class KeyrxApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: MigrationWrapper(
-        onCheckMigrationNeeded: _checkMigrationNeeded,
-        onRunMigration: _runMigration,
-        child: const HomePage(),
+      home: Builder(
+        builder:
+            (context) => MigrationWrapper(
+              onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
+              onRunMigration: () => _runMigration(context),
+              child: const HomePage(),
+            ),
       ),
     );
   }
 
   /// Check if migration is needed by checking for old profiles directory.
-  ///
-  /// For now, this is a stub that always returns false.
-  /// In a full implementation, this would call the FFI to check
-  /// if ~/.config/keyrx/device_profiles exists and contains JSON files.
-  Future<bool> _checkMigrationNeeded() async {
-    // TODO: Implement FFI call to keyrx_migration_check_needed
-    // For now, return false to avoid showing migration prompt
-    return false;
+  Future<bool> _checkMigrationNeeded(BuildContext context) async {
+    final registry = context.read<ServiceRegistry>();
+    final oldPath = _resolveOldProfilesPath();
+
+    if (!await Directory(oldPath).exists()) {
+      return false;
+    }
+
+    return registry.bridge.checkMigrationNeeded(oldPath);
   }
 
   /// Run the migration process.
-  ///
-  /// For now, this is a stub that returns an empty report.
-  /// In a full implementation, this would call the FFI to run the migration.
-  Future<MigrationReport> _runMigration() async {
-    // TODO: Implement FFI call to keyrx_migration_run
-    // For now, return a success report
-    return MigrationReport(totalCount: 0, migratedCount: 0, failedCount: 0);
+  Future<MigrationReport> _runMigration(BuildContext context) async {
+    final registry = context.read<ServiceRegistry>();
+    final oldPath = _resolveOldProfilesPath();
+    final newPath = registry.storagePathResolver.resolveProfilesPath();
+
+    return registry.bridge.runMigration(oldPath, newPath);
+  }
+
+  String _resolveOldProfilesPath() {
+    // Legacy path: ~/.config/keyrx/device_profiles
+    final env = Platform.environment;
+    final home =
+        Platform.isWindows
+            ? env['USERPROFILE'] ?? env['HOME']
+            : env['HOME'] ?? env['USERPROFILE'];
+
+    if (home == null || home.isEmpty) {
+      // Should not happen, but safe fallback
+      return '';
+    }
+
+    // This is hardcoded to the legacy location on Linux/Mac.
+    // On Windows, the legacy location might differ, but assuming XDG-like structure for now
+    // based on project history. Adjust if Windows legacy path was different.
+    return p.join(home, '.config', 'keyrx', 'device_profiles');
   }
 }
 
