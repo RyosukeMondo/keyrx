@@ -303,12 +303,23 @@ fn parse_action_binding(input: &str) -> Result<ActionBinding, String> {
     if let Some(value) = normalized.strip_prefix("layer-toggle:") {
         return Ok(ActionBinding::LayerToggle(value.trim().to_string()));
     }
+    if let Some(value) = normalized.strip_prefix("tap-hold:") {
+        // Format: tap-hold:tap_key,hold_layer (comma separated)
+        let parts: Vec<&str> = value.split(',').collect();
+        if parts.len() != 2 {
+            return Err("Tap-hold format is tap-hold:tap_key,hold_layer".to_string());
+        }
+        return Ok(ActionBinding::TapHold(
+            parts[0].trim().to_string(),
+            parts[1].trim().to_string(),
+        ));
+    }
     if normalized.eq_ignore_ascii_case("transparent") {
         return Ok(ActionBinding::Transparent);
     }
 
     Err(
-        "Invalid action; use key:<code>, macro:<text>, layer-toggle:<layer>, or transparent"
+        "Invalid action; use key:<code>, macro:<text>, layer-toggle:<layer>, tap-hold:<tap>,<hold>, or transparent"
             .to_string(),
     )
 }

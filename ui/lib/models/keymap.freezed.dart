@@ -15,6 +15,183 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
+Combo _$ComboFromJson(Map<String, dynamic> json) {
+  return _Combo.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Combo {
+  List<String> get keys => throw _privateConstructorUsedError;
+  String get output => throw _privateConstructorUsedError;
+
+  /// Serializes this Combo to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of Combo
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ComboCopyWith<Combo> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ComboCopyWith<$Res> {
+  factory $ComboCopyWith(Combo value, $Res Function(Combo) then) =
+      _$ComboCopyWithImpl<$Res, Combo>;
+  @useResult
+  $Res call({List<String> keys, String output});
+}
+
+/// @nodoc
+class _$ComboCopyWithImpl<$Res, $Val extends Combo>
+    implements $ComboCopyWith<$Res> {
+  _$ComboCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of Combo
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? keys = null, Object? output = null}) {
+    return _then(
+      _value.copyWith(
+        keys:
+            null == keys
+                ? _value.keys
+                : keys // ignore: cast_nullable_to_non_nullable
+                    as List<String>,
+        output:
+            null == output
+                ? _value.output
+                : output // ignore: cast_nullable_to_non_nullable
+                    as String,
+      ) as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ComboImplCopyWith<$Res> implements $ComboCopyWith<$Res> {
+  factory _$$ComboImplCopyWith(
+    _$ComboImpl value,
+    $Res Function(_$ComboImpl) then,
+  ) = __$$ComboImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({List<String> keys, String output});
+}
+
+/// @nodoc
+class __$$ComboImplCopyWithImpl<$Res>
+    extends _$ComboCopyWithImpl<$Res, _$ComboImpl>
+    implements _$$ComboImplCopyWith<$Res> {
+  __$$ComboImplCopyWithImpl(
+    _$ComboImpl _value,
+    $Res Function(_$ComboImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of Combo
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? keys = null, Object? output = null}) {
+    return _then(
+      _$ComboImpl(
+        keys:
+            null == keys
+                ? _value._keys
+                : keys // ignore: cast_nullable_to_non_nullable
+                    as List<String>,
+        output:
+            null == output
+                ? _value.output
+                : output // ignore: cast_nullable_to_non_nullable
+                    as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ComboImpl implements _Combo {
+  const _$ComboImpl({required final List<String> keys, required this.output})
+    : _keys = keys;
+
+  factory _$ComboImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ComboImplFromJson(json);
+
+  final List<String> _keys;
+  @override
+  List<String> get keys {
+    if (_keys is EqualUnmodifiableListView) return _keys;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_keys);
+  }
+
+  @override
+  final String output;
+
+  @override
+  String toString() {
+    return 'Combo(keys: $keys, output: $output)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ComboImpl &&
+            const DeepCollectionEquality().equals(other._keys, _keys) &&
+            (identical(other.output, output) || other.output == output));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_keys),
+    output,
+  );
+
+  /// Create a copy of Combo
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ComboImplCopyWith<_$ComboImpl> get copyWith =>
+      __$$ComboImplCopyWithImpl<_$ComboImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ComboImplToJson(this);
+  }
+}
+
+abstract class _Combo implements Combo {
+  const factory _Combo({
+    required final List<String> keys,
+    required final String output,
+  }) = _$ComboImpl;
+
+  factory _Combo.fromJson(Map<String, dynamic> json) = _$ComboImpl.fromJson;
+
+  @override
+  List<String> get keys;
+  @override
+  String get output;
+
+  /// Create a copy of Combo
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ComboImplCopyWith<_$ComboImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 KeymapLayer _$KeymapLayerFromJson(Map<String, dynamic> json) {
   return _KeymapLayer.fromJson(json);
 }
@@ -61,16 +238,17 @@ class _$KeymapLayerCopyWithImpl<$Res, $Val extends KeymapLayer>
   $Res call({Object? name = null, Object? bindings = null}) {
     return _then(
       _value.copyWith(
-            name: null == name
+        name:
+            null == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            bindings: null == bindings
+                    as String,
+        bindings:
+            null == bindings
                 ? _value.bindings
                 : bindings // ignore: cast_nullable_to_non_nullable
-                      as Map<String, ActionBinding>,
-          )
-          as $Val,
+                    as Map<String, ActionBinding>,
+      ) as $Val,
     );
   }
 }
@@ -103,14 +281,16 @@ class __$$KeymapLayerImplCopyWithImpl<$Res>
   $Res call({Object? name = null, Object? bindings = null}) {
     return _then(
       _$KeymapLayerImpl(
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        bindings: null == bindings
-            ? _value._bindings
-            : bindings // ignore: cast_nullable_to_non_nullable
-                  as Map<String, ActionBinding>,
+        name:
+            null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                    as String,
+        bindings:
+            null == bindings
+                ? _value._bindings
+                : bindings // ignore: cast_nullable_to_non_nullable
+                    as Map<String, ActionBinding>,
       ),
     );
   }
@@ -210,6 +390,7 @@ mixin _$Keymap {
   @JsonKey(name: 'virtual_layout_id')
   String get virtualLayoutId => throw _privateConstructorUsedError;
   List<KeymapLayer> get layers => throw _privateConstructorUsedError;
+  List<Combo> get combos => throw _privateConstructorUsedError;
 
   /// Serializes this Keymap to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -230,6 +411,7 @@ abstract class $KeymapCopyWith<$Res> {
     String name,
     @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     List<KeymapLayer> layers,
+    List<Combo> combos,
   });
 }
 
@@ -252,27 +434,36 @@ class _$KeymapCopyWithImpl<$Res, $Val extends Keymap>
     Object? name = null,
     Object? virtualLayoutId = null,
     Object? layers = null,
+    Object? combos = null,
   }) {
     return _then(
       _value.copyWith(
-            id: null == id
+        id:
+            null == id
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
+                    as String,
+        name:
+            null == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            virtualLayoutId: null == virtualLayoutId
+                    as String,
+        virtualLayoutId:
+            null == virtualLayoutId
                 ? _value.virtualLayoutId
                 : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            layers: null == layers
+                    as String,
+        layers:
+            null == layers
                 ? _value.layers
                 : layers // ignore: cast_nullable_to_non_nullable
-                      as List<KeymapLayer>,
-          )
-          as $Val,
+                    as List<KeymapLayer>,
+        combos:
+            null == combos
+                ? _value.combos
+                : combos // ignore: cast_nullable_to_non_nullable
+                    as List<Combo>,
+      ) as $Val,
     );
   }
 }
@@ -290,6 +481,7 @@ abstract class _$$KeymapImplCopyWith<$Res> implements $KeymapCopyWith<$Res> {
     String name,
     @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     List<KeymapLayer> layers,
+    List<Combo> combos,
   });
 }
 
@@ -311,25 +503,35 @@ class __$$KeymapImplCopyWithImpl<$Res>
     Object? name = null,
     Object? virtualLayoutId = null,
     Object? layers = null,
+    Object? combos = null,
   }) {
     return _then(
       _$KeymapImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        virtualLayoutId: null == virtualLayoutId
-            ? _value.virtualLayoutId
-            : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        layers: null == layers
-            ? _value._layers
-            : layers // ignore: cast_nullable_to_non_nullable
-                  as List<KeymapLayer>,
+        id:
+            null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                    as String,
+        name:
+            null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                    as String,
+        virtualLayoutId:
+            null == virtualLayoutId
+                ? _value.virtualLayoutId
+                : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                    as String,
+        layers:
+            null == layers
+                ? _value._layers
+                : layers // ignore: cast_nullable_to_non_nullable
+                    as List<KeymapLayer>,
+        combos:
+            null == combos
+                ? _value._combos
+                : combos // ignore: cast_nullable_to_non_nullable
+                    as List<Combo>,
       ),
     );
   }
@@ -343,7 +545,9 @@ class _$KeymapImpl extends _Keymap {
     required this.name,
     @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
     final List<KeymapLayer> layers = const <KeymapLayer>[],
+    final List<Combo> combos = const <Combo>[],
   }) : _layers = layers,
+       _combos = combos,
        super._();
 
   factory _$KeymapImpl.fromJson(Map<String, dynamic> json) =>
@@ -365,9 +569,18 @@ class _$KeymapImpl extends _Keymap {
     return EqualUnmodifiableListView(_layers);
   }
 
+  final List<Combo> _combos;
+  @override
+  @JsonKey()
+  List<Combo> get combos {
+    if (_combos is EqualUnmodifiableListView) return _combos;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_combos);
+  }
+
   @override
   String toString() {
-    return 'Keymap(id: $id, name: $name, virtualLayoutId: $virtualLayoutId, layers: $layers)';
+    return 'Keymap(id: $id, name: $name, virtualLayoutId: $virtualLayoutId, layers: $layers, combos: $combos)';
   }
 
   @override
@@ -379,7 +592,8 @@ class _$KeymapImpl extends _Keymap {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.virtualLayoutId, virtualLayoutId) ||
                 other.virtualLayoutId == virtualLayoutId) &&
-            const DeepCollectionEquality().equals(other._layers, _layers));
+            const DeepCollectionEquality().equals(other._layers, _layers) &&
+            const DeepCollectionEquality().equals(other._combos, _combos));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -390,6 +604,7 @@ class _$KeymapImpl extends _Keymap {
     name,
     virtualLayoutId,
     const DeepCollectionEquality().hash(_layers),
+    const DeepCollectionEquality().hash(_combos),
   );
 
   /// Create a copy of Keymap
@@ -412,6 +627,7 @@ abstract class _Keymap extends Keymap {
     required final String name,
     @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
     final List<KeymapLayer> layers,
+    final List<Combo> combos,
   }) = _$KeymapImpl;
   const _Keymap._() : super._();
 
@@ -426,6 +642,8 @@ abstract class _Keymap extends Keymap {
   String get virtualLayoutId;
   @override
   List<KeymapLayer> get layers;
+  @override
+  List<Combo> get combos;
 
   /// Create a copy of Keymap
   /// with the given fields replaced by the non-null parameter values.

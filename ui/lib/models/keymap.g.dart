@@ -6,13 +6,20 @@ part of 'keymap.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_$ComboImpl _$$ComboImplFromJson(Map<String, dynamic> json) => _$ComboImpl(
+  keys: (json['keys'] as List<dynamic>).map((e) => e as String).toList(),
+  output: json['output'] as String,
+);
+
+Map<String, dynamic> _$$ComboImplToJson(_$ComboImpl instance) =>
+    <String, dynamic>{'keys': instance.keys, 'output': instance.output};
+
 _$KeymapLayerImpl _$$KeymapLayerImplFromJson(Map<String, dynamic> json) =>
     _$KeymapLayerImpl(
       name: json['name'] as String,
       bindings:
           (json['bindings'] as Map<String, dynamic>?)?.map(
-            (k, e) =>
-                MapEntry(k, ActionBinding.fromJson(e as Map<String, dynamic>)),
+            (k, e) => MapEntry(k, ActionBinding.fromJson(e as Map<String, dynamic>)),
           ) ??
           const <VirtualKeyId, ActionBinding>{},
     );
@@ -29,6 +36,11 @@ _$KeymapImpl _$$KeymapImplFromJson(Map<String, dynamic> json) => _$KeymapImpl(
           ?.map((e) => KeymapLayer.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <KeymapLayer>[],
+  combos:
+      (json['combos'] as List<dynamic>?)
+          ?.map((e) => Combo.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Combo>[],
 );
 
 Map<String, dynamic> _$$KeymapImplToJson(_$KeymapImpl instance) =>
@@ -37,4 +49,5 @@ Map<String, dynamic> _$$KeymapImplToJson(_$KeymapImpl instance) =>
       'name': instance.name,
       'virtual_layout_id': instance.virtualLayoutId,
       'layers': instance.layers,
+      'combos': instance.combos,
     };

@@ -39,6 +39,17 @@ Map<String, dynamic> _$$ActionBindingLayerToggleImplToJson(
   _$ActionBindingLayerToggleImpl instance,
 ) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
 
+_$ActionBindingTapHoldImpl _$$ActionBindingTapHoldImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingTapHoldImpl(
+  value: (json['value'] as List<dynamic>).map((e) => e as String).toList(),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingTapHoldImplToJson(
+  _$ActionBindingTapHoldImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
 _$ActionBindingTransparentImpl _$$ActionBindingTransparentImplFromJson(
   Map<String, dynamic> json,
 ) => _$ActionBindingTransparentImpl($type: json['type'] as String?);

@@ -23,6 +23,8 @@ ActionBinding _$ActionBindingFromJson(Map<String, dynamic> json) {
       return ActionBindingMacro.fromJson(json);
     case 'layer_toggle':
       return ActionBindingLayerToggle.fromJson(json);
+    case 'tap_hold':
+      return ActionBindingTapHold.fromJson(json);
     case 'transparent':
       return ActionBindingTransparent.fromJson(json);
 
@@ -43,6 +45,8 @@ mixin _$ActionBinding {
     required TResult Function(@JsonKey(name: 'value') String value) standardKey,
     required TResult Function(@JsonKey(name: 'value') String value) macro,
     required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
     required TResult Function() transparent,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -50,6 +54,7 @@ mixin _$ActionBinding {
     TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult? Function(@JsonKey(name: 'value') String value)? macro,
     TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult? Function()? transparent,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -57,6 +62,7 @@ mixin _$ActionBinding {
     TResult Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult Function(@JsonKey(name: 'value') String value)? macro,
     TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult Function()? transparent,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
@@ -65,6 +71,7 @@ mixin _$ActionBinding {
     required TResult Function(ActionBindingStandardKey value) standardKey,
     required TResult Function(ActionBindingMacro value) macro,
     required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
     required TResult Function(ActionBindingTransparent value) transparent,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -72,6 +79,7 @@ mixin _$ActionBinding {
     TResult? Function(ActionBindingStandardKey value)? standardKey,
     TResult? Function(ActionBindingMacro value)? macro,
     TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
     TResult? Function(ActionBindingTransparent value)? transparent,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -79,6 +87,7 @@ mixin _$ActionBinding {
     TResult Function(ActionBindingStandardKey value)? standardKey,
     TResult Function(ActionBindingMacro value)? macro,
     TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
     TResult Function(ActionBindingTransparent value)? transparent,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
@@ -135,10 +144,11 @@ class __$$ActionBindingStandardKeyImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingStandardKeyImpl(
-        value: null == value
-            ? _value.value
-            : value // ignore: cast_nullable_to_non_nullable
-                  as String,
+        value:
+            null == value
+                ? _value.value
+                : value // ignore: cast_nullable_to_non_nullable
+                    as String,
       ),
     );
   }
@@ -196,6 +206,8 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     required TResult Function(@JsonKey(name: 'value') String value) standardKey,
     required TResult Function(@JsonKey(name: 'value') String value) macro,
     required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
     required TResult Function() transparent,
   }) {
     return standardKey(value);
@@ -207,6 +219,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult? Function(@JsonKey(name: 'value') String value)? macro,
     TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult? Function()? transparent,
   }) {
     return standardKey?.call(value);
@@ -218,6 +231,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     TResult Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult Function(@JsonKey(name: 'value') String value)? macro,
     TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult Function()? transparent,
     required TResult orElse(),
   }) {
@@ -233,6 +247,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     required TResult Function(ActionBindingStandardKey value) standardKey,
     required TResult Function(ActionBindingMacro value) macro,
     required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
     required TResult Function(ActionBindingTransparent value) transparent,
   }) {
     return standardKey(this);
@@ -244,6 +259,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     TResult? Function(ActionBindingStandardKey value)? standardKey,
     TResult? Function(ActionBindingMacro value)? macro,
     TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
     TResult? Function(ActionBindingTransparent value)? transparent,
   }) {
     return standardKey?.call(this);
@@ -255,6 +271,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
     TResult Function(ActionBindingStandardKey value)? standardKey,
     TResult Function(ActionBindingMacro value)? macro,
     TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
     TResult Function(ActionBindingTransparent value)? transparent,
     required TResult orElse(),
   }) {
@@ -314,10 +331,11 @@ class __$$ActionBindingMacroImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingMacroImpl(
-        value: null == value
-            ? _value.value
-            : value // ignore: cast_nullable_to_non_nullable
-                  as String,
+        value:
+            null == value
+                ? _value.value
+                : value // ignore: cast_nullable_to_non_nullable
+                    as String,
       ),
     );
   }
@@ -375,6 +393,8 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     required TResult Function(@JsonKey(name: 'value') String value) standardKey,
     required TResult Function(@JsonKey(name: 'value') String value) macro,
     required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
     required TResult Function() transparent,
   }) {
     return macro(value);
@@ -386,6 +406,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult? Function(@JsonKey(name: 'value') String value)? macro,
     TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult? Function()? transparent,
   }) {
     return macro?.call(value);
@@ -397,6 +418,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     TResult Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult Function(@JsonKey(name: 'value') String value)? macro,
     TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult Function()? transparent,
     required TResult orElse(),
   }) {
@@ -412,6 +434,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     required TResult Function(ActionBindingStandardKey value) standardKey,
     required TResult Function(ActionBindingMacro value) macro,
     required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
     required TResult Function(ActionBindingTransparent value) transparent,
   }) {
     return macro(this);
@@ -423,6 +446,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     TResult? Function(ActionBindingStandardKey value)? standardKey,
     TResult? Function(ActionBindingMacro value)? macro,
     TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
     TResult? Function(ActionBindingTransparent value)? transparent,
   }) {
     return macro?.call(this);
@@ -434,6 +458,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
     TResult Function(ActionBindingStandardKey value)? standardKey,
     TResult Function(ActionBindingMacro value)? macro,
     TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
     TResult Function(ActionBindingTransparent value)? transparent,
     required TResult orElse(),
   }) {
@@ -493,10 +518,11 @@ class __$$ActionBindingLayerToggleImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingLayerToggleImpl(
-        value: null == value
-            ? _value.value
-            : value // ignore: cast_nullable_to_non_nullable
-                  as String,
+        value:
+            null == value
+                ? _value.value
+                : value // ignore: cast_nullable_to_non_nullable
+                    as String,
       ),
     );
   }
@@ -554,6 +580,8 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     required TResult Function(@JsonKey(name: 'value') String value) standardKey,
     required TResult Function(@JsonKey(name: 'value') String value) macro,
     required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
     required TResult Function() transparent,
   }) {
     return layerToggle(value);
@@ -565,6 +593,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult? Function(@JsonKey(name: 'value') String value)? macro,
     TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult? Function()? transparent,
   }) {
     return layerToggle?.call(value);
@@ -576,6 +605,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     TResult Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult Function(@JsonKey(name: 'value') String value)? macro,
     TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult Function()? transparent,
     required TResult orElse(),
   }) {
@@ -591,6 +621,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     required TResult Function(ActionBindingStandardKey value) standardKey,
     required TResult Function(ActionBindingMacro value) macro,
     required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
     required TResult Function(ActionBindingTransparent value) transparent,
   }) {
     return layerToggle(this);
@@ -602,6 +633,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     TResult? Function(ActionBindingStandardKey value)? standardKey,
     TResult? Function(ActionBindingMacro value)? macro,
     TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
     TResult? Function(ActionBindingTransparent value)? transparent,
   }) {
     return layerToggle?.call(this);
@@ -613,6 +645,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
     TResult Function(ActionBindingStandardKey value)? standardKey,
     TResult Function(ActionBindingMacro value)? macro,
     TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
     TResult Function(ActionBindingTransparent value)? transparent,
     required TResult orElse(),
   }) {
@@ -643,6 +676,201 @@ abstract class ActionBindingLayerToggle implements ActionBinding {
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ActionBindingLayerToggleImplCopyWith<_$ActionBindingLayerToggleImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$ActionBindingTapHoldImplCopyWith<$Res> {
+  factory _$$ActionBindingTapHoldImplCopyWith(
+    _$ActionBindingTapHoldImpl value,
+    $Res Function(_$ActionBindingTapHoldImpl) then,
+  ) = __$$ActionBindingTapHoldImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({@JsonKey(name: 'value') List<String> value});
+}
+
+/// @nodoc
+class __$$ActionBindingTapHoldImplCopyWithImpl<$Res>
+    extends _$ActionBindingCopyWithImpl<$Res, _$ActionBindingTapHoldImpl>
+    implements _$$ActionBindingTapHoldImplCopyWith<$Res> {
+  __$$ActionBindingTapHoldImplCopyWithImpl(
+    _$ActionBindingTapHoldImpl _value,
+    $Res Function(_$ActionBindingTapHoldImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ActionBinding
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? value = null}) {
+    return _then(
+      _$ActionBindingTapHoldImpl(
+        value:
+            null == value
+                ? _value._value
+                : value // ignore: cast_nullable_to_non_nullable
+                    as List<String>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ActionBindingTapHoldImpl implements ActionBindingTapHold {
+  const _$ActionBindingTapHoldImpl({
+    @JsonKey(name: 'value') required final List<String> value,
+    final String? $type,
+  }) : _value = value,
+       $type = $type ?? 'tap_hold';
+
+  factory _$ActionBindingTapHoldImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ActionBindingTapHoldImplFromJson(json);
+
+  final List<String> _value;
+  @override
+  @JsonKey(name: 'value')
+  List<String> get value {
+    if (_value is EqualUnmodifiableListView) return _value;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_value);
+  }
+
+  @JsonKey(name: 'type')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'ActionBinding.tapHold(value: $value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ActionBindingTapHoldImpl &&
+            const DeepCollectionEquality().equals(other._value, _value));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(_value));
+
+  /// Create a copy of ActionBinding
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ActionBindingTapHoldImplCopyWith<_$ActionBindingTapHoldImpl>
+  get copyWith =>
+      __$$ActionBindingTapHoldImplCopyWithImpl<_$ActionBindingTapHoldImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(@JsonKey(name: 'value') String value) standardKey,
+    required TResult Function(@JsonKey(name: 'value') String value) macro,
+    required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
+    required TResult Function() transparent,
+  }) {
+    return tapHold(value);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
+    TResult? Function(@JsonKey(name: 'value') String value)? macro,
+    TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
+    TResult? Function()? transparent,
+  }) {
+    return tapHold?.call(value);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(@JsonKey(name: 'value') String value)? standardKey,
+    TResult Function(@JsonKey(name: 'value') String value)? macro,
+    TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
+    TResult Function()? transparent,
+    required TResult orElse(),
+  }) {
+    if (tapHold != null) {
+      return tapHold(value);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(ActionBindingStandardKey value) standardKey,
+    required TResult Function(ActionBindingMacro value) macro,
+    required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
+    required TResult Function(ActionBindingTransparent value) transparent,
+  }) {
+    return tapHold(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(ActionBindingStandardKey value)? standardKey,
+    TResult? Function(ActionBindingMacro value)? macro,
+    TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
+    TResult? Function(ActionBindingTransparent value)? transparent,
+  }) {
+    return tapHold?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(ActionBindingStandardKey value)? standardKey,
+    TResult Function(ActionBindingMacro value)? macro,
+    TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
+    TResult Function(ActionBindingTransparent value)? transparent,
+    required TResult orElse(),
+  }) {
+    if (tapHold != null) {
+      return tapHold(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ActionBindingTapHoldImplToJson(this);
+  }
+}
+
+abstract class ActionBindingTapHold implements ActionBinding {
+  const factory ActionBindingTapHold({
+    @JsonKey(name: 'value') required final List<String> value,
+  }) = _$ActionBindingTapHoldImpl;
+
+  factory ActionBindingTapHold.fromJson(Map<String, dynamic> json) =
+      _$ActionBindingTapHoldImpl.fromJson;
+
+  @JsonKey(name: 'value')
+  List<String> get value;
+
+  /// Create a copy of ActionBinding
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ActionBindingTapHoldImplCopyWith<_$ActionBindingTapHoldImpl>
   get copyWith => throw _privateConstructorUsedError;
 }
 
@@ -701,6 +929,8 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     required TResult Function(@JsonKey(name: 'value') String value) standardKey,
     required TResult Function(@JsonKey(name: 'value') String value) macro,
     required TResult Function(@JsonKey(name: 'value') String value) layerToggle,
+    required TResult Function(@JsonKey(name: 'value') List<String> value)
+    tapHold,
     required TResult Function() transparent,
   }) {
     return transparent();
@@ -712,6 +942,7 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     TResult? Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult? Function(@JsonKey(name: 'value') String value)? macro,
     TResult? Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult? Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult? Function()? transparent,
   }) {
     return transparent?.call();
@@ -723,6 +954,7 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     TResult Function(@JsonKey(name: 'value') String value)? standardKey,
     TResult Function(@JsonKey(name: 'value') String value)? macro,
     TResult Function(@JsonKey(name: 'value') String value)? layerToggle,
+    TResult Function(@JsonKey(name: 'value') List<String> value)? tapHold,
     TResult Function()? transparent,
     required TResult orElse(),
   }) {
@@ -738,6 +970,7 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     required TResult Function(ActionBindingStandardKey value) standardKey,
     required TResult Function(ActionBindingMacro value) macro,
     required TResult Function(ActionBindingLayerToggle value) layerToggle,
+    required TResult Function(ActionBindingTapHold value) tapHold,
     required TResult Function(ActionBindingTransparent value) transparent,
   }) {
     return transparent(this);
@@ -749,6 +982,7 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     TResult? Function(ActionBindingStandardKey value)? standardKey,
     TResult? Function(ActionBindingMacro value)? macro,
     TResult? Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult? Function(ActionBindingTapHold value)? tapHold,
     TResult? Function(ActionBindingTransparent value)? transparent,
   }) {
     return transparent?.call(this);
@@ -760,6 +994,7 @@ class _$ActionBindingTransparentImpl implements ActionBindingTransparent {
     TResult Function(ActionBindingStandardKey value)? standardKey,
     TResult Function(ActionBindingMacro value)? macro,
     TResult Function(ActionBindingLayerToggle value)? layerToggle,
+    TResult Function(ActionBindingTapHold value)? tapHold,
     TResult Function(ActionBindingTransparent value)? transparent,
     required TResult orElse(),
   }) {

@@ -127,16 +127,18 @@ impl<'a> GenerationPipeline<'a> {
         let signatures = generate_ffi_signatures(contract)
             .map_err(|e| anyhow::anyhow!("Failed to generate FFI signatures: {e}"))?;
 
-        output.push(format!(
+        output.push(
             "// ============================================================================="
-        ));
+                .to_string(),
+        );
         output.push(format!(
             "// {} Domain Bindings",
             to_pascal_case(&contract.domain)
         ));
-        output.push(format!(
+        output.push(
             "// ============================================================================="
-        ));
+                .to_string(),
+        );
         output.push(String::new());
 
         // Typedefs must be at top level (not inside class)

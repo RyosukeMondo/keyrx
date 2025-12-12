@@ -47,6 +47,7 @@ fn test_keymap(id: &str) -> crate::config::models::Keymap {
         name: format!("Keymap {}", id),
         virtual_layout_id: "layout-1".to_string(),
         layers: vec![],
+        combos: vec![],
     }
 }
 

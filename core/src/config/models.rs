@@ -111,8 +111,19 @@ pub enum ActionBinding {
     Macro(String),
     /// Toggles a named layer on/off.
     LayerToggle(String),
+    /// Tap-hold binding: tap action, hold action.
+    TapHold(String, String),
     /// Passes through to the underlying layer.
     Transparent,
+}
+
+/// A combo definition (multiple keys pressed together).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Combo {
+    /// Keys involved in the combo.
+    pub keys: Vec<VirtualKeyId>,
+    /// Output action when combo is triggered.
+    pub output: String,
 }
 
 /// A single logical layer of a keymap (virtual key -> action).
@@ -137,6 +148,9 @@ pub struct Keymap {
     /// Layers in this keymap (first is typically base).
     #[serde(default)]
     pub layers: Vec<KeymapLayer>,
+    /// Combo definitions.
+    #[serde(default)]
+    pub combos: Vec<Combo>,
 }
 
 /// Runtime assignment for a specific device: which wiring + keymap to apply.
@@ -228,5 +242,19 @@ mod tests {
         let value: Value = serde_json::to_value(&binding).expect("to value");
         assert_eq!(value["type"], "layer_toggle");
         assert_eq!(value["value"], "fn");
+    }
+
+    #[test]
+    fn tap_hold_binding_serialization() {
+        let binding = ActionBinding::TapHold("KeyA".into(), "Nav".into());
+        // For tuples in enums with content="value", it typically serializes as an array if not named fields.
+        // However, serde default for tuple variants with `content` might be tricky.
+        // Let's verify what we get.
+        let value: Value = serde_json::to_value(&binding).expect("to value");
+        assert_eq!(value["type"], "tap_hold");
+        // Verify value is [tap, hold]
+        assert!(value["value"].is_array());
+        assert_eq!(value["value"][0], "KeyA");
+        assert_eq!(value["value"][1], "Nav");
     }
 }

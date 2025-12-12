@@ -267,6 +267,7 @@ mod tests {
                 name: "default".into(),
                 bindings: HashMap::new(),
             }],
+            combos: vec![],
         }
     }
 

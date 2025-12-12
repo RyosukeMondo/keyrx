@@ -13,10 +13,34 @@ class KeymapConverter {
   VisualConfig convert(Keymap keymap) {
     final mappings = <RemapConfig>[];
     final layerConfigs = <LayerConfig>[];
+    final tapHoldConfigs = <TapHoldConfig>[];
+    final comboConfigs = <ComboConfig>[];
 
     // Process all layers
     for (var i = 0; i < keymap.layers.length; i++) {
       final layer = keymap.layers[i];
+
+      // Extract tap-hold configs from all layers (though usually they are on base)
+      // If we encounter a tap-hold, we add it to tapHoldConfigs
+      for (final entry in layer.bindings.entries) {
+        final source = entry.key;
+        final binding = entry.value;
+
+        binding.maybeMap(
+          tapHold: (b) {
+            if (b.value.length == 2) {
+              tapHoldConfigs.add(
+                TapHoldConfig(
+                  triggerKey: source,
+                  tapAction: b.value[0],
+                  holdAction: b.value[1],
+                ),
+              );
+            }
+          },
+          orElse: () {},
+        );
+      }
 
       // Layer 0 is the base layer, treated as global remaps for simple cases
       if (i == 0) {
@@ -26,12 +50,21 @@ class KeymapConverter {
       }
     }
 
+    // Extract combo configs
+    for (final combo in keymap.combos) {
+      comboConfigs.add(
+        ComboConfig(
+          keys: combo.keys,
+          output: combo.output,
+        ),
+      );
+    }
+
     return VisualConfig(
       mappings: mappings,
       layerConfigs: layerConfigs,
-      // TODO: Extract other configs when supported by Keymap model
-      tapHoldConfigs: [],
-      comboConfigs: [],
+      tapHoldConfigs: tapHoldConfigs,
+      comboConfigs: comboConfigs,
     );
   }
 
@@ -58,6 +91,9 @@ class KeymapConverter {
         },
         layerToggle: (_) {
           // Layer toggles on base layer not supported in simple remaps yet
+        },
+        tapHold: (_) {
+          // Tap-Hold handled separately
         },
         transparent: (_) {
           // Transparent on base layer means no-op (pass-through)

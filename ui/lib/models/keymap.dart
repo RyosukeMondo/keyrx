@@ -9,6 +9,17 @@ import 'config_ids.dart';
 part 'keymap.freezed.dart';
 part 'keymap.g.dart';
 
+/// A combo definition (multiple keys pressed together).
+@freezed
+class Combo with _$Combo {
+  const factory Combo({
+    required List<VirtualKeyId> keys,
+    required String output,
+  }) = _Combo;
+
+  factory Combo.fromJson(Map<String, dynamic> json) => _$ComboFromJson(json);
+}
+
 /// A single logical layer of a keymap (virtual key -> action).
 @freezed
 class KeymapLayer with _$KeymapLayer {
@@ -33,6 +44,7 @@ class Keymap with _$Keymap {
     @JsonKey(name: 'virtual_layout_id')
     required VirtualLayoutId virtualLayoutId,
     @Default(<KeymapLayer>[]) List<KeymapLayer> layers,
+    @Default(<Combo>[]) List<Combo> combos,
   }) = _Keymap;
 
   const Keymap._();

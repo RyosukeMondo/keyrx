@@ -20,6 +20,10 @@ sealed class ActionBinding with _$ActionBinding {
     @JsonKey(name: 'value') required String value,
   }) = ActionBindingLayerToggle;
 
+  const factory ActionBinding.tapHold({
+    @JsonKey(name: 'value') required List<String> value,
+  }) = ActionBindingTapHold;
+
   const factory ActionBinding.transparent() = ActionBindingTransparent;
 
   factory ActionBinding.fromJson(Map<String, dynamic> json) =>

@@ -169,6 +169,7 @@ mod tests {
             name: format!("Keymap {}", id),
             virtual_layout_id: "layout-1".into(),
             layers: vec![],
+            combos: vec![],
         }
     }
 

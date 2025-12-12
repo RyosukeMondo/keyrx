@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use crate::drivers::{InjectedKey, KeyInjector, MockKeyInjector};
 use crate::engine::{KeyCode, OutputAction};
