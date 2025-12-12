@@ -52,12 +52,7 @@ class KeymapConverter {
 
     // Extract combo configs
     for (final combo in keymap.combos) {
-      comboConfigs.add(
-        ComboConfig(
-          keys: combo.keys,
-          output: combo.output,
-        ),
-      );
+      comboConfigs.add(ComboConfig(keys: combo.keys, output: combo.output));
     }
 
     return VisualConfig(
@@ -110,12 +105,24 @@ class KeymapConverter {
       final source = entry.key;
       final binding = entry.value;
 
-      binding.maybeMap(
+      binding.map(
         standardKey: (b) {
           layerMappings.add(LayerMapping(sourceKey: source, action: b.value));
         },
-        orElse: () {
-          // TODO: Support other binding types in layers
+        macro: (b) {
+          // Macros not yet supported in layer maps
+          // TODO: Implement macro support
+        },
+        layerToggle: (b) {
+          layerMappings.add(
+            LayerMapping(sourceKey: source, action: 'layer_toggle:${b.value}'),
+          );
+        },
+        tapHold: (_) {
+          // Tap-Hold handled separately (global config)
+        },
+        transparent: (_) {
+          layerMappings.add(LayerMapping(sourceKey: source, action: 'pass'));
         },
       );
     }
