@@ -48,6 +48,11 @@ class _FakeEngineService implements EngineService {
   Future<void> stop() async {
     // No-op
   }
+
+  @override
+  Future<void> start() async {
+    // No-op
+  }
 }
 
 class _FakeServiceRegistry implements ServiceRegistry {

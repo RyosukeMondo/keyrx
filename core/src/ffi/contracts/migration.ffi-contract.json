@@ -1,0 +1,58 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "migration",
+    "description": "Migration operations for updating from older versions",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "check_needed",
+            "rust_name": "keyrx_migration_check_needed",
+            "description": "Check if migration is needed.",
+            "parameters": [
+                {
+                    "name": "old_profiles_dir",
+                    "type": "string",
+                    "description": "Path to directory to check for old V1 profiles",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "ok:true or ok:false or error:<message>"
+            },
+            "errors": []
+        },
+        {
+            "name": "run",
+            "rust_name": "keyrx_migration_run",
+            "description": "Run migration from V1 to V2 profiles.",
+            "parameters": [
+                {
+                    "name": "old_profiles_dir",
+                    "type": "string",
+                    "description": "Path to directory containing old V1 profiles",
+                    "required": true
+                },
+                {
+                    "name": "new_profiles_dir",
+                    "type": "string",
+                    "description": "Path to directory for new V2 profiles",
+                    "required": true
+                },
+                {
+                    "name": "create_backup",
+                    "type": "int",
+                    "description": "Whether to create backup (0 = no, 1 = yes)",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON string: ok:<migration_report_json> or error:<message>"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

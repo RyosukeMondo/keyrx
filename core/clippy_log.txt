@@ -1,0 +1,139 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+error: duplicated attribute
+  --> core\src\identity\windows.rs:11:8
+   |
+11 | #![cfg(windows)]
+   |        ^^^^^^^
+   |
+note: first defined here
+  --> core\src\identity\mod.rs:13:7
+   |
+13 | #[cfg(windows)]
+   |       ^^^^^^^
+help: remove this attribute
+  --> core\src\identity\windows.rs:11:8
+   |
+11 | #![cfg(windows)]
+   |        ^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#duplicated_attributes
+   = note: `-D clippy::duplicated-attributes` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::duplicated_attributes)]`
+
+error: used `expect()` on a `Result` value
+  --> core\src\drivers\windows\device.rs:72:9
+   |
+72 |         Regex::new(r"(?i)VID_([0-9A-F]{4})&PID_([0-9A-F]{4})").expect("Invalid regex")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#expect_used
+   = note: requested on the command line with `-D clippy::expect-used`
+
+error: used `expect()` on a `Result` value
+   --> core\src\drivers\windows\input.rs:531:9
+    |
+531 | /         Self::new().expect(
+532 | |             "WindowsInput creation failed - critical system resource exhaustion (channel creation)",
+533 | |         )
+    | |_________^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#expect_used
+
+error: used `unwrap()` on a `Result` value
+   --> core\src\drivers\windows\raw_input.rs:220:32
+    |
+220 |     let re = RE.get_or_init(|| Regex::new(r"VID_([0-9A-Fa-f]{4}).*PID_([0-9A-Fa-f]{4})").unwrap());
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unwrap_used
+    = note: requested on the command line with `-D clippy::unwrap-used`
+
+error: this `if` statement can be collapsed
+   --> core\src\drivers\windows\raw_input.rs:293:5
+    |
+293 | /     if is_e0 {
+294 | |         if vkey == 0x0D {
+295 | |             // VK_RETURN
+296 | |             key_code = KeyCode::NumpadEnter;
+297 | |         }
+298 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+293 ~     if is_e0
+294 ~         && vkey == 0x0D {
+295 |             // VK_RETURN
+296 |             key_code = KeyCode::NumpadEnter;
+297 ~         }
+    |
+
+error: casting to the same type is unnecessary (`u16` -> `u16`)
+   --> core\src\drivers\windows\raw_input.rs:309:20
+    |
+309 |         scan_code: scan_code as u16,
+    |                    ^^^^^^^^^^^^^^^^ help: try: `scan_code`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_cast
+    = note: `-D clippy::unnecessary-cast` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_cast)]`
+
+error: unsafe function's docs are missing a `# Safety` section
+   --> core\src\ffi\exports_engine.rs:202:1
+    |
+202 | pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#missing_safety_doc
+    = note: `-D clippy::missing-safety-doc` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::missing_safety_doc)]`
+
+error: used `unwrap()` on a `Result` value
+   --> core\src\ffi\exports_engine.rs:203:21
+    |
+203 |     let mut guard = get_stop_sender().lock().unwrap();
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unwrap_used
+
+error: used `unwrap()` on a `Result` value
+   --> core\src\ffi\exports_engine.rs:227:25
+    |
+227 |         let mut guard = get_stop_sender().lock().unwrap();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unwrap_used
+
+error: unsafe function's docs are missing a `# Safety` section
+   --> core\src\ffi\exports_engine.rs:236:1
+    |
+236 | pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#missing_safety_doc
+
+error: used `unwrap()` on a `Result` value
+   --> core\src\ffi\exports_engine.rs:237:17
+    |
+237 |     let guard = get_stop_sender().lock().unwrap();
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unwrap_used
+
+error: casting to the same type is unnecessary (`u16` -> `u16`)
+   --> core\src\scripting\row_col_resolver.rs:153:42
+    |
+153 |             let key_code = vk_to_keycode(scan_code as u16);
+    |                                          ^^^^^^^^^^^^^^^^ help: try: `scan_code`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_cast
+
+error: could not compile `keyrx_core` (lib) due to 12 previous errors

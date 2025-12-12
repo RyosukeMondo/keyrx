@@ -85,6 +85,7 @@ class _MappingEditorState extends State<MappingEditor> {
       macro: (b) => 'Macro: ${b.value}',
       layerToggle: (b) => 'Layer → ${b.value}',
       transparent: (_) => 'Transparent',
+      tapHold: (b) => 'Tap/Hold: ${b.value.join(" / ")}',
     );
   }
 

@@ -1,0 +1,29 @@
+           ID                                    Description                                    Repo                Last active                Status         
+ 17404510996168153280    ## Task: Wrongly added line in php-version-switcher script窶ｦ   MondoAIStudio/shoppi窶ｦ   1h12m56s ago            Completed      
+ 1458653314664355070     ## Task: Add actual widget and unit tests (placeholder)**D窶ｦ   RyosukeMondo/beatbox窶ｦ   1h17m38s ago            Completed      
+ 8187919965785378110     ## Task: Configure Release Signing**Details:**- File: app/窶ｦ   RyosukeMondo/dev-bea窶ｦ   1h18m46s ago            Completed      
+ 15811531602200280214    ## Task: Set Unique Application ID**Details:**- File: app/窶ｦ   RyosukeMondo/dev-bea窶ｦ   1h20m56s ago            Completed      
+ 11173960879192149605    ## Task: Implement proper ANSI/ISO keyboard layout visuali窶ｦ   RyosukeMondo/keyrx      1h15m8s ago             Completed      
+ 12851122479395016398    ## Task: Extract other configs when supported by Keymap mo窶ｦ   RyosukeMondo/keyrx      50m41s ago              Completed      
+ 14843142590166208907    ## Task: Implement Windows scan_code conversion**Details:*窶ｦ   RyosukeMondo/keyrx      1h6m11s ago             Completed      
+ 6048782125391994405     ## Task: Investigate pending_count behavior in tests**Deta窶ｦ   RyosukeMondo/keyrx      1h0m50s ago             Completed      
+ 10922585402448675535    ## Task: Implement FFI call to keyrx_migration_run**Detail窶ｦ   RyosukeMondo/keyrx      1h17m57s ago            Completed      
+ 15438999647012820839    ## Task: Parse event type from JSON and route to specific 窶ｦ   RyosukeMondo/keyrx      1h10m5s ago             Completed      
+ 16862320678666265866    ## Task: Cleanup: Remove redundant exports_*.rs files (Tas窶ｦ   RyosukeMondo/keyrx      54m35s ago              Awaiting User F
+ 8514889142664767284     ## Task: Implement config root override**Details:**- File:窶ｦ   RyosukeMondo/keyrx      55m12s ago              Completed      
+ 9538086374832868331     ## Task: Implement macro support in KeymapConverter**Detai窶ｦ   RyosukeMondo/keyrx      1h16m26s ago            Completed      
+ 8377539523105385501     ## Task: Spawn background thread for metrics updates**Deta窶ｦ   RyosukeMondo/keyrx      1h7m13s ago             Completed      
+ 10179822913412962726    ## Task: Connect Transition Log FFI to Engine Instance**De窶ｦ   RyosukeMondo/keyrx      1h7m18s ago             Completed      
+ 17250903238755710216    ## Task: Add proper layer toggle UI**Details:**- File: ui/窶ｦ   RyosukeMondo/keyrx      56m5s ago               Awaiting User F
+ 15873153210020233907    ## Task: Implement FFI call to keyrx_migration_check_neede窶ｦ   RyosukeMondo/keyrx      1h3m44s ago             Completed      
+ 18297615139748308052    ## Task: Support other binding types in layers**Details:**窶ｦ   RyosukeMondo/keyrx      1h8m30s ago             Completed      
+ 9278569594046178028     ## Task: Free the string when keyrx_free_string is availab窶ｦ   RyosukeMondo/keyrx      52m59s ago              Awaiting User F
+ 8690746657850795923     ## Task: Show error when saving layout with empty ID or Na窶ｦ   RyosukeMondo/keyrx      1h2m17s ago             Awaiting User F
+ 2380741731494941708     ## Task: Enforce documentation examples pass**Details:**- 窶ｦ   RyosukeMondo/keyrx      52m46s ago              Completed      
+ 16539636946846299950    ## Task: Refactor AudioServiceImpl for injectable API depe窶ｦ   RyosukeMondo/beatbox窶ｦ   1h17m14s ago            Completed      
+ 12335383307397972136    ## Task: Refactor AudioServiceImpl for injectable API depe窶ｦ   RyosukeMondo/beatbox窶ｦ   1h7m21s ago             Completed      
+ 13472166879705142205    ## Task: Mock api.getCalibrationState() in calibration scr窶ｦ   RyosukeMondo/beatbox窶ｦ   1h12m37s ago            Completed      
+ 294048840072931813      ## Task: Refactor AudioServiceImpl for injectable API depe窶ｦ   RyosukeMondo/beatbox窶ｦ   1h19m58s ago            Completed      
+ 16159574354652468022    ## Task: Implement proper timestamp tracking**Details:**- 窶ｦ   RyosukeMondo/beatbox窶ｦ   1h22m29s ago            Completed      
+ 12278005461552303029    I have a difficutly to accomplish SSOT, communication betw窶ｦ   RyosukeMondo/beatbox窶ｦ   1h9m40s ago             Completed      
+                                                                                                                                                      

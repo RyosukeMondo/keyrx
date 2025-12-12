@@ -31,6 +31,7 @@ import 'package:keyrx_ui/models/hardware_profile.dart';
 
 import 'package:keyrx_ui/models/runtime_config.dart';
 import 'package:keyrx_ui/services/test_service.dart';
+import 'package:keyrx_ui/pages/migration_prompt_page.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
 class FakeDeviceService implements DeviceService {
@@ -344,6 +345,21 @@ class FakeBridge implements KeyrxBridge {
   void shutdown() {
     // No-op for fake
   }
+
+  @override
+  Future<bool> checkMigrationNeeded(String oldProfilesDir) async => false;
+
+  @override
+  Future<MigrationReport> runMigration(
+    String oldProfilesDir,
+    String newProfilesDir, {
+    bool createBackup = true,
+  }) async => MigrationReport(
+    totalCount: 0,
+    migratedCount: 0,
+    failedCount: 0,
+    failures: [],
+  );
 }
 
 /// Fake ScriptFileService that simulates file operations in memory.

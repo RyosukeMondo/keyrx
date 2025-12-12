@@ -50,12 +50,11 @@ class KeyrxApp extends StatelessWidget {
         ),
       ),
       home: Builder(
-        builder:
-            (context) => MigrationWrapper(
-              onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
-              onRunMigration: () => _runMigration(context),
-              child: const HomePage(),
-            ),
+        builder: (context) => MigrationWrapper(
+          onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
+          onRunMigration: () => _runMigration(context),
+          child: const HomePage(),
+        ),
       ),
     );
   }
@@ -84,10 +83,9 @@ class KeyrxApp extends StatelessWidget {
   String _resolveOldProfilesPath() {
     // Legacy path: ~/.config/keyrx/device_profiles
     final env = Platform.environment;
-    final home =
-        Platform.isWindows
-            ? env['USERPROFILE'] ?? env['HOME']
-            : env['HOME'] ?? env['USERPROFILE'];
+    final home = Platform.isWindows
+        ? env['USERPROFILE'] ?? env['HOME']
+        : env['HOME'] ?? env['USERPROFILE'];
 
     if (home == null || home.isEmpty) {
       // Should not happen, but safe fallback

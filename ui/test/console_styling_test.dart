@@ -62,6 +62,11 @@ class _FakeEngineService implements EngineService {
   Future<void> stop() async {
     // No-op
   }
+
+  @override
+  Future<void> start() async {
+    // No-op
+  }
 }
 
 Widget _buildTestWidget({required _FakeEngineService engine}) {

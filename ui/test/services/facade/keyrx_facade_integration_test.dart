@@ -133,14 +133,16 @@ void main() {
   group('KeyrxFacade Integration - Device Operations', () {
     test('list and select device with real DeviceService', () async {
       final deviceStates = [
-        const DeviceState(
-          identity: DeviceIdentity(
+        DeviceState(
+          identity: const DeviceIdentity(
             vendorId: 0x1234,
             productId: 0x5678,
             serialNumber: '/dev/input/event0', // Using path as serial for test
             userLabel: 'Keyboard 1',
           ),
           remapEnabled: false,
+          connectedAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
         ),
       ];
 
@@ -152,7 +154,7 @@ void main() {
       // List devices
       final listResult = await facade.listDevices();
       expect(listResult.isOk, isTrue);
-      expect(listResult.okOrNull, devices);
+      expect(listResult.okOrNull, deviceStates);
       expect(facade.currentState.device, DeviceStatus.available);
 
       // Select device
