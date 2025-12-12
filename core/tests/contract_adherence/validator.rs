@@ -3,6 +3,8 @@
 //! This module provides validation error types and logic for comparing
 //! FFI contract definitions against parsed Rust function signatures.
 
+#![allow(clippy::result_large_err)]
+
 use std::path::PathBuf;
 
 /// Represents a location in a source file for error reporting.

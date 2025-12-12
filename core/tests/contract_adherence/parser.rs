@@ -165,7 +165,7 @@ pub fn parse_ffi_exports_from_str(
         match item {
             Item::Fn(func) => {
                 if is_extern_c_no_mangle(&func.attrs, &func.sig.abi, &func.vis) {
-                    let parsed = extract_function_signature(&func.sig, &file_path, &source)?;
+                    let parsed = extract_function_signature(&func.sig, &file_path, source)?;
                     functions.push(parsed);
                 }
             }
@@ -175,7 +175,7 @@ pub fn parse_ffi_exports_from_str(
                         if let ForeignItem::Fn(func) = item {
                             if has_no_mangle(&func.attrs) {
                                 let parsed =
-                                    extract_foreign_fn_signature(&func, &file_path, &source)?;
+                                    extract_foreign_fn_signature(&func, &file_path, source)?;
                                 functions.push(parsed);
                             }
                         }

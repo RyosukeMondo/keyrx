@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::expect_used)]
+
 use keyrx_core::definitions::DeviceDefinition;
 use std::fs;
 

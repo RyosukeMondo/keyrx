@@ -375,7 +375,7 @@ fn benchmark_sandbox_check_denied(c: &mut Criterion) {
 fn benchmark_mode_switching(c: &mut Criterion) {
     c.bench_function("mode_switching", |b| {
         b.iter_batched(
-            || ScriptSandbox::default(),
+            ScriptSandbox::default,
             |mut sandbox| {
                 sandbox.set_mode(black_box(ScriptMode::Safe));
                 sandbox.set_mode(black_box(ScriptMode::Full));

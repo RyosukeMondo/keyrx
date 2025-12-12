@@ -41,6 +41,12 @@ pub struct OtelMetricsExporter {
     last_counts: std::sync::Mutex<std::collections::HashMap<String, u64>>,
 }
 
+impl std::fmt::Debug for OtelMetricsExporter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OtelMetricsExporter").finish()
+    }
+}
+
 impl OtelMetricsExporter {
     /// Record a metrics snapshot into OTEL instruments.
     ///

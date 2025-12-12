@@ -54,13 +54,6 @@ impl SpanGuard {
             _marker: std::marker::PhantomData,
         }
     }
-
-    #[cfg(feature = "otel-tracing")]
-    pub(super) fn new_noop() -> Self {
-        Self {
-            _context: opentelemetry::Context::current(),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -114,8 +107,17 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "otel-tracing"))]
     fn span_guard_drops_safely() {
         let guard = SpanGuard::new_noop();
+        drop(guard);
+        // Should not panic
+    }
+
+    #[test]
+    #[cfg(feature = "otel-tracing")]
+    fn span_guard_with_context_drops_safely() {
+        let guard = SpanGuard::new(opentelemetry::Context::current());
         drop(guard);
         // Should not panic
     }

@@ -226,7 +226,7 @@ impl OtelMetricsCollector {
                 .with_unit("1")
                 .build();
 
-            return Self {
+            Self {
                 key_events_total,
                 errors_total,
                 processing_latency,
@@ -235,7 +235,7 @@ impl OtelMetricsCollector {
                 active_devices,
                 session_value: AtomicI64::new(0),
                 device_value: AtomicI64::new(0),
-            };
+            }
         }
 
         #[cfg(not(feature = "otel-tracing"))]

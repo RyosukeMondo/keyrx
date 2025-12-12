@@ -99,7 +99,7 @@ fn benchmark_primitives(c: &mut Criterion) {
 
     // f64 marshaling
     group.bench_function("f64_roundtrip", |b| {
-        let value = 3.14159265359f64;
+        let value = std::f64::consts::PI;
         b.iter(|| {
             let c_repr = black_box(&value).to_c().unwrap();
             let restored = f64::from_c(black_box(c_repr)).unwrap();
