@@ -67,6 +67,7 @@ fn sample_keymap(id: &str, layout_id: &str) -> Keymap {
             name: "default".to_string(),
             bindings: HashMap::new(),
         }],
+        combos: vec![],
     }
 }
 

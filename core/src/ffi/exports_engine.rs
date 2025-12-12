@@ -181,11 +181,13 @@ use crate::drivers::WindowsInput;
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::engine::{AdvancedEngine, TimingConfig};
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
+use crate::ffi::engine_instance::{clear_global_engine, set_global_engine};
+#[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::ffi::runtime::with_revolutionary_runtime;
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use crate::InputSource;
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
 use std::thread;
 
@@ -273,13 +275,19 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
     // Note: We're not fully initializing the engine with device registry/profiles here yet
     // because that requires more intricate setup that is done in `RunCommand`.
     // For now, this is sufficient to capture keys and run the script.
-    let mut engine = AdvancedEngine::new(runtime_arc, TimingConfig::default());
+    let engine = AdvancedEngine::new(runtime_arc, TimingConfig::default());
 
     // We can try to attach device registry if available in RevolutionaryRuntime
     let device_registry = with_revolutionary_runtime(|rt| Ok(rt.device_registry().clone())).ok();
-    if let Some(reg) = device_registry {
-        engine = engine.with_device_registry(reg);
-    }
+    let engine = if let Some(reg) = device_registry {
+        engine.with_device_registry(reg)
+    } else {
+        engine
+    };
+
+    // Wrap in Arc<Mutex> and share globally
+    let engine = Arc::new(Mutex::new(engine));
+    set_global_engine(engine.clone());
 
     tracing::info!("Engine loop running");
 
@@ -302,14 +310,20 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
                 };
 
                 for event in events {
-                    // Update engine time
-                    if event.timestamp_us > last_timestamp {
-                         for action in engine.tick(event.timestamp_us) {
-                             if let Err(e) = input.send_output(action).await {
-                                 tracing::error!("Failed to send output: {}", e);
-                             }
-                         }
-                         last_timestamp = event.timestamp_us;
+                    // Update engine and collect actions
+                    let mut actions = Vec::new();
+                    {
+                        #[allow(clippy::unwrap_used)]
+                        let mut engine_guard = engine.lock().unwrap();
+
+                        // Update engine time
+                        if event.timestamp_us > last_timestamp {
+                            actions.extend(engine_guard.tick(event.timestamp_us));
+                            last_timestamp = event.timestamp_us;
+                        }
+
+                        // Process
+                        actions.extend(engine_guard.process_event(event.clone()));
                     }
 
                     // Emit RawInput for Monitor
@@ -320,21 +334,19 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
                     // Pass to discovery session (if active)
                     crate::ffi::domains::discovery::process_discovery_event(&event);
 
-                    // Process
-                    let outputs = engine.process_event(event.clone());
-
-                    for action in outputs {
-                         // Emit RawOutput for Monitor
-                         global_event_registry().invoke(EventType::RawOutput, &action);
-                         if let Err(e) = input.send_output(action).await {
+                    for action in actions {
+                        // Emit RawOutput for Monitor
+                        global_event_registry().invoke(EventType::RawOutput, &action);
+                        if let Err(e) = input.send_output(action).await {
                             tracing::error!("Failed to send output: {}", e);
-                         }
+                        }
                     }
                 }
             }
         }
     }
 
+    clear_global_engine();
     input.stop().await?;
     tracing::info!("Engine loop stopped");
     Ok(())

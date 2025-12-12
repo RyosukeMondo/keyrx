@@ -52,6 +52,7 @@
 
 #![allow(unsafe_code)]
 
+use crate::ffi::engine_instance::with_global_engine;
 use std::ffi::{c_char, CString};
 
 /// Export all transition log entries as JSON.
@@ -76,29 +77,16 @@ use std::ffi::{c_char, CString};
 pub extern "C" fn keyrx_transition_log_export_json(
     _engine_ptr: *const std::ffi::c_void,
 ) -> *mut c_char {
-    // TODO: This needs actual engine instance access
-    // For now, return a placeholder indicating the feature is available
-    #[cfg(feature = "transition-logging")]
-    {
-        let json = serde_json::json!({
-            "status": "available",
-            "message": "Transition logging is enabled. Engine integration pending."
-        });
-        if let Ok(json_str) = serde_json::to_string(&json) {
+    with_global_engine(|engine| {
+        let log = engine.transition_log();
+        if let Ok(json_str) = log.export_json() {
             if let Ok(c_str) = CString::new(json_str) {
                 return c_str.into_raw();
             }
         }
-    }
-
-    #[cfg(not(feature = "transition-logging"))]
-    {
-        if let Ok(c_str) = CString::new("[]") {
-            return c_str.into_raw();
-        }
-    }
-
-    std::ptr::null_mut()
+        std::ptr::null_mut()
+    })
+    .unwrap_or(std::ptr::null_mut())
 }
 
 /// Get the number of transition log entries currently stored.
@@ -116,8 +104,7 @@ pub extern "C" fn keyrx_transition_log_export_json(
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void) -> usize {
-    // TODO: This needs actual engine instance access
-    0
+    with_global_engine(|engine| engine.transition_log().len()).unwrap_or(0)
 }
 
 /// Get the maximum capacity of the transition log.
@@ -135,12 +122,7 @@ pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void)
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_void) -> usize {
-    // TODO: This needs actual engine instance access
-    #[cfg(feature = "transition-logging")]
-    return 10_000; // Default capacity
-
-    #[cfg(not(feature = "transition-logging"))]
-    return 0;
+    with_global_engine(|engine| engine.transition_log().capacity()).unwrap_or(0)
 }
 
 /// Clear all entries from the transition log.
@@ -154,7 +136,7 @@ pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_clear(_engine_ptr: *mut std::ffi::c_void) {
-    // TODO: This needs actual engine instance access
+    with_global_engine(|engine| engine.transition_log_mut().clear());
 }
 
 /// Get statistics about the transition log.
@@ -184,37 +166,54 @@ pub unsafe extern "C" fn keyrx_transition_log_statistics(
     total_duration: *mut u64,
     avg_duration: *mut u64,
 ) {
-    // TODO: This needs actual engine instance access
+    let stats =
+        with_global_engine(|engine| engine.transition_log().statistics()).unwrap_or((0, 0, 0, 0));
+
     if !total.is_null() {
-        *total = 0;
+        *total = stats.0;
     }
     if !unique_names.is_null() {
-        *unique_names = 0;
+        *unique_names = stats.1;
     }
     if !total_duration.is_null() {
-        *total_duration = 0;
+        *total_duration = stats.2;
     }
     if !avg_duration.is_null() {
-        *avg_duration = 0;
+        *avg_duration = stats.3;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::{AdvancedEngine, TimingConfig};
+    use crate::ffi::engine_instance::{clear_global_engine, set_global_engine};
+    use crate::scripting::RhaiRuntime;
+    use std::sync::{Arc, Mutex};
+
+    fn setup_mock_engine() {
+        let rhai_runtime = Arc::new(Mutex::new(
+            RhaiRuntime::new().expect("Failed to create rhai runtime"),
+        ));
+        let engine = AdvancedEngine::new(rhai_runtime, TimingConfig::default());
+        let shared_engine = Arc::new(Mutex::new(engine));
+        set_global_engine(shared_engine);
+    }
+
+    fn teardown_mock_engine() {
+        clear_global_engine();
+    }
 
     #[test]
-    fn test_placeholder_functions() {
-        // Test that placeholder functions don't crash
+    fn test_connected_functions() {
+        setup_mock_engine();
         let null_ptr = std::ptr::null();
 
+        // Initial state
         assert_eq!(keyrx_transition_log_len(null_ptr), 0);
 
         #[cfg(feature = "transition-logging")]
         assert_eq!(keyrx_transition_log_capacity(null_ptr), 10_000);
-
-        #[cfg(not(feature = "transition-logging"))]
-        assert_eq!(keyrx_transition_log_capacity(null_ptr), 0);
 
         let mut total = 0usize;
         let mut unique = 0usize;
@@ -232,27 +231,16 @@ mod tests {
         }
 
         assert_eq!(total, 0);
-        assert_eq!(unique, 0);
-        assert_eq!(total_dur, 0);
-        assert_eq!(avg_dur, 0);
-    }
 
-    #[test]
-    fn test_export_json_placeholder() {
-        let null_ptr = std::ptr::null();
+        // Test JSON export
         let json_ptr = keyrx_transition_log_export_json(null_ptr);
-
-        if !json_ptr.is_null() {
-            unsafe {
-                let c_str = CString::from_raw(json_ptr);
-                let json_str = c_str.to_str().unwrap();
-
-                #[cfg(feature = "transition-logging")]
-                assert!(json_str.contains("available") || json_str.contains("status"));
-
-                #[cfg(not(feature = "transition-logging"))]
-                assert_eq!(json_str, "[]");
-            }
+        assert!(!json_ptr.is_null());
+        unsafe {
+            let c_str = CString::from_raw(json_ptr);
+            let json_str = c_str.to_str().unwrap();
+            assert_eq!(json_str, "[]");
         }
+
+        teardown_mock_engine();
     }
 }

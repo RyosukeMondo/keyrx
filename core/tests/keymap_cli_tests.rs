@@ -49,6 +49,7 @@ fn sample_keymap() -> Keymap {
         name: "Test Keymap".into(),
         virtual_layout_id: "layout-1".into(),
         layers: vec![],
+        combos: vec![],
     }
 }
 
