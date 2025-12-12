@@ -5,8 +5,11 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart'; // For @visibleForTesting
 
 import 'bindings.dart';
 import 'bridge_core.dart';
@@ -380,6 +383,47 @@ class KeyrxBridge
     }
   }
 
+  /// Helper to route events, extracted for testability.
+  @visibleForTesting
+  static void routeEvent(
+    Uint8List bytes,
+    Map<EventType, void Function(Uint8List)> handlers,
+  ) {
+    try {
+      // Parse the JSON wrapper to extract event type
+      final jsonString = utf8.decode(bytes);
+      final eventWrapper = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      final typeCode = eventWrapper['eventType'] as int?;
+
+      if (typeCode != null) {
+        // Find the matching EventType enum
+        EventType? targetType;
+        for (final type in EventType.values) {
+          if (type.code == typeCode) {
+            targetType = type;
+            break;
+          }
+        }
+
+        if (targetType != null) {
+          final handler = handlers[targetType];
+          if (handler != null) {
+            try {
+              // Pass the original bytes to the handler to preserve the data contract
+              // and avoid unnecessary re-serialization.
+              handler(bytes);
+            } catch (_) {
+              // Swallow handler errors to avoid crashing
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Swallow malformed payloads to avoid crashing listeners.
+    }
+  }
+
   /// Handle unified event callbacks from the native core.
   ///
   /// This static method is called by the Rust core when an event occurs.
@@ -396,29 +440,7 @@ class KeyrxBridge
 
     try {
       final bytes = ptr.asTypedList(length);
-      /*
-      // Temporary debug log
-      print('DART: Received unified event: ${bytes.length} bytes');
-      */
-
-      // The Rust core sends events in the format:
-      // {"eventType": <code>, "payload": {...}}
-      // We need to parse the eventType to route to the correct handler.
-      //
-      // For now, we'll invoke all registered handlers with the full payload.
-      // This is not ideal but maintains functionality. A better approach
-      // would be to parse the JSON to extract the event type code.
-      //
-      // TODO: Parse event type from JSON and route to specific handler
-
-      // For now, just forward to all handlers (temporary implementation)
-      for (final handler in instance._eventHandlers.values) {
-        try {
-          handler(bytes);
-        } catch (_) {
-          // Swallow handler errors to avoid crashing other handlers
-        }
-      }
+      routeEvent(bytes, instance._eventHandlers);
     } catch (_) {
       // Swallow malformed payloads to avoid crashing listeners.
     } finally {
