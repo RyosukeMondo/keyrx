@@ -14,8 +14,10 @@
 //! Helper functions follow the XDG Base Directory Specification where applicable,
 //! falling back to sensible defaults when XDG variables are not set.
 
+use lazy_static::lazy_static;
 use std::env;
 use std::path::PathBuf;
+use std::sync::RwLock;
 
 // =============================================================================
 // Linux Device Paths
@@ -83,13 +85,45 @@ pub const PERF_BASELINE_FILE: &str = "target/perf-baseline.json";
 // Path Resolution Functions
 // =============================================================================
 
+lazy_static! {
+    static ref CONFIG_ROOT_OVERRIDE: RwLock<Option<PathBuf>> = RwLock::new(None);
+}
+
+/// Set a runtime override for the configuration root directory.
+///
+/// This allows the embedding application to specify a custom location for
+/// configuration files, bypassing standard XDG/system paths.
+///
+/// # Arguments
+///
+/// * `path` - The new configuration root directory path.
+pub fn set_config_root(path: PathBuf) {
+    if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+        *lock = Some(path);
+    }
+}
+
+/// Reset the configuration root directory override.
+///
+/// This clears any override set by `set_config_root`, causing the configuration
+/// system to fall back to standard XDG/system paths.
+///
+/// # Testing
+/// This is primarily useful for cleanup during testing.
+pub fn clear_config_root() {
+    if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+        *lock = None;
+    }
+}
+
 /// Resolve the KeyRx configuration directory.
 ///
 /// Preference order:
-/// 1. `$XDG_CONFIG_HOME/keyrx`
-/// 2. Platform-specific config dir (e.g. `%APPDATA%` on Windows, `~/.config` on Linux)
-/// 3. `$HOME/.config/keyrx` (Legacy fallback)
-/// 4. `.config/keyrx` relative to CWD (last-resort fallback)
+/// 1. Runtime override (set via `set_config_root`)
+/// 2. `$XDG_CONFIG_HOME/keyrx`
+/// 3. Platform-specific config dir (e.g. `%APPDATA%` on Windows, `~/.config` on Linux)
+/// 4. `$HOME/.config/keyrx` (Legacy fallback)
+/// 5. `.config/keyrx` relative to CWD (last-resort fallback)
 ///
 /// # Returns
 ///
@@ -104,6 +138,13 @@ pub const PERF_BASELINE_FILE: &str = "target/perf-baseline.json";
 /// println!("Config directory: {}", dir.display());
 /// ```
 pub fn config_dir() -> PathBuf {
+    // Check for runtime override first
+    if let Ok(lock) = CONFIG_ROOT_OVERRIDE.read() {
+        if let Some(path) = lock.as_ref() {
+            return path.clone();
+        }
+    }
+
     if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
         return PathBuf::from(xdg).join("keyrx");
     }
@@ -202,7 +243,33 @@ mod tests {
 
     #[test]
     #[serial]
+    fn config_dir_prefers_override() {
+        // Reset override for clean state (though serial test helps)
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
+
+        let temp = tempdir().unwrap();
+        let override_path = temp.path().join("override");
+
+        set_config_root(override_path.clone());
+
+        assert_eq!(config_dir(), override_path);
+
+        // Clean up
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
+    }
+
+    #[test]
+    #[serial]
     fn config_dir_prefers_xdg_config_home() {
+        // Ensure override is cleared
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
+
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
@@ -240,6 +307,10 @@ mod tests {
     #[serial]
     #[cfg(not(windows))]
     fn config_dir_falls_back_to_home() {
+        // Ensure override is cleared
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
@@ -276,6 +347,11 @@ mod tests {
     #[test]
     #[serial]
     fn device_profiles_dir_is_subdir_of_config() {
+        // Ensure override is cleared
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
+
         // Ensure stable environment for this test
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
@@ -316,6 +392,11 @@ mod tests {
     #[test]
     #[serial]
     fn scripts_dir_is_subdir_of_config() {
+        // Ensure override is cleared
+        if let Ok(mut lock) = CONFIG_ROOT_OVERRIDE.write() {
+            *lock = None;
+        }
+
         // Ensure stable environment for this test
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();

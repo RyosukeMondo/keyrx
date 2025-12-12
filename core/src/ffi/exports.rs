@@ -121,8 +121,13 @@ pub unsafe extern "C" fn keyrx_introspection_metadata() -> *mut c_char {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn keyrx_set_config_root(_path: *const c_char) -> i32 {
-    // TODO: Implement config root override
+pub unsafe extern "C" fn keyrx_set_config_root(path: *const c_char) -> i32 {
+    let path_str = match parse_c_string(path, "path") {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    crate::config::set_config_root(std::path::PathBuf::from(path_str));
     0
 }
 
@@ -152,6 +157,7 @@ pub unsafe extern "C" fn keyrx_free_event_payload(ptr: *mut u8, len: usize) {
 mod tests {
     use super::*;
     use crate::ffi::events::EventType;
+    use serial_test::serial;
 
     #[test]
     fn init_is_idempotent() {
@@ -192,6 +198,28 @@ mod tests {
             assert_eq!(keyrx_register_event_callback(-1, None), -1);
             assert_eq!(keyrx_register_event_callback(18, None), -1);
             assert_eq!(keyrx_register_event_callback(100, None), -1);
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn set_config_root_works() {
+        crate::config::clear_config_root();
+
+        let temp = std::env::temp_dir();
+        let path = CString::new(temp.to_str().unwrap()).unwrap();
+        unsafe {
+            assert_eq!(keyrx_set_config_root(path.as_ptr()), 0);
+        }
+        assert_eq!(crate::config::config_dir(), temp);
+
+        crate::config::clear_config_root();
+    }
+
+    #[test]
+    fn set_config_root_handles_invalid_input() {
+        unsafe {
+            assert_eq!(keyrx_set_config_root(ptr::null()), -1);
         }
     }
 }
