@@ -159,7 +159,7 @@ struct ThreadContext {
 }
 
 thread_local! {
-    static CONTEXT: RefCell<Option<ThreadContext>> = RefCell::new(None);
+    static CONTEXT: RefCell<Option<ThreadContext>> = const { RefCell::new(None) };
 }
 
 unsafe extern "system" fn wnd_proc(
