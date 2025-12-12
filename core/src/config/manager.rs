@@ -34,6 +34,11 @@ impl ConfigManager {
         Self { root: root.into() }
     }
 
+    /// Get the root configuration directory path.
+    pub fn root_path(&self) -> &Path {
+        &self.root
+    }
+
     /// Load all persisted resources from disk.
     pub fn load_all(&self) -> Result<StoredResources, StorageError> {
         self.ensure_directories()?;

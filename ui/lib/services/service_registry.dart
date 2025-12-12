@@ -59,18 +59,10 @@ class ServiceRegistry {
     KeymapService? keymapService,
     RuntimeService? runtimeService,
   }) {
-    final resolver = storagePathResolver ?? const StoragePathResolver();
-    final translator = errorTranslator ?? const ErrorTranslatorImpl();
-
     final effectiveBridge = bridge ?? KeyrxBridge.open();
-
-    // Configure bridge with user storage path
-    try {
-      effectiveBridge.setConfigRoot(resolver.resolveProfilesPath());
-    } catch (e) {
-      // Ignore errors here to prevent startup crash if bindings are missing
-      // (bridge handles null bindings gracefully)
-    }
+    final resolver =
+        storagePathResolver ?? StoragePathResolver(bridge: effectiveBridge);
+    final translator = errorTranslator ?? const ErrorTranslatorImpl();
 
     // Initialize the bridge (and revolutionary runtime)
     effectiveBridge.initialize();

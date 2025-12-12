@@ -11,6 +11,7 @@ import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
+import 'package:keyrx_ui/ffi/bridge_config.dart';
 import 'package:keyrx_ui/models/device_state.dart';
 import 'package:keyrx_ui/models/device_identity.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
@@ -360,6 +361,9 @@ class FakeBridge implements KeyrxBridge {
     failedCount: 0,
     failures: [],
   );
+
+  @override
+  ConfigPathResult getConfigRoot() => ConfigPathResult.success('.');
 }
 
 /// Fake ScriptFileService that simulates file operations in memory.

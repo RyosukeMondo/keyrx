@@ -145,6 +145,17 @@
                 "description": "JSON result object"
             },
             "errors": []
+        },
+        {
+            "name": "get_config_root",
+            "rust_name": "keyrx_config_get_config_root",
+            "description": "Get the absolute path to the configuration root directory.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "Absolute path string"
+            },
+            "errors": []
         }
     ],
     "events": []

@@ -20,6 +20,7 @@ import 'bridge_migration.dart';
 import 'bridge_session.dart';
 import 'bridge_testing.dart';
 import 'bridge_validation.dart';
+import 'bridge_config.dart';
 
 import 'device_registry_ffi.dart';
 import 'profile_registry_ffi.dart';
@@ -103,6 +104,7 @@ class KeyrxBridge
         BridgeValidationMixin,
         DeviceRegistryFFIMixin,
         ProfileRegistryFFIMixin,
+        BridgeConfigMixin,
         BridgeMigrationMixin {
   static const int expectedProtocolVersion = 1;
 

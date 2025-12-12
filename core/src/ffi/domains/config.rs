@@ -14,11 +14,7 @@ use std::sync::OnceLock;
 /// Stores configuration in `~/.keyrx` (or platform equivalent).
 pub fn global_config_manager() -> &'static ConfigManager {
     static MANAGER: OnceLock<ConfigManager> = OnceLock::new();
-    MANAGER.get_or_init(|| {
-        let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-        let config_root = home.join(".keyrx");
-        ConfigManager::new(config_root)
-    })
+    MANAGER.get_or_init(ConfigManager::default)
 }
 
 /// ConfigDomain provides configuration management FFI functions.
@@ -107,6 +103,14 @@ impl ConfigDomain {
             .delete_keymap(&id)
             .map_err(|e| e.to_string())?;
         Ok(r#"{"success": true}"#.to_string())
+    }
+
+    /// Get the content root path.
+    fn get_config_root() -> Result<String, String> {
+        Ok(global_config_manager()
+            .root_path()
+            .to_string_lossy()
+            .to_string())
     }
 }
 

@@ -12,16 +12,28 @@ import 'package:path/path.dart' as p;
 class StoragePathResolver {
   /// Create a resolver using the provided environment (useful for tests) or
   /// the current process environment by default.
-  const StoragePathResolver({Map<String, String>? environment})
-    : _environment = environment;
+  const StoragePathResolver({
+    Map<String, String>? environment,
+    KeyrxBridge? bridge,
+  }) : _environment = environment,
+       _bridge = bridge;
 
   final Map<String, String>? _environment;
+  final KeyrxBridge? _bridge;
 
   Map<String, String> get _env => _environment ?? Platform.environment;
 
-  /// Returns the resolved profiles directory path (e.g. `~/.keyrx` or
-  /// `%USERPROFILE%/.keyrx`), without creating it.
+  /// Returns the resolved profiles directory path from the backend.
+  /// Falls back to legacy calculation if bridge is unavailable.
   String resolveProfilesPath() {
+    if (_bridge != null) {
+      final result = _bridge.getConfigRoot();
+      if (result.isSuccess) {
+        return result.path!;
+      }
+    }
+
+    // Fallback for tests or when bridge is unavailable (legacy behavior)
     final home = _resolveHomeDirectory();
     return p.join(home, '.keyrx');
   }
@@ -30,7 +42,9 @@ class StoragePathResolver {
   Future<String> ensureProfilesDirectory() async {
     final path = resolveProfilesPath();
     final directory = Directory(path);
-    await directory.create(recursive: true);
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
     return directory.path;
   }
 
