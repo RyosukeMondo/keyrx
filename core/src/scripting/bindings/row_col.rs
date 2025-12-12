@@ -31,9 +31,9 @@ use std::sync::Arc;
 ///
 /// # Examples
 /// ```
-/// remap_rc(3, 0, "Escape");     // Home row, 1st key (CapsLock) → Escape
-/// remap_rc(3, 1, "B");          // Home row, 2nd key (A on QWERTY) → B
-/// remap_rc(0, 16, "Delete");    // Top row, last key → Delete
+/// // remap_rc(3, 0, "Escape");     // Home row, 1st key (CapsLock) → Escape
+/// // remap_rc(3, 1, "B");          // Home row, 2nd key (A on QWERTY) → B
+/// // remap_rc(0, 16, "Delete");    // Top row, last key → Delete
 /// ```
 ///
 /// # Notes
@@ -113,10 +113,10 @@ pub fn register_remap_rc(
 /// # Examples
 /// ```
 /// // Home row modifiers (row 3 on standard keyboards)
-/// tap_hold_rc(3, 1, "A", "LeftCtrl");   // tap=A, hold=Ctrl
-/// tap_hold_rc(3, 2, "S", "LeftAlt");    // tap=S, hold=Alt
-/// tap_hold_rc(3, 3, "D", "LeftMeta");   // tap=D, hold=Meta
-/// tap_hold_rc(3, 4, "F", "LeftShift");  // tap=F, hold=Shift
+/// // tap_hold_rc(3, 1, "A", "LeftCtrl");   // tap=A, hold=Ctrl
+/// // tap_hold_rc(3, 2, "S", "LeftAlt");    // tap=S, hold=Alt
+/// // tap_hold_rc(3, 3, "D", "LeftMeta");   // tap=D, hold=Meta
+/// // tap_hold_rc(3, 4, "F", "LeftShift");  // tap=F, hold=Shift
 /// ```
 ///
 /// # Notes
@@ -202,9 +202,9 @@ pub fn register_tap_hold_rc(
 ///
 /// # Examples
 /// ```
-/// block_rc(1, 13);  // Block Insert key (often hit by accident)
-/// block_rc(0, 16);  // Block Delete key (top-right corner)
-/// block_rc(0, 15);  // Block Pause key
+/// // block_rc(1, 13);  // Block Insert key (often hit by accident)
+/// // block_rc(0, 16);  // Block Delete key (top-right corner)
+/// // block_rc(0, 15);  // Block Pause key
 /// ```
 ///
 /// # Notes

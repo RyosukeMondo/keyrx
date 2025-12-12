@@ -22,7 +22,7 @@ use std::sync::Arc;
 /// ```
 /// remap("CapsLock", "Esc");
 /// remap("A", "B");
-/// remap("F13", "AudioMute");
+/// remap("F12", "F1");
 /// ```
 ///
 /// # Notes

@@ -26,7 +26,6 @@ use std::sync::Arc;
 /// ```
 /// tap_hold("CapsLock", "Esc", "Ctrl");
 /// tap_hold("Space", "Space", "Shift");
-/// tap_hold("Tab", "Tab", "Hyper");
 /// ```
 ///
 /// # Notes

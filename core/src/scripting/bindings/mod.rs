@@ -70,6 +70,7 @@ pub fn register_all_functions(
 /// # Examples
 /// ```
 /// print_debug("Script started");
+/// let layer_name = "Base";
 /// print_debug("Current layer: " + layer_name);
 /// ```
 ///

@@ -178,13 +178,15 @@ layer_map("Nav", "H", "Left");
 layer_map("Nav", "J", "Down");"#
                 .to_string(),
             r#"// Push layer action
-layer_map("Nav", "Space", "push:Symbols");"#
+layer_define("Symbols", false);
+layer_map("Nav", "Space", "layer_push:Symbols");"#
                 .to_string(),
             r#"// Toggle layer action
-layer_map("Base", "F1", "toggle:Nav");"#
+layer_define("Nav", true);
+layer_map("Base", "F1", "layer_toggle:Nav");"#
                 .to_string(),
             r#"// Pop layer action (less common)
-layer_map("Symbols", "Esc", "pop:");"#
+layer_map("Symbols", "Esc", "layer_pop");"#
                 .to_string(),
         ],
     }

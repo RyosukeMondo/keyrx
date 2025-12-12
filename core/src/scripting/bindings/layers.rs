@@ -92,11 +92,13 @@ fn register_layer_define(engine: &mut Engine, pending_ops: &PendingOps, layer_vi
 ///
 /// # Examples
 /// ```
+/// layer_define("Nav", true);
 /// layer_map("Nav", "H", "Left");
 /// layer_map("Nav", "J", "Down");
 /// layer_map("Nav", "K", "Up");
 /// layer_map("Nav", "L", "Right");
-/// layer_map("Nav", "Space", "push:Symbols");
+/// layer_define("Symbols", false);
+/// layer_map("Nav", "Space", "layer_push:Symbols");
 /// ```
 ///
 /// # Notes
@@ -162,8 +164,12 @@ fn register_layer_map(engine: &mut Engine, pending_ops: &PendingOps, layer_view:
 ///
 /// # Examples
 /// ```
+/// layer_define("Nav", true);
+/// layer_define("Symbols", false);
 /// layer_push("Nav");
 /// layer_push("Symbols");
+/// layer_pop();
+/// layer_pop();
 /// ```
 #[rhai_doc(module = "layers")]
 fn layer_push_impl(
@@ -237,6 +243,8 @@ fn layer_pop_impl(
 ///
 /// # Examples
 /// ```
+/// layer_define("Nav", true);
+/// layer_define("Symbols", false);
 /// layer_toggle("Nav");
 /// layer_toggle("Symbols");
 /// ```
@@ -283,6 +291,7 @@ fn layer_toggle_impl(
 ///
 /// # Examples
 /// ```
+/// layer_define("Nav", true);
 /// if is_layer_active("Nav") {
 ///     print_debug("Nav layer is active");
 /// }

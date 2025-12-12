@@ -119,6 +119,23 @@ impl ExampleRunner {
     fn run_single_example(&mut self, name: &str, module: &str, code: &str) -> ExampleResult {
         let start = Instant::now();
 
+        // Create a fresh runtime for each example to ensure isolation.
+        // This prevents side effects (like layer state) from leaking between examples.
+        match RhaiRuntime::new() {
+            Ok(runtime) => {
+                self.runtime = runtime;
+            }
+            Err(e) => {
+                return ExampleResult::fail(
+                    name.to_string(),
+                    module.to_string(),
+                    code.to_string(),
+                    format!("Failed to initialize runtime: {}", e),
+                    0,
+                );
+            }
+        }
+
         // Execute the example code
         match self.runtime.execute(code) {
             Ok(_) => {

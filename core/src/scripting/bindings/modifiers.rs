@@ -67,6 +67,8 @@ fn define_modifier_impl(
 ///
 /// # Examples
 /// ```
+/// define_modifier("Hyper");
+/// define_modifier("Meh");
 /// modifier_on("Hyper");
 /// modifier_on("Meh");
 /// ```
@@ -105,6 +107,8 @@ fn modifier_on_impl(
 ///
 /// # Examples
 /// ```
+/// define_modifier("Hyper");
+/// define_modifier("Meh");
 /// modifier_off("Hyper");
 /// modifier_off("Meh");
 /// ```
@@ -144,6 +148,8 @@ fn modifier_off_impl(
 ///
 /// # Examples
 /// ```
+/// define_modifier("Shift");
+/// define_modifier("Ctrl");
 /// one_shot("Shift");
 /// one_shot("Ctrl");
 /// ```
@@ -182,6 +188,7 @@ fn one_shot_impl(
 ///
 /// # Examples
 /// ```
+/// define_modifier("Hyper");
 /// if is_modifier_active("Hyper") {
 ///     print_debug("Hyper is active");
 /// }
