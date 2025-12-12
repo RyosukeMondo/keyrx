@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
 import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/widgets/layout_grid.dart';
+import 'package:keyrx_ui/widgets/visual_keyboard.dart';
 
 void main() {
   group('LayoutGrid Widget Tests', () {
@@ -180,7 +181,7 @@ void main() {
     });
 
     group('Standard Layout', () {
-      testWidgets('renders placeholder for standard layout', (
+      testWidgets('renders VisualKeyboard for standard layout', (
         WidgetTester tester,
       ) async {
         final layoutInfo = LayoutInfo(
@@ -193,21 +194,17 @@ void main() {
           makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
         );
 
-        // Should show placeholder text
-        expect(find.text('Standard keyboard layout'), findsOneWidget);
-        expect(find.text('Visual representation coming soon'), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard), findsOneWidget);
+        // Should render VisualKeyboard
+        expect(find.byType(VisualKeyboard), findsOneWidget);
+        // Should find Esc key (first key)
+        expect(find.text('Esc'), findsOneWidget);
       });
 
-      testWidgets('shows mapping count for standard layout with profile', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('renders correctly with profile', (WidgetTester tester) async {
         final profile = createTestProfile(
           layoutType: LayoutType.standard,
           mappings: {
-            '0,0': const KeyAction.key(key: 'A'),
-            '0,1': const KeyAction.key(key: 'B'),
-            '0,2': const KeyAction.key(key: 'C'),
+            '0,0': const KeyAction.key(key: 'A'), // Esc -> A
           },
         );
 
@@ -223,8 +220,8 @@ void main() {
           ),
         );
 
-        // Should show mapping count
-        expect(find.text('Mapped keys: 3'), findsOneWidget);
+        // Should render VisualKeyboard
+        expect(find.byType(VisualKeyboard), findsOneWidget);
       });
     });
 

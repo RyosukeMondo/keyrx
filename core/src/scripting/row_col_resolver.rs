@@ -150,7 +150,7 @@ impl RowColResolver {
             // Note: Windows device profiles store scan codes differently
             // For now, we'll use a placeholder. This needs proper Windows implementation.
             // TODO: Implement proper Windows scan_code → VK → KeyCode conversion
-            let key_code = vk_to_keycode(scan_code as u16);
+            let key_code = vk_to_keycode(scan_code);
             if matches!(key_code, KeyCode::Unknown(_)) {
                 return Err(ResolverError::ScanCodeConversionFailed(scan_code));
             }

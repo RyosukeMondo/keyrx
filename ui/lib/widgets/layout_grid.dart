@@ -5,8 +5,10 @@
 // mapping configuration.
 
 import 'package:flutter/material.dart';
+import '../models/keyboard_layout.dart';
 import '../models/layout_type.dart';
 import '../models/profile.dart';
+import 'visual_keyboard.dart';
 
 /// Layout information for rendering grids
 class LayoutInfo {
@@ -120,42 +122,85 @@ class LayoutGrid extends StatelessWidget {
     );
   }
 
-  /// Build standard keyboard layout
-  /// For now, uses a simplified grid approach
-  /// TODO: Implement proper ANSI/ISO keyboard layout with correct key sizes
+  /// Build standard keyboard layout using VisualKeyboard
   Widget _buildStandardLayout(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.keyboard, size: 48),
-          const SizedBox(height: 16),
-          Text(
-            'Standard keyboard layout',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Visual representation coming soon',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Show mapped keys as a simple list for now
-          if (profile != null && profile!.hasMapping) ...[
-            const Divider(),
-            const SizedBox(height: 8),
-            Text(
-              'Mapped keys: ${profile!.mappingCount}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ],
-      ),
+    final layout = KeyboardLayout.ansi104();
+
+    // Map selected position to key ID
+    final Set<String> selectedKeys = {};
+    if (selectedPosition != null) {
+      final key = _getKeyFromPosition(selectedPosition!, layout);
+      if (key != null) {
+        selectedKeys.add(key.id);
+      }
+    }
+
+    // Map highlighted positions to key IDs
+    final Set<String> highlightedKeys = {};
+    for (final pos in highlightedPositions) {
+      final key = _getKeyFromPosition(pos, layout);
+      if (key != null) {
+        highlightedKeys.add(key.id);
+      }
+    }
+
+    // Map profile mappings to key IDs
+    final Set<String> mappedKeys = {};
+    if (profile != null) {
+      for (final keyString in profile!.mappings.keys) {
+        final pos = PhysicalPosition.fromKey(keyString);
+        if (pos != null) {
+          final key = _getKeyFromPosition(pos, layout);
+          if (key != null) {
+            mappedKeys.add(key.id);
+          }
+        }
+      }
+    }
+
+    return VisualKeyboard(
+      layout: layout,
+      selectedKeys: selectedKeys,
+      highlightedKeys: highlightedKeys,
+      mappedKeys: mappedKeys,
+      enableDragDrop: false,
+      showMappingOverlay: false,
+      onKeyTap: (key) {
+        final pos = _getPositionFromKey(key, layout);
+        if (pos != null && onKeyTap != null) {
+          onKeyTap!(pos.row, pos.col);
+        }
+      },
     );
+  }
+
+  KeyDefinition? _getKeyFromPosition(
+    PhysicalPosition pos,
+    KeyboardLayout layout,
+  ) {
+    if (pos.row < 0 || pos.row >= layout.rows.length) {
+      return null;
+    }
+    final row = layout.rows[pos.row];
+    if (pos.col < 0 || pos.col >= row.keys.length) {
+      return null;
+    }
+    return row.keys[pos.col];
+  }
+
+  PhysicalPosition? _getPositionFromKey(
+    KeyDefinition key,
+    KeyboardLayout layout,
+  ) {
+    for (int r = 0; r < layout.rows.length; r++) {
+      final row = layout.rows[r];
+      for (int c = 0; c < row.keys.length; c++) {
+        if (row.keys[c].id == key.id) {
+          return PhysicalPosition(row: r, col: c);
+        }
+      }
+    }
+    return null;
   }
 
   /// Build split keyboard layout

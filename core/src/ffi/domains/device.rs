@@ -237,6 +237,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn select_device_rejects_nonexistent_path() {
         let mut ctx = setup_context();
         let result = select_device(&mut ctx, "/nonexistent/device/path");

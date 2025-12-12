@@ -217,7 +217,10 @@ fn parse_vid_pid(path: &str) -> (Option<u16>, Option<u16>) {
         return (None, None);
     }
 
-    let re = RE.get_or_init(|| Regex::new(r"VID_([0-9A-Fa-f]{4}).*PID_([0-9A-Fa-f]{4})").unwrap());
+    let re = RE.get_or_init(|| {
+        #[allow(clippy::unwrap_used)]
+        Regex::new(r"VID_([0-9A-Fa-f]{4}).*PID_([0-9A-Fa-f]{4})").unwrap()
+    });
 
     let captures = re.captures(path);
 
@@ -290,11 +293,9 @@ fn process_raw_input(raw: &RAWINPUT) {
 
     // Handle extended keys
     let mut key_code = vk_to_keycode(vkey);
-    if is_e0 {
-        if vkey == 0x0D {
-            // VK_RETURN
-            key_code = KeyCode::NumpadEnter;
-        }
+    if is_e0 && vkey == 0x0D {
+        // VK_RETURN
+        key_code = KeyCode::NumpadEnter;
     }
 
     let (vendor_id, product_id) = parse_vid_pid(&path);
@@ -306,7 +307,7 @@ fn process_raw_input(raw: &RAWINPUT) {
         device_id: if path.is_empty() { None } else { Some(path) },
         is_repeat: false,
         is_synthetic: false,
-        scan_code: scan_code as u16,
+        scan_code,
         serial_number,
         vendor_id,
         product_id,

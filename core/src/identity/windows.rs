@@ -8,7 +8,7 @@
 //! \\?\HID#VID_046D&PID_C52B#7&12345678&0&0000#{...}
 //! The Instance ID is: 7&12345678&0&0000
 
-#![cfg(windows)]
+// #[cfg(windows)] implied by parent module
 #![allow(unsafe_code)]
 
 use anyhow::{Context, Result};

@@ -192,19 +192,32 @@ mod tests {
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
 
-        env::set_var("XDG_CONFIG_HOME", temp.path());
-        env::remove_var("HOME");
+        unsafe {
+            env::set_var("XDG_CONFIG_HOME", temp.path());
+            env::remove_var("HOME");
+        }
 
         let path = device_profiles_dir();
+
+        #[cfg(windows)]
+        assert!(path
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&temp.path().to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(path.starts_with(temp.path()));
         assert!(path.ends_with(PathBuf::from("keyrx").join("devices")));
 
-        match prev_xdg {
-            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
-            None => env::remove_var("XDG_CONFIG_HOME"),
+        unsafe {
+            match prev_xdg {
+                Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+                None => env::remove_var("XDG_CONFIG_HOME"),
+            }
         }
         if let Some(home) = prev_home {
-            env::set_var("HOME", home);
+            unsafe {
+                env::set_var("HOME", home);
+            }
         }
     }
 
@@ -215,19 +228,32 @@ mod tests {
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
 
-        env::remove_var("XDG_CONFIG_HOME");
-        env::set_var("HOME", temp.path());
+        unsafe {
+            env::remove_var("XDG_CONFIG_HOME");
+            env::set_var("HOME", temp.path());
+        }
 
         let path = device_profiles_dir();
+
+        #[cfg(windows)]
+        assert!(path
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&temp.path().to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(path.starts_with(temp.path()));
         assert!(path.ends_with(PathBuf::from(".config").join("keyrx").join("devices")));
 
         if let Some(xdg) = prev_xdg {
-            env::set_var("XDG_CONFIG_HOME", xdg);
+            unsafe {
+                env::set_var("XDG_CONFIG_HOME", xdg);
+            }
         }
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 }

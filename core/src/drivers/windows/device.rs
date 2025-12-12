@@ -69,6 +69,7 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
 
     let mut result = Vec::new();
     let re = DEVICE_PATH_REGEX.get_or_init(|| {
+        #[allow(clippy::expect_used)]
         Regex::new(r"(?i)VID_([0-9A-F]{4})&PID_([0-9A-F]{4})").expect("Invalid regex")
     });
 

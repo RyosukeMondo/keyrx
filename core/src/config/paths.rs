@@ -207,42 +207,69 @@ mod tests {
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
 
-        env::set_var("XDG_CONFIG_HOME", temp.path());
-        env::remove_var("HOME");
+        unsafe {
+            env::set_var("XDG_CONFIG_HOME", temp.path());
+            env::remove_var("HOME");
+        }
 
         let path = config_dir();
+
+        #[cfg(windows)]
+        assert!(path
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&temp.path().to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(path.starts_with(temp.path()));
         assert!(path.ends_with("keyrx"));
 
-        match prev_xdg {
-            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
-            None => env::remove_var("XDG_CONFIG_HOME"),
+        unsafe {
+            match prev_xdg {
+                Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+                None => env::remove_var("XDG_CONFIG_HOME"),
+            }
         }
         if let Some(home) = prev_home {
-            env::set_var("HOME", home);
+            unsafe {
+                env::set_var("HOME", home);
+            }
         }
     }
 
     #[test]
     #[serial]
+    #[cfg(not(windows))]
     fn config_dir_falls_back_to_home() {
         let temp = tempdir().unwrap();
         let prev_xdg = env::var("XDG_CONFIG_HOME").ok();
         let prev_home = env::var("HOME").ok();
 
-        env::remove_var("XDG_CONFIG_HOME");
-        env::set_var("HOME", temp.path());
+        unsafe {
+            env::remove_var("XDG_CONFIG_HOME");
+            env::set_var("HOME", temp.path());
+        }
 
         let path = config_dir();
+
+        #[cfg(windows)]
+        assert!(path
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&temp.path().to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(path.starts_with(temp.path()));
         assert!(path.ends_with(PathBuf::from(".config").join("keyrx")));
 
         if let Some(xdg) = prev_xdg {
-            env::set_var("XDG_CONFIG_HOME", xdg);
+            unsafe {
+                env::set_var("XDG_CONFIG_HOME", xdg);
+            }
         }
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 
@@ -254,22 +281,35 @@ mod tests {
         let prev_home = env::var("HOME").ok();
 
         // Set a known HOME to ensure consistent behavior
-        env::remove_var("XDG_CONFIG_HOME");
-        env::set_var("HOME", "/tmp/test_home");
+        unsafe {
+            env::remove_var("XDG_CONFIG_HOME");
+            env::set_var("HOME", "/tmp/test_home");
+        }
 
         let config = config_dir();
         let devices = device_profiles_dir();
+
+        #[cfg(windows)]
+        assert!(devices
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&config.to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(devices.starts_with(&config));
         assert!(devices.ends_with("devices"));
 
         // Restore environment
-        match prev_xdg {
-            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
-            None => env::remove_var("XDG_CONFIG_HOME"),
+        unsafe {
+            match prev_xdg {
+                Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+                None => env::remove_var("XDG_CONFIG_HOME"),
+            }
         }
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 
@@ -281,22 +321,35 @@ mod tests {
         let prev_home = env::var("HOME").ok();
 
         // Set a known HOME to ensure consistent behavior
-        env::remove_var("XDG_CONFIG_HOME");
-        env::set_var("HOME", "/tmp/test_home");
+        unsafe {
+            env::remove_var("XDG_CONFIG_HOME");
+            env::set_var("HOME", "/tmp/test_home");
+        }
 
         let config = config_dir();
         let scripts = scripts_dir();
+
+        #[cfg(windows)]
+        assert!(scripts
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&config.to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(scripts.starts_with(&config));
         assert!(scripts.ends_with(SCRIPTS_DIR));
 
         // Restore environment
-        match prev_xdg {
-            Some(val) => env::set_var("XDG_CONFIG_HOME", val),
-            None => env::remove_var("XDG_CONFIG_HOME"),
+        unsafe {
+            match prev_xdg {
+                Some(val) => env::set_var("XDG_CONFIG_HOME", val),
+                None => env::remove_var("XDG_CONFIG_HOME"),
+            }
         }
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 
@@ -306,7 +359,9 @@ mod tests {
         let temp = tempdir().unwrap();
         let prev_home = env::var("HOME").ok();
 
-        env::set_var("HOME", temp.path());
+        unsafe {
+            env::set_var("HOME", temp.path());
+        }
 
         let path = script_cache_dir();
         assert!(path.ends_with(PathBuf::from(CACHE_DIR_NAME).join(SCRIPT_CACHE_DIR)));
@@ -315,9 +370,11 @@ mod tests {
             Some(std::ffi::OsStr::new(CACHE_DIR_NAME))
         );
 
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 
@@ -327,15 +384,19 @@ mod tests {
         let temp = tempdir().unwrap();
         let prev_home = env::var("HOME").ok();
 
-        env::set_var("HOME", temp.path());
+        unsafe {
+            env::set_var("HOME", temp.path());
+        }
 
         let home = home_dir();
         assert!(home.is_some());
         assert_eq!(home.unwrap(), temp.path());
 
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 
@@ -345,17 +406,28 @@ mod tests {
         let temp = tempdir().unwrap();
         let prev_home = env::var("HOME").ok();
 
-        env::set_var("HOME", temp.path());
+        unsafe {
+            env::set_var("HOME", temp.path());
+        }
 
         let history = repl_history_path();
         assert!(history.is_some());
         let path = history.unwrap();
+
+        #[cfg(windows)]
+        assert!(path
+            .to_string_lossy()
+            .to_lowercase()
+            .starts_with(&temp.path().to_string_lossy().to_lowercase()));
+        #[cfg(not(windows))]
         assert!(path.starts_with(temp.path()));
         assert!(path.ends_with(REPL_HISTORY_FILE));
 
-        match prev_home {
-            Some(val) => env::set_var("HOME", val),
-            None => env::remove_var("HOME"),
+        unsafe {
+            match prev_home {
+                Some(val) => env::set_var("HOME", val),
+                None => env::remove_var("HOME"),
+            }
         }
     }
 

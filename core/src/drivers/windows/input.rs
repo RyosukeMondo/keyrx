@@ -528,6 +528,7 @@ impl Default for WindowsInput {
         // and would indicate a critical system resource issue. In such cases, panicking
         // in Default is acceptable as the system cannot continue anyway.
         // We use expect with a clear message to aid debugging if this ever occurs.
+        #[allow(clippy::expect_used)]
         Self::new().expect(
             "WindowsInput creation failed - critical system resource exhaustion (channel creation)",
         )

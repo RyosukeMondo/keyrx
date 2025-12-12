@@ -198,8 +198,12 @@ fn get_stop_sender() -> &'static Mutex<Option<tokio::sync::mpsc::Sender<()>>> {
 }
 
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
+/// # Safety
+///
+/// This function is unsafe because it interacts with global mutable state and is an FFI entry point.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
+    #[allow(clippy::unwrap_used)]
     let mut guard = get_stop_sender().lock().unwrap();
     if guard.is_some() {
         return -1; // Already running
@@ -224,6 +228,7 @@ pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
         });
 
         // Cleanup
+        #[allow(clippy::unwrap_used)]
         let mut guard = get_stop_sender().lock().unwrap();
         *guard = None;
     });
@@ -232,8 +237,12 @@ pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
 }
 
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
+/// # Safety
+///
+/// This function is unsafe because it interacts with global mutable state and is an FFI entry point.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
+    #[allow(clippy::unwrap_used)]
     let guard = get_stop_sender().lock().unwrap();
     if let Some(tx) = guard.as_ref() {
         let tx = tx.clone();
