@@ -288,7 +288,7 @@ Success: All tests pass. No regressions from improvements. Test suite stable.
 After completing:
 1. Mark [-], run tests, verify, log results, mark [x]_
 
-- [-] 6.2 Measure final coverage and verify targets met
+- [x] 6.2 Measure final coverage and verify targets met
   - Command: `cargo llvm-cov --lib --summary-only`
   - Verify ≥80% overall, ≥90% critical paths
   - Purpose: Confirm coverage targets achieved
@@ -307,7 +307,7 @@ Success: Coverage targets met OR remaining gaps are documented. Final coverage p
 After completing:
 1. Mark [-], measure, verify, document, log final numbers, mark [x]_
 
-- [ ] 6.3 Verify all quality standards met
+- [x] 6.3 Verify all quality standards met
   - Verify file sizes (from spec #2)
   - Verify function lengths (from 3.1-3.2)
   - Verify coverage (from 6.2)
