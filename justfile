@@ -109,8 +109,24 @@ build-full:
     @echo "Running comprehensive build..."
     ./scripts/build.sh --release
 
+# Check documentation for warnings (fails if any warnings exist)
+doc-check:
+    @echo "Checking documentation for warnings..."
+    @cd core && cargo doc --no-deps 2>&1 | tee /tmp/doc-output.txt
+    @if grep -qi "warning" /tmp/doc-output.txt; then \
+        echo "Documentation warnings found:"; \
+        grep -i "warning" /tmp/doc-output.txt; \
+        exit 1; \
+    fi
+    @echo "Documentation check passed - no warnings found!"
+
+# Check test coverage threshold (80% minimum)
+coverage-check:
+    @echo "Checking coverage threshold (80% minimum)..."
+    cd core && cargo llvm-cov --all-features --fail-under-lines 80
+
 # CI-specific checks (strict verification, fail on binding drift)
-ci-check: fmt-check clippy test verify-bindings
+ci-check: fmt-check clippy test verify-bindings doc-check
     @echo "CI checks passed!"
 
 # Build release binary for current platform

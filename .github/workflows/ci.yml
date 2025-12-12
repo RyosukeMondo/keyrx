@@ -262,6 +262,31 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  doc-check:
+    name: Documentation Check
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: doc-check
+          cache-on-failure: true
+      - name: Check documentation warnings
+        run: cargo doc --no-deps 2>&1 | tee doc-output.txt
+        working-directory: ./core
+      - name: Verify no doc warnings
+        run: |
+          if grep -qi "warning" doc-output.txt; then
+            echo "::error::Documentation warnings found. Please fix all warnings in public API documentation."
+            grep -i "warning" doc-output.txt
+            exit 1
+          fi
+          echo "Documentation check passed - no warnings found!"
+        working-directory: ./core
+
   security:
     name: Security Audit
     needs: check
