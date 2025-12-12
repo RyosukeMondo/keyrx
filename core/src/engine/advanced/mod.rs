@@ -14,9 +14,8 @@ use crate::engine::state::EngineState;
 use crate::engine::transitions::log::TransitionLog;
 use crate::engine::transitions::{StateGraph, StateKind};
 use crate::engine::{
-    ComboRegistry, DecisionQueue, InputEvent, KeyCode, LayerStack, Layout, LayoutCompositor,
-    LayoutMetadata, ModifierCoordinator, ModifierState, OutputAction, PendingDecision,
-    TimingConfig,
+    ComboRegistry, InputEvent, KeyCode, LayerStack, Layout, LayoutCompositor, LayoutMetadata,
+    ModifierCoordinator, ModifierState, OutputAction, PendingDecision, TimingConfig,
 };
 use crate::registry::device::DeviceRegistry;
 use crate::traits::{KeyStateProvider, ScriptRuntime};
@@ -81,7 +80,7 @@ where
     pub(crate) modifier_coordinator: ModifierCoordinator,
 
     // Decisions
-    pub(crate) pending: DecisionQueue,
+    // Note: Pending decisions are now managed by self.state.pending
     pub(crate) combos: ComboRegistry,
     pub(crate) blocked_releases: HashSet<KeyCode>,
 
@@ -115,7 +114,6 @@ where
             transition_log: TransitionLog::default(),
             layouts,
             modifier_coordinator: ModifierCoordinator::new(),
-            pending: DecisionQueue::new(timing.clone()),
             combos: ComboRegistry::new(),
             blocked_releases: HashSet::new(),
             timing,
@@ -280,7 +278,7 @@ where
 
     /// Inspect pending decisions.
     pub fn pending(&self) -> &[PendingDecision] {
-        self.pending.pending()
+        self.state.pending().pending()
     }
 
     /// Access timing config.
@@ -310,7 +308,7 @@ where
             return Vec::new();
         }
 
-        let resolutions = self.pending.check_timeouts(now_us);
+        let resolutions = self.state.pending_mut().resolve_on_timeout(now_us);
         let (outputs, _, _) = self.handle_resolutions(resolutions, None);
         outputs
     }

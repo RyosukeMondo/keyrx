@@ -122,10 +122,7 @@ fn snapshot_exposes_serializable_state() {
         .iter()
         .any(|pk| pk.key == KeyCode::CapsLock && pk.pressed_at == 100));
     assert!(snapshot.is_layer_active(0));
-    // Note: After state refactoring, pending decisions may not appear in pending_count
-    // until the next tick() or event processing cycle. Tap-hold functionality still works
-    // correctly as verified by other passing tests (tap_hold_tap_path_emits_tap, etc.)
-    // assert_eq!(snapshot.pending_count, 1); // FIXME: Investigate pending_count behavior
+    assert_eq!(snapshot.pending_count, 1);
 
     serde_json::to_string(&snapshot).expect("engine state serializes");
 }
@@ -160,7 +157,8 @@ fn combo_queue_saturation_does_not_block_events() {
 
     for _ in 0..DecisionQueue::MAX_PENDING {
         let _ = engine
-            .pending
+            .state
+            .pending_mut()
             .add_combo(&[KeyCode::A, KeyCode::B], 0, LayerAction::Block);
     }
 
@@ -187,7 +185,7 @@ fn combo_tap_hold_uses_event_timestamp() {
     let second = engine.process_event(key_down(KeyCode::B, 10_000));
     assert_eq!(second, vec![OutputAction::Block]);
 
-    let pending = engine.pending.snapshot();
+    let pending = engine.state.pending().snapshot();
     let (key, pressed_at) = match pending.first() {
         Some(crate::engine::decision::pending::PendingDecisionState::TapHold {
             key,

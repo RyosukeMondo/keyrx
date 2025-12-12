@@ -28,7 +28,8 @@ where
         for ComboDef { keys, action } in self.combos.all() {
             if keys.contains(&event.key)
                 && self
-                    .pending
+                    .state
+                    .pending_mut()
                     .add_combo(&keys, event.timestamp_us, action.clone())
             {
                 blocked = true;
@@ -37,7 +38,7 @@ where
 
         // If current pressed keys already match a combo, trigger immediately.
         if let Some(action) = self.combos.find(&pressed_keys) {
-            self.pending.clear();
+            self.state.pending_mut().clear();
             let immediate = self.execute_layer_action_with_event(action.clone(), Some(event));
             if !immediate.is_empty() {
                 blocked = true;
@@ -99,9 +100,12 @@ where
         // TapHold from combo needs special handling with DecisionQueue
         if let LayerAction::TapHold { tap, hold } = &action {
             if let Some(evt) = event {
-                let (_, eager) =
-                    self.pending
-                        .add_tap_hold(evt.key, evt.timestamp_us, *tap, hold.clone());
+                let (_, eager) = self.state.pending_mut().add_tap_hold(
+                    evt.key,
+                    evt.timestamp_us,
+                    *tap,
+                    hold.clone(),
+                );
                 return eager
                     .map(|res| self.handle_resolutions(vec![res], Some(evt)).0)
                     .unwrap_or_default();

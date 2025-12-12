@@ -214,7 +214,7 @@ where
             validate_and_check_safe_mode(&event, &KeyStateView(&self.state), self.safe_mode);
 
         if validation.safe_mode_toggled {
-            self.pending.clear();
+            self.state.pending_mut().clear();
             self.safe_mode = !self.safe_mode;
         }
         if validation.early_return {
@@ -247,7 +247,7 @@ where
     pub(crate) fn resolve_decision(&mut self, event: &InputEvent) -> DecisionResult {
         // Mark other tap-hold decisions as interrupted when another key is pressed.
         if event.pressed {
-            self.pending.mark_interrupted(event.key);
+            self.state.pending_mut().mark_interrupted(event.key);
         }
 
         let mut result = DecisionResult::default();
@@ -265,7 +265,7 @@ where
         }
         result.blocked_for_combo = blocked_for_combo;
 
-        let resolutions = self.pending.check_event(event);
+        let resolutions = self.state.pending_mut().resolve_on_event(event);
         let (resolved_outputs, resolved_consumed, skip_layer_actions) =
             self.handle_resolutions(resolutions, Some(event));
         result.outputs.extend(resolved_outputs);
@@ -299,9 +299,12 @@ where
         // TapHold requires special handling with DecisionQueue
         if let LayerAction::TapHold { tap, hold } = &action {
             if event.pressed {
-                let (_, eager) =
-                    self.pending
-                        .add_tap_hold(event.key, event.timestamp_us, *tap, hold.clone());
+                let (_, eager) = self.state.pending_mut().add_tap_hold(
+                    event.key,
+                    event.timestamp_us,
+                    *tap,
+                    hold.clone(),
+                );
                 let mut outputs = Vec::new();
                 if let Some(resolution) = eager {
                     let (eager_outputs, _, _) =

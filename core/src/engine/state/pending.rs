@@ -3,7 +3,9 @@
 //! Tracks tap-hold and combo decisions awaiting resolution. Provides efficient
 //! storage and lookup for pending decisions with timeout tracking.
 
-use crate::engine::decision::pending::{DecisionQueue, DecisionResolution, PendingDecisionState};
+use crate::engine::decision::pending::{
+    DecisionQueue, DecisionResolution, PendingDecision, PendingDecisionState,
+};
 use crate::engine::state::{HoldAction, LayerAction};
 use crate::engine::{InputEvent, KeyCode, TimingConfig};
 
@@ -111,6 +113,11 @@ impl PendingState {
     /// Check if there are no pending decisions.
     pub fn is_empty(&self) -> bool {
         self.queue.pending().is_empty()
+    }
+
+    /// Inspect pending decisions for debugging/telemetry.
+    pub fn pending(&self) -> &[PendingDecision] {
+        self.queue.pending()
     }
 
     /// Create a serializable snapshot of pending decisions.
