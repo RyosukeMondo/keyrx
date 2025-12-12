@@ -38,7 +38,7 @@
 use crossbeam_channel::unbounded;
 use keyrx_core::drivers::windows::safety::callback::{HookAction, HookCallback};
 use keyrx_core::drivers::windows::safety::thread_local::ThreadLocalState;
-use keyrx_core::engine::InputEvent;
+use keyrx_core::engine::{InputEvent, KeyCode};
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 
 #[test]
@@ -102,14 +102,14 @@ fn test_thread_local_state_sender_lifecycle() {
     ThreadLocalState::init_sender(tx);
 
     // Verify we can access it
-    let sender_exists = ThreadLocalState::with_sender(|sender| sender.is_some());
+    let sender_exists = ThreadLocalState::is_sender_initialized();
     assert!(sender_exists);
 
     // Cleanup
     ThreadLocalState::cleanup();
 
     // Verify it's gone
-    let sender_exists_after = ThreadLocalState::with_sender(|sender| sender.is_some());
+    let sender_exists_after = ThreadLocalState::is_sender_initialized();
     assert!(!sender_exists_after);
 }
 
@@ -119,7 +119,7 @@ fn test_thread_local_state_sender_clone() {
     ThreadLocalState::init_sender(tx);
 
     // Clone the sender
-    let cloned = ThreadLocalState::with_sender(|sender| sender.as_ref().map(|s| s.clone()));
+    let cloned = ThreadLocalState::with_sender(|sender| sender.clone());
 
     assert!(cloned.is_some());
 
@@ -145,7 +145,7 @@ fn test_thread_local_state_key_states() {
     assert!(ThreadLocalState::is_key_pressed(66));
 
     // Clear all
-    ThreadLocalState::clear_key_states();
+    ThreadLocalState::cleanup();
     assert!(!ThreadLocalState::is_key_pressed(65));
     assert!(!ThreadLocalState::is_key_pressed(66));
 }
@@ -170,7 +170,7 @@ fn test_thread_local_state_key_repeat_detection() {
     assert!(ThreadLocalState::is_key_pressed(65));
 
     // Cleanup
-    ThreadLocalState::clear_key_states();
+    ThreadLocalState::cleanup();
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn test_thread_local_state_isolation() {
     assert!(success.load(Ordering::SeqCst));
 
     // Cleanup
-    ThreadLocalState::clear_key_states();
+    ThreadLocalState::cleanup();
 }
 
 #[test]
@@ -226,13 +226,12 @@ fn test_thread_local_state_multiple_init() {
 
     // Send through the sender
     ThreadLocalState::with_sender(|sender| {
-        if let Some(s) = sender {
-            // Should be able to send
-            let _ = s.send(InputEvent::KeyPress {
-                code: 65,
-                name: "A".to_string(),
-            });
-        }
+        // Should be able to send
+        let _ = sender.send(InputEvent {
+            key: KeyCode::A,
+            pressed: true,
+            ..Default::default()
+        });
     });
 
     // Verify we can receive on the second receiver
@@ -292,7 +291,7 @@ fn test_callback_with_complex_logic() {
 #[test]
 fn test_thread_local_state_concurrent_keys() {
     // Test pressing multiple keys simultaneously
-    ThreadLocalState::clear_key_states();
+    ThreadLocalState::cleanup();
 
     // Press several keys
     for key in 65..75 {
@@ -330,7 +329,7 @@ fn test_thread_local_state_concurrent_keys() {
     }
 
     // Cleanup
-    ThreadLocalState::clear_key_states();
+    ThreadLocalState::cleanup();
 }
 
 #[test]
@@ -346,6 +345,6 @@ fn test_cleanup_is_idempotent() {
     ThreadLocalState::cleanup();
 
     // State should still be clean
-    assert!(!ThreadLocalState::with_sender(|s| s.is_some()));
+    assert!(!ThreadLocalState::is_sender_initialized());
     assert!(!ThreadLocalState::is_key_pressed(65));
 }
