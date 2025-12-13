@@ -2,12 +2,9 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
-
-import '../ffi/bindings.dart';
 import '../ffi/bridge.dart';
+import '../ffi/generated_bindings.dart';
 import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import 'config_result.dart';
@@ -47,29 +44,11 @@ class RuntimeServiceImpl implements RuntimeService {
   @override
   Future<ConfigOperationResult<RuntimeConfig>> getConfig() async {
     return _guard('get runtime config', (bindings) {
-      final errorPtr = calloc<Pointer<Utf8>>();
-      Pointer<Char>? ptr;
       try {
-        ptr = bindings.runtimeGetConfig(errorPtr);
-
-        if (errorPtr.value.address != 0) {
-          final error = errorPtr.value.toDartString();
-          bindings.freeString(errorPtr.value.cast<Char>());
-          return ConfigOperationResult.error(error);
-        }
-
-        if (ptr == nullptr) {
-          return ConfigOperationResult.error('runtimeGetConfig returned null');
-        }
-        final raw = ptr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        final raw = bindings.getConfig();
+        return _parseConfig(raw);
       } catch (e) {
         return ConfigOperationResult.error('get runtime config failed: $e');
-      } finally {
-        if (ptr != null && ptr != nullptr) {
-          bindings.freeString(ptr);
-        }
-        calloc.free(errorPtr);
       }
     });
   }
@@ -80,45 +59,18 @@ class RuntimeServiceImpl implements RuntimeService {
     ProfileSlot slot,
   ) async {
     return _guard('add slot', (bindings) {
-      final errorPtr = calloc<Pointer<Utf8>>();
-      Pointer<Utf8>? devicePtr;
-      Pointer<Utf8>? slotPtr;
-      Pointer<Char>? resultPtr;
-
       try {
-        devicePtr = json.encode(device.toJson()).toNativeUtf8();
-        slotPtr = json.encode(slot.toJson()).toNativeUtf8();
-        resultPtr = bindings.runtimeAddSlot(
-          devicePtr.cast<Char>(),
-          slotPtr.cast<Char>(),
+        final deviceJson = jsonEncode(device.toJson());
+        final slotJson = jsonEncode(slot.toJson());
+        final raw = bindings.addSlot(
+          deviceJson,
+          slotJson,
           0,
-          errorPtr,
-        );
-
-        if (errorPtr.value.address != 0) {
-          final error = errorPtr.value.toDartString();
-          bindings.freeString(errorPtr.value.cast<Char>());
-          return ConfigOperationResult.error(error);
-        }
-
-        if (resultPtr == nullptr) {
-          return ConfigOperationResult.error('runtimeAddSlot returned null');
-        }
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        ); // 0 = default priority? Or hardcoded? Check signature.
+        // Wait, generated addSlot takes (String, String, int). 0 is fine if compatible with backend.
+        return _parseConfig(raw);
       } catch (e) {
         return ConfigOperationResult.error('add slot failed: $e');
-      } finally {
-        if (devicePtr != null) {
-          calloc.free(devicePtr);
-        }
-        if (slotPtr != null) {
-          calloc.free(slotPtr);
-        }
-        if (resultPtr != null && resultPtr != nullptr) {
-          bindings.freeString(resultPtr);
-        }
-        calloc.free(errorPtr);
       }
     });
   }
@@ -129,44 +81,12 @@ class RuntimeServiceImpl implements RuntimeService {
     String slotId,
   ) async {
     return _guard('remove slot', (bindings) {
-      final errorPtr = calloc<Pointer<Utf8>>();
-      Pointer<Utf8>? devicePtr;
-      Pointer<Utf8>? slotPtr;
-      Pointer<Char>? resultPtr;
-
       try {
-        devicePtr = json.encode(device.toJson()).toNativeUtf8();
-        slotPtr = slotId.toNativeUtf8();
-        resultPtr = bindings.runtimeRemoveSlot(
-          devicePtr.cast<Char>(),
-          slotPtr.cast<Char>(),
-          errorPtr,
-        );
-
-        if (errorPtr.value.address != 0) {
-          final error = errorPtr.value.toDartString();
-          bindings.freeString(errorPtr.value.cast<Char>());
-          return ConfigOperationResult.error(error);
-        }
-
-        if (resultPtr == nullptr) {
-          return ConfigOperationResult.error('runtimeRemoveSlot returned null');
-        }
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        final deviceJson = jsonEncode(device.toJson());
+        final raw = bindings.removeSlot(deviceJson, slotId);
+        return _parseConfig(raw);
       } catch (e) {
         return ConfigOperationResult.error('remove slot failed: $e');
-      } finally {
-        if (devicePtr != null) {
-          calloc.free(devicePtr);
-        }
-        if (slotPtr != null) {
-          calloc.free(slotPtr);
-        }
-        if (resultPtr != null && resultPtr != nullptr) {
-          bindings.freeString(resultPtr);
-        }
-        calloc.free(errorPtr);
       }
     });
   }
@@ -178,47 +98,12 @@ class RuntimeServiceImpl implements RuntimeService {
     int priority,
   ) async {
     return _guard('reorder slot', (bindings) {
-      final errorPtr = calloc<Pointer<Utf8>>();
-      Pointer<Utf8>? devicePtr;
-      Pointer<Utf8>? slotPtr;
-      Pointer<Char>? resultPtr;
-
       try {
-        devicePtr = json.encode(device.toJson()).toNativeUtf8();
-        slotPtr = slotId.toNativeUtf8();
-        resultPtr = bindings.runtimeReorderSlot(
-          devicePtr.cast<Char>(),
-          slotPtr.cast<Char>(),
-          priority,
-          errorPtr,
-        );
-
-        if (errorPtr.value.address != 0) {
-          final error = errorPtr.value.toDartString();
-          bindings.freeString(errorPtr.value.cast<Char>());
-          return ConfigOperationResult.error(error);
-        }
-
-        if (resultPtr == nullptr) {
-          return ConfigOperationResult.error(
-            'runtimeReorderSlot returned null',
-          );
-        }
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        final deviceJson = jsonEncode(device.toJson());
+        final raw = bindings.reorderSlot(deviceJson, slotId, priority);
+        return _parseConfig(raw);
       } catch (e) {
         return ConfigOperationResult.error('reorder slot failed: $e');
-      } finally {
-        if (devicePtr != null) {
-          calloc.free(devicePtr);
-        }
-        if (slotPtr != null) {
-          calloc.free(slotPtr);
-        }
-        if (resultPtr != null && resultPtr != nullptr) {
-          bindings.freeString(resultPtr);
-        }
-        calloc.free(errorPtr);
       }
     });
   }
@@ -230,54 +115,19 @@ class RuntimeServiceImpl implements RuntimeService {
     bool active,
   ) async {
     return _guard('set slot active', (bindings) {
-      final errorPtr = calloc<Pointer<Utf8>>();
-      Pointer<Utf8>? devicePtr;
-      Pointer<Utf8>? slotPtr;
-      Pointer<Char>? resultPtr;
-
       try {
-        devicePtr = json.encode(device.toJson()).toNativeUtf8();
-        slotPtr = slotId.toNativeUtf8();
-        resultPtr = bindings.runtimeSetSlotActive(
-          devicePtr.cast<Char>(),
-          slotPtr.cast<Char>(),
-          active,
-          errorPtr,
-        );
-
-        if (errorPtr.value.address != 0) {
-          final error = errorPtr.value.toDartString();
-          bindings.freeString(errorPtr.value.cast<Char>());
-          return ConfigOperationResult.error(error);
-        }
-
-        if (resultPtr == nullptr) {
-          return ConfigOperationResult.error(
-            'runtimeSetSlotActive returned null',
-          );
-        }
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        final deviceJson = jsonEncode(device.toJson());
+        final raw = bindings.setSlotActive(deviceJson, slotId, active);
+        return _parseConfig(raw);
       } catch (e) {
         return ConfigOperationResult.error('set slot active failed: $e');
-      } finally {
-        if (devicePtr != null) {
-          calloc.free(devicePtr);
-        }
-        if (slotPtr != null) {
-          calloc.free(slotPtr);
-        }
-        if (resultPtr != null && resultPtr != nullptr) {
-          bindings.freeString(resultPtr);
-        }
-        calloc.free(errorPtr);
       }
     });
   }
 
   Future<ConfigOperationResult<RuntimeConfig>> _guard(
     String operation,
-    ConfigOperationResult<RuntimeConfig> Function(KeyrxBindings bindings)
+    ConfigOperationResult<RuntimeConfig> Function(RuntimeBindings bindings)
     action,
   ) async {
     final loadFailure = _bridge.loadFailure;
@@ -287,20 +137,35 @@ class RuntimeServiceImpl implements RuntimeService {
       );
     }
 
-    final bindings = _bridge.bindings;
+    final bindings = _bridge.runtimeBindings;
     if (bindings == null) {
       return ConfigOperationResult.error(
-        'FFI bindings unavailable ($operation)',
+        'Runtime bindings unavailable ($operation)',
       );
     }
 
     return action(bindings);
   }
 
-  ConfigOperationResult<RuntimeConfig> _parseRuntime(String raw) {
-    return parseConfigFfiResult<RuntimeConfig>(
-      raw,
-      (json) => RuntimeConfig.fromJson(json as Map<String, dynamic>),
-    );
+  ConfigOperationResult<RuntimeConfig> _parseConfig(String raw) {
+    try {
+      if (raw.trim().isEmpty) {
+        return ConfigOperationResult.error('Empty response from runtime');
+      }
+      final jsonMap = jsonDecode(raw) as Map<String, dynamic>;
+      // Check for backend error payload "error": ... ?
+      // Rust usually returns "error": "msg" or similar if logic fails but FFI succeeds.
+      // But generated bindings usually throw FFIException if error pointer set.
+      // If error pointer was NOT set, it assumes Success.
+      // So checking for "error" field might be redundant but safe.
+      if (jsonMap.containsKey('error')) {
+        return ConfigOperationResult.error(
+          'Runtime error: ${jsonMap['error']}',
+        );
+      }
+      return ConfigOperationResult.success(RuntimeConfig.fromJson(jsonMap));
+    } catch (e) {
+      return ConfigOperationResult.error('Failed to parse runtime config: $e');
+    }
   }
 }

@@ -112,6 +112,7 @@ class KeyrxBridge
 
   KeyrxBindings? _bindings;
   ConfigBindings? _configBindings;
+  RuntimeBindings? _runtimeBindings;
   bool _initialized = false;
   Object? _loadFailure;
   StreamController<BridgeStateUpdate>? _stateController;
@@ -148,6 +149,7 @@ class KeyrxBridge
 
     if (lib != null) {
       _configBindings = ConfigBindings(lib);
+      _runtimeBindings = RuntimeBindings(lib);
     }
 
     if (_bindings != null) {
@@ -194,6 +196,8 @@ class KeyrxBridge
   KeyrxBindings? get bindings => _bindings;
 
   ConfigBindings? get configBindings => _configBindings;
+
+  RuntimeBindings? get runtimeBindings => _runtimeBindings;
 
   @override
   bool get initialized => _initialized;
