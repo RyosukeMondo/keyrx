@@ -18,6 +18,9 @@ class FakeRuntimeService implements RuntimeService {
   RuntimeConfig config;
 
   @override
+  RuntimeConfig? get lastConfig => config;
+
+  @override
   Future<ConfigOperationResult<RuntimeConfig>> addSlot(
     DeviceInstanceId device,
     ProfileSlot slot,

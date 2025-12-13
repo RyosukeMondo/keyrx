@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import '../ffi/bridge_device_profile.dart';
 import '../models/device_state.dart';
+import '../models/device_identity.dart';
 import '../models/keyboard_layout.dart';
 import '../models/key_codes_windows.dart';
 import '../services/device_profile_service.dart';
@@ -57,18 +58,77 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
       _errorMessage = null;
     });
 
+    // Capture services early to avoid context usage across async gaps
+    final runtimeService = Provider.of<ServiceRegistry>(
+      context,
+      listen: false,
+    ).runtimeService;
+
     try {
-      final devices = await _deviceRegistry.getDevices();
+      final registryDevices = await _deviceRegistry.getDevices();
+      final runtimeRes = await runtimeService.getConfig();
+
+      // Start with connected devices
+      final mergedDevices = [...registryDevices];
+
+      // Merge configured devices
+      if (runtimeRes.isSuccess && runtimeRes.data != null) {
+        final configDevices = runtimeRes.data!.devices;
+        for (final configDevice in configDevices) {
+          // Check if already in list
+          final isConnected = registryDevices.any(
+            (d) =>
+                d.identity.vendorId == configDevice.device.vendorId &&
+                d.identity.productId == configDevice.device.productId &&
+                (configDevice.device.serial == null ||
+                    configDevice.device.serial!.isEmpty ||
+                    d.identity.serialNumber == configDevice.device.serial),
+          );
+
+          if (!isConnected) {
+            String userLabel = 'Offline';
+            final vid = configDevice.device.vendorId
+                .toRadixString(16)
+                .padLeft(4, '0');
+            final pid = configDevice.device.productId
+                .toRadixString(16)
+                .padLeft(4, '0');
+
+            if (configDevice.device.serial != null &&
+                configDevice.device.serial!.isNotEmpty) {
+              userLabel = 'Offline (${configDevice.device.serial})';
+            } else {
+              userLabel = 'Offline (0x$vid:0x$pid)';
+            }
+
+            mergedDevices.add(
+              DeviceState(
+                identity: DeviceIdentity(
+                  vendorId: configDevice.device.vendorId,
+                  productId: configDevice.device.productId,
+                  serialNumber: configDevice.device.serial ?? '',
+                  userLabel: userLabel,
+                ),
+                remapEnabled: false,
+                connectedAt: '',
+                updatedAt: DateTime.now().toIso8601String(),
+                profileId: null,
+              ),
+            );
+          }
+        }
+      }
+
       setState(() {
-        _devices = devices;
+        _devices = mergedDevices;
         _isLoading = false;
 
         // Auto-select first device if none selected
-        if (_selectedDevice == null && devices.isNotEmpty) {
-          _selectDevice(devices.first);
+        if (_selectedDevice == null && mergedDevices.isNotEmpty) {
+          _selectDevice(mergedDevices.first);
         } else if (_selectedDevice != null) {
           // Refresh selected device
-          final updated = devices
+          final updated = mergedDevices
               .where(
                 (d) => d.identity.toKey() == _selectedDevice!.identity.toKey(),
               )

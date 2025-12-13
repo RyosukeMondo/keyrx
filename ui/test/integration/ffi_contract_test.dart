@@ -40,7 +40,7 @@ void main() {
         }
       }
 
-      print('Loading library from: $path');
+      stdout.writeln('Loading library from: $path');
       lib = DynamicLibrary.open(path);
       runtimeBindings = RuntimeBindings(lib);
       configBindings = ConfigBindings(lib);
@@ -55,7 +55,7 @@ void main() {
 
     test('runtimeGetConfig returns strict JSON without "ok:" prefix', () {
       final raw = runtimeBindings.getConfig();
-      print('runtimeGetConfig output: $raw');
+      stdout.writeln('runtimeGetConfig output: $raw');
 
       // 1. Must not start with legacy prefix
       expect(

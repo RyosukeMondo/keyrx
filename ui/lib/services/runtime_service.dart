@@ -34,12 +34,18 @@ abstract class RuntimeService {
     String slotId,
     bool active,
   );
+
+  RuntimeConfig? get lastConfig;
 }
 
 class RuntimeServiceImpl implements RuntimeService {
   RuntimeServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
+  RuntimeConfig? _lastConfig;
+
+  @override
+  RuntimeConfig? get lastConfig => _lastConfig;
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> getConfig() async {
@@ -170,7 +176,9 @@ class RuntimeServiceImpl implements RuntimeService {
           'Runtime error: ${jsonMap['error']}',
         );
       }
-      return ConfigOperationResult.success(RuntimeConfig.fromJson(jsonMap));
+      final config = RuntimeConfig.fromJson(jsonMap);
+      _lastConfig = config;
+      return ConfigOperationResult.success(config);
     } catch (e) {
       return ConfigOperationResult.error('Failed to parse runtime config: $e');
     }

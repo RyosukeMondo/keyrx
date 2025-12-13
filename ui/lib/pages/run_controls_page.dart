@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/device_state.dart';
+import '../models/device_identity.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';
 import '../models/runtime_config.dart';
@@ -401,7 +402,64 @@ class _RunControlsPageState extends State<RunControlsPage> {
 
                 final devices = snapshot.data ?? [];
 
-                if (devices.isEmpty) {
+                // Merge with configured devices from runtime config
+                final mergedDevices = [...devices];
+
+                if (facade.services.runtimeService.lastConfig != null) {
+                  final configDevices =
+                      facade.services.runtimeService.lastConfig!.devices;
+                  for (final configDevice in configDevices) {
+                    // Check if this configured device is already in the connected list
+                    final isConnected = devices.any(
+                      (d) =>
+                          d.identity.vendorId == configDevice.device.vendorId &&
+                          d.identity.productId ==
+                              configDevice.device.productId &&
+                          (configDevice.device.serial == null ||
+                              configDevice.device.serial!.isEmpty ||
+                              d.identity.serialNumber ==
+                                  configDevice.device.serial),
+                    );
+
+                    if (!isConnected) {
+                      // Try to find a better label
+                      String userLabel = 'Offline';
+
+                      // Format VID:PID as label if nothing else
+                      final vid = configDevice.device.vendorId
+                          .toRadixString(16)
+                          .padLeft(4, '0');
+                      final pid = configDevice.device.productId
+                          .toRadixString(16)
+                          .padLeft(4, '0');
+
+                      if (configDevice.device.serial != null &&
+                          configDevice.device.serial!.isNotEmpty) {
+                        userLabel = 'Offline (${configDevice.device.serial})';
+                      } else {
+                        userLabel = 'Offline (0x$vid:0x$pid)';
+                      }
+
+                      // Create a synthetic "Offline" device state
+                      mergedDevices.add(
+                        DeviceState(
+                          identity: DeviceIdentity(
+                            vendorId: configDevice.device.vendorId,
+                            productId: configDevice.device.productId,
+                            serialNumber: configDevice.device.serial ?? '',
+                            userLabel: userLabel,
+                          ),
+                          remapEnabled: false, // Cannot remap offline
+                          connectedAt: '',
+                          updatedAt: DateTime.now().toIso8601String(),
+                          profileId: null, // We will infer active slots later
+                        ),
+                      );
+                    }
+                  }
+                }
+
+                if (mergedDevices.isEmpty) {
                   return const Text(
                     'No devices found. Connect a keyboard and refresh.',
                     style: TextStyle(color: Colors.grey),
@@ -411,11 +469,17 @@ class _RunControlsPageState extends State<RunControlsPage> {
                 return ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: devices.length,
+                  itemCount: mergedDevices.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final device = devices[index];
-                    return _buildDeviceListItem(device, facade);
+                    final device = mergedDevices[index];
+                    // Check if this device is actually connected (present in original snapshot list)
+                    final isConnected = devices.contains(device);
+                    return _buildDeviceListItem(
+                      device,
+                      facade,
+                      isConnected: isConnected,
+                    );
                   },
                 );
               },
@@ -426,7 +490,11 @@ class _RunControlsPageState extends State<RunControlsPage> {
     );
   }
 
-  Widget _buildDeviceListItem(DeviceState device, KeyrxFacade facade) {
+  Widget _buildDeviceListItem(
+    DeviceState device,
+    KeyrxFacade facade, {
+    bool isConnected = true,
+  }) {
     // Check for active slots in runtime config
     String profileText = device.profileId ?? 'No Profile';
     bool hasActiveSlots = false;
@@ -490,14 +558,21 @@ class _RunControlsPageState extends State<RunControlsPage> {
               children: [
                 Text(
                   device.identity.displayName,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: isConnected ? null : Theme.of(context).disabledColor,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  isPassthrough ? 'Passthrough' : profileText,
+                  !isConnected
+                      ? 'Offline'
+                      : (isPassthrough ? 'Passthrough' : profileText),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    color: !isConnected
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ],

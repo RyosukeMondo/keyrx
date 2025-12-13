@@ -488,6 +488,9 @@ class FakeProfileRegistryService implements ProfileRegistryService {
 /// Fake RuntimeService that returns empty config.
 class FakeRuntimeService implements RuntimeService {
   @override
+  RuntimeConfig? get lastConfig => RuntimeConfig(devices: const []);
+
+  @override
   Future<ConfigOperationResult<RuntimeConfig>> getConfig() async =>
       ConfigOperationResult.success(RuntimeConfig(devices: []));
 
