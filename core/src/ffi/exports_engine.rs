@@ -117,63 +117,6 @@ pub extern "C" fn keyrx_on_state(callback: Option<EventCallback>) {
     reset_last_sent_version();
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::engine::state::{Mutation, StateResult};
-    use crate::engine::{KeyCode, TimingConfig};
-
-    fn apply_keydown(state: &mut EngineState) -> StateResult<()> {
-        state
-            .apply(Mutation::KeyDown {
-                key: KeyCode::A,
-                timestamp_us: 100,
-                is_repeat: false,
-            })
-            .map(|_| ())
-    }
-
-    #[test]
-    #[serial_test::serial]
-    fn sends_full_snapshot_on_first_publish() {
-        reset_last_sent_version();
-
-        let state = EngineState::new(TimingConfig::default());
-        let event = build_state_update_event(&state, None, Some("init".into()), Some(0));
-
-        assert!(
-            event.full_snapshot.is_some(),
-            "first publish should include snapshot"
-        );
-        assert_eq!(event.delta.from_version, 0);
-        assert_eq!(event.delta.to_version, 0);
-    }
-
-    #[test]
-    #[serial_test::serial]
-    fn sends_delta_after_initial_full_snapshot() {
-        reset_last_sent_version();
-
-        let mut state = EngineState::new(TimingConfig::default());
-        let initial = build_state_update_event(&state, None, None, None); // bootstrap
-        assert!(
-            initial.full_snapshot.is_some(),
-            "bootstrap should include snapshot"
-        );
-
-        apply_keydown(&mut state).expect("mutation applies");
-        let event = build_state_update_event(&state, None, Some("key_down".into()), Some(500));
-        assert!(
-            event.full_snapshot.is_none(),
-            "delta publish should not include snapshot"
-        );
-        assert_eq!(event.delta.from_version, 0);
-        assert_eq!(event.delta.to_version, 1);
-        assert_eq!(event.event.as_deref(), Some("key_down"));
-        assert_eq!(event.latency_us, Some(500));
-    }
-}
-
 // ─── Engine Loop Lifecycle ────────────────────────────────────────────────
 
 #[cfg(all(target_os = "windows", feature = "windows-driver"))]
@@ -424,4 +367,61 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
     input.stop().await?;
     tracing::info!("Engine loop stopped");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::state::{Mutation, StateResult};
+    use crate::engine::{KeyCode, TimingConfig};
+
+    fn apply_keydown(state: &mut EngineState) -> StateResult<()> {
+        state
+            .apply(Mutation::KeyDown {
+                key: KeyCode::A,
+                timestamp_us: 100,
+                is_repeat: false,
+            })
+            .map(|_| ())
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn sends_full_snapshot_on_first_publish() {
+        reset_last_sent_version();
+
+        let state = EngineState::new(TimingConfig::default());
+        let event = build_state_update_event(&state, None, Some("init".into()), Some(0));
+
+        assert!(
+            event.full_snapshot.is_some(),
+            "first publish should include snapshot"
+        );
+        assert_eq!(event.delta.from_version, 0);
+        assert_eq!(event.delta.to_version, 0);
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn sends_delta_after_initial_full_snapshot() {
+        reset_last_sent_version();
+
+        let mut state = EngineState::new(TimingConfig::default());
+        let initial = build_state_update_event(&state, None, None, None); // bootstrap
+        assert!(
+            initial.full_snapshot.is_some(),
+            "bootstrap should include snapshot"
+        );
+
+        apply_keydown(&mut state).expect("mutation applies");
+        let event = build_state_update_event(&state, None, Some("key_down".into()), Some(500));
+        assert!(
+            event.full_snapshot.is_none(),
+            "delta publish should not include snapshot"
+        );
+        assert_eq!(event.delta.from_version, 0);
+        assert_eq!(event.delta.to_version, 1);
+        assert_eq!(event.event.as_deref(), Some("key_down"));
+        assert_eq!(event.latency_us, Some(500));
+    }
 }
