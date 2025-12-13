@@ -88,11 +88,10 @@ class KeymapConverter {
           );
         },
         macro: (_) {
-          // Macros not yet supported in simple remaps
-          // TODO: Implement macro support
+          // Macros on base layer are handled by _extractLayerConfig(onlyComplex: true)
         },
         layerToggle: (_) {
-          // Layer toggles on base layer not supported in simple remaps yet
+          // Layer toggles on base layer are handled by _extractLayerConfig(onlyComplex: true)
         },
         tapHold: (_) {
           // Tap-Hold handled separately

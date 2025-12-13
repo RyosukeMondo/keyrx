@@ -1,10 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/action_binding.dart';
 import 'package:keyrx_ui/models/keymap.dart';
-import 'package:keyrx_ui/models/config_ids.dart';
-import 'package:keyrx_ui/models/virtual_layout.dart';
 import 'package:keyrx_ui/services/keymap_converter.dart';
-import 'package:keyrx_ui/services/rhai_generator.dart';
 
 void main() {
   group('KeymapConverter', () {
