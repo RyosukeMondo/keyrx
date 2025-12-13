@@ -56,3 +56,7 @@ test_output*.log
 clippy*.log
 target_*/
 check_log.txt
+
+# python artifacts
+*.pyc
+**/__pycache__
