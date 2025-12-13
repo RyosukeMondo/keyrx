@@ -20,17 +20,25 @@ class HardwareService with ChangeNotifier {
   /// List all hardware profiles.
   Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async {
     return _guard('list hardware profiles', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Char>? ptr;
       try {
-        ptr = bindings.configListHardwareProfiles();
+        ptr = bindings.configListHardwareProfiles(errorPtr);
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (ptr == nullptr) {
           return ConfigOperationResult.error(
             'configListHardwareProfiles returned null',
           );
         }
 
-        final raw = ptr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<List<HardwareProfile>>(raw, (json) {
+        final raw = ptr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<List<HardwareProfile>>(raw!, (json) {
           final list = json as List<dynamic>;
           return list
               .map(
@@ -45,6 +53,7 @@ class HardwareService with ChangeNotifier {
         if (ptr != null && ptr != nullptr) {
           bindings.freeString(ptr);
         }
+        calloc.free(errorPtr);
       }
     });
   }
@@ -56,21 +65,32 @@ class HardwareService with ChangeNotifier {
     final result = await _guard<HardwareProfile>('save hardware profile', (
       bindings,
     ) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Utf8>? jsonPtr;
       Pointer<Char>? resultPtr;
       try {
         final jsonStr = json.encode(profile.toJson());
         jsonPtr = jsonStr.toNativeUtf8();
-        resultPtr = bindings.configSaveHardwareProfile(jsonPtr.cast<Char>());
+        resultPtr = bindings.configSaveHardwareProfile(
+          jsonPtr.cast<Char>(),
+          errorPtr,
+        );
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error(
             'configSaveHardwareProfile returned null',
           );
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
+        final raw = resultPtr?.cast<Utf8>().toDartString();
         return parseConfigFfiResult<HardwareProfile>(
-          raw,
+          raw!,
           (json) => HardwareProfile.fromJson(json as Map<String, dynamic>),
         );
       } catch (e) {
@@ -82,6 +102,7 @@ class HardwareService with ChangeNotifier {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
 
@@ -94,19 +115,30 @@ class HardwareService with ChangeNotifier {
   /// Delete a hardware profile by id.
   Future<ConfigOperationResult<void>> deleteProfile(String id) async {
     final result = await _guard<void>('delete hardware profile', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       final idPtr = id.toNativeUtf8();
       Pointer<Char>? resultPtr;
 
       try {
-        resultPtr = bindings.configDeleteHardwareProfile(idPtr.cast<Char>());
+        resultPtr = bindings.configDeleteHardwareProfile(
+          idPtr.cast<Char>(),
+          errorPtr,
+        );
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error(
             'configDeleteHardwareProfile returned null',
           );
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<void>(raw, null);
+        final raw = resultPtr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<void>(raw!, null);
       } catch (e) {
         return ConfigOperationResult.error(
           'delete hardware profile failed: $e',
@@ -116,6 +148,7 @@ class HardwareService with ChangeNotifier {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
 

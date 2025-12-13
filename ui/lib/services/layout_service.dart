@@ -20,17 +20,25 @@ class LayoutService with ChangeNotifier {
   /// List all virtual layouts stored in the config directory.
   Future<ConfigOperationResult<List<VirtualLayout>>> listLayouts() async {
     return _guard('list layouts', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Char>? ptr;
       try {
-        ptr = bindings.configListVirtualLayouts();
+        ptr = bindings.configListVirtualLayouts(errorPtr);
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (ptr == nullptr) {
           return ConfigOperationResult.error(
             'configListVirtualLayouts returned null',
           );
         }
 
-        final raw = ptr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<List<VirtualLayout>>(raw, (json) {
+        final raw = ptr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<List<VirtualLayout>>(raw!, (json) {
           final list = json as List<dynamic>;
           return list
               .map(
@@ -44,6 +52,7 @@ class LayoutService with ChangeNotifier {
         if (ptr != null && ptr != nullptr) {
           bindings.freeString(ptr);
         }
+        calloc.free(errorPtr);
       }
     });
   }
@@ -53,21 +62,32 @@ class LayoutService with ChangeNotifier {
     VirtualLayout layout,
   ) async {
     final result = await _guard<VirtualLayout>('save layout', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Utf8>? jsonPtr;
       Pointer<Char>? resultPtr;
       try {
         final jsonStr = json.encode(layout.toJson());
         jsonPtr = jsonStr.toNativeUtf8();
-        resultPtr = bindings.configSaveVirtualLayout(jsonPtr.cast<Char>());
+        resultPtr = bindings.configSaveVirtualLayout(
+          jsonPtr.cast<Char>(),
+          errorPtr,
+        );
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error(
             'configSaveVirtualLayout returned null',
           );
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
+        final raw = resultPtr?.cast<Utf8>().toDartString();
         return parseConfigFfiResult<VirtualLayout>(
-          raw,
+          raw!,
           (json) => VirtualLayout.fromJson(json as Map<String, dynamic>),
         );
       } catch (e) {
@@ -79,6 +99,7 @@ class LayoutService with ChangeNotifier {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
 
@@ -91,19 +112,30 @@ class LayoutService with ChangeNotifier {
   /// Delete a virtual layout by id.
   Future<ConfigOperationResult<void>> deleteLayout(String id) async {
     final result = await _guard<void>('delete layout', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       final idPtr = id.toNativeUtf8();
       Pointer<Char>? resultPtr;
 
       try {
-        resultPtr = bindings.configDeleteVirtualLayout(idPtr.cast<Char>());
+        resultPtr = bindings.configDeleteVirtualLayout(
+          idPtr.cast<Char>(),
+          errorPtr,
+        );
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error(
             'configDeleteVirtualLayout returned null',
           );
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<void>(raw, null);
+        final raw = resultPtr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<void>(raw!, null);
       } catch (e) {
         return ConfigOperationResult.error('delete layout failed: $e');
       } finally {
@@ -111,6 +143,7 @@ class LayoutService with ChangeNotifier {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
 
