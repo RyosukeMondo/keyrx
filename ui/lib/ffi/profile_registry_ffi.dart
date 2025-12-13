@@ -114,9 +114,9 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('listProfiles returned null');
       }
 
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = ptr?.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw,
+        raw!,
         (json) => json as List<dynamic>,
       );
 
@@ -159,9 +159,9 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('getProfile returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = resultPtr?.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<Map<String, dynamic>>(
-        raw,
+        raw!,
         (json) => json as Map<String, dynamic>,
       );
 
@@ -208,8 +208,8 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('saveProfile returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw, null);
+      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw!, null);
 
       if (result.hasError) {
         return ProfileRegistryResult.error(result.errorMessage!);
@@ -250,8 +250,8 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('deleteProfile returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw, null);
+      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw!, null);
 
       if (result.hasError) {
         return ProfileRegistryResult.error(result.errorMessage!);
@@ -296,9 +296,9 @@ mixin ProfileRegistryFFIMixin {
         );
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = resultPtr?.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw,
+        raw!,
         (json) => json as List<dynamic>,
       );
 

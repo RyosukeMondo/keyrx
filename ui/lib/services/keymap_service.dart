@@ -19,15 +19,23 @@ class KeymapService {
   /// List all keymaps.
   Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async {
     return _guard('list keymaps', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Char>? ptr;
       try {
-        ptr = bindings.configListKeymaps();
+        ptr = bindings.configListKeymaps(errorPtr);
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (ptr == nullptr) {
           return ConfigOperationResult.error('configListKeymaps returned null');
         }
 
-        final raw = ptr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<List<Keymap>>(raw, (json) {
+        final raw = ptr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<List<Keymap>>(raw!, (json) {
           final list = json as List<dynamic>;
           return list
               .map((item) => Keymap.fromJson(item as Map<String, dynamic>))
@@ -39,6 +47,7 @@ class KeymapService {
         if (ptr != null && ptr != nullptr) {
           bindings.freeString(ptr);
         }
+        calloc.free(errorPtr);
       }
     });
   }
@@ -46,19 +55,27 @@ class KeymapService {
   /// Persist or update a keymap definition.
   Future<ConfigOperationResult<Keymap>> saveKeymap(Keymap keymap) async {
     return _guard('save keymap', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       Pointer<Utf8>? jsonPtr;
       Pointer<Char>? resultPtr;
       try {
         final jsonStr = json.encode(keymap.toJson());
         jsonPtr = jsonStr.toNativeUtf8();
-        resultPtr = bindings.configSaveKeymap(jsonPtr.cast<Char>());
+        resultPtr = bindings.configSaveKeymap(jsonPtr.cast<Char>(), errorPtr);
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error('configSaveKeymap returned null');
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
+        final raw = resultPtr?.cast<Utf8>().toDartString();
         return parseConfigFfiResult<Keymap>(
-          raw,
+          raw!,
           (json) => Keymap.fromJson(json as Map<String, dynamic>),
         );
       } catch (e) {
@@ -70,6 +87,7 @@ class KeymapService {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
   }
@@ -77,19 +95,27 @@ class KeymapService {
   /// Delete a keymap by id.
   Future<ConfigOperationResult<void>> deleteKeymap(String id) async {
     return _guard('delete keymap', (bindings) {
+      final errorPtr = calloc<Pointer<Utf8>>();
       final idPtr = id.toNativeUtf8();
       Pointer<Char>? resultPtr;
 
       try {
-        resultPtr = bindings.configDeleteKeymap(idPtr.cast<Char>());
+        resultPtr = bindings.configDeleteKeymap(idPtr.cast<Char>(), errorPtr);
+
+        if (errorPtr.value.address != 0) {
+          final error = errorPtr.value.toDartString();
+          bindings.freeString(errorPtr.value.cast<Char>());
+          return ConfigOperationResult.error(error);
+        }
+
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error(
             'configDeleteKeymap returned null',
           );
         }
 
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<void>(raw, null);
+        final raw = resultPtr?.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<void>(raw!, null);
       } catch (e) {
         return ConfigOperationResult.error('delete keymap failed: $e');
       } finally {
@@ -97,6 +123,7 @@ class KeymapService {
         if (resultPtr != null && resultPtr != nullptr) {
           bindings.freeString(resultPtr);
         }
+        calloc.free(errorPtr);
       }
     });
   }
