@@ -1,0 +1,8 @@
+00:00 +0: loading C:/Users/ryosu/repos/keyrx/ui/test/integration/ffi_contract_test.dart
+00:00 +0: FFI Contract Tests (setUpAll)
+Loading library from: ../target/debug/keyrx_core.dll
+00:00 +0: FFI Contract Tests runtimeGetConfig returns strict JSON without "ok:" prefix
+runtimeGetConfig output: {"devices":[{"device":{"vendor_id":11240,"product_id":531,"serial":"8&303028d0&0&0000"},"slots":[{"id":"slot-2be8-0213-8&303028d0&0&0000-1765168574645","hardware_profile_id":"hardware_1765152434347","keymap_id":"keymap_1765167636060","active":true,"priority":1}]}]}
+00:00 +1: FFI Contract Tests configListHardwareProfiles returns strict JSON list
+00:00 +2: FFI Contract Tests (tearDownAll)
+00:00 +2: All tests passed!

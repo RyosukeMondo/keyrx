@@ -149,10 +149,17 @@ class RuntimeServiceImpl implements RuntimeService {
 
   ConfigOperationResult<RuntimeConfig> _parseConfig(String raw) {
     try {
-      if (raw.trim().isEmpty) {
+      var jsonStr = raw.trim();
+      if (jsonStr.isEmpty) {
         return ConfigOperationResult.error('Empty response from runtime');
       }
-      final jsonMap = jsonDecode(raw) as Map<String, dynamic>;
+
+      // Handle legacy "ok:" prefix if present
+      if (jsonStr.startsWith('ok:')) {
+        jsonStr = jsonStr.substring(3);
+      }
+
+      final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
       // Check for backend error payload "error": ... ?
       // Rust usually returns "error": "msg" or similar if logic fails but FFI succeeds.
       // But generated bindings usually throw FFIException if error pointer set.
