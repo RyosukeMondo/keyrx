@@ -50,10 +50,14 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
 
   late final KeyrxEngineStartLoop? startLoop;
   late final KeyrxEngineStopLoop? stopLoop;
+  late final KeyrxFreeString freeString;
 
   KeyrxBindings(this._lib) : super(_lib) {
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
+    freeString = _lib
+        .lookup<NativeFunction<KeyrxFreeStringNative>>('keyrx_free_string')
+        .asFunction<KeyrxFreeString>();
   }
 
   KeyrxEngineStartLoop? _tryLookupStartLoop() {
