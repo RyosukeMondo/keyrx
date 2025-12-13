@@ -34,6 +34,10 @@ pub enum EventType {
     // Device domain events (future)
     DeviceConnected,
     DeviceDisconnected,
+    DeviceUpdated,
+
+    // Profile domain events
+    ProfileUpdated,
 
     // Testing domain events (future)
     TestProgress,
@@ -56,6 +60,15 @@ pub enum EventType {
     RawOutput,
 }
 
+impl Serialize for EventType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_i32(self.code())
+    }
+}
+
 impl EventType {
     /// Get the event type name for logging.
     pub fn name(&self) -> &'static str {
@@ -68,6 +81,8 @@ impl EventType {
             EventType::ValidationResult => "validation_result",
             EventType::DeviceConnected => "device_connected",
             EventType::DeviceDisconnected => "device_disconnected",
+            EventType::DeviceUpdated => "device_updated",
+            EventType::ProfileUpdated => "profile_updated",
             EventType::TestProgress => "test_progress",
             EventType::TestResult => "test_result",
             EventType::AnalysisProgress => "analysis_progress",
@@ -102,9 +117,47 @@ impl EventType {
             15 => Some(EventType::RecordingStopped),
             16 => Some(EventType::RawInput),
             17 => Some(EventType::RawOutput),
+            18 => Some(EventType::DeviceUpdated),
+            19 => Some(EventType::ProfileUpdated),
             _ => None,
         }
     }
+
+    /// Get the integer code for this event type.
+    pub fn code(&self) -> i32 {
+        match self {
+            EventType::DiscoveryProgress => 0,
+            EventType::DiscoveryDuplicate => 1,
+            EventType::DiscoverySummary => 2,
+            EventType::EngineState => 3,
+            EventType::ValidationProgress => 4,
+            EventType::ValidationResult => 5,
+            EventType::DeviceConnected => 6,
+            EventType::DeviceDisconnected => 7,
+            EventType::TestProgress => 8,
+            EventType::TestResult => 9,
+            EventType::AnalysisProgress => 10,
+            EventType::AnalysisResult => 11,
+            EventType::DiagnosticsLog => 12,
+            EventType::DiagnosticsMetric => 13,
+            EventType::RecordingStarted => 14,
+            EventType::RecordingStopped => 15,
+            EventType::RawInput => 16,
+            EventType::RawOutput => 17,
+            EventType::DeviceUpdated => 18,
+            EventType::ProfileUpdated => 19,
+        }
+    }
+}
+
+/// Unified event envelope that wraps all FFI events.
+/// This ensures the event type is always available to the consumer.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UnifiedEvent<'a, T> {
+    event_type: EventType,
+    #[serde(flatten)]
+    payload: &'a T,
 }
 
 /// Unified registry for all FFI event callbacks.
@@ -204,8 +257,14 @@ impl EventRegistry {
         // If no callback registered, silently discard (requirement 2.4)
         let Some(cb) = callback else { return };
 
+        // Wrap payload in UnifiedEvent to ensure eventType is present
+        let event = UnifiedEvent {
+            event_type,
+            payload,
+        };
+
         // Serialize payload to JSON
-        match serde_json::to_vec(payload) {
+        match serde_json::to_vec(&event) {
             Ok(bytes) => {
                 // SAFETY: We leak the memory here to ensure it survives the async FFI call.
                 // The Dart side MUST call keyrx_free_event_payload to reclaim this memory.
@@ -263,6 +322,7 @@ impl Default for EventRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
     use serde_json::json;
     use serial_test::serial;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -328,7 +388,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn invoke_calls_registered_callback() {
+    fn invoke_calls_registered_callback_with_unified_payload() {
         reset_test_state();
         let registry = EventRegistry::new();
 
@@ -339,12 +399,21 @@ mod tests {
 
         assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 1);
 
-        // Verify payload was passed correctly
+        // Verify payload was passed correctly AND has eventType
         if let Ok(guard) = LAST_PAYLOAD.lock() {
             assert!(guard.is_some());
             let json_str = String::from_utf8(guard.clone().unwrap()).unwrap();
-            assert!(json_str.contains("scanning"));
-            assert!(json_str.contains("0.5"));
+            let data: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+            // Check eventType presence
+            assert_eq!(
+                data["eventType"].as_i64(),
+                Some(EventType::DiscoveryProgress.code() as i64)
+            );
+
+            // Check flattened payload
+            assert_eq!(data["stage"].as_str(), Some("scanning"));
+            assert_eq!(data["progress"].as_f64(), Some(0.5));
         }
     }
 
@@ -358,7 +427,7 @@ mod tests {
         let payload = json!({"test": "data"});
         registry.invoke(EventType::DiscoveryProgress, &payload);
 
-        // Should not panic or call anything
+        // Should not pass to callback
         assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 0);
     }
 
@@ -414,21 +483,38 @@ mod tests {
 
     #[test]
     #[serial]
-    fn event_type_names_are_unique() {
+    fn event_type_codes_are_unique_and_serializable() {
         use std::collections::HashSet;
 
-        let names: HashSet<_> = [
+        let types = [
             EventType::DiscoveryProgress,
             EventType::DiscoveryDuplicate,
             EventType::DiscoverySummary,
             EventType::EngineState,
             EventType::ValidationProgress,
             EventType::ValidationResult,
-        ]
-        .iter()
-        .map(|e| e.name())
-        .collect();
+            EventType::DeviceConnected,
+            EventType::DeviceDisconnected,
+            EventType::DeviceUpdated,
+            EventType::TestProgress,
+            EventType::TestResult,
+            EventType::AnalysisProgress,
+            EventType::AnalysisResult,
+            EventType::DiagnosticsLog,
+            EventType::DiagnosticsMetric,
+            EventType::RecordingStarted,
+            EventType::RecordingStopped,
+            EventType::RawInput,
+            EventType::RawOutput,
+        ];
 
-        assert_eq!(names.len(), 6);
+        let mut codes = HashSet::new();
+        for t in types.iter() {
+            assert!(codes.insert(t.code()), "Duplicate code for {:?}", t);
+
+            // formatting verification
+            let json = serde_json::to_string(t).unwrap();
+            assert_eq!(json, t.code().to_string());
+        }
     }
 }

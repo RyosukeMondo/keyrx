@@ -130,6 +130,7 @@ impl RunCommand {
 
         RevolutionaryRuntimeGuard::install(RevolutionaryRuntime::new(
             device_registry.clone(),
+            None,
             profile_registry.clone(),
             device_definitions.clone(),
             shared_runtime,

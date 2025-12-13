@@ -289,6 +289,80 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
     let engine = Arc::new(Mutex::new(engine));
     set_global_engine(engine.clone());
 
+    // 3.5 Setup Event Forwarding
+    // We take the receiver from the runtime (if available) and forward events to FFI
+    let events_rx =
+        crate::ffi::runtime::with_revolutionary_runtime(|rt| Ok(rt.take_device_events_rx()))
+            .ok()
+            .flatten();
+
+    if let Some(mut rx) = events_rx {
+        tokio::spawn(async move {
+            use crate::registry::DeviceEvent;
+            use serde_json::json;
+
+            tracing::info!("Starting device event forwarding loop");
+            while let Some(event) = rx.recv().await {
+                // Map DeviceEvent to FFI EventType and payload
+                match event {
+                    DeviceEvent::Registered { identity } => {
+                        global_event_registry()
+                            .invoke(EventType::DeviceConnected, &json!({ "identity": identity }));
+                    }
+                    DeviceEvent::Unregistered { identity } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceDisconnected,
+                            &json!({ "identity": identity }),
+                        );
+                    }
+                    DeviceEvent::RemapStateChanged { identity, enabled } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "remap",
+                                "enabled": enabled
+                            }),
+                        );
+                    }
+                    DeviceEvent::ProfileAssigned {
+                        identity,
+                        profile_id,
+                    } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "profile_assigned",
+                                "profileId": profile_id
+                            }),
+                        );
+                    }
+                    DeviceEvent::ProfileUnassigned { identity } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "profile_unassigned"
+                            }),
+                        );
+                    }
+                    DeviceEvent::LabelChanged { identity, label } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "label",
+                                "label": label
+                            }),
+                        );
+                    }
+                }
+            }
+            tracing::info!("Device event forwarding loop ended");
+        });
+    }
+
     tracing::info!("Engine loop running");
 
     // 4. Loop

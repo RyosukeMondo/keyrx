@@ -78,4 +78,50 @@ where
             std::ptr::null()
         }
     }
+    }
+
+
+/// Specialized wrapper for returning raw strings (without JSON serialization).
+///
+/// Use this when the function contract specifies a String return and the implementation
+/// returns a `String` that should be passed directly to C (e.g. pre-formatted JSON).
+pub unsafe fn ffi_string_wrapper<F>(error: *mut *mut c_char, f: F) -> *const c_char
+where
+    F: FnOnce() -> Result<String, String>,
+{
+     // Helper to set error pointer
+    let set_error = |err_msg: &str| {
+        if !error.is_null() {
+            if let Ok(cs) = CString::new(err_msg) {
+                // SAFETY: error is not null, checked above
+                unsafe { *error = cs.into_raw() };
+            }
+        }
+    };
+
+    // Catch panics
+    let result = handle_panic(f);
+
+    match result {
+        Ok(Ok(value)) => {
+            // Success path: convert String directly to CString
+            match CString::new(value) {
+                Ok(cs) => cs.into_raw(),
+                Err(_) => {
+                    set_error("String contains null byte");
+                    std::ptr::null()
+                }
+            }
+        }
+        Ok(Err(e)) => {
+            // Implementation returned an error
+            set_error(&e);
+            std::ptr::null()
+        }
+        Err(panic_msg) => {
+            // Panic was caught
+            set_error(&panic_msg);
+            std::ptr::null()
+        }
+    }
 }

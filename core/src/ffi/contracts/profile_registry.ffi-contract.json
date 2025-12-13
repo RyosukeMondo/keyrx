@@ -1,0 +1,93 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "profile_registry",
+    "description": "Profile Registry FFI",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "list_profiles",
+            "rust_name": "keyrx_profile_registry_list_profiles",
+            "description": "List all profile IDs.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "JSON array of profile IDs"
+            },
+            "errors": []
+        },
+        {
+            "name": "get_profile",
+            "rust_name": "keyrx_profile_registry_get_profile",
+            "description": "Get a profile by ID.",
+            "parameters": [
+                {
+                    "name": "profile_id",
+                    "type": "string",
+                    "description": "Profile ID",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON profile object"
+            },
+            "errors": []
+        },
+        {
+            "name": "save_profile",
+            "rust_name": "keyrx_profile_registry_save_profile",
+            "description": "Save a profile.",
+            "parameters": [
+                {
+                    "name": "profile_json",
+                    "type": "string",
+                    "description": "JSON profile object",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result"
+            },
+            "errors": []
+        },
+        {
+            "name": "delete_profile",
+            "rust_name": "keyrx_profile_registry_delete_profile",
+            "description": "Delete a profile by ID.",
+            "parameters": [
+                {
+                    "name": "profile_id",
+                    "type": "string",
+                    "description": "Profile ID",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result"
+            },
+            "errors": []
+        },
+        {
+            "name": "find_compatible_profiles",
+            "rust_name": "keyrx_profile_registry_find_compatible_profiles",
+            "description": "Find compatible profiles.",
+            "parameters": [
+                {
+                    "name": "layout_type",
+                    "type": "string",
+                    "description": "Layout type",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

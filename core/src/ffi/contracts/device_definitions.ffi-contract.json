@@ -1,0 +1,45 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "device_definitions",
+    "description": "Access to device definition library",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "list_all",
+            "rust_name": "keyrx_definitions_list_all",
+            "description": "List all loaded device definitions.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "JSON array of device definitions"
+            },
+            "errors": []
+        },
+        {
+            "name": "get_for_device",
+            "rust_name": "keyrx_definitions_get_for_device",
+            "description": "Get device definition for a specific VID:PID.",
+            "parameters": [
+                {
+                    "name": "vendor_id",
+                    "type": "uint16",
+                    "description": "USB Vendor ID",
+                    "required": true
+                },
+                {
+                    "name": "product_id",
+                    "type": "uint16",
+                    "description": "USB Product ID",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON device definition object"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

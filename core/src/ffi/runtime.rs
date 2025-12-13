@@ -19,12 +19,17 @@ pub struct RevolutionaryRuntime {
     profile_registry: Arc<ProfileRegistry>,
     device_definitions: Arc<DeviceDefinitionLibrary>,
     rhai_runtime: Arc<Mutex<crate::scripting::RhaiRuntime>>,
+    device_events_rx:
+        Arc<Mutex<Option<tokio::sync::mpsc::UnboundedReceiver<crate::registry::DeviceEvent>>>>,
 }
 
 impl RevolutionaryRuntime {
     /// Create a new runtime wrapper from shared registries.
     pub fn new(
         device_registry: DeviceRegistry,
+        device_events_rx: Option<
+            tokio::sync::mpsc::UnboundedReceiver<crate::registry::DeviceEvent>,
+        >,
         profile_registry: Arc<ProfileRegistry>,
         device_definitions: Arc<DeviceDefinitionLibrary>,
         rhai_runtime: Arc<Mutex<crate::scripting::RhaiRuntime>>,
@@ -34,6 +39,7 @@ impl RevolutionaryRuntime {
             profile_registry,
             device_definitions,
             rhai_runtime,
+            device_events_rx: Arc::new(Mutex::new(device_events_rx)),
         }
     }
 
@@ -55,6 +61,13 @@ impl RevolutionaryRuntime {
     /// Access the shared device definition library.
     pub fn device_definitions(&self) -> &Arc<DeviceDefinitionLibrary> {
         &self.device_definitions
+    }
+
+    /// Take the device events receiver (can only be done once).
+    pub fn take_device_events_rx(
+        &self,
+    ) -> Option<tokio::sync::mpsc::UnboundedReceiver<crate::registry::DeviceEvent>> {
+        self.device_events_rx.lock().unwrap().take()
     }
 }
 

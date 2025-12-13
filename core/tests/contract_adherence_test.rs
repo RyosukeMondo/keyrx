@@ -5,7 +5,8 @@
     clippy::panic,
     clippy::print_stdout,
     clippy::print_stderr,
-    clippy::unnecessary_map_or
+    clippy::unnecessary_map_or,
+    unsafe_code
 )]
 
 mod contract_adherence;
@@ -63,4 +64,63 @@ fn verify_ffi_contract_adherence() {
         "FFI Contract Validation: {} functions validated successfully",
         report.passed
     );
+}
+
+#[test]
+fn verify_ffi_return_envelopes() {
+    // This test ensures that the FFI functions in the config domain return
+    // JSON strings wrapped in the ok:/error: envelope.
+    // This prevents runtime crashes in the Flutter application which expects this format.
+
+    use keyrx_core::ffi::domains::config;
+    use std::ffi::{CStr, CString};
+
+    unsafe {
+        // Initialize error pointer
+        let mut error: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        // Test 1: list_hardware_profiles (should be ok:)
+        let result_ptr = config::keyrx_config_list_hardware_profiles(&mut error);
+
+        if !error.is_null() {
+            let err_msg = CStr::from_ptr(error).to_string_lossy();
+            panic!("FFI returned error: {}", err_msg);
+        }
+
+        assert!(!result_ptr.is_null(), "Returned null pointer");
+        let c_str = CStr::from_ptr(result_ptr);
+        let result = c_str.to_str().expect("Valid UTF-8");
+
+        if !result.starts_with("ok:") && !result.starts_with("error:") {
+            let snippet: String = result.chars().take(50).collect();
+            panic!(
+                "Result must start with 'ok:' or 'error:', got start: '{}...'",
+                snippet
+            );
+        }
+
+        // Clean up
+        drop(CString::from_raw(result_ptr as *mut i8));
+
+        // Test 2: list_keymaps (should be ok:)
+        let result_ptr = config::keyrx_config_list_keymaps(&mut error);
+
+        if !error.is_null() {
+            let err_msg = CStr::from_ptr(error).to_string_lossy();
+            panic!("FFI returned error: {}", err_msg);
+        }
+
+        assert!(!result_ptr.is_null(), "Returned null pointer");
+        let c_str = CStr::from_ptr(result_ptr);
+        let result = c_str.to_str().expect("Valid UTF-8");
+
+        assert!(
+            result.starts_with("ok:") || result.starts_with("error:"),
+            "Result must start with 'ok:' or 'error:', got: {}",
+            result
+        );
+
+        // Clean up
+        drop(CString::from_raw(result_ptr as *mut i8));
+    }
 }

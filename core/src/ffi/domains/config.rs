@@ -30,7 +30,9 @@ impl ConfigDomain {
             .load_virtual_layouts()
             .map(|map| map.into_values().collect())
             .map_err(|e| e.to_string())?;
-        serde_json::to_string(&layouts).map_err(|e| e.to_string())
+        serde_json::to_string(&layouts)
+            .map(|json| format!("ok:{json}"))
+            .map_err(|e| e.to_string())
     }
 
     /// Save or update a virtual layout.
@@ -40,7 +42,7 @@ impl ConfigDomain {
         global_config_manager()
             .save_virtual_layout(&layout)
             .map_err(|e| e.to_string())?;
-        Ok(r#"{"success": true}"#.to_string())
+        Ok(r#"ok:{"success": true}"#.to_string())
     }
 
     /// Delete a virtual layout by ID.
@@ -48,7 +50,7 @@ impl ConfigDomain {
         global_config_manager()
             .delete_virtual_layout(&id)
             .map_err(|e| e.to_string())?;
-        Ok(r#"{"success": true}"#.to_string())
+        Ok(r#"ok:{"success": true}"#.to_string())
     }
 
     /// List all hardware profiles.
@@ -57,7 +59,9 @@ impl ConfigDomain {
             .load_hardware_profiles()
             .map(|map| map.into_values().collect())
             .map_err(|e| e.to_string())?;
-        serde_json::to_string(&profiles).map_err(|e| e.to_string())
+        serde_json::to_string(&profiles)
+            .map(|json| format!("ok:{json}"))
+            .map_err(|e| e.to_string())
     }
 
     /// Save or update a hardware profile.
@@ -67,7 +71,9 @@ impl ConfigDomain {
         global_config_manager()
             .save_hardware_profile(&profile)
             .map_err(|e| e.to_string())?;
-        serde_json::to_string(&profile).map_err(|e| e.to_string())
+        serde_json::to_string(&profile)
+            .map(|json| format!("ok:{json}"))
+            .map_err(|e| e.to_string())
     }
 
     /// Delete a hardware profile by ID.
@@ -75,7 +81,7 @@ impl ConfigDomain {
         global_config_manager()
             .delete_hardware_profile(&id)
             .map_err(|e| e.to_string())?;
-        Ok(r#"{"success": true}"#.to_string())
+        Ok(r#"ok:{"success": true}"#.to_string())
     }
 
     /// List all keymaps.
@@ -84,7 +90,9 @@ impl ConfigDomain {
             .load_keymaps()
             .map(|map| map.into_values().collect())
             .map_err(|e| e.to_string())?;
-        serde_json::to_string(&keymaps).map_err(|e| e.to_string())
+        serde_json::to_string(&keymaps)
+            .map(|json| format!("ok:{json}"))
+            .map_err(|e| e.to_string())
     }
 
     /// Save or update a keymap.
@@ -94,7 +102,7 @@ impl ConfigDomain {
         global_config_manager()
             .save_keymap(&keymap)
             .map_err(|e| e.to_string())?;
-        Ok(r#"{"success": true}"#.to_string())
+        Ok(r#"ok:{"success": true}"#.to_string())
     }
 
     /// Delete a keymap by ID.
@@ -102,15 +110,13 @@ impl ConfigDomain {
         global_config_manager()
             .delete_keymap(&id)
             .map_err(|e| e.to_string())?;
-        Ok(r#"{"success": true}"#.to_string())
+        Ok(r#"ok:{"success": true}"#.to_string())
     }
 
     /// Get the content root path.
     fn get_config_root() -> Result<String, String> {
-        Ok(global_config_manager()
-            .root_path()
-            .to_string_lossy()
-            .to_string())
+        let path = global_config_manager().root_path().to_string_lossy();
+        Ok(format!("ok:{}", path))
     }
 }
 

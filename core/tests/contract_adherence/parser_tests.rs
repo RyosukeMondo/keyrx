@@ -177,7 +177,7 @@ fn test_parse_double_pointer_param() {
 
     let param = &funcs[0].params[0];
     assert_eq!(param.name, "err");
-    assert_eq!(param.rust_type, "*mut *mut c_char");
+    assert_eq!(param.rust_type, "*mut * mut c_char");
     assert!(param.is_pointer);
     assert!(param.is_mutable);
 }

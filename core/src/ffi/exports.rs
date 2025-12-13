@@ -36,13 +36,14 @@ pub(crate) fn parse_device_json(json_str: &str) -> FfiResult<DeviceInstanceId> {
 fn init_revolutionary_runtime() {
     // Initialize with default/empty components for now.
     // In a real app complexity, this would load config from disk.
-    let (registry, _rx) = DeviceRegistry::new();
+    let (registry, rx) = DeviceRegistry::new();
     let profiles = Arc::new(ProfileRegistry::new());
     let definitions = Arc::new(DeviceDefinitionLibrary::new());
     let rhai = crate::scripting::RhaiRuntime::new().expect("failed to initialize rhai runtime");
     let rhai_runtime = Arc::new(Mutex::new(rhai));
 
-    let runtime = RevolutionaryRuntime::new(registry, profiles, definitions, rhai_runtime);
+    let runtime =
+        RevolutionaryRuntime::new(registry, Some(rx), profiles, definitions, rhai_runtime);
     let _ = set_revolutionary_runtime(runtime);
 }
 

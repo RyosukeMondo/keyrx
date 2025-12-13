@@ -149,24 +149,24 @@ fn test_map_case_insensitive_void() {
 #[test]
 fn test_map_unknown_type() {
     match map_contract_to_rust("custom_type") {
-        RustFfiType::Unknown(s) => assert_eq!(s, "custom_type"),
-        _ => panic!("Expected Unknown type"),
+        RustFfiType::Complex(s) => assert_eq!(s, "custom_type"),
+        _ => panic!("Expected Complex type"),
     }
 }
 
 #[test]
 fn test_map_unknown_preserves_original_case() {
     match map_contract_to_rust("CustomStruct") {
-        RustFfiType::Unknown(s) => assert_eq!(s, "customstruct"),
-        _ => panic!("Expected Unknown type"),
+        RustFfiType::Complex(s) => assert_eq!(s, "CustomStruct"), // Case preserved
+        _ => panic!("Expected Complex type"),
     }
 }
 
 #[test]
 fn test_map_empty_string_is_unknown() {
     match map_contract_to_rust("") {
-        RustFfiType::Unknown(s) => assert_eq!(s, ""),
-        _ => panic!("Expected Unknown type for empty string"),
+        RustFfiType::Complex(s) => assert_eq!(s, ""),
+        _ => panic!("Expected Complex type for empty string"),
     }
 }
 
@@ -397,8 +397,7 @@ fn test_validate_unknown_contract_type_returns_error() {
     let result = validate_type_match("custom_type", &ParsedType::Primitive("i32".to_string()));
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert!(err.message.contains("Unknown contract type"));
-    assert!(err.message.contains("custom_type"));
+    assert!(err.message.contains("expected") && err.message.contains("custom_type"));
 }
 
 // ============================================================================

@@ -1,0 +1,64 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "marshal",
+    "description": "Marshal and helper utilities",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "free_ffi_json",
+            "rust_name": "free_ffi_json",
+            "description": "Free FFI JSON string.",
+            "parameters": [
+                {
+                    "name": "ptr",
+                    "type": "*mut c_char",
+                    "description": "Pointer to string",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "free_ffi_string",
+            "rust_name": "free_ffi_string",
+            "description": "Free FFI string.",
+            "parameters": [
+                {
+                    "name": "ptr",
+                    "type": "*mut c_char",
+                    "description": "Pointer to string",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "free_c_string",
+            "rust_name": "free_c_string",
+            "description": "Free C string.",
+            "parameters": [
+                {
+                    "name": "ptr",
+                    "type": "*mut c_char",
+                    "description": "Pointer to string",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

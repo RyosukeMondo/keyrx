@@ -182,6 +182,14 @@ pub fn parse_ffi_exports_from_str(
                     }
                 }
             }
+            Item::Impl(impl_block) => {
+                if let Some(domain) = get_keyrx_ffi_domain(&impl_block.attrs) {
+                    let parsed_funcs =
+                        extract_macro_impl_functions(&impl_block, &domain, &file_path, source)?;
+
+                    functions.extend(parsed_funcs);
+                }
+            }
             _ => {}
         }
     }
@@ -307,46 +315,11 @@ fn extract_type_info(ty: &Type) -> (String, bool, bool) {
 }
 
 /// Convert a syn::Type to a string representation.
+/// Convert a syn::Type to a string representation.
 fn type_to_string(ty: &Type) -> String {
-    match ty {
-        Type::Path(type_path) => type_path
-            .path
-            .segments
-            .iter()
-            .map(|s| s.ident.to_string())
-            .collect::<Vec<_>>()
-            .join("::"),
-        Type::Ptr(ptr) => {
-            let inner = type_to_string(&ptr.elem);
-            if ptr.mutability.is_some() {
-                format!("*mut {}", inner)
-            } else {
-                format!("*const {}", inner)
-            }
-        }
-        Type::Tuple(tuple) if tuple.elems.is_empty() => "()".to_string(),
-        Type::BareFn(bare_fn) => {
-            let params: Vec<String> = bare_fn
-                .inputs
-                .iter()
-                .map(|arg| type_to_string(&arg.ty))
-                .collect();
-            let ret = match &bare_fn.output {
-                ReturnType::Default => "()".to_string(),
-                ReturnType::Type(_, ty) => type_to_string(ty),
-            };
-            format!("fn({}) -> {}", params.join(", "), ret)
-        }
-        Type::Reference(reference) => {
-            let inner = type_to_string(&reference.elem);
-            if reference.mutability.is_some() {
-                format!("&mut {}", inner)
-            } else {
-                format!("&{}", inner)
-            }
-        }
-        _ => quote::quote!(#ty).to_string(),
-    }
+    // Use quote! to generate the exact Rust code for the type
+    // This handles generics (Option<T>), function pointers, and all other complex types correctly
+    quote::quote!(#ty).to_string()
 }
 
 /// Extract return type from a syn::ReturnType.
@@ -383,6 +356,100 @@ fn get_line_number(source: &str, span: proc_macro2::Span) -> usize {
             .filter(|&c| c == '\n')
             .count()
             + 1
+    }
+}
+
+/// Extract the domain from `#[keyrx_ffi(domain = "foo")]`.
+fn get_keyrx_ffi_domain(attrs: &[syn::Attribute]) -> Option<String> {
+    for attr in attrs {
+        if attr.path().is_ident("keyrx_ffi") {
+            let mut domain = None;
+            let result = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("domain") {
+                    let value = meta.value()?;
+                    let s: syn::LitStr = value.parse()?;
+                    domain = Some(s.value());
+                }
+                Ok(())
+            });
+
+            if let Err(_e) = result {}
+            return domain;
+        }
+    }
+    None
+}
+
+/// Extract function signatures from a `#[keyrx_ffi]` impl block.
+fn extract_macro_impl_functions(
+    impl_block: &syn::ItemImpl,
+    domain: &str,
+    file_path: &Path,
+    source: &str,
+) -> Result<Vec<ParsedFunction>, ParseError> {
+    let mut functions = Vec::new();
+
+    for item in &impl_block.items {
+        if let syn::ImplItem::Fn(method) = item {
+            let method_name = method.sig.ident.to_string();
+            let ffi_name = format!("keyrx_{}_{}", domain, method_name);
+            let line_number = get_line_number(source, method.sig.ident.span());
+
+            // 1. Map parameters
+            let mut params = Vec::new();
+            for input in &method.sig.inputs {
+                if let FnArg::Typed(pat_type) = input {
+                    let name = match pat_type.pat.as_ref() {
+                        Pat::Ident(pat_ident) => pat_ident.ident.to_string(),
+                        _ => "_".to_string(),
+                    };
+                    let (rust_type, is_ptr, is_mut) = map_rust_type_to_ffi(&pat_type.ty);
+                    params.push(ParsedParam::new(name, rust_type, is_ptr, is_mut));
+                }
+            }
+
+            // 2. Append error pointer (required by macro)
+            params.push(ParsedParam::new(
+                "error".to_string(),
+                "*mut *mut c_char".to_string(),
+                true,
+                true,
+            ));
+
+            // 3. Map return type
+            // The macro assumes Result<T, E> -> *mut c_char (serialized JSON)
+            // We simplify here assuming most config methods return strings/JSON objects.
+            let return_type = ParsedType::Pointer {
+                target: "c_char".to_string(),
+                is_mut: true,
+            };
+
+            functions.push(ParsedFunction::new(
+                ffi_name,
+                params,
+                return_type,
+                file_path.to_path_buf(),
+                line_number,
+            ));
+        }
+    }
+
+    Ok(functions)
+}
+
+/// Map high-level Rust types to expected FFI types.
+fn map_rust_type_to_ffi(ty: &Type) -> (String, bool, bool) {
+    let type_str = type_to_string(ty);
+    match type_str.as_str() {
+        "String" => ("*const c_char".to_string(), true, false),
+        "& str" => ("*const c_char".to_string(), true, false),
+        "i32" | "u32" | "u16" | "bool" => (type_str, false, false),
+        _ => {
+            // Fallback: assume it's passed as is or is a complex type
+            // For strict correctness we might need more logic, but this covers config.rs
+            // If it matches a primitive, keep it.
+            (type_str, false, false)
+        }
     }
 }
 

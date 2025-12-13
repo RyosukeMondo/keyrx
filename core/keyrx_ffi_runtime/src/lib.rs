@@ -26,7 +26,7 @@ pub mod wrapper;
 pub use json::serialize_to_c_string;
 pub use panic::handle_panic;
 pub use string::parse_c_string;
-pub use wrapper::ffi_wrapper;
+pub use wrapper::{ffi_string_wrapper, ffi_wrapper};
 
 #[cfg(test)]
 mod tests;

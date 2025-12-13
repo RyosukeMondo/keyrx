@@ -1,0 +1,455 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "compat",
+    "description": "Compatibility FFI exports",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "select_device",
+            "rust_name": "keyrx_select_device",
+            "description": "Select device by path.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Device path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "list_keys",
+            "rust_name": "keyrx_list_keys",
+            "description": "List keys.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "JSON keys"
+            },
+            "errors": []
+        },
+        {
+            "name": "get_device_profile",
+            "rust_name": "keyrx_get_device_profile",
+            "description": "Get device profile.",
+            "parameters": [
+                {
+                    "name": "vendor_id",
+                    "type": "u16",
+                    "description": "VID",
+                    "required": true
+                },
+                {
+                    "name": "product_id",
+                    "type": "u16",
+                    "description": "PID",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON profile"
+            },
+            "errors": []
+        },
+        {
+            "name": "has_device_profile",
+            "rust_name": "keyrx_has_device_profile",
+            "description": "Check profile existence.",
+            "parameters": [
+                {
+                    "name": "vendor_id",
+                    "type": "u16",
+                    "description": "VID",
+                    "required": true
+                },
+                {
+                    "name": "product_id",
+                    "type": "u16",
+                    "description": "PID",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON bool"
+            },
+            "errors": []
+        },
+        {
+            "name": "save_device_profile",
+            "rust_name": "keyrx_save_device_profile",
+            "description": "Save profile.",
+            "parameters": [
+                {
+                    "name": "profile_json",
+                    "type": "string",
+                    "description": "JSON",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result"
+            },
+            "errors": []
+        },
+        {
+            "name": "is_bypass_active",
+            "rust_name": "keyrx_is_bypass_active",
+            "description": "Check bypass mode.",
+            "parameters": [],
+            "returns": {
+                "type": "bool",
+                "description": "Active state"
+            },
+            "errors": []
+        },
+        {
+            "name": "set_bypass",
+            "rust_name": "keyrx_set_bypass",
+            "description": "Set bypass mode.",
+            "parameters": [
+                {
+                    "name": "active",
+                    "type": "bool",
+                    "description": "State",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "load_script",
+            "rust_name": "keyrx_load_script",
+            "description": "Load script.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 success"
+            },
+            "errors": []
+        },
+        {
+            "name": "eval",
+            "rust_name": "keyrx_eval",
+            "description": "Evaluate command.",
+            "parameters": [
+                {
+                    "name": "command",
+                    "type": "string",
+                    "description": "Command",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "validate_script",
+            "rust_name": "keyrx_validate_script",
+            "description": "Validate script.",
+            "parameters": [
+                {
+                    "name": "script",
+                    "type": "string",
+                    "description": "Script",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "validate_script_with_options",
+            "rust_name": "keyrx_validate_script_with_options",
+            "description": "Validate script with options.",
+            "parameters": [
+                {
+                    "name": "script",
+                    "type": "string",
+                    "description": "Script",
+                    "required": true
+                },
+                {
+                    "name": "options_json",
+                    "type": "string",
+                    "description": "Options",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "suggest_keys",
+            "rust_name": "keyrx_suggest_keys",
+            "description": "Suggest keys.",
+            "parameters": [
+                {
+                    "name": "partial",
+                    "type": "string",
+                    "description": "Partial",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Suggestions"
+            },
+            "errors": []
+        },
+        {
+            "name": "all_key_names",
+            "rust_name": "keyrx_all_key_names",
+            "description": "Get all key names.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "Names"
+            },
+            "errors": []
+        },
+        {
+            "name": "check_script",
+            "rust_name": "keyrx_check_script",
+            "description": "Check script.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "discover_tests",
+            "rust_name": "keyrx_discover_tests",
+            "description": "Discover tests.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "run_tests",
+            "rust_name": "keyrx_run_tests",
+            "description": "Run tests.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                },
+                {
+                    "name": "filter",
+                    "type": "string",
+                    "description": "Filter",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "simulate",
+            "rust_name": "keyrx_simulate",
+            "description": "Simulate keys.",
+            "parameters": [
+                {
+                    "name": "keys_json",
+                    "type": "string",
+                    "description": "Keys",
+                    "required": true
+                },
+                {
+                    "name": "script_path",
+                    "type": "string",
+                    "description": "Script path",
+                    "required": false
+                },
+                {
+                    "name": "combo_mode",
+                    "type": "bool",
+                    "description": "Combo mode",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "run_benchmark",
+            "rust_name": "keyrx_run_benchmark",
+            "description": "Run benchmark.",
+            "parameters": [
+                {
+                    "name": "iterations",
+                    "type": "u32",
+                    "description": "Iterations",
+                    "required": true
+                },
+                {
+                    "name": "script_path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "run_doctor",
+            "rust_name": "keyrx_run_doctor",
+            "description": "Run doctor.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "start_recording",
+            "rust_name": "keyrx_start_recording",
+            "description": "Start recording.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "stop_recording",
+            "rust_name": "keyrx_stop_recording",
+            "description": "Stop recording.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "list_sessions",
+            "rust_name": "keyrx_list_sessions",
+            "description": "List sessions.",
+            "parameters": [
+                {
+                    "name": "dir_path",
+                    "type": "string",
+                    "description": "Dir",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "analyze_session",
+            "rust_name": "keyrx_analyze_session",
+            "description": "Analyze session.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        },
+        {
+            "name": "replay_session",
+            "rust_name": "keyrx_replay_session",
+            "description": "Replay session.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "string",
+                    "description": "Path",
+                    "required": true
+                },
+                {
+                    "name": "verify",
+                    "type": "bool",
+                    "description": "Verify",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "Result"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

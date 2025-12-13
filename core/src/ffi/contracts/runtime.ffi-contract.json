@@ -129,6 +129,17 @@
                 "description": "JSON runtime configuration"
             },
             "errors": []
+        },
+        {
+            "name": "get_config_root",
+            "rust_name": "keyrx_get_config_root",
+            "description": "Get configuration root path.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "Config root path"
+            },
+            "errors": []
         }
     ],
     "events": []

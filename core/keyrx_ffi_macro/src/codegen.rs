@@ -295,13 +295,26 @@ pub fn generate_ffi_function(
         }
     } else {
         // Non-void return - serialize result
-        quote! {
-            unsafe {
-                ::keyrx_ffi_runtime::ffi_wrapper(error, || {
-                    #param_parsers
-                    let result = #impl_type::#impl_method(#call_args)?;
-                    Ok(result)
-                })
+        if matches!(return_ffi_type, FfiType::CString) {
+            quote! {
+                unsafe {
+                    ::keyrx_ffi_runtime::ffi_string_wrapper(error, || {
+                        #param_parsers
+                        // Ensure the implementation returns Result<String, String>
+                        let result = #impl_type::#impl_method(#call_args)?;
+                        Ok(result)
+                    })
+                }
+            }
+        } else {
+            quote! {
+                unsafe {
+                    ::keyrx_ffi_runtime::ffi_wrapper(error, || {
+                        #param_parsers
+                        let result = #impl_type::#impl_method(#call_args)?;
+                        Ok(result)
+                    })
+                }
             }
         }
     };

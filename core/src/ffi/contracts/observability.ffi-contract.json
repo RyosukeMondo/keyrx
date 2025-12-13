@@ -1,0 +1,325 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "observability",
+    "description": "Observability (Logging and Metrics) FFI",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "log_bridge_init",
+            "rust_name": "keyrx_log_bridge_init",
+            "description": "Initialize the log bridge.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "log_set_callback",
+            "rust_name": "keyrx_log_set_callback",
+            "description": "Register log callback.",
+            "parameters": [
+                {
+                    "name": "callback",
+                    "type": "Option<extern \"C\" fn(*const CLogEntry)>",
+                    "description": "Callback function pointer",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "log_count",
+            "rust_name": "keyrx_log_count",
+            "description": "Get number of buffered log entries.",
+            "parameters": [],
+            "returns": {
+                "type": "usize",
+                "description": "Count of entries"
+            },
+            "errors": []
+        },
+        {
+            "name": "log_drain",
+            "rust_name": "keyrx_log_drain",
+            "description": "Drain log entries as JSON.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "JSON string (caller must free)"
+            },
+            "errors": []
+        },
+        {
+            "name": "log_clear",
+            "rust_name": "keyrx_log_clear",
+            "description": "Clear log buffer.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "log_set_enabled",
+            "rust_name": "keyrx_log_set_enabled",
+            "description": "Enable/disable logging.",
+            "parameters": [
+                {
+                    "name": "enabled",
+                    "type": "i32",
+                    "description": "1 enabled, 0 disabled",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_set_callback",
+            "rust_name": "keyrx_metrics_set_callback",
+            "description": "Set metrics callback.",
+            "parameters": [
+                {
+                    "name": "callback",
+                    "type": "Option<extern \"C\" fn(*const MetricsSnapshotFfi)>",
+                    "description": "Callback function pointer",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_snapshot",
+            "rust_name": "keyrx_metrics_snapshot",
+            "description": "Get metrics snapshot pointer.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut MetricsSnapshotFfi",
+                "description": "Pointer to snapshot"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_free_snapshot",
+            "rust_name": "keyrx_metrics_free_snapshot",
+            "description": "Free metrics snapshot.",
+            "parameters": [
+                {
+                    "name": "snapshot",
+                    "type": "*mut MetricsSnapshotFfi",
+                    "description": "Snapshot pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_snapshot_json",
+            "rust_name": "keyrx_metrics_snapshot_json",
+            "description": "Get metrics snapshot as JSON.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "JSON string"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_start_updates",
+            "rust_name": "keyrx_metrics_start_updates",
+            "description": "Start metrics updates.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_stop_updates",
+            "rust_name": "keyrx_metrics_stop_updates",
+            "description": "Stop metrics updates.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_trigger_callback",
+            "rust_name": "keyrx_metrics_trigger_callback",
+            "description": "Trigger metrics callback.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_set_threshold_callback",
+            "rust_name": "keyrx_metrics_set_threshold_callback",
+            "description": "Set threshold callback.",
+            "parameters": [
+                {
+                    "name": "callback",
+                    "type": "Option<ThresholdCallback>",
+                    "description": "Callback function pointer",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_set_thresholds",
+            "rust_name": "keyrx_metrics_set_thresholds",
+            "description": "Set threshold values.",
+            "parameters": [
+                {
+                    "name": "latency_warn_micros",
+                    "type": "u64",
+                    "description": "Latency warning",
+                    "required": true
+                },
+                {
+                    "name": "latency_error_micros",
+                    "type": "u64",
+                    "description": "Latency error",
+                    "required": true
+                },
+                {
+                    "name": "memory_warn_bytes",
+                    "type": "u64",
+                    "description": "Memory warning",
+                    "required": true
+                },
+                {
+                    "name": "memory_error_bytes",
+                    "type": "u64",
+                    "description": "Memory error",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "metrics_get_thresholds",
+            "rust_name": "keyrx_metrics_get_thresholds",
+            "description": "Get threshold values.",
+            "parameters": [
+                {
+                    "name": "latency_warn_micros",
+                    "type": "*mut u64",
+                    "description": "Output pointer",
+                    "required": true
+                },
+                {
+                    "name": "latency_error_micros",
+                    "type": "*mut u64",
+                    "description": "Output pointer",
+                    "required": true
+                },
+                {
+                    "name": "memory_warn_bytes",
+                    "type": "*mut u64",
+                    "description": "Output pointer",
+                    "required": true
+                },
+                {
+                    "name": "memory_error_bytes",
+                    "type": "*mut u64",
+                    "description": "Output pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "c_log_entry_free",
+            "rust_name": "c_log_entry_free",
+            "description": "Free CLogEntry.",
+            "parameters": [
+                {
+                    "name": "entry",
+                    "type": "*mut CLogEntry",
+                    "description": "Entry pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "c_log_entry_create",
+            "rust_name": "c_log_entry_create",
+            "description": "Create CLogEntry.",
+            "parameters": [
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "description": "Timestamp",
+                    "required": true
+                },
+                {
+                    "name": "level",
+                    "type": "LogLevel",
+                    "description": "Log Level",
+                    "required": true
+                },
+                {
+                    "name": "target",
+                    "type": "*const c_char",
+                    "description": "Target",
+                    "required": true
+                },
+                {
+                    "name": "message",
+                    "type": "*const c_char",
+                    "description": "Message",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "*mut CLogEntry",
+                "description": "Entry pointer"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

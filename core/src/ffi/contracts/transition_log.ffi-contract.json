@@ -1,0 +1,124 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "transition_log",
+    "description": "Transition log access",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "export_json",
+            "rust_name": "keyrx_transition_log_export_json",
+            "description": "Export log as JSON.",
+            "parameters": [
+                {
+                    "name": "engine_ptr",
+                    "type": "*const c_void",
+                    "description": "Engine pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "JSON string"
+            },
+            "errors": []
+        },
+        {
+            "name": "len",
+            "rust_name": "keyrx_transition_log_len",
+            "description": "Get log length.",
+            "parameters": [
+                {
+                    "name": "engine_ptr",
+                    "type": "*const c_void",
+                    "description": "Engine pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "usize",
+                "description": "Length"
+            },
+            "errors": []
+        },
+        {
+            "name": "capacity",
+            "rust_name": "keyrx_transition_log_capacity",
+            "description": "Get log capacity.",
+            "parameters": [
+                {
+                    "name": "engine_ptr",
+                    "type": "*const c_void",
+                    "description": "Engine pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "usize",
+                "description": "Capacity"
+            },
+            "errors": []
+        },
+        {
+            "name": "clear",
+            "rust_name": "keyrx_transition_log_clear",
+            "description": "Clear log.",
+            "parameters": [
+                {
+                    "name": "engine_ptr",
+                    "type": "*mut c_void",
+                    "description": "Engine pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "statistics",
+            "rust_name": "keyrx_transition_log_statistics",
+            "description": "Get log statistics.",
+            "parameters": [
+                {
+                    "name": "engine_ptr",
+                    "type": "*const c_void",
+                    "description": "Engine pointer",
+                    "required": true
+                },
+                {
+                    "name": "total",
+                    "type": "*mut usize",
+                    "description": "Total entries",
+                    "required": true
+                },
+                {
+                    "name": "unique_names",
+                    "type": "*mut usize",
+                    "description": "Unique names",
+                    "required": true
+                },
+                {
+                    "name": "total_duration",
+                    "type": "*mut u64",
+                    "description": "Total duration",
+                    "required": true
+                },
+                {
+                    "name": "avg_duration",
+                    "type": "*mut u64",
+                    "description": "Average duration",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

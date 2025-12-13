@@ -36,6 +36,24 @@
                 "input": {},
                 "output": 0
             }
+        },
+        {
+            "name": "on_state",
+            "rust_name": "keyrx_on_state",
+            "description": "Register state callback.",
+            "parameters": [
+                {
+                    "name": "callback",
+                    "type": "Option<EventCallback>",
+                    "description": "Callback function",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
         }
     ],
     "events": []

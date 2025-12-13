@@ -1,0 +1,91 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+error[E0432]: unresolved import `super::type_mapper::TypeMismatch`
+ --> core\tests\contract_adherence\type_mapper_tests.rs:9:5
+  |
+9 |     TypeMismatch,
+  |     ^^^^^^^^^^^^ no `TypeMismatch` in `contract_adherence::type_mapper`
+
+error[E0412]: cannot find type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:113:17
+    |
+113 | ) -> Result<(), TypeMismatch> {
+    |                 ^^^^^^^^^^^^ not found in this scope
+    |
+help: you might be missing a type parameter
+    |
+110 | pub fn validate_type_match<TypeMismatch>(
+    |                           ++++++++++++++
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:139:21
+    |
+139 |                 Err(TypeMismatch {
+    |                     ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:156:21
+    |
+156 |                 Err(TypeMismatch {
+    |                     ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:170:21
+    |
+170 |                 Err(TypeMismatch {
+    |                     ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:187:21
+    |
+187 |                 Err(TypeMismatch {
+    |                     ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:218:21
+    |
+218 |                 Err(TypeMismatch {
+    |                     ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:232:51
+    |
+232 |         (RustFfiType::Unknown(unknown), _) => Err(TypeMismatch {
+    |                                                   ^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TypeMismatch` in this scope
+   --> core\tests\contract_adherence\type_mapper.rs:240:18
+    |
+240 |         _ => Err(TypeMismatch {
+    |                  ^^^^^^^^^^^^ not found in this scope
+
+warning: unused imports: `Attribute`, `ImplItem`, `ItemImpl`, and `LitStr`
+  --> core\tests\contract_adherence\parser.rs:10:10
+   |
+10 |     Abi, Attribute, FnArg, ForeignItem, ImplItem, Item, ItemImpl, LitStr, Pat, ReturnType, Type,
+   |          ^^^^^^^^^                      ^^^^^^^^        ^^^^^^^^  ^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: usage of an `unsafe` block
+   --> core\tests\contract_adherence_test.rs:77:5
+    |
+ 77 | /     unsafe {
+ 78 | |         // Initialize error pointer
+ 79 | |         let mut error: *mut std::os::raw::c_char = std::ptr::null_mut();
+...   |
+123 | |         drop(CString::from_raw(result_ptr as *mut i8));
+124 | |     }
+    | |_____^
+    |
+    = note: requested on the command line with `-W unsafe-code`
+
+warning: unused import: `syn::parse::Parse`
+ --> core\tests\contract_adherence\parser.rs:8:5
+  |
+8 | use syn::parse::Parse;
+  |     ^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0412, E0422, E0432.
+For more information about an error, try `rustc --explain E0412`.
+warning: `keyrx_core` (test "contract_adherence_test") generated 3 warnings
+error: could not compile `keyrx_core` (test "contract_adherence_test") due to 9 previous errors; 3 warnings emitted

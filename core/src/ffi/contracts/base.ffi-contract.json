@@ -1,0 +1,171 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "base",
+    "description": "Base library exports",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "init",
+            "rust_name": "keyrx_init",
+            "description": "Initialize the library.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "version",
+            "rust_name": "keyrx_version",
+            "description": "Get library version.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "Version string"
+            },
+            "errors": []
+        },
+        {
+            "name": "free_string",
+            "rust_name": "keyrx_free_string",
+            "description": "Free a string returned by the library.",
+            "parameters": [
+                {
+                    "name": "s",
+                    "type": "*mut c_char",
+                    "description": "String pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "last_error",
+            "rust_name": "keyrx_last_error",
+            "description": "Get last error message.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "Error string"
+            },
+            "errors": []
+        },
+        {
+            "name": "register_event_callback",
+            "rust_name": "keyrx_register_event_callback",
+            "description": "Register global event callback.",
+            "parameters": [
+                {
+                    "name": "event_type",
+                    "type": "i32",
+                    "description": "Event type ID",
+                    "required": true
+                },
+                {
+                    "name": "callback",
+                    "type": "Option<unsafe extern \"C\" fn(*const u8, usize)>",
+                    "description": "Callback function",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "protocol_version",
+            "rust_name": "keyrx_protocol_version",
+            "description": "Get protocol version.",
+            "parameters": [],
+            "returns": {
+                "type": "u32",
+                "description": "Protocol version"
+            },
+            "errors": []
+        },
+        {
+            "name": "introspection_metadata",
+            "rust_name": "keyrx_introspection_metadata",
+            "description": "Get FFI metadata.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut c_char",
+                "description": "JSON metadata"
+            },
+            "errors": []
+        },
+        {
+            "name": "set_config_root",
+            "rust_name": "keyrx_set_config_root",
+            "description": "Set configuration root path.",
+            "parameters": [
+                {
+                    "name": "path",
+                    "type": "*const c_char",
+                    "description": "Path string",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "revolutionary_runtime_init",
+            "rust_name": "keyrx_revolutionary_runtime_init",
+            "description": "Initialize revolutionary runtime.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "revolutionary_runtime_shutdown",
+            "rust_name": "keyrx_revolutionary_runtime_shutdown",
+            "description": "Shutdown revolutionary runtime.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        },
+        {
+            "name": "free_event_payload",
+            "rust_name": "keyrx_free_event_payload",
+            "description": "Free event payload.",
+            "parameters": [
+                {
+                    "name": "ptr",
+                    "type": "*mut u8",
+                    "description": "Payload pointer",
+                    "required": true
+                },
+                {
+                    "name": "len",
+                    "type": "usize",
+                    "description": "Payload length",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}

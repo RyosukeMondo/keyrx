@@ -254,3 +254,14 @@ pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
     })
     .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_set_slot_active"))))
 }
+
+#[no_mangle]
+/// Get the configuration root path.
+pub extern "C" fn keyrx_get_config_root() -> *mut c_char {
+    use crate::config::config_dir;
+    let path = config_dir();
+    match CString::new(path.to_string_lossy().as_bytes()) {
+        Ok(c_str) => c_str.into_raw(),
+        Err(_) => ptr::null_mut(),
+    }
+}

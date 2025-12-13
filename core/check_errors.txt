@@ -1,0 +1,412 @@
+    Checking tokio-rustls v0.26.4
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+    Checking flutter_rust_bridge v2.11.1
+    Checking keyrx_ffi_runtime v0.1.0 (C:\Users\ryosu\repos\keyrx\core\keyrx_ffi_runtime)
+    Checking hyper-rustls v0.27.7
+    Checking reqwest v0.12.24
+    Checking reqwest-middleware v0.4.2
+    Checking jsonschema v0.18.3
+    Checking reqwest-tracing v0.5.8
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:495:17
+    |
+495 |         let t = ParsedType::Unit;
+    |                 ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:501:17
+    |
+501 |         let t = ParsedType::Pointer {
+    |                 ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:510:17
+    |
+510 |         let t = ParsedType::Pointer {
+    |                 ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:519:17
+    |
+519 |         let t = ParsedType::Primitive("i32".to_string());
+    |                 ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedParam`
+   --> core\tests\contract_adherence\parser.rs:525:21
+    |
+525 |         let param = ParsedParam::new(
+    |                     ^^^^^^^^^^^ use of undeclared type `ParsedParam`
+    |
+help: consider importing this struct
+    |
+494 +     use crate::contract_adherence::parser::ParsedParam;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedFunction`
+   --> core\tests\contract_adherence\parser.rs:538:20
+    |
+538 |         let func = ParsedFunction::new(
+    |                    ^^^^^^^^^^^^^^ use of undeclared type `ParsedFunction`
+    |
+help: consider importing this struct
+    |
+494 +     use crate::contract_adherence::parser::ParsedFunction;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedParam`
+   --> core\tests\contract_adherence\parser.rs:540:18
+    |
+540 |             vec![ParsedParam::new(
+    |                  ^^^^^^^^^^^ use of undeclared type `ParsedParam`
+    |
+help: consider importing this struct
+    |
+494 +     use crate::contract_adherence::parser::ParsedParam;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:546:13
+    |
+546 |             ParsedType::Unit,
+    |             ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:547:13
+    |
+547 |             PathBuf::from("test.rs"),
+    |             ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedFunction`
+   --> core\tests\contract_adherence\parser.rs:557:20
+    |
+557 |         let func = ParsedFunction::new(
+    |                    ^^^^^^^^^^^^^^ use of undeclared type `ParsedFunction`
+    |
+help: consider importing this struct
+    |
+494 +     use crate::contract_adherence::parser::ParsedFunction;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedParam`
+   --> core\tests\contract_adherence\parser.rs:559:18
+    |
+559 |             vec![ParsedParam::new(
+    |                  ^^^^^^^^^^^ use of undeclared type `ParsedParam`
+    |
+help: consider importing this struct
+    |
+494 +     use crate::contract_adherence::parser::ParsedParam;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:565:13
+    |
+565 |             ParsedType::Unit,
+    |             ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:566:13
+    |
+566 |             PathBuf::from("test.rs"),
+    |             ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:584:13
+    |
+584 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:584:48
+    |
+584 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:591:13
+    |
+591 |             ParsedType::Primitive("i32".to_string())
+    |             ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:607:13
+    |
+607 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:607:48
+    |
+607 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:632:13
+    |
+632 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:632:48
+    |
+632 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:637:13
+    |
+637 |             ParsedType::Pointer {
+    |             ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:671:13
+    |
+671 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:671:48
+    |
+671 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:692:13
+    |
+692 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:692:48
+    |
+692 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:730:13
+    |
+730 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:730:48
+    |
+730 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:750:13
+    |
+750 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:750:48
+    |
+750 |             parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+    |                                                ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ParsedType`
+   --> core\tests\contract_adherence\parser.rs:753:42
+    |
+753 |         assert_eq!(funcs[0].return_type, ParsedType::Unit);
+    |                                          ^^^^^^^^^^ use of undeclared type `ParsedType`
+    |
+help: consider importing this enum
+    |
+494 +     use crate::contract_adherence::parser::ParsedType;
+    |
+
+error[E0425]: cannot find function `parse_ffi_exports_from_str` in this scope
+   --> core\tests\contract_adherence\parser.rs:763:22
+    |
+763 |         let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+494 +     use crate::contract_adherence::parser::parse_ffi_exports_from_str;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `PathBuf`
+   --> core\tests\contract_adherence\parser.rs:763:57
+    |
+763 |         let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+    |                                                         ^^^^^^^ use of undeclared type `PathBuf`
+    |
+help: consider importing one of these structs
+    |
+494 +     use crate::PathBuf;
+    |
+494 +     use std::path::PathBuf;
+    |
+
+warning: unused imports: `Attribute`, `ImplItem`, `ItemImpl`, and `LitStr`
+  --> core\tests\contract_adherence\parser.rs:10:10
+   |
+10 |     Abi, Attribute, FnArg, ForeignItem, ImplItem, Item, ItemImpl, LitStr, Pat, ReturnType, Type,
+   |          ^^^^^^^^^                      ^^^^^^^^        ^^^^^^^^  ^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: usage of an `unsafe` block
+   --> core\tests\contract_adherence_test.rs:77:5
+    |
+ 77 | /     unsafe {
+ 78 | |         // Initialize error pointer
+ 79 | |         let mut error: *mut std::os::raw::c_char = std::ptr::null_mut();
+...   |
+123 | |         drop(CString::from_raw(result_ptr as *mut i8));
+124 | |     }
+    | |_____^
+    |
+    = note: requested on the command line with `-W unsafe-code`
+
+warning: unused import: `syn::parse::Parse`
+ --> core\tests\contract_adherence\parser.rs:8:5
+  |
+8 | use syn::parse::Parse;
+  |     ^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0425, E0433.
+For more information about an error, try `rustc --explain E0425`.
+warning: `keyrx_core` (test "contract_adherence_test") generated 3 warnings
+error: could not compile `keyrx_core` (test "contract_adherence_test") due to 32 previous errors; 3 warnings emitted

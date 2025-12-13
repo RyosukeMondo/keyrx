@@ -59,6 +59,72 @@
                     "status": "ok"
                 }
             }
+        },
+        {
+            "name": "assign_profile",
+            "rust_name": "keyrx_device_registry_assign_profile",
+            "description": "Assign a profile to a device.",
+            "parameters": [
+                {
+                    "name": "device_key",
+                    "type": "string",
+                    "description": "Device identity key",
+                    "required": true
+                },
+                {
+                    "name": "profile_id",
+                    "type": "string",
+                    "description": "ID of the profile to assign",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result string"
+            },
+            "errors": [],
+            "example": {
+                "input": {
+                    "device_key": "1234:5678:0001",
+                    "profile_id": "profile-123"
+                },
+                "output": {
+                    "status": "ok"
+                }
+            }
+        },
+        {
+            "name": "set_user_label",
+            "rust_name": "keyrx_device_registry_set_user_label",
+            "description": "Set a user-friendly label for a device.",
+            "parameters": [
+                {
+                    "name": "device_key",
+                    "type": "string",
+                    "description": "Device identity key",
+                    "required": true
+                },
+                {
+                    "name": "label",
+                    "type": "string",
+                    "description": "User label text (or null to clear)",
+                    "required": false
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result string"
+            },
+            "errors": [],
+            "example": {
+                "input": {
+                    "device_key": "1234:5678:0001",
+                    "label": "My Keyboard"
+                },
+                "output": {
+                    "status": "ok"
+                }
+            }
         }
     ],
     "events": []

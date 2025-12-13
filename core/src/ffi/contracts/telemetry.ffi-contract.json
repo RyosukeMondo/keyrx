@@ -1,0 +1,61 @@
+{
+    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
+    "version": "1.0.0",
+    "domain": "telemetry",
+    "description": "Panic telemetry and recovery events",
+    "protocol_version": 1,
+    "functions": [
+        {
+            "name": "snapshot_json",
+            "rust_name": "keyrx_telemetry_snapshot_json",
+            "description": "Get telemetry as JSON.",
+            "parameters": [],
+            "returns": {
+                "type": "string",
+                "description": "JSON string"
+            },
+            "errors": []
+        },
+        {
+            "name": "snapshot",
+            "rust_name": "keyrx_telemetry_snapshot",
+            "description": "Get telemetry struct.",
+            "parameters": [],
+            "returns": {
+                "type": "*mut PanicTelemetryFfi",
+                "description": "Struct pointer"
+            },
+            "errors": []
+        },
+        {
+            "name": "free_snapshot",
+            "rust_name": "keyrx_telemetry_free_snapshot",
+            "description": "Free telemetry struct.",
+            "parameters": [
+                {
+                    "name": "telemetry",
+                    "type": "*mut PanicTelemetryFfi",
+                    "description": "Struct pointer",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
+            "name": "reset",
+            "rust_name": "keyrx_telemetry_reset",
+            "description": "Reset counters.",
+            "parameters": [],
+            "returns": {
+                "type": "i32",
+                "description": "0 on success"
+            },
+            "errors": []
+        }
+    ],
+    "events": []
+}
