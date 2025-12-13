@@ -1,0 +1,45 @@
+
+  Future<int?> _showLayerSelectDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    return showDialog<int?>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Layer'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Layer Index (0-255)',
+              hintText: 'e.g., 1',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                final index = int.tryParse(text);
+                if (index != null && index >= 0 && index <= 255) {
+                  Navigator.pop(context, index);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid number (0-255)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Select'),
+            ),
+          ],
+        );
+      },
+    );
+  }

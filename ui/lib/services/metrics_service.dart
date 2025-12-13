@@ -227,8 +227,7 @@ class MetricsServiceImpl implements MetricsService {
     } catch (e) {
       return null;
     } finally {
-      // TODO: Free the string when keyrx_free_string is available
-      // bindings.freeString(jsonPtr);
+      bindings.freeString(jsonPtr.cast<Char>());
     }
   }
 

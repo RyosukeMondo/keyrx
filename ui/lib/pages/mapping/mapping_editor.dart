@@ -439,15 +439,21 @@ class _MappingEditorState extends State<MappingEditor> {
                                   const ActionBinding.transparent(),
                                 ),
                               ),
-                              // TODO: Add proper layer toggle UI
+                              // Layer Toggle
                               ActionChip(
-                                label: const Text('To Layer 1'),
+                                label: const Text('Layer Toggle'),
                                 avatar: const Icon(Icons.layers, size: 16),
-                                onPressed: () => _applyBinding(
-                                  const ActionBinding.layerToggle(
-                                    value: 'Layer 1',
-                                  ),
-                                ),
+                                onPressed: () async {
+                                  final layerIndex =
+                                      await _showLayerSelectDialog(context);
+                                  if (layerIndex != null) {
+                                    _applyBinding(
+                                      ActionBinding.layerToggle(
+                                        value: layerIndex.toString(),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ],
                           ),
@@ -500,6 +506,51 @@ class _MappingEditorState extends State<MappingEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [_buildTopBar(), _buildCanvas(), _buildActionPalette()],
       ),
+    );
+  }
+
+  Future<int?> _showLayerSelectDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    return showDialog<int?>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Layer'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Layer Index (0-255)',
+              hintText: 'e.g., 1',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                final index = int.tryParse(text);
+                if (index != null && index >= 0 && index <= 255) {
+                  Navigator.pop(context, index);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid number (0-255)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Select'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -45,6 +45,13 @@ class KeymapConverter {
       // Layer 0 is the base layer, treated as global remaps for simple cases
       if (i == 0) {
         mappings.addAll(_extractBaseMappings(layer));
+
+        // Also extract complex mappings (macros, layer toggles) for Layer 0
+        // These can't be simple remaps, so we add them as a 'Base' layer config
+        final baseComplex = _extractLayerConfig(layer, i, onlyComplex: true);
+        if (baseComplex.mappings.isNotEmpty) {
+          layerConfigs.add(baseComplex);
+        }
       } else {
         layerConfigs.add(_extractLayerConfig(layer, i));
       }
@@ -98,20 +105,36 @@ class KeymapConverter {
     return remaps;
   }
 
-  LayerConfig _extractLayerConfig(KeymapLayer layer, int index) {
+  LayerConfig _extractLayerConfig(
+    KeymapLayer layer,
+    int index, {
+    bool onlyComplex = false,
+  }) {
     final layerMappings = <LayerMapping>[];
 
     for (final entry in layer.bindings.entries) {
       final source = entry.key;
       final binding = entry.value;
 
+      // If we only want complex mappings (for Layer 0), skip simple standard keys
+      if (onlyComplex) {
+        final isSimple = binding.maybeMap(
+          standardKey: (_) => true,
+          orElse: () => false,
+        );
+        if (isSimple) continue;
+      }
+
       binding.map(
         standardKey: (b) {
-          layerMappings.add(LayerMapping(sourceKey: source, action: b.value));
+          if (!onlyComplex) {
+            layerMappings.add(LayerMapping(sourceKey: source, action: b.value));
+          }
         },
         macro: (b) {
-          // Macros not yet supported in layer maps
-          // TODO: Implement macro support
+          layerMappings.add(
+            LayerMapping(sourceKey: source, action: 'macro:${b.value}'),
+          );
         },
         layerToggle: (b) {
           layerMappings.add(
