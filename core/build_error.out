@@ -1,0 +1,27 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+error[E0425]: cannot find function `ffi_void_wrapper` in crate `keyrx_ffi_runtime`
+  --> core\src\ffi\domains\config.rs:25:1
+   |
+25 |   #[keyrx_ffi(domain = "config")]
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  ::: C:\Users\ryosu\repos\keyrx\core\keyrx_ffi_runtime\src\wrapper.rs:92:1
+   |
+92 | / pub unsafe fn ffi_string_wrapper<F>(error: *mut *mut c_char, f: F) -> *const c_char
+93 | | where
+94 | |     F: FnOnce() -> Result<String, String>,
+   | |__________________________________________- similarly named function `ffi_string_wrapper` defined here
+   |
+   = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a function with a similar name exists
+   |
+25 - #[keyrx_ffi(domain = "config")]
+25 + ffi_string_wrapper
+   |
+help: consider importing this function
+   |
+ 7 + use keyrx_ffi_runtime::wrapper::ffi_void_wrapper;
+   |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `keyrx_core` (lib) due to 1 previous error

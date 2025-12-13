@@ -275,6 +275,7 @@ mod tests {
             id: id.to_string(),
             vendor_id: 0x1,
             product_id: 0x2,
+            serial_number: None,
             name: None,
             virtual_layout_id: "layout-1".into(),
             wiring: wiring_map,

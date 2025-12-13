@@ -51,6 +51,7 @@ fn sample_hardware_profile(id: &str, layout_id: &str) -> HardwareProfile {
         id: id.to_string(),
         vendor_id: 0x1234,
         product_id: 0x5678,
+        serial_number: None,
         name: Some("Test Hardware".to_string()),
         virtual_layout_id: layout_id.to_string(),
         wiring: HashMap::from([(4, "key-a".to_string())]),

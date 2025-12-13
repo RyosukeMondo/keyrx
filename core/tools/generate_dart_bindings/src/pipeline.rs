@@ -156,9 +156,9 @@ impl<'a> GenerationPipeline<'a> {
         output.push(String::new());
         output.push(format!("  {class_name}(this._lib);"));
         output.push(String::new());
-        // Add free string function pointer (needed for memory cleanup)
+        // Free string function for memory cleanup
         output.push("  // Free string function for memory cleanup".to_string());
-        output.push("  late final _keyrx_free_string = _lib".to_string());
+        output.push("  late final _freeString = _lib".to_string());
         output.push(
             "      .lookup<NativeFunction<Void Function(Pointer<Utf8>)>>('keyrx_free_string')"
                 .to_string(),

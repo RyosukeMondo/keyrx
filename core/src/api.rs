@@ -589,6 +589,7 @@ mod tests {
             id: id.into(),
             vendor_id: 0x1234,
             product_id: 0x5678,
+            serial_number: None,
             name: Some(format!("Profile {}", id)),
             virtual_layout_id: "layout-1".into(),
             wiring: HashMap::new(),

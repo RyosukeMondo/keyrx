@@ -144,11 +144,10 @@ class __$$ActionBindingStandardKeyImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingStandardKeyImpl(
-        value:
-            null == value
-                ? _value.value
-                : value // ignore: cast_nullable_to_non_nullable
-                    as String,
+        value: null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -158,7 +157,7 @@ class __$$ActionBindingStandardKeyImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
   const _$ActionBindingStandardKeyImpl({
-    @JsonKey(name: 'value') required this.value,
+    @JsonKey(name: 'value') this.value = '',
     final String? $type,
   }) : $type = $type ?? 'standard_key';
 
@@ -289,7 +288,7 @@ class _$ActionBindingStandardKeyImpl implements ActionBindingStandardKey {
 
 abstract class ActionBindingStandardKey implements ActionBinding {
   const factory ActionBindingStandardKey({
-    @JsonKey(name: 'value') required final String value,
+    @JsonKey(name: 'value') final String value,
   }) = _$ActionBindingStandardKeyImpl;
 
   factory ActionBindingStandardKey.fromJson(Map<String, dynamic> json) =
@@ -331,11 +330,10 @@ class __$$ActionBindingMacroImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingMacroImpl(
-        value:
-            null == value
-                ? _value.value
-                : value // ignore: cast_nullable_to_non_nullable
-                    as String,
+        value: null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -345,7 +343,7 @@ class __$$ActionBindingMacroImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ActionBindingMacroImpl implements ActionBindingMacro {
   const _$ActionBindingMacroImpl({
-    @JsonKey(name: 'value') required this.value,
+    @JsonKey(name: 'value') this.value = '',
     final String? $type,
   }) : $type = $type ?? 'macro';
 
@@ -476,7 +474,7 @@ class _$ActionBindingMacroImpl implements ActionBindingMacro {
 
 abstract class ActionBindingMacro implements ActionBinding {
   const factory ActionBindingMacro({
-    @JsonKey(name: 'value') required final String value,
+    @JsonKey(name: 'value') final String value,
   }) = _$ActionBindingMacroImpl;
 
   factory ActionBindingMacro.fromJson(Map<String, dynamic> json) =
@@ -518,11 +516,10 @@ class __$$ActionBindingLayerToggleImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingLayerToggleImpl(
-        value:
-            null == value
-                ? _value.value
-                : value // ignore: cast_nullable_to_non_nullable
-                    as String,
+        value: null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -532,7 +529,7 @@ class __$$ActionBindingLayerToggleImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
   const _$ActionBindingLayerToggleImpl({
-    @JsonKey(name: 'value') required this.value,
+    @JsonKey(name: 'value') this.value = '',
     final String? $type,
   }) : $type = $type ?? 'layer_toggle';
 
@@ -663,7 +660,7 @@ class _$ActionBindingLayerToggleImpl implements ActionBindingLayerToggle {
 
 abstract class ActionBindingLayerToggle implements ActionBinding {
   const factory ActionBindingLayerToggle({
-    @JsonKey(name: 'value') required final String value,
+    @JsonKey(name: 'value') final String value,
   }) = _$ActionBindingLayerToggleImpl;
 
   factory ActionBindingLayerToggle.fromJson(Map<String, dynamic> json) =
@@ -705,11 +702,10 @@ class __$$ActionBindingTapHoldImplCopyWithImpl<$Res>
   $Res call({Object? value = null}) {
     return _then(
       _$ActionBindingTapHoldImpl(
-        value:
-            null == value
-                ? _value._value
-                : value // ignore: cast_nullable_to_non_nullable
-                    as List<String>,
+        value: null == value
+            ? _value._value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
       ),
     );
   }
@@ -719,7 +715,7 @@ class __$$ActionBindingTapHoldImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ActionBindingTapHoldImpl implements ActionBindingTapHold {
   const _$ActionBindingTapHoldImpl({
-    @JsonKey(name: 'value') required final List<String> value,
+    @JsonKey(name: 'value') final List<String> value = const [],
     final String? $type,
   }) : _value = value,
        $type = $type ?? 'tap_hold';
@@ -858,7 +854,7 @@ class _$ActionBindingTapHoldImpl implements ActionBindingTapHold {
 
 abstract class ActionBindingTapHold implements ActionBinding {
   const factory ActionBindingTapHold({
-    @JsonKey(name: 'value') required final List<String> value,
+    @JsonKey(name: 'value') final List<String> value,
   }) = _$ActionBindingTapHoldImpl;
 
   factory ActionBindingTapHold.fromJson(Map<String, dynamic> json) =

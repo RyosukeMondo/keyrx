@@ -26,8 +26,8 @@ _$HardwareProfileImpl _$$HardwareProfileImplFromJson(
   Map<String, dynamic> json,
 ) => _$HardwareProfileImpl(
   id: json['id'] as String,
-  vendorId: (json['vendor_id'] as num).toInt(),
-  productId: (json['product_id'] as num).toInt(),
+  vendorId: (json['vendor_id'] as num?)?.toInt() ?? 0,
+  productId: (json['product_id'] as num?)?.toInt() ?? 0,
   serialNumber: json['serial_number'] as String?,
   name: json['name'] as String?,
   virtualLayoutId: json['virtual_layout_id'] as String,

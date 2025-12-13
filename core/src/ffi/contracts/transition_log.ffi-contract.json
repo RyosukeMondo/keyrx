@@ -1,5 +1,4 @@
 {
-    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
     "version": "1.0.0",
     "domain": "transition_log",
     "description": "Transition log access",
@@ -122,3 +121,4 @@
     ],
     "events": []
 }
+

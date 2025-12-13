@@ -90,10 +90,8 @@ pub fn map_to_dart_ffi_type(contract_type: &str) -> Result<DartFfiType, TypeMapp
         return Ok(DartFfiType::Pointer("Void".to_string()));
     }
 
-    Err(TypeMappingError {
-        contract_type: contract_type.to_string(),
-        message: "Unknown or unsupported contract type".to_string(),
-    })
+    // Fallback: Assume any other type is a complex struct passed as JSON string
+    Ok(DartFfiType::PointerUtf8)
 }
 
 /// Maps a contract type string to its native Dart type string.
@@ -152,10 +150,15 @@ pub fn map_to_dart_native_type(contract_type: &str) -> Result<String, TypeMappin
         return Ok("Pointer<Void>".to_string());
     }
 
-    Err(TypeMappingError {
-        contract_type: contract_type.to_string(),
-        message: "Unknown or unsupported contract type".to_string(),
-    })
+    // Handle generic List<T>
+    if contract_type.starts_with("List<") && contract_type.ends_with('>') {
+        let inner = &contract_type[5..contract_type.len() - 1];
+        let inner_dart = map_to_dart_native_type(inner)?;
+        return Ok(format!("List<{}>", inner_dart));
+    }
+
+    // Fallback: Use PascalCase for named types (e.g. "Keymap", "HardwareProfile")
+    Ok(crate::templates::to_pascal_case(contract_type))
 }
 
 /// Check if a contract type represents a complex type (object or array)

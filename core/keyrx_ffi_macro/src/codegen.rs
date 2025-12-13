@@ -126,6 +126,17 @@ pub fn generate_param_parser(param: &ParsedParam) -> TokenStream {
                 let #ident = #ident;
             }
         }
+        FfiType::JsonParam => {
+            // Complex parameters are passed as JSON strings and parsed to strict types
+            let ident_json = Ident::new(&format!("{}_json", ident), ident.span());
+            quote! {
+                let #ident_json = unsafe {
+                    ::keyrx_ffi_runtime::parse_c_string(#ident, #name_str)?
+                };
+                let #ident = ::serde_json::from_str(&#ident_json)
+                    .map_err(|e| format!("Invalid JSON for argument '{}': {}", #name_str, e))?;
+            }
+        }
         FfiType::Void | FfiType::JsonReturn => {
             // These types are not used as parameters
             quote! {}
@@ -216,6 +227,10 @@ pub fn generate_result_serializer(return_type: &FfiType) -> TokenStream {
                 ::keyrx_ffi_runtime::serialize_to_c_string(&result)?
             }
         }
+        FfiType::JsonParam => {
+            // JsonParam is not a return type
+            unreachable!("JsonParam cannot be used as a return type")
+        }
     }
 }
 
@@ -283,10 +298,10 @@ pub fn generate_ffi_function(
 
     // Generate the function body based on whether it returns void
     let body = if matches!(return_ffi_type, FfiType::Void) {
-        // Void return - no serialization needed
+        // Void return - no serialization needed, use void wrapper
         quote! {
             unsafe {
-                ::keyrx_ffi_runtime::ffi_wrapper(error, || {
+                ::keyrx_ffi_runtime::ffi_void_wrapper(error, || {
                     #param_parsers
                     #impl_type::#impl_method(#call_args)?;
                     Ok(())

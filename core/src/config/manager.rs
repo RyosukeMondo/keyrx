@@ -257,6 +257,7 @@ mod tests {
             id: "hw-1".into(),
             vendor_id: 0x1,
             product_id: 0x2,
+            serial_number: None,
             name: Some("Test Hardware".into()),
             virtual_layout_id: "layout-1".into(),
             wiring: HashMap::from([(4, "VK_A".into())]),

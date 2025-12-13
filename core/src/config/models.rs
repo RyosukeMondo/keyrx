@@ -91,6 +91,9 @@ pub struct HardwareProfile {
     pub vendor_id: u16,
     /// USB product ID of the target device.
     pub product_id: u16,
+    /// Optional serial number of the target device.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub serial_number: Option<String>,
     /// Human-readable name for this profile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -202,6 +205,7 @@ mod tests {
             id: "hw-stream-deck-left".into(),
             vendor_id: 0x0fd9,
             product_id: 0x0060,
+            serial_number: Some("SN12345".into()),
             name: Some("Stream Deck Left".into()),
             virtual_layout_id: "layout-4x4".into(),
             wiring,

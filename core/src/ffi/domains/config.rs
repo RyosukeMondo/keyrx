@@ -25,98 +25,78 @@ pub fn global_config_manager() -> &'static ConfigManager {
 #[keyrx_ffi(domain = "config")]
 impl ConfigDomain {
     /// List all virtual layouts.
-    fn list_virtual_layouts() -> Result<String, String> {
-        let layouts: Vec<VirtualLayout> = global_config_manager()
+    fn list_virtual_layouts() -> Result<Vec<VirtualLayout>, String> {
+        global_config_manager()
             .load_virtual_layouts()
             .map(|map| map.into_values().collect())
-            .map_err(|e| e.to_string())?;
-        serde_json::to_string(&layouts)
-            .map(|json| format!("ok:{json}"))
             .map_err(|e| e.to_string())
     }
 
     /// Save or update a virtual layout.
-    fn save_virtual_layout(json: String) -> Result<String, String> {
-        let layout: VirtualLayout =
-            serde_json::from_str(&json).map_err(|e| format!("Invalid JSON: {e}"))?;
+    fn save_virtual_layout(layout: VirtualLayout) -> Result<VirtualLayout, String> {
         global_config_manager()
             .save_virtual_layout(&layout)
             .map_err(|e| e.to_string())?;
-        Ok(r#"ok:{"success": true}"#.to_string())
+        Ok(layout)
     }
 
     /// Delete a virtual layout by ID.
-    fn delete_virtual_layout(id: String) -> Result<String, String> {
+    fn delete_virtual_layout(id: String) -> Result<(), String> {
         global_config_manager()
             .delete_virtual_layout(&id)
-            .map_err(|e| e.to_string())?;
-        Ok(r#"ok:{"success": true}"#.to_string())
+            .map_err(|e| e.to_string())
     }
 
     /// List all hardware profiles.
-    fn list_hardware_profiles() -> Result<String, String> {
-        let profiles: Vec<HardwareProfile> = global_config_manager()
+    fn list_hardware_profiles() -> Result<Vec<HardwareProfile>, String> {
+        global_config_manager()
             .load_hardware_profiles()
             .map(|map| map.into_values().collect())
-            .map_err(|e| e.to_string())?;
-        serde_json::to_string(&profiles)
-            .map(|json| format!("ok:{json}"))
             .map_err(|e| e.to_string())
     }
 
     /// Save or update a hardware profile.
-    fn save_hardware_profile(json: String) -> Result<String, String> {
-        let profile: HardwareProfile =
-            serde_json::from_str(&json).map_err(|e| format!("Invalid JSON: {e}"))?;
+    fn save_hardware_profile(profile: HardwareProfile) -> Result<HardwareProfile, String> {
         global_config_manager()
             .save_hardware_profile(&profile)
             .map_err(|e| e.to_string())?;
-        serde_json::to_string(&profile)
-            .map(|json| format!("ok:{json}"))
-            .map_err(|e| e.to_string())
+        Ok(profile)
     }
 
     /// Delete a hardware profile by ID.
-    fn delete_hardware_profile(id: String) -> Result<String, String> {
+    fn delete_hardware_profile(id: String) -> Result<(), String> {
         global_config_manager()
             .delete_hardware_profile(&id)
-            .map_err(|e| e.to_string())?;
-        Ok(r#"ok:{"success": true}"#.to_string())
+            .map_err(|e| e.to_string())
     }
 
     /// List all keymaps.
-    fn list_keymaps() -> Result<String, String> {
-        let keymaps: Vec<Keymap> = global_config_manager()
+    fn list_keymaps() -> Result<Vec<Keymap>, String> {
+        global_config_manager()
             .load_keymaps()
             .map(|map| map.into_values().collect())
-            .map_err(|e| e.to_string())?;
-        serde_json::to_string(&keymaps)
-            .map(|json| format!("ok:{json}"))
             .map_err(|e| e.to_string())
     }
 
     /// Save or update a keymap.
-    fn save_keymap(json: String) -> Result<String, String> {
-        let keymap: Keymap =
-            serde_json::from_str(&json).map_err(|e| format!("Invalid JSON: {e}"))?;
+    fn save_keymap(keymap: Keymap) -> Result<Keymap, String> {
         global_config_manager()
             .save_keymap(&keymap)
             .map_err(|e| e.to_string())?;
-        Ok(r#"ok:{"success": true}"#.to_string())
+        Ok(keymap)
     }
 
     /// Delete a keymap by ID.
-    fn delete_keymap(id: String) -> Result<String, String> {
+    fn delete_keymap(id: String) -> Result<(), String> {
         global_config_manager()
             .delete_keymap(&id)
-            .map_err(|e| e.to_string())?;
-        Ok(r#"ok:{"success": true}"#.to_string())
+            .map_err(|e| e.to_string())
     }
 
     /// Get the content root path.
     fn get_config_root() -> Result<String, String> {
         let path = global_config_manager().root_path().to_string_lossy();
-        Ok(format!("ok:{}", path))
+        Ok(path.into_owned())
     }
 }
 

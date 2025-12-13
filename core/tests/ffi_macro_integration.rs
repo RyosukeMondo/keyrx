@@ -36,28 +36,38 @@ struct VirtualLayout {
     name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct HardwareProfile {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Keymap {
+    id: String,
+    mappings: Vec<serde_json::Value>,
+}
+
 impl TestConfigStore {
     fn new() -> Self {
         Self::default()
     }
 
-    fn list_virtual_layouts(&self) -> Result<String, String> {
-        serde_json::to_string(&self.layouts).map_err(|e| e.to_string())
+    fn list_virtual_layouts(&self) -> Result<Vec<VirtualLayout>, String> {
+        Ok(self.layouts.clone())
     }
 
-    fn save_virtual_layout(&mut self, json: &str) -> Result<String, String> {
-        let layout: VirtualLayout =
-            serde_json::from_str(json).map_err(|e| format!("Invalid JSON: {e}"))?;
+    fn save_virtual_layout(&mut self, layout: VirtualLayout) -> Result<VirtualLayout, String> {
         self.layouts.retain(|l| l.id != layout.id);
         self.layouts.push(layout.clone());
-        serde_json::to_string(&layout).map_err(|e| e.to_string())
+        Ok(layout)
     }
 
-    fn delete_virtual_layout(&mut self, id: &str) -> Result<String, String> {
+    fn delete_virtual_layout(&mut self, id: &str) -> Result<(), String> {
         let initial_len = self.layouts.len();
         self.layouts.retain(|l| l.id != id);
         if self.layouts.len() < initial_len {
-            Ok(r#"{"success": true}"#.to_string())
+            Ok(())
         } else {
             Err(format!("Layout '{id}' not found"))
         }
@@ -94,51 +104,47 @@ fn reset_store() {
 #[keyrx_ffi(domain = "config")]
 impl ConfigDomain {
     /// List all virtual layouts.
-    fn list_virtual_layouts() -> Result<String, String> {
+    fn list_virtual_layouts() -> Result<Vec<VirtualLayout>, String> {
         get_store().list_virtual_layouts()
     }
 
     /// Save or update a virtual layout.
-    fn save_virtual_layout(json: String) -> Result<String, String> {
-        get_store_mut().save_virtual_layout(&json)
+    fn save_virtual_layout(layout: VirtualLayout) -> Result<VirtualLayout, String> {
+        get_store_mut().save_virtual_layout(layout)
     }
 
     /// Delete a virtual layout by ID.
-    fn delete_virtual_layout(id: String) -> Result<String, String> {
+    fn delete_virtual_layout(id: String) -> Result<(), String> {
         get_store_mut().delete_virtual_layout(&id)
     }
 
     /// List all hardware profiles.
-    fn list_hardware_profiles() -> Result<String, String> {
-        Ok("[]".to_string())
+    fn list_hardware_profiles() -> Result<Vec<HardwareProfile>, String> {
+        Ok(vec![])
     }
 
     /// Save or update a hardware profile.
-    fn save_hardware_profile(json: String) -> Result<String, String> {
-        let _: serde_json::Value =
-            serde_json::from_str(&json).map_err(|e| format!("Invalid JSON: {e}"))?;
-        Ok(r#"{"success": true}"#.to_string())
+    fn save_hardware_profile(profile: HardwareProfile) -> Result<HardwareProfile, String> {
+        Ok(profile)
     }
 
     /// Delete a hardware profile by ID.
-    fn delete_hardware_profile(id: String) -> Result<String, String> {
+    fn delete_hardware_profile(id: String) -> Result<(), String> {
         Err(format!("Profile '{id}' not found"))
     }
 
     /// List all keymaps.
-    fn list_keymaps() -> Result<String, String> {
-        Ok("[]".to_string())
+    fn list_keymaps() -> Result<Vec<Keymap>, String> {
+        Ok(vec![])
     }
 
     /// Save or update a keymap.
-    fn save_keymap(json: String) -> Result<String, String> {
-        let _: serde_json::Value =
-            serde_json::from_str(&json).map_err(|e| format!("Invalid JSON: {e}"))?;
-        Ok(r#"{"success": true}"#.to_string())
+    fn save_keymap(keymap: Keymap) -> Result<Keymap, String> {
+        Ok(keymap)
     }
 
     /// Delete a keymap by ID.
-    fn delete_keymap(id: String) -> Result<String, String> {
+    fn delete_keymap(id: String) -> Result<(), String> {
         Err(format!("Keymap '{id}' not found"))
     }
     /// Get the content root path.
@@ -259,12 +265,9 @@ fn test_delete_virtual_layout() {
     // Delete the layout
     let id_c = CString::new("delete-me").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
+    unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
 
     assert!(error.is_null(), "Expected no error on delete");
-    let response = unsafe { get_result_string(result) }.unwrap();
-    // Result is directly the string
-    assert!(response.contains("success"));
 
     // Verify it's gone
     let mut error: *mut c_char = std::ptr::null_mut();
@@ -281,10 +284,9 @@ fn test_delete_nonexistent_layout_returns_error() {
 
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
+    unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
 
-    // Result should be null and error should be set
-    assert!(result.is_null(), "Expected null result on error");
+    // Error should be set
     assert!(!error.is_null(), "Expected error to be set");
 
     let error_msg = unsafe { get_error_string(error) }.unwrap();
@@ -348,9 +350,8 @@ fn test_list_keymaps() {
 fn test_delete_hardware_profile_not_found() {
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_hardware_profile(id_c.as_ptr(), &mut error) };
+    unsafe { keyrx_config_delete_hardware_profile(id_c.as_ptr(), &mut error) };
 
-    assert!(result.is_null());
     assert!(!error.is_null());
 
     let error_msg = unsafe { get_error_string(error) }.unwrap();
@@ -361,9 +362,8 @@ fn test_delete_hardware_profile_not_found() {
 fn test_delete_keymap_not_found() {
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_keymap(id_c.as_ptr(), &mut error) };
+    unsafe { keyrx_config_delete_keymap(id_c.as_ptr(), &mut error) };
 
-    assert!(result.is_null());
     assert!(!error.is_null());
 
     let error_msg = unsafe { get_error_string(error) }.unwrap();
@@ -379,7 +379,7 @@ fn test_save_hardware_profile_valid_json() {
     assert!(error.is_null());
     let response = unsafe { get_result_string(result) }.unwrap();
     // Result is directly the string
-    assert!(response.contains("success"));
+    assert!(response.contains("test"));
 }
 
 #[test]
@@ -391,7 +391,7 @@ fn test_save_keymap_valid_json() {
     assert!(error.is_null());
     let response = unsafe { get_result_string(result) }.unwrap();
     // Result is directly the string
-    assert!(response.contains("success"));
+    assert!(response.contains("test"));
 }
 
 // ============================================================================

@@ -16,6 +16,8 @@ use crate::contract_loader::TypeDefinition;
 pub enum FfiType {
     /// `*const c_char` - string input parameter
     CString,
+    /// `*const c_char` - JSON serialized input parameter (parsed to struct)
+    JsonParam,
     /// `*const c_char` - JSON serialized return value
     JsonReturn,
     /// `i32` - signed 32-bit integer
@@ -38,7 +40,7 @@ impl FfiType {
     /// Generate FFI parameter type tokens.
     pub fn to_param_tokens(&self) -> TokenStream {
         match self {
-            FfiType::CString => quote! { *const ::std::os::raw::c_char },
+            FfiType::CString | FfiType::JsonParam => quote! { *const ::std::os::raw::c_char },
             FfiType::Int32 => quote! { i32 },
             FfiType::Uint8 => quote! { u8 },
             FfiType::Uint32 => quote! { u32 },
@@ -62,6 +64,8 @@ impl FfiType {
             FfiType::Uint64 => quote! { u64 },
             FfiType::Float64 => quote! { f64 },
             FfiType::Bool => quote! { bool },
+            // JsonParam is not a return type
+            FfiType::JsonParam => quote! { *const ::std::os::raw::c_char },
         }
     }
 
@@ -72,7 +76,7 @@ impl FfiType {
 
     /// Whether this type is a C string parameter requiring parsing.
     pub fn needs_string_parsing(&self) -> bool {
-        matches!(self, FfiType::CString)
+        matches!(self, FfiType::CString | FfiType::JsonParam)
     }
 }
 
@@ -87,7 +91,7 @@ impl FfiType {
 /// The corresponding `FfiType` for FFI code generation.
 pub fn map_param_type(type_name: &str) -> FfiType {
     match type_name {
-        "string" => FfiType::CString,
+        "string" | "str" => FfiType::CString,
         "int32" | "int" => FfiType::Int32,
         "uint8" => FfiType::Uint8,
         "uint32" => FfiType::Uint32,
@@ -96,8 +100,8 @@ pub fn map_param_type(type_name: &str) -> FfiType {
         "bool" | "boolean" => FfiType::Bool,
         // Complex types are passed as JSON strings
         "object" | "array" => FfiType::CString,
-        // Unknown types default to JSON string for flexibility
-        _ => FfiType::CString,
+        // Unknown types are strictly typed JSON parameters
+        _ => FfiType::JsonParam,
     }
 }
 

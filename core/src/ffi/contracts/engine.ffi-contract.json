@@ -1,5 +1,4 @@
 {
-    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
     "version": "1.0.0",
     "domain": "engine",
     "description": "Core engine operations",
@@ -58,3 +57,4 @@
     ],
     "events": []
 }
+

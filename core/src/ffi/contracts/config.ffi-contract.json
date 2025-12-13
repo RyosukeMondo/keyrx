@@ -1,5 +1,4 @@
 {
-    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
     "version": "1.0.0",
     "domain": "config",
     "description": "Configuration management operations for virtual layouts, hardware profiles, and keymaps",
@@ -11,8 +10,8 @@
             "description": "List all saved virtual layouts.",
             "parameters": [],
             "returns": {
-                "type": "string",
-                "description": "JSON array of virtual layouts"
+                "type": "List<VirtualLayout>",
+                "description": "List of virtual layouts"
             },
             "errors": []
         },
@@ -22,15 +21,15 @@
             "description": "Save or update a virtual layout.",
             "parameters": [
                 {
-                    "name": "json",
-                    "type": "string",
-                    "description": "JSON representation of the virtual layout",
+                    "name": "layout",
+                    "type": "VirtualLayout",
+                    "description": "Virtual layout to save",
                     "required": true
                 }
             ],
             "returns": {
-                "type": "string",
-                "description": "JSON result object"
+                "type": "VirtualLayout",
+                "description": "Saved virtual layout"
             },
             "errors": []
         },
@@ -47,7 +46,7 @@
                 }
             ],
             "returns": {
-                "type": "string",
+                "type": "void",
                 "description": "JSON result object"
             },
             "errors": []
@@ -58,8 +57,8 @@
             "description": "List all saved hardware profiles.",
             "parameters": [],
             "returns": {
-                "type": "string",
-                "description": "JSON array of hardware profiles"
+                "type": "List<HardwareProfile>",
+                "description": "List of hardware profiles"
             },
             "errors": []
         },
@@ -69,15 +68,15 @@
             "description": "Save or update a hardware profile.",
             "parameters": [
                 {
-                    "name": "json",
-                    "type": "string",
-                    "description": "JSON representation of the hardware profile",
+                    "name": "profile",
+                    "type": "HardwareProfile",
+                    "description": "Profile to save",
                     "required": true
                 }
             ],
             "returns": {
-                "type": "string",
-                "description": "JSON result with saved profile"
+                "type": "HardwareProfile",
+                "description": "Saved hardware profile"
             },
             "errors": []
         },
@@ -94,7 +93,7 @@
                 }
             ],
             "returns": {
-                "type": "string",
+                "type": "void",
                 "description": "JSON result object"
             },
             "errors": []
@@ -105,8 +104,8 @@
             "description": "List all saved keymaps.",
             "parameters": [],
             "returns": {
-                "type": "string",
-                "description": "JSON array of keymaps"
+                "type": "List<Keymap>",
+                "description": "List of keymaps"
             },
             "errors": []
         },
@@ -116,15 +115,15 @@
             "description": "Save or update a keymap.",
             "parameters": [
                 {
-                    "name": "json",
-                    "type": "string",
-                    "description": "JSON representation of the keymap",
+                    "name": "keymap",
+                    "type": "Keymap",
+                    "description": "Keymap to save",
                     "required": true
                 }
             ],
             "returns": {
-                "type": "string",
-                "description": "JSON result object"
+                "type": "Keymap",
+                "description": "Saved keymap"
             },
             "errors": []
         },
@@ -141,7 +140,7 @@
                 }
             ],
             "returns": {
-                "type": "string",
+                "type": "void",
                 "description": "JSON result object"
             },
             "errors": []
@@ -160,3 +159,4 @@
     ],
     "events": []
 }
+

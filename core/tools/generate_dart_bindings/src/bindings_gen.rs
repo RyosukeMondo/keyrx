@@ -6,7 +6,8 @@
 use crate::templates::{
     context, render, to_camel_case, DART_TYPEDEF_TEMPLATE, FUNCTION_POINTER_TEMPLATE,
     NATIVE_TYPEDEF_TEMPLATE, PARAM_FREE_UTF8, PARAM_TO_NATIVE_UTF8, RESULT_JSON_DECODE_CONVERSION,
-    RESULT_STRING_CONVERSION, RESULT_VOID_TEMPLATE, WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE,
+    RESULT_STRING_CONVERSION, RESULT_VOID_TEMPLATE, WRAPPER_FUNCTION_VOID_WITH_ERROR_TEMPLATE,
+    WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE,
 };
 use crate::type_mapper::{map_to_dart_ffi_type, map_to_dart_native_type, TypeMappingError};
 use crate::types::DartFfiType;
@@ -255,13 +256,17 @@ fn determine_dart_return_type(ffi_type: &DartFfiType, type_def: &TypeDefinition)
     match ffi_type {
         DartFfiType::Void => "void".to_string(),
         DartFfiType::PointerUtf8 => {
+            let type_name = type_def.type_name();
             // Check if this is a complex type that returns JSON
             if type_def.is_object() {
                 "Map<String, dynamic>".to_string()
             } else if type_def.is_array() {
                 "List<dynamic>".to_string()
-            } else {
+            } else if type_name == "string" || type_name == "str" {
                 "String".to_string()
+            } else {
+                // Must be a strongly typed object
+                map_to_dart_native_type(type_name).unwrap_or_else(|_| "dynamic".to_string())
             }
         }
         _ => ffi_type.dart_type().to_string(),
@@ -304,7 +309,25 @@ fn build_param_conversions(func: &FunctionContract) -> String {
                     p.name, p.name
                 ))
             } else {
-                None
+                // Check for strict types (Keymap etc) which should be serialized via toJson()
+                match map_to_dart_native_type(&p.param_type) {
+                    Ok(t) => {
+                        if t == "String" {
+                            let mut ctx = context();
+                            ctx.insert("param_name".to_string(), p.name.clone());
+                            Some(render(PARAM_TO_NATIVE_UTF8, &ctx))
+                        } else if t != "int" && t != "double" && t != "bool" && t != "Pointer<Void>"
+                        {
+                            Some(format!(
+                                "    final {}Ptr = jsonEncode({}.toJson()).toNativeUtf8();",
+                                p.name, p.name
+                            ))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }
             }
         })
         .collect();
@@ -326,7 +349,13 @@ fn build_ffi_call_args(func: &FunctionContract) -> String {
             {
                 format!("{}Ptr", p.name)
             } else {
-                p.name.clone()
+                // Check if it's a strict type we serialized
+                match map_to_dart_native_type(&p.param_type) {
+                    Ok(t) if t != "int" && t != "double" && t != "bool" && t != "Pointer<Void>" => {
+                        format!("{}Ptr", p.name)
+                    }
+                    _ => p.name.clone(),
+                }
             }
         })
         .collect();
@@ -353,7 +382,15 @@ fn build_param_frees(func: &FunctionContract) -> String {
                 ctx.insert("param_name".to_string(), p.name.clone());
                 Some(render(PARAM_FREE_UTF8, &ctx))
             } else {
-                None
+                // Free strict type JSON strings
+                match map_to_dart_native_type(&p.param_type) {
+                    Ok(t) if t != "int" && t != "double" && t != "bool" && t != "Pointer<Void>" => {
+                        let mut ctx = context();
+                        ctx.insert("param_name".to_string(), p.name.clone());
+                        Some(render(PARAM_FREE_UTF8, &ctx))
+                    }
+                    _ => None,
+                }
             }
         })
         .collect();
@@ -366,6 +403,7 @@ fn build_result_conversion(ffi_type: &DartFfiType, type_def: &TypeDefinition) ->
     match ffi_type {
         DartFfiType::Void => RESULT_VOID_TEMPLATE.to_string(),
         DartFfiType::PointerUtf8 => {
+            let type_name = type_def.type_name();
             if type_def.is_object() {
                 let mut ctx = context();
                 ctx.insert("dart_type".to_string(), "Map<String, dynamic>".to_string());
@@ -374,8 +412,55 @@ fn build_result_conversion(ffi_type: &DartFfiType, type_def: &TypeDefinition) ->
                 let mut ctx = context();
                 ctx.insert("dart_type".to_string(), "List<dynamic>".to_string());
                 render(RESULT_JSON_DECODE_CONVERSION, &ctx)
-            } else {
+            } else if type_name == "string" || type_name == "str" {
                 RESULT_STRING_CONVERSION.to_string()
+            } else {
+                // Strong type conversion
+                let dart_type =
+                    map_to_dart_native_type(type_name).unwrap_or_else(|_| "dynamic".to_string());
+
+                // Handle List<T>
+                if dart_type.starts_with("List<") {
+                    // Extract T from List<T>
+                    let inner_type = &dart_type[5..dart_type.len() - 1];
+                    if inner_type == "String"
+                        || inner_type == "int"
+                        || inner_type == "double"
+                        || inner_type == "bool"
+                    {
+                        format!(
+                            r#"    final resultJson = resultPtr.toDartString();
+    _freeString(resultPtr);
+    final jsonList = jsonDecode(resultJson) as List;
+    return jsonList.cast<{}>().toList();"#,
+                            inner_type
+                        )
+                    } else {
+                        format!(
+                            r#"    final resultJson = resultPtr.toDartString();
+    _freeString(resultPtr);
+    final jsonList = jsonDecode(resultJson) as List;
+    return jsonList.map((e) => {}.fromJson(e as Map<String, dynamic>)).toList();"#,
+                            inner_type
+                        )
+                    }
+                } else if dart_type == "String" {
+                    // String return (missed by type_name check)
+                    RESULT_STRING_CONVERSION.to_string()
+                } else if dart_type.starts_with("Map<") {
+                    // Map return (missed by object check)
+                    let mut ctx = context();
+                    ctx.insert("dart_type".to_string(), dart_type.clone());
+                    render(RESULT_JSON_DECODE_CONVERSION, &ctx)
+                } else {
+                    // Single object T
+                    format!(
+                        r#"    final resultJson = resultPtr.toDartString();
+    _freeString(resultPtr);
+    return {}.fromJson(jsonDecode(resultJson) as Map<String, dynamic>);"#,
+                        dart_type
+                    )
+                }
             }
         }
         _ => {
@@ -410,7 +495,11 @@ fn render_wrapper(ctx: &WrapperContext) -> String {
         ctx.result_conversion.clone(),
     );
 
-    render(WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE, &template_ctx)
+    if ctx.dart_return_type == "void" {
+        render(WRAPPER_FUNCTION_VOID_WITH_ERROR_TEMPLATE, &template_ctx)
+    } else {
+        render(WRAPPER_FUNCTION_WITH_ERROR_TEMPLATE, &template_ctx)
+    }
 }
 
 /// Generate all wrapper functions for a contract as a single string

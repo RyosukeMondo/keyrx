@@ -1,5 +1,4 @@
 {
-  "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
   "version": "1.0.0",
   "domain": "discovery",
   "description": "Keyboard discovery operations for detecting matrix rows and columns",
@@ -226,3 +225,4 @@
     }
   ]
 }
+

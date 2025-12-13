@@ -9,7 +9,7 @@ part of 'action_binding.dart';
 _$ActionBindingStandardKeyImpl _$$ActionBindingStandardKeyImplFromJson(
   Map<String, dynamic> json,
 ) => _$ActionBindingStandardKeyImpl(
-  value: json['value'] as String,
+  value: json['value'] as String? ?? '',
   $type: json['type'] as String?,
 );
 
@@ -20,7 +20,7 @@ Map<String, dynamic> _$$ActionBindingStandardKeyImplToJson(
 _$ActionBindingMacroImpl _$$ActionBindingMacroImplFromJson(
   Map<String, dynamic> json,
 ) => _$ActionBindingMacroImpl(
-  value: json['value'] as String,
+  value: json['value'] as String? ?? '',
   $type: json['type'] as String?,
 );
 
@@ -31,7 +31,7 @@ Map<String, dynamic> _$$ActionBindingMacroImplToJson(
 _$ActionBindingLayerToggleImpl _$$ActionBindingLayerToggleImplFromJson(
   Map<String, dynamic> json,
 ) => _$ActionBindingLayerToggleImpl(
-  value: json['value'] as String,
+  value: json['value'] as String? ?? '',
   $type: json['type'] as String?,
 );
 
@@ -42,7 +42,9 @@ Map<String, dynamic> _$$ActionBindingLayerToggleImplToJson(
 _$ActionBindingTapHoldImpl _$$ActionBindingTapHoldImplFromJson(
   Map<String, dynamic> json,
 ) => _$ActionBindingTapHoldImpl(
-  value: (json['value'] as List<dynamic>).map((e) => e as String).toList(),
+  value:
+      (json['value'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
   $type: json['type'] as String?,
 );
 

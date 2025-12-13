@@ -58,17 +58,16 @@ class _$ComboCopyWithImpl<$Res, $Val extends Combo>
   $Res call({Object? keys = null, Object? output = null}) {
     return _then(
       _value.copyWith(
-        keys:
-            null == keys
+            keys: null == keys
                 ? _value.keys
                 : keys // ignore: cast_nullable_to_non_nullable
-                    as List<String>,
-        output:
-            null == output
+                      as List<String>,
+            output: null == output
                 ? _value.output
                 : output // ignore: cast_nullable_to_non_nullable
-                    as String,
-      ) as $Val,
+                      as String,
+          )
+          as $Val,
     );
   }
 }
@@ -100,16 +99,14 @@ class __$$ComboImplCopyWithImpl<$Res>
   $Res call({Object? keys = null, Object? output = null}) {
     return _then(
       _$ComboImpl(
-        keys:
-            null == keys
-                ? _value._keys
-                : keys // ignore: cast_nullable_to_non_nullable
-                    as List<String>,
-        output:
-            null == output
-                ? _value.output
-                : output // ignore: cast_nullable_to_non_nullable
-                    as String,
+        keys: null == keys
+            ? _value._keys
+            : keys // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        output: null == output
+            ? _value.output
+            : output // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -238,17 +235,16 @@ class _$KeymapLayerCopyWithImpl<$Res, $Val extends KeymapLayer>
   $Res call({Object? name = null, Object? bindings = null}) {
     return _then(
       _value.copyWith(
-        name:
-            null == name
+            name: null == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
-                    as String,
-        bindings:
-            null == bindings
+                      as String,
+            bindings: null == bindings
                 ? _value.bindings
                 : bindings // ignore: cast_nullable_to_non_nullable
-                    as Map<String, ActionBinding>,
-      ) as $Val,
+                      as Map<String, ActionBinding>,
+          )
+          as $Val,
     );
   }
 }
@@ -281,16 +277,14 @@ class __$$KeymapLayerImplCopyWithImpl<$Res>
   $Res call({Object? name = null, Object? bindings = null}) {
     return _then(
       _$KeymapLayerImpl(
-        name:
-            null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                    as String,
-        bindings:
-            null == bindings
-                ? _value._bindings
-                : bindings // ignore: cast_nullable_to_non_nullable
-                    as Map<String, ActionBinding>,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        bindings: null == bindings
+            ? _value._bindings
+            : bindings // ignore: cast_nullable_to_non_nullable
+                  as Map<String, ActionBinding>,
       ),
     );
   }
@@ -438,32 +432,28 @@ class _$KeymapCopyWithImpl<$Res, $Val extends Keymap>
   }) {
     return _then(
       _value.copyWith(
-        id:
-            null == id
+            id: null == id
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
-                    as String,
-        name:
-            null == name
+                      as String,
+            name: null == name
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
-                    as String,
-        virtualLayoutId:
-            null == virtualLayoutId
+                      as String,
+            virtualLayoutId: null == virtualLayoutId
                 ? _value.virtualLayoutId
                 : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                    as String,
-        layers:
-            null == layers
+                      as String,
+            layers: null == layers
                 ? _value.layers
                 : layers // ignore: cast_nullable_to_non_nullable
-                    as List<KeymapLayer>,
-        combos:
-            null == combos
+                      as List<KeymapLayer>,
+            combos: null == combos
                 ? _value.combos
                 : combos // ignore: cast_nullable_to_non_nullable
-                    as List<Combo>,
-      ) as $Val,
+                      as List<Combo>,
+          )
+          as $Val,
     );
   }
 }
@@ -507,31 +497,26 @@ class __$$KeymapImplCopyWithImpl<$Res>
   }) {
     return _then(
       _$KeymapImpl(
-        id:
-            null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                    as String,
-        name:
-            null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                    as String,
-        virtualLayoutId:
-            null == virtualLayoutId
-                ? _value.virtualLayoutId
-                : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                    as String,
-        layers:
-            null == layers
-                ? _value._layers
-                : layers // ignore: cast_nullable_to_non_nullable
-                    as List<KeymapLayer>,
-        combos:
-            null == combos
-                ? _value._combos
-                : combos // ignore: cast_nullable_to_non_nullable
-                    as List<Combo>,
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        virtualLayoutId: null == virtualLayoutId
+            ? _value.virtualLayoutId
+            : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        layers: null == layers
+            ? _value._layers
+            : layers // ignore: cast_nullable_to_non_nullable
+                  as List<KeymapLayer>,
+        combos: null == combos
+            ? _value._combos
+            : combos // ignore: cast_nullable_to_non_nullable
+                  as List<Combo>,
       ),
     );
   }
@@ -542,7 +527,7 @@ class __$$KeymapImplCopyWithImpl<$Res>
 class _$KeymapImpl extends _Keymap {
   const _$KeymapImpl({
     required this.id,
-    required this.name,
+    this.name = 'Untitled Keymap',
     @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
     final List<KeymapLayer> layers = const <KeymapLayer>[],
     final List<Combo> combos = const <Combo>[],
@@ -556,6 +541,7 @@ class _$KeymapImpl extends _Keymap {
   @override
   final String id;
   @override
+  @JsonKey()
   final String name;
   @override
   @JsonKey(name: 'virtual_layout_id')
@@ -624,7 +610,7 @@ class _$KeymapImpl extends _Keymap {
 abstract class _Keymap extends Keymap {
   const factory _Keymap({
     required final String id,
-    required final String name,
+    final String name,
     @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
     final List<KeymapLayer> layers,
     final List<Combo> combos,

@@ -12,10 +12,9 @@ import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/bridge_config.dart';
-import 'package:keyrx_ui/models/device_state.dart';
-import 'package:keyrx_ui/models/device_identity.dart';
-import 'package:keyrx_ui/models/layout_type.dart';
-import 'package:keyrx_ui/models/profile.dart';
+import 'package:keyrx_ui/ffi/generated_bindings.dart';
+
+import 'package:keyrx_ui/models/models.dart';
 
 import 'package:keyrx_ui/services/api_docs_service.dart';
 import 'package:keyrx_ui/services/device_profile_service.dart';
@@ -28,9 +27,7 @@ import 'package:keyrx_ui/services/script_file_service.dart';
 
 import 'package:keyrx_ui/services/config_result.dart';
 import 'package:keyrx_ui/services/runtime_service.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
 
-import 'package:keyrx_ui/models/runtime_config.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 import 'package:keyrx_ui/pages/migration_prompt_page.dart';
 
@@ -146,6 +143,11 @@ class FakeBridge implements KeyrxBridge {
 
   @override
   KeyrxBindings? get bindings => null;
+
+  final _configBindings = FakeConfigBindings();
+
+  @override
+  ConfigBindings? get configBindings => _configBindings;
 
   @override
   bool startEngineLoop() => true;
@@ -514,4 +516,39 @@ class FakeRuntimeService implements RuntimeService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Fake ConfigBindings for testing.
+class FakeConfigBindings implements ConfigBindings {
+  @override
+  List<VirtualLayout> listVirtualLayouts() => const [];
+
+  @override
+  VirtualLayout saveVirtualLayout(VirtualLayout layout) => layout;
+
+  @override
+  void deleteVirtualLayout(String id) {}
+
+  @override
+  List<Keymap> listKeymaps() => const [];
+
+  @override
+  Keymap saveKeymap(Keymap keymap) => keymap;
+
+  @override
+  void deleteKeymap(String id) {}
+
+  @override
+  List<HardwareProfile> listHardwareProfiles() => const [];
+
+  @override
+  HardwareProfile saveHardwareProfile(HardwareProfile profile) => profile;
+
+  @override
+  void deleteHardwareProfile(String id) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    return null;
+  }
 }

@@ -129,3 +129,44 @@ where
         }
     }
 }
+/// Specialized wrapper for void return types.
+///
+/// Use this when the function contract specifies void return.
+/// It works like `ffi_wrapper` but handles error setting and returns `()`.
+///
+/// # Safety
+///
+/// This function manipulates raw pointers. The `error` parameter must be a valid
+/// pointer to a `*mut c_char` (or null). If not null, it will be written to
+/// on error.
+pub unsafe fn ffi_void_wrapper<F>(error: *mut *mut c_char, f: F)
+where
+    F: FnOnce() -> Result<(), String>,
+{
+    // Helper to set error pointer
+    let set_error = |err_msg: &str| {
+        if !error.is_null() {
+            if let Ok(cs) = CString::new(err_msg) {
+                // SAFETY: error is not null, checked above
+                unsafe { *error = cs.into_raw() };
+            }
+        }
+    };
+
+    // Catch panics
+    let result = handle_panic(f);
+
+    match result {
+        Ok(Ok(())) => {
+            // Success - do nothing
+        }
+        Ok(Err(e)) => {
+            // Implementation returned an error
+            set_error(&e);
+        }
+        Err(panic_msg) => {
+            // Panic was caught
+            set_error(&panic_msg);
+        }
+    }
+}

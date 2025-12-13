@@ -9,19 +9,19 @@ part 'action_binding.g.dart';
 @Freezed(unionKey: 'type', unionValueCase: FreezedUnionCase.snake)
 sealed class ActionBinding with _$ActionBinding {
   const factory ActionBinding.standardKey({
-    @JsonKey(name: 'value') required String value,
+    @JsonKey(name: 'value') @Default('') String value,
   }) = ActionBindingStandardKey;
 
   const factory ActionBinding.macro({
-    @JsonKey(name: 'value') required String value,
+    @JsonKey(name: 'value') @Default('') String value,
   }) = ActionBindingMacro;
 
   const factory ActionBinding.layerToggle({
-    @JsonKey(name: 'value') required String value,
+    @JsonKey(name: 'value') @Default('') String value,
   }) = ActionBindingLayerToggle;
 
   const factory ActionBinding.tapHold({
-    @JsonKey(name: 'value') required List<String> value,
+    @JsonKey(name: 'value') @Default([]) List<String> value,
   }) = ActionBindingTapHold;
 
   const factory ActionBinding.transparent() = ActionBindingTransparent;

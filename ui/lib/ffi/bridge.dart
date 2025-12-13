@@ -25,6 +25,7 @@ import 'device_registry_ffi.dart';
 import 'profile_registry_ffi.dart';
 import 'event_types.dart';
 import 'generated/bindings_generated.dart';
+import 'generated_bindings.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
 export 'bridge_device_profile.dart'
@@ -110,6 +111,7 @@ class KeyrxBridge
   static KeyrxBridge? _currentInstance;
 
   KeyrxBindings? _bindings;
+  ConfigBindings? _configBindings;
   bool _initialized = false;
   Object? _loadFailure;
   StreamController<BridgeStateUpdate>? _stateController;
@@ -142,6 +144,10 @@ class KeyrxBridge
       }
     } else {
       _freeEventPayload = null;
+    }
+
+    if (lib != null) {
+      _configBindings = ConfigBindings(lib);
     }
 
     if (_bindings != null) {
@@ -186,6 +192,8 @@ class KeyrxBridge
   // Mixin interface implementations.
   @override
   KeyrxBindings? get bindings => _bindings;
+
+  ConfigBindings? get configBindings => _configBindings;
 
   @override
   bool get initialized => _initialized;

@@ -197,7 +197,7 @@ mod tests {
     fn register_event_callback_rejects_invalid_codes() {
         unsafe {
             assert_eq!(keyrx_register_event_callback(-1, None), -1);
-            assert_eq!(keyrx_register_event_callback(18, None), -1);
+            assert_eq!(keyrx_register_event_callback(20, None), -1);
             assert_eq!(keyrx_register_event_callback(100, None), -1);
         }
     }

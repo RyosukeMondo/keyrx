@@ -1,5 +1,4 @@
 {
-    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
     "version": "1.0.0",
     "domain": "telemetry",
     "description": "Panic telemetry and recovery events",
@@ -59,3 +58,4 @@
     ],
     "events": []
 }
+

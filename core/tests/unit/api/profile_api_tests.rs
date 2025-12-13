@@ -26,6 +26,7 @@ fn test_hardware_profile(id: &str) -> HardwareProfile {
         id: id.to_string(),
         vendor_id: 0x1234,
         product_id: 0x5678,
+        serial_number: None,
         name: Some(format!("Profile {}", id)),
         virtual_layout_id: "layout-1".to_string(),
         wiring: HashMap::new(),

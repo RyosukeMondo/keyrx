@@ -417,8 +417,8 @@ class __$$HardwareProfileImplCopyWithImpl<$Res>
 class _$HardwareProfileImpl extends _HardwareProfile {
   const _$HardwareProfileImpl({
     required this.id,
-    @JsonKey(name: 'vendor_id') required this.vendorId,
-    @JsonKey(name: 'product_id') required this.productId,
+    @JsonKey(name: 'vendor_id') this.vendorId = 0,
+    @JsonKey(name: 'product_id') this.productId = 0,
     @JsonKey(name: 'serial_number') this.serialNumber,
     this.name,
     @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
@@ -510,8 +510,8 @@ class _$HardwareProfileImpl extends _HardwareProfile {
 abstract class _HardwareProfile extends HardwareProfile {
   const factory _HardwareProfile({
     required final String id,
-    @JsonKey(name: 'vendor_id') required final int vendorId,
-    @JsonKey(name: 'product_id') required final int productId,
+    @JsonKey(name: 'vendor_id') final int vendorId,
+    @JsonKey(name: 'product_id') final int productId,
     @JsonKey(name: 'serial_number') final String? serialNumber,
     final String? name,
     @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,

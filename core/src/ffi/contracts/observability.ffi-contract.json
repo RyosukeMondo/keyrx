@@ -1,5 +1,4 @@
 {
-    "$schema": "https://keyrx.dev/schemas/ffi-contract-v1.json",
     "version": "1.0.0",
     "domain": "observability",
     "description": "Observability (Logging and Metrics) FFI",
@@ -323,3 +322,4 @@
     ],
     "events": []
 }
+

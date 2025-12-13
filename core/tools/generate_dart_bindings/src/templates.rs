@@ -39,11 +39,12 @@ pub const BINDINGS_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 // To regenerate: cargo run --bin generate-dart-bindings
 // Or: just gen-dart-bindings
 
-// ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types, unused_field
+// ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types, unused_field, unused_local_variable
 
 import 'dart:convert';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
+import '../models/models.dart';
 "#;
 
 /// Header for generated models file
@@ -139,6 +140,33 @@ void {{dart_function_name}}({{dart_params_signature}}) {
 {{param_frees}}
 }"#;
 
+/// Template for wrapper function with error handling but void return
+///
+/// Placeholders:
+/// - `{{doc_comment}}` - Documentation
+/// - `{{dart_function_name}}` - Dart function name
+/// - `{{dart_params_signature}}` - Dart parameter signature
+/// - `{{param_conversions}}` - Code to convert Dart params to FFI
+/// - `{{ffi_call_args}}` - Arguments to pass to FFI function
+/// - `{{param_frees}}` - Code to free allocated parameters
+/// - `{{lookup_name}}` - Name of the function pointer variable
+pub const WRAPPER_FUNCTION_VOID_WITH_ERROR_TEMPLATE: &str = r#"/// {{doc_comment}}
+void {{dart_function_name}}({{dart_params_signature}}) {
+  final errorPtr = calloc<Pointer<Utf8>>();
+  try {
+{{param_conversions}}
+    _{{lookup_name}}({{ffi_call_args}});
+{{param_frees}}
+    if (errorPtr.value.address != 0) {
+      final error = errorPtr.value.toDartString();
+      calloc.free(errorPtr.value);
+      throw FfiException(error);
+    }
+  } finally {
+    calloc.free(errorPtr);
+  }
+}"#;
+
 /// Template for parameter conversion (string to native)
 pub const PARAM_TO_NATIVE_UTF8: &str =
     "    final {{param_name}}Ptr = {{param_name}}.toNativeUtf8();";
@@ -151,7 +179,7 @@ pub const RESULT_STRING_CONVERSION: &str = r#"    if (resultPtr.address == 0) {
       throw FfiException('Unexpected null return from FFI');
     }
     final result = resultPtr.toDartString();
-    _keyrx_free_string(resultPtr);
+    _freeString(resultPtr);
     return result;"#;
 
 /// Template for JSON-decoded result conversion
@@ -162,7 +190,7 @@ pub const RESULT_JSON_DECODE_CONVERSION: &str = r#"    if (resultPtr.address == 
       throw FfiException('Unexpected null return from FFI');
     }
     final resultJson = resultPtr.toDartString();
-    _keyrx_free_string(resultPtr);
+    _freeString(resultPtr);
     return jsonDecode(resultJson) as {{dart_type}};"#;
 
 /// Template for model class result conversion
@@ -173,7 +201,7 @@ pub const RESULT_MODEL_CONVERSION: &str = r#"    if (resultPtr.address == 0) {
       throw FfiException('Unexpected null return from FFI');
     }
     final resultJson = resultPtr.toDartString();
-    _keyrx_free_string(resultPtr);
+    _freeString(resultPtr);
     return {{class_name}}.fromJson(jsonDecode(resultJson) as Map<String, dynamic>);"#;
 
 /// Template for void return (no result conversion needed)
@@ -273,7 +301,7 @@ class {{class_name}} {
   {{class_name}}(this._lib);
 
   // Free string function lookup
-  late final _keyrx_free_string = _lib
+  late final _freeString = _lib
       .lookup<NativeFunction<Void Function(Pointer<Utf8>)>>('keyrx_free_string')
       .asFunction<void Function(Pointer<Utf8>)>();
 
