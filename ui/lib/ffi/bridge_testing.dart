@@ -28,9 +28,17 @@ mixin BridgeTestingMixin {
     }
 
     final pathPtr = path.toNativeUtf8();
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = discoverFn(pathPtr.cast<Char>());
+      ptr = discoverFn(pathPtr.cast<Char>(), errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return TestDiscoveryResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return TestDiscoveryResult.error('discoverTests returned null');
       }
@@ -41,6 +49,7 @@ mixin BridgeTestingMixin {
       return TestDiscoveryResult.error('$e');
     } finally {
       calloc.free(pathPtr);
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);
@@ -61,9 +70,17 @@ mixin BridgeTestingMixin {
 
     final pathPtr = path.toNativeUtf8();
     final filterPtr = filter?.toNativeUtf8() ?? nullptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = runFn(pathPtr.cast<Char>(), filterPtr.cast<Char>());
+      ptr = runFn(pathPtr.cast<Char>(), filterPtr.cast<Char>(), errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return TestRunResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return TestRunResult.error('runTests returned null');
       }
@@ -74,6 +91,7 @@ mixin BridgeTestingMixin {
       return TestRunResult.error('$e');
     } finally {
       calloc.free(pathPtr);
+      calloc.free(errorPtr);
       if (filterPtr != nullptr) {
         calloc.free(filterPtr);
       }
@@ -104,9 +122,22 @@ mixin BridgeTestingMixin {
     final keysJson = json.encode(keys.map((k) => k.toJson()).toList());
     final keysPtr = keysJson.toNativeUtf8();
     final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = simFn(keysPtr.cast<Char>(), scriptPtr.cast<Char>(), comboMode);
+      ptr = simFn(
+        keysPtr.cast<Char>(),
+        scriptPtr.cast<Char>(),
+        comboMode,
+        errorPtr,
+      );
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return SimulationResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return SimulationResult.error('simulate returned null');
       }
@@ -117,6 +148,7 @@ mixin BridgeTestingMixin {
       return SimulationResult.error('$e');
     } finally {
       calloc.free(keysPtr);
+      calloc.free(errorPtr);
       if (scriptPtr != nullptr) {
         calloc.free(scriptPtr);
       }
@@ -136,9 +168,17 @@ mixin BridgeTestingMixin {
     }
 
     final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = benchFn(iterations, scriptPtr.cast<Char>());
+      ptr = benchFn(iterations, scriptPtr.cast<Char>(), errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return BenchmarkResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return BenchmarkResult.error('runBenchmark returned null');
       }
@@ -148,6 +188,7 @@ mixin BridgeTestingMixin {
     } catch (e) {
       return BenchmarkResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       if (scriptPtr != nullptr) {
         calloc.free(scriptPtr);
       }
@@ -166,9 +207,17 @@ mixin BridgeTestingMixin {
       return DoctorResult.error('runDoctor not available');
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = doctorFn();
+      ptr = doctorFn(errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DoctorResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return DoctorResult.error('runDoctor returned null');
       }
@@ -178,6 +227,7 @@ mixin BridgeTestingMixin {
     } catch (e) {
       return DoctorResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);

@@ -114,9 +114,9 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('listProfiles returned null');
       }
 
-      final raw = ptr?.cast<Utf8>().toDartString();
+      final raw = ptr.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw!,
+        raw,
         (json) => json as List<dynamic>,
       );
 
@@ -159,9 +159,9 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('getProfile returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final raw = resultPtr.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<Map<String, dynamic>>(
-        raw!,
+        raw,
         (json) => json as Map<String, dynamic>,
       );
 
@@ -208,8 +208,8 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('saveProfile returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw!, null);
+      final raw = resultPtr.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
         return ProfileRegistryResult.error(result.errorMessage!);
@@ -250,8 +250,8 @@ mixin ProfileRegistryFFIMixin {
         return ProfileRegistryResult.error('deleteProfile returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw!, null);
+      final raw = resultPtr.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
         return ProfileRegistryResult.error(result.errorMessage!);
@@ -284,21 +284,29 @@ mixin ProfileRegistryFFIMixin {
     }
 
     // Convert LayoutType to string
+    // Convert LayoutType to string
     final layoutTypeStr = layoutType.toJsonString();
     final typePtr = layoutTypeStr.toNativeUtf8();
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? resultPtr;
 
     try {
-      resultPtr = findFn(typePtr.cast<Char>());
+      resultPtr = findFn(typePtr.cast<Char>(), errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return ProfileRegistryResult.error(error);
+      }
       if (resultPtr == nullptr) {
         return ProfileRegistryResult.error(
           'findCompatibleProfiles returned null',
         );
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final raw = resultPtr.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw!,
+        raw,
         (json) => json as List<dynamic>,
       );
 
@@ -321,6 +329,7 @@ mixin ProfileRegistryFFIMixin {
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);
       }
+      calloc.free(errorPtr);
     }
   }
 }

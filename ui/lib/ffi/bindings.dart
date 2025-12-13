@@ -12,9 +12,6 @@ import 'generated/bindings_generated.dart';
 // Legacy Callback Types (Backward Compatibility)
 // ────────────────────────────────────────────────────────────────
 
-typedef KeyrxSetBypassNative = Void Function(Bool active);
-typedef KeyrxSetBypass = void Function(bool active);
-
 typedef KeyrxFreeStringNative = Void Function(Pointer<Char> ptr);
 typedef KeyrxFreeString = void Function(Pointer<Char> ptr);
 
@@ -35,6 +32,9 @@ typedef KeyrxRegisterEventCallbackNative =
 typedef KeyrxRegisterEventCallback =
     int Function(int, Pointer<NativeFunction<EventCallbackNative>>);
 
+typedef KeyrxGetConfigRootNative = Pointer<Char> Function();
+typedef KeyrxGetConfigRoot = Pointer<Char> Function();
+
 // ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
@@ -51,16 +51,21 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxEngineStartLoop? startLoop;
   late final KeyrxEngineStopLoop? stopLoop;
 
-  late final KeyrxSetBypass? setBypass;
+  @override
   late final KeyrxFreeString freeString;
+  @override
+  late final KeyrxGetConfigRoot getConfigRoot;
 
   KeyrxBindings(this._lib) : super(_lib) {
     // Required functions
     freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
       'keyrx_free_string',
     );
+    getConfigRoot = _lib
+        .lookupFunction<KeyrxGetConfigRootNative, KeyrxGetConfigRoot>(
+          'keyrx_get_config_root',
+        );
 
-    setBypass = _tryLookupSetBypass();
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
     registerEventCallback = _lib
@@ -70,17 +75,8 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
         >('keyrx_register_event_callback');
   }
 
+  @override
   late final KeyrxRegisterEventCallback registerEventCallback;
-
-  KeyrxSetBypass? _tryLookupSetBypass() {
-    try {
-      return _lib.lookupFunction<KeyrxSetBypassNative, KeyrxSetBypass>(
-        'keyrx_set_bypass',
-      );
-    } on ArgumentError {
-      return null;
-    }
-  }
 
   KeyrxEngineStartLoop? _tryLookupStartLoop() {
     try {

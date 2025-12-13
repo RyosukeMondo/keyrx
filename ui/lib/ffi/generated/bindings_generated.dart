@@ -7,6 +7,7 @@
 library;
 
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 // ────────────────────────────────────────────────────────────────
 // Common Callback Typedefs
@@ -16,1012 +17,612 @@ import 'dart:ffi';
 typedef EventCallbackNative = Void Function(Pointer<Uint8>, IntPtr);
 typedef EventCallback = void Function(Pointer<Uint8>, int);
 
-// ────────────────────────────────────────────────────────────────
-// Function Typedefs
-// ────────────────────────────────────────────────────────────────
+
+// Bindings Definitions
 
 // keyrx_init
+/// Initialize the library.
 typedef InitNative = Int32 Function();
 typedef Init = int Function();
 
-
 // keyrx_version
+/// Get library version.
 typedef VersionNative = Pointer<Char> Function();
 typedef Version = Pointer<Char> Function();
 
+// keyrx_free_string
+/// Free a string returned by the library.
+typedef FreeStringNative = Void Function(Pointer<Char>);
+typedef FreeString = void Function(Pointer<Char>);
 
 // keyrx_last_error
+/// Get last error message.
 typedef LastErrorNative = Pointer<Char> Function();
 typedef LastError = Pointer<Char> Function();
 
+// keyrx_register_event_callback
+/// Register global event callback.
+typedef RegisterEventCallbackNative = Int32 Function(Int32, Pointer<NativeFunction<EventCallbackNative>>);
+typedef RegisterEventCallback = int Function(int, Pointer<NativeFunction<EventCallbackNative>>);
 
 // keyrx_protocol_version
+/// Get protocol version.
 typedef ProtocolVersionNative = Uint32 Function();
 typedef ProtocolVersion = int Function();
 
-
 // keyrx_introspection_metadata
-/// Get FFI introspection metadata (developer tools)
-/// 
-/// Returns JSON with all available FFI functions, parameters, and events.
-/// This enables runtime discovery of FFI capabilities.
+/// Get FFI metadata.
 typedef IntrospectionMetadataNative = Pointer<Char> Function();
 typedef IntrospectionMetadata = Pointer<Char> Function();
 
-
 // keyrx_set_config_root
+/// Set configuration root path.
 typedef SetConfigRootNative = Int32 Function(Pointer<Char>);
 typedef SetConfigRoot = int Function(Pointer<Char>);
 
-
 // keyrx_revolutionary_runtime_init
+/// Initialize revolutionary runtime.
 typedef RevolutionaryRuntimeInitNative = Int32 Function();
 typedef RevolutionaryRuntimeInit = int Function();
 
-
 // keyrx_revolutionary_runtime_shutdown
+/// Shutdown revolutionary runtime.
 typedef RevolutionaryRuntimeShutdownNative = Int32 Function();
 typedef RevolutionaryRuntimeShutdown = int Function();
 
-
-// keyrx_config_list_virtual_layouts
-typedef ConfigListVirtualLayoutsNative = Pointer<Char> Function();
-typedef ConfigListVirtualLayouts = Pointer<Char> Function();
-
-
-// keyrx_config_save_virtual_layout
-typedef ConfigSaveVirtualLayoutNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigSaveVirtualLayout = Pointer<Char> Function(Pointer<Char>);
-
-
-// keyrx_config_delete_virtual_layout
-typedef ConfigDeleteVirtualLayoutNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigDeleteVirtualLayout = Pointer<Char> Function(Pointer<Char>);
-
-
-// keyrx_config_list_hardware_profiles
-typedef ConfigListHardwareProfilesNative = Pointer<Char> Function();
-typedef ConfigListHardwareProfiles = Pointer<Char> Function();
-
-
-// keyrx_config_save_hardware_profile
-typedef ConfigSaveHardwareProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigSaveHardwareProfile = Pointer<Char> Function(Pointer<Char>);
-
-
-// keyrx_config_delete_hardware_profile
-typedef ConfigDeleteHardwareProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigDeleteHardwareProfile = Pointer<Char> Function(Pointer<Char>);
-
-
-// keyrx_config_list_keymaps
-typedef ConfigListKeymapsNative = Pointer<Char> Function();
-typedef ConfigListKeymaps = Pointer<Char> Function();
-
-
-// keyrx_config_save_keymap
-typedef ConfigSaveKeymapNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigSaveKeymap = Pointer<Char> Function(Pointer<Char>);
-
-
-// keyrx_config_delete_keymap
-typedef ConfigDeleteKeymapNative = Pointer<Char> Function(Pointer<Char>);
-typedef ConfigDeleteKeymap = Pointer<Char> Function(Pointer<Char>);
-
+// keyrx_free_event_payload
+/// Free event payload.
+typedef FreeEventPayloadNative = Void Function(Pointer<Uint8>, Size);
+typedef FreeEventPayload = void Function(Pointer<Uint8>, int);
 
 // keyrx_select_device
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
+/// Select device by path.
 typedef SelectDeviceNative = Int32 Function(Pointer<Char>);
 typedef SelectDevice = int Function(Pointer<Char>);
 
-
 // keyrx_list_keys
-typedef ListKeysNative = Pointer<Char> Function();
-typedef ListKeys = Pointer<Char> Function();
-
+/// List keys.
+typedef ListKeysNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ListKeys = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_get_device_profile
-/// Get device profile for a specific device.
-/// 
-/// Returns JSON containing the complete device profile including:
-/// - Keyboard layout (rows, cols_per_row)
-/// - Keymap (scan_code -> row/col/alias mapping)
-/// - Discovery metadata
-/// 
-/// # Arguments
-/// * `vendor_id` - USB vendor ID
-/// * `product_id` - USB product ID
-/// 
-/// # Returns
-/// * `ok:<json>` on success with DeviceProfile JSON
-/// * `error:<message>` if profile not found
-/// 
-/// # Example JSON Response
-/// ```json
-/// {
-/// "schema_version": 1,
-/// "vendor_id": 1234,
-/// "product_id": 5678,
-/// "name": "My Keyboard",
-/// "discovered_at": "2024-01-15T10:30:00Z",
-/// "rows": 6,
-/// "cols_per_row": [15, 15, 15, 13, 11, 8],
-/// "keymap": {
-/// "1": {"scan_code": 1, "row": 0, "col": 0, "alias": "Esc"},
-/// "2": {"scan_code": 2, "row": 0, "col": 1, "alias": "1"}
-/// },
-/// "aliases": {
-/// "Esc": 1,
-/// "1": 2
-/// },
-/// "source": "Discovered"
-/// }
-/// ```
-typedef GetDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16);
-typedef GetDeviceProfile = Pointer<Char> Function(int, int);
-
+/// Get device profile.
+typedef GetDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16, Pointer<Pointer<Utf8>>);
+typedef GetDeviceProfile = Pointer<Char> Function(int, int, Pointer<Pointer<Utf8>>);
 
 // keyrx_has_device_profile
-/// Check if a device profile exists.
-/// 
-/// # Arguments
-/// * `vendor_id` - USB vendor ID
-/// * `product_id` - USB product ID
-/// 
-/// # Returns
-/// * `ok:true` if profile exists
-/// * `ok:false` if profile does not exist
-typedef HasDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16);
-typedef HasDeviceProfile = Pointer<Char> Function(int, int);
-
+/// Check profile existence.
+typedef HasDeviceProfileNative = Pointer<Char> Function(Uint16, Uint16, Pointer<Pointer<Utf8>>);
+typedef HasDeviceProfile = Pointer<Char> Function(int, int, Pointer<Pointer<Utf8>>);
 
 // keyrx_save_device_profile
-/// Save a device profile.
-/// 
-/// # Safety
-/// `profile_json` must be a valid, non-null, nul-terminated C string.
-typedef SaveDeviceProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef SaveDeviceProfile = Pointer<Char> Function(Pointer<Char>);
-
+/// Save profile.
+typedef SaveDeviceProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef SaveDeviceProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_is_bypass_active
+/// Check bypass mode.
 typedef IsBypassActiveNative = Bool Function();
 typedef IsBypassActive = bool Function();
 
+// keyrx_set_bypass
+/// Set bypass mode.
+typedef SetBypassNative = Void Function(Bool);
+typedef SetBypass = void Function(bool);
 
 // keyrx_load_script
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
+/// Load script.
 typedef LoadScriptNative = Int32 Function(Pointer<Char>);
 typedef LoadScript = int Function(Pointer<Char>);
 
-
 // keyrx_eval
-/// # Safety
-/// 
-/// The `command` pointer must be a valid, non-null, nul-terminated C string.
-typedef EvalNative = Pointer<Char> Function(Pointer<Char>);
-typedef Eval = Pointer<Char> Function(Pointer<Char>);
-
+/// Evaluate command.
+typedef EvalNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef Eval = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_validate_script
-/// # Safety
-/// 
-/// The `script` pointer must be a valid, non-null, nul-terminated C string.
-typedef ValidateScriptNative = Pointer<Char> Function(Pointer<Char>);
-typedef ValidateScript = Pointer<Char> Function(Pointer<Char>);
-
+/// Validate script.
+typedef ValidateScriptNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ValidateScript = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_validate_script_with_options
-/// # Safety
-/// 
-/// Both `script` and `options_json` must be valid, non-null, nul-terminated C strings.
-typedef ValidateScriptWithOptionsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-typedef ValidateScriptWithOptions = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-
+/// Validate script with options.
+typedef ValidateScriptWithOptionsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ValidateScriptWithOptions = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_suggest_keys
-/// # Safety
-/// 
-/// The `partial` pointer must be a valid, non-null, nul-terminated C string.
-typedef SuggestKeysNative = Pointer<Char> Function(Pointer<Char>);
-typedef SuggestKeys = Pointer<Char> Function(Pointer<Char>);
-
+/// Suggest keys.
+typedef SuggestKeysNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef SuggestKeys = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_all_key_names
-typedef AllKeyNamesNative = Pointer<Char> Function();
-typedef AllKeyNames = Pointer<Char> Function();
-
+/// Get all key names.
+typedef AllKeyNamesNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef AllKeyNames = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_check_script
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-typedef CheckScriptNative = Pointer<Char> Function(Pointer<Char>);
-typedef CheckScript = Pointer<Char> Function(Pointer<Char>);
-
+/// Check script.
+typedef CheckScriptNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef CheckScript = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_discover_tests
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-typedef DiscoverTestsNative = Pointer<Char> Function(Pointer<Char>);
-typedef DiscoverTests = Pointer<Char> Function(Pointer<Char>);
-
+/// Discover tests.
+typedef DiscoverTestsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef DiscoverTests = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_run_tests
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-/// The `filter` pointer may be null, or a valid nul-terminated C string.
-typedef RunTestsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-typedef RunTests = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-
+/// Run tests.
+typedef RunTestsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef RunTests = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_simulate
-/// # Safety
-/// 
-/// The `keys_json` pointer must be a valid, non-null, nul-terminated C string.
-/// The `script_path` pointer may be null, or a valid nul-terminated C string.
-typedef SimulateNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool);
-typedef Simulate = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool);
-
+/// Simulate keys.
+typedef SimulateNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool, Pointer<Pointer<Utf8>>);
+typedef Simulate = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool, Pointer<Pointer<Utf8>>);
 
 // keyrx_run_benchmark
-/// # Safety
-/// 
-/// The `script_path` pointer may be null, or a valid nul-terminated C string.
-typedef RunBenchmarkNative = Pointer<Char> Function(Uint32, Pointer<Char>);
-typedef RunBenchmark = Pointer<Char> Function(int, Pointer<Char>);
-
+/// Run benchmark.
+typedef RunBenchmarkNative = Pointer<Char> Function(Uint32, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef RunBenchmark = Pointer<Char> Function(int, Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_run_doctor
-typedef RunDoctorNative = Pointer<Char> Function();
-typedef RunDoctor = Pointer<Char> Function();
-
+/// Run doctor.
+typedef RunDoctorNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef RunDoctor = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_start_recording
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-typedef StartRecordingNative = Pointer<Char> Function(Pointer<Char>);
-typedef StartRecording = Pointer<Char> Function(Pointer<Char>);
-
+/// Start recording.
+typedef StartRecordingNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef StartRecording = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_stop_recording
-typedef StopRecordingNative = Pointer<Char> Function();
-typedef StopRecording = Pointer<Char> Function();
-
+/// Stop recording.
+typedef StopRecordingNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef StopRecording = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_list_sessions
-/// # Safety
-/// 
-/// The `dir_path` pointer must be a valid, non-null, nul-terminated C string.
-typedef ListSessionsNative = Pointer<Char> Function(Pointer<Char>);
-typedef ListSessions = Pointer<Char> Function(Pointer<Char>);
-
+/// List sessions.
+typedef ListSessionsNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ListSessions = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_analyze_session
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-typedef AnalyzeSessionNative = Pointer<Char> Function(Pointer<Char>);
-typedef AnalyzeSession = Pointer<Char> Function(Pointer<Char>);
-
+/// Analyze session.
+typedef AnalyzeSessionNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef AnalyzeSession = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_replay_session
-/// # Safety
-/// 
-/// The `path` pointer must be a valid, non-null, nul-terminated C string.
-typedef ReplaySessionNative = Pointer<Char> Function(Pointer<Char>, Bool);
-typedef ReplaySession = Pointer<Char> Function(Pointer<Char>, bool);
+/// Replay session.
+typedef ReplaySessionNative = Pointer<Char> Function(Pointer<Char>, Bool, Pointer<Pointer<Utf8>>);
+typedef ReplaySession = Pointer<Char> Function(Pointer<Char>, bool, Pointer<Pointer<Utf8>>);
 
+// keyrx_config_list_virtual_layouts
+/// List all saved virtual layouts.
+typedef ConfigListVirtualLayoutsNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ConfigListVirtualLayouts = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
-// keyrx_on_state
-/// Register a legacy EngineState callback.
-/// 
-/// This provides compatibility for the older `keyrx_on_state` API expected by
-/// the Flutter bindings. Call with `None` to unregister.
-typedef OnStateNative = Void Function(Pointer<NativeFunction<EventCallbackNative>>);
-typedef OnState = void Function(Pointer<NativeFunction<EventCallbackNative>>);
+// keyrx_config_save_virtual_layout
+/// Save or update a virtual layout.
+typedef ConfigSaveVirtualLayoutNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigSaveVirtualLayout = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
+// keyrx_config_delete_virtual_layout
+/// Delete a virtual layout by ID.
+typedef ConfigDeleteVirtualLayoutNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteVirtualLayout = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
-// keyrx_runtime_get_config
-/// Get the current runtime configuration.
-/// 
-/// Returns JSON string: `ok:<json>` or `error:<message>`.
-typedef RuntimeGetConfigNative = Pointer<Char> Function();
-typedef RuntimeGetConfig = Pointer<Char> Function();
+// keyrx_config_list_hardware_profiles
+/// List all saved hardware profiles.
+typedef ConfigListHardwareProfilesNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ConfigListHardwareProfiles = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
+// keyrx_config_save_hardware_profile
+/// Save or update a hardware profile.
+typedef ConfigSaveHardwareProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigSaveHardwareProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
-// keyrx_runtime_add_slot
-typedef RuntimeAddSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Uint32);
-typedef RuntimeAddSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int);
+// keyrx_config_delete_hardware_profile
+/// Delete a hardware profile by ID.
+typedef ConfigDeleteHardwareProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteHardwareProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
+// keyrx_config_list_keymaps
+/// List all saved keymaps.
+typedef ConfigListKeymapsNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ConfigListKeymaps = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
-// keyrx_runtime_remove_slot
-typedef RuntimeRemoveSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-typedef RuntimeRemoveSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+// keyrx_config_save_keymap
+/// Save or update a keymap.
+typedef ConfigSaveKeymapNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigSaveKeymap = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
+// keyrx_config_delete_keymap
+/// Delete a keymap by ID.
+typedef ConfigDeleteKeymapNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteKeymap = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
-// keyrx_runtime_reorder_slot
-typedef RuntimeReorderSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Uint32);
-typedef RuntimeReorderSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int);
-
-
-// keyrx_runtime_set_slot_active
-typedef RuntimeSetSlotActiveNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool);
-typedef RuntimeSetSlotActive = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool);
-
-
-// keyrx_telemetry_snapshot_json
-/// Gets panic telemetry as a JSON string.
-/// 
-/// Returns a null-terminated JSON string that must be freed with `keyrx_free_string()`.
-/// Returns NULL on error.
-/// 
-/// # Safety
-/// 
-/// The returned pointer must be freed with `keyrx_free_string()` to avoid memory leaks.
-/// 
-/// # Example
-/// 
-/// ```c
-/// char* json = keyrx_telemetry_snapshot_json();
-/// if (json) {
-/// printf("%s\n", json);
-/// keyrx_free_string(json);
-/// }
-/// ```
-typedef TelemetrySnapshotJsonNative = Pointer<Char> Function();
-typedef TelemetrySnapshotJson = Pointer<Char> Function();
-
-
-// keyrx_telemetry_snapshot
-/// Gets panic telemetry as an FFI struct.
-/// 
-/// Returns a pointer to `PanicTelemetryFfi` that must be freed with
-/// `keyrx_telemetry_free_snapshot()`. Returns NULL on error.
-/// 
-/// # Safety
-/// 
-/// The returned pointer must be freed with `keyrx_telemetry_free_snapshot()`
-/// to avoid memory leaks.
-/// 
-/// # Example
-/// 
-/// ```c
-/// PanicTelemetryFfi* telemetry = keyrx_telemetry_snapshot();
-/// if (telemetry) {
-/// printf("Panics: %llu\n", telemetry->total_panics);
-/// keyrx_telemetry_free_snapshot(telemetry);
-/// }
-/// ```
-typedef TelemetrySnapshotNative = Pointer<Void> Function();
-typedef TelemetrySnapshot = Pointer<Void> Function();
-
-
-// keyrx_telemetry_reset
-/// Resets all panic telemetry counters and clears events.
-/// 
-/// This is primarily for testing. In production, counters should accumulate.
-/// 
-/// Returns 0 on success, -1 on error.
-/// 
-/// # Example
-/// 
-/// ```c
-/// keyrx_telemetry_reset();  // Start fresh
-/// ```
-typedef TelemetryResetNative = Int32 Function();
-typedef TelemetryReset = int Function();
-
-
-// keyrx_telemetry_free_snapshot
-/// Frees a panic telemetry snapshot.
-/// 
-/// # Safety
-/// 
-/// - `telemetry` must be a valid pointer returned by `keyrx_telemetry_snapshot()`
-/// - `telemetry` must not be used after this call
-/// - `telemetry` must not be NULL
-/// 
-/// # Example
-/// 
-/// ```c
-/// PanicTelemetryFfi* telemetry = keyrx_telemetry_snapshot();
-/// if (telemetry) {
-/// // Use telemetry...
-/// keyrx_telemetry_free_snapshot(telemetry);
-/// }
-/// ```
-typedef TelemetryFreeSnapshotNative = Void Function(Pointer<Void>);
-typedef TelemetryFreeSnapshot = void Function(Pointer<Void>);
-
-
-// keyrx_transition_log_export_json
-/// Export all transition log entries as JSON.
-/// 
-/// Returns a JSON array containing all transitions in chronological order.
-/// Each entry includes the transition type, state before/after snapshots,
-/// timing information, and metadata.
-/// 
-/// # Arguments
-/// 
-/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
-/// 
-/// # Returns
-/// 
-/// Pointer to a null-terminated JSON string, or null on error.
-/// The caller must free the returned string with `keyrx_free_string()`.
-/// 
-/// # Safety
-/// 
-/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
-typedef TransitionLogExportJsonNative = Pointer<Char> Function(Pointer<Void>);
-typedef TransitionLogExportJson = Pointer<Char> Function(Pointer<Void>);
-
-
-// keyrx_transition_log_len
-/// Get the number of transition log entries currently stored.
-/// 
-/// # Arguments
-/// 
-/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
-/// 
-/// # Returns
-/// 
-/// Number of entries in the log.
-/// 
-/// # Safety
-/// 
-/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
-typedef TransitionLogLenNative = Size Function(Pointer<Void>);
-typedef TransitionLogLen = int Function(Pointer<Void>);
-
-
-// keyrx_transition_log_capacity
-/// Get the maximum capacity of the transition log.
-/// 
-/// # Arguments
-/// 
-/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
-/// 
-/// # Returns
-/// 
-/// Maximum number of entries the log can hold.
-/// 
-/// # Safety
-/// 
-/// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
-typedef TransitionLogCapacityNative = Size Function(Pointer<Void>);
-typedef TransitionLogCapacity = int Function(Pointer<Void>);
-
-
-// keyrx_transition_log_statistics
-/// Get statistics about the transition log.
-/// 
-/// Returns a tuple of statistics via output parameters:
-/// - `total`: Total entries currently stored
-/// - `unique_names`: Number of unique transition names
-/// - `total_duration`: Sum of all transition processing durations (nanoseconds)
-/// - `avg_duration`: Average processing duration per entry (nanoseconds)
-/// 
-/// # Arguments
-/// 
-/// * `engine_ptr` - Opaque pointer to the AdvancedEngine instance
-/// * `total` - Output: Total entries
-/// * `unique_names` - Output: Number of unique transition names
-/// * `total_duration` - Output: Total processing time (nanoseconds)
-/// * `avg_duration` - Output: Average processing time (nanoseconds)
-/// 
-/// # Safety
-/// 
-/// All pointers must be valid. `engine_ptr` must point to an AdvancedEngine instance.
-typedef TransitionLogStatisticsNative = Void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
-typedef TransitionLogStatistics = void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
-
+// keyrx_config_get_config_root
+/// Get the absolute path to the configuration root directory.
+typedef ConfigGetConfigRootNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ConfigGetConfigRoot = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_definitions_list_all
 /// List all loaded device definitions.
-/// 
-/// Returns JSON string: `ok:<json>` or `error:<message>`.
-/// 
-/// # Safety
-/// This function catches panics and returns an error string if a panic occurs.
-typedef DefinitionsListAllNative = Pointer<Char> Function();
-typedef DefinitionsListAll = Pointer<Char> Function();
-
+typedef DefinitionsListAllNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef DefinitionsListAll = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_definitions_get_for_device
 /// Get device definition for a specific VID:PID.
-/// 
-/// Returns JSON string: `ok:<definition_json>` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `vendor_id` - USB Vendor ID (hex format, e.g., 0x1234)
-/// * `product_id` - USB Product ID (hex format, e.g., 0x5678)
-/// 
-/// # Safety
-/// This function catches panics and returns an error string if a panic occurs.
-typedef DefinitionsGetForDeviceNative = Pointer<Char> Function(Uint16, Uint16);
-typedef DefinitionsGetForDevice = Pointer<Char> Function(int, int);
-
+typedef DefinitionsGetForDeviceNative = Pointer<Char> Function(Uint16, Uint16, Pointer<Pointer<Utf8>>);
+typedef DefinitionsGetForDevice = Pointer<Char> Function(int, int, Pointer<Pointer<Utf8>>);
 
 // keyrx_device_registry_list_devices
-/// List all registered devices.
-/// 
-/// Returns JSON string: `ok:<json>` or `error:<message>`.
-/// 
-/// # Safety
-/// This function catches panics and returns an error string if a panic occurs.
-typedef DeviceRegistryListDevicesNative = Pointer<Char> Function();
-typedef DeviceRegistryListDevices = Pointer<Char> Function();
-
+/// List all registered devices
+typedef DeviceRegistryListDevicesNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef DeviceRegistryListDevices = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_device_registry_set_remap_enabled
-/// Set remap enabled state for a device.
-/// 
-/// Returns `ok:` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `device_key` - Device identity key (format: "VID:PID:SERIAL")
-/// * `enabled` - 1 for enabled, 0 for disabled
-/// 
-/// # Safety
-/// * `device_key` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef DeviceRegistrySetRemapEnabledNative = Pointer<Char> Function(Pointer<Char>, Int32);
-typedef DeviceRegistrySetRemapEnabled = Pointer<Char> Function(Pointer<Char>, int);
-
+/// Enable/Disable remapping for a device
+typedef DeviceRegistrySetRemapEnabledNative = Pointer<Char> Function(Pointer<Char>, Int32, Pointer<Pointer<Utf8>>);
+typedef DeviceRegistrySetRemapEnabled = Pointer<Char> Function(Pointer<Char>, int, Pointer<Pointer<Utf8>>);
 
 // keyrx_device_registry_assign_profile
 /// Assign a profile to a device.
-/// 
-/// Returns `ok:` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `device_key` - Device identity key (format: "VID:PID:SERIAL")
-/// * `profile_id` - Profile ID to assign
-/// 
-/// # Safety
-/// * `device_key` and `profile_id` must be valid null-terminated C strings
-/// * This function catches panics and returns an error string if a panic occurs
-typedef DeviceRegistryAssignProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-typedef DeviceRegistryAssignProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-
+typedef DeviceRegistryAssignProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef DeviceRegistryAssignProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_device_registry_set_user_label
-/// Set user label for a device.
-/// 
-/// Returns `ok:` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `device_key` - Device identity key (format: "VID:PID:SERIAL")
-/// * `label` - User label (pass NULL to clear)
-/// 
-/// # Safety
-/// * `device_key` must be a valid null-terminated C string
-/// * `label` may be NULL to clear the label
-/// * This function catches panics and returns an error string if a panic occurs
-typedef DeviceRegistrySetUserLabelNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
-typedef DeviceRegistrySetUserLabel = Pointer<Char> Function(Pointer<Char>, Pointer<Char>);
+/// Set a user-friendly label for a device.
+typedef DeviceRegistrySetUserLabelNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef DeviceRegistrySetUserLabel = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
 
+// keyrx_discovery_start_discovery
+/// Start keyboard matrix discovery process
+typedef DiscoveryStartDiscoveryNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef DiscoveryStartDiscovery = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
-// keyrx_migration_run
-/// Run migration from V1 to V2 profiles.
-/// 
-/// Returns JSON string: `ok:<migration_report_json>` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `old_profiles_dir` - Path to directory containing old V1 profiles
-/// * `new_profiles_dir` - Path to directory for new V2 profiles
-/// * `create_backup` - Whether to create backup (0 = no, 1 = yes)
-/// 
-/// # Safety
-/// * `old_profiles_dir` and `new_profiles_dir` must be valid null-terminated C strings
-/// * This function catches panics and returns an error string if a panic occurs
-typedef MigrationRunNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Int32);
-typedef MigrationRun = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int);
+// keyrx_discovery_stop_discovery
+/// Stop ongoing discovery process
+typedef DiscoveryStopDiscoveryNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef DiscoveryStopDiscovery = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
+// keyrx_discovery_get_discovery_status
+/// Get current discovery status
+typedef DiscoveryGetDiscoveryStatusNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef DiscoveryGetDiscoveryStatus = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+
+// keyrx_engine_start_loop
+/// Start the input capture loop
+typedef EngineStartLoopNative = Int32 Function();
+typedef EngineStartLoop = int Function();
+
+// keyrx_engine_stop_loop
+/// Stop the input capture loop
+typedef EngineStopLoopNative = Int32 Function();
+typedef EngineStopLoop = int Function();
+
+// keyrx_on_state
+/// Register state callback.
+typedef OnStateNative = Void Function(Pointer<NativeFunction<EventCallbackNative>>);
+typedef OnState = void Function(Pointer<NativeFunction<EventCallbackNative>>);
+
+// free_ffi_json
+/// Free FFI JSON string.
+typedef FreeFfiJsonNative = Void Function(Pointer<Char>);
+typedef FreeFfiJson = void Function(Pointer<Char>);
+
+// free_ffi_string
+/// Free FFI string.
+typedef FreeFfiStringNative = Void Function(Pointer<Char>);
+typedef FreeFfiString = void Function(Pointer<Char>);
+
+// free_c_string
+/// Free C string.
+typedef FreeCStringNative = Void Function(Pointer<Char>);
+typedef FreeCString = void Function(Pointer<Char>);
 
 // keyrx_migration_check_needed
 /// Check if migration is needed.
-/// 
-/// Returns `ok:true` or `ok:false` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `old_profiles_dir` - Path to directory to check for old V1 profiles
-/// 
-/// # Safety
-/// * `old_profiles_dir` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef MigrationCheckNeededNative = Pointer<Char> Function(Pointer<Char>);
-typedef MigrationCheckNeeded = Pointer<Char> Function(Pointer<Char>);
+typedef MigrationCheckNeededNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef MigrationCheckNeeded = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
+// keyrx_migration_run
+/// Run migration from V1 to V2 profiles.
+typedef MigrationRunNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Int32, Pointer<Pointer<Utf8>>);
+typedef MigrationRun = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int, Pointer<Pointer<Utf8>>);
 
 // keyrx_log_bridge_init
-/// Initialize the log bridge for FFI access.
-/// 
-/// This must be called before using any log FFI functions.
-/// If a bridge already exists, this function does nothing.
-/// 
-/// # Safety
-/// This function is thread-safe.
+/// Initialize the log bridge.
 typedef LogBridgeInitNative = Int32 Function();
 typedef LogBridgeInit = int Function();
 
+// keyrx_log_set_callback
+/// Register log callback.
+typedef LogSetCallbackNative = Int32 Function(Pointer<NativeFunction<EventCallbackNative>>);
+typedef LogSetCallback = int Function(Pointer<NativeFunction<EventCallbackNative>>);
 
 // keyrx_log_count
-/// Get the number of buffered log entries.
-/// 
-/// # Returns
-/// Number of log entries in the buffer, or 0 if bridge is unavailable.
+/// Get number of buffered log entries.
 typedef LogCountNative = Size Function();
 typedef LogCount = int Function();
 
-
 // keyrx_log_drain
-/// Drain buffered log entries into a JSON array string.
-/// 
-/// This removes all entries from the buffer and returns them as a
-/// JSON-formatted string. The caller must free the returned string
-/// using `keyrx_free_string`.
-/// 
-/// # Returns
-/// Pointer to JSON array string, or NULL on error.
-/// The JSON format is: `[{...}, {...}, ...]` where each object is a LogEntry.
-/// 
-/// # Safety
-/// The returned pointer must be freed with `keyrx_free_string`.
+/// Drain log entries as JSON.
 typedef LogDrainNative = Pointer<Char> Function();
 typedef LogDrain = Pointer<Char> Function();
 
-
 // keyrx_log_clear
-/// Clear all buffered log entries without returning them.
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
+/// Clear log buffer.
 typedef LogClearNative = Int32 Function();
 typedef LogClear = int Function();
 
-
 // keyrx_log_set_enabled
-/// Enable or disable log buffering.
-/// 
-/// When disabled, log events are not captured by the bridge.
-/// 
-/// # Arguments
-/// * `enabled` - 1 to enable, 0 to disable
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
+/// Enable/disable logging.
 typedef LogSetEnabledNative = Int32 Function(Int32);
 typedef LogSetEnabled = int Function(int);
 
+// keyrx_metrics_set_callback
+/// Set metrics callback.
+typedef MetricsSetCallbackNative = Int32 Function(Pointer<Void>);
+typedef MetricsSetCallback = int Function(Pointer<Void>);
 
 // keyrx_metrics_snapshot
-/// Get the current metrics snapshot.
-/// 
-/// Returns a pointer to a metrics snapshot that must be freed with
-/// `keyrx_metrics_free_snapshot`.
-/// 
-/// # Returns
-/// Pointer to MetricsSnapshotFfi, or NULL on error.
-/// 
-/// # Safety
-/// The returned pointer must be freed with `keyrx_metrics_free_snapshot`.
+/// Get metrics snapshot pointer.
 typedef MetricsSnapshotNative = Pointer<Void> Function();
 typedef MetricsSnapshot = Pointer<Void> Function();
 
-
-// keyrx_metrics_snapshot_json
-/// Get metrics snapshot as a JSON string.
-/// 
-/// The caller must free the returned string using `keyrx_free_string`.
-/// 
-/// # Returns
-/// Pointer to JSON string, or NULL on error.
-/// 
-/// # Safety
-/// The returned pointer must be freed with `keyrx_free_string`.
-typedef MetricsSnapshotJsonNative = Pointer<Char> Function();
-typedef MetricsSnapshotJson = Pointer<Char> Function();
-
-
-// keyrx_metrics_start_updates
-/// Start background metrics updates.
-/// 
-/// When enabled, the metrics callback (if registered) will be invoked
-/// periodically with updated metrics.
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
-typedef MetricsStartUpdatesNative = Int32 Function();
-typedef MetricsStartUpdates = int Function();
-
-
-// keyrx_metrics_stop_updates
-/// Stop background metrics updates.
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
-typedef MetricsStopUpdatesNative = Int32 Function();
-typedef MetricsStopUpdates = int Function();
-
-
-// keyrx_metrics_trigger_callback
-/// Trigger an immediate metrics callback (if registered).
-/// 
-/// This can be used for on-demand updates without waiting for the
-/// background update interval.
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
-typedef MetricsTriggerCallbackNative = Int32 Function();
-typedef MetricsTriggerCallback = int Function();
-
-
-// keyrx_metrics_set_threshold_callback
-/// Register a callback for threshold violations.
-/// 
-/// The callback will be invoked when metrics exceed configured thresholds.
-/// Pass NULL to unregister the callback.
-/// 
-/// # Arguments
-/// * `callback` - Function pointer to call on threshold violations, or NULL to unregister
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Failed to acquire bridge lock
-/// 
-/// # Safety
-/// The callback function must be valid for the lifetime of the registration.
-/// The callback receives a pointer to ThresholdViolation that is only valid
-/// during the callback invocation - it must not be retained.
-typedef MetricsSetThresholdCallbackNative = Int32 Function(Pointer<Void>);
-typedef MetricsSetThresholdCallback = int Function(Pointer<Void>);
-
-
-// keyrx_metrics_set_thresholds
-/// Set threshold values for violation detection.
-/// 
-/// # Arguments
-/// * `latency_warn_micros` - Latency warning threshold in microseconds
-/// * `latency_error_micros` - Latency error threshold in microseconds
-/// * `memory_warn_bytes` - Memory warning threshold in bytes
-/// * `memory_error_bytes` - Memory error threshold in bytes
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable
-typedef MetricsSetThresholdsNative = Int32 Function(Uint64, Uint64, Uint64, Uint64);
-typedef MetricsSetThresholds = int Function(int, int, int, int);
-
-
-// keyrx_metrics_get_thresholds
-/// Get current threshold values.
-/// 
-/// # Arguments
-/// * `latency_warn_micros` - Output: Latency warning threshold in microseconds
-/// * `latency_error_micros` - Output: Latency error threshold in microseconds
-/// * `memory_warn_bytes` - Output: Memory warning threshold in bytes
-/// * `memory_error_bytes` - Output: Memory error threshold in bytes
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Bridge unavailable or null pointers provided
-/// 
-/// # Safety
-/// All output pointers must be valid and non-null.
-typedef MetricsGetThresholdsNative = Int32 Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
-typedef MetricsGetThresholds = int Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Void>);
-
-
-// keyrx_metrics_set_callback
-/// Register a callback for real-time metrics updates.
-/// 
-/// The callback will be invoked periodically with updated metrics.
-/// Pass NULL to unregister the callback.
-/// 
-/// # Arguments
-/// * `callback` - Function pointer to call with metrics, or NULL to unregister
-/// 
-/// # Returns
-/// - 0: Success
-/// - -1: Failed to acquire bridge lock
-/// 
-/// # Safety
-/// The callback function must be valid for the lifetime of the registration.
-/// The callback receives a pointer to MetricsSnapshotFfi that is only valid
-/// during the callback invocation - it must not be retained.
-typedef MetricsSetCallbackNative = Void Function(Pointer<Void>);
-typedef MetricsSetCallback = void Function(Pointer<Void>);
-
-
 // keyrx_metrics_free_snapshot
-/// Free a metrics snapshot returned by `keyrx_metrics_snapshot`.
-/// 
-/// # Safety
-/// The pointer must have been returned by `keyrx_metrics_snapshot` and
-/// must only be freed once.
+/// Free metrics snapshot.
 typedef MetricsFreeSnapshotNative = Void Function(Pointer<Void>);
 typedef MetricsFreeSnapshot = void Function(Pointer<Void>);
 
+// keyrx_metrics_snapshot_json
+/// Get metrics snapshot as JSON.
+typedef MetricsSnapshotJsonNative = Pointer<Char> Function();
+typedef MetricsSnapshotJson = Pointer<Char> Function();
+
+// keyrx_metrics_start_updates
+/// Start metrics updates.
+typedef MetricsStartUpdatesNative = Int32 Function();
+typedef MetricsStartUpdates = int Function();
+
+// keyrx_metrics_stop_updates
+/// Stop metrics updates.
+typedef MetricsStopUpdatesNative = Int32 Function();
+typedef MetricsStopUpdates = int Function();
+
+// keyrx_metrics_trigger_callback
+/// Trigger metrics callback.
+typedef MetricsTriggerCallbackNative = Int32 Function();
+typedef MetricsTriggerCallback = int Function();
+
+// keyrx_metrics_set_threshold_callback
+/// Set threshold callback.
+typedef MetricsSetThresholdCallbackNative = Int32 Function(Pointer<Void>);
+typedef MetricsSetThresholdCallback = int Function(Pointer<Void>);
+
+// keyrx_metrics_set_thresholds
+/// Set threshold values.
+typedef MetricsSetThresholdsNative = Int32 Function(Uint64, Uint64, Uint64, Uint64);
+typedef MetricsSetThresholds = int Function(int, int, int, int);
+
+// keyrx_metrics_get_thresholds
+/// Get threshold values.
+typedef MetricsGetThresholdsNative = Int32 Function(Pointer<Uint64>, Pointer<Uint64>, Pointer<Uint64>, Pointer<Uint64>);
+typedef MetricsGetThresholds = int Function(Pointer<Uint64>, Pointer<Uint64>, Pointer<Uint64>, Pointer<Uint64>);
+
+// c_log_entry_free
+/// Free CLogEntry.
+typedef CLogEntryFreeNative = Void Function(Pointer<Void>);
+typedef CLogEntryFree = void Function(Pointer<Void>);
+
+// c_log_entry_create
+/// Create CLogEntry.
+typedef CLogEntryCreateNative = Pointer<Void> Function(Uint64, Pointer<Void>, Pointer<Char>, Pointer<Char>);
+typedef CLogEntryCreate = Pointer<Void> Function(int, Pointer<Void>, Pointer<Char>, Pointer<Char>);
 
 // keyrx_profile_registry_list_profiles
 /// List all profile IDs.
-/// 
-/// Returns JSON string: `ok:<json>` or `error:<message>`.
-/// 
-/// # Safety
-/// This function catches panics and returns an error string if a panic occurs.
-typedef ProfileRegistryListProfilesNative = Pointer<Char> Function();
-typedef ProfileRegistryListProfiles = Pointer<Char> Function();
-
+typedef ProfileRegistryListProfilesNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef ProfileRegistryListProfiles = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
 // keyrx_profile_registry_get_profile
 /// Get a profile by ID.
-/// 
-/// Returns JSON string: `ok:<profile_json>` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `profile_id` - Profile ID to retrieve
-/// 
-/// # Safety
-/// * `profile_id` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef ProfileRegistryGetProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef ProfileRegistryGetProfile = Pointer<Char> Function(Pointer<Char>);
-
+typedef ProfileRegistryGetProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ProfileRegistryGetProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_profile_registry_save_profile
 /// Save a profile.
-/// 
-/// Returns `ok:` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `profile_json` - JSON string representing the profile
-/// 
-/// # Safety
-/// * `profile_json` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef ProfileRegistrySaveProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef ProfileRegistrySaveProfile = Pointer<Char> Function(Pointer<Char>);
-
+typedef ProfileRegistrySaveProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ProfileRegistrySaveProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_profile_registry_delete_profile
 /// Delete a profile by ID.
-/// 
-/// Returns `ok:` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `profile_id` - Profile ID to delete
-/// 
-/// # Safety
-/// * `profile_id` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef ProfileRegistryDeleteProfileNative = Pointer<Char> Function(Pointer<Char>);
-typedef ProfileRegistryDeleteProfile = Pointer<Char> Function(Pointer<Char>);
-
+typedef ProfileRegistryDeleteProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ProfileRegistryDeleteProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
 // keyrx_profile_registry_find_compatible_profiles
-/// Find profiles compatible with a given layout type.
-/// 
-/// Returns JSON string: `ok:<json>` or `error:<message>`.
-/// 
-/// # Arguments
-/// * `layout_type` - Layout type ("standard", "matrix", or "split")
-/// 
-/// # Safety
-/// * `layout_type` must be a valid null-terminated C string
-/// * This function catches panics and returns an error string if a panic occurs
-typedef ProfileRegistryFindCompatibleProfilesNative = Pointer<Char> Function(Pointer<Char>);
-typedef ProfileRegistryFindCompatibleProfiles = Pointer<Char> Function(Pointer<Char>);
+/// Find compatible profiles.
+typedef ProfileRegistryFindCompatibleProfilesNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ProfileRegistryFindCompatibleProfiles = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
 
-// ────────────────────────────────────────────────────────────────
-// Bindings Class
-// ────────────────────────────────────────────────────────────────
+// keyrx_runtime_get_config
+/// Get the current runtime configuration.
+typedef RuntimeGetConfigNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef RuntimeGetConfig = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
 
-/// FFI bindings to the KeyRx Core library.
+// keyrx_runtime_add_slot
+/// Add a new runtime slot for a device (or update existing).
+typedef RuntimeAddSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Uint32, Pointer<Pointer<Utf8>>);
+typedef RuntimeAddSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int, Pointer<Pointer<Utf8>>);
+
+// keyrx_runtime_remove_slot
+/// Remove a runtime slot for a device.
+typedef RuntimeRemoveSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef RuntimeRemoveSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Pointer<Pointer<Utf8>>);
+
+// keyrx_runtime_reorder_slot
+/// Update slot priority.
+typedef RuntimeReorderSlotNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Uint32, Pointer<Pointer<Utf8>>);
+typedef RuntimeReorderSlot = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, int, Pointer<Pointer<Utf8>>);
+
+// keyrx_runtime_set_slot_active
+/// Toggle a runtime slot active flag.
+typedef RuntimeSetSlotActiveNative = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, Bool, Pointer<Pointer<Utf8>>);
+typedef RuntimeSetSlotActive = Pointer<Char> Function(Pointer<Char>, Pointer<Char>, bool, Pointer<Pointer<Utf8>>);
+
+// keyrx_get_config_root
+/// Get configuration root path.
+typedef GetConfigRootNative = Pointer<Char> Function();
+typedef GetConfigRoot = Pointer<Char> Function();
+
+// keyrx_telemetry_snapshot_json
+/// Get telemetry as JSON.
+typedef TelemetrySnapshotJsonNative = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+typedef TelemetrySnapshotJson = Pointer<Char> Function(Pointer<Pointer<Utf8>>);
+
+// keyrx_telemetry_snapshot
+/// Get telemetry struct.
+typedef TelemetrySnapshotNative = Pointer<Void> Function();
+typedef TelemetrySnapshot = Pointer<Void> Function();
+
+// keyrx_telemetry_free_snapshot
+/// Free telemetry struct.
+typedef TelemetryFreeSnapshotNative = Void Function(Pointer<Void>);
+typedef TelemetryFreeSnapshot = void Function(Pointer<Void>);
+
+// keyrx_telemetry_reset
+/// Reset counters.
+typedef TelemetryResetNative = Int32 Function();
+typedef TelemetryReset = int Function();
+
+// keyrx_transition_log_export_json
+/// Export log as JSON.
+typedef TransitionLogExportJsonNative = Pointer<Char> Function(Pointer<Void>);
+typedef TransitionLogExportJson = Pointer<Char> Function(Pointer<Void>);
+
+// keyrx_transition_log_len
+/// Get log length.
+typedef TransitionLogLenNative = Size Function(Pointer<Void>);
+typedef TransitionLogLen = int Function(Pointer<Void>);
+
+// keyrx_transition_log_capacity
+/// Get log capacity.
+typedef TransitionLogCapacityNative = Size Function(Pointer<Void>);
+typedef TransitionLogCapacity = int Function(Pointer<Void>);
+
+// keyrx_transition_log_clear
+/// Clear log.
+typedef TransitionLogClearNative = Void Function(Pointer<Void>);
+typedef TransitionLogClear = void Function(Pointer<Void>);
+
+// keyrx_transition_log_statistics
+/// Get log statistics.
+typedef TransitionLogStatisticsNative = Void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Uint64>, Pointer<Uint64>);
+typedef TransitionLogStatistics = void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Uint64>, Pointer<Uint64>);
+
 class KeyrxBindingsGenerated {
   final DynamicLibrary _lib;
-
   KeyrxBindingsGenerated(this._lib);
-
-  /// Look up a symbol in the dynamic library.
   Pointer<T> _lookup<T extends NativeType>(String name) => _lib.lookup<T>(name);
 
-  // Function bindings
-  late final Init init = _lookup<NativeFunction<InitNative>>('keyrx_init').asFunction();
-  late final Version version = _lookup<NativeFunction<VersionNative>>('keyrx_version').asFunction();
-  late final LastError lastError = _lookup<NativeFunction<LastErrorNative>>('keyrx_last_error').asFunction();
-  late final ProtocolVersion protocolVersion = _lookup<NativeFunction<ProtocolVersionNative>>('keyrx_protocol_version').asFunction();
-  late final IntrospectionMetadata introspectionMetadata = _lookup<NativeFunction<IntrospectionMetadataNative>>('keyrx_introspection_metadata').asFunction();
-  late final SetConfigRoot setConfigRoot = _lookup<NativeFunction<SetConfigRootNative>>('keyrx_set_config_root').asFunction();
-  late final RevolutionaryRuntimeInit revolutionaryRuntimeInit = _lookup<NativeFunction<RevolutionaryRuntimeInitNative>>('keyrx_revolutionary_runtime_init').asFunction();
-  late final RevolutionaryRuntimeShutdown revolutionaryRuntimeShutdown = _lookup<NativeFunction<RevolutionaryRuntimeShutdownNative>>('keyrx_revolutionary_runtime_shutdown').asFunction();
-  late final ConfigListVirtualLayouts configListVirtualLayouts = _lookup<NativeFunction<ConfigListVirtualLayoutsNative>>('keyrx_config_list_virtual_layouts').asFunction();
-  late final ConfigSaveVirtualLayout configSaveVirtualLayout = _lookup<NativeFunction<ConfigSaveVirtualLayoutNative>>('keyrx_config_save_virtual_layout').asFunction();
-  late final ConfigDeleteVirtualLayout configDeleteVirtualLayout = _lookup<NativeFunction<ConfigDeleteVirtualLayoutNative>>('keyrx_config_delete_virtual_layout').asFunction();
-  late final ConfigListHardwareProfiles configListHardwareProfiles = _lookup<NativeFunction<ConfigListHardwareProfilesNative>>('keyrx_config_list_hardware_profiles').asFunction();
-  late final ConfigSaveHardwareProfile configSaveHardwareProfile = _lookup<NativeFunction<ConfigSaveHardwareProfileNative>>('keyrx_config_save_hardware_profile').asFunction();
-  late final ConfigDeleteHardwareProfile configDeleteHardwareProfile = _lookup<NativeFunction<ConfigDeleteHardwareProfileNative>>('keyrx_config_delete_hardware_profile').asFunction();
-  late final ConfigListKeymaps configListKeymaps = _lookup<NativeFunction<ConfigListKeymapsNative>>('keyrx_config_list_keymaps').asFunction();
-  late final ConfigSaveKeymap configSaveKeymap = _lookup<NativeFunction<ConfigSaveKeymapNative>>('keyrx_config_save_keymap').asFunction();
-  late final ConfigDeleteKeymap configDeleteKeymap = _lookup<NativeFunction<ConfigDeleteKeymapNative>>('keyrx_config_delete_keymap').asFunction();
-  late final SelectDevice selectDevice = _lookup<NativeFunction<SelectDeviceNative>>('keyrx_select_device').asFunction();
-  late final ListKeys listKeys = _lookup<NativeFunction<ListKeysNative>>('keyrx_list_keys').asFunction();
-  late final GetDeviceProfile getDeviceProfile = _lookup<NativeFunction<GetDeviceProfileNative>>('keyrx_get_device_profile').asFunction();
-  late final HasDeviceProfile hasDeviceProfile = _lookup<NativeFunction<HasDeviceProfileNative>>('keyrx_has_device_profile').asFunction();
-  late final SaveDeviceProfile saveDeviceProfile = _lookup<NativeFunction<SaveDeviceProfileNative>>('keyrx_save_device_profile').asFunction();
-  late final IsBypassActive isBypassActive = _lookup<NativeFunction<IsBypassActiveNative>>('keyrx_is_bypass_active').asFunction();
-  late final LoadScript loadScript = _lookup<NativeFunction<LoadScriptNative>>('keyrx_load_script').asFunction();
-  late final Eval eval = _lookup<NativeFunction<EvalNative>>('keyrx_eval').asFunction();
-  late final ValidateScript validateScript = _lookup<NativeFunction<ValidateScriptNative>>('keyrx_validate_script').asFunction();
-  late final ValidateScriptWithOptions validateScriptWithOptions = _lookup<NativeFunction<ValidateScriptWithOptionsNative>>('keyrx_validate_script_with_options').asFunction();
-  late final SuggestKeys suggestKeys = _lookup<NativeFunction<SuggestKeysNative>>('keyrx_suggest_keys').asFunction();
-  late final AllKeyNames allKeyNames = _lookup<NativeFunction<AllKeyNamesNative>>('keyrx_all_key_names').asFunction();
-  late final CheckScript checkScript = _lookup<NativeFunction<CheckScriptNative>>('keyrx_check_script').asFunction();
-  late final DiscoverTests discoverTests = _lookup<NativeFunction<DiscoverTestsNative>>('keyrx_discover_tests').asFunction();
-  late final RunTests runTests = _lookup<NativeFunction<RunTestsNative>>('keyrx_run_tests').asFunction();
-  late final Simulate simulate = _lookup<NativeFunction<SimulateNative>>('keyrx_simulate').asFunction();
-  late final RunBenchmark runBenchmark = _lookup<NativeFunction<RunBenchmarkNative>>('keyrx_run_benchmark').asFunction();
-  late final RunDoctor runDoctor = _lookup<NativeFunction<RunDoctorNative>>('keyrx_run_doctor').asFunction();
-  late final StartRecording startRecording = _lookup<NativeFunction<StartRecordingNative>>('keyrx_start_recording').asFunction();
-  late final StopRecording stopRecording = _lookup<NativeFunction<StopRecordingNative>>('keyrx_stop_recording').asFunction();
-  late final ListSessions listSessions = _lookup<NativeFunction<ListSessionsNative>>('keyrx_list_sessions').asFunction();
-  late final AnalyzeSession analyzeSession = _lookup<NativeFunction<AnalyzeSessionNative>>('keyrx_analyze_session').asFunction();
-  late final ReplaySession replaySession = _lookup<NativeFunction<ReplaySessionNative>>('keyrx_replay_session').asFunction();
-  late final OnState onState = _lookup<NativeFunction<OnStateNative>>('keyrx_on_state').asFunction();
-  late final RuntimeGetConfig runtimeGetConfig = _lookup<NativeFunction<RuntimeGetConfigNative>>('keyrx_runtime_get_config').asFunction();
-  late final RuntimeAddSlot runtimeAddSlot = _lookup<NativeFunction<RuntimeAddSlotNative>>('keyrx_runtime_add_slot').asFunction();
-  late final RuntimeRemoveSlot runtimeRemoveSlot = _lookup<NativeFunction<RuntimeRemoveSlotNative>>('keyrx_runtime_remove_slot').asFunction();
-  late final RuntimeReorderSlot runtimeReorderSlot = _lookup<NativeFunction<RuntimeReorderSlotNative>>('keyrx_runtime_reorder_slot').asFunction();
-  late final RuntimeSetSlotActive runtimeSetSlotActive = _lookup<NativeFunction<RuntimeSetSlotActiveNative>>('keyrx_runtime_set_slot_active').asFunction();
-  late final TelemetrySnapshotJson telemetrySnapshotJson = _lookup<NativeFunction<TelemetrySnapshotJsonNative>>('keyrx_telemetry_snapshot_json').asFunction();
-  late final TelemetrySnapshot telemetrySnapshot = _lookup<NativeFunction<TelemetrySnapshotNative>>('keyrx_telemetry_snapshot').asFunction();
-  late final TelemetryReset telemetryReset = _lookup<NativeFunction<TelemetryResetNative>>('keyrx_telemetry_reset').asFunction();
-  late final TelemetryFreeSnapshot telemetryFreeSnapshot = _lookup<NativeFunction<TelemetryFreeSnapshotNative>>('keyrx_telemetry_free_snapshot').asFunction();
-  late final TransitionLogExportJson transitionLogExportJson = _lookup<NativeFunction<TransitionLogExportJsonNative>>('keyrx_transition_log_export_json').asFunction();
-  late final TransitionLogLen transitionLogLen = _lookup<NativeFunction<TransitionLogLenNative>>('keyrx_transition_log_len').asFunction();
-  late final TransitionLogCapacity transitionLogCapacity = _lookup<NativeFunction<TransitionLogCapacityNative>>('keyrx_transition_log_capacity').asFunction();
-  late final TransitionLogStatistics transitionLogStatistics = _lookup<NativeFunction<TransitionLogStatisticsNative>>('keyrx_transition_log_statistics').asFunction();
-  late final DefinitionsListAll definitionsListAll = _lookup<NativeFunction<DefinitionsListAllNative>>('keyrx_definitions_list_all').asFunction();
-  late final DefinitionsGetForDevice definitionsGetForDevice = _lookup<NativeFunction<DefinitionsGetForDeviceNative>>('keyrx_definitions_get_for_device').asFunction();
-  late final DeviceRegistryListDevices deviceRegistryListDevices = _lookup<NativeFunction<DeviceRegistryListDevicesNative>>('keyrx_device_registry_list_devices').asFunction();
-  late final DeviceRegistrySetRemapEnabled deviceRegistrySetRemapEnabled = _lookup<NativeFunction<DeviceRegistrySetRemapEnabledNative>>('keyrx_device_registry_set_remap_enabled').asFunction();
-  late final DeviceRegistryAssignProfile deviceRegistryAssignProfile = _lookup<NativeFunction<DeviceRegistryAssignProfileNative>>('keyrx_device_registry_assign_profile').asFunction();
-  late final DeviceRegistrySetUserLabel deviceRegistrySetUserLabel = _lookup<NativeFunction<DeviceRegistrySetUserLabelNative>>('keyrx_device_registry_set_user_label').asFunction();
-  late final MigrationRun migrationRun = _lookup<NativeFunction<MigrationRunNative>>('keyrx_migration_run').asFunction();
-  late final MigrationCheckNeeded migrationCheckNeeded = _lookup<NativeFunction<MigrationCheckNeededNative>>('keyrx_migration_check_needed').asFunction();
-  late final LogBridgeInit logBridgeInit = _lookup<NativeFunction<LogBridgeInitNative>>('keyrx_log_bridge_init').asFunction();
-  late final LogCount logCount = _lookup<NativeFunction<LogCountNative>>('keyrx_log_count').asFunction();
-  late final LogDrain logDrain = _lookup<NativeFunction<LogDrainNative>>('keyrx_log_drain').asFunction();
-  late final LogClear logClear = _lookup<NativeFunction<LogClearNative>>('keyrx_log_clear').asFunction();
-  late final LogSetEnabled logSetEnabled = _lookup<NativeFunction<LogSetEnabledNative>>('keyrx_log_set_enabled').asFunction();
-  late final MetricsSnapshot metricsSnapshot = _lookup<NativeFunction<MetricsSnapshotNative>>('keyrx_metrics_snapshot').asFunction();
-  late final MetricsSnapshotJson metricsSnapshotJson = _lookup<NativeFunction<MetricsSnapshotJsonNative>>('keyrx_metrics_snapshot_json').asFunction();
-  late final MetricsStartUpdates metricsStartUpdates = _lookup<NativeFunction<MetricsStartUpdatesNative>>('keyrx_metrics_start_updates').asFunction();
-  late final MetricsStopUpdates metricsStopUpdates = _lookup<NativeFunction<MetricsStopUpdatesNative>>('keyrx_metrics_stop_updates').asFunction();
-  late final MetricsTriggerCallback metricsTriggerCallback = _lookup<NativeFunction<MetricsTriggerCallbackNative>>('keyrx_metrics_trigger_callback').asFunction();
-  late final MetricsSetThresholdCallback metricsSetThresholdCallback = _lookup<NativeFunction<MetricsSetThresholdCallbackNative>>('keyrx_metrics_set_threshold_callback').asFunction();
-  late final MetricsSetThresholds metricsSetThresholds = _lookup<NativeFunction<MetricsSetThresholdsNative>>('keyrx_metrics_set_thresholds').asFunction();
-  late final MetricsGetThresholds metricsGetThresholds = _lookup<NativeFunction<MetricsGetThresholdsNative>>('keyrx_metrics_get_thresholds').asFunction();
-  late final MetricsSetCallback metricsSetCallback = _lookup<NativeFunction<MetricsSetCallbackNative>>('keyrx_metrics_set_callback').asFunction();
-  late final MetricsFreeSnapshot metricsFreeSnapshot = _lookup<NativeFunction<MetricsFreeSnapshotNative>>('keyrx_metrics_free_snapshot').asFunction();
-  late final ProfileRegistryListProfiles profileRegistryListProfiles = _lookup<NativeFunction<ProfileRegistryListProfilesNative>>('keyrx_profile_registry_list_profiles').asFunction();
-  late final ProfileRegistryGetProfile profileRegistryGetProfile = _lookup<NativeFunction<ProfileRegistryGetProfileNative>>('keyrx_profile_registry_get_profile').asFunction();
-  late final ProfileRegistrySaveProfile profileRegistrySaveProfile = _lookup<NativeFunction<ProfileRegistrySaveProfileNative>>('keyrx_profile_registry_save_profile').asFunction();
-  late final ProfileRegistryDeleteProfile profileRegistryDeleteProfile = _lookup<NativeFunction<ProfileRegistryDeleteProfileNative>>('keyrx_profile_registry_delete_profile').asFunction();
-  late final ProfileRegistryFindCompatibleProfiles profileRegistryFindCompatibleProfiles = _lookup<NativeFunction<ProfileRegistryFindCompatibleProfilesNative>>('keyrx_profile_registry_find_compatible_profiles').asFunction();
+  late final init = _lookup<NativeFunction<InitNative>>('keyrx_init').asFunction<Init>();
+  late final version = _lookup<NativeFunction<VersionNative>>('keyrx_version').asFunction<Version>();
+  late final freeString = _lookup<NativeFunction<FreeStringNative>>('keyrx_free_string').asFunction<FreeString>();
+  late final lastError = _lookup<NativeFunction<LastErrorNative>>('keyrx_last_error').asFunction<LastError>();
+  late final registerEventCallback = _lookup<NativeFunction<RegisterEventCallbackNative>>('keyrx_register_event_callback').asFunction<RegisterEventCallback>();
+  late final protocolVersion = _lookup<NativeFunction<ProtocolVersionNative>>('keyrx_protocol_version').asFunction<ProtocolVersion>();
+  late final introspectionMetadata = _lookup<NativeFunction<IntrospectionMetadataNative>>('keyrx_introspection_metadata').asFunction<IntrospectionMetadata>();
+  late final setConfigRoot = _lookup<NativeFunction<SetConfigRootNative>>('keyrx_set_config_root').asFunction<SetConfigRoot>();
+  late final revolutionaryRuntimeInit = _lookup<NativeFunction<RevolutionaryRuntimeInitNative>>('keyrx_revolutionary_runtime_init').asFunction<RevolutionaryRuntimeInit>();
+  late final revolutionaryRuntimeShutdown = _lookup<NativeFunction<RevolutionaryRuntimeShutdownNative>>('keyrx_revolutionary_runtime_shutdown').asFunction<RevolutionaryRuntimeShutdown>();
+  late final freeEventPayload = _lookup<NativeFunction<FreeEventPayloadNative>>('keyrx_free_event_payload').asFunction<FreeEventPayload>();
+  late final selectDevice = _lookup<NativeFunction<SelectDeviceNative>>('keyrx_select_device').asFunction<SelectDevice>();
+  late final listKeys = _lookup<NativeFunction<ListKeysNative>>('keyrx_list_keys').asFunction<ListKeys>();
+  late final getDeviceProfile = _lookup<NativeFunction<GetDeviceProfileNative>>('keyrx_get_device_profile').asFunction<GetDeviceProfile>();
+  late final hasDeviceProfile = _lookup<NativeFunction<HasDeviceProfileNative>>('keyrx_has_device_profile').asFunction<HasDeviceProfile>();
+  late final saveDeviceProfile = _lookup<NativeFunction<SaveDeviceProfileNative>>('keyrx_save_device_profile').asFunction<SaveDeviceProfile>();
+  late final isBypassActive = _lookup<NativeFunction<IsBypassActiveNative>>('keyrx_is_bypass_active').asFunction<IsBypassActive>();
+  late final setBypass = _lookup<NativeFunction<SetBypassNative>>('keyrx_set_bypass').asFunction<SetBypass>();
+  late final loadScript = _lookup<NativeFunction<LoadScriptNative>>('keyrx_load_script').asFunction<LoadScript>();
+  late final eval = _lookup<NativeFunction<EvalNative>>('keyrx_eval').asFunction<Eval>();
+  late final validateScript = _lookup<NativeFunction<ValidateScriptNative>>('keyrx_validate_script').asFunction<ValidateScript>();
+  late final validateScriptWithOptions = _lookup<NativeFunction<ValidateScriptWithOptionsNative>>('keyrx_validate_script_with_options').asFunction<ValidateScriptWithOptions>();
+  late final suggestKeys = _lookup<NativeFunction<SuggestKeysNative>>('keyrx_suggest_keys').asFunction<SuggestKeys>();
+  late final allKeyNames = _lookup<NativeFunction<AllKeyNamesNative>>('keyrx_all_key_names').asFunction<AllKeyNames>();
+  late final checkScript = _lookup<NativeFunction<CheckScriptNative>>('keyrx_check_script').asFunction<CheckScript>();
+  late final discoverTests = _lookup<NativeFunction<DiscoverTestsNative>>('keyrx_discover_tests').asFunction<DiscoverTests>();
+  late final runTests = _lookup<NativeFunction<RunTestsNative>>('keyrx_run_tests').asFunction<RunTests>();
+  late final simulate = _lookup<NativeFunction<SimulateNative>>('keyrx_simulate').asFunction<Simulate>();
+  late final runBenchmark = _lookup<NativeFunction<RunBenchmarkNative>>('keyrx_run_benchmark').asFunction<RunBenchmark>();
+  late final runDoctor = _lookup<NativeFunction<RunDoctorNative>>('keyrx_run_doctor').asFunction<RunDoctor>();
+  late final startRecording = _lookup<NativeFunction<StartRecordingNative>>('keyrx_start_recording').asFunction<StartRecording>();
+  late final stopRecording = _lookup<NativeFunction<StopRecordingNative>>('keyrx_stop_recording').asFunction<StopRecording>();
+  late final listSessions = _lookup<NativeFunction<ListSessionsNative>>('keyrx_list_sessions').asFunction<ListSessions>();
+  late final analyzeSession = _lookup<NativeFunction<AnalyzeSessionNative>>('keyrx_analyze_session').asFunction<AnalyzeSession>();
+  late final replaySession = _lookup<NativeFunction<ReplaySessionNative>>('keyrx_replay_session').asFunction<ReplaySession>();
+  late final configListVirtualLayouts = _lookup<NativeFunction<ConfigListVirtualLayoutsNative>>('keyrx_config_list_virtual_layouts').asFunction<ConfigListVirtualLayouts>();
+  late final configSaveVirtualLayout = _lookup<NativeFunction<ConfigSaveVirtualLayoutNative>>('keyrx_config_save_virtual_layout').asFunction<ConfigSaveVirtualLayout>();
+  late final configDeleteVirtualLayout = _lookup<NativeFunction<ConfigDeleteVirtualLayoutNative>>('keyrx_config_delete_virtual_layout').asFunction<ConfigDeleteVirtualLayout>();
+  late final configListHardwareProfiles = _lookup<NativeFunction<ConfigListHardwareProfilesNative>>('keyrx_config_list_hardware_profiles').asFunction<ConfigListHardwareProfiles>();
+  late final configSaveHardwareProfile = _lookup<NativeFunction<ConfigSaveHardwareProfileNative>>('keyrx_config_save_hardware_profile').asFunction<ConfigSaveHardwareProfile>();
+  late final configDeleteHardwareProfile = _lookup<NativeFunction<ConfigDeleteHardwareProfileNative>>('keyrx_config_delete_hardware_profile').asFunction<ConfigDeleteHardwareProfile>();
+  late final configListKeymaps = _lookup<NativeFunction<ConfigListKeymapsNative>>('keyrx_config_list_keymaps').asFunction<ConfigListKeymaps>();
+  late final configSaveKeymap = _lookup<NativeFunction<ConfigSaveKeymapNative>>('keyrx_config_save_keymap').asFunction<ConfigSaveKeymap>();
+  late final configDeleteKeymap = _lookup<NativeFunction<ConfigDeleteKeymapNative>>('keyrx_config_delete_keymap').asFunction<ConfigDeleteKeymap>();
+  late final configGetConfigRoot = _lookup<NativeFunction<ConfigGetConfigRootNative>>('keyrx_config_get_config_root').asFunction<ConfigGetConfigRoot>();
+  late final definitionsListAll = _lookup<NativeFunction<DefinitionsListAllNative>>('keyrx_definitions_list_all').asFunction<DefinitionsListAll>();
+  late final definitionsGetForDevice = _lookup<NativeFunction<DefinitionsGetForDeviceNative>>('keyrx_definitions_get_for_device').asFunction<DefinitionsGetForDevice>();
+  late final deviceRegistryListDevices = _lookup<NativeFunction<DeviceRegistryListDevicesNative>>('keyrx_device_registry_list_devices').asFunction<DeviceRegistryListDevices>();
+  late final deviceRegistrySetRemapEnabled = _lookup<NativeFunction<DeviceRegistrySetRemapEnabledNative>>('keyrx_device_registry_set_remap_enabled').asFunction<DeviceRegistrySetRemapEnabled>();
+  late final deviceRegistryAssignProfile = _lookup<NativeFunction<DeviceRegistryAssignProfileNative>>('keyrx_device_registry_assign_profile').asFunction<DeviceRegistryAssignProfile>();
+  late final deviceRegistrySetUserLabel = _lookup<NativeFunction<DeviceRegistrySetUserLabelNative>>('keyrx_device_registry_set_user_label').asFunction<DeviceRegistrySetUserLabel>();
+  late final discoveryStartDiscovery = _lookup<NativeFunction<DiscoveryStartDiscoveryNative>>('keyrx_discovery_start_discovery').asFunction<DiscoveryStartDiscovery>();
+  late final discoveryStopDiscovery = _lookup<NativeFunction<DiscoveryStopDiscoveryNative>>('keyrx_discovery_stop_discovery').asFunction<DiscoveryStopDiscovery>();
+  late final discoveryGetDiscoveryStatus = _lookup<NativeFunction<DiscoveryGetDiscoveryStatusNative>>('keyrx_discovery_get_discovery_status').asFunction<DiscoveryGetDiscoveryStatus>();
+  late final engineStartLoop = _lookup<NativeFunction<EngineStartLoopNative>>('keyrx_engine_start_loop').asFunction<EngineStartLoop>();
+  late final engineStopLoop = _lookup<NativeFunction<EngineStopLoopNative>>('keyrx_engine_stop_loop').asFunction<EngineStopLoop>();
+  late final onState = _lookup<NativeFunction<OnStateNative>>('keyrx_on_state').asFunction<OnState>();
+  late final freeFfiJson = _lookup<NativeFunction<FreeFfiJsonNative>>('free_ffi_json').asFunction<FreeFfiJson>();
+  late final freeFfiString = _lookup<NativeFunction<FreeFfiStringNative>>('free_ffi_string').asFunction<FreeFfiString>();
+  late final freeCString = _lookup<NativeFunction<FreeCStringNative>>('free_c_string').asFunction<FreeCString>();
+  late final migrationCheckNeeded = _lookup<NativeFunction<MigrationCheckNeededNative>>('keyrx_migration_check_needed').asFunction<MigrationCheckNeeded>();
+  late final migrationRun = _lookup<NativeFunction<MigrationRunNative>>('keyrx_migration_run').asFunction<MigrationRun>();
+  late final logBridgeInit = _lookup<NativeFunction<LogBridgeInitNative>>('keyrx_log_bridge_init').asFunction<LogBridgeInit>();
+  late final logSetCallback = _lookup<NativeFunction<LogSetCallbackNative>>('keyrx_log_set_callback').asFunction<LogSetCallback>();
+  late final logCount = _lookup<NativeFunction<LogCountNative>>('keyrx_log_count').asFunction<LogCount>();
+  late final logDrain = _lookup<NativeFunction<LogDrainNative>>('keyrx_log_drain').asFunction<LogDrain>();
+  late final logClear = _lookup<NativeFunction<LogClearNative>>('keyrx_log_clear').asFunction<LogClear>();
+  late final logSetEnabled = _lookup<NativeFunction<LogSetEnabledNative>>('keyrx_log_set_enabled').asFunction<LogSetEnabled>();
+  late final metricsSetCallback = _lookup<NativeFunction<MetricsSetCallbackNative>>('keyrx_metrics_set_callback').asFunction<MetricsSetCallback>();
+  late final metricsSnapshot = _lookup<NativeFunction<MetricsSnapshotNative>>('keyrx_metrics_snapshot').asFunction<MetricsSnapshot>();
+  late final metricsFreeSnapshot = _lookup<NativeFunction<MetricsFreeSnapshotNative>>('keyrx_metrics_free_snapshot').asFunction<MetricsFreeSnapshot>();
+  late final metricsSnapshotJson = _lookup<NativeFunction<MetricsSnapshotJsonNative>>('keyrx_metrics_snapshot_json').asFunction<MetricsSnapshotJson>();
+  late final metricsStartUpdates = _lookup<NativeFunction<MetricsStartUpdatesNative>>('keyrx_metrics_start_updates').asFunction<MetricsStartUpdates>();
+  late final metricsStopUpdates = _lookup<NativeFunction<MetricsStopUpdatesNative>>('keyrx_metrics_stop_updates').asFunction<MetricsStopUpdates>();
+  late final metricsTriggerCallback = _lookup<NativeFunction<MetricsTriggerCallbackNative>>('keyrx_metrics_trigger_callback').asFunction<MetricsTriggerCallback>();
+  late final metricsSetThresholdCallback = _lookup<NativeFunction<MetricsSetThresholdCallbackNative>>('keyrx_metrics_set_threshold_callback').asFunction<MetricsSetThresholdCallback>();
+  late final metricsSetThresholds = _lookup<NativeFunction<MetricsSetThresholdsNative>>('keyrx_metrics_set_thresholds').asFunction<MetricsSetThresholds>();
+  late final metricsGetThresholds = _lookup<NativeFunction<MetricsGetThresholdsNative>>('keyrx_metrics_get_thresholds').asFunction<MetricsGetThresholds>();
+  late final cLogEntryFree = _lookup<NativeFunction<CLogEntryFreeNative>>('c_log_entry_free').asFunction<CLogEntryFree>();
+  late final cLogEntryCreate = _lookup<NativeFunction<CLogEntryCreateNative>>('c_log_entry_create').asFunction<CLogEntryCreate>();
+  late final profileRegistryListProfiles = _lookup<NativeFunction<ProfileRegistryListProfilesNative>>('keyrx_profile_registry_list_profiles').asFunction<ProfileRegistryListProfiles>();
+  late final profileRegistryGetProfile = _lookup<NativeFunction<ProfileRegistryGetProfileNative>>('keyrx_profile_registry_get_profile').asFunction<ProfileRegistryGetProfile>();
+  late final profileRegistrySaveProfile = _lookup<NativeFunction<ProfileRegistrySaveProfileNative>>('keyrx_profile_registry_save_profile').asFunction<ProfileRegistrySaveProfile>();
+  late final profileRegistryDeleteProfile = _lookup<NativeFunction<ProfileRegistryDeleteProfileNative>>('keyrx_profile_registry_delete_profile').asFunction<ProfileRegistryDeleteProfile>();
+  late final profileRegistryFindCompatibleProfiles = _lookup<NativeFunction<ProfileRegistryFindCompatibleProfilesNative>>('keyrx_profile_registry_find_compatible_profiles').asFunction<ProfileRegistryFindCompatibleProfiles>();
+  late final runtimeGetConfig = _lookup<NativeFunction<RuntimeGetConfigNative>>('keyrx_runtime_get_config').asFunction<RuntimeGetConfig>();
+  late final runtimeAddSlot = _lookup<NativeFunction<RuntimeAddSlotNative>>('keyrx_runtime_add_slot').asFunction<RuntimeAddSlot>();
+  late final runtimeRemoveSlot = _lookup<NativeFunction<RuntimeRemoveSlotNative>>('keyrx_runtime_remove_slot').asFunction<RuntimeRemoveSlot>();
+  late final runtimeReorderSlot = _lookup<NativeFunction<RuntimeReorderSlotNative>>('keyrx_runtime_reorder_slot').asFunction<RuntimeReorderSlot>();
+  late final runtimeSetSlotActive = _lookup<NativeFunction<RuntimeSetSlotActiveNative>>('keyrx_runtime_set_slot_active').asFunction<RuntimeSetSlotActive>();
+  late final getConfigRoot = _lookup<NativeFunction<GetConfigRootNative>>('keyrx_get_config_root').asFunction<GetConfigRoot>();
+  late final telemetrySnapshotJson = _lookup<NativeFunction<TelemetrySnapshotJsonNative>>('keyrx_telemetry_snapshot_json').asFunction<TelemetrySnapshotJson>();
+  late final telemetrySnapshot = _lookup<NativeFunction<TelemetrySnapshotNative>>('keyrx_telemetry_snapshot').asFunction<TelemetrySnapshot>();
+  late final telemetryFreeSnapshot = _lookup<NativeFunction<TelemetryFreeSnapshotNative>>('keyrx_telemetry_free_snapshot').asFunction<TelemetryFreeSnapshot>();
+  late final telemetryReset = _lookup<NativeFunction<TelemetryResetNative>>('keyrx_telemetry_reset').asFunction<TelemetryReset>();
+  late final transitionLogExportJson = _lookup<NativeFunction<TransitionLogExportJsonNative>>('keyrx_transition_log_export_json').asFunction<TransitionLogExportJson>();
+  late final transitionLogLen = _lookup<NativeFunction<TransitionLogLenNative>>('keyrx_transition_log_len').asFunction<TransitionLogLen>();
+  late final transitionLogCapacity = _lookup<NativeFunction<TransitionLogCapacityNative>>('keyrx_transition_log_capacity').asFunction<TransitionLogCapacity>();
+  late final transitionLogClear = _lookup<NativeFunction<TransitionLogClearNative>>('keyrx_transition_log_clear').asFunction<TransitionLogClear>();
+  late final transitionLogStatistics = _lookup<NativeFunction<TransitionLogStatisticsNative>>('keyrx_transition_log_statistics').asFunction<TransitionLogStatistics>();
 }
