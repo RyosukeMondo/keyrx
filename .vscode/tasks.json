@@ -2,22 +2,25 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build Rust Core",
+      "label": "Verify Dart Bindings",
       "type": "shell",
-      "command": "cargo",
+      "command": "python",
       "args": [
-        "build",
-        "-p",
-        "keyrx_core",
-        "--lib"
+        "scripts/verify_dart_bindings.py"
       ],
-      "group": "build",
-      "problemMatcher": [
-        "$rustc"
-      ],
+      "problemMatcher": [],
       "presentation": {
         "reveal": "silent"
       }
+    },
+    {
+      "label": "Generate Dart Bindings",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/generate_dart_bindings.py"
+      ],
+      "problemMatcher": []
     }
   ]
 }

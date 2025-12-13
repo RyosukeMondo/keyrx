@@ -78,18 +78,22 @@ where
             std::ptr::null()
         }
     }
-    }
-
+}
 
 /// Specialized wrapper for returning raw strings (without JSON serialization).
 ///
 /// Use this when the function contract specifies a String return and the implementation
 /// returns a `String` that should be passed directly to C (e.g. pre-formatted JSON).
+///
+/// # Safety
+///
+/// * `error` must be a valid pointer to a `*mut c_char` or null.
+/// * If `error` is not null, it will be written to in case of an error.
 pub unsafe fn ffi_string_wrapper<F>(error: *mut *mut c_char, f: F) -> *const c_char
 where
     F: FnOnce() -> Result<String, String>,
 {
-     // Helper to set error pointer
+    // Helper to set error pointer
     let set_error = |err_msg: &str| {
         if !error.is_null() {
             if let Ok(cs) = CString::new(err_msg) {

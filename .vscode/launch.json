@@ -2,68 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "lldb",
+      "name": "KeyRx UI",
       "request": "launch",
-      "name": "Debug keyrx run",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=keyrx",
-          "--package=keyrx_core"
-        ],
-        "filter": {
-          "name": "keyrx",
-          "kind": "bin"
-        }
-      },
-      "args": [
-        "run"
-      ],
-      "cwd": "${workspaceFolder}/core"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug Tests",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--lib",
-          "--package=keyrx_core"
-        ],
-        "filter": {
-          "name": "keyrx_core",
-          "kind": "lib"
-        }
-      },
-      "cwd": "${workspaceFolder}/core"
-    },
-    {
       "type": "dart",
-      "request": "launch",
-      "name": "Flutter",
       "program": "ui/lib/main.dart",
       "cwd": "${workspaceFolder}/ui",
-      "preLaunchTask": "Build Rust Core"
-    },
-    {
-      "type": "lldb",
-      "request": "attach",
-      "name": "Attach to Process",
-      "pid": "${command:pickProcess}",
-      "sourceLanguages": [
-        "rust"
-      ]
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Flutter + Rust",
-      "configurations": [
-        "Flutter",
-        "Attach to Process"
-      ]
+      "preLaunchTask": "Verify Dart Bindings"
     }
   ]
 }

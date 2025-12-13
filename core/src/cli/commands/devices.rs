@@ -335,6 +335,7 @@ mod tests {
 
         let _guard = RevolutionaryRuntimeGuard::install(RevolutionaryRuntime::new(
             registry.clone(),
+            Some(_rx),
             profile_registry.clone(),
             device_definitions.clone(),
             rhai_runtime,

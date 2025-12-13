@@ -122,6 +122,18 @@ else
 fi
 echo ""
 
+# Step 3.5: Run Contract Adherence Tests
+echo -e "${BLUE}Step 3.5: Checking FFI contract adherence...${NC}"
+cd core
+if cargo test --test contract_adherence_test; then
+    echo -e "${GREEN}✓ Contract adherence checks passed${NC}"
+else
+    echo -e "${RED}✗ Contract adherence checks failed${NC}"
+    exit 1
+fi
+cd ..
+echo ""
+
 # Step 4: Build Rust core
 if [ "$BUILD_RUST" = true ]; then
     echo -e "${BLUE}Step 4: Building Rust core library...${NC}"

@@ -67,7 +67,10 @@ impl RevolutionaryRuntime {
     pub fn take_device_events_rx(
         &self,
     ) -> Option<tokio::sync::mpsc::UnboundedReceiver<crate::registry::DeviceEvent>> {
-        self.device_events_rx.lock().unwrap().take()
+        self.device_events_rx
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take()
     }
 }
 
