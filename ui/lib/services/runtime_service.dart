@@ -256,8 +256,8 @@ class RuntimeServiceImpl implements RuntimeService {
             'runtimeSetSlotActive returned null',
           );
         }
-        final raw = resultPtr.cast<Utf8>().toDartString();
-        return _parseRuntime(raw);
+        final raw = resultPtr?.cast<Utf8>().toDartString();
+        return _parseRuntime(raw!);
       } catch (e) {
         return ConfigOperationResult.error('set slot active failed: $e');
       } finally {
