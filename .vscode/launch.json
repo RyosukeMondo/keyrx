@@ -5,9 +5,9 @@
       "name": "KeyRx UI",
       "request": "launch",
       "type": "dart",
-      "program": "ui/lib/main.dart",
+      "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/ui",
-      "preLaunchTask": "Verify Dart Bindings"
+      "preLaunchTask": "Build Rust Core"
     }
   ]
 }

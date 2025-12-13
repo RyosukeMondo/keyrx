@@ -59,8 +59,8 @@ pub fn generate_param_declarations(params: &[ParsedParam]) -> TokenStream {
         }
     } else {
         quote! {
-            error: *mut *mut ::std::os::raw::c_char,
-            #(#param_decls),*
+            #(#param_decls),*,
+            error: *mut *mut ::std::os::raw::c_char
         }
     }
 }

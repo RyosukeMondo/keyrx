@@ -1,3 +1,12 @@
+#![cfg_attr(
+    test,
+    allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::expect_fun_call
+    )
+)]
 //! Dart Binding Code Generator Library
 //!
 //! This library provides functionality for generating type-safe Dart FFI bindings

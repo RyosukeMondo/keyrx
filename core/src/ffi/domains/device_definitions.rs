@@ -162,6 +162,7 @@ key_spacing = 4
 
         set_revolutionary_runtime(RevolutionaryRuntime::new(
             device_registry,
+            Some(_rx),
             profile_registry,
             library,
             Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),

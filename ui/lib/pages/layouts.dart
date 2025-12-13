@@ -125,7 +125,15 @@ class _LayoutsPageState extends State<LayoutsPage> {
     final id = _idController.text.trim();
     final name = _nameController.text.trim();
 
-    if (id.isEmpty || name.isEmpty) return; // TODO: Show error
+    if (id.isEmpty || name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Layout ID and Name are required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final layout = VirtualLayout(
       id: id,

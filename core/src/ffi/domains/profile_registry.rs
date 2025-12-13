@@ -365,6 +365,7 @@ mod tests {
         let definitions = Arc::new(DeviceDefinitionLibrary::new());
         set_revolutionary_runtime(RevolutionaryRuntime::new(
             device_registry.clone(),
+            Some(_rx),
             profile_registry.clone(),
             definitions,
             Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),

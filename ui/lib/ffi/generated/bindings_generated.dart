@@ -362,8 +362,8 @@ typedef LogSetEnabled = int Function(int);
 
 // keyrx_metrics_set_callback
 /// Set metrics callback.
-typedef MetricsSetCallbackNative = Int32 Function(Pointer<Void>);
-typedef MetricsSetCallback = int Function(Pointer<Void>);
+typedef MetricsSetCallbackNative = Int32 Function(Pointer<NativeFunction<Void Function(Pointer<Void>)>>);
+typedef MetricsSetCallback = int Function(Pointer<NativeFunction<Void Function(Pointer<Void>)>>);
 
 // keyrx_metrics_snapshot
 /// Get metrics snapshot pointer.
@@ -397,8 +397,8 @@ typedef MetricsTriggerCallback = int Function();
 
 // keyrx_metrics_set_threshold_callback
 /// Set threshold callback.
-typedef MetricsSetThresholdCallbackNative = Int32 Function(Pointer<Void>);
-typedef MetricsSetThresholdCallback = int Function(Pointer<Void>);
+typedef MetricsSetThresholdCallbackNative = Int32 Function(Pointer<NativeFunction<Void Function(Pointer<Void>)>>);
+typedef MetricsSetThresholdCallback = int Function(Pointer<NativeFunction<Void Function(Pointer<Void>)>>);
 
 // keyrx_metrics_set_thresholds
 /// Set threshold values.
@@ -417,8 +417,8 @@ typedef CLogEntryFree = void Function(Pointer<Void>);
 
 // c_log_entry_create
 /// Create CLogEntry.
-typedef CLogEntryCreateNative = Pointer<Void> Function(Uint64, Pointer<Void>, Pointer<Char>, Pointer<Char>);
-typedef CLogEntryCreate = Pointer<Void> Function(int, Pointer<Void>, Pointer<Char>, Pointer<Char>);
+typedef CLogEntryCreateNative = Pointer<Void> Function(Uint64, Int32, Pointer<Char>, Pointer<Char>);
+typedef CLogEntryCreate = Pointer<Void> Function(int, int, Pointer<Char>, Pointer<Char>);
 
 // keyrx_profile_registry_list_profiles
 /// List all profile IDs.
@@ -517,8 +517,8 @@ typedef TransitionLogClear = void Function(Pointer<Void>);
 
 // keyrx_transition_log_statistics
 /// Get log statistics.
-typedef TransitionLogStatisticsNative = Void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Uint64>, Pointer<Uint64>);
-typedef TransitionLogStatistics = void Function(Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Uint64>, Pointer<Uint64>);
+typedef TransitionLogStatisticsNative = Void Function(Pointer<Void>, Pointer<Size>, Pointer<Size>, Pointer<Uint64>, Pointer<Uint64>);
+typedef TransitionLogStatistics = void Function(Pointer<Void>, Pointer<Size>, Pointer<Size>, Pointer<Uint64>, Pointer<Uint64>);
 
 class KeyrxBindingsGenerated {
   final DynamicLibrary _lib;

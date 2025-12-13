@@ -1,0 +1,235 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+error[E0599]: no function or associated item named `get_config_root` found for struct `ConfigDomain` in the current scope
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `ConfigDomain`
+...
+147 | struct ConfigDomain;
+    | ------------------- function or associated item `get_config_root` not found for this struct
+    |
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:216:27
+    |
+216 |     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ---------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                            |
+    |                                                            expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+216 -     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+216 +     let result = unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:252:18
+    |
+252 |         unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ---------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                   |
+    |                                                   expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+252 -         unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+252 +         unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:262:27
+    |
+262 |     let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                              |
+    |                                                              expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+262 -     let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+262 +     let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:286:27
+    |
+286 |     let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                              |
+    |                                                              expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+286 -     let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+286 +     let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:303:27
+    |
+303 |     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, invalid_json.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  --------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                            |
+    |                                                            expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+303 -     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, invalid_json.as_ptr()) };
+303 +     let result = unsafe { keyrx_config_save_virtual_layout(invalid_json.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:318:27
+    |
+318 |     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, std::ptr::null()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ---------------- expected `*mut *mut i8`, found `*const _`
+    |                                                            |
+    |                                                            expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+318 -     let result = unsafe { keyrx_config_save_virtual_layout(&mut error, std::ptr::null()) };
+318 +     let result = unsafe { keyrx_config_save_virtual_layout(std::ptr::null(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:355:27
+    |
+355 |     let result = unsafe { keyrx_config_delete_hardware_profile(&mut error, id_c.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                                |
+    |                                                                expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+355 -     let result = unsafe { keyrx_config_delete_hardware_profile(&mut error, id_c.as_ptr()) };
+355 +     let result = unsafe { keyrx_config_delete_hardware_profile(id_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:368:27
+    |
+368 |     let result = unsafe { keyrx_config_delete_keymap(&mut error, id_c.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                      |
+    |                                                      expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+368 -     let result = unsafe { keyrx_config_delete_keymap(&mut error, id_c.as_ptr()) };
+368 +     let result = unsafe { keyrx_config_delete_keymap(id_c.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:381:27
+    |
+381 |     let result = unsafe { keyrx_config_save_hardware_profile(&mut error, profile_json.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  --------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                              |
+    |                                                              expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+381 -     let result = unsafe { keyrx_config_save_hardware_profile(&mut error, profile_json.as_ptr()) };
+381 +     let result = unsafe { keyrx_config_save_hardware_profile(profile_json.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:394:27
+    |
+394 |     let result = unsafe { keyrx_config_save_keymap(&mut error, keymap_json.as_ptr()) };
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^ ----------  -------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                    |
+    |                                                    expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+394 -     let result = unsafe { keyrx_config_save_keymap(&mut error, keymap_json.as_ptr()) };
+394 +     let result = unsafe { keyrx_config_save_keymap(keymap_json.as_ptr(), &mut error) };
+    |
+
+error[E0308]: arguments to this function are incorrect
+   --> core\tests\ffi_macro_integration.rs:422:22
+    |
+422 |             unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ----------  ---------------------- expected `*mut *mut i8`, found `*const i8`
+    |                                                       |
+    |                                                       expected `*const i8`, found `&mut *mut i8`
+    |
+note: function defined here
+   --> core\tests\ffi_macro_integration.rs:94:1
+    |
+ 94 | #[keyrx_ffi(domain = "config")]
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: this error originates in the attribute macro `keyrx_ffi` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: swap these arguments
+    |
+422 -             unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+422 +             unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
+    |
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+error: could not compile `keyrx_core` (test "ffi_macro_integration") due to 12 previous errors

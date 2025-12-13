@@ -544,6 +544,7 @@ mod tests {
         let _ = clear_revolutionary_runtime();
         set_revolutionary_runtime(RevolutionaryRuntime::new(
             registry.clone(),
+            Some(_rx),
             profile_registry,
             definitions,
             Arc::new(Mutex::new(crate::scripting::RhaiRuntime::new().unwrap())),

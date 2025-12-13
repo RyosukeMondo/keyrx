@@ -1,0 +1,46 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+    Checking generate_dart_bindings v0.1.0 (C:\Users\ryosu\repos\keyrx\core\tools\generate_dart_bindings)
+error: use of `eprintln!`
+   --> core\tools\generate_dart_bindings\tests\integration_test.rs:219:9
+    |
+219 |         eprintln!("Skipping dart analyze test: dart not available");
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#print_stderr
+    = note: `-D clippy::print-stderr` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::print_stderr)]`
+
+error: use of `eprintln!`
+   --> core\tools\generate_dart_bindings\tests\integration_test.rs:306:9
+    |
+306 |         eprintln!("Bindings analyze errors:\n{}", bindings_stderr);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#print_stderr
+
+error: use of `eprintln!`
+   --> core\tools\generate_dart_bindings\tests\integration_test.rs:307:9
+    |
+307 |         eprintln!("Bindings content:\n{}", bindings_code);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#print_stderr
+
+error: use of `eprintln!`
+   --> core\tools\generate_dart_bindings\tests\integration_test.rs:311:9
+    |
+311 |         eprintln!("Models analyze errors:\n{}", models_stderr);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#print_stderr
+
+error: use of `eprintln!`
+   --> core\tools\generate_dart_bindings\tests\integration_test.rs:312:9
+    |
+312 |         eprintln!("Models content:\n{}", models_code);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#print_stderr
+
+error: could not compile `generate_dart_bindings` (test "integration_test") due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...

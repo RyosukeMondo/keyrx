@@ -1,5 +1,12 @@
 // Allow test-specific lints - tests need panic/unwrap/expect for failure assertions
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::expect_fun_call,
+    clippy::print_stdout,
+    clippy::print_stderr
+)]
 
 //! Integration tests for the Dart binding code generator
 //!

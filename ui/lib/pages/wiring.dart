@@ -207,8 +207,17 @@ class _WiringPageState extends State<WiringPage> {
     final layoutId = _selectedLayoutId;
     final layout = _selectedLayout;
 
-    if (layoutId == null || layout == null) {
+    if (layoutId == null) {
       _showSnack('Select a virtual layout first', isError: true);
+      return;
+    }
+
+    // Integrity Check: Ensure selected layout actually exists
+    if (layout == null) {
+      _showSnack(
+        'Selected layout "$layoutId" does not exist. Please choose a valid layout.',
+        isError: true,
+      );
       return;
     }
 
@@ -435,6 +444,27 @@ class _WiringPageState extends State<WiringPage> {
                       children: [
                         const Icon(Icons.keyboard),
                         const SizedBox(width: 8),
+                        // Connection Status Indicator
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                _knownDevices.any(
+                                  (d) =>
+                                      d.identity.vendorId == profile.vendorId &&
+                                      d.identity.productId ==
+                                          profile.productId &&
+                                      (profile.serialNumber == null ||
+                                          d.identity.serialNumber ==
+                                              profile.serialNumber),
+                                )
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             profile.name ?? 'Unnamed Profile',
@@ -500,9 +530,35 @@ class _WiringPageState extends State<WiringPage> {
                         ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        'Layout: ${profile.virtualLayoutId}',
-                        style: Theme.of(context).textTheme.labelSmall,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Layout: ${profile.virtualLayoutId}',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color:
+                                      _layouts.any(
+                                        (l) => l.id == profile.virtualLayoutId,
+                                      )
+                                      ? null
+                                      : Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                          if (!_layouts.any(
+                            (l) => l.id == profile.virtualLayoutId,
+                          )) ...[
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'Layout not found',
+                              child: Icon(
+                                Icons.broken_image,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -711,14 +767,25 @@ class _WiringPageState extends State<WiringPage> {
               labelText: 'Virtual layout',
               border: OutlineInputBorder(),
             ),
-            items: _layouts
-                .map(
-                  (layout) => DropdownMenuItem(
-                    value: layout.id,
-                    child: Text('${layout.name} • ${layout.id}'),
+            items: [
+              ..._layouts.map(
+                (layout) => DropdownMenuItem(
+                  value: layout.id,
+                  child: Text('${layout.name} • ${layout.id}'),
+                ),
+              ),
+              // Robustness: If the selected layout ID is missing (deleted/not loaded),
+              // add a placeholder item to prevent DropdownButton assertion crash.
+              if (_selectedLayoutId != null &&
+                  !_layouts.any((l) => l.id == _selectedLayoutId))
+                DropdownMenuItem(
+                  value: _selectedLayoutId,
+                  child: Text(
+                    'Unknown Layout ($_selectedLayoutId)',
+                    style: const TextStyle(color: Colors.red),
                   ),
-                )
-                .toList(),
+                ),
+            ],
             onChanged: (value) {
               setState(() {
                 _selectedLayoutId = value;

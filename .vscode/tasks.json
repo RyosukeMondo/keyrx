@@ -14,6 +14,27 @@
       }
     },
     {
+      "label": "Build Rust Core",
+      "type": "shell",
+      "command": "cargo",
+      "args": [
+        "build",
+        "-p",
+        "keyrx_core",
+        "--lib"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": [
+        "Verify Dart Bindings"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ]
+    },
+    {
       "label": "Generate Dart Bindings",
       "type": "shell",
       "command": "python",

@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used)]
 //! Centralized unit tests for code generators
 //!
 //! This module provides integration-style tests that verify the code generators

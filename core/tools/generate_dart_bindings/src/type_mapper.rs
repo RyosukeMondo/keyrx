@@ -35,41 +35,65 @@ impl std::error::Error for TypeMappingError {}
 pub fn map_to_dart_ffi_type(contract_type: &str) -> Result<DartFfiType, TypeMappingError> {
     let normalized = contract_type.trim().to_lowercase();
 
+    // Check specific types first
     match normalized.as_str() {
         // Void
-        "void" => Ok(DartFfiType::Void),
+        "void" => return Ok(DartFfiType::Void),
 
         // Boolean
-        "bool" | "boolean" => Ok(DartFfiType::Bool),
+        "bool" | "boolean" => return Ok(DartFfiType::Bool),
 
         // Signed integers
-        "int8" | "i8" => Ok(DartFfiType::Int8),
-        "int16" | "i16" => Ok(DartFfiType::Int16),
-        "int32" | "i32" | "int" => Ok(DartFfiType::Int32),
-        "int64" | "i64" => Ok(DartFfiType::Int64),
+        "int8" | "i8" => return Ok(DartFfiType::Int8),
+        "int16" | "i16" => return Ok(DartFfiType::Int16),
+        "int32" | "i32" | "int" => return Ok(DartFfiType::Int32),
+        "int64" | "i64" => return Ok(DartFfiType::Int64),
 
         // Unsigned integers
-        "uint8" | "u8" | "byte" => Ok(DartFfiType::Uint8),
-        "uint16" | "u16" => Ok(DartFfiType::Uint16),
-        "uint32" | "u32" => Ok(DartFfiType::Uint32),
-        "uint64" | "u64" => Ok(DartFfiType::Uint64),
+        "uint8" | "u8" | "byte" => return Ok(DartFfiType::Uint8),
+        "uint16" | "u16" => return Ok(DartFfiType::Uint16),
+        "uint32" | "u32" => return Ok(DartFfiType::Uint32),
+        "uint64" | "u64" => return Ok(DartFfiType::Uint64),
 
         // Floating point
-        "float" | "float32" | "f32" => Ok(DartFfiType::Float),
-        "double" | "float64" | "f64" => Ok(DartFfiType::Double),
+        "float" | "float32" | "f32" => return Ok(DartFfiType::Float),
+        "double" | "float64" | "f64" => return Ok(DartFfiType::Double),
+
+        // Size types
+        "usize" | "size_t" => return Ok(DartFfiType::Size),
+        "isize" | "intptr_t" | "ptrdiff_t" => return Ok(DartFfiType::IntPtr),
+
+        // Domain specific types
+        "loglevel" => return Ok(DartFfiType::Int32),
+        "ffierror" => return Ok(DartFfiType::Pointer("Void".to_string())),
 
         // String - passed as UTF-8 pointer
-        "string" | "str" => Ok(DartFfiType::PointerUtf8),
+        "string" | "str" => return Ok(DartFfiType::PointerUtf8),
+        // Raw C strings
+        "*const c_char" | "*mut c_char" => return Ok(DartFfiType::PointerUtf8),
+        "*const i8" | "*mut i8" => return Ok(DartFfiType::PointerUtf8),
+        "*const u8" | "*mut u8" => return Ok(DartFfiType::PointerUtf8),
 
         // Complex types (object, array) are serialized as JSON strings
-        "object" | "array" => Ok(DartFfiType::PointerUtf8),
+        "object" | "array" => return Ok(DartFfiType::PointerUtf8),
 
-        // Unknown type
-        _ => Err(TypeMappingError {
-            contract_type: contract_type.to_string(),
-            message: "Unknown or unsupported contract type".to_string(),
-        }),
+        _ => {}
     }
+
+    // Generic pointer fallbacks
+    if normalized.starts_with("*const ") || normalized.starts_with("*mut ") {
+        return Ok(DartFfiType::Pointer("Void".to_string()));
+    }
+
+    // Generic callback fallbacks (function pointers and Option types)
+    if normalized.starts_with("option<") {
+        return Ok(DartFfiType::Pointer("Void".to_string()));
+    }
+
+    Err(TypeMappingError {
+        contract_type: contract_type.to_string(),
+        message: "Unknown or unsupported contract type".to_string(),
+    })
 }
 
 /// Maps a contract type string to its native Dart type string.
@@ -86,37 +110,52 @@ pub fn map_to_dart_ffi_type(contract_type: &str) -> Result<DartFfiType, TypeMapp
 pub fn map_to_dart_native_type(contract_type: &str) -> Result<String, TypeMappingError> {
     let normalized = contract_type.trim().to_lowercase();
 
-    let dart_type = match normalized.as_str() {
+    match normalized.as_str() {
         // Void
-        "void" => "void",
+        "void" => return Ok("void".to_string()),
 
         // Boolean
-        "bool" | "boolean" => "bool",
+        "bool" | "boolean" => return Ok("bool".to_string()),
 
         // All integers map to Dart's int type
         "int8" | "i8" | "int16" | "i16" | "int32" | "i32" | "int" | "int64" | "i64" | "uint8"
-        | "u8" | "byte" | "uint16" | "u16" | "uint32" | "u32" | "uint64" | "u64" => "int",
+        | "u8" | "byte" | "uint16" | "u16" | "uint32" | "u32" | "uint64" | "u64" | "usize"
+        | "size_t" | "isize" | "intptr_t" | "ptrdiff_t" | "loglevel" => {
+            return Ok("int".to_string())
+        }
+
+        "ffierror" => return Ok("Pointer<Void>".to_string()),
 
         // Floating point maps to double
-        "float" | "float32" | "f32" | "double" | "float64" | "f64" => "double",
+        "float" | "float32" | "f32" | "double" | "float64" | "f64" => {
+            return Ok("double".to_string())
+        }
 
         // String stays as String
-        "string" | "str" => "String",
+        "string" | "str" | "*const c_char" | "*mut c_char" | "*const i8" | "*mut i8"
+        | "*const u8" | "*mut u8" => return Ok("String".to_string()),
 
         // Complex types map to dynamic (parsed from JSON)
-        "object" => "Map<String, dynamic>",
-        "array" => "List<dynamic>",
+        "object" => return Ok("Map<String, dynamic>".to_string()),
+        "array" => return Ok("List<dynamic>".to_string()),
 
-        // Unknown type
-        _ => {
-            return Err(TypeMappingError {
-                contract_type: contract_type.to_string(),
-                message: "Unknown or unsupported contract type".to_string(),
-            });
-        }
-    };
+        _ => {}
+    }
 
-    Ok(dart_type.to_string())
+    // Generic pointer fallbacks
+    if normalized.starts_with("*const ") || normalized.starts_with("*mut ") {
+        return Ok("Pointer<Void>".to_string());
+    }
+
+    // Generic callback fallbacks
+    if normalized.starts_with("option<") {
+        return Ok("Pointer<Void>".to_string());
+    }
+
+    Err(TypeMappingError {
+        contract_type: contract_type.to_string(),
+        message: "Unknown or unsupported contract type".to_string(),
+    })
 }
 
 /// Check if a contract type represents a complex type (object or array)

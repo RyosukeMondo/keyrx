@@ -65,6 +65,21 @@ class ContractReflector:
         'uint32': 'Uint32',
         'int': 'Int32',
         'Option<extern "C" fn(*const CLogEntry)>': 'Pointer<NativeFunction<EventCallbackNative>>',
+        'LogLevel': 'Int32',
+        '*mut usize': 'Pointer<Size>',
+        '*const usize': 'Pointer<Size>',
+        '*mut c_void': 'Pointer<Void>',
+        '*const c_void': 'Pointer<Void>',
+        # Opaque struct pointers (treated as void* in Dart for now)
+        '*mut MetricsSnapshotFfi': 'Pointer<Void>',
+        '*const MetricsSnapshotFfi': 'Pointer<Void>',
+        '*mut CLogEntry': 'Pointer<Void>',
+        '*const CLogEntry': 'Pointer<Void>',
+        '*mut PanicTelemetryFfi': 'Pointer<Void>',
+        '*const PanicTelemetryFfi': 'Pointer<Void>',
+        # Callbacks
+        'Option<extern "C" fn(*const MetricsSnapshotFfi)>': 'Pointer<NativeFunction<Void Function(Pointer<Void>)>>',
+        'Option<ThresholdCallback>': 'Pointer<NativeFunction<Void Function(Pointer<Void>)>>',
     }
 
     # Dart types for the public API (typedef alias)

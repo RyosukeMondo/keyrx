@@ -141,6 +141,10 @@ impl ConfigDomain {
     fn delete_keymap(id: String) -> Result<String, String> {
         Err(format!("Keymap '{id}' not found"))
     }
+    /// Get the content root path.
+    fn get_config_root() -> Result<String, String> {
+        Ok("ok:/tmp".to_string())
+    }
 }
 
 /// Placeholder struct for the impl block.
@@ -191,11 +195,8 @@ fn test_list_virtual_layouts_empty() {
     assert!(json.is_some());
     let json = json.unwrap();
 
-    // The result is double-serialized: the method returns a JSON string,
-    // which is then serialized again by ffi_wrapper. So we need to parse
-    // the outer JSON string first, then parse the inner JSON.
-    let inner_json: String = serde_json::from_str(&json).unwrap();
-    let layouts: Vec<VirtualLayout> = serde_json::from_str(&inner_json).unwrap();
+    // The result is directly the JSON string
+    let layouts: Vec<VirtualLayout> = serde_json::from_str(&json).unwrap();
     assert!(layouts.is_empty());
 }
 
@@ -213,7 +214,7 @@ fn test_save_and_list_virtual_layout() {
     let layout_json_c = CString::new(layout_json).unwrap();
 
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+    let result = unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
 
     assert!(error.is_null(), "Expected no error on save");
     let saved = unsafe { get_result_string(result) };
@@ -226,9 +227,8 @@ fn test_save_and_list_virtual_layout() {
     assert!(error.is_null(), "Expected no error on list");
     let json = unsafe { get_result_string(result) }.unwrap();
 
-    // Parse the double-serialized result
-    let inner_json: String = serde_json::from_str(&json).unwrap();
-    let layouts: Vec<VirtualLayout> = serde_json::from_str(&inner_json).unwrap();
+    // Parse the result
+    let layouts: Vec<VirtualLayout> = serde_json::from_str(&json).unwrap();
     assert_eq!(layouts.len(), 1);
     assert_eq!(layouts[0].id, "test-layout-1");
     assert_eq!(layouts[0].name, "Test Layout");
@@ -249,7 +249,7 @@ fn test_delete_virtual_layout() {
 
     let mut error: *mut c_char = std::ptr::null_mut();
     let save_result =
-        unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+        unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
     assert!(error.is_null(), "Expected no error on save");
     // Free the save result
     if !save_result.is_null() {
@@ -259,20 +259,18 @@ fn test_delete_virtual_layout() {
     // Delete the layout
     let id_c = CString::new("delete-me").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+    let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
 
     assert!(error.is_null(), "Expected no error on delete");
     let response = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner_response: String = serde_json::from_str(&response).unwrap();
-    assert!(inner_response.contains("success"));
+    // Result is directly the string
+    assert!(response.contains("success"));
 
     // Verify it's gone
     let mut error: *mut c_char = std::ptr::null_mut();
     let result = unsafe { keyrx_config_list_virtual_layouts(&mut error) };
     let json = unsafe { get_result_string(result) }.unwrap();
-    let inner_json: String = serde_json::from_str(&json).unwrap();
-    let layouts: Vec<VirtualLayout> = serde_json::from_str(&inner_json).unwrap();
+    let layouts: Vec<VirtualLayout> = serde_json::from_str(&json).unwrap();
     assert!(layouts.is_empty());
 }
 
@@ -283,7 +281,7 @@ fn test_delete_nonexistent_layout_returns_error() {
 
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_virtual_layout(&mut error, id_c.as_ptr()) };
+    let result = unsafe { keyrx_config_delete_virtual_layout(id_c.as_ptr(), &mut error) };
 
     // Result should be null and error should be set
     assert!(result.is_null(), "Expected null result on error");
@@ -300,7 +298,7 @@ fn test_save_invalid_json_returns_error() {
 
     let invalid_json = CString::new("not valid json").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_save_virtual_layout(&mut error, invalid_json.as_ptr()) };
+    let result = unsafe { keyrx_config_save_virtual_layout(invalid_json.as_ptr(), &mut error) };
 
     assert!(result.is_null(), "Expected null result on error");
     assert!(!error.is_null(), "Expected error to be set");
@@ -315,7 +313,7 @@ fn test_null_parameter_returns_error() {
     reset_store();
 
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_save_virtual_layout(&mut error, std::ptr::null()) };
+    let result = unsafe { keyrx_config_save_virtual_layout(std::ptr::null(), &mut error) };
 
     assert!(result.is_null(), "Expected null result on null param");
     assert!(!error.is_null(), "Expected error for null param");
@@ -331,9 +329,8 @@ fn test_list_hardware_profiles() {
 
     assert!(error.is_null());
     let json = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner: String = serde_json::from_str(&json).unwrap();
-    assert_eq!(inner, "[]");
+    // Result is directly the string
+    assert_eq!(json, "[]");
 }
 
 #[test]
@@ -343,16 +340,15 @@ fn test_list_keymaps() {
 
     assert!(error.is_null());
     let json = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner: String = serde_json::from_str(&json).unwrap();
-    assert_eq!(inner, "[]");
+    // Result is directly the string
+    assert_eq!(json, "[]");
 }
 
 #[test]
 fn test_delete_hardware_profile_not_found() {
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_hardware_profile(&mut error, id_c.as_ptr()) };
+    let result = unsafe { keyrx_config_delete_hardware_profile(id_c.as_ptr(), &mut error) };
 
     assert!(result.is_null());
     assert!(!error.is_null());
@@ -365,7 +361,7 @@ fn test_delete_hardware_profile_not_found() {
 fn test_delete_keymap_not_found() {
     let id_c = CString::new("nonexistent").unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_delete_keymap(&mut error, id_c.as_ptr()) };
+    let result = unsafe { keyrx_config_delete_keymap(id_c.as_ptr(), &mut error) };
 
     assert!(result.is_null());
     assert!(!error.is_null());
@@ -378,26 +374,24 @@ fn test_delete_keymap_not_found() {
 fn test_save_hardware_profile_valid_json() {
     let profile_json = CString::new(r#"{"id": "test", "name": "Test Profile"}"#).unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_save_hardware_profile(&mut error, profile_json.as_ptr()) };
+    let result = unsafe { keyrx_config_save_hardware_profile(profile_json.as_ptr(), &mut error) };
 
     assert!(error.is_null());
     let response = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner: String = serde_json::from_str(&response).unwrap();
-    assert!(inner.contains("success"));
+    // Result is directly the string
+    assert!(response.contains("success"));
 }
 
 #[test]
 fn test_save_keymap_valid_json() {
     let keymap_json = CString::new(r#"{"id": "test", "mappings": []}"#).unwrap();
     let mut error: *mut c_char = std::ptr::null_mut();
-    let result = unsafe { keyrx_config_save_keymap(&mut error, keymap_json.as_ptr()) };
+    let result = unsafe { keyrx_config_save_keymap(keymap_json.as_ptr(), &mut error) };
 
     assert!(error.is_null());
     let response = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner: String = serde_json::from_str(&response).unwrap();
-    assert!(inner.contains("success"));
+    // Result is directly the string
+    assert!(response.contains("success"));
 }
 
 // ============================================================================
@@ -419,7 +413,7 @@ fn test_repeated_calls_no_memory_issues() {
 
         let mut error: *mut c_char = std::ptr::null_mut();
         let result =
-            unsafe { keyrx_config_save_virtual_layout(&mut error, layout_json_c.as_ptr()) };
+            unsafe { keyrx_config_save_virtual_layout(layout_json_c.as_ptr(), &mut error) };
 
         if !result.is_null() {
             unsafe { drop(CString::from_raw(result as *mut c_char)) };
@@ -433,9 +427,8 @@ fn test_repeated_calls_no_memory_issues() {
     let mut error: *mut c_char = std::ptr::null_mut();
     let result = unsafe { keyrx_config_list_virtual_layouts(&mut error) };
     let json = unsafe { get_result_string(result) }.unwrap();
-    // Result is double-serialized
-    let inner: String = serde_json::from_str(&json).unwrap();
-    let layouts: Vec<VirtualLayout> = serde_json::from_str(&inner).unwrap();
+    // Result is directly the string
+    let layouts: Vec<VirtualLayout> = serde_json::from_str(&json).unwrap();
     assert_eq!(layouts.len(), 100);
 }
 

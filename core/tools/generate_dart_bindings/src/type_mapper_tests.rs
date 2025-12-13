@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used)]
 //! Comprehensive unit tests for type mapper
 //!
 //! This module tests all type mappings from contract types to Dart FFI types

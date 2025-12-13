@@ -115,6 +115,7 @@ fn setup_shared_runtime() -> (DeviceRegistry, Arc<ProfileRegistry>, tempfile::Te
 
     set_revolutionary_runtime(RevolutionaryRuntime::new(
         device_registry.clone(),
+        Some(_rx),
         profile_registry.clone(),
         device_definitions,
         Arc::new(std::sync::Mutex::new(

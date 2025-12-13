@@ -1,0 +1,242 @@
+   Compiling keyrx_core v0.1.0 (C:\Users\ryosu\repos\keyrx\core)
+   Compiling generate_dart_bindings v0.1.0 (C:\Users\ryosu\repos\keyrx\core\tools\generate_dart_bindings)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.95s
+     Running unittests src\lib.rs (C:\Users\ryosu\repos\keyrx\target\debug\deps\generate_dart_bindings-4b17f4faa12f5336.exe)
+
+running 169 tests
+test bindings_gen::tests::test_parameter_in_typedef ... ok
+test bindings_gen::tests::test_generate_ffi_signatures ... ok
+test bindings_gen::tests::test_native_typedef_generation ... ok
+test bindings_gen::tests::test_dart_typedef_generation ... ok
+test bindings_gen::tests::test_function_pointer_generation ... ok
+test bindings_gen::tests::test_generate_wrapper_functions ... ok
+test bindings_gen::tests::test_wrapper_object_return_type ... ok
+test bindings_gen::tests::test_wrapper_error_handling ... ok
+test bindings_gen::tests::test_wrapper_result_conversion ... ok
+test bindings_gen::tests::test_generate_typedefs_block ... ok
+test bindings_gen::tests::test_wrapper_function_no_params ... ok
+test bindings_gen::tests::test_generate_wrappers_block ... ok
+test bindings_gen::tests::test_wrapper_finally_cleanup ... ok
+test bindings_gen::tests::test_generate_function_pointers_block ... ok
+test bindings_gen::tests::test_wrapper_function_with_string_param ... ok
+test header::tests::test_bindings_header_contains_timestamp ... ok
+test header::tests::test_bindings_header_contains_lint_ignores ... ok
+test header::tests::test_bindings_header_contains_regenerate_instructions ... ok
+test header::tests::test_bindings_header_contains_source_info ... ok
+test header::tests::test_bindings_header_contains_imports ... ok
+test header::tests::test_bindings_header_contains_warning ... ok
+test header::tests::test_format_timestamp ... ok
+test formatter::tests::test_format_directory_dart_available ... ok
+test header::tests::test_generate_bindings_header_not_empty ... ok
+test header::tests::test_generate_models_header_not_empty ... ok
+test header::tests::test_models_header_contains_source_info ... ok
+test header::tests::test_models_header_contains_timestamp ... ok
+test formatter::tests::test_format_nonexistent_file ... ok
+test header::tests::test_models_header_contains_warning ... ok
+test formatter::tests::test_format_files_no_dart ... ok
+test formatter::tests::test_format_directory_not_a_dir ... ok
+test formatter::tests::test_format_file_dart_available ... ok
+test models_gen::tests::test_camel_case_field_names ... ok
+test models_gen::tests::test_doc_comment_in_class ... ok
+test models_gen::tests::test_field_type_mapping ... ok
+test models_gen::tests::test_generate_all_models ... ok
+test formatter::tests::test_format_invalid_dart_file ... ok
+test models_gen::tests::test_generate_model_class ... ok
+test models_gen::tests::test_generate_models_from_returns ... ok
+test models_gen::tests::test_generate_models_block ... ok
+test models_gen::tests::test_non_object_type_returns_error ... ok
+test models_gen::tests::test_model_has_constructor ... ok
+test models_gen::tests::test_model_has_from_json ... ok
+test models_gen::tests::test_model_has_to_json ... ok
+test templates::tests::test_ffi_exception_class ... ok
+test templates::tests::test_dart_typedef_template ... ok
+test templates::tests::test_function_pointer_template ... ok
+test templates::tests::test_native_typedef_template ... ok
+test templates::tests::test_model_class_template_structure ... ok
+test templates::tests::test_render_missing_placeholder ... ok
+test templates::tests::test_render_multiple_placeholders ... ok
+test templates::tests::test_render_repeated_placeholder ... ok
+test templates::tests::test_render_simple_placeholder ... ok
+test templates::tests::test_to_camel_case ... ok
+test templates::tests::test_to_pascal_case ... ok
+test templates::tests::test_to_snake_case ... ok
+test tests::test_case_conversion_edge_cases ... ok
+test tests::test_case_conversion_roundtrip ... ok
+test tests::test_ffi_signatures_auto_generated_name ... ok
+test tests::test_ffi_signatures_empty_contract ... ok
+test tests::test_ffi_signatures_multi_param_function ... ok
+test tests::test_ffi_signatures_void_return ... ok
+test tests::test_function_pointers_block_generation ... ok
+test tests::test_full_contract_code_generation ... ok
+test tests::test_generated_code_validity ... ok
+test tests::test_models_from_empty_contract ... ok
+test tests::test_model_constructor ... ok
+test tests::test_type_mapping_all_integers ... ok
+test tests::test_model_field_types ... ok
+test tests::test_type_mapping_floats ... ok
+test tests::test_model_json_serialization ... ok
+test tests::test_type_mapping_nullable ... ok
+test tests::test_models_block_generation ... ok
+test tests::test_models_from_types ... ok
+test tests::test_typedefs_block_generation ... ok
+test tests::test_wrapper_function_array_return ... ok
+test tests::test_wrapper_function_multi_param ... ok
+test tests::test_wrapper_functions_empty_contract ... ok
+test tests::test_wrapper_function_void_return ... ok
+test type_mapper::tests::test_base_type ... ok
+test type_mapper::tests::test_case_insensitive_mapping ... ok
+test tests::test_wrappers_block_generation ... ok
+test type_mapper::tests::test_is_complex_type ... ok
+test type_mapper::tests::test_is_nullable ... ok
+test type_mapper::tests::test_map_bool_to_ffi ... ok
+test type_mapper::tests::test_map_bool_to_native ... ok
+test type_mapper::tests::test_map_complex_to_native ... ok
+test type_mapper::tests::test_map_complex_types_to_ffi ... ok
+test type_mapper::tests::test_map_floats_to_ffi ... ok
+test type_mapper::tests::test_map_floats_to_native ... ok
+test type_mapper::tests::test_map_integers_to_native ... ok
+test type_mapper::tests::test_map_signed_integers_to_ffi ... ok
+test type_mapper::tests::test_map_string_to_ffi ... ok
+test type_mapper::tests::test_map_string_to_native ... ok
+test type_mapper::tests::test_map_unknown_type_to_ffi_fails ... ok
+test type_mapper::tests::test_map_unsigned_integers_to_ffi ... ok
+test type_mapper::tests::test_map_void_to_ffi ... ok
+test type_mapper::tests::test_map_void_to_native ... ok
+test type_mapper::tests::test_whitespace_trimming ... ok
+test type_mapper_tests::case_insensitivity::mixed_case_types_work ... ok
+test type_mapper_tests::case_insensitivity::native_mapping_case_insensitive ... ok
+test type_mapper_tests::case_insensitivity::uppercase_types_work ... ok
+test type_mapper_tests::complex_type_detection::array_is_complex ... ok
+test type_mapper_tests::complex_type_detection::complex_detection_case_insensitive ... ok
+test type_mapper_tests::complex_type_detection::complex_detection_trims_whitespace ... ok
+test type_mapper_tests::complex_type_detection::object_is_complex ... ok
+test loader::tests::test_load_contracts_for_missing_domain ... ok
+test type_mapper_tests::complex_type_detection::primitives_are_not_complex ... ok
+test type_mapper_tests::comprehensive_coverage::all_type_aliases_covered ... ok
+test loader::tests::test_load_contracts ... ok
+test type_mapper_tests::comprehensive_coverage::ffi_types_to_dart_types_consistency ... ok
+test type_mapper_tests::error_handling::empty_type_returns_error ... ok
+test loader::tests::test_load_contracts_for_domain ... ok
+test type_mapper_tests::error_handling::error_display_is_readable ... ok
+test type_mapper_tests::error_handling::error_implements_std_error ... ok
+test type_mapper_tests::error_handling::unknown_type_returns_error_for_ffi ... ok
+test type_mapper_tests::error_handling::unknown_type_returns_error_for_native ... ok
+test loader::tests::test_load_all_contracts ... ok
+test type_mapper_tests::ffi_type_mapping::bool_variants_map_correctly ... ok
+test type_mapper_tests::ffi_type_mapping::complex_types::array_maps_to_pointer_utf8 ... ok
+test type_mapper_tests::ffi_type_mapping::complex_types::object_maps_to_pointer_utf8 ... ok
+test type_mapper_tests::ffi_type_mapping::floating_point::double_variants ... ok
+test type_mapper_tests::ffi_type_mapping::floating_point::float_variants ... ok
+test type_mapper_tests::ffi_type_mapping::signed_integers::int16_variants ... ok
+test type_mapper_tests::ffi_type_mapping::signed_integers::int32_variants ... ok
+test type_mapper_tests::ffi_type_mapping::signed_integers::int64_variants ... ok
+test type_mapper_tests::ffi_type_mapping::signed_integers::int8_variants ... ok
+test type_mapper_tests::ffi_type_mapping::string_types::string_variants ... ok
+test type_mapper_tests::ffi_type_mapping::unsigned_integers::uint16_variants ... ok
+test type_mapper_tests::ffi_type_mapping::unsigned_integers::uint32_variants ... ok
+test type_mapper_tests::ffi_type_mapping::unsigned_integers::uint64_variants ... ok
+test type_mapper_tests::ffi_type_mapping::unsigned_integers::uint8_variants ... ok
+test type_mapper_tests::ffi_type_mapping::void_maps_correctly ... ok
+test type_mapper_tests::native_type_mapping::all_floats_map_to_double ... ok
+test type_mapper_tests::native_type_mapping::all_integers_map_to_int ... ok
+test type_mapper_tests::native_type_mapping::array_maps_to_list ... ok
+test type_mapper_tests::native_type_mapping::bool_variants_map_correctly ... ok
+test type_mapper_tests::native_type_mapping::object_maps_to_map ... ok
+test type_mapper_tests::native_type_mapping::string_maps_correctly ... ok
+test type_mapper_tests::native_type_mapping::void_maps_correctly ... ok
+test type_mapper_tests::nullable_types::all_nullable_base_types_map_correctly ... ok
+test type_mapper_tests::nullable_types::base_type_extraction_works ... ok
+test type_mapper_tests::nullable_types::base_type_trims_whitespace ... ok
+test type_mapper_tests::nullable_types::base_type_unchanged_for_non_nullable ... ok
+test type_mapper_tests::nullable_types::non_nullable_types_not_detected ... ok
+test type_mapper_tests::nullable_types::nullable_base_type_maps_correctly ... ok
+test type_mapper_tests::nullable_types::nullable_suffix_detected ... ok
+test type_mapper_tests::nullable_types::nullable_with_whitespace ... ok
+test type_mapper_tests::whitespace_handling::both_sides_whitespace_trimmed ... ok
+test type_mapper_tests::whitespace_handling::leading_whitespace_trimmed ... ok
+test type_mapper_tests::whitespace_handling::native_mapping_trims_whitespace ... ok
+test type_mapper_tests::whitespace_handling::trailing_whitespace_trimmed ... ok
+test types::tests::test_clone_and_eq ... ok
+test types::tests::test_dart_ffi_function_type ... ok
+test types::tests::test_dart_type_mapping ... ok
+test types::tests::test_display_trait ... ok
+test types::tests::test_ffi_type_string_representation ... ok
+test types::tests::test_is_numeric ... ok
+test types::tests::test_is_pointer ... ok
+test types::tests::test_required_import ... ok
+test types::tests::test_requires_free ... ok
+test writer::tests::test_needs_write_nonexistent_file ... ok
+test writer::tests::test_needs_write_different_content ... ok
+test writer::tests::test_needs_write_same_content ... ok
+test writer::tests::test_create_parent_directories ... ok
+test writer::tests::test_skip_unchanged_file ... ok
+test writer::tests::test_write_new_file ... ok
+test writer::tests::test_write_multiple_files ... ok
+test writer::tests::test_overwrite_changed_file ... ok
+
+test result: ok. 169 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (C:\Users\ryosu\repos\keyrx\target\debug\deps\generate_dart_bindings-b268d416f793bcf0.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\integration_test.rs (C:\Users\ryosu\repos\keyrx\target\debug\deps\integration_test-4acad33d44b227f7.exe)
+
+running 9 tests
+test test_dart_analyze_on_generated_code ... ok
+test test_generate_models_for_all_contracts ... ok
+test test_load_all_real_contracts ... ok
+test test_generate_ffi_signatures_for_all_contracts ... FAILED
+test test_generated_typedefs_naming_convention ... FAILED
+test test_generate_wrapper_functions_for_all_contracts ... FAILED
+test test_idempotent_generation ... FAILED
+test test_full_generation_pipeline_produces_valid_dart ... FAILED
+test test_generated_code_contains_all_contract_functions ... FAILED
+
+failures:
+
+---- test_generate_ffi_signatures_for_all_contracts stdout ----
+
+thread 'test_generate_ffi_signatures_for_all_contracts' (22588) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:70:9:
+Failed to generate FFI signatures for domain 'observability': Some(BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- test_generated_typedefs_naming_convention stdout ----
+
+thread 'test_generated_typedefs_naming_convention' (7968) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:356:60:
+Failed to generate signatures: BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" }
+
+---- test_generate_wrapper_functions_for_all_contracts stdout ----
+
+thread 'test_generate_wrapper_functions_for_all_contracts' (10732) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:95:9:
+Failed to generate wrapper functions for domain 'observability': Some(BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" })
+
+---- test_idempotent_generation stdout ----
+
+thread 'test_idempotent_generation' (27144) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:413:51:
+Failed to generate signatures: BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" }
+
+---- test_full_generation_pipeline_produces_valid_dart stdout ----
+
+thread 'test_full_generation_pipeline_produces_valid_dart' (8084) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:146:60:
+Failed to generate signatures: BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" }
+
+---- test_generated_code_contains_all_contract_functions stdout ----
+
+thread 'test_generated_code_contains_all_contract_functions' (20652) panicked at core\tools\generate_dart_bindings\tests\integration_test.rs:334:61:
+Failed to generate wrappers: BindingGenError { function_name: "c_log_entry_create", message: "Invalid parameter type for 'level': Cannot map contract type 'LogLevel': Unknown or unsupported contract type" }
+
+
+failures:
+    test_full_generation_pipeline_produces_valid_dart
+    test_generate_ffi_signatures_for_all_contracts
+    test_generate_wrapper_functions_for_all_contracts
+    test_generated_code_contains_all_contract_functions
+    test_generated_typedefs_naming_convention
+    test_idempotent_generation
+
+test result: FAILED. 3 passed; 6 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test integration_test`

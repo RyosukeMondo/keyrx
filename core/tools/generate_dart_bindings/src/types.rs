@@ -30,6 +30,10 @@ pub enum DartFfiType {
     Float,
     /// `Double` - 64-bit floating point
     Double,
+    /// `IntPtr` - platform-dependent signed integer
+    IntPtr,
+    /// `Size` - platform-dependent unsigned integer (size_t)
+    Size,
     /// `Pointer<Utf8>` - pointer to UTF-8 string
     PointerUtf8,
     /// `Pointer<T>` - pointer to custom type
@@ -52,6 +56,8 @@ impl DartFfiType {
             DartFfiType::Uint64 => "Uint64",
             DartFfiType::Float => "Float",
             DartFfiType::Double => "Double",
+            DartFfiType::IntPtr => "IntPtr",
+            DartFfiType::Size => "Size",
             DartFfiType::PointerUtf8 => "Pointer<Utf8>",
             DartFfiType::Pointer(_) => "Pointer<Void>",
         }
@@ -69,7 +75,9 @@ impl DartFfiType {
             | DartFfiType::Uint8
             | DartFfiType::Uint16
             | DartFfiType::Uint32
-            | DartFfiType::Uint64 => "int",
+            | DartFfiType::Uint64
+            | DartFfiType::IntPtr
+            | DartFfiType::Size => "int",
             DartFfiType::Float | DartFfiType::Double => "double",
             DartFfiType::PointerUtf8 => "String",
             DartFfiType::Pointer(_) => "Pointer<Void>",
@@ -88,7 +96,9 @@ impl DartFfiType {
             | DartFfiType::Uint8
             | DartFfiType::Uint16
             | DartFfiType::Uint32
-            | DartFfiType::Uint64 => "int",
+            | DartFfiType::Uint64
+            | DartFfiType::IntPtr
+            | DartFfiType::Size => "int",
             DartFfiType::Float | DartFfiType::Double => "double",
             DartFfiType::PointerUtf8 => "Pointer<Utf8>",
             DartFfiType::Pointer(_) => "Pointer<Void>",
@@ -127,6 +137,8 @@ impl DartFfiType {
                 | DartFfiType::Uint64
                 | DartFfiType::Float
                 | DartFfiType::Double
+                | DartFfiType::IntPtr
+                | DartFfiType::Size
         )
     }
 }
