@@ -150,6 +150,9 @@ class FakeBridge implements KeyrxBridge {
   ConfigBindings? get configBindings => _configBindings;
 
   @override
+  RuntimeBindings? get runtimeBindings => null;
+
+  @override
   bool startEngineLoop() => true;
 
   @override
