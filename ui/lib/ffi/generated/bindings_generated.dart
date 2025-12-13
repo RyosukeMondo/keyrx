@@ -30,11 +30,6 @@ typedef Init = int Function();
 typedef VersionNative = Pointer<Char> Function();
 typedef Version = Pointer<Char> Function();
 
-// keyrx_free_string
-/// Free a string returned by the library.
-typedef FreeStringNative = Void Function(Pointer<Char>);
-typedef FreeString = void Function(Pointer<Char>);
-
 // keyrx_last_error
 /// Get last error message.
 typedef LastErrorNative = Pointer<Char> Function();
@@ -207,8 +202,8 @@ typedef ConfigSaveVirtualLayout = Pointer<Char> Function(Pointer<Char>, Pointer<
 
 // keyrx_config_delete_virtual_layout
 /// Delete a virtual layout by ID.
-typedef ConfigDeleteVirtualLayoutNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
-typedef ConfigDeleteVirtualLayout = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteVirtualLayoutNative = Void Function(Pointer<Char>);
+typedef ConfigDeleteVirtualLayout = void Function(Pointer<Char>);
 
 // keyrx_config_list_hardware_profiles
 /// List all saved hardware profiles.
@@ -222,8 +217,8 @@ typedef ConfigSaveHardwareProfile = Pointer<Char> Function(Pointer<Char>, Pointe
 
 // keyrx_config_delete_hardware_profile
 /// Delete a hardware profile by ID.
-typedef ConfigDeleteHardwareProfileNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
-typedef ConfigDeleteHardwareProfile = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteHardwareProfileNative = Void Function(Pointer<Char>);
+typedef ConfigDeleteHardwareProfile = void Function(Pointer<Char>);
 
 // keyrx_config_list_keymaps
 /// List all saved keymaps.
@@ -237,8 +232,8 @@ typedef ConfigSaveKeymap = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer
 
 // keyrx_config_delete_keymap
 /// Delete a keymap by ID.
-typedef ConfigDeleteKeymapNative = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
-typedef ConfigDeleteKeymap = Pointer<Char> Function(Pointer<Char>, Pointer<Pointer<Utf8>>);
+typedef ConfigDeleteKeymapNative = Void Function(Pointer<Char>);
+typedef ConfigDeleteKeymap = void Function(Pointer<Char>);
 
 // keyrx_config_get_config_root
 /// Get the absolute path to the configuration root directory.
@@ -527,7 +522,6 @@ class KeyrxBindingsGenerated {
 
   late final init = _lookup<NativeFunction<InitNative>>('keyrx_init').asFunction<Init>();
   late final version = _lookup<NativeFunction<VersionNative>>('keyrx_version').asFunction<Version>();
-  late final freeString = _lookup<NativeFunction<FreeStringNative>>('keyrx_free_string').asFunction<FreeString>();
   late final lastError = _lookup<NativeFunction<LastErrorNative>>('keyrx_last_error').asFunction<LastError>();
   late final registerEventCallback = _lookup<NativeFunction<RegisterEventCallbackNative>>('keyrx_register_event_callback').asFunction<RegisterEventCallback>();
   late final protocolVersion = _lookup<NativeFunction<ProtocolVersionNative>>('keyrx_protocol_version').asFunction<ProtocolVersion>();

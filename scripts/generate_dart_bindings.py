@@ -115,6 +115,17 @@ class ContractReflector:
         if contract_type in ('string', 'json', 'object'):
             return ('Pointer<Char>', True)
 
+        # Strict Types (serialized as JSON strings at FFI boundary)
+        strict_types = (
+            'VirtualLayout', 'List<VirtualLayout>',
+            'HardwareProfile', 'List<HardwareProfile>',
+            'Keymap', 'List<Keymap>',
+            'RuntimeConfig', 'List<RuntimeConfig>',
+            'DeviceDefinition', 'List<DeviceDefinition>',
+        )
+        if contract_type in strict_types:
+            return ('Pointer<Char>', True)
+
         # Explicit C types
         if contract_type in cls.RAW_TYPE_MAP:
             return (cls.RAW_TYPE_MAP[contract_type], False)
