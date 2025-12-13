@@ -484,30 +484,38 @@ class _FfiToolsPageState extends State<FfiToolsPage>
       if (bindings == null) throw Exception('Bindings not initialized');
 
       String resultStr;
-      dynamic result;
 
       // Dispatch based on domain/function
       // Note: In a real system, we might use code generation or mirrors (if not Flutter) to map this.
       // Here we manually map the "considerable" functions for developer testing.
 
-      switch ('${_selectedDomain}.${func.name}') {
+      switch ('$_selectedDomain.${func.name}') {
         // --- Engine Domain ---
         case 'engine.start_loop':
           final ret = bindings.startLoop!();
-          result = ret;
           resultStr = 'Returned: $ret';
           break;
 
         case 'engine.stop_loop':
           final ret = bindings.stopLoop!();
-          result = ret;
           resultStr = 'Returned: $ret';
           break;
 
         // --- Device Registry Domain ---
         case 'device_registry.list_devices':
+          final errorPtr = calloc<Pointer<Utf8>>();
           // Use the raw binding
-          final ptr = bindings.deviceRegistryListDevices();
+          final ptr = bindings.deviceRegistryListDevices(errorPtr);
+
+          if (errorPtr.value.address != 0) {
+            final error = errorPtr.value.toDartString();
+            bindings.freeString(errorPtr.value.cast<Char>());
+            calloc.free(errorPtr);
+            resultStr = 'Error: $error';
+            break;
+          }
+          calloc.free(errorPtr);
+
           final str = ptr.cast<Utf8>().toDartString();
           // We do NOT free the string here if the contract says it returns a static/managed buffer
           // OR if it returns a new string we must free.
@@ -516,7 +524,6 @@ class _FfiToolsPageState extends State<FfiToolsPage>
           // So we MUST free it.
           bindings.freeString(ptr);
 
-          result = str;
           resultStr = str;
           break;
 
@@ -525,17 +532,29 @@ class _FfiToolsPageState extends State<FfiToolsPage>
           final enabled =
               _paramControllers['enabled']!.text.toLowerCase() == 'true';
 
+          final errorPtr = calloc<Pointer<Utf8>>();
           final keyPtr = key.toNativeUtf8();
           final retPtr = bindings.deviceRegistrySetRemapEnabled(
             keyPtr.cast<Char>(),
             enabled ? 1 : 0,
+            errorPtr,
           );
+
+          if (errorPtr.value.address != 0) {
+            final error = errorPtr.value.toDartString();
+            bindings.freeString(errorPtr.value.cast<Char>());
+            calloc.free(errorPtr);
+            calloc.free(keyPtr);
+            resultStr = 'Error: $error';
+            break;
+          }
+          calloc.free(errorPtr);
+
           calloc.free(keyPtr);
 
           final str = retPtr.cast<Utf8>().toDartString();
           bindings.freeString(retPtr);
 
-          result = str;
           resultStr = str;
           break;
 

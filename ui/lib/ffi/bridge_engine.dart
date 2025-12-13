@@ -512,8 +512,9 @@ mixin BridgeEngineMixin {
 
     final cmdPtr = command.toNativeUtf8();
     Pointer<Char>? responsePtr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      responsePtr = evalFn(cmdPtr.cast<Char>());
+      responsePtr = evalFn(cmdPtr.cast<Char>(), errorPtr);
       if (responsePtr == nullptr) {
         return 'error: eval returned null';
       }
@@ -523,6 +524,7 @@ mixin BridgeEngineMixin {
     } catch (e) {
       return 'error: $e';
     } finally {
+      calloc.free(errorPtr);
       calloc.free(cmdPtr);
       if (responsePtr != null) {
         try {
@@ -540,8 +542,9 @@ mixin BridgeEngineMixin {
     }
 
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = listFn();
+      ptr = listFn(errorPtr);
       if (ptr == nullptr) {
         return KeyRegistryResult.fallback('error: listKeys returned null');
       }
@@ -551,6 +554,7 @@ mixin BridgeEngineMixin {
     } catch (e) {
       return KeyRegistryResult.fallback('error: $e');
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null) {
         try {
           bindings?.freeString(ptr);
@@ -589,8 +593,9 @@ mixin BridgeEngineMixin {
 
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = checkFn(pathPtr.cast<Char>());
+      ptr = checkFn(pathPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return ScriptValidationResult.error('checkScript returned null');
       }
@@ -600,6 +605,7 @@ mixin BridgeEngineMixin {
     } catch (e) {
       return ScriptValidationResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(pathPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -624,8 +630,14 @@ extension BridgeEngineStateSetup on BridgeEngineMixin {
   /// Parse state payload from JSON bytes.
   static BridgeStateUpdate? parseStatePayload(List<int> bytes) {
     try {
-      final payload = json.decode(utf8.decode(bytes));
-      if (payload is! Map<String, dynamic>) return null;
+      final decoded = json.decode(utf8.decode(bytes));
+      if (decoded is! Map<String, dynamic>) return null;
+
+      // Handle UnifiedEvent envelope
+      final payload =
+          decoded.containsKey('eventType') && decoded.containsKey('payload')
+          ? decoded['payload'] as Map<String, dynamic>
+          : decoded;
 
       if (payload['delta'] is Map<String, dynamic>) {
         final delta = BridgeStateDelta.fromJson(

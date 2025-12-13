@@ -1,4 +1,4 @@
-/// Config domain FFI methods.
+// Config domain FFI methods.
 ///
 /// Provides configuration path resolution via FFI.
 library;
@@ -6,7 +6,6 @@ library;
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter/foundation.dart';
 
 import 'bindings.dart';
 

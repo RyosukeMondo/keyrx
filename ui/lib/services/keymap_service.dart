@@ -34,8 +34,8 @@ class KeymapService {
           return ConfigOperationResult.error('configListKeymaps returned null');
         }
 
-        final raw = ptr?.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<List<Keymap>>(raw!, (json) {
+        final raw = ptr.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<List<Keymap>>(raw, (json) {
           final list = json as List<dynamic>;
           return list
               .map((item) => Keymap.fromJson(item as Map<String, dynamic>))
@@ -73,9 +73,9 @@ class KeymapService {
           return ConfigOperationResult.error('configSaveKeymap returned null');
         }
 
-        final raw = resultPtr?.cast<Utf8>().toDartString();
+        final raw = resultPtr.cast<Utf8>().toDartString();
         return parseConfigFfiResult<Keymap>(
-          raw!,
+          raw,
           (json) => Keymap.fromJson(json as Map<String, dynamic>),
         );
       } catch (e) {
@@ -114,8 +114,8 @@ class KeymapService {
           );
         }
 
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<void>(raw!, null);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<void>(raw, null);
       } catch (e) {
         return ConfigOperationResult.error('delete keymap failed: $e');
       } finally {

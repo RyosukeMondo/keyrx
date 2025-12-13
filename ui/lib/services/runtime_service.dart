@@ -61,8 +61,8 @@ class RuntimeServiceImpl implements RuntimeService {
         if (ptr == nullptr) {
           return ConfigOperationResult.error('runtimeGetConfig returned null');
         }
-        final raw = ptr?.cast<Utf8>().toDartString();
-        return _parseRuntime(raw!);
+        final raw = ptr.cast<Utf8>().toDartString();
+        return _parseRuntime(raw);
       } catch (e) {
         return ConfigOperationResult.error('get runtime config failed: $e');
       } finally {
@@ -104,8 +104,8 @@ class RuntimeServiceImpl implements RuntimeService {
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error('runtimeAddSlot returned null');
         }
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return _parseRuntime(raw!);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return _parseRuntime(raw);
       } catch (e) {
         return ConfigOperationResult.error('add slot failed: $e');
       } finally {
@@ -152,8 +152,8 @@ class RuntimeServiceImpl implements RuntimeService {
         if (resultPtr == nullptr) {
           return ConfigOperationResult.error('runtimeRemoveSlot returned null');
         }
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return _parseRuntime(raw!);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return _parseRuntime(raw);
       } catch (e) {
         return ConfigOperationResult.error('remove slot failed: $e');
       } finally {
@@ -204,8 +204,8 @@ class RuntimeServiceImpl implements RuntimeService {
             'runtimeReorderSlot returned null',
           );
         }
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return _parseRuntime(raw!);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return _parseRuntime(raw);
       } catch (e) {
         return ConfigOperationResult.error('reorder slot failed: $e');
       } finally {
@@ -256,8 +256,8 @@ class RuntimeServiceImpl implements RuntimeService {
             'runtimeSetSlotActive returned null',
           );
         }
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return _parseRuntime(raw!);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return _parseRuntime(raw);
       } catch (e) {
         return ConfigOperationResult.error('set slot active failed: $e');
       } finally {

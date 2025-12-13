@@ -51,32 +51,10 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxEngineStartLoop? startLoop;
   late final KeyrxEngineStopLoop? stopLoop;
 
-  @override
-  late final KeyrxFreeString freeString;
-  @override
-  late final KeyrxGetConfigRoot getConfigRoot;
-
   KeyrxBindings(this._lib) : super(_lib) {
-    // Required functions
-    freeString = _lib.lookupFunction<KeyrxFreeStringNative, KeyrxFreeString>(
-      'keyrx_free_string',
-    );
-    getConfigRoot = _lib
-        .lookupFunction<KeyrxGetConfigRootNative, KeyrxGetConfigRoot>(
-          'keyrx_get_config_root',
-        );
-
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
-    registerEventCallback = _lib
-        .lookupFunction<
-          KeyrxRegisterEventCallbackNative,
-          KeyrxRegisterEventCallback
-        >('keyrx_register_event_callback');
   }
-
-  @override
-  late final KeyrxRegisterEventCallback registerEventCallback;
 
   KeyrxEngineStartLoop? _tryLookupStartLoop() {
     try {

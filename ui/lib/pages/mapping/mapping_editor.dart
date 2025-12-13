@@ -178,6 +178,8 @@ class _MappingEditorState extends State<MappingEditor> {
         );
       }
 
+      if (!mounted) return;
+
       // 4. Load Script into Engine
       final appState = context.read<AppState>();
       final loadSuccess = await appState.loadScript(scriptPath);
@@ -192,6 +194,8 @@ class _MappingEditorState extends State<MappingEditor> {
         _isSaving = false;
       });
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Keymap saved and loaded: $scriptPath'),
@@ -200,6 +204,8 @@ class _MappingEditorState extends State<MappingEditor> {
       );
     } catch (e) {
       setState(() => _isSaving = false);
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error generating/loading script: $e'),

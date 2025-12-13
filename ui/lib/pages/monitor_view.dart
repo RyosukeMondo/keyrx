@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../ffi/bridge.dart';
-import '../ffi/event_types.dart';
 import '../services/facade/keyrx_facade.dart';
 
 class MonitorView extends StatefulWidget {

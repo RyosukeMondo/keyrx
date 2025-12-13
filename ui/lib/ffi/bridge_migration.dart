@@ -31,15 +31,11 @@ mixin BridgeMigrationMixin {
 
     final oldDirPtr = oldProfilesDir.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
 
     try {
-      // Execute on a separate thread/event loop implicitly via FFI if possible?
-      // No, these are blocking calls. We rely on them being fast or wrapping in Future.
-      // Since file I/O is involved, ideally this should be async in Rust, but here we block.
-      // However, check is usually fast (just checking dir existence).
-      
-      ptr = checkFn(oldDirPtr.cast<Char>());
-      
+      ptr = checkFn(oldDirPtr.cast<Char>(), errorPtr);
+
       if (ptr == nullptr) {
         return false;
       }
@@ -60,6 +56,7 @@ mixin BridgeMigrationMixin {
       debugPrint('Migration check exception: $e');
       return false;
     } finally {
+      calloc.free(errorPtr);
       calloc.free(oldDirPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -87,12 +84,14 @@ mixin BridgeMigrationMixin {
     final oldDirPtr = oldProfilesDir.toNativeUtf8();
     final newDirPtr = newProfilesDir.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
 
     try {
       ptr = runFn(
         oldDirPtr.cast<Char>(),
         newDirPtr.cast<Char>(),
         createBackup ? 1 : 0,
+        errorPtr,
       );
 
       if (ptr == nullptr) {
@@ -115,6 +114,7 @@ mixin BridgeMigrationMixin {
       // Re-throw to be handled by the UI
       rethrow;
     } finally {
+      calloc.free(errorPtr);
       calloc.free(oldDirPtr);
       calloc.free(newDirPtr);
       if (ptr != null && ptr != nullptr) {

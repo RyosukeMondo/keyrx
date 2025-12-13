@@ -6,6 +6,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,7 +68,17 @@ abstract class DeviceRegistryService {
 
 /// Real DeviceRegistryService that wraps the KeyrxBridge.
 class DeviceRegistryServiceImpl implements DeviceRegistryService {
-  DeviceRegistryServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
+  DeviceRegistryServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge {
+    _bridge.registerEventCallback(
+      EventType.deviceConnected,
+      _handleDeviceEvent,
+    );
+    _bridge.registerEventCallback(
+      EventType.deviceDisconnected,
+      _handleDeviceEvent,
+    );
+    _bridge.registerEventCallback(EventType.deviceUpdated, _handleDeviceEvent);
+  }
 
   final KeyrxBridge _bridge;
   List<DeviceState>? _cachedDevices;
@@ -327,8 +338,17 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
   @override
   Future<void> dispose() async {
+    _bridge.unregisterEventCallback(EventType.deviceConnected);
+    _bridge.unregisterEventCallback(EventType.deviceDisconnected);
+    _bridge.unregisterEventCallback(EventType.deviceUpdated);
     await _devicesController.close();
     _cachedDevices = null;
+  }
+
+  void _handleDeviceEvent(Uint8List payload) {
+    // Automatically refresh on any device event from Rust.
+    // This keeps the UI in sync without manual polling.
+    refresh();
   }
 
   /// Convert technical error messages to user-friendly messages.

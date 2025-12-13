@@ -4,6 +4,8 @@
 /// wrapping FFI calls with error handling and user-friendly messages.
 library;
 
+import 'dart:typed_data';
+
 import '../ffi/bridge.dart';
 import '../models/profile.dart';
 import '../models/layout_type.dart';
@@ -71,11 +73,20 @@ abstract class ProfileRegistryService {
 
 /// Real ProfileRegistryService that wraps the KeyrxBridge.
 class ProfileRegistryServiceImpl implements ProfileRegistryService {
-  ProfileRegistryServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
+  ProfileRegistryServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge {
+    _bridge.registerEventCallback(
+      EventType.profileUpdated,
+      _handleProfileEvent,
+    );
+  }
 
   final KeyrxBridge _bridge;
   List<String>? _cachedProfileIds;
   final Map<String, Profile> _profileCache = {};
+
+  void _handleProfileEvent(Uint8List payload) {
+    refresh();
+  }
 
   @override
   Future<List<String>> listProfiles() async {
@@ -197,6 +208,7 @@ class ProfileRegistryServiceImpl implements ProfileRegistryService {
 
   @override
   Future<void> dispose() async {
+    _bridge.unregisterEventCallback(EventType.profileUpdated);
     _cachedProfileIds = null;
     _profileCache.clear();
   }

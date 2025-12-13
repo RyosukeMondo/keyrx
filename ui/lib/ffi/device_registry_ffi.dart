@@ -122,9 +122,9 @@ mixin DeviceRegistryFFIMixin {
         );
       }
 
-      final raw = ptr?.cast<Utf8>().toDartString();
+      final raw = ptr.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw!,
+        raw,
         (json) => json as List<dynamic>,
       );
 
@@ -179,8 +179,8 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('setRemapEnabled returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw!, null);
+      final raw = resultPtr.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);
@@ -234,8 +234,8 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('assignProfile returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw!, null);
+      final raw = resultPtr.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);
@@ -295,8 +295,8 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('setUserLabel returned null');
       }
 
-      final raw = resultPtr?.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw!, null);
+      final raw = resultPtr.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);

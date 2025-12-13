@@ -200,8 +200,9 @@ mixin BridgeDeviceProfileMixin {
     }
 
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = getFn(vendorId, productId);
+      ptr = getFn(vendorId, productId, errorPtr);
       if (ptr == nullptr) {
         return DeviceProfileResult.error('getDeviceProfile returned null');
       }
@@ -211,6 +212,7 @@ mixin BridgeDeviceProfileMixin {
     } catch (e) {
       return DeviceProfileResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);
@@ -229,8 +231,9 @@ mixin BridgeDeviceProfileMixin {
     }
 
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = hasFn(vendorId, productId);
+      ptr = hasFn(vendorId, productId, errorPtr);
       if (ptr == nullptr) {
         return false;
       }
@@ -248,6 +251,7 @@ mixin BridgeDeviceProfileMixin {
     } catch (e) {
       return false;
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);
@@ -267,8 +271,9 @@ mixin BridgeDeviceProfileMixin {
 
     final jsonPtr = profileJson.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = saveFn(jsonPtr.cast<Char>());
+      ptr = saveFn(jsonPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) return false;
 
       final raw = ptr.cast<Utf8>().toDartString();
@@ -284,6 +289,7 @@ mixin BridgeDeviceProfileMixin {
       debugPrint('saveDeviceProfile exception: $e');
       return false;
     } finally {
+      calloc.free(errorPtr);
       calloc.free(jsonPtr);
       if (ptr != null && ptr != nullptr) {
         try {

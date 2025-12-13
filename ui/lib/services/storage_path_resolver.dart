@@ -6,6 +6,8 @@ library;
 
 import 'dart:io';
 
+import '../ffi/bridge.dart';
+
 import 'package:path/path.dart' as p;
 
 /// Resolves and prepares storage paths for profiles.

@@ -8,7 +8,6 @@
 
 // ignore_for_file: non_constant_identifier_names, unused_element, camel_case_types, unused_field
 
-import 'dart:convert';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
@@ -22,41 +21,60 @@ class FfiException implements Exception {
   String toString() => 'FfiException: $message';
 }
 
-
 // =============================================================================
 // Config Domain Bindings
 // =============================================================================
 
 // Typedefs for config domain
-typedef _keyrx_config_list_virtual_layouts_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_list_virtual_layouts = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_virtual_layouts_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_virtual_layouts =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_save_virtual_layout_native = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_save_virtual_layout = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_virtual_layout_native =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_virtual_layout =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_delete_virtual_layout_native = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_delete_virtual_layout = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_virtual_layout_native =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_virtual_layout =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_list_hardware_profiles_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_list_hardware_profiles = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_hardware_profiles_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_hardware_profiles =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_save_hardware_profile_native = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_save_hardware_profile = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_hardware_profile_native =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_hardware_profile =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_delete_hardware_profile_native = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_delete_hardware_profile = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_hardware_profile_native =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_hardware_profile =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_list_keymaps_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_list_keymaps = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_keymaps_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_list_keymaps =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_save_keymap_native = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_save_keymap = Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_keymap_native =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_save_keymap =
+    Pointer<Utf8> Function(Pointer<Utf8> json, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_delete_keymap_native = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_delete_keymap = Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_keymap_native =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_delete_keymap =
+    Pointer<Utf8> Function(Pointer<Utf8> id, Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_config_get_config_root_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_config_get_config_root = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_get_config_root_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_config_get_config_root =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
 /// FFI bindings for the config domain
 class ConfigBindings {
@@ -70,52 +88,71 @@ class ConfigBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _listVirtualLayouts = _lib
-      .lookup<NativeFunction<_keyrx_config_list_virtual_layouts_native>>('keyrx_config_list_virtual_layouts')
+      .lookup<NativeFunction<_keyrx_config_list_virtual_layouts_native>>(
+        'keyrx_config_list_virtual_layouts',
+      )
       .asFunction<_keyrx_config_list_virtual_layouts>();
 
   late final _saveVirtualLayout = _lib
-      .lookup<NativeFunction<_keyrx_config_save_virtual_layout_native>>('keyrx_config_save_virtual_layout')
+      .lookup<NativeFunction<_keyrx_config_save_virtual_layout_native>>(
+        'keyrx_config_save_virtual_layout',
+      )
       .asFunction<_keyrx_config_save_virtual_layout>();
 
   late final _deleteVirtualLayout = _lib
-      .lookup<NativeFunction<_keyrx_config_delete_virtual_layout_native>>('keyrx_config_delete_virtual_layout')
+      .lookup<NativeFunction<_keyrx_config_delete_virtual_layout_native>>(
+        'keyrx_config_delete_virtual_layout',
+      )
       .asFunction<_keyrx_config_delete_virtual_layout>();
 
   late final _listHardwareProfiles = _lib
-      .lookup<NativeFunction<_keyrx_config_list_hardware_profiles_native>>('keyrx_config_list_hardware_profiles')
+      .lookup<NativeFunction<_keyrx_config_list_hardware_profiles_native>>(
+        'keyrx_config_list_hardware_profiles',
+      )
       .asFunction<_keyrx_config_list_hardware_profiles>();
 
   late final _saveHardwareProfile = _lib
-      .lookup<NativeFunction<_keyrx_config_save_hardware_profile_native>>('keyrx_config_save_hardware_profile')
+      .lookup<NativeFunction<_keyrx_config_save_hardware_profile_native>>(
+        'keyrx_config_save_hardware_profile',
+      )
       .asFunction<_keyrx_config_save_hardware_profile>();
 
   late final _deleteHardwareProfile = _lib
-      .lookup<NativeFunction<_keyrx_config_delete_hardware_profile_native>>('keyrx_config_delete_hardware_profile')
+      .lookup<NativeFunction<_keyrx_config_delete_hardware_profile_native>>(
+        'keyrx_config_delete_hardware_profile',
+      )
       .asFunction<_keyrx_config_delete_hardware_profile>();
 
   late final _listKeymaps = _lib
-      .lookup<NativeFunction<_keyrx_config_list_keymaps_native>>('keyrx_config_list_keymaps')
+      .lookup<NativeFunction<_keyrx_config_list_keymaps_native>>(
+        'keyrx_config_list_keymaps',
+      )
       .asFunction<_keyrx_config_list_keymaps>();
 
   late final _saveKeymap = _lib
-      .lookup<NativeFunction<_keyrx_config_save_keymap_native>>('keyrx_config_save_keymap')
+      .lookup<NativeFunction<_keyrx_config_save_keymap_native>>(
+        'keyrx_config_save_keymap',
+      )
       .asFunction<_keyrx_config_save_keymap>();
 
   late final _deleteKeymap = _lib
-      .lookup<NativeFunction<_keyrx_config_delete_keymap_native>>('keyrx_config_delete_keymap')
+      .lookup<NativeFunction<_keyrx_config_delete_keymap_native>>(
+        'keyrx_config_delete_keymap',
+      )
       .asFunction<_keyrx_config_delete_keymap>();
 
   late final _getConfigRoot = _lib
-      .lookup<NativeFunction<_keyrx_config_get_config_root_native>>('keyrx_config_get_config_root')
+      .lookup<NativeFunction<_keyrx_config_get_config_root_native>>(
+        'keyrx_config_get_config_root',
+      )
       .asFunction<_keyrx_config_get_config_root>();
 
   /// List all saved virtual layouts.
   String listVirtualLayouts() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _listVirtualLayouts(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -182,9 +219,8 @@ class ConfigBindings {
   String listHardwareProfiles() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _listHardwareProfiles(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -251,9 +287,8 @@ class ConfigBindings {
   String listKeymaps() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _listKeymaps(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -320,9 +355,8 @@ class ConfigBindings {
   String getConfigRoot() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _getConfigRoot(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -345,11 +379,23 @@ class ConfigBindings {
 // =============================================================================
 
 // Typedefs for device_registry domain
-typedef _keyrx_device_registry_list_devices_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_device_registry_list_devices = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_device_registry_list_devices_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_device_registry_list_devices =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_device_registry_set_remap_enabled_native = Pointer<Utf8> Function(Pointer<Utf8> device_key, Int32 enabled, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_device_registry_set_remap_enabled = Pointer<Utf8> Function(Pointer<Utf8> device_key, int enabled, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_device_registry_set_remap_enabled_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_key,
+      Int32 enabled,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_device_registry_set_remap_enabled =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_key,
+      int enabled,
+      Pointer<Pointer<Utf8>> error,
+    );
 
 /// FFI bindings for the device_registry domain
 class DeviceRegistryBindings {
@@ -363,20 +409,23 @@ class DeviceRegistryBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _listDevices = _lib
-      .lookup<NativeFunction<_keyrx_device_registry_list_devices_native>>('keyrx_device_registry_list_devices')
+      .lookup<NativeFunction<_keyrx_device_registry_list_devices_native>>(
+        'keyrx_device_registry_list_devices',
+      )
       .asFunction<_keyrx_device_registry_list_devices>();
 
   late final _setRemapEnabled = _lib
-      .lookup<NativeFunction<_keyrx_device_registry_set_remap_enabled_native>>('keyrx_device_registry_set_remap_enabled')
+      .lookup<NativeFunction<_keyrx_device_registry_set_remap_enabled_native>>(
+        'keyrx_device_registry_set_remap_enabled',
+      )
       .asFunction<_keyrx_device_registry_set_remap_enabled>();
 
   /// List all registered devices
   String listDevices() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _listDevices(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -422,14 +471,26 @@ class DeviceRegistryBindings {
 // =============================================================================
 
 // Typedefs for discovery domain
-typedef _keyrx_discovery_start_discovery_native = Pointer<Utf8> Function(Pointer<Utf8> params_json, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_discovery_start_discovery = Pointer<Utf8> Function(Pointer<Utf8> params_json, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_discovery_start_discovery_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> params_json,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_discovery_start_discovery =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> params_json,
+      Pointer<Pointer<Utf8>> error,
+    );
 
-typedef _keyrx_discovery_stop_discovery_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_discovery_stop_discovery = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_discovery_stop_discovery_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_discovery_stop_discovery =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_discovery_get_discovery_status_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_discovery_get_discovery_status = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_discovery_get_discovery_status_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_discovery_get_discovery_status =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
 /// FFI bindings for the discovery domain
 class DiscoveryBindings {
@@ -443,15 +504,21 @@ class DiscoveryBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _startDiscovery = _lib
-      .lookup<NativeFunction<_keyrx_discovery_start_discovery_native>>('keyrx_discovery_start_discovery')
+      .lookup<NativeFunction<_keyrx_discovery_start_discovery_native>>(
+        'keyrx_discovery_start_discovery',
+      )
       .asFunction<_keyrx_discovery_start_discovery>();
 
   late final _stopDiscovery = _lib
-      .lookup<NativeFunction<_keyrx_discovery_stop_discovery_native>>('keyrx_discovery_stop_discovery')
+      .lookup<NativeFunction<_keyrx_discovery_stop_discovery_native>>(
+        'keyrx_discovery_stop_discovery',
+      )
       .asFunction<_keyrx_discovery_stop_discovery>();
 
   late final _getDiscoveryStatus = _lib
-      .lookup<NativeFunction<_keyrx_discovery_get_discovery_status_native>>('keyrx_discovery_get_discovery_status')
+      .lookup<NativeFunction<_keyrx_discovery_get_discovery_status_native>>(
+        'keyrx_discovery_get_discovery_status',
+      )
       .asFunction<_keyrx_discovery_get_discovery_status>();
 
   /// Start keyboard matrix discovery process
@@ -481,9 +548,8 @@ class DiscoveryBindings {
   String stopDiscovery() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _stopDiscovery(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -504,9 +570,8 @@ class DiscoveryBindings {
   String getDiscoveryStatus() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _getDiscoveryStatus(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -529,10 +594,12 @@ class DiscoveryBindings {
 // =============================================================================
 
 // Typedefs for engine domain
-typedef _keyrx_engine_start_loop_native = Int32 Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_engine_start_loop_native =
+    Int32 Function(Pointer<Pointer<Utf8>> error);
 typedef _keyrx_engine_start_loop = int Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_engine_stop_loop_native = Int32 Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_engine_stop_loop_native =
+    Int32 Function(Pointer<Pointer<Utf8>> error);
 typedef _keyrx_engine_stop_loop = int Function(Pointer<Pointer<Utf8>> error);
 
 /// FFI bindings for the engine domain
@@ -547,20 +614,23 @@ class EngineBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _startLoop = _lib
-      .lookup<NativeFunction<_keyrx_engine_start_loop_native>>('keyrx_engine_start_loop')
+      .lookup<NativeFunction<_keyrx_engine_start_loop_native>>(
+        'keyrx_engine_start_loop',
+      )
       .asFunction<_keyrx_engine_start_loop>();
 
   late final _stopLoop = _lib
-      .lookup<NativeFunction<_keyrx_engine_stop_loop_native>>('keyrx_engine_stop_loop')
+      .lookup<NativeFunction<_keyrx_engine_stop_loop_native>>(
+        'keyrx_engine_stop_loop',
+      )
       .asFunction<_keyrx_engine_stop_loop>();
 
   /// Start the input capture loop
   int startLoop() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _startLoop(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -576,9 +646,8 @@ class EngineBindings {
   int stopLoop() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _stopLoop(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -596,11 +665,31 @@ class EngineBindings {
 // =============================================================================
 
 // Typedefs for migration domain
-typedef _keyrx_migration_check_needed_native = Pointer<Utf8> Function(Pointer<Utf8> old_profiles_dir, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_migration_check_needed = Pointer<Utf8> Function(Pointer<Utf8> old_profiles_dir, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_migration_check_needed_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> old_profiles_dir,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_migration_check_needed =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> old_profiles_dir,
+      Pointer<Pointer<Utf8>> error,
+    );
 
-typedef _keyrx_migration_run_native = Pointer<Utf8> Function(Pointer<Utf8> old_profiles_dir, Pointer<Utf8> new_profiles_dir, Int32 create_backup, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_migration_run = Pointer<Utf8> Function(Pointer<Utf8> old_profiles_dir, Pointer<Utf8> new_profiles_dir, int create_backup, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_migration_run_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> old_profiles_dir,
+      Pointer<Utf8> new_profiles_dir,
+      Int32 create_backup,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_migration_run =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> old_profiles_dir,
+      Pointer<Utf8> new_profiles_dir,
+      int create_backup,
+      Pointer<Pointer<Utf8>> error,
+    );
 
 /// FFI bindings for the migration domain
 class MigrationBindings {
@@ -614,11 +703,15 @@ class MigrationBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _checkNeeded = _lib
-      .lookup<NativeFunction<_keyrx_migration_check_needed_native>>('keyrx_migration_check_needed')
+      .lookup<NativeFunction<_keyrx_migration_check_needed_native>>(
+        'keyrx_migration_check_needed',
+      )
       .asFunction<_keyrx_migration_check_needed>();
 
   late final _run = _lib
-      .lookup<NativeFunction<_keyrx_migration_run_native>>('keyrx_migration_run')
+      .lookup<NativeFunction<_keyrx_migration_run_native>>(
+        'keyrx_migration_run',
+      )
       .asFunction<_keyrx_migration_run>();
 
   /// Check if migration is needed.
@@ -645,12 +738,21 @@ class MigrationBindings {
   }
 
   /// Run migration from V1 to V2 profiles.
-  String run(String old_profiles_dir, String new_profiles_dir, int create_backup) {
+  String run(
+    String old_profiles_dir,
+    String new_profiles_dir,
+    int create_backup,
+  ) {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
       final old_profiles_dirPtr = old_profiles_dir.toNativeUtf8();
       final new_profiles_dirPtr = new_profiles_dir.toNativeUtf8();
-      final resultPtr = _run(old_profiles_dirPtr, new_profiles_dirPtr, create_backup, errorPtr);
+      final resultPtr = _run(
+        old_profiles_dirPtr,
+        new_profiles_dirPtr,
+        create_backup,
+        errorPtr,
+      );
       calloc.free(old_profiles_dirPtr);
       calloc.free(new_profiles_dirPtr);
       if (errorPtr.value.address != 0) {
@@ -675,20 +777,68 @@ class MigrationBindings {
 // =============================================================================
 
 // Typedefs for runtime domain
-typedef _keyrx_runtime_get_config_native = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
-typedef _keyrx_runtime_get_config = Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_get_config_native =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_get_config =
+    Pointer<Utf8> Function(Pointer<Pointer<Utf8>> error);
 
-typedef _keyrx_runtime_add_slot_native = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_json, Uint32 priority, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_runtime_add_slot = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_json, int priority, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_add_slot_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_json,
+      Uint32 priority,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_runtime_add_slot =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_json,
+      int priority,
+      Pointer<Pointer<Utf8>> error,
+    );
 
-typedef _keyrx_runtime_remove_slot_native = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_runtime_remove_slot = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_remove_slot_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_runtime_remove_slot =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      Pointer<Pointer<Utf8>> error,
+    );
 
-typedef _keyrx_runtime_reorder_slot_native = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, Uint32 priority, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_runtime_reorder_slot = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, int priority, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_reorder_slot_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      Uint32 priority,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_runtime_reorder_slot =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      int priority,
+      Pointer<Pointer<Utf8>> error,
+    );
 
-typedef _keyrx_runtime_set_slot_active_native = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, Bool active, Pointer<Pointer<Utf8>> error);
-typedef _keyrx_runtime_set_slot_active = Pointer<Utf8> Function(Pointer<Utf8> device_json, Pointer<Utf8> slot_id, bool active, Pointer<Pointer<Utf8>> error);
+typedef _keyrx_runtime_set_slot_active_native =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      Bool active,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef _keyrx_runtime_set_slot_active =
+    Pointer<Utf8> Function(
+      Pointer<Utf8> device_json,
+      Pointer<Utf8> slot_id,
+      bool active,
+      Pointer<Pointer<Utf8>> error,
+    );
 
 /// FFI bindings for the runtime domain
 class RuntimeBindings {
@@ -702,32 +852,41 @@ class RuntimeBindings {
       .asFunction<void Function(Pointer<Utf8>)>();
 
   late final _getConfig = _lib
-      .lookup<NativeFunction<_keyrx_runtime_get_config_native>>('keyrx_runtime_get_config')
+      .lookup<NativeFunction<_keyrx_runtime_get_config_native>>(
+        'keyrx_runtime_get_config',
+      )
       .asFunction<_keyrx_runtime_get_config>();
 
   late final _addSlot = _lib
-      .lookup<NativeFunction<_keyrx_runtime_add_slot_native>>('keyrx_runtime_add_slot')
+      .lookup<NativeFunction<_keyrx_runtime_add_slot_native>>(
+        'keyrx_runtime_add_slot',
+      )
       .asFunction<_keyrx_runtime_add_slot>();
 
   late final _removeSlot = _lib
-      .lookup<NativeFunction<_keyrx_runtime_remove_slot_native>>('keyrx_runtime_remove_slot')
+      .lookup<NativeFunction<_keyrx_runtime_remove_slot_native>>(
+        'keyrx_runtime_remove_slot',
+      )
       .asFunction<_keyrx_runtime_remove_slot>();
 
   late final _reorderSlot = _lib
-      .lookup<NativeFunction<_keyrx_runtime_reorder_slot_native>>('keyrx_runtime_reorder_slot')
+      .lookup<NativeFunction<_keyrx_runtime_reorder_slot_native>>(
+        'keyrx_runtime_reorder_slot',
+      )
       .asFunction<_keyrx_runtime_reorder_slot>();
 
   late final _setSlotActive = _lib
-      .lookup<NativeFunction<_keyrx_runtime_set_slot_active_native>>('keyrx_runtime_set_slot_active')
+      .lookup<NativeFunction<_keyrx_runtime_set_slot_active_native>>(
+        'keyrx_runtime_set_slot_active',
+      )
       .asFunction<_keyrx_runtime_set_slot_active>();
 
   /// Get the current runtime configuration.
   String getConfig() {
     final errorPtr = calloc<Pointer<Utf8>>();
     try {
-  
       final resultPtr = _getConfig(errorPtr);
-  
+
       if (errorPtr.value.address != 0) {
         final error = errorPtr.value.toDartString();
         calloc.free(errorPtr.value);
@@ -750,7 +909,12 @@ class RuntimeBindings {
     try {
       final device_jsonPtr = device_json.toNativeUtf8();
       final slot_jsonPtr = slot_json.toNativeUtf8();
-      final resultPtr = _addSlot(device_jsonPtr, slot_jsonPtr, priority, errorPtr);
+      final resultPtr = _addSlot(
+        device_jsonPtr,
+        slot_jsonPtr,
+        priority,
+        errorPtr,
+      );
       calloc.free(device_jsonPtr);
       calloc.free(slot_jsonPtr);
       if (errorPtr.value.address != 0) {
@@ -800,7 +964,12 @@ class RuntimeBindings {
     try {
       final device_jsonPtr = device_json.toNativeUtf8();
       final slot_idPtr = slot_id.toNativeUtf8();
-      final resultPtr = _reorderSlot(device_jsonPtr, slot_idPtr, priority, errorPtr);
+      final resultPtr = _reorderSlot(
+        device_jsonPtr,
+        slot_idPtr,
+        priority,
+        errorPtr,
+      );
       calloc.free(device_jsonPtr);
       calloc.free(slot_idPtr);
       if (errorPtr.value.address != 0) {
@@ -825,7 +994,12 @@ class RuntimeBindings {
     try {
       final device_jsonPtr = device_json.toNativeUtf8();
       final slot_idPtr = slot_id.toNativeUtf8();
-      final resultPtr = _setSlotActive(device_jsonPtr, slot_idPtr, active, errorPtr);
+      final resultPtr = _setSlotActive(
+        device_jsonPtr,
+        slot_idPtr,
+        active,
+        errorPtr,
+      );
       calloc.free(device_jsonPtr);
       calloc.free(slot_idPtr);
       if (errorPtr.value.address != 0) {

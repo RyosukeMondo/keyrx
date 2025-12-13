@@ -37,8 +37,8 @@ class LayoutService with ChangeNotifier {
           );
         }
 
-        final raw = ptr?.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<List<VirtualLayout>>(raw!, (json) {
+        final raw = ptr.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<List<VirtualLayout>>(raw, (json) {
           final list = json as List<dynamic>;
           return list
               .map(
@@ -85,9 +85,9 @@ class LayoutService with ChangeNotifier {
           );
         }
 
-        final raw = resultPtr?.cast<Utf8>().toDartString();
+        final raw = resultPtr.cast<Utf8>().toDartString();
         return parseConfigFfiResult<VirtualLayout>(
-          raw!,
+          raw,
           (json) => VirtualLayout.fromJson(json as Map<String, dynamic>),
         );
       } catch (e) {
@@ -134,8 +134,8 @@ class LayoutService with ChangeNotifier {
           );
         }
 
-        final raw = resultPtr?.cast<Utf8>().toDartString();
-        return parseConfigFfiResult<void>(raw!, null);
+        final raw = resultPtr.cast<Utf8>().toDartString();
+        return parseConfigFfiResult<void>(raw, null);
       } catch (e) {
         return ConfigOperationResult.error('delete layout failed: $e');
       } finally {

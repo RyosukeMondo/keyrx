@@ -108,8 +108,9 @@ mixin ProfileRegistryFFIMixin {
     }
 
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = listFn();
+      ptr = listFn(errorPtr);
       if (ptr == nullptr) {
         return ProfileRegistryResult.error('listProfiles returned null');
       }
@@ -131,6 +132,7 @@ mixin ProfileRegistryFFIMixin {
     } catch (e) {
       return ProfileRegistryResult.error('listProfiles exception: $e');
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         _freeString(ptr);
       }
@@ -152,9 +154,10 @@ mixin ProfileRegistryFFIMixin {
 
     final idPtr = profileId.toNativeUtf8();
     Pointer<Char>? resultPtr;
+    final errorPtr = calloc<Pointer<Utf8>>();
 
     try {
-      resultPtr = getFn(idPtr.cast<Char>());
+      resultPtr = getFn(idPtr.cast<Char>(), errorPtr);
       if (resultPtr == nullptr) {
         return ProfileRegistryResult.error('getProfile returned null');
       }
@@ -175,6 +178,7 @@ mixin ProfileRegistryFFIMixin {
     } catch (e) {
       return ProfileRegistryResult.error('getProfile exception: $e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(idPtr);
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);
@@ -197,13 +201,14 @@ mixin ProfileRegistryFFIMixin {
 
     Pointer<Utf8>? jsonPtr;
     Pointer<Char>? resultPtr;
+    final errorPtr = calloc<Pointer<Utf8>>();
 
     try {
       // Convert profile to JSON
       final profileJson = json.encode(profile.toJson());
       jsonPtr = profileJson.toNativeUtf8();
 
-      resultPtr = saveFn(jsonPtr.cast<Char>());
+      resultPtr = saveFn(jsonPtr.cast<Char>(), errorPtr);
       if (resultPtr == nullptr) {
         return ProfileRegistryResult.error('saveProfile returned null');
       }
@@ -219,6 +224,7 @@ mixin ProfileRegistryFFIMixin {
     } catch (e) {
       return ProfileRegistryResult.error('saveProfile exception: $e');
     } finally {
+      calloc.free(errorPtr);
       if (jsonPtr != null) {
         calloc.free(jsonPtr);
       }
@@ -243,9 +249,10 @@ mixin ProfileRegistryFFIMixin {
 
     final idPtr = profileId.toNativeUtf8();
     Pointer<Char>? resultPtr;
+    final errorPtr = calloc<Pointer<Utf8>>();
 
     try {
-      resultPtr = deleteFn(idPtr.cast<Char>());
+      resultPtr = deleteFn(idPtr.cast<Char>(), errorPtr);
       if (resultPtr == nullptr) {
         return ProfileRegistryResult.error('deleteProfile returned null');
       }
@@ -261,6 +268,7 @@ mixin ProfileRegistryFFIMixin {
     } catch (e) {
       return ProfileRegistryResult.error('deleteProfile exception: $e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(idPtr);
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);

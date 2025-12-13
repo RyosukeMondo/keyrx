@@ -35,8 +35,9 @@ mixin BridgeValidationMixin {
 
     final scriptPtr = script.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = validateFn(scriptPtr.cast<Char>());
+      ptr = validateFn(scriptPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return ValidationResult.error('validateScript returned null');
       }
@@ -46,6 +47,7 @@ mixin BridgeValidationMixin {
     } catch (e) {
       return ValidationResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(scriptPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -69,8 +71,13 @@ mixin BridgeValidationMixin {
     final optionsJson = json.encode(options.toJson());
     final optionsPtr = optionsJson.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = validateFn(scriptPtr.cast<Char>(), optionsPtr.cast<Char>());
+      ptr = validateFn(
+        scriptPtr.cast<Char>(),
+        optionsPtr.cast<Char>(),
+        errorPtr,
+      );
       if (ptr == nullptr) {
         return ValidationResult.error(
           'validateScriptWithOptions returned null',
@@ -82,6 +89,7 @@ mixin BridgeValidationMixin {
     } catch (e) {
       return ValidationResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(scriptPtr);
       calloc.free(optionsPtr);
       if (ptr != null && ptr != nullptr) {
@@ -104,8 +112,9 @@ mixin BridgeValidationMixin {
 
     final partialPtr = partial.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = suggestFn(partialPtr.cast<Char>());
+      ptr = suggestFn(partialPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return const [];
       }
@@ -115,6 +124,7 @@ mixin BridgeValidationMixin {
     } catch (_) {
       return const [];
     } finally {
+      calloc.free(errorPtr);
       calloc.free(partialPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -133,9 +143,10 @@ mixin BridgeValidationMixin {
       return const [];
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = allNamesFn();
+      ptr = allNamesFn(errorPtr);
       if (ptr == nullptr) {
         return const [];
       }
@@ -145,6 +156,7 @@ mixin BridgeValidationMixin {
     } catch (_) {
       return const [];
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);

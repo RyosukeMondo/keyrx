@@ -27,8 +27,9 @@ mixin BridgeSessionMixin {
 
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = startFn(pathPtr.cast<Char>());
+      ptr = startFn(pathPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return RecordingStartResult.error('startRecording returned null');
       }
@@ -38,6 +39,7 @@ mixin BridgeSessionMixin {
     } catch (e) {
       return RecordingStartResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(pathPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -55,8 +57,9 @@ mixin BridgeSessionMixin {
     }
 
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = stopFn();
+      ptr = stopFn(errorPtr);
       if (ptr == nullptr) {
         return RecordingStopResult.error('stopRecording returned null');
       }
@@ -66,6 +69,7 @@ mixin BridgeSessionMixin {
     } catch (e) {
       return RecordingStopResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       if (ptr != null && ptr != nullptr) {
         try {
           bindings?.freeString(ptr);
@@ -83,8 +87,9 @@ mixin BridgeSessionMixin {
 
     final dirPtr = dirPath.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = listFn(dirPtr.cast<Char>());
+      ptr = listFn(dirPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return SessionListResult.error('listSessions returned null');
       }
@@ -94,6 +99,7 @@ mixin BridgeSessionMixin {
     } catch (e) {
       return SessionListResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(dirPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -112,8 +118,9 @@ mixin BridgeSessionMixin {
 
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = analyzeFn(pathPtr.cast<Char>());
+      ptr = analyzeFn(pathPtr.cast<Char>(), errorPtr);
       if (ptr == nullptr) {
         return SessionAnalysisResult.error('analyzeSession returned null');
       }
@@ -123,6 +130,7 @@ mixin BridgeSessionMixin {
     } catch (e) {
       return SessionAnalysisResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(pathPtr);
       if (ptr != null && ptr != nullptr) {
         try {
@@ -141,8 +149,9 @@ mixin BridgeSessionMixin {
 
     final pathPtr = path.toNativeUtf8();
     Pointer<Char>? ptr;
+    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = replayFn(pathPtr.cast<Char>(), verify);
+      ptr = replayFn(pathPtr.cast<Char>(), verify, errorPtr);
       if (ptr == nullptr) {
         return ReplayResult.error('replaySession returned null');
       }
@@ -152,6 +161,7 @@ mixin BridgeSessionMixin {
     } catch (e) {
       return ReplayResult.error('$e');
     } finally {
+      calloc.free(errorPtr);
       calloc.free(pathPtr);
       if (ptr != null && ptr != nullptr) {
         try {

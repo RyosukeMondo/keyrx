@@ -22,7 +22,9 @@ enum EventType {
   recordingStarted(14),
   recordingStopped(15),
   rawInput(16),
-  rawOutput(17);
+  rawOutput(17),
+  deviceUpdated(18),
+  profileUpdated(19);
 
   const EventType(this.code);
 
