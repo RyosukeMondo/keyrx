@@ -105,18 +105,26 @@ mixin DeviceRegistryFFIMixin {
       );
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     Pointer<Char>? ptr;
     try {
-      ptr = listFn();
+      ptr = listFn(errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DeviceRegistryResult.error(error);
+      }
+
       if (ptr == nullptr) {
         return DeviceRegistryResult.error(
           'listRegisteredDevices returned null',
         );
       }
 
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = ptr?.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
-        raw,
+        raw!,
         (json) => json as List<dynamic>,
       );
 
@@ -136,6 +144,7 @@ mixin DeviceRegistryFFIMixin {
       if (ptr != null && ptr != nullptr) {
         _freeString(ptr);
       }
+      calloc.free(errorPtr);
     }
   }
 
@@ -153,17 +162,25 @@ mixin DeviceRegistryFFIMixin {
       );
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     final keyPtr = deviceKey.toNativeUtf8();
     Pointer<Char>? resultPtr;
 
     try {
-      resultPtr = setRemapFn(keyPtr.cast<Char>(), enabled ? 1 : 0);
+      resultPtr = setRemapFn(keyPtr.cast<Char>(), enabled ? 1 : 0, errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DeviceRegistryResult.error(error);
+      }
+
       if (resultPtr == nullptr) {
         return DeviceRegistryResult.error('setRemapEnabled returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw, null);
+      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw!, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);
@@ -177,6 +194,7 @@ mixin DeviceRegistryFFIMixin {
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);
       }
+      calloc.free(errorPtr);
     }
   }
 
@@ -194,18 +212,30 @@ mixin DeviceRegistryFFIMixin {
       );
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     final keyPtr = deviceKey.toNativeUtf8();
     final profilePtr = profileId.toNativeUtf8();
     Pointer<Char>? resultPtr;
 
     try {
-      resultPtr = assignFn(keyPtr.cast<Char>(), profilePtr.cast<Char>());
+      resultPtr = assignFn(
+        keyPtr.cast<Char>(),
+        profilePtr.cast<Char>(),
+        errorPtr,
+      );
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DeviceRegistryResult.error(error);
+      }
+
       if (resultPtr == nullptr) {
         return DeviceRegistryResult.error('assignProfile returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw, null);
+      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw!, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);
@@ -220,6 +250,7 @@ mixin DeviceRegistryFFIMixin {
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);
       }
+      calloc.free(errorPtr);
     }
   }
 
@@ -237,6 +268,7 @@ mixin DeviceRegistryFFIMixin {
       );
     }
 
+    final errorPtr = calloc<Pointer<Utf8>>();
     final keyPtr = deviceKey.toNativeUtf8();
     Pointer<Utf8>? labelPtr;
     Pointer<Char>? resultPtr;
@@ -250,13 +282,21 @@ mixin DeviceRegistryFFIMixin {
       resultPtr = setLabelFn(
         keyPtr.cast<Char>(),
         labelPtr?.cast<Char>() ?? nullptr,
+        errorPtr,
       );
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DeviceRegistryResult.error(error);
+      }
+
       if (resultPtr == nullptr) {
         return DeviceRegistryResult.error('setUserLabel returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
-      final result = _FfiResultParser.parse<void>(raw, null);
+      final raw = resultPtr?.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw!, null);
 
       if (result.hasError) {
         return DeviceRegistryResult.error(result.errorMessage!);
@@ -273,6 +313,7 @@ mixin DeviceRegistryFFIMixin {
       if (resultPtr != null && resultPtr != nullptr) {
         _freeString(resultPtr);
       }
+      calloc.free(errorPtr);
     }
   }
 }
