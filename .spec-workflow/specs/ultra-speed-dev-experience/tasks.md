@@ -120,7 +120,7 @@
   - _Requirements: FR6.3_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Engineer with expertise in memory profiling and leak detection | Task: Create memory leak detection tests in ui/test/memory/, document heap snapshot workflow using Flutter DevTools, add memory usage metrics for critical paths, document memory profiling in docs/PROFILING.md | Restrictions: Tests must be reliable, heap snapshots should be analyzed systematically, avoid false positives | Success: Memory leak detection tests created, heap snapshot workflow documented, memory metrics added, profiling documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 16. Design System Document
+- [x] 16. Design System Document
   - File: .spec-workflow/steering/design.md
   - Create comprehensive design system documentation covering color palette, typography, spacing, component library, Flutter widget patterns, accessibility, dark mode
   - Purpose: Accelerate UI development decisions, ensure consistency
