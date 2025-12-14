@@ -66,3 +66,14 @@ try {
 2. Watch stdout or configured sink for `ffi.call.*` and `ffi.boundary.*` events.
 3. Inspect Timeline slices for expensive calls; add latency budgets to contexts where needed.
 4. Surface formatted errors to users instead of raw exception strings.
+
+## Reproducing and isolating issues
+- Regenerate bindings after Rust changes: `just gen-dart-bindings` (or keep `just dev-watch` running to auto-regenerate).
+- Isolate UI-only regressions by running with the mock bridge: `just dev-mock` (sets `MOCK_FFI=true`).
+- Capture a trace: run `flutter run --profile --trace-skia` then open DevTools and record while reproducing the issue.
+- For crash repros, set `KEYRX_LOG_LEVEL=trace` to capture full FFI payload metadata, then downgrade after the fix.
+
+## Logging integration
+- All FFI logs use `StructuredLogger`; levels map to `Level.FINEST`/`FINE`/`INFO`/`WARNING`/`SEVERE`.
+- Correlate with Rust logs by including shared identifiers in `context` (device path, profile id, operation name).
+- Avoid logging raw buffers; log sizes and hashes instead to keep output lightweight and safe.

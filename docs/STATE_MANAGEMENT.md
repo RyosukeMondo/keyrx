@@ -1,11 +1,12 @@
 # State Management Guide
 
-KeyRx UI now standardizes on Riverpod for new development while keeping the existing `provider` consumers running through an adapter layer.
+KeyRx standardizes on Riverpod for new development while keeping existing `provider` consumers alive through an adapter layer.
 
 ## Architecture
 - `ProviderScope` wraps the app in `main.dart` to enable Riverpod.
-- Core dependencies are created in `ui/lib/state/providers_setup.dart` and exposed to legacy widgets through `createProviders` in `ui/lib/state/providers.dart`.
+- Core dependencies are created in `ui/lib/state/providers_setup.dart` and exposed to legacy widgets via `createProviders` in `ui/lib/state/providers.dart`.
 - `keyFlowProvider` surfaces the aggregated `FacadeState` stream so widgets can watch runtime status without manual stream wiring.
+- Generated code is minimal today; we keep providers hand-authored for clarity. Add `riverpod_annotation` if you need families/codegen, but prefer simple providers unless ergonomics demand macros.
 
 ## Core Providers
 - `bridgeProvider` – lifecycle-managed `KeyrxBridge`.
@@ -37,6 +38,14 @@ KeyRx UI now standardizes on Riverpod for new development while keeping the exis
   );
   ```
 - Legacy `provider` consumers continue to work because Riverpod instances are bridged via `createProviders`.
+
+## Best practices
+- Prefer `ConsumerWidget`/`ConsumerStatefulWidget` over `Provider` context usage; move logic out of `initState` into providers where possible.
+- Keep providers pure and side-effect free; place I/O inside async notifiers or facade calls, not in constructors.
+- Keep provider names descriptive and in `snake_case` when exported (e.g., `devicesProvider`), matching the file name.
+- Use `.when` for async providers to avoid uncaught loading/error states; never ignore the error branch.
+- For imperative code paths (dialogs, navigation) pull values via `ref.read` to avoid rebuilds; otherwise use `ref.watch`.
+- Dispose resources in provider tear-down (see `serviceRegistryProvider` pattern) rather than relying on widget disposal.
 
 ## Migration Notes
 - Prefer Riverpod for all new state and dependency injection.

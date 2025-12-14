@@ -8,6 +8,12 @@ Use these steps to stand up Flutter DevTools, capture useful traces, and validat
 - Run the app with VM service enabled: `cd ui && flutter run --profile --trace-skia --vm-service-port 9101`.
 - Open the DevTools URL printed by the server (default `http://localhost:9100`) and paste the VM service URI from `flutter run`.
 
+## Performance budgets (targets)
+- App startup to interactive: <500ms.
+- TradeOffChart render: <350ms; MigrationPromptPage build: <300ms on 1280x900.
+- Async FFI trace (mock 12ms call): <40ms wall clock; sync trace overhead <10ms.
+- Keep main isolate free of heavy work; move parsing/IO to isolates or async services.
+
 ## Profiling Workflow
 1) **Record a timeline trace**
    - DevTools → Performance tab → Record.
@@ -55,3 +61,8 @@ Use these markers to line up UI frames with engine initialization and to spot sl
 - Automated leak checks: `cd ui && flutter test test/memory/memory_profiling_test.dart` runs leak-tracked widget tests for Console and Monitor pages (uses `leak_tracker_*`), asserting controllers/subscriptions are released and monitor event buffers stay bounded.
 - Track RSS deltas: Memory test also asserts resident set size growth stays under 40MB after heavy monitor traffic to catch runaway buffers early.
 - When investigating a leak: Re-run with `--enable-heap-snapshot` and take snapshots before/after the suspect flow; diff by retaining path to find the root owner, then add a regression test under `ui/test/memory/`.
+
+## Regression guardrails
+- Before merging UI/FFI changes: run `cd ui && flutter test test/performance` and `cd ui && flutter test test/memory`.
+- For visual regressions: `just ui-golden-verify` (goldens live under `test/widgets/golden`).
+- For quality gates: use `just ui-quality` or `just ui-coverage` to keep coverage near the 80% target while profiling changes.

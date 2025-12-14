@@ -56,3 +56,6 @@ Accepted values: `trace`, `debug`, `info`, `warn`, `error`.
 - Use consistent event names (snake_case, past tense).
 - Keep log lines single-line JSON for ingestion.
 - Include identifiers that help correlate with Rust logs when relevant (device path, profile id, etc.).
+- Use `KEYRX_LOG_LEVEL` for temporary verbosity during debugging (`trace` for deep FFI issues, drop back to `info`/`debug` afterward).
+- FFI utilities (`FfiDebugTools.*`) already emit structured logs; avoid double-logging the same boundary events.
+- If you add new services, create a dedicated logger via `getLogger('service_name')` so downstream aggregation can filter cleanly.
