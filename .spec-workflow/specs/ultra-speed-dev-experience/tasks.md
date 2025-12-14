@@ -21,7 +21,7 @@
 - [x] 1.2.8 Document how to skip hooks for WIP commits (`--no-verify`)
 
 ### 1.3 Coverage Tracking Infrastructure
-- [ ] 1.3.1 Install `coverage` and `lcov` packages
+- [x] 1.3.1 Install `coverage` and `lcov` packages
 - [ ] 1.3.2 Configure coverage collection in test suite
 - [ ] 1.3.3 Create HTML coverage report generator
 - [ ] 1.3.4 Add coverage report to `.gitignore`

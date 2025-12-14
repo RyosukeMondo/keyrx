@@ -15,6 +15,8 @@ setup:
     cd core && cargo fetch
     @echo "Installing Flutter dependencies..."
     cd ui && flutter pub get
+    @echo "Installing coverage tooling (dart coverage + lcov)..."
+    ./scripts/install-coverage-tools.sh
     @echo "Installing git hooks..."
     ./scripts/install-hooks.sh
     @echo "Setup complete!"
