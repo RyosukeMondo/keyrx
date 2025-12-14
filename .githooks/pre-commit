@@ -41,7 +41,7 @@ echo ""
 
 TOTAL_CHECKS=4
 if [[ -d "$UI_DIR" ]]; then
-    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 2))
 fi
 PASSED_CHECKS=0
 STEP=1
@@ -173,6 +173,28 @@ if [[ -d "$UI_DIR" ]]; then
     popd >/dev/null
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     STEP=$((STEP + 1))
+
+    # Step 6: Dart format check
+    echo "[$STEP/$TOTAL_CHECKS] Checking Dart formatting..."
+    pushd "$UI_DIR" >/dev/null
+    if ! dart format --set-exit-if-changed .; then
+        echo ""
+        echo "╔════════════════════════════════════════════════════════════╗"
+        echo "║  ❌ FAILED: Dart formatting check                          ║"
+        echo "╠════════════════════════════════════════════════════════════╣"
+        echo "║  Dart files need formatting.                               ║"
+        echo "║                                                            ║"
+        echo "║  To fix, run:                                              ║"
+        echo "║    cd ui && dart format .                                  ║"
+        echo "╚════════════════════════════════════════════════════════════╝"
+        popd >/dev/null
+        exit 1
+    fi
+    popd >/dev/null
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    STEP=$((STEP + 1))
+    echo "    ✓ Dart formatting OK"
+    echo ""
 fi
 
 echo "╔════════════════════════════════════════════════════════════╗"
@@ -185,6 +207,7 @@ echo "║    • cargo test --lib                                      ║"
 echo "║    • python3 scripts/verify_bindings.py                    ║"
 if [[ -d "$UI_DIR" ]]; then
     echo "║    • Dart/Flutter toolchain availability                   ║"
+    echo "║    • dart format --set-exit-if-changed (ui)                ║"
 fi
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
