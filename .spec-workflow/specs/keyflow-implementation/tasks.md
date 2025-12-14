@@ -16,7 +16,7 @@
   - _Requirements: FR3.1, FR3.2, NFR1.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in data modeling and freezed | Task: Create ui/lib/models/flow/flow_graph.dart, define FlowGraph freezed class with nodes, edges, positions, define FlowNode union type (device, hardwareProfile, keymap), define FlowEdge freezed class (from, to, slot, priority, active, status), add EdgeStatus enum (valid, invalid, warning), implement FlowGraph.fromRuntimeConfig() factory method to transform RuntimeConfig into graph structure, write unit tests for all model transformations in test/models/flow/flow_graph_test.dart | Restrictions: Must use freezed for immutability, ensure type safety, validate all transformations, do not duplicate existing models | Success: All models defined with freezed, fromRuntimeConfig() correctly transforms data, EdgeStatus properly computed, unit tests pass with good coverage | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 3. Riverpod State Providers
+- [x] 3. Riverpod State Providers
   - File: ui/lib/state/keyflow_providers.dart, ui/test/state/keyflow_providers_test.dart
   - Create Riverpod providers: keyFlowRepositoryProvider, runtimeConfigProvider (async), flowGraphProvider (derived), nodePositionsProvider (persistent SharedPreferences), keyFlowActionsProvider for mutations, run build_runner, write provider tests with mocks
   - Purpose: Manage KeyFlow state with Riverpod, enable reactive updates across UI

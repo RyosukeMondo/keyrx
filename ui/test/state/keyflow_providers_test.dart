@@ -1,0 +1,227 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'package:keyrx_ui/models/hardware_profile.dart';
+import 'package:keyrx_ui/models/runtime_config.dart';
+import 'package:keyrx_ui/repositories/keyflow_repository.dart';
+import 'package:keyrx_ui/services/config_result.dart';
+import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockKeyFlowRepository extends Mock implements KeyFlowRepository {}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const device = DeviceInstanceId(vendorId: 1, productId: 2, serial: 'abc');
+  const baseConfig = RuntimeConfig(
+    devices: [DeviceSlots(device: device, slots: [])],
+  );
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  test(
+    'runtimeConfigProvider loads initial config and listens for updates',
+    () async {
+      final controller = StreamController<RuntimeConfig>();
+      final repository = _MockKeyFlowRepository();
+
+      when(
+        () => repository.watchRuntimeConfig(),
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => repository.getRuntimeConfig(
+          forceRefresh: any(named: 'forceRefresh'),
+        ),
+      ).thenAnswer((_) async => ConfigOperationResult.success(baseConfig));
+      when(() => repository.dispose()).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final initial = await container.read(runtimeConfigProvider.future);
+      expect(initial, baseConfig);
+
+      final listener = container.listen(
+        runtimeConfigProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      final updated = RuntimeConfig(
+        devices: [
+          DeviceSlots(
+            device: device,
+            slots: [
+              const ProfileSlot(
+                id: 'slot-a',
+                hardwareProfileId: 'hp-a',
+                keymapId: 'km-a',
+                active: true,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      controller.add(updated);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(listener.read().value, updated);
+
+      await controller.close();
+      listener.close();
+    },
+  );
+
+  test('flowGraphProvider derives graph from runtime config', () async {
+    final repository = _MockKeyFlowRepository();
+    when(
+      () => repository.watchRuntimeConfig(),
+    ).thenAnswer((_) => const Stream.empty());
+
+    final config = RuntimeConfig(
+      devices: [
+        DeviceSlots(
+          device: device,
+          slots: [
+            const ProfileSlot(
+              id: 'slot-a',
+              hardwareProfileId: 'hp-a',
+              keymapId: 'km-a',
+              priority: 1,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    when(
+      () =>
+          repository.getRuntimeConfig(forceRefresh: any(named: 'forceRefresh')),
+    ).thenAnswer((_) async => ConfigOperationResult.success(config));
+    when(() => repository.dispose()).thenAnswer((_) async {});
+
+    final container = ProviderContainer(
+      overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+
+    final graph = await container.read(flowGraphProvider.future);
+
+    expect(graph.nodes.length, 3);
+    expect(graph.edges.length, 2);
+    expect(graph.edges.every((edge) => edge.priority == 1), isTrue);
+  });
+
+  test('nodePositionsProvider persists and restores positions', () async {
+    const position = FlowPosition(x: 120.5, y: 40.25);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(nodePositionsProvider.notifier);
+    await notifier.setPosition('node-a', position);
+
+    final stored = await container.read(nodePositionsProvider.future);
+    expect(stored['node-a'], position);
+
+    final secondContainer = ProviderContainer();
+    addTearDown(secondContainer.dispose);
+    final restored = await secondContainer.read(nodePositionsProvider.future);
+    expect(restored['node-a'], position);
+  });
+
+  test(
+    'keyFlowActionsProvider updates runtime state after mutations',
+    () async {
+      final repository = _MockKeyFlowRepository();
+      final controller = StreamController<RuntimeConfig>();
+      final initialConfig = RuntimeConfig(
+        devices: [
+          DeviceSlots(
+            device: device,
+            slots: [
+              const ProfileSlot(
+                id: 'slot-a',
+                hardwareProfileId: 'hp-a',
+                keymapId: 'km-a',
+              ),
+            ],
+          ),
+        ],
+      );
+      final updatedConfig = RuntimeConfig(
+        devices: [
+          DeviceSlots(
+            device: device,
+            slots: [
+              const ProfileSlot(
+                id: 'slot-a',
+                hardwareProfileId: 'hp-a',
+                keymapId: 'km-a',
+              ),
+              const ProfileSlot(
+                id: 'slot-b',
+                hardwareProfileId: 'hp-b',
+                keymapId: 'km-b',
+                priority: 1,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      when(
+        () => repository.watchRuntimeConfig(),
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => repository.getRuntimeConfig(
+          forceRefresh: any(named: 'forceRefresh'),
+        ),
+      ).thenAnswer((_) async => ConfigOperationResult.success(initialConfig));
+      when(
+        () => repository.addSlot(
+          device,
+          const ProfileSlot(
+            id: 'slot-b',
+            hardwareProfileId: 'hp-b',
+            keymapId: 'km-b',
+            priority: 1,
+          ),
+          priorityOverride: null,
+        ),
+      ).thenAnswer((_) async => ConfigOperationResult.success(updatedConfig));
+      when(() => repository.dispose()).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(runtimeConfigProvider.future);
+      final actions = container.read(keyFlowActionsProvider);
+
+      await actions.addSlot(
+        device,
+        const ProfileSlot(
+          id: 'slot-b',
+          hardwareProfileId: 'hp-b',
+          keymapId: 'km-b',
+          priority: 1,
+        ),
+      );
+
+      final runtimeValue = container.read(runtimeConfigNotifierProvider).value;
+      expect(runtimeValue, updatedConfig);
+
+      await controller.close();
+    },
+  );
+}

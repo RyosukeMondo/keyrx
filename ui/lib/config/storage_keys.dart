@@ -20,4 +20,9 @@ abstract class StorageKeys {
   /// Stores a boolean indicating whether V1 to V2 migration has been completed.
   /// Used to determine if migration prompt should be shown on startup.
   static const String migrationCompletedKey = 'migration_v1_to_v2_completed';
+
+  /// Key for storing persisted KeyFlow node positions.
+  ///
+  /// Stores a JSON map of nodeId → {x, y} to restore canvas layout.
+  static const String keyFlowNodePositions = 'keyflow_node_positions';
 }

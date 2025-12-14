@@ -92,9 +92,7 @@ class ErrorHandler implements ErrorTranslator {
     }
 
     if (error is StateError) {
-      return _registry['E2001']!.withContext(
-        messageOverride: error.message ?? error.toString(),
-      );
+      return _registry['E2001']!.withContext(messageOverride: error.toString());
     }
 
     if (error is UnsupportedError) {
@@ -104,9 +102,7 @@ class ErrorHandler implements ErrorTranslator {
     if (error is ArgumentError ||
         error is FormatException ||
         error is RangeError) {
-      return _registry['E3001']!.withContext(
-        messageOverride: error.message ?? error.toString(),
-      );
+      return _registry['E3001']!.withContext(messageOverride: error.toString());
     }
 
     if (error is FileSystemException) {

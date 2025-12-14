@@ -65,12 +65,12 @@ class KeyFlowRepository {
     DateTime Function()? clock,
     void Function(EventType, void Function(Uint8List))? registerEventCallback,
     void Function(EventType)? unregisterEventCallback,
-  })  : _runtimeApi = runtimeApi,
-        _cacheTtl = cacheTtl,
-        _clock = clock ?? DateTime.now,
-        _logger = logger ?? getLogger('keyflow_repository'),
-        _registerEventCallback = registerEventCallback,
-        _unregisterEventCallback = unregisterEventCallback {
+  }) : _runtimeApi = runtimeApi,
+       _cacheTtl = cacheTtl,
+       _clock = clock ?? DateTime.now,
+       _logger = logger ?? getLogger('keyflow_repository'),
+       _registerEventCallback = registerEventCallback,
+       _unregisterEventCallback = unregisterEventCallback {
     _logger.info(
       'keyflow.repo.init',
       context: {'cache_ttl_ms': _cacheTtl.inMilliseconds},
@@ -83,22 +83,21 @@ class KeyFlowRepository {
     Duration cacheTtl = const Duration(minutes: 5),
     StructuredLogger? logger,
     DateTime Function()? clock,
-  }) =>
-      KeyFlowRepository(
-        runtimeApi: _BridgeRuntimeApi(bridge),
-        cacheTtl: cacheTtl,
-        logger: logger,
-        clock: clock,
-        registerEventCallback: bridge.registerEventCallback,
-        unregisterEventCallback: bridge.unregisterEventCallback,
-      );
+  }) => KeyFlowRepository(
+    runtimeApi: _BridgeRuntimeApi(bridge),
+    cacheTtl: cacheTtl,
+    logger: logger,
+    clock: clock,
+    registerEventCallback: bridge.registerEventCallback,
+    unregisterEventCallback: bridge.unregisterEventCallback,
+  );
 
   final RuntimeApi _runtimeApi;
   final Duration _cacheTtl;
   final DateTime Function() _clock;
   final StructuredLogger _logger;
   final void Function(EventType, void Function(Uint8List))?
-      _registerEventCallback;
+  _registerEventCallback;
   final void Function(EventType)? _unregisterEventCallback;
 
   RuntimeConfig? _cachedConfig;
@@ -127,10 +126,7 @@ class KeyFlowRepository {
     bool forceRefresh = false,
   }) async {
     if (!forceRefresh && _cachedConfig != null && _isCacheFresh) {
-      _logger.debug(
-        'keyflow.repo.cache_hit',
-        context: {'age_ms': _cacheAgeMs},
-      );
+      _logger.debug('keyflow.repo.cache_hit', context: {'age_ms': _cacheAgeMs});
       return ConfigOperationResult.success(_cachedConfig);
     }
 
@@ -187,10 +183,7 @@ class KeyFlowRepository {
   ) {
     return _performMutation(
       operation: 'remove_slot',
-      invoke: () => _runtimeApi.removeSlot(
-        jsonEncode(device.toJson()),
-        slotId,
-      ),
+      invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
     );
   }
 
@@ -212,7 +205,7 @@ class KeyFlowRepository {
     if (result.isSuccess && result.data != null) {
       _cacheConfig(result.data!, reason: operation);
     } else {
-      _invalidateCache(reason: '$operation_error');
+      _invalidateCache(reason: '${operation}_error');
     }
     return result;
   }
@@ -258,15 +251,12 @@ class KeyFlowRepository {
   }
 
   ConfigOperationResult<RuntimeConfig> _decodeRuntimeConfig(String raw) {
-    final parsed = parseConfigFfiResult<RuntimeConfig>(
-      raw,
-      (json) {
-        if (json is Map<String, dynamic>) {
-          return RuntimeConfig.fromJson(json);
-        }
-        throw const FormatException('RuntimeConfig expects a JSON object');
-      },
-    );
+    final parsed = parseConfigFfiResult<RuntimeConfig>(raw, (json) {
+      if (json is Map<String, dynamic>) {
+        return RuntimeConfig.fromJson(json);
+      }
+      throw const FormatException('RuntimeConfig expects a JSON object');
+    });
     if (parsed.isSuccess && parsed.data != null) {
       return parsed;
     }
@@ -298,7 +288,11 @@ class KeyFlowRepository {
       if (fetched.data == null) {
         return fallbackPriority;
       }
-      return _computeNextPriorityForConfig(fetched.data!, device, fallbackPriority);
+      return _computeNextPriorityForConfig(
+        fetched.data!,
+        device,
+        fallbackPriority,
+      );
     }
     return _computeNextPriorityForConfig(cached, device, fallbackPriority);
   }
@@ -317,10 +311,9 @@ class KeyFlowRepository {
     if (slots.isEmpty) {
       return fallbackPriority;
     }
-    final highest = slots.map((s) => s.priority).fold<int>(
-      -1,
-      (a, b) => a > b ? a : b,
-    );
+    final highest = slots
+        .map((s) => s.priority)
+        .fold<int>(-1, (a, b) => a > b ? a : b);
     return highest + 1;
   }
 
