@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:keyrx_ui/models/runtime_config.dart';
 import 'package:keyrx_ui/repositories/keyflow_repository.dart';
 import 'package:keyrx_ui/services/config_result.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -122,20 +124,51 @@ void main() {
   });
 
   test('nodePositionsProvider persists and restores positions', () async {
-    const position = FlowPosition(x: 120.5, y: 40.25);
-    final container = ProviderContainer();
+    final overrides = [
+      flowGraphProvider.overrideWith(
+        (_) async => const FlowGraph(
+          nodes: [FlowNode.device(id: 'node-a', deviceId: device)],
+        ),
+      ),
+    ];
+    final container = ProviderContainer(overrides: overrides);
     addTearDown(container.dispose);
 
     final notifier = container.read(nodePositionsProvider.notifier);
-    await notifier.setPosition('node-a', position);
+    await notifier.setPosition('node-a', const Offset(120.5, 40.25));
 
     final stored = await container.read(nodePositionsProvider.future);
-    expect(stored['node-a'], position);
+    expect(stored['node-a']?.offset, const Offset(120.5, 40.25));
+    expect(stored['node-a']?.isManual, isTrue);
 
-    final secondContainer = ProviderContainer();
+    final secondContainer = ProviderContainer(overrides: overrides);
     addTearDown(secondContainer.dispose);
     final restored = await secondContainer.read(nodePositionsProvider.future);
-    expect(restored['node-a'], position);
+    expect(restored['node-a']?.offset, const Offset(120.5, 40.25));
+  });
+
+  test('nodePositionsProvider auto layouts nodes by type', () async {
+    final container = ProviderContainer(
+      overrides: [
+        flowGraphProvider.overrideWith(
+          (_) async => const FlowGraph(
+            nodes: [
+              FlowNode.device(id: 'device-1', deviceId: device),
+              FlowNode.hardwareProfile(id: 'hp-1'),
+              FlowNode.keymap(id: 'km-1'),
+            ],
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final positions = await container.read(nodePositionsProvider.future);
+
+    expect(positions['device-1']?.x, 80);
+    expect(positions['hp-1']?.x, 460);
+    expect(positions['km-1']?.x, 820);
+    expect(positions['device-1']?.isManual, isFalse);
   });
 
   test(

@@ -2,13 +2,9 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../config/storage_keys.dart';
 import '../models/config_ids.dart';
 import '../models/flow/flow_graph.dart';
 import '../models/hardware_profile.dart';
@@ -76,70 +72,6 @@ Future<RuntimeConfig> runtimeConfig(RuntimeConfigRef ref) {
 Future<FlowGraph> flowGraph(FlowGraphRef ref) async {
   final runtime = await ref.watch(runtimeConfigProvider.future);
   return FlowGraph.fromRuntimeConfig(runtime);
-}
-
-@Riverpod(keepAlive: true)
-class NodePositions extends _$NodePositions {
-  @override
-  Future<Map<String, FlowPosition>> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(StorageKeys.keyFlowNodePositions);
-    if (raw == null || raw.isEmpty) {
-      return {};
-    }
-
-    try {
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return decoded.map(
-        (key, value) => MapEntry(
-          key,
-          FlowPosition.fromJson(Map<String, dynamic>.from(value as Map)),
-        ),
-      );
-    } catch (_) {
-      await prefs.remove(StorageKeys.keyFlowNodePositions);
-      return {};
-    }
-  }
-
-  /// Persist a single node position to storage.
-  Future<void> setPosition(String nodeId, FlowPosition position) async {
-    final updated = Map<String, FlowPosition>.from(state.value ?? {})
-      ..[nodeId] = position;
-    state = AsyncValue.data(updated);
-    await _persist(updated);
-  }
-
-  /// Persist multiple node positions to storage.
-  Future<void> setPositions(Map<String, FlowPosition> positions) async {
-    final updated = Map<String, FlowPosition>.from(state.value ?? {})
-      ..addAll(positions);
-    state = AsyncValue.data(updated);
-    await _persist(updated);
-  }
-
-  /// Remove a stored node position.
-  Future<void> removePosition(String nodeId) async {
-    final updated = Map<String, FlowPosition>.from(state.value ?? {})
-      ..remove(nodeId);
-    state = AsyncValue.data(updated);
-    await _persist(updated);
-  }
-
-  /// Clear all persisted node positions.
-  Future<void> clear() async {
-    state = const AsyncValue.data({});
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(StorageKeys.keyFlowNodePositions);
-  }
-
-  Future<void> _persist(Map<String, FlowPosition> positions) async {
-    final prefs = await SharedPreferences.getInstance();
-    final serialized = jsonEncode(
-      positions.map((key, value) => MapEntry(key, value.toJson())),
-    );
-    await prefs.setString(StorageKeys.keyFlowNodePositions, serialized);
-  }
 }
 
 class KeyFlowActions {

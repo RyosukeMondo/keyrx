@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keyrx_ui/models/flow/flow_data.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
@@ -66,7 +68,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     }
 
     final graph = graphAsync.value ?? const FlowGraph();
-    final positions = positionsAsync.value ?? const <String, FlowPosition>{};
+    final positions = positionsAsync.value ?? const <String, NodePosition>{};
 
     if (graph.nodes.isEmpty) {
       return const _FlowEmptyState();
@@ -122,7 +124,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   _CanvasView _buildCanvas(
     FlowGraph graph,
-    Map<String, FlowPosition> storedPositions,
+    Map<String, NodePosition> storedPositions,
   ) {
     final resolvedPositions = _resolvePositions(graph, storedPositions);
 
@@ -158,40 +160,13 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   Map<String, Offset> _resolvePositions(
     FlowGraph graph,
-    Map<String, FlowPosition> storedPositions,
+    Map<String, NodePosition> storedPositions,
   ) {
-    const deviceStart = Offset(60, 80);
-    const profileStart = Offset(420, 80);
-    const keymapStart = Offset(760, 80);
-    const verticalGap = 200.0;
-
-    var deviceY = deviceStart.dy;
-    var profileY = profileStart.dy;
-    var keymapY = keymapStart.dy;
-
     final positions = <String, Offset>{};
 
     for (final node in graph.nodes) {
       final saved = storedPositions[node.nodeId];
-      if (saved != null) {
-        positions[node.nodeId] = Offset(saved.x, saved.y);
-        continue;
-      }
-
-      node.when(
-        device: (_, __, ___, ____) {
-          positions[node.nodeId] = Offset(deviceStart.dx, deviceY);
-          deviceY += verticalGap;
-        },
-        hardwareProfile: (_, __) {
-          positions[node.nodeId] = Offset(profileStart.dx, profileY);
-          profileY += verticalGap;
-        },
-        keymap: (_, __, ___) {
-          positions[node.nodeId] = Offset(keymapStart.dx, keymapY);
-          keymapY += verticalGap;
-        },
-      );
+      positions[node.nodeId] = saved?.offset ?? Offset.zero;
     }
 
     return positions;

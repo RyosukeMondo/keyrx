@@ -32,7 +32,7 @@
   - _Requirements: FR1.1, NFR3.2_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in Riverpod and async UI patterns | Task: Refactor ui/lib/pages/flow_editor_page.dart to ConsumerStatefulWidget, replace hardcoded mock data with ref.watch(flowGraphProvider), implement when() pattern for AsyncValue handling (loading: skeleton with shimmer, error: ErrorView with retry button, data: render flow), add empty state when no devices connected, ensure InteractiveViewer still works, write widget tests covering all states in test/pages/flow_editor_page_test.dart | Restrictions: Must preserve existing UI layout, ensure smooth loading experience, do not break InteractiveViewer functionality, handle all error cases | Success: Page fetches real data from providers, loading state shows skeleton, error state has retry, empty state displayed when appropriate, all widget tests pass | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 5. Node Position Management
+- [x] 5. Node Position Management
   - File: ui/lib/state/node_positions_provider.dart, ui/lib/models/flow/node_position.dart
   - Implement persistent node position storage using SharedPreferences, auto-layout algorithm for initial placement, save/restore positions across sessions
   - Purpose: Remember user's custom node arrangements, provide sensible default layout

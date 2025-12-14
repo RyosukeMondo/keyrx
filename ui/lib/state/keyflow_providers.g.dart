@@ -91,21 +91,5 @@ final runtimeConfigNotifierProvider =
     );
 
 typedef _$RuntimeConfigNotifier = AsyncNotifier<RuntimeConfig>;
-String _$nodePositionsHash() => r'0df06ebf5c444c946c5bb23edf15df5041768d8c';
-
-/// See also [NodePositions].
-@ProviderFor(NodePositions)
-final nodePositionsProvider =
-    AsyncNotifierProvider<NodePositions, Map<String, FlowPosition>>.internal(
-      NodePositions.new,
-      name: r'nodePositionsProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$nodePositionsHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-typedef _$NodePositions = AsyncNotifier<Map<String, FlowPosition>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

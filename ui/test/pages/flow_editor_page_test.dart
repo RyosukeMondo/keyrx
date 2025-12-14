@@ -5,13 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
+import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/pages/flow_editor_page.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeNodePositions extends NodePositions {
   @override
-  Future<Map<String, FlowPosition>> build() async => const {};
+  Future<Map<String, NodePosition>> build() async => const {};
 }
 
 void main() {
