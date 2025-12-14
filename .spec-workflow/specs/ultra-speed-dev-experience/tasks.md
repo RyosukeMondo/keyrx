@@ -8,7 +8,7 @@
 - [x] 1.1.3 Add custom linter rules for function size (50 lines max)
 - [x] 1.1.4 Create `ui/scripts/check_metrics.dart` for code metrics
 - [x] 1.1.5 Test metrics checker on existing codebase
-- [ ] 1.1.6 Fix any violations found (or add to ignore list temporarily)
+- [x] 1.1.6 Fix any violations found (or add to ignore list temporarily)
 
 ### 1.2 Pre-Commit Hooks for Dart
 - [ ] 1.2.1 Update `.githooks/pre-commit` to include Dart checks

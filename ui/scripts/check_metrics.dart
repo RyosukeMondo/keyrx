@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 const _maxFileLines = 500;
 const _maxFunctionLines = 50;
+const _ignoreFileListPath = 'scripts/metrics_ignore.txt';
 
 /// Checks Dart files in `lib/` for file and function length limits.
 /// Usage: `cd ui && dart run scripts/check_metrics.dart`
@@ -21,11 +22,17 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  final files = _collectDartFiles(libDir);
+  final ignorePaths = _loadIgnoreList();
+  final files = _collectDartFiles(libDir, ignorePaths);
   final violations = <String>[];
 
   for (final file in files) {
     final relativePath = p.relative(file.path, from: Directory.current.path);
+    final normalizedPath = _normalizePath(relativePath);
+    if (ignorePaths.contains(normalizedPath)) {
+      continue;
+    }
+
     final content = await file.readAsString();
     final parsed = parseString(
       path: file.path,
@@ -64,12 +71,22 @@ Future<void> main(List<String> args) async {
   exitCode = 1;
 }
 
-List<File> _collectDartFiles(Directory libDir) {
+List<File> _collectDartFiles(
+  Directory libDir,
+  Set<String> ignorePaths,
+) {
   final files = libDir
       .listSync(recursive: true)
       .whereType<File>()
       .where((file) => file.path.endsWith('.dart'))
       .where((file) => !_isGenerated(file.path))
+      .where(
+        (file) => !ignorePaths.contains(
+          _normalizePath(
+            p.relative(file.path, from: Directory.current.path),
+          ),
+        ),
+      )
       .toList();
   files.sort((a, b) => a.path.compareTo(b.path));
   return files;
@@ -78,8 +95,27 @@ List<File> _collectDartFiles(Directory libDir) {
 bool _isGenerated(String path) {
   return path.endsWith('.g.dart') ||
       path.endsWith('.freezed.dart') ||
-      path.contains('generated_bindings.dart');
+      path.contains('generated_bindings.dart') ||
+      path.contains('bindings_generated.dart');
 }
+
+Set<String> _loadIgnoreList() {
+  final file = File(_ignoreFileListPath);
+  if (!file.existsSync()) {
+    return {};
+  }
+
+  final lines = file
+      .readAsLinesSync()
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty && !line.startsWith('#'))
+      .map(_normalizePath)
+      .toSet();
+
+  return lines;
+}
+
+String _normalizePath(String path) => path.replaceAll('\\', '/');
 
 class _FunctionLengthVisitor extends RecursiveAstVisitor<void> {
   _FunctionLengthVisitor({
