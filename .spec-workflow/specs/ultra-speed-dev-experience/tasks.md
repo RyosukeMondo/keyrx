@@ -15,7 +15,7 @@
 - [x] 1.2.2 Add `dart format --set-exit-if-changed` check
 - [x] 1.2.3 Add `flutter analyze --fatal-infos` check
 - [x] 1.2.4 Add `flutter test --coverage` check (fast tests only)
-- [ ] 1.2.5 Create `ui/scripts/check_coverage.sh` script
+- [x] 1.2.5 Create `ui/scripts/check_coverage.sh` script
 - [ ] 1.2.6 Configure coverage threshold (start at 60%, target 80%)
 - [ ] 1.2.7 Test pre-commit hooks locally
 - [ ] 1.2.8 Document how to skip hooks for WIP commits (`--no-verify`)
