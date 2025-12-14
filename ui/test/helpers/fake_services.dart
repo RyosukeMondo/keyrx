@@ -337,6 +337,14 @@ class FakeBridge implements KeyrxBridge {
   bool unregisterEventCallback(EventType eventType) =>
       _eventCallbacks.remove(eventType) != null;
 
+  /// Invoke a registered event callback (used by tests).
+  void emitEvent(EventType eventType, Uint8List payload) {
+    final handler = _eventCallbacks[eventType];
+    if (handler != null) {
+      handler(payload);
+    }
+  }
+
   @override
   Future<void> dispose() async {
     await _stateController.close();

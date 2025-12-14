@@ -48,3 +48,10 @@ Use these markers to line up UI frames with engine initialization and to spot sl
 - Add one-off spans: `PerformanceTimelineTracer.instant('event', context: {'detail': 'value'})`.
 - Record startup: `flutter run --profile --trace-startup` writes `startup_trace.json` you can load in Chrome tracing.
 - Keep background work off the UI thread; long-running tasks should use isolates or awaitable services to keep the timeline flat.
+
+## Memory Profiling & Leak Detection
+- Capture a heap snapshot in DevTools: Run `flutter run --profile`, open DevTools → Memory tab → Take Heap Snapshot → Filter by `Keyrx` classes and look for growing retainers (especially controllers, streams, and FFI handles).
+- Live allocations view: Use DevTools `Allocation Profile` to watch live growth while exercising console input and monitor mode; flatten spikes before merging.
+- Automated leak checks: `cd ui && flutter test test/memory/memory_profiling_test.dart` runs leak-tracked widget tests for Console and Monitor pages (uses `leak_tracker_*`), asserting controllers/subscriptions are released and monitor event buffers stay bounded.
+- Track RSS deltas: Memory test also asserts resident set size growth stays under 40MB after heavy monitor traffic to catch runaway buffers early.
+- When investigating a leak: Re-run with `--enable-heap-snapshot` and take snapshots before/after the suspect flow; diff by retaining path to find the root owner, then add a regression test under `ui/test/memory/`.

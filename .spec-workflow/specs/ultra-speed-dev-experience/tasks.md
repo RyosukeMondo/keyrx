@@ -112,7 +112,7 @@
   - _Requirements: NFR1.5_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Performance Engineer with expertise in benchmarking and Flutter performance testing | Task: Create baseline performance tests in ui/test/performance/, add widget render time benchmarks for key components, add FFI call latency benchmarks, set performance regression thresholds (app startup <500ms to interactive), optionally add performance tests to CI, document benchmarking in docs/PROFILING.md | Restrictions: Benchmarks must be reproducible, thresholds should be realistic, avoid flaky tests | Success: Baseline performance tests created, widget and FFI benchmarks work, regression thresholds set, benchmarking documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 15. Memory Profiling
+- [x] 15. Memory Profiling
   - File: ui/test/memory/, docs/PROFILING.md
   - Create memory leak detection tests, document heap snapshot workflow, add memory usage metrics
   - Purpose: Detect and prevent memory leaks, ensure app stability
