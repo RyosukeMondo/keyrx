@@ -41,7 +41,7 @@ echo ""
 
 TOTAL_CHECKS=4
 if [[ -d "$UI_DIR" ]]; then
-    TOTAL_CHECKS=$((TOTAL_CHECKS + 2))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 3))
 fi
 PASSED_CHECKS=0
 STEP=1
@@ -195,6 +195,30 @@ if [[ -d "$UI_DIR" ]]; then
     STEP=$((STEP + 1))
     echo "    ✓ Dart formatting OK"
     echo ""
+
+    # Step 7: Flutter analyze with fatal infos
+    echo "[$STEP/$TOTAL_CHECKS] Running flutter analyze (fatal infos)..."
+    pushd "$UI_DIR" >/dev/null
+    if ! flutter analyze --fatal-infos; then
+        echo ""
+        echo "╔════════════════════════════════════════════════════════════╗"
+        echo "║  ❌ FAILED: Flutter analyze (--fatal-infos)                ║"
+        echo "╠════════════════════════════════════════════════════════════╣"
+        echo "║  Dart analysis found issues (including infos as errors).   ║"
+        echo "║                                                            ║"
+        echo "║  To reproduce, run:                                        ║"
+        echo "║    cd ui && flutter analyze --fatal-infos                  ║"
+        echo "║                                                            ║"
+        echo "║  Fix the reported problems before committing.              ║"
+        echo "╚════════════════════════════════════════════════════════════╝"
+        popd >/dev/null
+        exit 1
+    fi
+    popd >/dev/null
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    STEP=$((STEP + 1))
+    echo "    ✓ Flutter analyze OK"
+    echo ""
 fi
 
 echo "╔════════════════════════════════════════════════════════════╗"
@@ -208,6 +232,7 @@ echo "║    • python3 scripts/verify_bindings.py                    ║"
 if [[ -d "$UI_DIR" ]]; then
     echo "║    • Dart/Flutter toolchain availability                   ║"
     echo "║    • dart format --set-exit-if-changed (ui)                ║"
+    echo "║    • flutter analyze --fatal-infos (ui)                    ║"
 fi
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""

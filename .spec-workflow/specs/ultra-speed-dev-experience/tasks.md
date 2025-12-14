@@ -13,7 +13,7 @@
 ### 1.2 Pre-Commit Hooks for Dart
 - [x] 1.2.1 Update `.githooks/pre-commit` to include Dart checks
 - [x] 1.2.2 Add `dart format --set-exit-if-changed` check
-- [ ] 1.2.3 Add `flutter analyze --fatal-infos` check
+- [x] 1.2.3 Add `flutter analyze --fatal-infos` check
 - [ ] 1.2.4 Add `flutter test --coverage` check (fast tests only)
 - [ ] 1.2.5 Create `ui/scripts/check_coverage.sh` script
 - [ ] 1.2.6 Configure coverage threshold (start at 60%, target 80%)
