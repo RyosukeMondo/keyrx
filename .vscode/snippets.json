@@ -1,0 +1,56 @@
+{
+  "riverpodGeneratorProvider": {
+    "scope": "dart",
+    "prefix": ["riverpodProvider", "rpProvider"],
+    "description": "Create a generated Riverpod provider with annotation",
+    "body": [
+      "import 'package:riverpod_annotation/riverpod_annotation.dart';",
+      "",
+      "part '${TM_FILENAME_BASE}.g.dart';",
+      "",
+      "@riverpod",
+      "${1:ReturnType} ${2:providerName}(${3:Ref ref}) {",
+      "  ${0:return /* TODO */;}",
+      "}"
+    ]
+  },
+  "widgetHarnessTest": {
+    "scope": "dart",
+    "prefix": ["widgetHarnessTest", "wthTest"],
+    "description": "Widget test using shared WidgetTestHarness",
+    "body": [
+      "import 'package:flutter_test/flutter_test.dart';",
+      "import '${1:../helpers/widget_test_harness.dart}';",
+      "",
+      "void main() {",
+      "  testWidgets('${2:widget description}', (tester) async {",
+      "    final harness = WidgetTestHarness();",
+      "",
+      "    await harness.pumpWidget(tester, ${3:YourWidget()}, overrides: [${4:// provider overrides}]);",
+      "",
+      "    ${0:// expectations}",
+      "  });",
+      "}"
+    ]
+  },
+  "goldenHarnessTest": {
+    "scope": "dart",
+    "prefix": ["goldenHarnessTest", "goldenTest"],
+    "description": "Golden test using shared GoldenTestHarness",
+    "body": [
+      "import 'package:flutter_test/flutter_test.dart';",
+      "import '${1:../helpers/golden_test_harness.dart}';",
+      "",
+      "void main() {",
+      "  testGoldens('${2:widget description}', (tester) async {",
+      "    final harness = GoldenTestHarness(tester);",
+      "",
+      "    await harness.pumpGolden('${3:goldenName}', ${4:YourWidget()}, overrides: [${5:// provider overrides}]);",
+      "",
+      "    ${0:// additional assertions}",
+      "  });",
+      "}",
+      ""
+    ]
+  }
+}

@@ -2,12 +2,41 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "KeyRx UI",
+      "name": "Flutter: KeyRx UI",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/ui",
       "preLaunchTask": "Build Rust Core"
+    },
+    {
+      "name": "Flutter: KeyRx UI (Mock FFI)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/ui",
+      "toolArgs": [
+        "--dart-define=MOCK_FFI=true"
+      ],
+      "preLaunchTask": "Build Rust Core"
+    },
+    {
+      "name": "Flutter: All Tests",
+      "request": "launch",
+      "type": "dart",
+      "program": "test",
+      "cwd": "${workspaceFolder}/ui"
+    },
+    {
+      "name": "Flutter: Widget & Golden Tests",
+      "request": "launch",
+      "type": "dart",
+      "program": "test",
+      "cwd": "${workspaceFolder}/ui",
+      "args": [
+        "--tags",
+        "widget"
+      ]
     }
   ]
 }

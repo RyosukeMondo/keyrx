@@ -4,6 +4,8 @@
     "tamasfe.even-better-toml",
     "serayuzgur.crates",
     "Dart-Code.flutter",
-    "Dart-Code.dart-code"
+    "Dart-Code.dart-code",
+    "robert-brunhage.flutter-riverpod-snippets",
+    "usernamehw.errorlens"
   ]
 }

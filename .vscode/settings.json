@@ -3,6 +3,9 @@
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.check.extraArgs": ["--", "-D", "warnings"],
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
@@ -14,5 +17,8 @@
   },
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
-  "dart.flutterSdkPath": ".fvm/versions/stable"
+  "dart.flutterSdkPath": ".fvm/versions/stable",
+  "dart.lineLength": 100,
+  "dart.completeFunctionCalls": true,
+  "dart.previewFlutterUiGuides": true
 }
