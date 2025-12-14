@@ -1,0 +1,31 @@
+# cargo-watch configuration for FFI development
+# Monitors Rust FFI sources and triggers Dart binding regeneration
+
+# Watch these paths for changes
+[watch]
+watch = ["core/src/ffi/", "core/src/api.rs"]
+
+# Execute this shell script on changes (handles incremental generation)
+execute = "./scripts/ffi_watch.sh"
+
+# Debounce file changes to prevent excessive regeneration
+debounce_ms = 500
+
+# Show clear output
+clear = true
+
+# Ignore common build/cache directories
+ignore = [
+    "target/",
+    ".cache/",
+    "*.swp",
+    "*.tmp",
+    ".git/",
+]
+
+# Notification settings
+[notify]
+# Success notification
+on_success = "FFI bindings regenerated"
+# Error notification
+on_error = "FFI binding generation failed"

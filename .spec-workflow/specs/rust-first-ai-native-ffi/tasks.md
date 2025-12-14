@@ -32,7 +32,7 @@
   - _Requirements: FR2.1, FR2.2_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in developer tooling and cross-platform setup | Task: Create scripts/setup_ffi_tools.sh that installs cargo-watch (cargo install cargo-watch), mold (Linux, sudo apt install mold), zld (macOS, brew install michaeleisel/zld/zld), tokei (cargo install tokei), configure linker in .cargo/config.toml (Linux: mold, macOS: zld), test installation on clean machines, add to just setup recipe, create docs/TOOLING_SETUP.md with platform-specific instructions, troubleshooting common issues | Restrictions: Script must be idempotent (safe to run multiple times), handle missing dependencies gracefully, provide clear error messages, support Linux/macOS/Windows, don't break existing setups | Success: All tools install correctly, fast linker configured and working (verify 2-3x faster linking), just setup includes FFI tools, documentation covers all platforms, tested on clean machines | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 5. Watch Mode Implementation
+- [x] 5. Watch Mode Implementation
   - File: scripts/ffi_watch.sh, .cargo/watch.toml
   - Implement cargo-watch for core/src/ffi/ and core/src/api.rs, trigger codegen on changes, debounce 500ms, show notifications, handle errors gracefully
   - Purpose: Auto-regenerate Dart bindings on Rust FFI changes

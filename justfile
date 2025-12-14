@@ -148,8 +148,20 @@ gen-bindings-legacy:
 verify-bindings: check-dart-bindings
     @echo "Dart FFI bindings are up-to-date!"
 
+# Watch FFI sources and auto-regenerate Dart bindings on change (cargo-watch)
+ffi-watch:
+    @echo "Starting FFI watch mode (cargo-watch)..."
+    @echo "Monitoring: core/src/ffi/ and core/src/api.rs"
+    @echo "Trigger: ./scripts/ffi_watch.sh (incremental generation)"
+    @if ! command -v cargo-watch >/dev/null 2>&1; then \
+        echo "Error: cargo-watch not found. Install via:"; \
+        echo "  cargo install cargo-watch"; \
+        exit 1; \
+    fi
+    cd core && cargo watch -c -w src/ffi -w src/api.rs -s '../scripts/ffi_watch.sh' --delay 0.5
+
 # Create an FFI implementation log entry from the template
-ffi-log task_id base_ref?="":
+ffi-log task_id base_ref="":
     if [ -n "{{base_ref}}" ]; then \
         scripts/log_ffi_implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
     else \
