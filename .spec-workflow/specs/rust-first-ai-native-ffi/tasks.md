@@ -56,7 +56,7 @@
   - _Requirements: FR2.3, NFR1_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in build systems and caching | Task: Implement incremental generation in core/tools/generate_dart_bindings, create src/incremental.rs with SHA256 hashing of contract JSON + Rust source files, create src/cache.rs for persistent cache storage (.cache/codegen/hashes.json), skip generation if hashes match, add --force flag to bypass cache, show statistics (Generated: N files, Skipped: M files, Time saved: Xs), integrate with watch mode, add cache invalidation logic (delete on breaking changes), write tests for cache correctness | Restrictions: Cache must be reliable (no false skips), hashing must be fast (<100ms), cache file format must be forward-compatible, provide clear feedback when skipping, handle corrupted cache gracefully | Success: Incremental generation skips unchanged contracts (verify with test cases), cache persists across runs, --force flag works, statistics show time saved, watch mode benefits from caching (2-3x faster), tests pass | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 8. FFI Export Derive Macro
+- [x] 8. FFI Export Derive Macro
   - File: core/macros/ffi_export/src/lib.rs, core/macros/ffi_export/tests/
   - Implement #[ffi_export] procedural macro that derives contract JSON from Rust function signature, extract metadata (domain, version, params, return type, docs), generate contract automatically
   - Purpose: Single source of truth - derive contracts from Rust code, eliminate manual JSON editing
