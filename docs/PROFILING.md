@@ -33,7 +33,15 @@ Use these markers to line up UI frames with engine initialization and to spot sl
 ## Performance Tests
 - Example benchmark: `ui/test/performance/startup_timeline_test.dart`
   - Uses the widget test harness + `PerformanceTimelineTracer` to assert the Profiler page builds under 500ms.
-- Run it alone: `cd ui && flutter test test/performance/startup_timeline_test.dart`
+- New baselines (fail the build if exceeded):
+  - Widget render: `ui/test/performance/widget_render_benchmark_test.dart`
+    - TradeOffChart <350ms to render (Material3 + chart draw).
+    - MigrationPromptPage <300ms to build on 1280x900 viewport.
+  - FFI latency: `ui/test/performance/ffi_latency_benchmark_test.dart`
+    - Async trace (12ms mock call) <40ms total wall clock.
+    - Sync trace overhead <10ms.
+- Run a single benchmark: `cd ui && flutter test test/performance/widget_render_benchmark_test.dart`
+- Run the whole suite: `cd ui && flutter test test/performance`
 - Include in quality suite: `just ui-test` (runs all widget/unit tests).
 
 ## Tips for Faster Investigations

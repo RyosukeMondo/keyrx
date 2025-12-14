@@ -104,7 +104,7 @@
   - _Requirements: FR6.1, FR6.3_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Performance Engineer with expertise in DevTools and profiling | Task: Document Flutter DevTools setup process, create profiling workflow guide covering CPU/memory/network profiling, add performance timeline instrumentation to critical paths, create example performance test, document profiling workflow in docs/PROFILING.md | Restrictions: Documentation must be beginner-friendly, instrumentation should have minimal performance impact, examples should be realistic | Success: DevTools setup documented, profiling workflow guide complete, timeline instrumentation added, example performance test works | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 14. Performance Benchmarking
+- [x] 14. Performance Benchmarking
   - File: ui/test/performance/, docs/PROFILING.md
   - Create baseline performance tests, add widget render time benchmarks, add FFI call latency benchmarks, set regression thresholds
   - Purpose: Prevent performance regressions, ensure NFR1.5 targets are met
