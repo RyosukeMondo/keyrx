@@ -1,5 +1,5 @@
 name: file_size_lint
-description: "Custom lint to enforce a 500-line limit per Dart file."
+description: "Custom lint plugin enforcing file and function size limits."
 version: 0.1.0
 publish_to: "none"
 
