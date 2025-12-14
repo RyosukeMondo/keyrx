@@ -14,26 +14,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-CONCURRENCY="${CONCURRENCY:-4}"
-EXCLUDE_TAGS="${EXCLUDE_TAGS:-slow,integration}"
-TEST_RANDOM_SEED="${TEST_RANDOM_SEED:-random}"
 COVERAGE_DIR="${COVERAGE_DIR:-coverage}"
 LCOV_FILE="${LCOV_FILE:-$COVERAGE_DIR/lcov.info}"
 THRESHOLD="${COVERAGE_THRESHOLD:-}"
-TEST_FILES="${TEST_FILES:-test}"
+COLLECT_COVERAGE="${COLLECT_COVERAGE:-1}"
 
-cd "$UI_DIR"
-
-echo "==> Running Flutter tests with coverage"
-flutter test --coverage \
-    --concurrency="$CONCURRENCY" \
-    --exclude-tags="$EXCLUDE_TAGS" \
-    --test-randomize-ordering-seed "$TEST_RANDOM_SEED" \
-    $TEST_FILES
-
-if [[ ! -f "$LCOV_FILE" ]]; then
-    echo "Coverage file not found: $LCOV_FILE"
-    exit 1
+if [[ "$COLLECT_COVERAGE" == "1" ]]; then
+    "$SCRIPT_DIR/collect_coverage.sh"
+else
+    cd "$UI_DIR"
+    if [[ ! -f "$LCOV_FILE" ]]; then
+        echo "Coverage file not found: $LCOV_FILE (set COLLECT_COVERAGE=1 to generate)"
+        exit 1
+    fi
 fi
 
 if [[ -n "$THRESHOLD" ]]; then

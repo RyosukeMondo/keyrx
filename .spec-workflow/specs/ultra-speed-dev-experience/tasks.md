@@ -22,7 +22,7 @@
 
 ### 1.3 Coverage Tracking Infrastructure
 - [x] 1.3.1 Install `coverage` and `lcov` packages
-- [ ] 1.3.2 Configure coverage collection in test suite
+- [x] 1.3.2 Configure coverage collection in test suite
 - [ ] 1.3.3 Create HTML coverage report generator
 - [ ] 1.3.4 Add coverage report to `.gitignore`
 - [ ] 1.3.5 Create `just ui-coverage` recipe
