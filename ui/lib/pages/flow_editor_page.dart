@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keyrx_ui/models/flow/flow_data.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/flow/node_position.dart';
+import 'package:keyrx_ui/models/flow/edge_style.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
+import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
 
@@ -22,9 +24,11 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     with SingleTickerProviderStateMixin {
   static const _canvasWidth = 1800.0;
   static const _canvasHeight = 1200.0;
+  static const _edgeStyle = EdgeStyle(palette: defaultEdgePalette);
 
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmer;
+  Offset? _hoverPosition;
 
   @override
   void initState() {
@@ -100,7 +104,18 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
             children: [
               Positioned.fill(child: CustomPaint(painter: _GridPainter())),
               Positioned.fill(
-                child: CustomPaint(painter: _EdgesPainter(view.edges)),
+                child: MouseRegion(
+                  onHover: (event) =>
+                      setState(() => _hoverPosition = event.localPosition),
+                  onExit: (_) => setState(() => _hoverPosition = null),
+                  child: CustomPaint(
+                    painter: EdgesPainter(
+                      edges: view.edges,
+                      style: _edgeStyle,
+                      hoverPosition: _hoverPosition,
+                    ),
+                  ),
+                ),
               ),
               ...view.nodes.map(
                 (node) => Positioned(
@@ -139,18 +154,19 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     }).toList();
 
     final nodeMap = {for (final node in nodes) node.id: node};
-    final edges = <_PaintableEdge>[];
+    final edges = <PaintableEdge>[];
     for (final edge in graph.edges) {
       final fromNode = nodeMap[edge.from];
       final toNode = nodeMap[edge.to];
       if (fromNode == null || toNode == null) continue;
 
       edges.add(
-        _PaintableEdge(
+        PaintableEdge(
           start: _edgeHandle(fromNode, isSource: true),
           end: _edgeHandle(toNode, isSource: false),
-          color: _edgeColor(edge),
-          isDashed: !edge.active,
+          status: edge.status,
+          active: edge.active,
+          priority: edge.priority,
         ),
       );
     }
@@ -231,26 +247,13 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       keymap: (_) => const Size(180, 120),
     );
   }
-
-  Color _edgeColor(FlowEdge edge) {
-    if (edge.status == EdgeStatus.invalid) {
-      return const Color(0xFFE74C3C);
-    }
-    if (edge.status == EdgeStatus.warning) {
-      return const Color(0xFFF1C40F);
-    }
-    if (!edge.active) {
-      return Colors.grey.shade600;
-    }
-    return const Color(0xFF1AB394);
-  }
 }
 
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF333333).withValues(alpha: 0.4)
+      ..color = const Color(0xFF333333).withOpacity(0.4)
       ..strokeWidth = 1;
 
     const gridSize = 20.0;
@@ -265,53 +268,6 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _EdgesPainter extends CustomPainter {
-  _EdgesPainter(this.edges);
-
-  final List<_PaintableEdge> edges;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final edge in edges) {
-      final paint = Paint()
-        ..color = edge.color
-        ..strokeWidth = 2.2
-        ..style = PaintingStyle.stroke;
-
-      final path = Path()
-        ..moveTo(edge.start.dx, edge.start.dy)
-        ..cubicTo(
-          (edge.start.dx + edge.end.dx) / 2,
-          edge.start.dy,
-          (edge.start.dx + edge.end.dx) / 2,
-          edge.end.dy,
-          edge.end.dx,
-          edge.end.dy,
-        );
-
-      if (edge.isDashed) {
-        final dashed = Path();
-        for (final metric in path.computeMetrics()) {
-          var distance = 0.0;
-          while (distance < metric.length) {
-            dashed.addPath(
-              metric.extractPath(distance, distance + 6),
-              Offset.zero,
-            );
-            distance += 12;
-          }
-        }
-        canvas.drawPath(dashed, paint);
-      } else {
-        canvas.drawPath(path, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _FlowLoadingSkeleton extends StatelessWidget {
@@ -461,7 +417,7 @@ class _CanvasView {
   const _CanvasView({required this.nodes, required this.edges});
 
   final List<_CanvasNode> nodes;
-  final List<_PaintableEdge> edges;
+  final List<PaintableEdge> edges;
 }
 
 class _CanvasNode {
@@ -476,18 +432,4 @@ class _CanvasNode {
   final Offset position;
   final Size size;
   final Widget child;
-}
-
-class _PaintableEdge {
-  const _PaintableEdge({
-    required this.start,
-    required this.end,
-    required this.color,
-    required this.isDashed,
-  });
-
-  final Offset start;
-  final Offset end;
-  final Color color;
-  final bool isDashed;
 }
