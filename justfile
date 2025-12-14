@@ -10,7 +10,7 @@ setup:
     @echo "Installing Rust toolchain components..."
     rustup component add clippy rustfmt
     @echo "Installing development tools..."
-    cargo install cargo-nextest cargo-watch --locked || true
+    cargo install cargo-nextest cargo-watch watchexec-cli --locked || true
     @echo "Installing Rust dependencies..."
     cd core && cargo fetch
     @echo "Installing Flutter dependencies..."
@@ -24,6 +24,10 @@ setup:
 # Run core in development mode with auto-reload
 dev:
     cd core && cargo watch -x run
+
+# Watch Rust FFI files and regenerate Dart bindings on change
+dev-watch:
+    ./scripts/watch_ffi.sh
 
 # Run Flutter UI in development mode
 ui:

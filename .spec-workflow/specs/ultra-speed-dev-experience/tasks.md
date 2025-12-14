@@ -72,7 +72,7 @@
   - _Requirements: FR6.2, NFR2.2_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend Developer with expertise in structured logging and observability | Task: Add logging package to pubspec.yaml, create ui/lib/utils/logger.dart, implement StructuredLogger class with JSON format (timestamp, level, service, event, context), add getLogger factory function, configure log levels for dev/prod environments, add example usage in one service, optionally create log aggregation viewer, document logging patterns in docs/LOGGING.md | Restrictions: Must match Rust JSON log format, do not log secrets/PII, ensure performance efficiency | Success: StructuredLogger outputs JSON logs, log levels configurable, example usage works, patterns documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 10. FFI Watch Mode
+- [x] 10. FFI Watch Mode
   - File: scripts/watch_ffi.sh, justfile
   - Install watchexec, create watch_ffi.sh script for core/src/ffi/*.rs, configure debouncing (500ms), integrate with just codegen, add dev-watch recipe
   - Purpose: Auto-regenerate FFI bindings on Rust changes, reduce feedback loop
