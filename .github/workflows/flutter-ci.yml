@@ -18,14 +18,9 @@ env:
   TEST_RANDOM_SEED: random
 
 jobs:
-  flutter:
-    name: Flutter ${{ matrix.suite }}
+  flutter-lint:
+    name: Flutter Lint (zero warnings)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [quality, golden]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -41,21 +36,53 @@ jobs:
         working-directory: ./ui
 
       - name: Verify FFI bindings
-        if: matrix.suite == 'quality'
         run: python3 scripts/verify_bindings.py
 
       - name: Flutter analyze (fatal warnings)
-        if: matrix.suite == 'quality'
         run: flutter analyze --fatal-infos --fatal-warnings
         working-directory: ./ui
 
+  flutter-metrics:
+    name: Flutter Metrics (size limits)
+    needs: flutter-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
       - name: Code metrics check (500 lines/file, 50 lines/function)
-        if: matrix.suite == 'quality'
         run: dart run scripts/check_metrics.dart
         working-directory: ./ui
 
+  flutter-coverage:
+    name: Flutter Coverage (>=${{ env.COVERAGE_THRESHOLD }}%)
+    needs: flutter-metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
       - name: Tests with coverage and threshold
-        if: matrix.suite == 'quality'
         env:
           COVERAGE_THRESHOLD: ${{ env.COVERAGE_THRESHOLD }}
           CONCURRENCY: ${{ env.CONCURRENCY }}
@@ -65,7 +92,6 @@ jobs:
         working-directory: ./ui
 
       - name: Upload Flutter coverage
-        if: matrix.suite == 'quality'
         uses: codecov/codecov-action@v4
         with:
           files: ./ui/coverage/lcov.info
@@ -75,15 +101,61 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Save coverage artifact
-        if: matrix.suite == 'quality' && always()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-coverage
           path: ui/coverage/lcov.info
 
+  flutter-golden:
+    name: Flutter Golden Tests
+    needs: flutter-metrics
+    runs-on: ubuntu-latest
+    env:
+      CONCURRENCY: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
       - name: Golden test verification
-        if: matrix.suite == 'golden'
-        env:
-          CONCURRENCY: 2
         run: flutter test --concurrency=${CONCURRENCY} test/widgets/golden
         working-directory: ./ui
+
+  flutter-quality-gates:
+    name: Flutter Quality Gates
+    if: ${{ always() }}
+    needs: [flutter-lint, flutter-metrics, flutter-coverage, flutter-golden]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize gate results
+        run: |
+          declare -A results=(
+            [lint]="${{ needs.flutter-lint.result }}"
+            [metrics]="${{ needs.flutter-metrics.result }}"
+            [coverage]="${{ needs.flutter-coverage.result }}"
+            [golden]="${{ needs.flutter-golden.result }}"
+          )
+
+          failed=0
+          for gate in "${!results[@]}"; do
+            echo "Gate '${gate}' result: ${results[$gate]}"
+            if [[ "${results[$gate]}" != "success" ]]; then
+              failed=1
+            fi
+          done
+
+          if [[ $failed -ne 0 ]]; then
+            echo "::error::One or more quality gates failed. See upstream job logs for details."
+            exit 1
+          fi
+          echo "All Flutter quality gates passed."
