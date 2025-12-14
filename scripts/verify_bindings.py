@@ -39,38 +39,32 @@ def main():
     print(f"\nReading existing bindings: {existing_bindings.relative_to(project_root)}")
     existing_content = existing_bindings.read_text(encoding='utf-8')
 
-    # Generate fresh bindings to temp file
-    print("Generating fresh bindings for comparison...")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Run the generator script
-        generator_script = project_root / 'scripts' / 'generate_dart_bindings.py'
+    # Check bindings using Rust tool's --check mode
+    print("Checking bindings using Rust tool...")
+    try:
+        result = subprocess.run(
+            ["cargo", "run", "--release", "--manifest-path", "core/tools/generate_dart_bindings/Cargo.toml", "--", "--check"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
 
-        # We'll temporarily modify the generator to output to temp directory
-        # For simplicity, we'll just run it and compare outputs
-        try:
-            # Run generator and capture what it would generate
-            result = subprocess.run(
-                [sys.executable, str(generator_script)],
-                cwd=project_root,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-
-            if result.returncode != 0:
-                print("ERROR: Binding generation failed!")
-                print(result.stderr)
-                return 1
-
-            # Read the newly generated file
-            fresh_content = existing_bindings.read_text(encoding='utf-8')
-
-        except subprocess.TimeoutExpired:
-            print("ERROR: Binding generation timed out!")
+        if result.returncode != 0:
+            print("ERROR: Bindings check failed!")
+            print(result.stdout)
+            print(result.stderr)
             return 1
-        except Exception as e:
-            print(f"ERROR: Failed to generate bindings: {e}")
-            return 1
+
+        # Read the current file for final verification
+        fresh_content = existing_bindings.read_text(encoding='utf-8')
+
+    except subprocess.TimeoutExpired:
+        print("ERROR: Binding check timed out!")
+        return 1
+    except Exception as e:
+        print(f"ERROR: Failed to check bindings: {e}")
+        return 1
 
     # Compare the contents (ignoring timestamp differences in comments)
     if normalize_bindings(existing_content) == normalize_bindings(fresh_content):
@@ -80,7 +74,7 @@ def main():
     else:
         print("\n✗ Bindings are OUT OF SYNC!")
         print("\nThe generated bindings do not match the current Rust FFI exports.")
-        print("\nTo fix, run: just gen-bindings")
+        print("\nTo fix, run: just gen-dart-bindings")
         print("\nThen commit the updated bindings file.")
         return 1
 

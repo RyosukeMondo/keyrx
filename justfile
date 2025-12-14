@@ -141,13 +141,6 @@ check-dart-bindings:
     @echo "Checking Dart FFI bindings are up-to-date..."
     cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --check
 
-# Legacy: Generate Dart FFI bindings using Python script (deprecated)
-gen-bindings-legacy:
-    @echo "Generating Dart FFI bindings (legacy)..."
-    python3 scripts/generate_dart_bindings.py
-    @echo "Formatting generated Dart code..."
-    cd ui && dart format lib/ffi/generated/bindings_generated.dart
-
 # Verify Dart FFI bindings are in sync with Rust exports
 verify-bindings: check-dart-bindings
     @echo "Dart FFI bindings are up-to-date!"

@@ -102,13 +102,7 @@ fi
 
 # Step 2: Generate Dart FFI bindings
 echo -e "${BLUE}Step 2: Generating Dart FFI bindings...${NC}"
-python3 scripts/generate_dart_bindings.py
-if command -v dart &> /dev/null; then
-    echo "Formatting generated Dart code..."
-    cd ui
-    dart format lib/ffi/generated/bindings_generated.dart
-    cd ..
-fi
+cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --verbose
 echo -e "${GREEN}✓ Dart FFI bindings generated${NC}"
 echo ""
 
