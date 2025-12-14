@@ -410,8 +410,11 @@ KeyRx includes a Flutter-based GUI for visual configuration and debugging.
 ### Running the UI
 
 ```bash
-just ui            # Development mode
-just ui-build      # Production build
+just ui             # Development mode
+just ui-build       # Production build
+just keyflow-dev    # Hot reload UI-only with mock bridge + stub data
+just keyflow-ffi    # Run UI with real FFI using sccache/incremental rebuild
+just keyflow-test   # Fast lane: nextest + focused Flutter widget subset
 ```
 
 ### User Interface (Main Screens)
@@ -447,6 +450,11 @@ Access developer tools via the wrench icon in the app bar (developer mode).
 | **Doctor** | System diagnostics with remediation steps |
 | **Replay** | Session replay with verification mode |
 | **Discovery** | Guided wizard for keyboard layout discovery |
+
+### KeyFlow iteration notes
+- `just keyflow-dev` is tuned for UI-only loops and passes `--dart-define=KEYFLOW_STUB_DATA=true` so the app can hot-reload without a native library.
+- `just keyflow-ffi` keeps the real bridge in play while using `sccache` and `LD_LIBRARY_PATH=../core/target/debug` for incremental rebuilds.
+- `just keyflow-test` provides a quick signal by running `cargo nextest` plus a focused Flutter widget subset.
 
 ## Troubleshooting
 

@@ -27,6 +27,20 @@ dev:
 ui:
     cd ui && flutter run -d linux
 
+# KeyFlow UI hot reload with mock bridge/stub data (no native lib required)
+keyflow-dev:
+    cd ui && KEYRX_SKIP_DEVICE_SCAN=1 flutter run -d linux --dart-define=KEYFLOW_STUB_DATA=true --dart-define=KEYFLOW_MOCK_BRIDGE=true
+
+# KeyFlow UI with real FFI, using sccache/incremental rebuilds
+keyflow-ffi:
+    RUSTC_WRAPPER=${RUSTC_WRAPPER:-$(command -v sccache || echo '')} SCCACHE_IDLE_TIMEOUT=${SCCACHE_IDLE_TIMEOUT:-600} cargo build -p keyrx_core --manifest-path core/Cargo.toml --profile dev
+    cd ui && LD_LIBRARY_PATH=../core/target/debug flutter run -d linux
+
+# Fast KeyFlow test lane: Rust nextest + focused Flutter widget subset
+keyflow-test:
+    KEYRX_SKIP_DEVICE_SCAN=1 cargo nextest run -p keyrx_core --manifest-path core/Cargo.toml --no-fail-fast
+    cd ui && flutter test --concurrency=4 test/widgets test/pages/run_controls_page_test.dart test/pages/developer/developer_pages_test.dart
+
 # Run Flutter analysis
 ui-check:
     cd ui && flutter analyze
