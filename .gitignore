@@ -12,6 +12,7 @@ Cargo.lock
 /ui/.pub/
 /ui/*.iml
 /ui/.metadata
+/ui/coverage/
 
 # IDE
 .idea/
