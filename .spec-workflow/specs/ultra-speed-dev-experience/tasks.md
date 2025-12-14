@@ -29,7 +29,7 @@
 - [x] 1.3.6 Document coverage workflow in `docs/TESTING.md`
 
 ### 1.4 Mock FFI Bridge
-- [ ] 1.4.1 Create `ui/lib/ffi/mock_bridge.dart`
+- [x] 1.4.1 Create `ui/lib/ffi/mock_bridge.dart`
 - [ ] 1.4.2 Implement `MockKeyrxBridge` class with all interface methods
 - [ ] 1.4.3 Add realistic mock data for devices, profiles, runtime config
 - [ ] 1.4.4 Add configurable latency simulation
