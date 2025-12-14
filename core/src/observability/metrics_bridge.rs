@@ -591,10 +591,10 @@ mod tests {
                 assert!(*g);
             }
         }
-        
+
         // Let the thread run for a bit
         std::thread::sleep(Duration::from_millis(100));
-        
+
         bridge.stop_updates();
         {
             let guard = bridge.inner.updates_enabled.lock();

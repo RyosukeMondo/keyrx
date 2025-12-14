@@ -14,9 +14,9 @@
 pub mod context;
 pub mod contract;
 pub mod domains;
+pub mod engine_instance;
 pub mod error;
 pub mod events;
-pub mod engine_instance;
 mod exports;
 mod exports_compat;
 mod exports_engine;

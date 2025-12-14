@@ -1,60 +1,81 @@
 {
-    "version": "1.0.0",
-    "domain": "engine",
-    "description": "Core engine operations",
-    "protocol_version": 1,
-    "functions": [
+  "$schema": "https://keyrx.dev/schemas/ffi-contract.schema.json",
+  "version": "1.0.0",
+  "domain": "engine",
+  "description": "Core engine lifecycle and control contract",
+  "protocol_version": 1,
+  "functions": [
+    {
+      "name": "start_loop",
+      "description": "Start the event processing loop",
+      "parameters": [
         {
-            "name": "start_loop",
-            "rust_name": "keyrx_engine_start_loop",
-            "description": "Start the input capture loop",
-            "parameters": [],
-            "returns": {
-                "type": "int32",
-                "description": "0 on success"
-            },
-            "errors": [],
-            "events_emitted": [],
-            "example": {
-                "input": {},
-                "output": 0
-            }
-        },
-        {
-            "name": "stop_loop",
-            "rust_name": "keyrx_engine_stop_loop",
-            "description": "Stop the input capture loop",
-            "parameters": [],
-            "returns": {
-                "type": "int32",
-                "description": "0 on success"
-            },
-            "errors": [],
-            "events_emitted": [],
-            "example": {
-                "input": {},
-                "output": 0
-            }
-        },
-        {
-            "name": "on_state",
-            "rust_name": "keyrx_on_state",
-            "description": "Register state callback.",
-            "parameters": [
-                {
-                    "name": "callback",
-                    "type": "Option<EventCallback>",
-                    "description": "Callback function",
-                    "required": false
-                }
-            ],
-            "returns": {
-                "type": "void",
-                "description": "None"
-            },
-            "errors": []
+          "name": "profile_id",
+          "type": "string",
+          "description": "Profile to load before starting the loop",
+          "required": true
         }
-    ],
-    "events": []
+      ],
+      "returns": {
+        "type": "object",
+        "description": "Engine start result",
+        "properties": {
+          "running": { "type": "bool", "description": "Whether the loop is running" }
+        }
+      },
+      "errors": [
+        {
+          "code": "INVALID_PROFILE",
+          "description": "Profile could not be loaded"
+        },
+        {
+          "code": "ENGINE_ERROR",
+          "description": "Engine failed to start"
+        }
+      ],
+      "events_emitted": ["engine_started"]
+    },
+    {
+      "name": "stop_loop",
+      "description": "Stop the event processing loop",
+      "parameters": [],
+      "returns": {
+        "type": "object",
+        "description": "Engine stop result",
+        "properties": {
+          "stopped": { "type": "bool", "description": "Whether the loop stopped cleanly" }
+        }
+      },
+      "errors": [
+        {
+          "code": "ENGINE_ERROR",
+          "description": "Engine failed to stop"
+        }
+      ],
+      "events_emitted": ["engine_stopped"]
+    }
+  ],
+  "types": {},
+  "events": [
+    {
+      "name": "engine_started",
+      "description": "Emitted after the engine loop starts",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "description": "Start time in RFC3339" }
+        }
+      }
+    },
+    {
+      "name": "engine_stopped",
+      "description": "Emitted after the engine loop stops",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "description": "Stop time in RFC3339" }
+        }
+      }
+    }
+  ]
 }
-

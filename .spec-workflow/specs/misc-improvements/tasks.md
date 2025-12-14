@@ -328,7 +328,7 @@ Success: All quality standards verified. Compliance documented. Summary report s
 After completing:
 1. Mark [-], verify all metrics, create summary, log compliance report, mark [x]_
 
-- [ ] 6.4 Add CI enforcement for quality standards
+- [x] 6.4 Add CI enforcement for quality standards
   - File: .github/workflows/ or similar CI config
   - Add coverage check (fail if <80%)
   - Add doc check (fail on warnings)
@@ -350,7 +350,7 @@ After completing:
 
 ## Phase 7: Documentation and Wrap-up
 
-- [ ] 7.1 Update CODEBASE_EVALUATION.md with results
+- [x] 7.1 Update CODEBASE_EVALUATION.md with results
   - File: CODEBASE_EVALUATION.md
   - Add section documenting misc improvements results
   - Record before/after metrics
@@ -370,7 +370,7 @@ Success: Evaluation comprehensively updated. All improvements documented. Metric
 After completing:
 1. Mark [-], update docs, log update, mark [x]_
 
-- [ ] 7.2 Create quality standards reference guide
+- [x] 7.2 Create quality standards reference guide
   - File: .spec-workflow/specs/misc-improvements/QUALITY_STANDARDS.md
   - Document all enforced standards
   - Provide examples and guidelines

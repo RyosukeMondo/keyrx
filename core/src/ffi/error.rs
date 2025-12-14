@@ -160,16 +160,8 @@ pub type FfiResult<T> = Result<T, FfiError>;
 /// ```
 pub fn serialize_ffi_result<T: Serialize>(result: &FfiResult<T>) -> serde_json::Result<String> {
     match result {
-        Ok(value) => serde_json::to_string(value),
-        Err(error) => {
-            // Wrap error in a JSON object to distinguish from success schema (assuming success isn't {error: ...})
-            // and to be valid JSON.
-            let error_json = serde_json::to_value(error)?;
-            let wrapper = serde_json::json!({
-                "error": error_json
-            });
-            serde_json::to_string(&wrapper)
-        }
+        Ok(value) => Ok(format!("ok:{}", serde_json::to_string(value)?)),
+        Err(error) => Ok(format!("error:{}", serde_json::to_string(error)?)),
     }
 }
 

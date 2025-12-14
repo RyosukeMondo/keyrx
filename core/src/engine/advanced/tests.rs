@@ -156,10 +156,11 @@ fn combo_queue_saturation_does_not_block_events() {
     );
 
     for _ in 0..DecisionQueue::MAX_PENDING {
-        let _ = engine
-            .state
-            .pending_mut()
-            .add_combo(&[KeyCode::A, KeyCode::B], 0, LayerAction::Block);
+        let _ =
+            engine
+                .state
+                .pending_mut()
+                .add_combo(&[KeyCode::A, KeyCode::B], 0, LayerAction::Block);
     }
 
     // With a full queue, new combo-related keys should pass through instead of being blocked.
