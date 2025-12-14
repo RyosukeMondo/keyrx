@@ -26,6 +26,7 @@ import 'profile_registry_ffi.dart';
 import 'event_types.dart';
 import 'generated/bindings_generated.dart';
 import 'generated_bindings.dart';
+import 'debug_tools.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
 export 'bridge_device_profile.dart'
@@ -180,8 +181,11 @@ class KeyrxBridge
   void _checkProtocolVersion() {
     if (_bindings == null) return;
 
-    final versionFn = _bindings!.protocolVersion;
-    final version = versionFn();
+    final version = FfiDebugTools.traceSync<int>(
+      operation: 'core.protocol_version',
+      includeTimeline: false,
+      call: () => _bindings!.protocolVersion(),
+    );
     if (version != expectedProtocolVersion) {
       _loadFailure ??= Exception(
         'Native library protocol mismatch. '
@@ -250,7 +254,11 @@ class KeyrxBridge
   void shutdown() {
     _initialized = false;
     if (_bindings != null) {
-      _bindings!.revolutionaryRuntimeShutdown();
+      FfiDebugTools.traceSync<void>(
+        operation: 'core.revolutionary_shutdown',
+        includeTimeline: false,
+        call: () => _bindings!.revolutionaryRuntimeShutdown(),
+      );
     }
   }
 
@@ -262,8 +270,12 @@ class KeyrxBridge
       return false;
     }
 
-    final result = startFn();
-    return result == 0;
+    final success = FfiDebugTools.traceSync<bool>(
+      operation: 'engine.loop.start',
+      includeTimeline: false,
+      call: () => startFn() == 0,
+    );
+    return success;
   }
 
   /// Stop the engine loop (input capturing).
@@ -274,8 +286,11 @@ class KeyrxBridge
       return false;
     }
 
-    final result = stopFn();
-    return result == 0;
+    return FfiDebugTools.traceSync<bool>(
+      operation: 'engine.loop.stop',
+      includeTimeline: false,
+      call: () => stopFn() == 0,
+    );
   }
 
   /// Register a unified event callback for a specific event type.
@@ -304,9 +319,20 @@ class KeyrxBridge
     );
     _nativeCallables[eventType] = nativeCallable;
 
-    final result = _bindings!.registerEventCallback(
-      eventType.code,
-      nativeCallable.nativeFunction,
+    final result = FfiDebugTools.traceSync<int>(
+      operation: 'events.register',
+      includeTimeline: false,
+      context: {'event_type': eventType.name},
+      call: () => _bindings!.registerEventCallback(
+        eventType.code,
+        nativeCallable.nativeFunction,
+      ),
+    );
+
+    FfiDebugTools.logBoundary(
+      direction: FfiBoundaryDirection.dartToNative,
+      operation: 'events.register',
+      context: {'event_type': eventType.name, 'result_code': result},
     );
 
     return result == 0;
@@ -324,7 +350,18 @@ class KeyrxBridge
     _nativeCallables.remove(eventType);
 
     // Unregister with the native code (pass nullptr)
-    final result = _bindings!.registerEventCallback(eventType.code, nullptr);
+    final result = FfiDebugTools.traceSync<int>(
+      operation: 'events.unregister',
+      includeTimeline: false,
+      context: {'event_type': eventType.name},
+      call: () => _bindings!.registerEventCallback(eventType.code, nullptr),
+    );
+
+    FfiDebugTools.logBoundary(
+      direction: FfiBoundaryDirection.dartToNative,
+      operation: 'events.unregister',
+      context: {'event_type': eventType.name, 'result_code': result},
+    );
 
     return result == 0;
   }
@@ -345,6 +382,12 @@ class KeyrxBridge
     _stateCallable?.close();
     _stateCallable = NativeCallable<EventCallbackNative>.listener(_handleState);
 
+    FfiDebugTools.logBoundary(
+      direction: FfiBoundaryDirection.dartToNative,
+      operation: 'state.register',
+      context: {'has_controller': _stateController != null},
+    );
+
     _bindings!.onState(_stateCallable!.nativeFunction);
   }
 
@@ -358,6 +401,11 @@ class KeyrxBridge
       // We don't need to recreate the callable if it already exists,
       // but if we want to be robust we can just re-register the existing one.
       if (_stateCallable != null) {
+        FfiDebugTools.logBoundary(
+          direction: FfiBoundaryDirection.dartToNative,
+          operation: 'state.resubscribe',
+          context: {'has_handler': true},
+        );
         _bindings!.onState(_stateCallable!.nativeFunction);
       }
     } catch (_) {
@@ -369,7 +417,11 @@ class KeyrxBridge
     if (_bindings == null) {
       return;
     }
-    final code = _bindings!.revolutionaryRuntimeInit();
+    final code = FfiDebugTools.traceSync<int>(
+      operation: 'core.revolutionary_init',
+      includeTimeline: false,
+      call: () => _bindings!.revolutionaryRuntimeInit(),
+    );
     // We ignore the return code here because it returns -1 if already initialized.
     // Since we call this blindly in initialize() as a recovery measure,
     // we don't want to overwrite `_loadFailure` if it was merely "already done".
@@ -388,6 +440,11 @@ class KeyrxBridge
 
     try {
       final bytes = ptr.asTypedList(length);
+      FfiDebugTools.logBoundary(
+        direction: FfiBoundaryDirection.nativeToDart,
+        operation: 'state.update',
+        context: {'length': length},
+      );
       final state = BridgeEngineStateSetup.parseStatePayload(bytes);
       if (state != null) {
         controller.add(state);
@@ -421,6 +478,11 @@ class KeyrxBridge
         }
 
         if (targetType != null) {
+          FfiDebugTools.logBoundary(
+            direction: FfiBoundaryDirection.nativeToDart,
+            operation: 'events.route',
+            context: {'event_type': targetType.name},
+          );
           final handler = handlers[targetType];
           if (handler != null) {
             try {
@@ -454,6 +516,11 @@ class KeyrxBridge
 
     try {
       final bytes = ptr.asTypedList(length);
+      FfiDebugTools.logBoundary(
+        direction: FfiBoundaryDirection.nativeToDart,
+        operation: 'events.dispatch',
+        context: {'length': length},
+      );
       routeEvent(bytes, instance._eventHandlers);
     } catch (_) {
       // Swallow malformed payloads to avoid crashing listeners.

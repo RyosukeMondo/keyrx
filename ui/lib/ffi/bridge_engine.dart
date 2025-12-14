@@ -11,6 +11,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
+import 'debug_tools.dart';
 
 /// State stream payload containing a delta and optional full snapshot.
 class BridgeStateUpdate {
@@ -494,13 +495,19 @@ mixin BridgeEngineMixin {
   /// Load a Rhai script file.
   bool loadScript(String path) {
     if (bindings == null) return false;
-    final pathPtr = path.toNativeUtf8();
-    try {
-      final result = bindings!.loadScript(pathPtr.cast<Char>());
-      return result == 0;
-    } finally {
-      calloc.free(pathPtr);
-    }
+    return FfiDebugTools.traceSync<bool>(
+      operation: 'engine.load_script',
+      context: {'path': path},
+      call: () {
+        final pathPtr = path.toNativeUtf8();
+        try {
+          final result = bindings!.loadScript(pathPtr.cast<Char>());
+          return result == 0;
+        } finally {
+          calloc.free(pathPtr);
+        }
+      },
+    );
   }
 
   /// Evaluate a console command if the native binding is available.
@@ -510,28 +517,39 @@ mixin BridgeEngineMixin {
     final evalFn = bindings?.eval;
     if (evalFn == null) return 'error: eval not available';
 
-    final cmdPtr = command.toNativeUtf8();
-    Pointer<Char>? responsePtr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    try {
-      responsePtr = evalFn(cmdPtr.cast<Char>(), errorPtr);
-      if (responsePtr == nullptr) {
-        return 'error: eval returned null';
-      }
-
-      final raw = responsePtr.cast<Utf8>().toDartString();
-      return _normalizeEval(raw);
-    } catch (e) {
-      return 'error: $e';
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(cmdPtr);
-      if (responsePtr != null) {
+    return FfiDebugTools.traceAsync<String?>(
+      operation: 'engine.eval',
+      context: {
+        'command_preview': command.length > 40
+            ? '${command.substring(0, 40)}…'
+            : command,
+      },
+      includeTimeline: false,
+      call: () async {
+        final cmdPtr = command.toNativeUtf8();
+        Pointer<Char>? responsePtr;
+        final errorPtr = calloc<Pointer<Utf8>>();
         try {
-          bindings?.freeString(responsePtr);
-        } catch (_) {}
-      }
-    }
+          responsePtr = evalFn(cmdPtr.cast<Char>(), errorPtr);
+          if (responsePtr == nullptr) {
+            return 'error: eval returned null';
+          }
+
+          final raw = responsePtr.cast<Utf8>().toDartString();
+          return _normalizeEval(raw);
+        } catch (e) {
+          return 'error: $e';
+        } finally {
+          calloc.free(errorPtr);
+          calloc.free(cmdPtr);
+          if (responsePtr != null) {
+            try {
+              bindings?.freeString(responsePtr);
+            } catch (_) {}
+          }
+        }
+      },
+    );
   }
 
   /// List canonical key names from the core definition table.
@@ -541,26 +559,32 @@ mixin BridgeEngineMixin {
       return KeyRegistryResult.fallback('error: listKeys not available');
     }
 
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    try {
-      ptr = listFn(errorPtr);
-      if (ptr == nullptr) {
-        return KeyRegistryResult.fallback('error: listKeys returned null');
-      }
-
-      final jsonStr = ptr.cast<Utf8>().toDartString();
-      return KeyRegistryResult.parse(jsonStr);
-    } catch (e) {
-      return KeyRegistryResult.fallback('error: $e');
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null) {
+    return FfiDebugTools.traceSync<KeyRegistryResult>(
+      operation: 'engine.list_keys',
+      includeTimeline: false,
+      call: () {
+        Pointer<Char>? ptr;
+        final errorPtr = calloc<Pointer<Utf8>>();
         try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
-    }
+          ptr = listFn(errorPtr);
+          if (ptr == nullptr) {
+            return KeyRegistryResult.fallback('error: listKeys returned null');
+          }
+
+          final jsonStr = ptr.cast<Utf8>().toDartString();
+          return KeyRegistryResult.parse(jsonStr);
+        } catch (e) {
+          return KeyRegistryResult.fallback('error: $e');
+        } finally {
+          calloc.free(errorPtr);
+          if (ptr != null) {
+            try {
+              bindings?.freeString(ptr);
+            } catch (_) {}
+          }
+        }
+      },
+    );
   }
 
   /// Check if emergency bypass mode is currently active.
@@ -569,7 +593,11 @@ mixin BridgeEngineMixin {
   bool isBypassActive() {
     final fn = bindings?.isBypassActive;
     if (fn == null) return false;
-    return fn();
+    return FfiDebugTools.traceSync<bool>(
+      operation: 'engine.bypass.is_active',
+      includeTimeline: false,
+      call: fn,
+    );
   }
 
   /// Set the emergency bypass mode state.
@@ -579,7 +607,12 @@ mixin BridgeEngineMixin {
   void setBypass(bool active) {
     final fn = bindings?.setBypass;
     if (fn == null) return;
-    fn(active);
+    FfiDebugTools.traceSync<void>(
+      operation: 'engine.bypass.set',
+      includeTimeline: false,
+      context: {'active': active},
+      call: () => fn(active),
+    );
   }
 
   /// Validate a Rhai script without executing it.
@@ -591,28 +624,34 @@ mixin BridgeEngineMixin {
       return ScriptValidationResult.error('checkScript not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    try {
-      ptr = checkFn(pathPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return ScriptValidationResult.error('checkScript returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
-      return ScriptValidationResult.parse(raw);
-    } catch (e) {
-      return ScriptValidationResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(pathPtr);
-      if (ptr != null && ptr != nullptr) {
+    return FfiDebugTools.traceSync<ScriptValidationResult>(
+      operation: 'engine.check_script',
+      context: {'path': path},
+      call: () {
+        final pathPtr = path.toNativeUtf8();
+        Pointer<Char>? ptr;
+        final errorPtr = calloc<Pointer<Utf8>>();
         try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
-    }
+          ptr = checkFn(pathPtr.cast<Char>(), errorPtr);
+          if (ptr == nullptr) {
+            return ScriptValidationResult.error('checkScript returned null');
+          }
+
+          final raw = ptr.cast<Utf8>().toDartString();
+          return ScriptValidationResult.parse(raw);
+        } catch (e) {
+          return ScriptValidationResult.error('$e');
+        } finally {
+          calloc.free(errorPtr);
+          calloc.free(pathPtr);
+          if (ptr != null && ptr != nullptr) {
+            try {
+              bindings?.freeString(ptr);
+            } catch (_) {}
+          }
+        }
+      },
+    );
   }
 
   static String _normalizeEval(String raw) {

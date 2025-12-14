@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
+import 'debug_tools.dart';
 
 /// Mixin providing core FFI initialization and lifecycle management.
 mixin BridgeCoreMixin {
@@ -34,14 +35,20 @@ mixin BridgeCoreMixin {
 
   /// Initialize the KeyRx engine.
   bool initialize() {
-    if (initialized) return true;
-    if (bindings == null || loadFailure != null) {
-      return false;
-    }
+    return FfiDebugTools.traceSync<bool>(
+      operation: 'core.init',
+      context: {'has_bindings': bindings != null},
+      call: () {
+        if (initialized) return true;
+        if (bindings == null || loadFailure != null) {
+          return false;
+        }
 
-    final result = bindings!.init();
-    initialized = result == 0;
-    return initialized;
+        final result = bindings!.init();
+        initialized = result == 0;
+        return initialized;
+      },
+    );
   }
 
   /// Set the configuration root directory.
@@ -50,12 +57,19 @@ mixin BridgeCoreMixin {
   void setConfigRoot(String path) {
     if (bindings == null) return;
 
-    final pathPtr = path.toNativeUtf8().cast<Char>();
-    try {
-      bindings!.setConfigRoot(pathPtr);
-    } finally {
-      malloc.free(pathPtr);
-    }
+    FfiDebugTools.traceSync<void>(
+      operation: 'core.set_config_root',
+      context: {'path': path},
+      includeTimeline: false,
+      call: () {
+        final pathPtr = path.toNativeUtf8().cast<Char>();
+        try {
+          bindings!.setConfigRoot(pathPtr);
+        } finally {
+          malloc.free(pathPtr);
+        }
+      },
+    );
   }
 
   /// Get the core library version.
@@ -64,8 +78,14 @@ mixin BridgeCoreMixin {
       return 'unavailable';
     }
 
-    final ptr = bindings!.version();
-    return ptr.cast<Utf8>().toDartString();
+    return FfiDebugTools.traceSync<String>(
+      operation: 'core.version',
+      includeTimeline: false,
+      call: () {
+        final ptr = bindings!.version();
+        return ptr.cast<Utf8>().toDartString();
+      },
+    );
   }
 
   /// Check if the engine is initialized.

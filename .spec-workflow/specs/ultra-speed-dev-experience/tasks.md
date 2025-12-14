@@ -80,7 +80,7 @@
   - _Requirements: FR1.2, NFR1.2_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in file watchers and automation | Task: Document watchexec installation in setup docs, create scripts/watch_ffi.sh script, configure file watchers for core/src/ffi/*.rs, add debouncing (500ms) to avoid excessive rebuilds, integrate with just codegen command, test watch mode with live Rust changes, add dev-watch recipe to justfile, document watch mode workflow in docs/DEVELOPMENT.md | Restrictions: Watch mode must be efficient (debounced), do not watch unnecessary files, ensure cross-platform compatibility | Success: watchexec installed, watch_ffi.sh works, debouncing prevents excessive rebuilds, dev-watch recipe functional, workflow documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 11. FFI Debugging Tools
+- [x] 11. FFI Debugging Tools
   - File: ui/lib/ffi/debug_tools.dart, docs/FFI_DEBUGGING.md
   - Create FFI call tracing utility, add Timeline instrumentation, create FFI error formatter, add logging for FFI boundary crossings, document common errors
   - Purpose: Accelerate FFI debugging, reduce debugging time from 2h to <30min
