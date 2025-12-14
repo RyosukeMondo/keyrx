@@ -1,0 +1,162 @@
+name: FFI Breaking Changes Detection
+
+on:
+  pull_request:
+    paths:
+      - 'core/src/ffi/**'
+      - 'core/Cargo.toml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'core/src/ffi/**'
+      - 'core/Cargo.toml'
+
+jobs:
+  detect-breaking-changes:
+    name: Detect FFI Breaking Changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Detect breaking changes (PR)
+        if: github.event_name == 'pull_request'
+        id: detect-pr
+        run: |
+          # Compare against the base branch
+          chmod +x scripts/detect_ffi_breaking_changes.sh
+          scripts/detect_ffi_breaking_changes.sh \
+            --base "origin/${{ github.base_ref }}" \
+            --format json > breaking_changes.json
+
+          # Extract summary
+          echo "major_count=$(jq -r '.summary.major_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+          echo "minor_count=$(jq -r '.summary.minor_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+          echo "patch_count=$(jq -r '.summary.patch_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+          echo "version_bumped=$(jq -r '.summary.version_bumped' breaking_changes.json)" >> $GITHUB_OUTPUT
+
+          # Generate markdown report
+          scripts/detect_ffi_breaking_changes.sh \
+            --base "origin/${{ github.base_ref }}" \
+            --format markdown > breaking_changes.md
+        continue-on-error: true
+
+      - name: Detect breaking changes (push to main)
+        if: github.event_name == 'push'
+        id: detect-push
+        run: |
+          chmod +x scripts/detect_ffi_breaking_changes.sh
+          scripts/detect_ffi_breaking_changes.sh \
+            --base "HEAD~1" \
+            --format json > breaking_changes.json
+
+          echo "major_count=$(jq -r '.summary.major_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+          echo "minor_count=$(jq -r '.summary.minor_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+          echo "patch_count=$(jq -r '.summary.patch_count' breaking_changes.json)" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Check for allow-breaking label
+        if: github.event_name == 'pull_request'
+        id: check-label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const hasAllowBreaking = labels.includes('allow-breaking');
+            core.setOutput('allow_breaking', hasAllowBreaking);
+            return hasAllowBreaking;
+
+      - name: Comment on PR with breaking changes
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.detect-pr.outputs.major_count > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('breaking_changes.md', 'utf8');
+            const majorCount = '${{ steps.detect-pr.outputs.major_count }}';
+            const versionBumped = '${{ steps.detect-pr.outputs.version_bumped }}';
+            const allowBreaking = '${{ steps.check-label.outputs.allow_breaking }}';
+
+            let comment = '## ⚠️ FFI Breaking Changes Detected\n\n';
+            comment += `Found **${majorCount}** breaking change(s) in FFI contracts.\n\n`;
+
+            if (versionBumped === 'true') {
+              comment += '✅ Version was bumped in `core/Cargo.toml` - breaking changes are acknowledged.\n\n';
+            } else if (allowBreaking === 'true') {
+              comment += '✅ PR has `allow-breaking` label - breaking changes are explicitly allowed.\n\n';
+            } else {
+              comment += '❌ **Action Required**: Either bump the version in `core/Cargo.toml` or add the `allow-breaking` label to this PR.\n\n';
+            }
+
+            comment += '<details>\n<summary>Breaking Changes Report</summary>\n\n';
+            comment += report;
+            comment += '\n</details>\n\n';
+            comment += '---\n';
+            comment += '*See [FFI Versioning Policy](../docs/FFI_VERSIONING.md) for guidance on breaking changes.*';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Block PR if breaking changes without version bump
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.detect-pr.outputs.major_count > 0 &&
+          steps.detect-pr.outputs.version_bumped == 'false' &&
+          steps.check-label.outputs.allow_breaking == 'false'
+        run: |
+          echo "::error::Breaking changes detected without version bump or allow-breaking label"
+          echo "Please either:"
+          echo "  1. Bump the version in core/Cargo.toml (major version for breaking changes)"
+          echo "  2. Add the 'allow-breaking' label to this PR to explicitly acknowledge breaking changes"
+          echo "  3. See docs/FFI_VERSIONING.md for guidance"
+          exit 1
+
+      - name: Upload breaking changes report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: breaking-changes-report
+          path: |
+            breaking_changes.json
+            breaking_changes.md
+          retention-days: 30
+
+      - name: Report summary
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## FFI Changes Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Change Type | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Major Breaking | ${{ steps.detect-pr.outputs.major_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Minor Compatible | ${{ steps.detect-pr.outputs.minor_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Patch | ${{ steps.detect-pr.outputs.patch_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.detect-pr.outputs.major_count }}" -gt 0 ]; then
+            echo "⚠️ **Breaking changes detected**" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.detect-pr.outputs.version_bumped }}" == "true" ]; then
+              echo "✅ Version was bumped" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ steps.check-label.outputs.allow_breaking }}" == "true" ]; then
+              echo "✅ Breaking changes explicitly allowed via label" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Version bump or allow-breaking label required" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ No breaking changes detected" >> $GITHUB_STEP_SUMMARY
+          fi

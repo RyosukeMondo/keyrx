@@ -172,6 +172,11 @@ ffi-log task_id base_ref="":
         scripts/log_ffi_implementation.sh --task-id {{task_id}}; \
     fi
 
+# Detect FFI contract breaking changes against a base reference
+diff-ffi-contracts base_ref="HEAD~1" format="text":
+    @echo "Detecting FFI breaking changes..."
+    @./scripts/detect_ffi_breaking_changes.sh --base {{base_ref}} --format {{format}}
+
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."

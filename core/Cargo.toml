@@ -69,6 +69,8 @@ reqwest-tracing = "0.5.8"
 default = ["windows-driver", "linux-driver", "transition-logging"]
 # Test utilities - enables mock services for integration testing
 test-utils = []
+# FFI contract inventory - enables runtime contract introspection
+contract-inventory = []
 otel-tracing = [
     "opentelemetry",
     "opentelemetry_sdk",
