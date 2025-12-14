@@ -135,6 +135,7 @@ echo "    ✓ Bindings OK"
 echo ""
 
 if [[ -d "$UI_DIR" ]]; then
+    UI_COVERAGE_THRESHOLD="${UI_COVERAGE_THRESHOLD:-60}"
     # Step 5: Dart/Flutter toolchain availability
     echo "[$STEP/$TOTAL_CHECKS] Checking Dart/Flutter toolchain..."
     if ! command -v dart >/dev/null 2>&1; then
@@ -221,22 +222,22 @@ if [[ -d "$UI_DIR" ]]; then
     echo ""
 
     # Step 8: Flutter tests with coverage (fast suite)
-    echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite)..."
+    echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite, threshold ${UI_COVERAGE_THRESHOLD}% )..."
     pushd "$UI_DIR" >/dev/null
-    if ! flutter test --coverage --concurrency=4 --exclude-tags=slow,integration \
-        --test-randomize-ordering-seed random; then
+    if ! COVERAGE_THRESHOLD="$UI_COVERAGE_THRESHOLD" "$UI_DIR/scripts/check_coverage.sh"; then
         echo ""
         echo "╔════════════════════════════════════════════════════════════╗"
         echo "║  ❌ FAILED: Flutter tests with coverage                    ║"
         echo "╠════════════════════════════════════════════════════════════╣"
-        echo "║  The fast Flutter test suite failed.                       ║"
+        echo "║  The fast Flutter test suite failed or coverage below      ║"
+        echo "║  the required threshold (${UI_COVERAGE_THRESHOLD}%).       ║"
         echo "║                                                            ║"
         echo "║  To reproduce, run:                                        ║"
-        echo "║    cd ui && flutter test --coverage --concurrency=4 \\      ║"
-        echo "║        --exclude-tags=slow,integration \\                   ║"
-        echo "║        --test-randomize-ordering-seed random               ║"
+        echo "║    cd ui && COVERAGE_THRESHOLD=${UI_COVERAGE_THRESHOLD} \\  ║"
+        echo "║      ./scripts/check_coverage.sh                           ║"
         echo "║                                                            ║"
         echo "║  Keep this suite fast-only; skip slow/integration cases.   ║"
+        echo "║  Raise UI_COVERAGE_THRESHOLD as quality improves (goal 80%).║"
         echo "╚════════════════════════════════════════════════════════════╝"
         popd >/dev/null
         exit 1
@@ -260,7 +261,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "║    • Dart/Flutter toolchain availability                   ║"
     echo "║    • dart format --set-exit-if-changed (ui)                ║"
     echo "║    • flutter analyze --fatal-infos (ui)                    ║"
-    echo "║    • flutter test --coverage (fast suite, ui)              ║"
+    echo "║    • flutter test --coverage (fast suite, ui, threshold ${UI_COVERAGE_THRESHOLD}%)║"
 fi
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
