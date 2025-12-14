@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Reminder hook: prompt contributors to record FFI implementation details.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel 2>/dev/null || (cd "$SCRIPT_DIR/.." && pwd))"
+SPEC_ROOT="$REPO_ROOT/.spec-workflow/specs/rust-first-ai-native-ffi"
+
+if [[ -d "$SPEC_ROOT" ]]; then
+    cat <<'EOF'
+[ffi-log] Remember to capture this commit in the FFI implementation log:
+  just ffi-log <task-number> [<base-ref>]
+Logs live in: .spec-workflow/specs/rust-first-ai-native-ffi/Implementation Logs/
+EOF
+fi

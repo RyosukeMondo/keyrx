@@ -143,6 +143,14 @@ gen-bindings-legacy:
 verify-bindings: check-dart-bindings
     @echo "Dart FFI bindings are up-to-date!"
 
+# Create an FFI implementation log entry from the template
+ffi-log task_id base_ref?="":
+    if [ -n "{{base_ref}}" ]; then \
+        scripts/log_ffi_implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
+    else \
+        scripts/log_ffi_implementation.sh --task-id {{task_id}}; \
+    fi
+
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."
