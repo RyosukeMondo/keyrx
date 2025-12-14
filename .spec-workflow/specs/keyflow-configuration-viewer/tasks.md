@@ -15,7 +15,7 @@
   - _Requirements: 1, 2, 3, 4, 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Dart service engineer. Task: Build a KeyFlowRepository that composes existing services to produce KeyFlowSnapshot data and exposes a runtime overlay stream. Restrictions: Do not call FFI directly; use existing services; keep it read-only; ensure per-call error isolation; keep iteration speed in mind (mock-friendly, no heavy init). _Leverage: listed services. _Requirements: 1,2,3,4,5. Success: repository returns aggregated data with gap/conflict counts, handles partial failures with errors collected, provides runtime overlay updates without blocking UI, and can run with a mock bridge._
 
-- [ ] 2. Add KeyFlow view model
+- [x] 2. Add KeyFlow view model
   - File: ui/lib/state/keyflow_view_model.dart
   - Manage loading, selection, staleness timers, gap/conflict derivation, error states; expose ChangeNotifier API
   - _Leverage: ui/lib/services/facade/keyflow_repository.dart_
