@@ -2,6 +2,64 @@
 
 This workflow keeps FFI changes traceable and fast for humans and AI agents.
 
+## Quick Start - Integrated Development
+
+Start the complete development environment with a single command:
+
+```bash
+just dev
+```
+
+This launches:
+- **Rust watch mode**: Auto-compiles on FFI changes → regenerates Dart bindings
+- **Flutter hot reload**: Auto-reloads UI on Dart changes
+- **ABI change detection**: Notifies when full restart is needed vs hot reload
+- **Unified logging**: All output prefixed with `[RUST]` or `[FLUTTER]`
+
+### Development Modes
+
+**Full Development** (Rust + Flutter):
+```bash
+just dev
+# or
+./scripts/integrated_dev.sh
+```
+
+**UI-Only Development** (Mock FFI):
+```bash
+just dev-mock-full
+# or
+./scripts/integrated_dev.sh --mock
+```
+
+**Custom Device**:
+```bash
+./scripts/integrated_dev.sh --device=chrome
+```
+
+### Workflow Timeline
+
+When you edit code, the system automatically handles:
+
+```
+Edit Rust → Compile → Generate Bindings → Flutter Reload
+Edit Dart → Flutter Hot Reload (instant)
+Edit FFI ABI → Notification: "Full restart recommended"
+```
+
+### Controls
+
+While running `just dev`:
+- Press **`r`** in Flutter terminal for hot reload
+- Press **`R`** in Flutter terminal for hot restart (ABI changes)
+- Press **`Ctrl+C`** to gracefully stop all processes
+
+### Startup Time
+
+- **Initial startup**: ~10s (Rust compile + Flutter launch)
+- **Rust incremental rebuild**: ~2-5s (with fast linker)
+- **Dart hot reload**: <1s (instant feedback)
+
 ## Logging Every FFI Change
 
 1) After completing work (ideally right after a commit), generate a log:

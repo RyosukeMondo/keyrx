@@ -14,9 +14,13 @@ setup:
 setup-ffi-tools:
     ./scripts/setup_ffi_tools.sh ${SETUP_OPTS}
 
-# Run core in development mode with auto-reload
+# Run integrated development workflow (Rust watch + Flutter hot reload in parallel)
 dev:
-    cd core && cargo watch -x run
+    ./scripts/integrated_dev.sh
+
+# Run integrated development workflow with mock FFI (UI-only development)
+dev-mock-full:
+    ./scripts/integrated_dev.sh --mock
 
 # Watch Rust FFI files and regenerate Dart bindings on change
 dev-watch:

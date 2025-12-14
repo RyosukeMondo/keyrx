@@ -40,7 +40,7 @@
   - _Requirements: FR2.1, FR2.3, NFR3.2_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in file watchers and automation | Task: Create scripts/ffi_watch.sh using cargo-watch to monitor core/src/ffi/ and core/src/api.rs, trigger just gen-dart-bindings on changes, configure 500ms debounce to avoid excessive regeneration, create .cargo/watch.toml for configuration, add terminal notifications (success/failure/skipped), implement smart incremental generation (track SHA256 of contracts, skip if unchanged), handle errors gracefully (show error but keep watching), add just ffi-watch recipe | Restrictions: Watch mode must be efficient (low CPU), debouncing must prevent spam, errors should not crash watcher, provide clear feedback (what changed, what regenerated), ensure cross-platform compatibility | Success: Watch mode detects Rust changes reliably, codegen triggers automatically with 500ms debounce, incremental generation skips unchanged contracts, terminal notifications clear, errors handled gracefully, just ffi-watch recipe works | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 6. Integrated Dev Workflow (just dev)
+- [x] 6. Integrated Dev Workflow (just dev)
   - File: justfile (add dev recipe), scripts/integrated_dev.sh
   - Create just dev command that starts Rust watch + Flutter hot reload in parallel, coordinate processes, handle shutdown gracefully, provide unified logging
   - Purpose: Single command to start complete development environment
