@@ -1,215 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/confirmation_dialog.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/input_dialog.dart';
 
+import '../../helpers/golden_test_harness.dart';
+import '../../helpers/widget_test_harness.dart';
+
 void main() {
-  group('ConfirmationDialog Golden Tests', () {
-    testWidgets('renders basic confirmation dialog', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: ConfirmationDialog(
-              title: 'Confirm Action',
-              message: 'Are you sure you want to proceed?',
-            ),
+  final darkHarness = GoldenTestHarness();
+  final lightHarness = GoldenTestHarness(
+    widgetHarness: WidgetTestHarness(
+      theme: ThemeData.light(useMaterial3: true),
+      wrapWithScaffold: true,
+    ),
+  );
+
+  Widget _dialogShell(Widget child, {Color? backgroundColor}) {
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: Center(child: child),
+    );
+  }
+
+  group('ConfirmationDialog Goldens', () {
+    testGoldens('renders basic confirmation dialog', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const ConfirmationDialog(
+            title: 'Confirm Action',
+            message: 'Are you sure you want to proceed?',
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(ConfirmationDialog),
-        matchesGoldenFile('goldens/confirmation_dialog_basic.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'confirmation_dialog_basic',
       );
     });
 
-    testWidgets('renders destructive confirmation dialog', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: ConfirmationDialog(
-              title: 'Delete Item',
-              message: 'This action cannot be undone.',
-              confirmLabel: 'Delete',
-              isDestructive: true,
-              icon: Icons.warning,
-            ),
+    testGoldens('renders destructive confirmation dialog', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const ConfirmationDialog(
+            title: 'Delete Item',
+            message: 'This action cannot be undone.',
+            confirmLabel: 'Delete',
+            isDestructive: true,
+            icon: Icons.warning,
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(ConfirmationDialog),
-        matchesGoldenFile('goldens/confirmation_dialog_destructive.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'confirmation_dialog_destructive',
       );
     });
 
-    testWidgets('renders confirmation dialog with icon', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: ConfirmationDialog(
-              title: 'Save Changes',
-              message: 'Do you want to save your changes?',
-              confirmLabel: 'Save',
-              cancelLabel: 'Discard',
-              icon: Icons.save,
-            ),
+    testGoldens('renders confirmation dialog with icon', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const ConfirmationDialog(
+            title: 'Save Changes',
+            message: 'Do you want to save your changes?',
+            confirmLabel: 'Save',
+            cancelLabel: 'Discard',
+            icon: Icons.save,
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(ConfirmationDialog),
-        matchesGoldenFile('goldens/confirmation_dialog_with_icon.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'confirmation_dialog_with_icon',
       );
     });
 
-    testWidgets('renders confirmation dialog in light theme', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: ConfirmationDialog(
-              title: 'Confirm Action',
-              message: 'Are you sure you want to proceed?',
-            ),
+    testGoldens('renders confirmation dialog in light theme', (tester) async {
+      await lightHarness.pump(
+        tester,
+        _dialogShell(
+          const ConfirmationDialog(
+            title: 'Confirm Action',
+            message: 'Are you sure you want to proceed?',
           ),
+          backgroundColor: Colors.white,
         ),
       );
 
-      await expectLater(
-        find.byType(ConfirmationDialog),
-        matchesGoldenFile('goldens/confirmation_dialog_light_theme.png'),
+      await lightHarness.expectGolden(
+        tester,
+        'confirmation_dialog_light_theme',
       );
     });
   });
 
-  group('InputDialog Golden Tests', () {
-    testWidgets('renders basic input dialog', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: InputDialog(
-              title: 'Enter Name',
-              labelText: 'Name',
-              hintText: 'Enter your name',
-            ),
+  group('InputDialog Goldens', () {
+    testGoldens('renders basic input dialog', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const InputDialog(
+            title: 'Enter Name',
+            labelText: 'Name',
+            hintText: 'Enter your name',
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(InputDialog),
-        matchesGoldenFile('goldens/input_dialog_basic.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'input_dialog_basic',
       );
     });
 
-    testWidgets('renders input dialog with message', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: InputDialog(
-              title: 'Create Layer',
-              message: 'Enter a name for the new layer',
-              labelText: 'Layer Name',
-              hintText: 'e.g., Gaming',
-            ),
+    testGoldens('renders input dialog with message', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const InputDialog(
+            title: 'Create Layer',
+            message: 'Enter a name for the new layer',
+            labelText: 'Layer Name',
+            hintText: 'e.g., Gaming',
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(InputDialog),
-        matchesGoldenFile('goldens/input_dialog_with_message.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'input_dialog_with_message',
       );
     });
 
-    testWidgets('renders input dialog with icon', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: InputDialog(
-              title: 'Rename',
-              labelText: 'New Name',
-              icon: Icons.edit,
-              initialValue: 'Old Name',
-            ),
+    testGoldens('renders input dialog with icon', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const InputDialog(
+            title: 'Rename',
+            labelText: 'New Name',
+            icon: Icons.edit,
+            initialValue: 'Old Name',
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(InputDialog),
-        matchesGoldenFile('goldens/input_dialog_with_icon.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'input_dialog_with_icon',
       );
     });
 
-    testWidgets('renders multiline input dialog', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: InputDialog(
-              title: 'Add Description',
-              labelText: 'Description',
-              hintText: 'Enter a description',
-              maxLines: 3,
-            ),
+    testGoldens('renders multiline input dialog', (tester) async {
+      await darkHarness.pump(
+        tester,
+        _dialogShell(
+          const InputDialog(
+            title: 'Add Description',
+            labelText: 'Description',
+            hintText: 'Enter a description',
+            maxLines: 3,
           ),
+          backgroundColor: Colors.black,
         ),
       );
 
-      await expectLater(
-        find.byType(InputDialog),
-        matchesGoldenFile('goldens/input_dialog_multiline.png'),
+      await darkHarness.expectGolden(
+        tester,
+        'input_dialog_multiline',
       );
     });
 
-    testWidgets('renders input dialog in light theme', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: InputDialog(
-              title: 'Enter Name',
-              labelText: 'Name',
-              hintText: 'Enter your name',
-            ),
+    testGoldens('renders input dialog in light theme', (tester) async {
+      await lightHarness.pump(
+        tester,
+        _dialogShell(
+          const InputDialog(
+            title: 'Enter Name',
+            labelText: 'Name',
+            hintText: 'Enter your name',
           ),
+          backgroundColor: Colors.white,
         ),
       );
 
-      await expectLater(
-        find.byType(InputDialog),
-        matchesGoldenFile('goldens/input_dialog_light_theme.png'),
+      await lightHarness.expectGolden(
+        tester,
+        'input_dialog_light_theme',
       );
     });
   });

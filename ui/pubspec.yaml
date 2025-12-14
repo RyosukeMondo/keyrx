@@ -81,6 +81,9 @@ dev_dependencies:
 
   mocktail: ^1.0.3
 
+  # Golden testing utilities
+  golden_toolkit: ^0.15.0
+
   # Code generation for freezed
   freezed: ^2.5.2
   build_runner: ^2.4.6

@@ -54,6 +54,14 @@ ui-metrics:
 ui-test:
     cd ui && flutter test --concurrency ${CONCURRENCY:-4}
 
+# Verify golden baselines
+ui-golden-verify:
+    cd ui && flutter test --concurrency ${CONCURRENCY:-2} test/widgets/golden
+
+# Update golden baselines
+ui-golden-update:
+    cd ui && flutter test --update-goldens --concurrency ${CONCURRENCY:-2} test/widgets/golden
+
 # Run Flutter tests in watch mode
 ui-test-watch:
     cd ui && flutter test --watch --concurrency ${CONCURRENCY:-4}

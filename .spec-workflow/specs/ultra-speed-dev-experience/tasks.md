@@ -56,7 +56,7 @@
   - _Requirements: FR2.3, NFR3.1_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in Flutter widget testing and test utilities | Task: Create ui/test/helpers/widget_test_harness.dart, implement WidgetTestHarness class with provider overrides and pumpWidget/pumpPage helpers, create WidgetTesterX extension with common assertions, add example widget test using harness, refactor existing widget tests to use harness, document test patterns in docs/TESTING.md | Restrictions: Must work with Riverpod, ensure test isolation, do not break existing tests | Success: WidgetTestHarness created with provider overrides, helper methods work correctly, extension adds useful assertions, example test passes, existing tests refactored, patterns documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 8. Golden Test Infrastructure
+- [x] 8. Golden Test Infrastructure
   - File: ui/pubspec.yaml, ui/test/helpers/golden_test_harness.dart, ui/flutter_test_config.dart, justfile
   - Add golden_toolkit dependency, create golden test harness, configure setup (fonts, devices), add example golden test, create ui-golden-update and ui-golden-verify recipes
   - Purpose: Enable visual regression testing for UI components

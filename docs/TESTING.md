@@ -73,3 +73,18 @@ COVERAGE_THRESHOLD=60 ./scripts/check_coverage.sh
 - Override dependencies with `overrides` or `providerOverrides` when a test needs custom fakes.
 - `WidgetTesterX` adds `tapAndSettle`, `enterTextAndSettle`, `expectOne`, and `expectNone` to keep assertions terse.
 - The harness defaults to `MaterialApp + Scaffold`; pass `wrapWithScaffold: false` when testing fragments that already provide layout chrome.
+
+## Golden tests (golden_toolkit)
+- Global config: `ui/flutter_test_config.dart` loads fonts once and standardizes device names (phone, iPhone 11, tablet landscape) with real shadows enabled.
+- Harness: use `GoldenTestHarness` (`ui/test/helpers/golden_test_harness.dart`) to reuse the widget harness and consistent surface sizes.
+- Commands:
+  - Verify: `just ui-golden-verify` (runs `flutter test test/widgets/golden`).
+  - Update baselines: `just ui-golden-update` (runs with `--update-goldens`).
+- Example:
+  ```dart
+  testGoldens('renders dialog', (tester) async {
+    final harness = GoldenTestHarness();
+    await harness.pump(tester, ConfirmationDialog(title: 'Confirm', message: 'Proceed?'));
+    await harness.expectGolden(tester, 'goldens/confirmation_dialog_basic');
+  });
+  ```
