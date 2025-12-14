@@ -7,7 +7,7 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
-  custom_lint_builder: ^0.7.1
+  custom_lint_builder: ^0.7.3
 
 dev_dependencies:
   lints: ^5.0.0

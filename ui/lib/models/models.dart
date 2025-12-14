@@ -22,6 +22,7 @@ export 'hardware_profile.dart';
 export 'action_binding.dart';
 export 'keymap.dart';
 export 'runtime_config.dart';
+export 'flow/flow_graph.dart';
 
 // Service models - re-exported for convenience
 // These are defined in their respective service files:
