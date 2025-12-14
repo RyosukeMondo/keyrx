@@ -52,6 +52,7 @@
 
 #![allow(unsafe_code)]
 
+use ffi_export::ffi_export;
 use crate::ffi::engine_instance::with_global_engine;
 use std::ffi::{c_char, CString};
 
@@ -73,6 +74,7 @@ use std::ffi::{c_char, CString};
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_export_json(
     _engine_ptr: *const std::ffi::c_void,
@@ -102,6 +104,7 @@ pub extern "C" fn keyrx_transition_log_export_json(
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void) -> usize {
     with_global_engine(|engine| engine.transition_log().len()).unwrap_or(0)
@@ -120,6 +123,7 @@ pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void)
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_void) -> usize {
     with_global_engine(|engine| engine.transition_log().capacity()).unwrap_or(0)
@@ -134,6 +138,7 @@ pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_clear(_engine_ptr: *mut std::ffi::c_void) {
     with_global_engine(|engine| engine.transition_log_mut().clear());

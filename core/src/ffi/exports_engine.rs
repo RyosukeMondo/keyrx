@@ -5,6 +5,7 @@
 //! fallback when versions drift.
 #![allow(unsafe_code)]
 
+use ffi_export::ffi_export;
 use crate::engine::layout::{LayoutCompositor, ModifierCoordinator};
 use crate::engine::state::{snapshot::StateSnapshot, EngineState, StateDelta};
 use crate::ffi::events::{global_event_registry, EventCallback, EventType};
@@ -108,6 +109,7 @@ pub fn publish_state_update_with_layouts(
 /// Register a legacy EngineState callback.
 ///
 /// This provides compatibility for the older `keyrx_on_state` API expected by
+#[ffi_export(domain = "engine", version = "1.0.0")]
 /// the Flutter bindings. Call with `None` to unregister.
 #[no_mangle]
 pub extern "C" fn keyrx_on_state(callback: Option<EventCallback>) {

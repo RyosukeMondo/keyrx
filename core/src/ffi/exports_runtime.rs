@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::ptr_arg)]
 
+use ffi_export::ffi_export;
 use crate::config::models::{DeviceSlots, ProfileSlot, RuntimeConfig};
 use crate::ffi::domains::config::global_config_manager;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
@@ -60,6 +61,7 @@ fn reorder_slots(slots: &mut Vec<ProfileSlot>) {
 /// Get the current runtime configuration.
 ///
 /// Returns JSON string: `ok:<json>` or `error:<message>`.
+#[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_runtime_get_config() -> *mut c_char {
     let config = match runtime_config_store().read() {
@@ -69,8 +71,9 @@ pub extern "C" fn keyrx_runtime_get_config() -> *mut c_char {
     ffi_json(Ok(config.clone()))
 }
 
-#[no_mangle]
 /// Add a new runtime slot for a device (or update existing).
+#[ffi_export(domain = "runtime", version = "1.0.0")]
+#[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_add_slot(
     device_json: *const c_char,
     slot_json: *const c_char,
@@ -129,8 +132,9 @@ pub unsafe extern "C" fn keyrx_runtime_add_slot(
     .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_add_slot"))))
 }
 
-#[no_mangle]
 /// Remove a runtime slot for a device.
+#[ffi_export(domain = "runtime", version = "1.0.0")]
+#[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_remove_slot(
     device_json: *const c_char,
     slot_id: *const c_char,
@@ -173,8 +177,9 @@ pub unsafe extern "C" fn keyrx_runtime_remove_slot(
     .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_remove_slot"))))
 }
 
-#[no_mangle]
 /// Update slot priority.
+#[ffi_export(domain = "runtime", version = "1.0.0")]
+#[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
     device_json: *const c_char,
     slot_id: *const c_char,
@@ -214,8 +219,9 @@ pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
     .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_reorder_slot"))))
 }
 
-#[no_mangle]
 /// Toggle a runtime slot active flag.
+#[ffi_export(domain = "runtime", version = "1.0.0")]
+#[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
     device_json: *const c_char,
     slot_id: *const c_char,
@@ -255,8 +261,9 @@ pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
     .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_set_slot_active"))))
 }
 
-#[no_mangle]
 /// Get the configuration root path.
+#[ffi_export(domain = "runtime", version = "1.0.0")]
+#[no_mangle]
 pub extern "C" fn keyrx_get_config_root() -> *mut c_char {
     use crate::config::config_dir;
     let path = config_dir();

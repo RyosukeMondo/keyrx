@@ -6,6 +6,7 @@
 //! throughout the project.
 #![allow(unsafe_code)]
 
+use ffi_export::ffi_export;
 use crate::ffi::context::FfiContext;
 use crate::ffi::domains::{
     analysis, device, diagnostics, engine, recording, script, testing, DeviceFfi, RecordingFfi,
@@ -95,6 +96,7 @@ pub unsafe extern "C" fn keyrx_select_device(path: *const c_char) -> i32 {
     .unwrap_or(-5) // -5 for panic
 }
 
+#[ffi_export(domain = "compat", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_list_keys() -> *mut c_char {
     std::panic::catch_unwind(|| ffi_json(device::list_keys()))
@@ -138,6 +140,7 @@ pub extern "C" fn keyrx_list_keys() -> *mut c_char {
 /// }
 /// ```
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_get_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
     std::panic::catch_unwind(|| ffi_json(device::get_device_profile(vendor_id, product_id)))
         .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_get_device_profile")))
@@ -153,6 +156,7 @@ pub extern "C" fn keyrx_get_device_profile(vendor_id: u16, product_id: u16) -> *
 /// * `ok:true` if profile exists
 /// * `ok:false` if profile does not exist
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_has_device_profile(vendor_id: u16, product_id: u16) -> *mut c_char {
     std::panic::catch_unwind(|| ffi_json(device::has_device_profile(vendor_id, product_id)))
         .unwrap_or_else(|_| ffi_error(FfiError::internal("panic in keyrx_has_device_profile")))
@@ -184,11 +188,13 @@ pub unsafe extern "C" fn keyrx_save_device_profile(profile_json: *const c_char) 
 // ── Engine ───────────────────────────────────────────────────────────────────
 
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_is_bypass_active() -> bool {
     engine::is_bypass_mode_active().unwrap_or(false)
 }
 
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_set_bypass(active: bool) {
     let _ = engine::set_bypass_mode_state(active);
 }
@@ -300,6 +306,7 @@ pub unsafe extern "C" fn keyrx_suggest_keys(partial: *const c_char) -> *mut c_ch
 }
 
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_all_key_names() -> *mut c_char {
     let names: Vec<String> = crate::drivers::keycodes::key_definitions()
         .iter()
@@ -415,6 +422,7 @@ pub unsafe extern "C" fn keyrx_run_benchmark(
 }
 
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_run_doctor() -> *mut c_char {
     ffi_json(diagnostics::run_doctor())
 }
@@ -440,6 +448,7 @@ pub unsafe extern "C" fn keyrx_start_recording(path: *const c_char) -> *mut c_ch
 }
 
 #[no_mangle]
+#[ffi_export(domain = "compat", version = "1.0.0")]
 pub extern "C" fn keyrx_stop_recording() -> *mut c_char {
     ffi_json(with_ctx(|ctx| {
         ensure_domain::<RecordingFfi>(ctx)?;

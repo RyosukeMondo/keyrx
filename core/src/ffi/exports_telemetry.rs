@@ -75,6 +75,7 @@
 
 #![allow(unsafe_code)]
 
+use ffi_export::ffi_export;
 use crate::safety::panic_telemetry::{get_telemetry, reset_telemetry};
 use std::ffi::{c_char, CString};
 use std::ptr;
@@ -144,6 +145,7 @@ pub struct PanicTelemetryFfi {
 ///     keyrx_free_string(json);
 /// }
 /// ```
+#[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_snapshot_json() -> *mut c_char {
     let telemetry = get_telemetry();
@@ -192,6 +194,7 @@ pub extern "C" fn keyrx_telemetry_snapshot_json() -> *mut c_char {
 ///     keyrx_telemetry_free_snapshot(telemetry);
 /// }
 /// ```
+#[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_snapshot() -> *mut PanicTelemetryFfi {
     let telemetry = get_telemetry();
@@ -270,6 +273,7 @@ pub extern "C" fn keyrx_telemetry_snapshot() -> *mut PanicTelemetryFfi {
 ///     keyrx_telemetry_free_snapshot(telemetry);
 /// }
 /// ```
+#[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_telemetry_free_snapshot(telemetry: *mut PanicTelemetryFfi) {
     if telemetry.is_null() {
@@ -314,6 +318,7 @@ pub unsafe extern "C" fn keyrx_telemetry_free_snapshot(telemetry: *mut PanicTele
 /// ```c
 /// keyrx_telemetry_reset();  // Start fresh
 /// ```
+#[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_reset() -> i32 {
     reset_telemetry();
