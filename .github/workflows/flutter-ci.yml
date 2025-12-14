@@ -1,0 +1,89 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: flutter-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_CHANNEL: stable
+  FLUTTER_VERSION: '3.x'
+  COVERAGE_THRESHOLD: 80
+  CONCURRENCY: 4
+  EXCLUDE_TAGS: slow,integration
+  TEST_RANDOM_SEED: random
+
+jobs:
+  flutter:
+    name: Flutter ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [quality, golden]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
+      - name: Verify FFI bindings
+        if: matrix.suite == 'quality'
+        run: python3 scripts/verify_bindings.py
+
+      - name: Flutter analyze (fatal warnings)
+        if: matrix.suite == 'quality'
+        run: flutter analyze --fatal-infos --fatal-warnings
+        working-directory: ./ui
+
+      - name: Code metrics check (500 lines/file, 50 lines/function)
+        if: matrix.suite == 'quality'
+        run: dart run scripts/check_metrics.dart
+        working-directory: ./ui
+
+      - name: Tests with coverage and threshold
+        if: matrix.suite == 'quality'
+        env:
+          COVERAGE_THRESHOLD: ${{ env.COVERAGE_THRESHOLD }}
+          CONCURRENCY: ${{ env.CONCURRENCY }}
+          EXCLUDE_TAGS: ${{ env.EXCLUDE_TAGS }}
+          TEST_RANDOM_SEED: ${{ env.TEST_RANDOM_SEED }}
+        run: bash scripts/check_coverage.sh
+        working-directory: ./ui
+
+      - name: Upload Flutter coverage
+        if: matrix.suite == 'quality'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./ui/coverage/lcov.info
+          flags: flutter
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Save coverage artifact
+        if: matrix.suite == 'quality' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage
+          path: ui/coverage/lcov.info
+
+      - name: Golden test verification
+        if: matrix.suite == 'golden'
+        env:
+          CONCURRENCY: 2
+        run: flutter test --concurrency=${CONCURRENCY} test/widgets/golden
+        working-directory: ./ui

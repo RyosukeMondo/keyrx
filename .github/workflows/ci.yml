@@ -168,38 +168,6 @@ jobs:
         run: cargo run --release --bin keyrx -- regression
         working-directory: ./core
 
-  test-flutter:
-    name: Test Flutter
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.x'
-          channel: stable
-          cache: true
-      - name: Verify FFI Bindings
-        run: python3 scripts/verify_bindings.py
-        working-directory: .
-      - name: Install dependencies
-        run: flutter pub get
-        working-directory: ./ui
-      - name: Analyze
-        run: flutter analyze --fatal-infos
-        working-directory: ./ui
-      - name: Run tests
-        run: flutter test --coverage
-        working-directory: ./ui
-      - name: Upload Flutter coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./ui/coverage/lcov.info
-          flags: flutter
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   coverage:
     name: Coverage
     needs: check
