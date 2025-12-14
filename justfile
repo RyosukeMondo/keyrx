@@ -29,9 +29,34 @@ dev:
 ui:
     cd ui && flutter run -d linux
 
-# Run Flutter analysis
-ui-check:
-    cd ui && flutter analyze
+# Run Flutter UI in development mode with mock FFI bridge
+dev-mock:
+    cd ui && flutter run --dart-define=MOCK_FFI=true -d ${DEVICE:-linux}
+
+# Install Flutter dependencies and run code generation
+ui-setup:
+    cd ui && flutter pub get
+    cd ui && flutter pub run build_runner build --delete-conflicting-outputs
+
+# Run Flutter analysis with infos treated as errors
+ui-analyze:
+    cd ui && flutter analyze --fatal-infos
+
+# Check Flutter formatting without writing changes
+ui-format:
+    cd ui && dart format --output=none --set-exit-if-changed lib test scripts
+
+# Check Dart code metrics (file/function length limits)
+ui-metrics:
+    cd ui && dart run scripts/check_metrics.dart
+
+# Run Flutter tests
+ui-test:
+    cd ui && flutter test --concurrency ${CONCURRENCY:-4}
+
+# Run Flutter tests in watch mode
+ui-test-watch:
+    cd ui && flutter test --watch --concurrency ${CONCURRENCY:-4}
 
 # Generate Flutter coverage and HTML report
 ui-coverage:
@@ -39,12 +64,18 @@ ui-coverage:
     ./ui/scripts/generate_coverage_report.sh
     @echo "Coverage report available at ui/coverage/html/index.html"
 
+# Run full Flutter quality gate (format, analyze, metrics, tests)
+ui-quality: ui-format ui-analyze ui-metrics ui-test
+
+# Legacy alias retained for compatibility
+ui-check: ui-analyze
+
 # Verify Flutter build (Windows)
 ui-verify: ui-check
     cd ui && flutter build windows --debug
 
-# Run all quality checks (fmt, clippy, test, docs, bindings)
-check: fmt-check clippy test docs verify-bindings
+# Run all quality checks (fmt, clippy, test, docs, bindings, Flutter quality)
+check: fmt-check clippy test docs verify-bindings ui-quality
     @echo "All checks passed!"
 
 # Format all Rust code
