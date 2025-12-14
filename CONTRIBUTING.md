@@ -56,13 +56,24 @@ Windows builds require [cross](https://github.com/cross-rs/cross).
 
 ### Pre-commit Hooks
 
-Git hooks are automatically installed with `just setup`. The pre-commit hook runs:
+Git hooks are automatically installed with `just setup` (or `scripts/install-hooks.sh`). The pre-commit hook enforces quality gates across Rust and Flutter:
 
-1. `cargo fmt --check` - Code formatting
-2. `cargo clippy -- -D warnings` - Linting
-3. `cargo test --lib` - Unit tests
+1. `cargo fmt --check` (core)
+2. `cargo clippy -- -D warnings` (core)
+3. `RUST_TEST_THREADS=1 cargo test --lib` (core, serial to avoid flakiness)
+4. `python3 scripts/verify_bindings.py` (FFI drift check)
+5. Dart/Flutter toolchain presence check (UI)
+6. `dart format --set-exit-if-changed` (UI)
+7. `flutter analyze --fatal-infos` on staged Dart files only (UI)
+8. `ui/scripts/check_coverage.sh` fast suite with coverage threshold (`UI_FAST_COVERAGE_THRESHOLD`, default 0)
 
-Commits are blocked if any check fails. Run `just fmt` to fix formatting issues.
+If any step fails, fix locally and rerun. For coverage or analysis, you can reproduce with the commands shown in the hook output.
+
+**Skipping hooks for WIP commits:** Only bypass for temporary work-in-progress commits when you need to checkpoint changes locally.
+
+- Run `git commit --no-verify -m "wip: <context>"` to skip the hook.
+- Before pushing or opening a PR, rerun the full checks (`just check` for Rust, `just ui-quality` for Flutter) and create a normal commit without `--no-verify`.
+- Do not merge or submit code that has only passed via `--no-verify`; the hook guards are required for shared branches.
 
 ### Quality Checks
 

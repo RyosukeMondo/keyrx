@@ -18,7 +18,7 @@
 - [x] 1.2.5 Create `ui/scripts/check_coverage.sh` script
 - [x] 1.2.6 Configure coverage threshold (start at 60%, target 80%)
 - [x] 1.2.7 Test pre-commit hooks locally
-- [ ] 1.2.8 Document how to skip hooks for WIP commits (`--no-verify`)
+- [x] 1.2.8 Document how to skip hooks for WIP commits (`--no-verify`)
 
 ### 1.3 Coverage Tracking Infrastructure
 - [ ] 1.3.1 Install `coverage` and `lcov` packages
