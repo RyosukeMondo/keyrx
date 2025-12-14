@@ -1,0 +1,119 @@
+{
+  "allow": [
+    {
+      "path": "core/src/ffi/exports_engine.rs",
+      "max_lines": 20000,
+      "reason": "Legacy monolith scheduled for split (task 14); do not block commits until refactor lands."
+    },
+    {
+      "path": "core/src/ffi/exports_compat.rs",
+      "max_lines": 20000,
+      "reason": "Legacy compatibility module scheduled for split (task 15); allow temporarily."
+    },
+    {
+      "path": "core/src/validation/safety.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; flagged for split via size tasks."
+    },
+    {
+      "path": "core/src/cli/commands/hardware.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; needs domain split."
+    },
+    {
+      "path": "core/src/profiling/flamegraph_diff.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; pending profiling module split."
+    },
+    {
+      "path": "core/src/validation/semantic.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; scheduled for semantic validation split."
+    },
+    {
+      "path": "core/src/engine/replay.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; to be split into ingest/replay components."
+    },
+    {
+      "path": "core/src/api.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; planned API partitioning."
+    },
+    {
+      "path": "core/src/engine/transitions/graph.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; split into graph/build/validate stages."
+    },
+    {
+      "path": "core/src/engine/transitions/log/tests.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; test suite to be modularized."
+    },
+    {
+      "path": "core/src/engine/state/engine_state_tests.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; tests to be segmented."
+    },
+    {
+      "path": "core/src/cli/commands/simulate.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; simulation command split pending."
+    },
+    {
+      "path": "core/src/uat/report.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; reporting to be modularized."
+    },
+    {
+      "path": "core/src/ffi/domains/observability.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; observability domain split planned."
+    },
+    {
+      "path": "core/src/engine/state/layers.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; state layers to be split."
+    },
+    {
+      "path": "core/src/scripting/docs/generators/json.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; docs generator split pending."
+    },
+    {
+      "path": "core/src/uat/report_html.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; HTML report extraction planned."
+    },
+    {
+      "path": "core/src/cli/commands/runtime.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; runtime command split pending."
+    },
+    {
+      "path": "core/src/engine/decision/pending.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; pending decision logic to be split."
+    },
+    {
+      "path": "core/src/uat/fuzz.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; fuzz utilities to be modularized."
+    },
+    {
+      "path": "core/src/scripting/docs/search.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; docs search split pending."
+    },
+    {
+      "path": "core/src/profiling/alloc_report.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; profiling report split planned."
+    },
+    {
+      "path": "core/src/validation/detectors/conflicts.rs",
+      "max_lines": 800,
+      "reason": "Baseline size before refactors; detector split scheduled."
+    }
+  ]
+}
