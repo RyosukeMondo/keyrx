@@ -7,6 +7,7 @@ members = [
     "core/keyrx_ffi_macro",
     "core/macros/ffi_export",
     "core/tools/generate_dart_bindings",
+    "core/tools/module_splitter",
 ]
 resolver = "2"
 
