@@ -62,6 +62,17 @@ cargo build --release --features otel-tracing
 
 ## Quick Start
 
+### Developer setup (automated)
+
+Use the automated helper to install common tools, fetch dependencies, and run first builds:
+
+```bash
+./scripts/setup_dev_env.sh           # or: just setup
+# Optional: SETUP_OPTS="--skip-build --skip-hooks" just setup
+```
+
+The script installs Rust components (rustfmt, clippy, cargo-nextest, watchexec-cli, sccache), coverage tooling (dart coverage + lcov), fetches Rust/Flutter deps, runs Flutter build_runner, installs git hooks, and performs initial Rust + Flutter builds. It is idempotent and will skip steps gracefully if Rust or Flutter are not yet installed. A package manager (apt or Homebrew) is used when available for lcov; install prerequisites manually on other platforms.
+
 ### 1. Check your system
 
 ```bash

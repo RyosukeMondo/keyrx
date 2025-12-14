@@ -35,6 +35,28 @@ bash scripts/flutter_setup.sh
 - `0`: Success
 - `1`: ANDROID_HOME not set
 
+### `setup_dev_env.sh`
+
+Automated developer onboarding script for local environments.
+
+**What it does:**
+1. Installs Rust components (rustfmt, clippy) and cargo tools (cargo-nextest, cargo-watch, watchexec-cli, sccache) when available
+2. Installs coverage tooling (dart coverage activation + lcov via apt/brew) by delegating to `install-coverage-tools.sh`
+3. Fetches Rust and Flutter dependencies; runs Flutter `build_runner` to prime generated code
+4. Installs repository git hooks
+5. Runs initial Rust build and a Flutter test compile unless skipped
+
+**Usage:**
+```bash
+bash scripts/setup_dev_env.sh                 # Full setup
+bash scripts/setup_dev_env.sh --skip-build    # Skip initial builds
+# Or via just: just setup [with SETUP_OPTS="--skip-build"]
+```
+
+**Notes:**
+- Skips Rust/Flutter steps gracefully if those toolchains are not installed yet
+- Uses `apt-get` or Homebrew for lcov when present; install manually on other platforms
+
 ### `jules_setup.sh`
 
 Complete Jules CI setup script for Android/Flutter build environment.

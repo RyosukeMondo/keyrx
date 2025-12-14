@@ -7,19 +7,7 @@ default:
 
 # Setup development environment (install tools, dependencies, and hooks)
 setup:
-    @echo "Installing Rust toolchain components..."
-    rustup component add clippy rustfmt
-    @echo "Installing development tools..."
-    cargo install cargo-nextest cargo-watch watchexec-cli --locked || true
-    @echo "Installing Rust dependencies..."
-    cd core && cargo fetch
-    @echo "Installing Flutter dependencies..."
-    cd ui && flutter pub get
-    @echo "Installing coverage tooling (dart coverage + lcov)..."
-    ./scripts/install-coverage-tools.sh
-    @echo "Installing git hooks..."
-    ./scripts/install-hooks.sh
-    @echo "Setup complete!"
+    ./scripts/setup_dev_env.sh ${SETUP_OPTS}
 
 # Run core in development mode with auto-reload
 dev:
