@@ -9,11 +9,10 @@ use crate::drivers::emergency_exit::{is_bypass_active, set_bypass_mode};
 use crate::engine::state::{change::StateChange, snapshot::StateSnapshot};
 use crate::ffi::context::FfiContext;
 use crate::ffi::error::{FfiError, FfiResult};
-use crate::ffi::events::{EventRegistry, EventType};
+use crate::ffi::events::{global_event_registry, EventType};
 use crate::ffi::traits::FfiExportable;
 // use keyrx_ffi_macros::ffi_export; // TODO: Uncomment when exports_*.rs files are removed (task 20)
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
 
 /// Engine domain FFI implementation.
 pub struct EngineFfi;
@@ -36,13 +35,6 @@ impl FfiExportable for EngineFfi {
         // Clean up engine domain marker
         ctx.remove_domain(Self::DOMAIN);
     }
-}
-
-/// Global event registry for Engine domain.
-/// This will be moved into FfiContext in a future refactor.
-pub(crate) fn global_event_registry() -> &'static EventRegistry {
-    static REGISTRY: OnceLock<EventRegistry> = OnceLock::new();
-    REGISTRY.get_or_init(EventRegistry::new)
 }
 
 // ─── FFI Exports ───────────────────────────────────────────────────────────

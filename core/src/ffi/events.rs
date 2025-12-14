@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 
 /// Standard FFI callback signature: receives pointer to JSON bytes and length.
 pub type EventCallback = unsafe extern "C" fn(*const u8, usize);
@@ -148,6 +148,15 @@ impl EventType {
             EventType::ProfileUpdated => 19,
         }
     }
+}
+
+/// Global event registry shared across all FFI domains.
+///
+/// Moving this out of the engine domain decouples rebuilds: changing engine
+/// exports no longer invalidates consumers that only depend on event routing.
+pub fn global_event_registry() -> &'static EventRegistry {
+    static REGISTRY: OnceLock<EventRegistry> = OnceLock::new();
+    REGISTRY.get_or_init(EventRegistry::new)
 }
 
 /// Unified event envelope that wraps all FFI events.

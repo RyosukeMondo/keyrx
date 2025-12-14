@@ -5,9 +5,11 @@
 #![allow(unsafe_code)]
 
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
+use crate::ffi::events::{global_event_registry, EventType};
 use crate::ffi::runtime::{block_on_ffi, with_revolutionary_runtime};
 use crate::registry::profile::{Profile, ProfileRegistry};
 use crate::registry::{ProfileRegistryResolution, ProfileRegistryStorage};
+use serde_json::json;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 
@@ -63,10 +65,6 @@ pub async fn save_profile(registry: &ProfileRegistry, profile_json: &str) -> Ffi
         .await
         .map_err(|e| FfiError::invalid_input(format!("Failed to save profile: {}", e)))?;
 
-    use crate::ffi::domains::engine::global_event_registry;
-    use crate::ffi::events::EventType;
-    use serde_json::json;
-
     global_event_registry().invoke(
         EventType::ProfileUpdated,
         &json!({
@@ -93,10 +91,6 @@ pub async fn delete_profile(registry: &ProfileRegistry, profile_id: &str) -> Ffi
         .delete_profile(profile_id)
         .await
         .map_err(|e| FfiError::not_found(format!("Profile '{}': {}", profile_id, e)))?;
-
-    use crate::ffi::domains::engine::global_event_registry;
-    use crate::ffi::events::EventType;
-    use serde_json::json;
 
     global_event_registry().invoke(
         EventType::ProfileUpdated,

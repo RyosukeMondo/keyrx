@@ -1,5 +1,4 @@
-use crate::ffi::domains::engine::global_event_registry;
-use crate::ffi::events::EventType;
+use crate::ffi::events::{global_event_registry, EventType};
 use serde::Serialize;
 use std::fmt;
 use tracing::field::{Field, Visit};

@@ -7,8 +7,7 @@
 
 use crate::engine::layout::{LayoutCompositor, ModifierCoordinator};
 use crate::engine::state::{snapshot::StateSnapshot, EngineState, StateDelta};
-use crate::ffi::domains::engine::global_event_registry;
-use crate::ffi::events::{EventCallback, EventType};
+use crate::ffi::events::{global_event_registry, EventCallback, EventType};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
@@ -344,7 +343,7 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
                     }
 
                     // Emit RawInput for Monitor
-                    use crate::ffi::domains::engine::global_event_registry;
+                    use crate::ffi::events::global_event_registry;
                     use crate::ffi::events::EventType;
                     global_event_registry().invoke(EventType::RawInput, &event);
 

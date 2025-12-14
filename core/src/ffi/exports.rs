@@ -4,9 +4,8 @@
 
 use crate::config::models::DeviceInstanceId;
 use crate::definitions::DeviceDefinitionLibrary;
-use crate::ffi::domains::engine::global_event_registry;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
-use crate::ffi::events::EventType;
+use crate::ffi::events::{global_event_registry, EventType};
 use crate::ffi::runtime::{
     clear_revolutionary_runtime, set_revolutionary_runtime, RevolutionaryRuntime,
 };

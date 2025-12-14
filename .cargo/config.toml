@@ -1,0 +1,10 @@
+[build]
+# Use a wrapper that prefers sccache but falls back to rustc when missing.
+rustc-wrapper = "scripts/rustc-wrapper.sh"
+# Keep incremental artifacts between builds for faster iterations.
+incremental = true
+
+[env]
+# Extend cache lifetime for local dev; adjust to fit disk space.
+SCCACHE_IDLE_TIMEOUT = "1800"
+SCCACHE_CACHE_SIZE = "10G"

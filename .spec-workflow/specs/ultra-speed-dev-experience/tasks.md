@@ -88,7 +88,7 @@
   - _Requirements: FR1.3, FR6.4, FR6.5, NFR2.2_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Systems Developer with expertise in FFI debugging and cross-language integration | Task: Create ui/lib/ffi/debug_tools.dart with FFI call tracing utility, add Timeline instrumentation for FFI calls, create FFI error formatter for user-friendly messages, add logging for all FFI boundary crossings using StructuredLogger, create docs/FFI_DEBUGGING.md guide, document common FFI errors and solutions | Restrictions: Tracing must have minimal performance impact, do not expose sensitive data in logs, ensure error messages are actionable | Success: FFI tracing works, Timeline shows FFI calls, error formatter provides clear messages, debugging guide complete with common errors | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 12. Rust Rebuild Optimization
+- [x] 12. Rust Rebuild Optimization
   - File: core/Cargo.toml, docs/BUILD_OPTIMIZATION.md
   - Enable incremental compilation, configure sccache for build caching, optimize FFI module structure, measure rebuild times
   - Purpose: Reduce Rust rebuild time from 30-60s to <5s

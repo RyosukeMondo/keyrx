@@ -6,8 +6,7 @@ use crate::engine::{
     TimingConfig,
 };
 use crate::errors::KeyrxError;
-use crate::ffi::domains::engine::global_event_registry;
-use crate::ffi::events::EventType;
+use crate::ffi::events::{global_event_registry, EventType};
 #[allow(deprecated)]
 use crate::ffi::publish_state_snapshot_legacy;
 use crate::metrics::{MetricsCollector, Operation, OtelMetricsCollector};
