@@ -109,7 +109,7 @@ class DeviceServiceImpl implements DeviceService {
       _log.error(
         'device_refresh_failed',
         message: 'Failed to list registered devices',
-        context: {'error': result.error.toString()},
+        context: {'error': result.errorMessage ?? 'unknown'},
       );
       _cachedDevices = const [];
       return const [];
@@ -134,10 +134,7 @@ class DeviceServiceImpl implements DeviceService {
     }).toList();
 
     _cachedDevices = devices;
-    _log.info(
-      'device_refresh_completed',
-      context: {'count': devices.length},
-    );
+    _log.info('device_refresh_completed', context: {'count': devices.length});
     return devices;
   }
 
@@ -147,10 +144,7 @@ class DeviceServiceImpl implements DeviceService {
   }
 
   DeviceSelectionResult _onSelectSuccess(String path) {
-    _log.info(
-      'device_selected',
-      context: {'path': path},
-    );
+    _log.info('device_selected', context: {'path': path});
     return DeviceSelectionResult.success();
   }
 

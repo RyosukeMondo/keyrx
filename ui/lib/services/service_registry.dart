@@ -17,6 +17,7 @@ import 'runtime_service.dart';
 import 'script_file_service.dart';
 import 'storage_path_resolver.dart';
 import 'test_service.dart';
+import '../utils/performance_timeline.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
 class ServiceRegistry {
@@ -59,13 +60,31 @@ class ServiceRegistry {
     KeymapService? keymapService,
     RuntimeService? runtimeService,
   }) {
+    final bootstrapSpan = PerformanceTimelineTracer.start(
+      'services.bootstrap',
+      context: {'source': 'real'},
+    );
+
+    final bridgeSpan = PerformanceTimelineTracer.start(
+      'ffi.bridge.open',
+      context: {'source': 'service_registry'},
+    );
     final effectiveBridge = bridge ?? KeyrxBridge.open();
+    bridgeSpan.finish(
+      context: {'load_failure': effectiveBridge.loadFailure?.toString()},
+    );
+
     final resolver =
         storagePathResolver ?? StoragePathResolver(bridge: effectiveBridge);
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
 
     // Initialize the bridge (and revolutionary runtime)
-    effectiveBridge.initialize();
+    final initSpan = PerformanceTimelineTracer.start(
+      'ffi.bridge.initialize',
+      context: {'has_bindings': effectiveBridge.bindings != null},
+    );
+    final initialized = effectiveBridge.initialize();
+    initSpan.finish(context: {'initialized': initialized});
 
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
@@ -95,7 +114,7 @@ class ServiceRegistry {
           storagePathResolver: resolver,
         );
 
-    return ServiceRegistry(
+    final registry = ServiceRegistry(
       errorTranslator: translator,
       engineService: engine,
       mappingRepository: mappingRepository ?? MappingRepository(),
@@ -114,6 +133,15 @@ class ServiceRegistry {
       keymapService: keymaps,
       runtimeService: runtime,
     );
+
+    bootstrapSpan.finish(
+      context: {
+        'bridge_initialized': initialized,
+        'load_failure': effectiveBridge.loadFailure?.toString(),
+      },
+    );
+
+    return registry;
   }
 
   /// Create a registry with explicit (often mocked) implementations.

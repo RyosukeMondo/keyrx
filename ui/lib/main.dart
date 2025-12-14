@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -29,14 +30,27 @@ import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
 import 'services/facade/facade_state.dart';
 import 'state/providers_setup.dart';
+import 'utils/performance_timeline.dart';
 
 void main() {
-  runApp(const ProviderScope(child: KeyrxApp()));
+  WidgetsFlutterBinding.ensureInitialized();
+  final startupSpan = PerformanceTimelineTracer.start(
+    'app.startup',
+    context: {'mode': kReleaseMode ? 'release' : 'debug'},
+  );
+
+  runApp(
+    ProviderScope(
+      child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame),
+    ),
+  );
 }
 
 /// Main application widget.
 class KeyrxApp extends ConsumerWidget {
-  const KeyrxApp({super.key});
+  const KeyrxApp({super.key, this.onFirstFrame});
+
+  final VoidCallback? onFirstFrame;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,13 +66,15 @@ class KeyrxApp extends ConsumerWidget {
         apiDocsService: apiDocsService,
         appState: appState,
       ),
-      child: const _KeyrxMaterialApp(),
+      child: _KeyrxMaterialApp(onFirstFrame: onFirstFrame),
     );
   }
 }
 
 class _KeyrxMaterialApp extends StatelessWidget {
-  const _KeyrxMaterialApp();
+  const _KeyrxMaterialApp({this.onFirstFrame});
+
+  final VoidCallback? onFirstFrame;
 
   @override
   Widget build(BuildContext context) {
@@ -72,11 +88,13 @@ class _KeyrxMaterialApp extends StatelessWidget {
         ),
       ),
       home: Builder(
-        builder: (context) => MigrationWrapper(
-          onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
-          onRunMigration: () => _runMigration(context),
-          child: const HomePage(),
-        ),
+        builder: (context) {
+          return MigrationWrapper(
+            onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
+            onRunMigration: () => _runMigration(context),
+            child: HomePage(onFirstFrame: onFirstFrame),
+          );
+        },
       ),
     );
   }
@@ -123,7 +141,9 @@ class _KeyrxMaterialApp extends StatelessWidget {
 
 /// Home page with navigation.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.onFirstFrame});
+
+  final VoidCallback? onFirstFrame;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -189,6 +209,7 @@ class _HomePageState extends State<HomePage> {
     // Load developer mode on startup (engine will init on demand)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppState>().loadDeveloperMode();
+      widget.onFirstFrame?.call();
     });
   }
 
