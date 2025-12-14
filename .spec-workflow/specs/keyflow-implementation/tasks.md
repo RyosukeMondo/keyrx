@@ -24,7 +24,7 @@
   - _Requirements: FR1.1, FR1.2, NFR2.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in Riverpod and state management | Task: Create ui/lib/state/keyflow_providers.dart, implement keyFlowRepositoryProvider, runtimeConfigProvider (AsyncNotifierProvider fetching from repository), flowGraphProvider (derived from runtimeConfigProvider using FlowGraph.fromRuntimeConfig()), nodePositionsProvider (persistent using SharedPreferences for canvas positions), keyFlowActionsProvider for mutations (updateSlot, addSlot, removeSlot), run build_runner to generate code, write provider tests with mocked repository in test/state/keyflow_providers_test.dart | Restrictions: Must follow Riverpod best practices, ensure proper dependency injection, handle loading/error states, keep providers focused | Success: All providers implemented with code generation, state updates trigger UI rebuilds, node positions persist across sessions, mutations work correctly, provider tests pass | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 4. FlowEditorPage Refactoring
+- [x] 4. FlowEditorPage Refactoring
   - File: ui/lib/pages/flow_editor_page.dart, ui/test/pages/flow_editor_page_test.dart
   - Refactor FlowEditorPage from StatefulWidget to ConsumerStatefulWidget, replace hardcoded mock data with ref.watch(flowGraphProvider), add loading state (skeleton with shimmer), error state (ErrorView with retry), empty state ("No devices connected"), widget tests
   - Purpose: Connect UI to real data layer, handle async states properly

@@ -1,155 +1,106 @@
-import 'package:flutter/material.dart';
-import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
-import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
-import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
-import 'package:keyrx_ui/models/flow/flow_data.dart';
+import 'dart:math' as math;
 
-class FlowEditorPage extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyrx_ui/models/flow/flow_data.dart';
+import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
+import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
+import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
+
+class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
 
   @override
-  State<FlowEditorPage> createState() => _FlowEditorPageState();
+  ConsumerState<FlowEditorPage> createState() => _FlowEditorPageState();
 }
 
-class _FlowEditorPageState extends State<FlowEditorPage> {
-  // Simple State for now
-  final List<FlowNodeWrapper> nodes = [];
-  final List<FlowEdge> edges = [];
+class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
+    with SingleTickerProviderStateMixin {
+  static const _canvasWidth = 1800.0;
+  static const _canvasHeight = 1200.0;
+
+  late final AnimationController _shimmerController;
+  late final Animation<double> _shimmer;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-  }
-
-  void _loadInitialData() {
-    // Device 1
-    nodes.add(
-      FlowNodeWrapper(
-        id: 'device-1',
-        position: const Offset(50, 100),
-        child: const DeviceNodeWidget(
-          data: DeviceNodeData(
-            name: 'Keychron Q1',
-            vid: '0x3434',
-            pid: '0x0120',
-            isConnected: true,
-            wirings: [
-              DeviceWiring(id: 'w1', name: 'Main Config', isActive: true),
-              DeviceWiring(id: 'w2', name: 'Fallback Config', isActive: false),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    // Layout 1
-    nodes.add(
-      FlowNodeWrapper(
-        id: 'layout-1',
-        position: const Offset(450, 50),
-        child: const LayoutNodeWidget(
-          data: LayoutNodeData(name: 'ANSI 104', type: 'preset'),
-        ),
-      ),
-    );
-
-    // Keymap 1
-    nodes.add(
-      FlowNodeWrapper(
-        id: 'keymap-1',
-        position: const Offset(750, 50),
-        child: const KeymapNodeWidget(
-          data: KeymapNodeData(name: 'Gaming Layer', layers: 4, isActive: true),
-        ),
-      ),
-    );
-
-    // Layout 2 (Fallback)
-    nodes.add(
-      FlowNodeWrapper(
-        id: 'layout-2',
-        position: const Offset(450, 300),
-        child: const LayoutNodeWidget(
-          data: LayoutNodeData(name: 'ISO 105', type: 'preset'),
-        ),
-      ),
-    );
-
-    // Keymap 2
-    nodes.add(
-      FlowNodeWrapper(
-        id: 'keymap-2',
-        position: const Offset(750, 300),
-        child: const KeymapNodeWidget(
-          data: KeymapNodeData(
-            name: 'Office Layer',
-            layers: 2,
-            isActive: false,
-          ),
-        ),
-      ),
-    );
-
-    // Edges
-    // Note: Offsets are approximate for now. A real system would calculate handle positions dynamically.
-    edges.add(
-      FlowEdge(
-        start: const Offset(290, 190), // Device w1 handle
-        end: const Offset(450, 120), // Layout 1 in
-        color: const Color(0xFF1AB394),
-        isActive: true,
-      ),
-    );
-    edges.add(
-      FlowEdge(
-        start: const Offset(650, 120), // Layout 1 out
-        end: const Offset(750, 120), // Keymap 1 in
-        color: const Color(0xFF9B59B6),
-        isActive: true,
-      ),
-    );
-
-    edges.add(
-      FlowEdge(
-        start: const Offset(290, 220), // Device w2 handle
-        end: const Offset(450, 370), // Layout 2 in
-        color: Colors.grey,
-        isActive: false,
-        isDashed: true,
-      ),
-    );
-    edges.add(
-      FlowEdge(
-        start: const Offset(650, 370), // Layout 2 out
-        end: const Offset(750, 370), // Keymap 2 in
-        color: Colors.grey,
-        isActive: false,
-      ),
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+    _shimmer = Tween<double>(begin: -1, end: 2).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
   }
 
   @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final graphAsync = ref.watch(flowGraphProvider);
+    final positionsAsync = ref.watch(nodePositionsProvider);
+
+    if (graphAsync.isLoading || positionsAsync.isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: _FlowLoadingSkeleton(
+          key: const Key('flow-loading-skeleton'),
+          animation: _shimmer,
+        ),
+      );
+    }
+
+    if (graphAsync.hasError) {
+      return _FlowErrorView(error: graphAsync.error, onRetry: _retryLoad);
+    }
+
+    if (positionsAsync.hasError) {
+      return _FlowErrorView(error: positionsAsync.error, onRetry: _retryLoad);
+    }
+
+    final graph = graphAsync.value ?? const FlowGraph();
+    final positions = positionsAsync.value ?? const <String, FlowPosition>{};
+
+    if (graph.nodes.isEmpty) {
+      return const _FlowEmptyState();
+    }
+
+    final view = _buildCanvas(graph, positions);
+
+    final canvasWidth = view.nodes.fold<double>(
+      _canvasWidth,
+      (width, node) =>
+          math.max(width, node.position.dx + node.size.width + 200),
+    );
+    final canvasHeight = view.nodes.fold<double>(
+      _canvasHeight,
+      (height, node) =>
+          math.max(height, node.position.dy + node.size.height + 200),
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: InteractiveViewer(
-        boundaryMargin: const EdgeInsets.all(double.infinity),
-        minScale: 0.1,
-        maxScale: 2.0,
+        boundaryMargin: const EdgeInsets.all(240),
+        minScale: 0.5,
+        maxScale: 2.5,
         child: SizedBox(
-          width: 2000,
-          height: 1500,
+          width: canvasWidth,
+          height: canvasHeight,
           child: Stack(
             children: [
-              // Background Grid
-              Positioned.fill(child: CustomPaint(painter: GridPainter())),
-
-              // Edges (Painted below nodes)
-              Positioned.fill(child: CustomPaint(painter: EdgesPainter(edges))),
-
-              // Nodes
-              ...nodes.map(
+              Positioned.fill(child: CustomPaint(painter: _GridPainter())),
+              Positioned.fill(
+                child: CustomPaint(painter: _EdgesPainter(view.edges)),
+              ),
+              ...view.nodes.map(
                 (node) => Positioned(
                   left: node.position.dx,
                   top: node.position.dy,
@@ -162,41 +113,169 @@ class _FlowEditorPageState extends State<FlowEditorPage> {
       ),
     );
   }
+
+  void _retryLoad() {
+    ref.invalidate(flowGraphProvider);
+    ref.invalidate(runtimeConfigProvider);
+    ref.invalidate(nodePositionsProvider);
+  }
+
+  _CanvasView _buildCanvas(
+    FlowGraph graph,
+    Map<String, FlowPosition> storedPositions,
+  ) {
+    final resolvedPositions = _resolvePositions(graph, storedPositions);
+
+    final nodes = graph.nodes.map((node) {
+      final position = resolvedPositions[node.nodeId] ?? Offset.zero;
+      return _CanvasNode(
+        id: node.nodeId,
+        position: position,
+        size: _nodeSizeFor(node),
+        child: _buildNodeWidget(node, graph),
+      );
+    }).toList();
+
+    final nodeMap = {for (final node in nodes) node.id: node};
+    final edges = <_PaintableEdge>[];
+    for (final edge in graph.edges) {
+      final fromNode = nodeMap[edge.from];
+      final toNode = nodeMap[edge.to];
+      if (fromNode == null || toNode == null) continue;
+
+      edges.add(
+        _PaintableEdge(
+          start: _edgeHandle(fromNode, isSource: true),
+          end: _edgeHandle(toNode, isSource: false),
+          color: _edgeColor(edge),
+          isDashed: !edge.active,
+        ),
+      );
+    }
+
+    return _CanvasView(nodes: nodes, edges: edges);
+  }
+
+  Map<String, Offset> _resolvePositions(
+    FlowGraph graph,
+    Map<String, FlowPosition> storedPositions,
+  ) {
+    const deviceStart = Offset(60, 80);
+    const profileStart = Offset(420, 80);
+    const keymapStart = Offset(760, 80);
+    const verticalGap = 200.0;
+
+    var deviceY = deviceStart.dy;
+    var profileY = profileStart.dy;
+    var keymapY = keymapStart.dy;
+
+    final positions = <String, Offset>{};
+
+    for (final node in graph.nodes) {
+      final saved = storedPositions[node.nodeId];
+      if (saved != null) {
+        positions[node.nodeId] = Offset(saved.x, saved.y);
+        continue;
+      }
+
+      node.when(
+        device: (_, __, ___, ____) {
+          positions[node.nodeId] = Offset(deviceStart.dx, deviceY);
+          deviceY += verticalGap;
+        },
+        hardwareProfile: (_, __) {
+          positions[node.nodeId] = Offset(profileStart.dx, profileY);
+          profileY += verticalGap;
+        },
+        keymap: (_, __, ___) {
+          positions[node.nodeId] = Offset(keymapStart.dx, keymapY);
+          keymapY += verticalGap;
+        },
+      );
+    }
+
+    return positions;
+  }
+
+  Widget _buildNodeWidget(FlowNode node, FlowGraph graph) {
+    return node.map(
+      device: (value) {
+        final wirings =
+            graph.edges.where((edge) => edge.from == value.id).toList()..sort(
+              (a, b) => a.priority == b.priority
+                  ? a.slotId.compareTo(b.slotId)
+                  : a.priority.compareTo(b.priority),
+            );
+
+        return DeviceNodeWidget(
+          data: DeviceNodeData(
+            name:
+                value.label ??
+                'Device ${value.deviceId.vendorId}:${value.deviceId.productId}',
+            vid: _formatId(value.deviceId.vendorId),
+            pid: _formatId(value.deviceId.productId),
+            isConnected: value.isConnected,
+            wirings: wirings
+                .map(
+                  (edge) => DeviceWiring(
+                    id: edge.slotId,
+                    name: '${edge.to} (p${edge.priority})',
+                    isActive: edge.active,
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
+      hardwareProfile: (value) => LayoutNodeWidget(
+        data: LayoutNodeData(name: value.label ?? value.id, type: 'profile'),
+      ),
+      keymap: (value) => KeymapNodeWidget(
+        data: KeymapNodeData(
+          name: value.label ?? value.id,
+          layers: value.layers ?? 1,
+          isActive: graph.edges.any(
+            (edge) => edge.to == value.id && edge.active,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatId(int id) => '0x${id.toRadixString(16).padLeft(4, '0')}';
+
+  Offset _edgeHandle(_CanvasNode node, {required bool isSource}) {
+    final dx = isSource ? node.size.width : 0.0;
+    return node.position + Offset(dx, node.size.height / 2);
+  }
+
+  Size _nodeSizeFor(FlowNode node) {
+    return node.map(
+      device: (_) => const Size(240, 200),
+      hardwareProfile: (_) => const Size(200, 140),
+      keymap: (_) => const Size(180, 120),
+    );
+  }
+
+  Color _edgeColor(FlowEdge edge) {
+    if (edge.status == EdgeStatus.invalid) {
+      return const Color(0xFFE74C3C);
+    }
+    if (edge.status == EdgeStatus.warning) {
+      return const Color(0xFFF1C40F);
+    }
+    if (!edge.active) {
+      return Colors.grey.shade600;
+    }
+    return const Color(0xFF1AB394);
+  }
 }
 
-class FlowNodeWrapper {
-  final String id;
-  final Offset position;
-  final Widget child;
-
-  FlowNodeWrapper({
-    required this.id,
-    required this.position,
-    required this.child,
-  });
-}
-
-class FlowEdge {
-  final Offset start;
-  final Offset end;
-  final Color color;
-  final bool isActive;
-  final bool isDashed;
-
-  FlowEdge({
-    required this.start,
-    required this.end,
-    required this.color,
-    this.isActive = true,
-    this.isDashed = false,
-  });
-}
-
-class GridPainter extends CustomPainter {
+class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF333333).withValues(alpha: 0.5)
+      ..color = const Color(0xFF333333).withValues(alpha: 0.4)
       ..strokeWidth = 1;
 
     const gridSize = 20.0;
@@ -213,48 +292,43 @@ class GridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class EdgesPainter extends CustomPainter {
-  final List<FlowEdge> edges;
+class _EdgesPainter extends CustomPainter {
+  _EdgesPainter(this.edges);
 
-  EdgesPainter(this.edges);
+  final List<_PaintableEdge> edges;
 
   @override
   void paint(Canvas canvas, Size size) {
     for (final edge in edges) {
       final paint = Paint()
         ..color = edge.color
-        ..strokeWidth = 2
+        ..strokeWidth = 2.2
         ..style = PaintingStyle.stroke;
 
-      final path = Path();
-      path.moveTo(edge.start.dx, edge.start.dy);
-
-      // Bezier curve
-      final midX = (edge.start.dx + edge.end.dx) / 2;
-      path.cubicTo(
-        midX,
-        edge.start.dy,
-        midX,
-        edge.end.dy,
-        edge.end.dx,
-        edge.end.dy,
-      );
+      final path = Path()
+        ..moveTo(edge.start.dx, edge.start.dy)
+        ..cubicTo(
+          (edge.start.dx + edge.end.dx) / 2,
+          edge.start.dy,
+          (edge.start.dx + edge.end.dx) / 2,
+          edge.end.dy,
+          edge.end.dx,
+          edge.end.dy,
+        );
 
       if (edge.isDashed) {
-        // Simple dashed line implementation
-        final dashPath = Path();
-        final metrics = path.computeMetrics();
-        for (final metric in metrics) {
+        final dashed = Path();
+        for (final metric in path.computeMetrics()) {
           var distance = 0.0;
           while (distance < metric.length) {
-            dashPath.addPath(
-              metric.extractPath(distance, distance + 5),
+            dashed.addPath(
+              metric.extractPath(distance, distance + 6),
               Offset.zero,
             );
-            distance += 10;
+            distance += 12;
           }
         }
-        canvas.drawPath(dashPath, paint);
+        canvas.drawPath(dashed, paint);
       } else {
         canvas.drawPath(path, paint);
       }
@@ -263,4 +337,182 @@ class EdgesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _FlowLoadingSkeleton extends StatelessWidget {
+  const _FlowLoadingSkeleton({super.key, required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Container(
+          color: const Color(0xFF121212),
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _shimmerBar(width: 220),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _shimmerCard(width: 240, height: 180),
+                    _shimmerCard(width: 200, height: 140),
+                    _shimmerCard(width: 180, height: 120),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _shimmerBar({required double width}) {
+    return _shimmerBox(width: width, height: 16, radius: 6);
+  }
+
+  Widget _shimmerCard({required double width, required double height}) {
+    return _shimmerBox(width: width, height: height, radius: 10);
+  }
+
+  Widget _shimmerBox({
+    required double width,
+    required double height,
+    required double radius,
+  }) {
+    final gradient = LinearGradient(
+      begin: Alignment(-1, 0),
+      end: Alignment(1, 0),
+      colors: const [Color(0xFF1E1E1E), Color(0xFF2C2C2C), Color(0xFF1E1E1E)],
+      stops: const [0.1, 0.5, 0.9],
+      transform: _SlidingGradientTransform(slidePercent: animation.value),
+    );
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(radius),
+        gradient: gradient,
+      ),
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  final double slidePercent;
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(bounds.width * slidePercent, 0, 0);
+  }
+}
+
+class _FlowErrorView extends StatelessWidget {
+  const _FlowErrorView({required this.error, required this.onRetry});
+
+  final Object? error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+            const SizedBox(height: 12),
+            const Text(
+              'Something went wrong',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$error',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FlowEmptyState extends StatelessWidget {
+  const _FlowEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.usb_off_rounded, color: Colors.grey, size: 52),
+            SizedBox(height: 12),
+            Text(
+              'No devices connected',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Connect a device to populate your flow.',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CanvasView {
+  const _CanvasView({required this.nodes, required this.edges});
+
+  final List<_CanvasNode> nodes;
+  final List<_PaintableEdge> edges;
+}
+
+class _CanvasNode {
+  const _CanvasNode({
+    required this.id,
+    required this.position,
+    required this.size,
+    required this.child,
+  });
+
+  final String id;
+  final Offset position;
+  final Size size;
+  final Widget child;
+}
+
+class _PaintableEdge {
+  const _PaintableEdge({
+    required this.start,
+    required this.end,
+    required this.color,
+    required this.isDashed,
+  });
+
+  final Offset start;
+  final Offset end;
+  final Color color;
+  final bool isDashed;
 }
