@@ -4,6 +4,7 @@
 library;
 
 import '../ffi/bridge.dart';
+import '../utils/logger.dart';
 
 /// Result of a device selection operation.
 class DeviceSelectionResult {
@@ -45,6 +46,7 @@ class DeviceServiceImpl implements DeviceService {
 
   final KeyrxBridge _bridge;
   List<KeyboardDevice>? _cachedDevices;
+  final StructuredLogger _log = getLogger('device_service');
 
   @override
   Future<List<KeyboardDevice>> listDevices() async {
@@ -57,20 +59,24 @@ class DeviceServiceImpl implements DeviceService {
   @override
   Future<DeviceSelectionResult> selectDevice(String path) async {
     if (_bridge.loadFailure != null) {
-      return DeviceSelectionResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
+      final message = 'Engine unavailable: ${_bridge.loadFailure}';
+      _log.error(
+        'device_select_failed',
+        message: message,
+        context: {'path': path},
       );
+      return DeviceSelectionResult.error(message);
     }
 
     final result = _bridge.selectDevice(path);
 
     return switch (result) {
-      0 => DeviceSelectionResult.success(),
-      -1 => DeviceSelectionResult.error('Null pointer'),
-      -2 => DeviceSelectionResult.error('Invalid UTF-8 path'),
-      -3 => DeviceSelectionResult.error('Device path does not exist'),
-      -4 => DeviceSelectionResult.error('Device lock error'),
-      _ => DeviceSelectionResult.error('Unknown error: $result'),
+      0 => _onSelectSuccess(path),
+      -1 => _onSelectFailure(path, 'Null pointer'),
+      -2 => _onSelectFailure(path, 'Invalid UTF-8 path'),
+      -3 => _onSelectFailure(path, 'Device path does not exist'),
+      -4 => _onSelectFailure(path, 'Device lock error'),
+      _ => _onSelectFailure(path, 'Unknown error: $result'),
     };
   }
 
@@ -89,12 +95,22 @@ class DeviceServiceImpl implements DeviceService {
   @override
   Future<List<KeyboardDevice>> refresh() async {
     if (_bridge.loadFailure != null) {
+      _log.warn(
+        'device_refresh_skipped',
+        message: 'Bridge failed to load; cannot refresh devices',
+        context: {'load_failure': _bridge.loadFailure.toString()},
+      );
       return const [];
     }
 
     // Use the new DeviceRegistry API which uses the Revolutionary Runtime
     final result = _bridge.listRegisteredDevices();
     if (result.hasError) {
+      _log.error(
+        'device_refresh_failed',
+        message: 'Failed to list registered devices',
+        context: {'error': result.error.toString()},
+      );
       _cachedDevices = const [];
       return const [];
     }
@@ -118,11 +134,32 @@ class DeviceServiceImpl implements DeviceService {
     }).toList();
 
     _cachedDevices = devices;
+    _log.info(
+      'device_refresh_completed',
+      context: {'count': devices.length},
+    );
     return devices;
   }
 
   @override
   Future<void> dispose() async {
     _cachedDevices = null;
+  }
+
+  DeviceSelectionResult _onSelectSuccess(String path) {
+    _log.info(
+      'device_selected',
+      context: {'path': path},
+    );
+    return DeviceSelectionResult.success();
+  }
+
+  DeviceSelectionResult _onSelectFailure(String path, String errorMessage) {
+    _log.warn(
+      'device_selection_error',
+      message: errorMessage,
+      context: {'path': path},
+    );
+    return DeviceSelectionResult.error(errorMessage);
   }
 }
