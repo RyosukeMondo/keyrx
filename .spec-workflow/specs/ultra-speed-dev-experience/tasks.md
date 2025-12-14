@@ -48,7 +48,7 @@
   - _Requirements: FR3.1, FR3.2, FR3.3_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in Riverpod and state management | Task: Add flutter_riverpod, riverpod_annotation to dependencies and riverpod_generator, build_runner to dev_dependencies in pubspec.yaml, create ui/lib/state/providers_setup.dart for global providers, migrate bridgeProvider to Riverpod, create example provider for KeyFlow state, update main.dart to use ProviderScope, run build_runner for code generation, document Riverpod patterns in docs/STATE_MANAGEMENT.md | Restrictions: Must maintain existing functionality, follow Riverpod best practices, ensure type safety | Success: Riverpod configured, bridgeProvider migrated, example provider created, ProviderScope in main.dart, build_runner generates code, patterns documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 7. Widget Test Harness
+- [x] 7. Widget Test Harness
   - File: ui/test/helpers/widget_test_harness.dart, ui/test/helpers/widget_tester_extensions.dart
   - Create WidgetTestHarness class with provider overrides, pumpWidget/pumpPage helpers, WidgetTesterX extension with common assertions, refactor existing tests
   - Purpose: Accelerate widget testing with reusable test utilities

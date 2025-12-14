@@ -5,13 +5,12 @@ import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/widgets/layout_grid.dart';
 import 'package:keyrx_ui/widgets/visual_keyboard.dart';
 
-void main() {
-  group('LayoutGrid Widget Tests', () {
-    // Helper function to wrap widget in MaterialApp for testing
-    Widget makeTestableWidget(Widget child) {
-      return MaterialApp(home: Scaffold(body: child));
-    }
+import '../helpers/widget_test_harness.dart';
 
+void main() {
+  final harness = WidgetTestHarness();
+
+  group('LayoutGrid Widget Tests', () {
     // Sample profile for testing
     Profile createTestProfile({
       LayoutType layoutType = LayoutType.matrix,
@@ -37,9 +36,7 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Should render 6 keys (2 rows × 3 cols)
         expect(find.byType(InkWell), findsNWidgets(6));
@@ -54,9 +51,7 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Should render 15 keys (3 rows × 5 cols)
         expect(find.byType(InkWell), findsNWidgets(15));
@@ -71,9 +66,7 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Check for position labels
         expect(find.text('0,0'), findsOneWidget);
@@ -94,34 +87,31 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            SizedBox(
-              width: 200,
-              height: 200,
-              child: LayoutGrid(
-                layoutInfo: layoutInfo,
-                keySize: 40.0,
-                keySpacing: 4.0,
-                onKeyTap: (row, col) {
-                  tappedRow = row;
-                  tappedCol = col;
-                },
-              ),
+        await harness.pumpWidget(
+          tester,
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: LayoutGrid(
+              layoutInfo: layoutInfo,
+              keySize: 40.0,
+              keySpacing: 4.0,
+              onKeyTap: (row, col) {
+                tappedRow = row;
+                tappedCol = col;
+              },
             ),
           ),
         );
 
         // Tap the first key (0,0)
-        await tester.tap(find.byType(InkWell).first);
-        await tester.pumpAndSettle();
+        await tester.tapAndSettle(find.byType(InkWell).first);
 
         expect(tappedRow, equals(0));
         expect(tappedCol, equals(0));
 
         // Tap the last key (1,1)
-        await tester.tap(find.byType(InkWell).last);
-        await tester.pumpAndSettle();
+        await tester.tapAndSettle(find.byType(InkWell).last);
 
         expect(tappedRow, equals(1));
         expect(tappedCol, equals(1));
@@ -145,10 +135,9 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, profile: profile),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, profile: profile),
         );
 
         // Check for mapped key labels
@@ -166,13 +155,10 @@ void main() {
 
         final selectedPos = PhysicalPosition(row: 0, col: 1);
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, selectedPosition: selectedPos),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, selectedPosition: selectedPos),
         );
-
-        await tester.pumpAndSettle();
 
         // Verify widget builds without error
         // Detailed color verification would require golden tests
@@ -190,9 +176,7 @@ void main() {
           type: LayoutType.standard,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Should render VisualKeyboard
         expect(find.byType(VisualKeyboard), findsOneWidget);
@@ -216,10 +200,9 @@ void main() {
           type: LayoutType.standard,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, profile: profile),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, profile: profile),
         );
 
         // Should render VisualKeyboard
@@ -237,9 +220,7 @@ void main() {
           type: LayoutType.split,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Should render 8 keys total (2 halves × 2 rows × 2 cols)
         expect(find.byType(InkWell), findsNWidgets(8));
@@ -250,9 +231,7 @@ void main() {
       ) async {
         final layoutInfo = LayoutInfo(rows: 2, cols: 4, type: LayoutType.split);
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         // Left half
         expect(find.text('0,0'), findsOneWidget);
@@ -288,10 +267,9 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, profile: profile),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, profile: profile),
         );
 
         // Verify action labels
@@ -311,10 +289,9 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, keySize: 64.0, keySpacing: 8.0),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, keySize: 64.0, keySpacing: 8.0),
         );
 
         // Should build without errors
@@ -334,10 +311,9 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, profile: profile),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, profile: profile),
         );
 
         // Should render keys with only position labels
@@ -352,8 +328,9 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo, profile: null)),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, profile: null),
         );
 
         // Should render without errors
@@ -367,9 +344,7 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(LayoutGrid(layoutInfo: layoutInfo)),
-        );
+        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
 
         expect(find.byType(InkWell), findsOneWidget);
         expect(find.text('0,0'), findsOneWidget);
@@ -382,14 +357,13 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            SingleChildScrollView(
-              child: LayoutGrid(
-                layoutInfo: layoutInfo,
-                keySize: 40.0,
-                keySpacing: 2.0,
-              ),
+        await harness.pumpWidget(
+          tester,
+          SingleChildScrollView(
+            child: LayoutGrid(
+              layoutInfo: layoutInfo,
+              keySize: 40.0,
+              keySpacing: 2.0,
             ),
           ),
         );
@@ -405,15 +379,13 @@ void main() {
           type: LayoutType.matrix,
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            LayoutGrid(layoutInfo: layoutInfo, onKeyTap: null),
-          ),
+        await harness.pumpWidget(
+          tester,
+          LayoutGrid(layoutInfo: layoutInfo, onKeyTap: null),
         );
 
         // Should render without errors and taps should do nothing
-        await tester.tap(find.byType(InkWell).first);
-        await tester.pumpAndSettle();
+        await tester.tapAndSettle(find.byType(InkWell).first);
 
         expect(find.byType(LayoutGrid), findsOneWidget);
       });

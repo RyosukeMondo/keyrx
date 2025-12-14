@@ -3,12 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:keyrx_ui/widgets/remap_toggle.dart';
 
+import '../helpers/widget_test_harness.dart';
+
 void main() {
+  final harness = WidgetTestHarness();
+
   testWidgets('RemapToggle displays ON label when enabled', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: RemapToggle(enabled: true))),
+    await harness.pumpWidget(
+      tester,
+      const RemapToggle(enabled: true),
     );
 
     expect(find.text('ON'), findsOneWidget);
@@ -19,8 +24,9 @@ void main() {
   testWidgets('RemapToggle displays OFF label when disabled', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: RemapToggle(enabled: false))),
+    await harness.pumpWidget(
+      tester,
+      const RemapToggle(enabled: false),
     );
 
     expect(find.text('OFF'), findsOneWidget);
@@ -32,19 +38,15 @@ void main() {
   ) async {
     bool? changedValue;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: RemapToggle(
-            enabled: false,
-            onChanged: (value) => changedValue = value,
-          ),
-        ),
+    await harness.pumpWidget(
+      tester,
+      RemapToggle(
+        enabled: false,
+        onChanged: (value) => changedValue = value,
       ),
     );
 
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
+    await tester.tapAndSettle(find.byType(Switch));
 
     expect(changedValue, isTrue);
   });
@@ -52,10 +54,9 @@ void main() {
   testWidgets('RemapToggle can be disabled when onChanged is null', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: RemapToggle(enabled: true, onChanged: null)),
-      ),
+    await harness.pumpWidget(
+      tester,
+      const RemapToggle(enabled: true, onChanged: null),
     );
 
     final switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -65,8 +66,9 @@ void main() {
   testWidgets('RemapToggle switch reflects enabled state', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: RemapToggle(enabled: true))),
+    await harness.pumpWidget(
+      tester,
+      const RemapToggle(enabled: true),
     );
 
     final switchWidget = tester.widget<Switch>(find.byType(Switch));

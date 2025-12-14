@@ -54,3 +54,22 @@ COVERAGE_THRESHOLD=60 ./scripts/check_coverage.sh
 2) During development: run `COVERAGE_THRESHOLD=60 ./scripts/check_coverage.sh` before committing; bump toward 80% as coverage improves.
 3) For reports: `just ui-coverage` and open `ui/coverage/html/index.html`.
 4) Keep the fast pre-commit subset healthy; expand `TEST_FILES` as new suites are added.
+
+## Widget test harness (Riverpod + provider)
+- Use `WidgetTestHarness` from `ui/test/helpers/widget_test_harness.dart` to wrap widgets in `ProviderScope` + `MultiProvider` with fake services (FakeBridge, fake registry, MockKeyrxFacade, AppState).
+- Quick start:
+  ```dart
+  final harness = WidgetTestHarness();
+  await harness.pumpPage(
+    tester,
+    Consumer(
+      builder: (context, ref, _) =>
+          Text('Bridge: ${ref.read(bridgeProvider).version}'),
+    ),
+  );
+  await tester.tapAndSettle(find.text('Submit'));
+  tester.expectOne(find.text('Bridge: fake-1.0.0'));
+  ```
+- Override dependencies with `overrides` or `providerOverrides` when a test needs custom fakes.
+- `WidgetTesterX` adds `tapAndSettle`, `enterTextAndSettle`, `expectOne`, and `expectNone` to keep assertions terse.
+- The harness defaults to `MaterialApp + Scaffold`; pass `wrapWithScaffold: false` when testing fragments that already provide layout chrome.
