@@ -29,6 +29,7 @@ mod exports_transition_log;
 pub mod logging;
 pub mod marshal;
 pub mod runtime;
+pub mod tracing;
 pub mod traits;
 
 #[cfg(test)]

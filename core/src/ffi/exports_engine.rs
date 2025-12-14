@@ -5,13 +5,15 @@
 //! fallback when versions drift.
 #![allow(unsafe_code)]
 
-use ffi_export::ffi_export;
 use crate::engine::layout::{LayoutCompositor, ModifierCoordinator};
 use crate::engine::state::{snapshot::StateSnapshot, EngineState, StateDelta};
 use crate::ffi::events::{global_event_registry, EventCallback, EventType};
+use crate::ffi::tracing::{correlation_id, new_correlation_id};
+use ffi_export::ffi_export;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
+use tracing::instrument;
 
 // Sentinel indicating that no state has been sent yet.
 const INITIAL_VERSION_SENTINEL: u64 = u64::MAX;
@@ -109,13 +111,24 @@ pub fn publish_state_update_with_layouts(
 /// Register a legacy EngineState callback.
 ///
 /// This provides compatibility for the older `keyrx_on_state` API expected by
-#[ffi_export(domain = "engine", version = "1.0.0")]
 /// the Flutter bindings. Call with `None` to unregister.
+#[instrument(skip(callback), fields(correlation_id = %correlation_id(), has_callback = callback.is_some()))]
+#[ffi_export(domain = "engine", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_on_state(callback: Option<EventCallback>) {
+    new_correlation_id();
+
+    if callback.is_some() {
+        tracing::info!("Registering engine state callback");
+    } else {
+        tracing::info!("Unregistering engine state callback");
+    }
+
     global_event_registry().register(EventType::EngineState, callback);
     // Force the next publish to include a full snapshot for resync.
     reset_last_sent_version();
+
+    tracing::debug!("Engine state callback registration completed");
 }
 
 // ─── Engine Loop Lifecycle ────────────────────────────────────────────────
