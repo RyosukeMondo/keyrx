@@ -29,7 +29,7 @@
   - _Requirements: 1, 2, 3, 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter UI engineer. Task: Create KeyFlowPage with panes for devices, wiring graph, key details, and runtime strip, consuming KeyFlowViewModel. Restrictions: Read-only; preserve scroll/selection on updates; show banners for bridge errors and stale runtime; keep widgets split into panes in same file or subwidgets; support mock-bridge hot reload without native lib. _Leverage: listed widgets/pages. _Requirements: 1,2,3,5. Success: screen renders live data, flags gaps/conflicts, shows runtime overlays, handles empty/error states clearly, and supports the hot-reload mock loop._
 
-- [ ] 4. Add telemetry hooks for KeyFlow
+- [x] 4. Add telemetry hooks for KeyFlow
   - File: ui/lib/services/metrics_service.dart (extend) and/or ui/lib/services/observability_service.dart usage within keyflow repository/view model
   - Record fetch latency (p95), success/failure counts, render timing for large layouts; capture parse errors with source + payload size only
   - _Leverage: ui/lib/services/metrics_service.dart, ui/lib/services/observability_service.dart_

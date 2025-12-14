@@ -14,6 +14,7 @@ import '../models/keymap.dart';
 import '../models/runtime_config.dart';
 import '../models/virtual_layout.dart';
 import '../services/facade/keyflow_repository.dart';
+import '../services/keyflow_telemetry.dart';
 import '../services/service_registry.dart';
 import '../state/keyflow_view_model.dart';
 import '../widgets/virtual_layout_renderer.dart';
@@ -26,6 +27,7 @@ class KeyFlowPage extends StatefulWidget {
 }
 
 class _KeyFlowPageState extends State<KeyFlowPage> {
+  late final KeyFlowTelemetry _telemetry;
   late final KeyFlowRepository _repository;
   late final KeyFlowViewModel _viewModel;
 
@@ -33,6 +35,7 @@ class _KeyFlowPageState extends State<KeyFlowPage> {
   void initState() {
     super.initState();
     final registry = context.read<ServiceRegistry>();
+    _telemetry = KeyFlowTelemetry();
     _repository = KeyFlowRepository(
       deviceRegistryService: registry.deviceRegistryService,
       hardwareService: registry.hardwareService,
@@ -40,8 +43,12 @@ class _KeyFlowPageState extends State<KeyFlowPage> {
       keymapService: registry.keymapService,
       runtimeService: registry.runtimeService,
       runtimeUpdates: registry.bridge.stateStream,
+      telemetry: _telemetry,
     );
-    _viewModel = KeyFlowViewModel(repository: _repository);
+    _viewModel = KeyFlowViewModel(
+      repository: _repository,
+      telemetry: _telemetry,
+    );
     _viewModel.load();
   }
 
@@ -79,6 +86,7 @@ class _KeyFlowPageState extends State<KeyFlowPage> {
         ),
         body: Consumer<KeyFlowViewModel>(
           builder: (context, vm, _) {
+            final renderStart = DateTime.now();
             final snapshot = vm.snapshot;
             final devices = snapshot?.devices ?? const [];
             final selectedDevice = vm.selectedDevice;
@@ -91,7 +99,7 @@ class _KeyFlowPageState extends State<KeyFlowPage> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            return RefreshIndicator(
+            final content = RefreshIndicator(
               onRefresh: vm.refresh,
               color: Theme.of(context).colorScheme.primary,
               child: ListView(
@@ -171,6 +179,20 @@ class _KeyFlowPageState extends State<KeyFlowPage> {
                 ],
               ),
             );
+            if (snapshot != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                final renderDuration = DateTime.now().difference(renderStart);
+                final keyCount = selectedLayout?.keys.length ?? 0;
+                final layerCount = selectedKeymap?.layers.length ?? 0;
+                vm.recordRender(
+                  renderDuration,
+                  keyCount: keyCount,
+                  layerCount: layerCount,
+                );
+              });
+            }
+            return content;
           },
         ),
       ),

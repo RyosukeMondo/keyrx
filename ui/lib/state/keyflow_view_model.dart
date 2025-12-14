@@ -9,14 +9,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../services/facade/keyflow_repository.dart';
+import '../services/keyflow_telemetry.dart';
 
 class KeyFlowViewModel extends ChangeNotifier {
   KeyFlowViewModel({
     required KeyFlowRepository repository,
+    KeyFlowTelemetry? telemetry,
     Duration runtimeStaleAfter = const Duration(seconds: 5),
     Duration refreshDebounce = const Duration(milliseconds: 200),
     DateTime Function()? now,
   }) : _repository = repository,
+       _telemetry = telemetry,
        _runtimeStaleAfter = runtimeStaleAfter,
        _refreshDebounce = refreshDebounce,
        _now = now ?? DateTime.now {
@@ -29,6 +32,7 @@ class KeyFlowViewModel extends ChangeNotifier {
   }
 
   final KeyFlowRepository _repository;
+  final KeyFlowTelemetry? _telemetry;
   final Duration _runtimeStaleAfter;
   final Duration _refreshDebounce;
   final DateTime Function() _now;
@@ -43,6 +47,7 @@ class KeyFlowViewModel extends ChangeNotifier {
   bool _isRefreshing = false;
   bool _disposed = false;
   String? _loadError;
+  int? _lastRenderStampMs;
 
   StreamSubscription<RuntimeOverlay>? _runtimeSub;
   Timer? _runtimeStaleTimer;
@@ -91,6 +96,12 @@ class KeyFlowViewModel extends ChangeNotifier {
     }
     return base;
   }
+
+  /// Telemetry summary for CLI-friendly automation loops.
+  String get telemetrySummary =>
+      _telemetry?.cliSummary() ?? 'telemetry-disabled';
+
+  KeyFlowTelemetrySnapshot? get telemetrySnapshot => _telemetry?.snapshot();
 
   /// Load the full KeyFlow snapshot.
   Future<void> load() async {
@@ -220,6 +231,28 @@ class KeyFlowViewModel extends ChangeNotifier {
       _runtimeStale = true;
       _notify();
     });
+  }
+
+  /// Record render durations for large layouts; no-ops when telemetry disabled.
+  void recordRender(
+    Duration duration, {
+    required int keyCount,
+    required int layerCount,
+  }) {
+    final snapshot = _snapshot;
+    if (_telemetry == null || snapshot == null) {
+      return;
+    }
+    final renderStamp = snapshot.generatedAt.millisecondsSinceEpoch;
+    if (_lastRenderStampMs == renderStamp) {
+      return;
+    }
+    _lastRenderStampMs = renderStamp;
+    _telemetry!.recordRender(
+      duration: duration,
+      keyCount: keyCount,
+      layerCount: layerCount,
+    );
   }
 
   void _notify() {

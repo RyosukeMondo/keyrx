@@ -14,6 +14,7 @@ import '../hardware_service.dart';
 import '../keymap_service.dart';
 import '../layout_service.dart';
 import '../runtime_service.dart';
+import '../keyflow_telemetry.dart';
 
 /// Aggregated view of KeyFlow data for UI consumption.
 class KeyFlowSnapshot {
@@ -138,12 +139,14 @@ class KeyFlowRepository {
     required KeymapService keymapService,
     required RuntimeService runtimeService,
     Stream<BridgeStateUpdate>? runtimeUpdates,
+    KeyFlowTelemetry? telemetry,
   }) : _deviceRegistryService = deviceRegistryService,
        _hardwareService = hardwareService,
        _layoutService = layoutService,
        _keymapService = keymapService,
        _runtimeService = runtimeService,
-       _runtimeUpdates = runtimeUpdates {
+       _runtimeUpdates = runtimeUpdates,
+       _telemetry = telemetry {
     _wireRuntimeStream();
   }
 
@@ -153,6 +156,7 @@ class KeyFlowRepository {
   final KeymapService _keymapService;
   final RuntimeService _runtimeService;
   final Stream<BridgeStateUpdate>? _runtimeUpdates;
+  final KeyFlowTelemetry? _telemetry;
 
   final StreamController<RuntimeOverlay> _runtimeController =
       StreamController<RuntimeOverlay>.broadcast();
@@ -166,19 +170,39 @@ class KeyFlowRepository {
 
   /// Aggregate all KeyFlow data with partial failure isolation.
   Future<KeyFlowSnapshot> loadAll() async {
+    final sw = Stopwatch()..start();
+    var success = true;
+    KeyFlowSnapshot? snapshot;
     final errors = <KeyFlowError>[];
 
-    final devices = await _safeDevices(errors);
-    await _refreshProfiles(errors);
-    await _refreshLayouts(errors);
-    await _refreshKeymaps(errors);
-    await _refreshRuntimeConfig(errors);
+    try {
+      final devices = await _safeDevices(errors);
+      await _refreshProfiles(errors);
+      await _refreshLayouts(errors);
+      await _refreshKeymaps(errors);
+      await _refreshRuntimeConfig(errors);
 
-    return _composeSnapshot(devices, errors: errors);
+      snapshot = _composeSnapshot(devices, errors: errors);
+      return snapshot;
+    } catch (_) {
+      success = false;
+      rethrow;
+    } finally {
+      _telemetry?.recordFetch(
+        duration: sw.elapsed,
+        success: success && (snapshot?.errors.isEmpty ?? true),
+      );
+      if (errors.isNotEmpty && snapshot != null) {
+        _maybeRecordParseErrors(snapshot!, errors);
+      }
+    }
   }
 
   /// Refresh devices only (fast path) and reuse cached config data.
   Future<KeyFlowSnapshot> refreshDevices() async {
+    final sw = Stopwatch()..start();
+    var success = true;
+    KeyFlowSnapshot? snapshot;
     if (_cachedProfiles.isEmpty ||
         _cachedLayouts.isEmpty ||
         _cachedKeymaps.isEmpty) {
@@ -198,7 +222,21 @@ class KeyFlowRepository {
       devices = await _safeDevices(errors);
     }
 
-    return _composeSnapshot(devices, errors: errors);
+    try {
+      snapshot = _composeSnapshot(devices, errors: errors);
+      return snapshot;
+    } catch (_) {
+      success = false;
+      rethrow;
+    } finally {
+      _telemetry?.recordFetch(
+        duration: sw.elapsed,
+        success: success && (snapshot?.errors.isEmpty ?? true),
+      );
+      if (errors.isNotEmpty && snapshot != null) {
+        _maybeRecordParseErrors(snapshot!, errors);
+      }
+    }
   }
 
   /// Stream runtime overlays without blocking UI consumers.
@@ -226,6 +264,11 @@ class KeyFlowRepository {
       final result = await _hardwareService.listProfiles();
       if (result.hasError || result.data == null) {
         errors.add(_error('hardware', result.errorMessage ?? 'unknown error'));
+        _recordParseError(
+          'profiles',
+          result.errorMessage,
+          payloadBytes: _estimateProfilesBytes(result.data),
+        );
         return;
       }
       _cachedProfiles = {
@@ -233,6 +276,11 @@ class KeyFlowRepository {
       };
     } catch (e) {
       errors.add(_error('hardware', 'list failed: $e'));
+      _recordParseError(
+        'profiles',
+        e,
+        payloadBytes: _estimateProfilesBytes(_cachedProfiles.values),
+      );
     }
   }
 
@@ -241,11 +289,21 @@ class KeyFlowRepository {
       final result = await _layoutService.listLayouts();
       if (result.hasError || result.data == null) {
         errors.add(_error('layouts', result.errorMessage ?? 'unknown error'));
+        _recordParseError(
+          'layouts',
+          result.errorMessage,
+          payloadBytes: _estimateLayoutBytes(result.data),
+        );
         return;
       }
       _cachedLayouts = {for (final layout in result.data!) layout.id: layout};
     } catch (e) {
       errors.add(_error('layouts', 'list failed: $e'));
+      _recordParseError(
+        'layouts',
+        e,
+        payloadBytes: _estimateLayoutBytes(_cachedLayouts.values),
+      );
     }
   }
 
@@ -254,11 +312,21 @@ class KeyFlowRepository {
       final result = await _keymapService.listKeymaps();
       if (result.hasError || result.data == null) {
         errors.add(_error('keymaps', result.errorMessage ?? 'unknown error'));
+        _recordParseError(
+          'keymaps',
+          result.errorMessage,
+          payloadBytes: _estimateKeymapBytes(result.data),
+        );
         return;
       }
       _cachedKeymaps = {for (final keymap in result.data!) keymap.id: keymap};
     } catch (e) {
       errors.add(_error('keymaps', 'list failed: $e'));
+      _recordParseError(
+        'keymaps',
+        e,
+        payloadBytes: _estimateKeymapBytes(_cachedKeymaps.values),
+      );
     }
   }
 
@@ -267,11 +335,21 @@ class KeyFlowRepository {
       final result = await _runtimeService.getConfig();
       if (result.hasError) {
         errors.add(_error('runtime', result.errorMessage ?? 'unknown error'));
+        _recordParseError(
+          'runtime',
+          result.errorMessage,
+          payloadBytes: _estimateRuntimeBytes(result.data),
+        );
         return;
       }
       _lastRuntimeConfig = result.data;
     } catch (e) {
       errors.add(_error('runtime', 'config failed: $e'));
+      _recordParseError(
+        'runtime',
+        e,
+        payloadBytes: _estimateRuntimeBytes(_lastRuntimeConfig),
+      );
     }
   }
 
@@ -353,6 +431,70 @@ class KeyFlowRepository {
 
   KeyFlowError _error(String source, String message) {
     return KeyFlowError(source: source, message: message);
+  }
+
+  void _recordParseError(String source, Object? error, {int? payloadBytes}) {
+    final message = error?.toString().toLowerCase();
+    if (message == null) return;
+    if (!message.contains('parse') && !message.contains('format')) {
+      return;
+    }
+    _telemetry?.recordParseError(source: source, payloadBytes: payloadBytes);
+  }
+
+  void _maybeRecordParseErrors(
+    KeyFlowSnapshot snapshot,
+    List<KeyFlowError> errors,
+  ) {
+    for (final error in errors) {
+      _recordParseError(
+        error.source,
+        error.message,
+        payloadBytes: _estimateSnapshotBytes(snapshot),
+      );
+    }
+  }
+
+  int _estimateSnapshotBytes(KeyFlowSnapshot snapshot) {
+    final deviceBytes = snapshot.devices.length * 128;
+    final profileBytes = snapshot.profiles.length * 256;
+    final layoutBytes = _estimateLayoutBytes(snapshot.layouts.values);
+    final keymapBytes = snapshot.keymaps.length * 192;
+    final runtimeBytes = _estimateRuntimeBytes(snapshot.runtimeConfig);
+    return deviceBytes +
+        profileBytes +
+        layoutBytes +
+        keymapBytes +
+        runtimeBytes;
+  }
+
+  int _estimateLayoutBytes(Iterable<VirtualLayout>? layouts) {
+    if (layouts == null) return 0;
+    var keyCount = 0;
+    for (final layout in layouts) {
+      keyCount += layout.keys.length;
+    }
+    // Roughly 32 bytes per key for sizing; avoids PII.
+    return keyCount * 32;
+  }
+
+  int _estimateProfilesBytes(Iterable<HardwareProfile>? profiles) {
+    if (profiles == null) return 0;
+    return profiles.length * 128;
+  }
+
+  int _estimateKeymapBytes(Iterable<Keymap>? keymaps) {
+    if (keymaps == null) return 0;
+    return keymaps.length * 96;
+  }
+
+  int _estimateRuntimeBytes(RuntimeConfig? config) {
+    if (config == null) return 0;
+    var slotCount = 0;
+    for (final device in config.devices) {
+      slotCount += device.slots.length;
+    }
+    return (config.devices.length * 64) + (slotCount * 32);
   }
 
   void _wireRuntimeStream() {
