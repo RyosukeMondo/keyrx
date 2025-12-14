@@ -1,280 +1,108 @@
 # Project Structure
 
-## Directory Organization
+## High-Level Layout
 
 ```
 keyrx/
-├── core/                       # Rust backend (primary logic)
-│   ├── src/
-│   │   ├── lib.rs             # Library root, public API
-│   │   ├── engine/            # Event loop and processing
-│   │   │   ├── mod.rs
-│   │   │   ├── event_loop.rs  # Tokio async event loop
-│   │   │   └── state.rs       # Layer state machine
-│   │   ├── scripting/         # Rhai integration
-│   │   │   ├── mod.rs
-│   │   │   ├── runtime.rs     # Rhai engine setup
-│   │   │   └── bindings.rs    # Rust-Rhai type bindings
-│   │   ├── drivers/           # OS adapter traits
-│   │   │   ├── mod.rs
-│   │   │   ├── traits.rs      # InputSource trait definition
-│   │   │   ├── windows.rs     # WH_KEYBOARD_LL implementation
-│   │   │   └── linux.rs       # uinput/evdev implementation
-│   │   └── ffi/               # C-ABI exports for Flutter
-│   │       ├── mod.rs
-│   │       └── exports.rs     # extern "C" functions
-│   ├── tests/                 # Integration tests
-│   ├── benches/               # Criterion benchmarks
-│   └── Cargo.toml
-│
-├── ui/                         # Flutter frontend
-│   ├── lib/
-│   │   ├── main.dart          # Application entry point
-│   │   ├── ffi/               # Dart FFI bindings
-│   │   │   ├── bindings.dart  # Generated FFI bindings
-│   │   │   └── bridge.dart    # High-level Rust bridge
-│   │   ├── pages/             # UI screens
-│   │   │   ├── devices.dart   # Tab 1: Device management
-│   │   │   ├── layouts.dart   # Tab 2: Virtual Layout editor
-│   │   │   ├── wiring.dart    # Tab 3: Hardware Profile wiring
-│   │   │   ├── mapping.dart   # Tab 4: Logical Mapping (Keymap)
-│   │   │   ├── debugger.dart  # Real-time state visualizer
-│   │   │   └── console.dart   # Rhai REPL terminal
-│   │   ├── widgets/           # Reusable UI components
-│   │   │   ├── keyboard.dart  # Visual keyboard widget
-│   │   │   └── layer_panel.dart
-│   │   └── state/             # Application state management
-│   ├── test/                  # Widget tests
+├── core/                  # Rust backend and FFI exports
+├── ui/                    # Flutter app
+│   ├── lib/               # Dart source (see detailed map below)
+│   ├── test/              # Unit/widget/golden/perf tests
 │   └── pubspec.yaml
-│
-├── scripts/                    # User Rhai configurations
-│   └── std/                   # Standard library
-│       ├── layouts/           # Keyboard layout definitions
-│       │   ├── 109.rhai       # JIS 109-key layout
-│       │   └── ansi.rhai      # ANSI layout
-│       ├── layers.rhai        # Layer management utilities
-│       └── modifiers.rhai     # Custom modifier helpers
-│
-├── .spec-workflow/            # Spec workflow artifacts
-│   ├── steering/              # Steering documents (product/tech/structure)
-│   └── specs/                 # Feature specifications
-│
-└── README.md                  # Project overview
+├── scripts/               # Rhai standard library
+└── .spec-workflow/        # Specs and steering docs
 ```
 
-## Current Spec Implementation Order (pending specs)
+## ui/lib Structure (actual)
 
-We only touch specs with open tasks; completed specs remain unchanged. Implementation order (post revolutionary-mapping):
-1) mapping-screen-refresh
-2) advanced-profiling-flamegraph-support
-3) state-snapshot-incremental-updates
-4) otel-observability-integration
-5) opentelemetry-metrics-dashboard
-6) multi-layout-simultaneous-support
-7) multi-user-profile-system
-8) hardware-specific-profile-optimization
-9) recording-analysis-export-system
-10) flutter-web-build-support
+```
+ui/lib/
+├── main.dart                 # App entry
+├── config/                   # Constants, thresholds, paths
+├── ffi/                      # Bridges to Rust (bindings, sessions, profiles, discovery)
+│   └── generated/            # Generated FFI artifacts (do not hand-edit)
+├── mixins/                   # Shared mixins (e.g., StreamSubscriber)
+├── models/                   # Freezed/data models, codecs, validation helpers
+├── repositories/             # Persistence/data access abstractions
+├── services/                 # Business logic + bridge adapters (engine, profiles, metrics)
+│   └── facade/               # Service facades used by UI
+├── state/                    # Riverpod providers/setup, app state containers
+├── pages/                    # Screen-level widgets (layouts, mapping, debugger, metrics, trade-offs)
+├── widgets/                  # Reusable UI components
+│   ├── common/               # Styled inputs/buttons
+│   ├── debug/                # Log/metrics viewers
+│   ├── flow/                 # Flow editor nodes
+│   ├── metrics/              # Metrics dashboard pieces
+│   ├── preview/              # Preview widgets
+│   ├── scripting/            # API browser, scripting helpers
+│   ├── settings/             # Settings widgets
+│   └── ... (feature widgets: keyboard, layout_grid, visual keyboards)
+├── utils/                    # Logging, timeline utilities
+└── ui/                       # Design-system assets/widgets (shared primitives)
+    ├── assets/
+    ├── styles/
+    └── widgets/
+```
+
+Representative files:
+- `pages/`: `layouts.dart`, `mapping_page.dart`, `debugger_page.dart`, `metrics_dashboard.dart`, `typing_simulator.dart`.
+- `services/`: `engine_service.dart`, `device_registry_service.dart`, `mapping_validator.dart`, `observability_service.dart`.
+- `state/`: `providers_setup.dart` (Riverpod bootstrap), `providers.dart`, `app_state.dart`.
+- `widgets/`: `visual_keyboard.dart`, `virtual_layout_renderer.dart`, `device_card.dart`, `developer_drawer.dart`, `metrics_dashboard.dart`.
+- `ui/widgets/`: `app_error_dialog.dart`, `loading_overlay.dart`; `ui/styles/surfaces.dart` centralizes surface theming.
+- `ffi/`: `bridge.dart`, `bridge_core.dart`, `bridge_discovery.dart`, `bridge_engine.dart`, `bridge_session.dart`, `bridge_validation.dart`, `mock_bridge.dart` plus generated bindings.
 
 ## Naming Conventions
 
-### Files
-- **Rust modules**: `snake_case.rs` (e.g., `event_loop.rs`, `state_machine.rs`)
-- **Dart files**: `snake_case.dart` (e.g., `keymap_editor.dart`)
-- **Rhai scripts**: `snake_case.rhai` (e.g., `user_config.rhai`)
-- **Tests**: `[module]_test.rs` (Rust), `[file]_test.dart` (Dart)
+- Files: `snake_case.dart`; generated files keep tool suffixes (e.g., `*.freezed.dart`, `*.g.dart`, `generated_bindings.dart`).
+- Classes/types: `PascalCase`; widgets end with `Widget` when not obviously a page (`DeviceCard`, `VisualKeyboard`).
+- Functions/methods: `camelCase`; private helpers prefixed with `_`.
+- Providers: `xxxProvider` for Riverpod providers; group exports in `state/providers.dart`.
+- Constants: prefer `lowerCamelCase` for runtime constants, `UPPER_SNAKE_CASE` for compile-time/environment switches.
 
-### Code
+## Module Boundaries and Dependencies
 
-#### Rust
-- **Structs/Enums**: `PascalCase` (e.g., `Engine`, `LayerState`)
-- **Functions/Methods**: `snake_case` (e.g., `process_event`, `activate_layer`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g., `MAX_MODIFIERS`, `DEFAULT_LATENCY`)
-- **Traits (Interfaces)**: `PascalCase` descriptive names (e.g., `InputSource`, `ScriptRuntime`, `StateStore`)
-- **Mock Implementations**: `Mock` + trait name (e.g., `MockInputSource`, `MockScriptRuntime`)
+- Pages depend on widgets + state providers; they should not talk directly to FFI—use services/facades.
+- Widgets are presentation-only; pull data via injected callbacks/providers rather than services directly when possible.
+- Services coordinate business logic and bridge calls; they consume repositories and FFI bridges.
+- Repositories encapsulate storage/access paths (files, registries) and stay framework-agnostic.
+- Models are pure data and may be shared across layers; Freezed/JSON codecs live here.
+- State holds Riverpod providers and app-level state; keep side-effects inside services, not providers.
+- Utils (logging/timeline) are leaf dependencies; nothing should import UI from utils.
+- Generated code under `ffi/generated` and `*.g.dart`/`*.freezed.dart` must not be edited manually.
 
-#### Dart
-- **Classes**: `PascalCase` (e.g., `KeyboardWidget`, `RustBridge`)
-- **Functions/Methods**: `camelCase` (e.g., `processKey`, `updateState`)
-- **Constants**: `lowerCamelCase` or `UPPER_SNAKE_CASE` for compile-time
-- **Files**: `snake_case.dart`
+## Import Organization (Dart)
 
-#### Rhai
-- **Functions**: `snake_case` (e.g., `on_key_press`, `activate_layer`)
-- **Variables**: `snake_case` (e.g., `current_layer`, `mod_flags`)
+1) Dart SDK (`dart:`)  
+2) Flutter framework (`package:flutter/`)  
+3) External packages (`package:flutter_riverpod/`, etc.)  
+4) Project packages (`package:keyrx/...`)  
+5) Relative imports (for local folders)
 
-## Import Patterns
-
-### Rust Import Order
-1. Standard library (`std::`)
-2. External crates (`tokio::`, `rhai::`)
-3. Crate modules (`crate::engine::`)
-4. Super/self imports
-
-### Dart Import Order
-1. Dart SDK (`dart:ffi`, `dart:async`)
-2. Flutter framework (`package:flutter/`)
-3. External packages
-4. Project imports (`package:keyrx/`)
-5. Relative imports
-
-### Module Organization
-- Use re-exports in `mod.rs` / `lib.rs` to create clean public APIs
-- Keep implementation details private
-- Platform-specific code behind `#[cfg(target_os = "...")]`
-
-## Code Structure Patterns
-
-### Rust Module Organization
-```rust
-// 1. Imports
-use std::collections::HashMap;
-use tokio::sync::mpsc;
-
-// 2. Constants
-const MAX_LAYERS: usize = 32;
-
-// 3. Type definitions
-pub struct Engine { ... }
-pub enum Event { ... }
-
-// 4. Trait implementations
-impl Engine { ... }
-
-// 5. Private helpers
-fn validate_input(...) { ... }
-
-// 6. Tests (in same file or tests/)
-#[cfg(test)]
-mod tests { ... }
-```
-
-### Dart File Organization
+Example:
 ```dart
-// 1. Imports
-import 'dart:ffi';
+import 'dart:async';
 import 'package:flutter/material.dart';
-
-// 2. Constants
-const kMaxLayers = 32;
-
-// 3. Class definitions
-class KeyboardEditor extends StatefulWidget { ... }
-
-// 4. State classes
-class _KeyboardEditorState extends State<KeyboardEditor> { ... }
-
-// 5. Helper widgets/functions
-Widget _buildKeyButton(...) { ... }
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyrx/services/engine_service.dart';
+import 'package:keyrx/state/providers.dart';
+import '../widgets/visual_keyboard.dart';
 ```
 
-## Code Organization Principles
+## Directory Examples and Rules
 
-1. **Single Responsibility**: Each module handles one concern (e.g., `engine/` for event processing, `scripting/` for Rhai)
-2. **Modularity**: OS drivers are interchangeable via `InputSource` trait
-3. **Testability**: All external dependencies injected; MockInputSource for testing
-4. **Consistency**: Follow established patterns in each language
-5. **CLI First**: Every feature CLI-exercisable before GUI implementation
+- `pages/layouts.dart`: screen composition; pulls providers from `state/providers.dart`, renders shared widgets like `visual_keyboard.dart`.
+- `widgets/flow/`: node widgets for the flow editor; depend on models and styling, not on services.
+- `ui/widgets/app_error_dialog.dart`: design-system overlays; reusable across pages.
+- `services/engine_service_impl.dart`: orchestrates FFI bridge calls and translates models; logs via `utils/logger.dart`.
+- `state/providers_setup.dart`: wraps the app in `ProviderScope`, registers global providers; keep side-effects centralized.
 
-## Dependency Injection Pattern
+## Rust Snapshot (for context)
 
-All external dependencies are abstracted behind traits and injected:
+Core keeps the existing layout (`core/src/engine`, `core/src/scripting`, `core/src/ffi`, drivers under `core/src/drivers`, CLI under `core/src/cli`). FFI remains the only boundary to the Flutter UI; UI must not import Rust modules directly.
 
-```
-core/src/
-├── traits/                    # DI interface definitions
-│   ├── mod.rs
-│   ├── input_source.rs       # pub trait InputSource
-│   ├── script_runtime.rs     # pub trait ScriptRuntime
-│   └── state_store.rs        # pub trait StateStore
-├── impl/                      # Production implementations
-│   ├── mod.rs
-│   ├── windows_input.rs      # impl InputSource for WindowsInput
-│   ├── linux_input.rs        # impl InputSource for LinuxInput
-│   ├── rhai_runtime.rs       # impl ScriptRuntime for RhaiRuntime
-│   └── memory_state.rs       # impl StateStore for InMemoryState
-└── mocks/                     # Test mocks
-    ├── mod.rs
-    ├── mock_input.rs         # impl InputSource for MockInput
-    ├── mock_runtime.rs       # impl ScriptRuntime for MockRuntime
-    └── mock_state.rs         # impl StateStore for MockState
-```
+## Size and Quality Guards
 
-**Trait Naming**: Use descriptive `PascalCase` names that describe the capability (e.g., `InputSource`, `ScriptRuntime`), not `ISomething` prefix.
-
-**Mock Naming**: Prefix with `Mock` (e.g., `MockInputSource`).
-
-## CLI Structure
-
-```
-core/src/
-├── bin/
-│   └── keyrx.rs              # CLI entry point
-├── cli/
-│   ├── mod.rs
-│   ├── commands/
-│   │   ├── check.rs          # keyrx check - validate scripts
-│   │   ├── run.rs            # keyrx run - start engine
-│   │   ├── simulate.rs       # keyrx simulate - event simulation
-│   │   ├── state.rs          # keyrx state - inspect state
-│   │   ├── doctor.rs         # keyrx doctor - self-diagnostics
-│   │   ├── bench.rs          # keyrx bench - latency benchmark
-│   │   └── repl.rs           # keyrx repl - interactive mode
-│   └── output.rs             # JSON/human-readable output formatting
-```
-
-Every CLI command supports:
-- `--json` flag for machine-readable output (AI agent friendly)
-- `--verbose` flag for detailed debugging
-- Exit codes for scripting (0=success, 1=error, 2=validation failure)
-
-## Module Boundaries
-
-### Core vs UI
-- Core exposes C-ABI functions only via `ffi/` module
-- UI never imports Rust types directly; uses FFI bridge
-- State synchronization via event passing, not shared memory
-
-### Core vs Drivers
-- Core defines `InputSource` trait
-- Drivers implement trait without Core knowing OS specifics
-- Drivers are compile-time selected via Cargo features
-
-### Public API vs Internal
-- `lib.rs` exports only public types
-- Internal modules use `pub(crate)` visibility
-- FFI functions are the only `extern "C"` exports
-
-### Platform-specific Isolation
-```rust
-#[cfg(target_os = "windows")]
-mod windows_driver;
-
-#[cfg(target_os = "linux")]
-mod linux_driver;
-```
-
-## Code Size Guidelines
-
-Per CLAUDE.md requirements:
-- **File size**: Maximum 500 lines (excluding comments/blank lines)
-- **Function size**: Maximum 50 lines
-- **Test coverage**: 80% minimum, 90% for critical paths (engine, scripting)
-- **Nesting depth**: Maximum 4 levels
-
-## Documentation Standards
-
-### Rust
-- All public items have `///` doc comments
-- Module-level `//!` documentation in `mod.rs`
-- Examples in doc comments where helpful
-
-### Dart
-- `///` doc comments for public APIs
-- Widget documentation includes usage examples
-- README in `lib/` directories for complex modules
-
-### Rhai Standard Library
-- Header comment explaining purpose
-- Inline comments for non-obvious logic
-- Usage examples in script files
+- Max 500 lines per file and 50 lines per function (enforced via metrics checks).
+- Keep nesting depth <=4; prefer extracting helpers.
+- Public APIs documented with `///`; user-facing widgets include brief usage examples where non-obvious.
