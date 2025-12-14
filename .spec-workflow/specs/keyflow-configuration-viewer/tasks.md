@@ -22,7 +22,7 @@
   - _Requirements: 1, 2, 3, 4, 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter state-management developer. Task: Create KeyFlowViewModel that loads snapshots, subscribes to runtime stream, tracks selection and staleness, exposes derived counts and UI-safe errors. Restrictions: No widget logic; keep under 300 lines; debounce refreshes; staleness at 5s; support mock-bridge mode for fast reload. _Leverage: KeyFlowRepository. _Requirements: 1,2,3,4,5. Success: view model notifies listeners on data/runtime updates, maintains selection without resets on device updates, marks runtime stale after 5s silence, and can operate with mock data._
 
-- [ ] 3. Build KeyFlow screen and panes
+- [x] 3. Build KeyFlow screen and panes
   - File: ui/lib/pages/keyflow_page.dart
   - Compose DeviceListPane, FlowGraphPane, DetailsPane, RuntimeStrip; wire to KeyFlowViewModel
   - _Leverage: ui/lib/widgets/virtual_layout_renderer.dart, ui/lib/pages/wiring.dart (patterns), ui/lib/pages/mapping/mapping_dashboard.dart (load patterns)_
