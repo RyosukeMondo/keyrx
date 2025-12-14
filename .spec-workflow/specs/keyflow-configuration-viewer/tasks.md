@@ -7,7 +7,7 @@
   - _Requirements: 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DX engineer. Task: Create documented commands for hot-reload with mock bridge, minimal-rebuild real FFI runs, and fast test lanes (nextest/unit/widget subset) plus a short doc note. Restrictions: No destructive changes; keep commands opt-in and fast; ensure mock bridge path does not require native lib. _Leverage: AUTONOMOUS-DEV-GUIDE, justfile. _Requirements: 5. Success: developers can run a documented one-liner for UI-only work without native lib, another for real FFI with cached builds, and a fast test lane, with instructions checked into repo._
 
-- [ ] 1. Create KeyFlow repository facade
+- [x] 1. Create KeyFlow repository facade
   - File: ui/lib/services/facade/keyflow_repository.dart
   - Aggregate devices, profiles, layouts, keymaps, runtime overlay into `KeyFlowSnapshot`
   - Provide `loadAll()`, `refreshDevices()`, `runtimeStream()` using existing services (DeviceRegistryService, HardwareService, LayoutService, KeymapService, RuntimeService)
