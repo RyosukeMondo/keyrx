@@ -24,7 +24,7 @@
   - _Requirements: FR1.3_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in workflow automation | Task: Create .spec-workflow/templates/ffi-implementation-log-template.md with structured format (timestamp, task ID, FFI functions added/modified, contract changes, files modified, test coverage, performance impact, AI agent notes - what worked/failed, lessons learned), create scripts/log_ffi_implementation.sh to help generate log entries, integrate with post-commit hook to remind developers to log implementations, create just ffi-log command for interactive logging, document logging workflow in docs/FFI_DEVELOPMENT.md | Restrictions: Logging should be easy and fast (<2 min), don't block workflow, template must be structured for AI parsing, encourage but don't force logging | Success: Template is comprehensive and structured, logging script automates data collection (git diff, files changed), post-commit hook reminds developers, just ffi-log command works, workflow documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 4. Development Tooling Setup
+- [-] 4. Development Tooling Setup
   - File: scripts/setup_ffi_tools.sh, docs/TOOLING_SETUP.md
   - Install cargo-watch, mold/zld fast linkers, tokei, configure environment, add to justfile setup recipe, document installation for all platforms (Linux/macOS/Windows)
   - Purpose: Ensure all developers have required tools for fast FFI iteration

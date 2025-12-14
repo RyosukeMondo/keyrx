@@ -8,3 +8,13 @@ incremental = true
 # Extend cache lifetime for local dev; adjust to fit disk space.
 SCCACHE_IDLE_TIMEOUT = "1800"
 SCCACHE_CACHE_SIZE = "10G"
+
+# Prefer fast linkers for local development (falls back to ld via scripts/fast_linker.sh).
+[target.x86_64-unknown-linux-gnu]
+linker = "scripts/fast_linker.sh"
+
+[target.aarch64-apple-darwin]
+linker = "scripts/fast_linker.sh"
+
+[target.x86_64-apple-darwin]
+linker = "scripts/fast_linker.sh"

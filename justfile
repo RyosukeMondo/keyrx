@@ -8,6 +8,11 @@ default:
 # Setup development environment (install tools, dependencies, and hooks)
 setup:
     ./scripts/setup_dev_env.sh ${SETUP_OPTS}
+    ./scripts/setup_ffi_tools.sh ${SETUP_OPTS}
+
+# Install only FFI-specific tooling (fast linkers, cargo-watch, tokei)
+setup-ffi-tools:
+    ./scripts/setup_ffi_tools.sh ${SETUP_OPTS}
 
 # Run core in development mode with auto-reload
 dev:
