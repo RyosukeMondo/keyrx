@@ -36,7 +36,7 @@
   - _Requirements: 4, 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Observability-focused engineer. Task: Add metrics around KeyFlowRepository calls and rendering hooks (exposed via view model) capturing success/failure counts, p95 latency, and render timing for large layouts (>150 keys or 5+ layers), with CLI-friendly summary surfaces for the automation loop in docs/AUTONOMOUS-DEV-GUIDE.md. Restrictions: No PII; redact serials; avoid heavy logging on UI thread; keep metrics lightweight for fast dev loops. _Leverage: metrics/observability services. _Requirements: 4,5. Success: metrics emitted when enabled, lightweight when disabled, errors include operation + payload size only, CLI agents can consume summary output without UI, and telemetry does not slow hot reload._
 
-- [ ] 5. Tests for repository and view model
+- [x] 5. Tests for repository and view model
   - Files: ui/test/keyflow_repository_test.dart, ui/test/keyflow_view_model_test.dart
   - Mock services to cover aggregation, partial failures, staleness, gap/conflict computation
   - _Leverage: existing test fixtures/patterns in ui/test_
