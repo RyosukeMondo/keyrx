@@ -1,9 +1,10 @@
 /// KeyRx UI - Visual interface for the KeyRx input remapping engine.
 library;
 
-import 'package:flutter/material.dart';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
@@ -23,20 +24,41 @@ import 'pages/metrics_dashboard.dart';
 import 'pages/wiring.dart';
 import 'pages/flow_editor_page.dart';
 import 'services/service_registry.dart';
-import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
-import 'services/facade/keyrx_facade.dart';
 import 'services/facade/facade_state.dart';
+import 'state/providers_setup.dart';
 
 void main() {
-  runApp(MultiProvider(providers: createProviders(), child: const KeyrxApp()));
+  runApp(const ProviderScope(child: KeyrxApp()));
 }
 
 /// Main application widget.
-class KeyrxApp extends StatelessWidget {
+class KeyrxApp extends ConsumerWidget {
   const KeyrxApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final registry = ref.watch(serviceRegistryProvider);
+    final facade = ref.watch(keyrxFacadeProvider);
+    final apiDocsService = ref.watch(apiDocsServiceProvider);
+    final appState = ref.watch(appStateProvider);
+
+    return MultiProvider(
+      providers: createProviders(
+        registry: registry,
+        facade: facade,
+        apiDocsService: apiDocsService,
+        appState: appState,
+      ),
+      child: const _KeyrxMaterialApp(),
+    );
+  }
+}
+
+class _KeyrxMaterialApp extends StatelessWidget {
+  const _KeyrxMaterialApp();
 
   @override
   Widget build(BuildContext context) {

@@ -40,7 +40,7 @@
   - _Requirements: FR5.3, NFR2.1_
   - _Prompt: Implement the task for spec ultra-speed-dev-experience, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in build automation and developer tooling | Task: Add justfile recipes: ui-setup (pub get + build_runner), ui-test (run tests), ui-test-watch (watch mode), ui-coverage (HTML report), ui-analyze (linting), ui-format (formatting check), ui-metrics (code metrics), ui-quality (all checks), dev-mock (run with mock FFI), update quality recipe to include Dart checks | Restrictions: Recipes must be cross-platform, follow existing justfile patterns, ensure fast execution | Success: All recipes work correctly, quality recipe includes Dart checks, recipes follow existing patterns | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 6. Riverpod Integration
+- [x] 6. Riverpod Integration
   - File: ui/pubspec.yaml, ui/lib/state/providers_setup.dart, ui/lib/main.dart
   - Add flutter_riverpod, riverpod_annotation, riverpod_generator dependencies, create global providers setup, migrate bridgeProvider, create example KeyFlow provider, update main.dart with ProviderScope
   - Purpose: Standardize state management pattern, enable code generation for boilerplate
