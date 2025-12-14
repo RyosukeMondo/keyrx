@@ -39,14 +39,36 @@ echo "║                   Pre-commit Checks                        ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
-TOTAL_CHECKS=5
+TOTAL_CHECKS=6
 if [[ -d "$UI_DIR" ]]; then
     TOTAL_CHECKS=$((TOTAL_CHECKS + 4))
 fi
 PASSED_CHECKS=0
 STEP=1
 
-# Step 1: Module size guard
+# Step 1: FFI Contract Validation
+echo "[$STEP/$TOTAL_CHECKS] Validating FFI contracts..."
+if ! "$REPO_ROOT/scripts/validate_ffi_contracts.sh"; then
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: FFI Contract Validation                        ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  FFI contracts are out of sync with Rust code.             ║"
+    echo "║                                                            ║"
+    echo "║  To fix, run:                                              ║"
+    echo "║    ./scripts/validate_ffi_contracts.sh --fix               ║"
+    echo "║                                                            ║"
+    echo "║  Or manually regenerate contracts:                         ║"
+    echo "║    just gen-dart-bindings                                  ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    exit 1
+fi
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
+echo "    ✓ FFI Contracts OK"
+echo ""
+
+# Step 2: Module size guard
 echo "[$STEP/$TOTAL_CHECKS] Checking Rust module sizes..."
 if ! "$REPO_ROOT/scripts/analyze_module_sizes.sh"; then
     echo ""
@@ -67,7 +89,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Module sizes OK"
 echo ""
 
-# Step 2: Format check
+# Step 3: Format check
 echo "[$STEP/$TOTAL_CHECKS] Checking code formatting..."
 if ! cargo fmt --check 2>/dev/null; then
     echo ""
@@ -89,7 +111,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Formatting OK"
 echo ""
 
-# Step 3: Clippy lint check
+# Step 4: Clippy lint check
 echo "[$STEP/$TOTAL_CHECKS] Running clippy lints..."
 if ! cargo clippy --quiet -- -D warnings 2>&1; then
     echo ""
@@ -111,7 +133,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Clippy OK"
 echo ""
 
-# Step 4: Unit tests (lib only for speed)
+# Step 5: Unit tests (lib only for speed)
 echo "[$STEP/$TOTAL_CHECKS] Running unit tests..."
 # Force single-threaded execution to avoid flaky global state interactions in docs registry
 if ! RUST_TEST_THREADS=1 cargo test --lib --quiet -- --test-threads=1 2>&1; then
@@ -134,7 +156,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Tests OK"
 echo ""
 
-# Step 5: Verify FFI bindings
+# Step 6: Verify FFI bindings
 echo "[$STEP/$TOTAL_CHECKS] Verifying FFI bindings..."
 if ! python3 "$REPO_ROOT/scripts/verify_bindings.py"; then
     echo ""
@@ -157,7 +179,7 @@ echo ""
 
 if [[ -d "$UI_DIR" ]]; then
     UI_COVERAGE_THRESHOLD="${UI_COVERAGE_THRESHOLD:-60}"
-    # Step 6: Dart/Flutter toolchain availability
+    # Step 7: Dart/Flutter toolchain availability
     echo "[$STEP/$TOTAL_CHECKS] Checking Dart/Flutter toolchain..."
     if ! command -v dart >/dev/null 2>&1; then
         echo ""
@@ -196,7 +218,7 @@ if [[ -d "$UI_DIR" ]]; then
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     STEP=$((STEP + 1))
 
-    # Step 7: Dart format check
+    # Step 8: Dart format check
     echo "[$STEP/$TOTAL_CHECKS] Checking Dart formatting..."
     pushd "$UI_DIR" >/dev/null
     if ! dart format --set-exit-if-changed .; then
@@ -218,7 +240,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "    ✓ Dart formatting OK"
     echo ""
 
-    # Step 8: Flutter analyze with fatal infos
+    # Step 9: Flutter analyze with fatal infos
     echo "[$STEP/$TOTAL_CHECKS] Running flutter analyze (fatal infos)..."
     pushd "$UI_DIR" >/dev/null
     STAGED_DART_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only -- '*.dart' | grep '^ui/' || true)
@@ -249,7 +271,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "    ✓ Flutter analyze OK"
     echo ""
 
-    # Step 9: Flutter tests with coverage (fast suite)
+    # Step 10: Flutter tests with coverage (fast suite)
     FAST_TEST_FILES="${UI_TEST_FILES:-test/services/keymap_converter_test.dart}"
     FAST_COVERAGE_THRESHOLD="${UI_FAST_COVERAGE_THRESHOLD:-0}"
     echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite, threshold ${FAST_COVERAGE_THRESHOLD}% )..."
@@ -283,6 +305,8 @@ echo "╔═══════════════════════�
 echo "║  ✅ All $PASSED_CHECKS/$TOTAL_CHECKS pre-commit checks passed!                       ║"
 echo "║                                                            ║"
 echo "║  Checks completed:                                         ║"
+echo "║    • FFI contract validation                               ║"
+echo "║    • Module size check                                     ║"
 echo "║    • cargo fmt --check                                     ║"
 echo "║    • cargo clippy -- -D warnings                           ║"
 echo "║    • cargo test --lib                                      ║"

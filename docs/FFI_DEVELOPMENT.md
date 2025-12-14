@@ -60,6 +60,125 @@ While running `just dev`:
 - **Rust incremental rebuild**: ~2-5s (with fast linker)
 - **Dart hot reload**: <1s (instant feedback)
 
+## FFI Contract Validation
+
+### Overview
+
+All FFI functions must use the `#[ffi_export]` macro to derive contracts from Rust code. The validation system ensures contracts stay synchronized with the actual Rust implementation.
+
+### Validation Commands
+
+**Validate contracts only**:
+```bash
+./scripts/validate_ffi_contracts.sh
+```
+
+**Validate with verbose output**:
+```bash
+./scripts/validate_ffi_contracts.sh --verbose
+```
+
+**Auto-fix contract mismatches**:
+```bash
+./scripts/validate_ffi_contracts.sh --fix
+```
+
+**CI mode (strict validation)**:
+```bash
+./scripts/validate_ffi_contracts.sh --check
+```
+
+### What Gets Validated
+
+The validation script checks:
+
+1. **All `#[ffi_export]` functions have matching contracts** - Every Rust function annotated with `#[ffi_export]` must have a corresponding entry in the domain's contract JSON file
+
+2. **Contract entries match Rust signatures** - Function names, parameters, and return types must match between Rust code and JSON contracts
+
+3. **No orphaned contracts** - Contract JSON files should not contain entries for functions that no longer exist in Rust code (warning only in normal mode, error in CI mode)
+
+### Pre-commit Hook
+
+Contract validation runs automatically on every commit via the pre-commit hook. If validation fails, the commit is blocked until you fix the issues.
+
+To bypass validation temporarily (not recommended):
+```bash
+git commit --no-verify
+```
+
+### Fixing Validation Errors
+
+When validation fails, you have several options:
+
+**Option 1: Auto-regenerate contracts**
+```bash
+./scripts/validate_ffi_contracts.sh --fix
+```
+This runs `just gen-dart-bindings` to regenerate all contracts from Rust code.
+
+**Option 2: Manual regeneration**
+```bash
+just gen-dart-bindings
+```
+
+**Option 3: Fix the Rust code**
+Ensure all FFI functions have the `#[ffi_export]` annotation with the correct domain:
+```rust
+#[ffi_export(domain = "engine", version = "1.0")]
+pub fn start_loop(profile_id: &str) -> Result<EngineState, EngineError> {
+    // Implementation
+}
+```
+
+### Contract Files Location
+
+Contract JSON files are located at:
+```
+core/src/ffi/contracts/<domain>.ffi-contract.json
+```
+
+Examples:
+- `core/src/ffi/contracts/engine.ffi-contract.json`
+- `core/src/ffi/contracts/config.ffi-contract.json`
+- `core/src/ffi/contracts/device_registry.ffi-contract.json`
+
+### Validation Output
+
+The validation script provides clear output:
+
+✅ **Success**:
+```
+╔════════════════════════════════════════════════════════════╗
+║           FFI Contract Validation Summary                  ║
+╚════════════════════════════════════════════════════════════╝
+
+  Valid contracts:     42
+  Missing contracts:   0
+  Mismatched:          0
+  Orphaned:            0
+
+✓ All contracts are valid!
+```
+
+❌ **Errors**:
+```
+  ✗ Missing contract entry: engine.start_loop
+    Expected in: core/src/ffi/contracts/engine.ffi-contract.json
+    Source: core/src/ffi/exports_engine.rs
+
+To fix these issues:
+  1. Run with --fix flag to auto-regenerate contracts:
+     ./scripts/validate_ffi_contracts.sh --fix
+```
+
+⚠️ **Warnings** (orphaned contracts):
+```
+  ! Orphaned contract: engine.deprecated_function
+    Found in: core/src/ffi/contracts/engine.ffi-contract.json
+    No matching #[ffi_export] annotation in Rust code
+```
+
 ## Logging Every FFI Change
 
 1) After completing work (ideally right after a commit), generate a log:
