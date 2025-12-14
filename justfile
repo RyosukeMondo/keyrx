@@ -33,6 +33,12 @@ ui:
 ui-check:
     cd ui && flutter analyze
 
+# Generate Flutter coverage and HTML report
+ui-coverage:
+    @echo "Collecting Flutter coverage and generating HTML report..."
+    ./ui/scripts/generate_coverage_report.sh
+    @echo "Coverage report available at ui/coverage/html/index.html"
+
 # Verify Flutter build (Windows)
 ui-verify: ui-check
     cd ui && flutter build windows --debug

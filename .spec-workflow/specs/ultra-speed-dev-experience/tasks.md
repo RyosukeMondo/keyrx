@@ -25,7 +25,7 @@
 - [x] 1.3.2 Configure coverage collection in test suite
 - [x] 1.3.3 Create HTML coverage report generator
 - [x] 1.3.4 Add coverage report to `.gitignore`
-- [ ] 1.3.5 Create `just ui-coverage` recipe
+- [x] 1.3.5 Create `just ui-coverage` recipe
 - [ ] 1.3.6 Document coverage workflow in `docs/TESTING.md`
 
 ### 1.4 Mock FFI Bridge
