@@ -21,6 +21,7 @@ import 'pages/run_controls_page.dart';
 import 'pages/calibration_page.dart';
 import 'pages/metrics_dashboard.dart';
 import 'pages/wiring.dart';
+import 'pages/flow_editor_page.dart';
 import 'services/service_registry.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
@@ -114,6 +115,7 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _buildPages(ServiceRegistry registry) {
     return [
       const RunControlsPage(),
+      const FlowEditorPage(),
       DevicesPage(
         runtimeService: registry.runtimeService,
         hardwareService: registry.hardwareService,
@@ -131,6 +133,11 @@ class _HomePageState extends State<HomePage> {
       icon: Icon(Icons.dashboard_outlined),
       selectedIcon: Icon(Icons.dashboard),
       label: 'Dashboard',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.account_tree_outlined),
+      selectedIcon: Icon(Icons.account_tree),
+      label: 'Flow',
     ),
     NavigationDestination(
       icon: Icon(Icons.keyboard_outlined),

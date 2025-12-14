@@ -2,14 +2,15 @@ import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import LayoutSelector from './components/LayoutSelector';
 import LayoutEditor from './components/LayoutEditor';
+import FlowEditor from './components/flow/FlowEditor';
 import './index.css';
 
 import type { LayoutConfig } from './types';
 
-export type ViewState = 'selector' | 'editor';
+export type ViewState = 'selector' | 'editor' | 'flow_editor';
 
 function App() {
-  const [view, setView] = useState<ViewState>('selector');
+  const [view, setView] = useState<ViewState>('flow_editor');
   const [currentLayout, setCurrentLayout] = useState<LayoutConfig | null>(null);
   const [savedLayouts, setSavedLayouts] = useState<LayoutConfig[]>([
     { id: '1', name: 'Gaming Profile', type: 'freeform', keys: [] },
@@ -47,7 +48,7 @@ function App() {
 
   return (
     <>
-      <Sidebar />
+      <Sidebar activeView={view} onSelect={setView} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* App Bar */}
         <div style={{
@@ -89,12 +90,14 @@ function App() {
             onSelect={handleLayoutSelect}
             onDelete={handleDeleteLayout}
           />
-        ) : (
+        ) : view === 'editor' ? (
           <LayoutEditor
             layout={currentLayout!}
             onBack={handleBack}
             onSave={handleSaveLayout}
           />
+        ) : (
+          <FlowEditor />
         )}
       </div>
     </>

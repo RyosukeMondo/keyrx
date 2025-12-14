@@ -1,6 +1,13 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
-const Sidebar = () => {
+import type { ViewState } from '../App';
+
+type SidebarProps = {
+    activeView: ViewState;
+    onSelect: (view: ViewState) => void;
+};
+
+const Sidebar = ({ activeView, onSelect }: SidebarProps) => {
     const styles: { [key: string]: CSSProperties } = {
         container: {
             width: '80px',
@@ -35,8 +42,11 @@ const Sidebar = () => {
         }
     };
 
-    const NavItem = ({ label, icon, active = false }: { label: string; icon: string; active?: boolean }) => (
-        <div style={{ ...styles.item, ...(active ? styles.active : {}) }}>
+    const NavItem = ({ label, icon, view }: { label: string; icon: string; view: ViewState }) => (
+        <div
+            style={{ ...styles.item, ...(activeView === view ? styles.active : {}) }}
+            onClick={() => onSelect(view)}
+        >
             <span style={styles.icon}>{icon}</span>
             {label}
         </div>
@@ -44,10 +54,9 @@ const Sidebar = () => {
 
     return (
         <div style={styles.container}>
-            <NavItem label="Devices" icon="⌨" />
-            <NavItem label="Layouts" icon="▦" active />
-            <NavItem label="Wiring" icon="∿" />
-            <NavItem label="Map" icon="⊞" />
+            <NavItem label="Flow" icon="⚡" view="flow_editor" />
+            <NavItem label="Layouts" icon="▦" view="selector" />
+            <NavItem label="Devices" icon="⌨" view="editor" /> {/* Placeholder mapping */}
         </div>
     );
 };

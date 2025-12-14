@@ -132,7 +132,7 @@ const LayoutEditor = ({ layout, onBack, onSave }: LayoutEditorProps) => {
             const dx = e.clientX - dragRef.current.startX;
             const dy = e.clientY - dragRef.current.startY;
 
-            setKeys(prev => {
+            setKeys(() => {
                 return dragRef.current.initialKeys.map(k => {
                     if (selectedIds.has(k.id)) {
                         let nx = k.x + dx;
