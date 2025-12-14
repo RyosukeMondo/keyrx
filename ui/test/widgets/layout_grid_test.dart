@@ -200,7 +200,9 @@ void main() {
         expect(find.text('Esc'), findsOneWidget);
       });
 
-      testWidgets('renders correctly with profile', (WidgetTester tester) async {
+      testWidgets('renders correctly with profile', (
+        WidgetTester tester,
+      ) async {
         final profile = createTestProfile(
           layoutType: LayoutType.standard,
           mappings: {

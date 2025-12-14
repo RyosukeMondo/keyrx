@@ -71,10 +71,7 @@ Future<void> main(List<String> args) async {
   exitCode = 1;
 }
 
-List<File> _collectDartFiles(
-  Directory libDir,
-  Set<String> ignorePaths,
-) {
+List<File> _collectDartFiles(Directory libDir, Set<String> ignorePaths) {
   final files = libDir
       .listSync(recursive: true)
       .whereType<File>()
@@ -82,9 +79,7 @@ List<File> _collectDartFiles(
       .where((file) => !_isGenerated(file.path))
       .where(
         (file) => !ignorePaths.contains(
-          _normalizePath(
-            p.relative(file.path, from: Directory.current.path),
-          ),
+          _normalizePath(p.relative(file.path, from: Directory.current.path)),
         ),
       )
       .toList();

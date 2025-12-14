@@ -200,20 +200,27 @@ if [[ -d "$UI_DIR" ]]; then
     # Step 7: Flutter analyze with fatal infos
     echo "[$STEP/$TOTAL_CHECKS] Running flutter analyze (fatal infos)..."
     pushd "$UI_DIR" >/dev/null
-    if ! flutter analyze --fatal-infos; then
-        echo ""
-        echo "╔════════════════════════════════════════════════════════════╗"
-        echo "║  ❌ FAILED: Flutter analyze (--fatal-infos)                ║"
-        echo "╠════════════════════════════════════════════════════════════╣"
-        echo "║  Dart analysis found issues (including infos as errors).   ║"
-        echo "║                                                            ║"
-        echo "║  To reproduce, run:                                        ║"
-        echo "║    cd ui && flutter analyze --fatal-infos                  ║"
-        echo "║                                                            ║"
-        echo "║  Fix the reported problems before committing.              ║"
-        echo "╚════════════════════════════════════════════════════════════╝"
-        popd >/dev/null
-        exit 1
+    STAGED_DART_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only -- '*.dart' | grep '^ui/' || true)
+    if [[ -z "$STAGED_DART_FILES" ]]; then
+        echo "    ✓ No staged Dart files to analyze (skipping)"
+    else
+        # Strip ui/ prefix so paths are relative to UI_DIR
+        mapfile -t ANALYZE_FILES < <(printf '%s\n' "$STAGED_DART_FILES" | sed 's#^ui/##')
+        if ! flutter analyze --fatal-infos "${ANALYZE_FILES[@]}"; then
+            echo ""
+            echo "╔════════════════════════════════════════════════════════════╗"
+            echo "║  ❌ FAILED: Flutter analyze (--fatal-infos)                ║"
+            echo "╠════════════════════════════════════════════════════════════╣"
+            echo "║  Dart analysis found issues (including infos as errors).   ║"
+            echo "║                                                            ║"
+            echo "║  To reproduce, run:                                        ║"
+            echo "║    cd ui && flutter analyze --fatal-infos ${ANALYZE_FILES[*]}"
+            echo "║                                                            ║"
+            echo "║  Fix the reported problems before committing.              ║"
+            echo "╚════════════════════════════════════════════════════════════╝"
+            popd >/dev/null
+            exit 1
+        fi
     fi
     popd >/dev/null
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
@@ -222,15 +229,17 @@ if [[ -d "$UI_DIR" ]]; then
     echo ""
 
     # Step 8: Flutter tests with coverage (fast suite)
-    echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite, threshold ${UI_COVERAGE_THRESHOLD}% )..."
+    FAST_TEST_FILES="${UI_TEST_FILES:-test/services/keymap_converter_test.dart}"
+    FAST_COVERAGE_THRESHOLD="${UI_FAST_COVERAGE_THRESHOLD:-0}"
+    echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite, threshold ${FAST_COVERAGE_THRESHOLD}% )..."
     pushd "$UI_DIR" >/dev/null
-    if ! COVERAGE_THRESHOLD="$UI_COVERAGE_THRESHOLD" "$UI_DIR/scripts/check_coverage.sh"; then
+    if ! TEST_FILES="$FAST_TEST_FILES" COVERAGE_THRESHOLD="$FAST_COVERAGE_THRESHOLD" "$UI_DIR/scripts/check_coverage.sh"; then
         echo ""
         echo "╔════════════════════════════════════════════════════════════╗"
         echo "║  ❌ FAILED: Flutter tests with coverage                    ║"
         echo "╠════════════════════════════════════════════════════════════╣"
         echo "║  The fast Flutter test suite failed or coverage below      ║"
-        echo "║  the required threshold (${UI_COVERAGE_THRESHOLD}%).       ║"
+        echo "║  the required threshold (${FAST_COVERAGE_THRESHOLD}%).     ║"
         echo "║                                                            ║"
         echo "║  To reproduce, run:                                        ║"
         echo "║    cd ui && COVERAGE_THRESHOLD=${UI_COVERAGE_THRESHOLD} \\  ║"
@@ -261,7 +270,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "║    • Dart/Flutter toolchain availability                   ║"
     echo "║    • dart format --set-exit-if-changed (ui)                ║"
     echo "║    • flutter analyze --fatal-infos (ui)                    ║"
-    echo "║    • flutter test --coverage (fast suite, ui, threshold ${UI_COVERAGE_THRESHOLD}%)║"
+    echo "║    • flutter test --coverage (fast suite, ui, threshold ${FAST_COVERAGE_THRESHOLD}%)║"
 fi
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""

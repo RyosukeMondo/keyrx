@@ -30,12 +30,12 @@ class FfiIntrospectionService {
 
     try {
       final resultStr = resultPtr.cast<Utf8>().toDartString();
-      final result =
-          FfiResult.fromJson(resultStr, IntrospectionData.fromJson);
+      final result = FfiResult.fromJson(resultStr, IntrospectionData.fromJson);
 
       if (!result.success || result.data == null) {
         throw Exception(
-            'Failed to fetch introspection metadata: ${result.error}');
+          'Failed to fetch introspection metadata: ${result.error}',
+        );
       }
 
       _cachedData = result.data!;
@@ -63,8 +63,8 @@ class FfiIntrospectionService {
     final domain = await getDomainMetadata(domainName);
     return domain?.functions.firstWhere(
       (f) => f.name == functionName,
-      orElse: () => throw Exception(
-          'Function not found: $domainName.$functionName'),
+      orElse: () =>
+          throw Exception('Function not found: $domainName.$functionName'),
     );
   }
 
@@ -84,10 +84,9 @@ class FfiIntrospectionService {
       for (final function in domain.functions) {
         if (function.name.toLowerCase().contains(lowerQuery) ||
             function.description.toLowerCase().contains(lowerQuery)) {
-          results.add(FunctionSearchResult(
-            domain: domain.name,
-            function: function,
-          ));
+          results.add(
+            FunctionSearchResult(domain: domain.name, function: function),
+          );
         }
       }
     }
@@ -102,10 +101,7 @@ class FfiIntrospectionService {
 
     for (final domain in data.domains) {
       for (final event in domain.events) {
-        results.add(EventSearchResult(
-          domain: domain.name,
-          event: event,
-        ));
+        results.add(EventSearchResult(domain: domain.name, event: event));
       }
     }
 
@@ -124,10 +120,7 @@ class FunctionSearchResult {
   final String domain;
   final FunctionMetadata function;
 
-  FunctionSearchResult({
-    required this.domain,
-    required this.function,
-  });
+  FunctionSearchResult({required this.domain, required this.function});
 
   String get fullName => '$domain.${function.name}';
 }
@@ -137,10 +130,7 @@ class EventSearchResult {
   final String domain;
   final EventMetadata event;
 
-  EventSearchResult({
-    required this.domain,
-    required this.event,
-  });
+  EventSearchResult({required this.domain, required this.event});
 
   String get fullName => '$domain.${event.name}';
 }

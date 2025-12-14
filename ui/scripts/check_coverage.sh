@@ -20,6 +20,7 @@ TEST_RANDOM_SEED="${TEST_RANDOM_SEED:-random}"
 COVERAGE_DIR="${COVERAGE_DIR:-coverage}"
 LCOV_FILE="${LCOV_FILE:-$COVERAGE_DIR/lcov.info}"
 THRESHOLD="${COVERAGE_THRESHOLD:-}"
+TEST_FILES="${TEST_FILES:-test}"
 
 cd "$UI_DIR"
 
@@ -27,7 +28,8 @@ echo "==> Running Flutter tests with coverage"
 flutter test --coverage \
     --concurrency="$CONCURRENCY" \
     --exclude-tags="$EXCLUDE_TAGS" \
-    --test-randomize-ordering-seed "$TEST_RANDOM_SEED"
+    --test-randomize-ordering-seed "$TEST_RANDOM_SEED" \
+    $TEST_FILES
 
 if [[ ! -f "$LCOV_FILE" ]]; then
     echo "Coverage file not found: $LCOV_FILE"
@@ -35,7 +37,7 @@ if [[ ! -f "$LCOV_FILE" ]]; then
 fi
 
 if [[ -n "$THRESHOLD" ]]; then
-    coverage_stats="$(awk -F',' '/^DA:/{total++; if ($2>0) covered++} END{if (total==0){print \"0 0\"} else {print covered \" \" total}}' "$LCOV_FILE")"
+    coverage_stats="$(awk -F',' '/^DA:/{total++; if ($2>0) covered++} END{if (total==0){print "0 0"} else {print covered " " total}}' "$LCOV_FILE")"
     read -r covered total <<<"${coverage_stats:-"0 0"}"
     percent="$(awk -v c="$covered" -v t="$total" 'BEGIN{if (t==0){print 0} else {printf "%.2f", (c/t)*100}}')"
     echo "Line coverage: $percent% ($covered/$total lines)"

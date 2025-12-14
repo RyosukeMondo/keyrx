@@ -17,6 +17,7 @@ Output:
 """
 
 import json
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -196,6 +197,7 @@ class DartBindingsGenerator:
 /// DO NOT EDIT MANUALLY - changes will be overwritten.
 ///
 /// To regenerate: python3 scripts/generate_dart_bindings.py
+// ignore_for_file: avoid_positional_boolean_parameters, sort_constructors_first
 library;
 
 import 'dart:ffi';
@@ -302,9 +304,22 @@ def main():
         sys.exit(1)
 
     functions = []
-    for f in contracts_dir.glob('*.ffi-contract.json'):
+    for f in sorted(contracts_dir.glob('*.ffi-contract.json')):
         print(f"Parsing {f.name}...")
         functions.extend(ContractReflector.parse_contract(f))
+
+    # Legacy bindings not yet represented in the contract files.
+    functions.append(
+        FfiFunction(
+            name='on_state',
+            doc_comment='Register state callback (legacy engine binding).',
+            rust_name='keyrx_on_state',
+            return_type='Void',
+            parameters=[('callback', 'Pointer<NativeFunction<EventCallbackNative>>')],
+            domain='engine',
+            has_error_ptr=False,
+        )
+    )
 
     print(f"Found {len(functions)} functions.")
 
@@ -318,6 +333,23 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(out_code, encoding='utf-8')
     print(f"Written to {out_path}")
+
+    # Keep generated bindings stable for verification by formatting with Dart.
+    try:
+        subprocess.run(
+            ["dart", "format", str(out_path)],
+            cwd=root / "ui",
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except FileNotFoundError:
+        print("dart format not run (dart not found on PATH); bindings may be unformatted.")
+    except subprocess.CalledProcessError as exc:
+        print("dart format failed; bindings may be unformatted.")
+        print(exc.stdout)
+        print(exc.stderr)
 
 if __name__ == '__main__':
     main()
