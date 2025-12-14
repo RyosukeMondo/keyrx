@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Pre-commit hook: enforces code quality before commits
-# Runs: cargo fmt --check, cargo clippy, cargo test --lib
+# Runs: cargo fmt --check, cargo clippy, cargo test --lib, Dart toolchain check
 #
 
 set -e
@@ -28,6 +28,7 @@ if [[ -z "$REPO_ROOT" ]]; then
 fi
 
 CORE_DIR="$REPO_ROOT/core"
+UI_DIR="$REPO_ROOT/ui"
 
 # Change to core directory for cargo commands
 cd "$CORE_DIR"
@@ -39,10 +40,14 @@ echo "╚═══════════════════════�
 echo ""
 
 TOTAL_CHECKS=4
+if [[ -d "$UI_DIR" ]]; then
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+fi
 PASSED_CHECKS=0
+STEP=1
 
 # Step 1: Format check
-echo "[1/$TOTAL_CHECKS] Checking code formatting..."
+echo "[$STEP/$TOTAL_CHECKS] Checking code formatting..."
 if ! cargo fmt --check 2>/dev/null; then
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
@@ -59,11 +64,12 @@ if ! cargo fmt --check 2>/dev/null; then
     exit 1
 fi
 PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
 echo "    ✓ Formatting OK"
 echo ""
 
 # Step 2: Clippy lint check
-echo "[2/$TOTAL_CHECKS] Running clippy lints..."
+echo "[$STEP/$TOTAL_CHECKS] Running clippy lints..."
 if ! cargo clippy --quiet -- -D warnings 2>&1; then
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
@@ -80,11 +86,12 @@ if ! cargo clippy --quiet -- -D warnings 2>&1; then
     exit 1
 fi
 PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
 echo "    ✓ Clippy OK"
 echo ""
 
 # Step 3: Unit tests (lib only for speed)
-echo "[3/$TOTAL_CHECKS] Running unit tests..."
+echo "[$STEP/$TOTAL_CHECKS] Running unit tests..."
 # Force single-threaded execution to avoid flaky global state interactions in docs registry
 if ! RUST_TEST_THREADS=1 cargo test --lib --quiet -- --test-threads=1 2>&1; then
     echo ""
@@ -102,11 +109,12 @@ if ! RUST_TEST_THREADS=1 cargo test --lib --quiet -- --test-threads=1 2>&1; then
     exit 1
 fi
 PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
 echo "    ✓ Tests OK"
 echo ""
 
 # Step 4: Verify FFI bindings
-echo "[4/$TOTAL_CHECKS] Verifying FFI bindings..."
+echo "[$STEP/$TOTAL_CHECKS] Verifying FFI bindings..."
 if ! python3 "$REPO_ROOT/scripts/verify_bindings.py"; then
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
@@ -122,8 +130,50 @@ if ! python3 "$REPO_ROOT/scripts/verify_bindings.py"; then
     exit 1
 fi
 PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
 echo "    ✓ Bindings OK"
 echo ""
+
+if [[ -d "$UI_DIR" ]]; then
+    # Step 5: Dart/Flutter toolchain availability
+    echo "[$STEP/$TOTAL_CHECKS] Checking Dart/Flutter toolchain..."
+    if ! command -v dart >/dev/null 2>&1; then
+        echo ""
+        echo "╔════════════════════════════════════════════════════════════╗"
+        echo "║  ❌ FAILED: Dart toolchain missing                         ║"
+        echo "╠════════════════════════════════════════════════════════════╣"
+        echo "║  Dart/Flutter commands are required for UI checks.         ║"
+        echo "║                                                            ║"
+        echo "║  To install Flutter (which bundles Dart):                  ║"
+        echo "║    https://docs.flutter.dev/get-started/install            ║"
+        echo "║                                                            ║"
+        echo "║  After installation, ensure 'dart' is on your PATH.        ║"
+        echo "╚════════════════════════════════════════════════════════════╝"
+        exit 1
+    fi
+
+    if ! command -v flutter >/dev/null 2>&1; then
+        echo ""
+        echo "╔════════════════════════════════════════════════════════════╗"
+        echo "║  ❌ FAILED: Flutter CLI missing                            ║"
+        echo "╠════════════════════════════════════════════════════════════╣"
+        echo "║  Flutter is needed for upcoming UI checks.                 ║"
+        echo "║                                                            ║"
+        echo "║  Install Flutter from:                                     ║"
+        echo "║    https://docs.flutter.dev/get-started/install            ║"
+        echo "║                                                            ║"
+        echo "║  Verify with:                                              ║"
+        echo "║    flutter --version                                       ║"
+        echo "╚════════════════════════════════════════════════════════════╝"
+        exit 1
+    fi
+
+    pushd "$UI_DIR" >/dev/null
+    echo "    ✓ Dart/Flutter toolchain detected (UI checks ready)"
+    popd >/dev/null
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+    STEP=$((STEP + 1))
+fi
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  ✅ All $PASSED_CHECKS/$TOTAL_CHECKS pre-commit checks passed!                       ║"
@@ -133,5 +183,8 @@ echo "║    • cargo fmt --check                                     ║"
 echo "║    • cargo clippy -- -D warnings                           ║"
 echo "║    • cargo test --lib                                      ║"
 echo "║    • python3 scripts/verify_bindings.py                    ║"
+if [[ -d "$UI_DIR" ]]; then
+    echo "║    • Dart/Flutter toolchain availability                   ║"
+fi
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
