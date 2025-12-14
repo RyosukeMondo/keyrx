@@ -131,7 +131,7 @@
   - _Requirements: FR4.1, FR4.2, NFR2.1_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with expertise in code organization | Task: Run module size analysis from task 2, identify all remaining FFI modules >500 lines, prioritize by size (largest first), use module_splitter tool to split each module following established patterns (core/src/ffi/domains/{domain}/{feature}.rs), apply consistent naming conventions (verbs for actions: create/update/delete, nouns for queries: state/config/status), create mod.rs files with re-exports, verify compilation after each split, run tests, update documentation, create summary report (modules split, new structure, benefits), add naming convention guide to docs/FFI_MODULE_CONVENTIONS.md | Restrictions: All modules must be ≤500 lines, naming must be consistent across all domains, functionality preserved exactly, all tests pass, maintain backward compatibility | Success: All FFI modules ≤500 lines, naming conventions consistent, all code compiles, tests pass, backward compatibility maintained, summary report shows before/after, conventions documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [-] 17. FFI Tracing Infrastructure
+- [x] 17. FFI Tracing Infrastructure
   - File: core/src/ffi/tracing.rs, core/Cargo.toml (add tracing dependencies)
   - Add tracing infrastructure for FFI layer: tracing crate integration, structured spans for FFI calls, correlation IDs, context propagation, integration with Dart DevTools timeline
   - Purpose: Enable observability of FFI calls for debugging and performance analysis
