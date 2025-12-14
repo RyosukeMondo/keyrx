@@ -391,6 +391,55 @@ pub struct EngineState {
 }
 ```
 
+## Flutter/Dart Architecture & Standards
+
+### Layered UI Architecture
+- **Presentation (Widgets)** → **State (Riverpod providers + adapters for legacy `provider`)** → **Services (ServiceRegistry/Facade)** → **FFI Bridge**. Composition entrypoint is `ProviderScope` in `ui/lib/main.dart`; dependency wiring lives in `ui/lib/state/providers_setup.dart`.
+- **ServiceRegistry** owns FFI-backed services and is disposed via Riverpod lifecycle; prefer constructing services via providers instead of singletons.
+- **UI contracts**: widgets observe derived streams (`keyFlowProvider`) instead of talking to the bridge directly; keep UI pure and side-effect free except through services/facade.
+- **Feature modules** follow folder layout under `ui/lib/` (`ffi/`, `services/`, `state/`, `widgets/`, `pages/`, `utils/`); add new modules by exporting providers + façade methods instead of reaching into bridge internals.
+
+### State Management (Riverpod)
+- Root `ProviderScope` wraps the app; all long-lived resources should be provided via `Provider`/`StateNotifierProvider` and cleaned up with `ref.onDispose`.
+- Use `bridgeProvider` → `serviceRegistryProvider` → `keyrxFacadeProvider` to access FFI safely; never hold global `KeyrxBridge` references.
+- Prefer **immutable state** via `StateNotifier`/`AsyncNotifier` for async flows; use `ChangeNotifierProvider` only when interoperating with legacy `provider`.
+- Watch streams through `StreamProvider` (`keyFlowProvider`) for runtime status; surface UI state as `AsyncValue` to keep error/loading handling explicit.
+- Dependency overrides in tests go through the widget test harness; avoid manual `ProviderScope(overrides: ...)` duplication.
+
+### Testing Strategy (Flutter)
+- **Unit/service tests**: mock bridge via `MockKeyrxBridge` or fake services from `ServiceRegistry` to isolate logic.
+- **Widget tests**: use `ui/test/helpers/widget_test_harness.dart` + `WidgetTesterX` for deterministic pumping and provider overrides; keep golden-safe themes/devices consistent.
+- **Golden tests**: standardized via `ui/test/helpers/golden_test_harness.dart`; run with `just ui-golden-verify` and update with `just ui-golden-update`.
+- **Performance & memory benches**: live in `ui/test/performance/` and `ui/test/memory/`; gate regressions against documented thresholds.
+- **Coverage**: target ≥80% line coverage; fast pre-commit gate runs at 60% using `ui/scripts/check_coverage.sh`; full runs use `collect_coverage.sh` + `generate_coverage_report.sh` or `just ui-coverage`.
+- **Automation**: `just ui-test`, `ui-test-watch`, `ui-quality` (format + analyze + tests + metrics) keep local runs aligned with CI.
+
+### Code Quality Standards (Flutter)
+- Analyzer is strict: fatal infos/warnings, strong mode, and custom lint plugin. Metrics gate: **≤500 lines/file** and **≤50 lines/function** enforced by `ui/scripts/check_metrics.dart` (`just ui-metrics`, `ui-quality`, and pre-commit).
+- Formatting required (`dart format --set-exit-if-changed`); zero analyzer warnings tolerated.
+- Coverage floors: 60% fast gate (pre-commit) and 80% target for features/CI; add focused tests alongside new code.
+- Prefer pure widgets and side-effect isolation; async calls should surface cancellable Futures/Streams with clear error handling.
+- Keep FFI surface narrow: add methods to `KeyrxBridge` and expose via `ServiceRegistry`/`KeyrxFacade`; document every addition in STATE_MANAGEMENT/FFI docs.
+
+### Performance Targets
+- **Hot reload** <1s for UI-only changes; keep rebuild depth small and avoid heavy synchronous work in build methods.
+- **Startup to interactive** <500ms on release desktop builds; measure with `PerformanceTimelineTracer` (see `ui/lib/utils/performance_timeline.dart`) and DevTools timeline markers.
+- **FFI calls** should remain sub-millisecond for lightweight queries; batch where possible and avoid UI-thread blocking.
+- **Rendering**: avoid layout thrash; prefer const widgets and memoized providers. Golden/perf tests should catch regressions before release.
+
+### FFI Workflow (Dart ↔ Rust)
+- Bridge entrypoint: `ui/lib/ffi/bridge.dart`; lifecycle managed by `bridgeProvider` with disposal hooks. Mockable via `ui/lib/ffi/mock_bridge.dart` gated by `MOCK_FFI=true` for offline/UI-only flows.
+- Service access: `ServiceRegistry` wraps bridge channels and emits typed streams; UI consumes facade (`KeyrxFacade`) and `FacadeState` instead of raw FFI.
+- Codegen/watch: `scripts/watch_ffi.sh` + `just dev-watch` rebuild bindings on Rust changes with debouncing; run `just dev-mock` to pair with mock bridge during UI iteration.
+- Data contracts documented in `docs/ffi-architecture.md` / `docs/ffi-contract-schema.md`; any breaking change requires schema + doc updates.
+
+### Debugging & Observability (Flutter)
+- Logging: `ui/lib/utils/logger.dart` provides JSON-structured logs; set log level via env defines and avoid logging secrets.
+- FFI tracing: `ui/lib/ffi/debug_tools.dart` adds call tracing, Timeline instrumentation, and error formatting; enable during integration debugging.
+- Profiling: DevTools workflow documented in `docs/PROFILING.md`; use timeline events around startup/FFI boundaries and benchmarks in `ui/test/performance/`.
+- Error handling: surface actionable messages and remediation links; prefer typed errors translated through `errorTranslator` in services.
+- Golden/widget issues: use harness snapshots and `WidgetTesterX` diagnostics for layout/semantics regressions before escalating to runtime debugging.
+
 ## CLI-First Development
 
 Every feature must be CLI-exercisable before GUI implementation:
