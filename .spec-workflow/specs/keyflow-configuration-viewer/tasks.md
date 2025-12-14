@@ -43,7 +43,7 @@
   - _Requirements: 1, 2, 3, 4, 5_
   - _Prompt: Implement the task for spec keyflow-configuration-viewer, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter/Dart QA engineer. Task: Write unit tests for KeyFlowRepository and KeyFlowViewModel using mocked services to validate aggregation, error propagation, staleness, selection preservation, and mock-bridge mode. Restrictions: No real FFI; use fakes; keep tests deterministic. _Leverage: ui/test helpers. _Requirements: 1,2,3,4,5. Success: tests cover happy/failure paths, staleness timer at 5s, gap/conflict counts, runtime updates propagate correctly, and mock-mode works without native libs._
 
-- [ ] 6. Widget tests for KeyFlow page
+- [x] 6. Widget tests for KeyFlow page
   - File: ui/test/keyflow_page_test.dart
   - Verify rendering of panes, empty/error states, runtime stale banner, selection persistence
   - _Leverage: Flutter widget testing patterns in repo_
