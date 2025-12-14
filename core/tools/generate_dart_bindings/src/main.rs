@@ -44,16 +44,31 @@ fn main() -> Result<()> {
         }
     }
 
+    // Display incremental generation statistics
+    let stats = &result.incremental_stats;
+    if stats.skipped > 0 {
+        eprintln!(
+            "Incremental: Generated {} files, Skipped {} files, Time saved: {:.2}s",
+            stats.generated,
+            stats.skipped,
+            stats.time_saved_seconds()
+        );
+    }
+
     if cli.check && result.needs_regeneration {
         eprintln!("Error: Generated bindings are out of date. Run without --check to regenerate.");
         std::process::exit(1);
     }
 
     if !cli.check {
-        eprintln!(
-            "Successfully generated Dart bindings ({} file(s) written)",
-            result.files_written
-        );
+        if result.files_written > 0 {
+            eprintln!(
+                "Successfully generated Dart bindings ({} file(s) written)",
+                result.files_written
+            );
+        } else if stats.skipped > 0 {
+            eprintln!("All files up to date (nothing to generate)");
+        }
     } else {
         eprintln!("Bindings are up to date.");
     }

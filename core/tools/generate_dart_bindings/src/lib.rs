@@ -13,9 +13,11 @@
 //! from JSON contracts.
 
 pub mod bindings_gen;
+pub mod cache;
 pub mod cli;
 pub mod formatter;
 pub mod header;
+pub mod incremental;
 pub mod loader;
 pub mod models_gen;
 pub mod templates;

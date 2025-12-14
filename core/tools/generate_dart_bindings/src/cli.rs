@@ -21,6 +21,10 @@ pub struct Cli {
     #[arg(short, long)]
     pub verbose: bool,
 
+    /// Force regeneration, bypassing cache
+    #[arg(short, long)]
+    pub force: bool,
+
     /// Path to contracts directory (default: core/src/ffi/contracts)
     #[arg(long)]
     pub contracts: Option<PathBuf>,

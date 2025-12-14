@@ -48,7 +48,7 @@
   - _Requirements: FR2.2, NFR3.2_
   - _Prompt: Implement the task for spec rust-first-ai-native-ffi, first run spec-workflow-guide to get the workflow guide then implement the task: Role: DevOps Engineer with expertise in process orchestration and developer workflows | Task: Create scripts/integrated_dev.sh that runs cargo-watch (Rust rebuild + codegen) and flutter run (hot reload) in parallel using process groups, add just dev recipe calling integrated script, coordinate logs with prefixes ([RUST], [FLUTTER]), handle Ctrl+C gracefully (kill both processes), detect when Rust ABI changes vs Dart-only changes (full restart vs hot reload), provide clear feedback (Edit → Compile → Generate → Reload timeline), add --mock flag to run with mock FFI bridge, document workflow in docs/FFI_DEVELOPMENT.md | Restrictions: Both processes must be killable with single Ctrl+C, logs must be interleaved cleanly, errors in one shouldn't crash the other, startup time <10s, ensure cross-platform compatibility | Success: just dev starts both watch modes, logs are clear and prefixed, Ctrl+C shuts down cleanly, hot reload works for Dart changes, full restart for Rust ABI changes, --mock flag functional, workflow documented | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 7. Incremental Code Generation
+- [-] 7. Incremental Code Generation
   - File: core/tools/generate_dart_bindings/src/incremental.rs, core/tools/generate_dart_bindings/src/cache.rs
   - Implement SHA256 tracking of contract JSON + Rust source, skip regeneration if unchanged, persist cache to .cache/codegen/, provide --force flag, show skip statistics
   - Purpose: Avoid unnecessary regeneration, speed up watch mode

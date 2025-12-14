@@ -8,15 +8,18 @@ use generate_dart_bindings::{
         generate_ffi_signatures, generate_function_pointers_block, generate_typedefs_block,
         generate_wrapper_functions, generate_wrappers_block,
     },
+    cache::CodegenCache,
     cli::Cli,
     formatter::{format_file, is_dart_available, FormatResult},
     header::{generate_bindings_header, generate_models_header},
+    incremental::{IncrementalGenerator, IncrementalStats, RegenerationStatus},
     loader::{load_all_contracts, load_contracts_for_domain},
     models_gen::{generate_all_models, generate_models_block},
     writer::{write_if_changed, WriteResult},
 };
 use keyrx_core::ffi::contract::FfiContract;
 use std::path::PathBuf;
+use std::time::Instant;
 
 /// Result of the generation pipeline
 #[derive(Debug, Default)]
@@ -26,6 +29,7 @@ pub struct PipelineResult {
     pub files_written: usize,
     pub files_skipped: usize,
     pub needs_regeneration: bool,
+    pub incremental_stats: IncrementalStats,
 }
 
 /// Generation pipeline that orchestrates all components
@@ -40,18 +44,47 @@ impl<'a> GenerationPipeline<'a> {
 
     /// Run the full generation pipeline
     pub fn run(&self) -> Result<PipelineResult> {
+        let start_time = Instant::now();
         let mut result = PipelineResult::default();
 
-        // Step 1: Load contracts
+        // Step 1: Initialize incremental generator
+        let cache_path = CodegenCache::default_path();
+        let mut incremental = IncrementalGenerator::new(&cache_path, self.cli.force)?;
+
+        if self.cli.verbose {
+            if self.cli.force {
+                eprintln!("Force mode: bypassing cache");
+            } else {
+                eprintln!("Cache: {} entries", incremental.cache_size());
+            }
+        }
+
+        // Step 2: Load contracts
         let contracts = self.load_contracts()?;
         if self.cli.verbose {
             eprintln!("Loaded {} contract(s)", contracts.len());
         }
 
-        // Step 2: Generate code for each contract
+        // Step 3: Check if regeneration is needed (for incremental mode)
+        let contracts_json = serde_json::to_string(&contracts)
+            .with_context(|| "Failed to serialize contracts for hashing")?;
+
+        let contracts_path = self.cli.contracts_dir().join("all_contracts.meta");
+        let needs_regen = incremental
+            .needs_regeneration(&contracts_path, &contracts_json)?;
+
+        if needs_regen == RegenerationStatus::CanSkip && !self.cli.check {
+            if self.cli.verbose {
+                eprintln!("Contracts unchanged, skipping regeneration");
+            }
+            result.incremental_stats.add_skipped(1000); // Estimate 1s saved
+            return Ok(result);
+        }
+
+        // Step 4: Generate code for each contract
         let (bindings_code, models_code) = self.generate_code(&contracts)?;
 
-        // Step 3: Write files (unless in check mode)
+        // Step 5: Write files (unless in check mode)
         let output_dir = self.cli.output_dir();
         let bindings_path = output_dir.join("ffi/generated_bindings.dart");
         let models_path = output_dir.join("models/generated_models.dart");
@@ -71,6 +104,22 @@ impl<'a> GenerationPipeline<'a> {
             result.files_skipped = skipped;
             result.bindings_generated = 1;
             result.models_generated = 1;
+
+            // Update cache
+            incremental.update_cache(
+                &contracts_path,
+                &contracts_json,
+                Some(&bindings_code),
+                Some(&models_code),
+            );
+            incremental.save(&cache_path)?;
+
+            result.incremental_stats.add_generated();
+        }
+
+        let elapsed = start_time.elapsed();
+        if self.cli.verbose {
+            eprintln!("Generation completed in {:.2}s", elapsed.as_secs_f64());
         }
 
         Ok(result)

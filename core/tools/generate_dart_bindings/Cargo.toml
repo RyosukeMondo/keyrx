@@ -36,6 +36,9 @@ chrono = { workspace = true }
 # Temp files for check mode
 tempfile = "3"
 
+# SHA256 hashing for incremental generation
+sha2 = "0.10"
+
 [dev-dependencies]
 
 [lints]
