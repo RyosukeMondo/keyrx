@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../ffi/bridge.dart';
 import '../../models/device_state.dart';
 import '../../models/hardware_profile.dart';
+import '../../models/device_identity.dart';
 import '../../models/keymap.dart';
 import '../../models/runtime_config.dart';
 import '../../models/virtual_layout.dart';
@@ -15,6 +16,7 @@ import '../keymap_service.dart';
 import '../layout_service.dart';
 import '../runtime_service.dart';
 import '../keyflow_telemetry.dart';
+import '../config_result.dart';
 
 /// Aggregated view of KeyFlow data for UI consumption.
 class KeyFlowSnapshot {
@@ -148,6 +150,80 @@ class KeyFlowRepository {
        _runtimeUpdates = runtimeUpdates,
        _telemetry = telemetry {
     _wireRuntimeStream();
+  }
+
+  /// Stub repository for hot-reload / mock-bridge loops (no native lib).
+  factory KeyFlowRepository.stub({KeyFlowTelemetry? telemetry}) {
+    final stubDevices = [
+      const DeviceState(
+        identity: DeviceIdentity(
+          vendorId: 1,
+          productId: 2,
+          serialNumber: 'stub-001',
+          userLabel: 'Stub Board',
+        ),
+        remapEnabled: true,
+        profileId: 'stub-profile',
+        connectedAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      ),
+    ];
+    final stubLayout = VirtualLayout(
+      id: 'stub-layout',
+      name: 'Stub Layout',
+      layoutType: VirtualLayoutType.matrix,
+      keys: const [
+        VirtualKeyDef(id: 'K1', label: 'A'),
+        VirtualKeyDef(id: 'K2', label: 'B'),
+      ],
+    );
+    final stubProfile = HardwareProfile(
+      id: 'stub-profile',
+      name: 'Stub Profile',
+      virtualLayoutId: 'stub-layout',
+      wiring: const {0: 'K1', 1: 'K2'},
+    );
+    final stubKeymap = Keymap(
+      id: 'stub-keymap',
+      name: 'Stub Keymap',
+      virtualLayoutId: 'stub-layout',
+      layers: const [
+        KeymapLayer(
+          name: 'Base',
+          bindings: {'K1': ActionBinding.standardKey(value: 'A')},
+        ),
+      ],
+    );
+    final stubRuntime = RuntimeConfig(
+      devices: [
+        DeviceSlots(
+          device: const DeviceInstanceId(
+            vendorId: 1,
+            productId: 2,
+            serial: 'stub-001',
+          ),
+          slots: const [
+            ProfileSlot(
+              id: 'slot-1',
+              hardwareProfileId: 'stub-profile',
+              keymapId: 'stub-keymap',
+              active: true,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return KeyFlowRepository(
+      deviceRegistryService:
+          _StubDeviceRegistryService(devices: stubDevices),
+      hardwareService: _StubHardwareService(profiles: [stubProfile]),
+      layoutService: _StubLayoutService(layouts: [stubLayout]),
+      keymapService: _StubKeymapService(keymaps: [stubKeymap]),
+      runtimeService: _StubRuntimeService(config: stubRuntime),
+      runtimeUpdates: const Stream<BridgeStateUpdate>.empty(),
+      telemetry: telemetry,
+    );
   }
 
   final DeviceRegistryService _deviceRegistryService;
