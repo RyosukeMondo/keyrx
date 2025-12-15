@@ -66,3 +66,128 @@ Use these markers to line up UI frames with engine initialization and to spot sl
 - Before merging UI/FFI changes: run `cd ui && flutter test test/performance` and `cd ui && flutter test test/memory`.
 - For visual regressions: `just ui-golden-verify` (goldens live under `test/widgets/golden`).
 - For quality gates: use `just ui-quality` or `just ui-coverage` to keep coverage near the 80% target while profiling changes.
+
+## KeyFlow Performance Benchmarks
+
+KeyFlow has strict performance requirements for smooth 60fps rendering with large device counts.
+
+### Performance Targets
+
+| Metric | Target | Critical Threshold |
+|--------|--------|-------------------|
+| Widget rendering (250 nodes) | <16ms per frame | <16ms (60fps) |
+| Interaction latency (drag/zoom/pan) | <100ms | <100ms |
+| Initial data load | <500ms | <500ms |
+| Incremental updates | <100ms | <100ms |
+| Memory baseline | <50MB | <100MB max |
+| Memory with 50 devices | <100MB | <150MB max |
+| Virtualization (250 nodes) | <5ms | <5ms |
+
+### Regression Thresholds
+
+- Performance must not regress by more than **10%** vs baseline
+- Memory must not increase by more than **20%** vs baseline
+- Tests fail if critical thresholds are exceeded
+
+### Running KeyFlow Benchmarks
+
+Run KeyFlow-specific performance benchmarks:
+
+```bash
+cd ui
+flutter test test/performance/keyflow_performance_test.dart
+```
+
+Output example:
+```
+✓ Rendered 250 nodes in 12ms (<16ms target)
+✓ Rendered 500 edges in 14ms (<16ms target)
+✓ Viewport calculation: 42.50μs avg
+✓ Virtualized 250 nodes to 48 visible in 3847μs (<5ms target)
+✓ Drag operation: 87ms (<100ms target)
+✓ Pan operation: 13.20ms avg (<16ms target)
+✓ Loaded and parsed 255 nodes in 234ms (<500ms target)
+✓ Incremental update: 45ms (<100ms target)
+```
+
+### KeyFlow Memory Profiling
+
+Run KeyFlow memory profiling tests:
+
+```bash
+cd ui
+flutter test test/performance/memory_profile_test.dart
+```
+
+Output example:
+```
+✓ Baseline: Empty canvas initialized
+✓ Baseline: 10 devices (55 nodes) rendered
+✓ Maximum load: 50 devices (255 nodes) rendered
+✓ Stress test: 100 devices (505 nodes) rendered
+✓ Stream cleanup: 10 streams created and disposed cleanly
+✓ Controller cleanup: 3 controllers disposed correctly
+✓ Memory accumulation: 100 parse cycles completed
+✓ Flow graph cleanup: 1000 graphs created and discarded
+```
+
+### Profiling KeyFlow in DevTools
+
+1. **Start app in profile mode:**
+   ```bash
+   cd ui
+   flutter run --profile --trace-skia --vm-service-port 9101
+   ```
+
+2. **Navigate to KeyFlow page** and perform operations:
+   - Pan and zoom the canvas
+   - Drag nodes around
+   - Add/delete slots
+   - Connect/disconnect devices
+
+3. **Record Timeline:**
+   - DevTools → Performance tab → Record
+   - Interact with flow canvas
+   - Stop recording
+   - Verify frames are <16ms (green bars)
+
+4. **Check Memory:**
+   - DevTools → Memory tab → Take Snapshot
+   - Filter for `FlowGraph`, `FlowNode`, `FlowEdge`
+   - Verify no memory leaks after operations
+   - Check object counts are reasonable
+
+### Troubleshooting KeyFlow Performance
+
+**Rendering too slow (>16ms frames):**
+- Check `RepaintBoundary` around nodes
+- Verify virtualization is working (only visible nodes rendered)
+- Profile `EdgesPainter.shouldRepaint`
+- Check for excessive widget rebuilds
+
+**High memory usage:**
+- Verify streams are disposed (`StreamController.close()`)
+- Check for cached flow graphs not being released
+- Profile with DevTools Memory to find retained objects
+- Run memory leak tests
+
+**Slow data loading:**
+- Profile `FlowGraph.fromRuntimeConfig()` parsing
+- Check FFI bridge latency
+- Verify caching is working (5min TTL)
+- Profile repository operations
+
+**Interaction latency:**
+- Profile drag gesture handlers
+- Check for blocking operations in pan/zoom
+- Measure state update latency with stopwatch
+- Verify debouncing is active
+
+### Best Practices
+
+1. **Profile in release mode:** Debug mode is not representative
+2. **Test with 50+ devices:** Real-world stress testing
+3. **Run benchmarks in CI:** Catch regressions early
+4. **Monitor frame times:** Use performance overlay during development
+5. **Check memory regularly:** Use DevTools to verify no leaks
+6. **Optimize hot paths:** Focus on rendering and interaction code
