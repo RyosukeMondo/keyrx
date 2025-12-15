@@ -8,6 +8,8 @@
 //! - **Event Collection**: FFI functions emit trace events
 //! - **Event Buffer**: Thread-safe circular buffer stores recent events
 //! - **Export API**: FFI functions expose events to Dart
+
+#![allow(clippy::expect_used)] // Legacy code - expect() is acceptable for trace buffer locks
 //! - **Timeline Integration**: Dart converts to Timeline events
 //!
 //! ## Usage
@@ -215,9 +217,7 @@ pub fn current_time_us() -> u64 {
 /// emit_trace_event_end(event_id, ResultStatus::Success);
 /// ```
 pub fn emit_trace_event_start(name: &str, domain: &str, args: &[(&str, &str)]) -> u64 {
-    let mut buffer = trace_buffer()
-        .lock()
-        .expect("Failed to lock trace buffer");
+    let mut buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
 
     if !buffer.is_enabled() {
         return 0;
@@ -251,9 +251,7 @@ pub fn emit_trace_event_end(event_id: u64, result_status: ResultStatus) {
         return; // Tracing was disabled
     }
 
-    let mut buffer = trace_buffer()
-        .lock()
-        .expect("Failed to lock trace buffer");
+    let mut buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
     let now = current_time_us();
 
     buffer.update_event(event_id, |event| {
@@ -272,9 +270,13 @@ pub fn emit_trace_event_end(event_id: u64, result_status: ResultStatus) {
 /// This function is FFI-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_enable() {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let mut buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
     buffer.enable();
     tracing::info!("FFI trace event collection enabled");
+    crate::ffi_record_metrics!("keyrx_trace_enable", "tracing", start, &Ok::<_, ()>(()));
 }
 
 /// Disable FFI trace event collection.
@@ -284,9 +286,13 @@ pub extern "C" fn keyrx_trace_enable() {
 /// This function is FFI-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_disable() {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let mut buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
     buffer.disable();
     tracing::info!("FFI trace event collection disabled");
+    crate::ffi_record_metrics!("keyrx_trace_disable", "tracing", start, &Ok::<_, ()>(()));
 }
 
 /// Check if trace event collection is enabled.
@@ -296,8 +302,13 @@ pub extern "C" fn keyrx_trace_disable() {
 /// This function is FFI-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_is_enabled() -> bool {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
-    buffer.is_enabled()
+    let result = buffer.is_enabled();
+    crate::ffi_record_metrics!("keyrx_trace_is_enabled", "tracing", start, &Ok::<_, ()>(()));
+    result
 }
 
 /// Get the number of buffered trace events.
@@ -307,8 +318,13 @@ pub extern "C" fn keyrx_trace_is_enabled() -> bool {
 /// This function is FFI-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_get_count() -> usize {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
-    buffer.events.len()
+    let result = buffer.events.len();
+    crate::ffi_record_metrics!("keyrx_trace_get_count", "tracing", start, &Ok::<_, ()>(()));
+    result
 }
 
 /// Clear all buffered trace events.
@@ -318,9 +334,13 @@ pub extern "C" fn keyrx_trace_get_count() -> usize {
 /// This function is FFI-safe.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_clear() {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let mut buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
     buffer.clear();
     tracing::debug!("Trace event buffer cleared");
+    crate::ffi_record_metrics!("keyrx_trace_clear", "tracing", start, &Ok::<_, ()>(()));
 }
 
 /// Get all trace events as a JSON string.
@@ -334,10 +354,13 @@ pub extern "C" fn keyrx_trace_clear() {
 /// The returned pointer must be freed using `keyrx_trace_free_json`.
 #[no_mangle]
 pub extern "C" fn keyrx_trace_get_events_json() -> *mut std::os::raw::c_char {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
     let events = buffer.get_events();
 
-    match serde_json::to_string(&events) {
+    let result = match serde_json::to_string(&events) {
         Ok(json) => {
             let c_str = std::ffi::CString::new(json).expect("Failed to create CString");
             c_str.into_raw()
@@ -346,7 +369,14 @@ pub extern "C" fn keyrx_trace_get_events_json() -> *mut std::os::raw::c_char {
             tracing::error!(error = %e, "Failed to serialize trace events");
             std::ptr::null_mut()
         }
-    }
+    };
+    crate::ffi_record_metrics!(
+        "keyrx_trace_get_events_json",
+        "tracing",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Get filtered trace events as a JSON string.
@@ -368,6 +398,9 @@ pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
     domain: *const std::os::raw::c_char,
     min_duration_us: u64,
 ) -> *mut std::os::raw::c_char {
+    use std::time::Instant;
+    let start = Instant::now();
+
     let buffer = trace_buffer().lock().expect("Failed to lock trace buffer");
 
     // Parse domain filter if provided
@@ -402,7 +435,7 @@ pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
         true
     });
 
-    match serde_json::to_string(&events) {
+    let result = match serde_json::to_string(&events) {
         Ok(json) => {
             let c_str = std::ffi::CString::new(json).expect("Failed to create CString");
             c_str.into_raw()
@@ -411,7 +444,14 @@ pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
             tracing::error!(error = %e, "Failed to serialize filtered trace events");
             std::ptr::null_mut()
         }
-    }
+    };
+    crate::ffi_record_metrics!(
+        "keyrx_trace_get_filtered_events_json",
+        "tracing",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Free a JSON string returned by trace functions.
@@ -422,9 +462,13 @@ pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
 /// `keyrx_trace_get_filtered_events_json` and must only be freed once.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_trace_free_json(json: *mut std::os::raw::c_char) {
+    use std::time::Instant;
+    let start = Instant::now();
+
     if !json.is_null() {
         drop(std::ffi::CString::from_raw(json));
     }
+    crate::ffi_record_metrics!("keyrx_trace_free_json", "tracing", start, &Ok::<_, ()>(()));
 }
 
 /// Helper macro to trace an FFI function with automatic timing.

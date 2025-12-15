@@ -28,6 +28,7 @@ mod exports_telemetry;
 mod exports_transition_log;
 pub mod logging;
 pub mod marshal;
+pub mod metrics;
 pub mod runtime;
 pub mod tracing;
 pub mod tracing_export;

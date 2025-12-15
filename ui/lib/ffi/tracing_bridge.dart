@@ -346,25 +346,16 @@ class FfiTracingBridge {
 
     // For completed events, use instantSync with duration
     if (event.durationUs != null) {
-      developer.Timeline.instantSync(
-        event.name,
-        arguments: arguments,
-      );
+      developer.Timeline.instantSync(event.name, arguments: arguments);
 
       // Also emit a start/finish pair for better visualization
-      developer.Timeline.startSync(
-        event.name,
-        arguments: arguments,
-      );
+      developer.Timeline.startSync(event.name, arguments: arguments);
       // Simulate the duration by finishing immediately
       // (DevTools will show the instantSync timing)
       developer.Timeline.finishSync();
     } else {
       // For pending events, just use instantSync
-      developer.Timeline.instantSync(
-        event.name,
-        arguments: arguments,
-      );
+      developer.Timeline.instantSync(event.name, arguments: arguments);
     }
   }
 

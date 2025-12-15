@@ -55,6 +55,8 @@
 use crate::ffi::engine_instance::with_global_engine;
 use ffi_export::ffi_export;
 use std::ffi::{c_char, CString};
+use std::time::Instant;
+use tracing::instrument;
 
 /// Export all transition log entries as JSON.
 ///
@@ -74,12 +76,16 @@ use std::ffi::{c_char, CString};
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_export_json(
     _engine_ptr: *const std::ffi::c_void,
 ) -> *mut c_char {
-    with_global_engine(|engine| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result = with_global_engine(|engine| {
         let log = engine.transition_log();
         if let Ok(json_str) = log.export_json() {
             if let Ok(c_str) = CString::new(json_str) {
@@ -88,7 +94,15 @@ pub extern "C" fn keyrx_transition_log_export_json(
         }
         std::ptr::null_mut()
     })
-    .unwrap_or(std::ptr::null_mut())
+    .unwrap_or(std::ptr::null_mut());
+
+    crate::ffi_record_metrics!(
+        "keyrx_transition_log_export_json",
+        "transition_log",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Get the number of transition log entries currently stored.
@@ -104,10 +118,21 @@ pub extern "C" fn keyrx_transition_log_export_json(
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void) -> usize {
-    with_global_engine(|engine| engine.transition_log().len()).unwrap_or(0)
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result = with_global_engine(|engine| engine.transition_log().len()).unwrap_or(0);
+    crate::ffi_record_metrics!(
+        "keyrx_transition_log_len",
+        "transition_log",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Get the maximum capacity of the transition log.
@@ -123,10 +148,21 @@ pub extern "C" fn keyrx_transition_log_len(_engine_ptr: *const std::ffi::c_void)
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_void) -> usize {
-    with_global_engine(|engine| engine.transition_log().capacity()).unwrap_or(0)
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result = with_global_engine(|engine| engine.transition_log().capacity()).unwrap_or(0);
+    crate::ffi_record_metrics!(
+        "keyrx_transition_log_capacity",
+        "transition_log",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Clear all entries from the transition log.
@@ -138,10 +174,20 @@ pub extern "C" fn keyrx_transition_log_capacity(_engine_ptr: *const std::ffi::c_
 /// # Safety
 ///
 /// `engine_ptr` must be a valid pointer to an AdvancedEngine instance.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "transition_log", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_transition_log_clear(_engine_ptr: *mut std::ffi::c_void) {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     with_global_engine(|engine| engine.transition_log_mut().clear());
+    crate::ffi_record_metrics!(
+        "keyrx_transition_log_clear",
+        "transition_log",
+        start,
+        &Ok::<_, ()>(())
+    );
 }
 
 /// Get statistics about the transition log.
@@ -163,6 +209,7 @@ pub extern "C" fn keyrx_transition_log_clear(_engine_ptr: *mut std::ffi::c_void)
 /// # Safety
 ///
 /// All pointers must be valid. `engine_ptr` must point to an AdvancedEngine instance.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_transition_log_statistics(
     _engine_ptr: *const std::ffi::c_void,
@@ -171,6 +218,9 @@ pub unsafe extern "C" fn keyrx_transition_log_statistics(
     total_duration: *mut u64,
     avg_duration: *mut u64,
 ) {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     let stats =
         with_global_engine(|engine| engine.transition_log().statistics()).unwrap_or((0, 0, 0, 0));
 
@@ -186,6 +236,12 @@ pub unsafe extern "C" fn keyrx_transition_log_statistics(
     if !avg_duration.is_null() {
         *avg_duration = stats.3;
     }
+    crate::ffi_record_metrics!(
+        "keyrx_transition_log_statistics",
+        "transition_log",
+        start,
+        &Ok::<_, ()>(())
+    );
 }
 
 #[cfg(test)]

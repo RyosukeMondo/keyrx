@@ -241,6 +241,33 @@ macro_rules! ffi_trace_exit {
     };
 }
 
+/// Helper macro to record FFI metrics
+///
+/// This should be used at the end of FFI functions to record call metrics.
+///
+/// # Examples
+///
+/// ```ignore
+/// use keyrx_core::ffi_record_metrics;
+///
+/// #[instrument(skip(context))]
+/// pub extern "C" fn my_ffi_function() -> i32 {
+///     let start = std::time::Instant::now();
+///     // ... function implementation ...
+///     let result = Ok(42);
+///     ffi_record_metrics!("my_ffi_function", "my_domain", start, &result);
+///     0
+/// }
+/// ```
+#[macro_export]
+macro_rules! ffi_record_metrics {
+    ($function:expr, $domain:expr, $start:expr, $result:expr) => {{
+        let latency_us = $start.elapsed().as_micros() as u64;
+        let is_error = $result.is_err();
+        $crate::ffi::metrics::record_call($function, $domain, latency_us, is_error);
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

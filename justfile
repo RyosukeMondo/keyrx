@@ -174,6 +174,10 @@ diff-ffi-contracts base_ref="HEAD~1" format="text":
     @echo "Detecting FFI breaking changes..."
     @./scripts/detect_ffi_breaking_changes.sh --base {{base_ref}} --format {{format}}
 
+# Display FFI call metrics (call count, latency, error rates)
+ffi-metrics format="text":
+    @./scripts/ffi_metrics.sh {{ if format == "json" { "--json" } else { "" } }}
+
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."

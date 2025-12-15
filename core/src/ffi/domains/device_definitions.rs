@@ -10,6 +10,8 @@ use crate::ffi::runtime::with_revolutionary_runtime;
 use serde::Serialize;
 use std::ffi::{c_char, CString};
 use std::ptr;
+use std::time::Instant;
+use tracing::instrument;
 
 /// List all loaded device definitions.
 ///
@@ -66,18 +68,36 @@ fn ffi_response<T: Serialize>(result: FfiResult<T>) -> *mut c_char {
 ///
 /// # Safety
 /// This function catches panics and returns an error string if a panic occurs.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub extern "C" fn keyrx_definitions_list_all() -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let result: FfiResult<Vec<DeviceDefinition>> =
             with_revolutionary_runtime(|runtime| list_all(runtime.device_definitions()));
+        crate::ffi_record_metrics!(
+            "keyrx_definitions_list_all",
+            "device_definitions",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_definitions_list_all",
+            "device_definitions",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_definitions_list_all",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 /// Get device definition for a specific VID:PID.
@@ -90,19 +110,37 @@ pub extern "C" fn keyrx_definitions_list_all() -> *mut c_char {
 ///
 /// # Safety
 /// This function catches panics and returns an error string if a panic occurs.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id(), vendor_id, product_id))]
 #[no_mangle]
 pub extern "C" fn keyrx_definitions_get_for_device(vendor_id: u16, product_id: u16) -> *mut c_char {
-    std::panic::catch_unwind(move || {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(move || {
         let result: FfiResult<DeviceDefinition> = with_revolutionary_runtime(|runtime| {
             get_for_device(runtime.device_definitions(), vendor_id, product_id)
         });
+        crate::ffi_record_metrics!(
+            "keyrx_definitions_get_for_device",
+            "device_definitions",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_definitions_get_for_device",
+            "device_definitions",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_definitions_get_for_device",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 #[cfg(test)]

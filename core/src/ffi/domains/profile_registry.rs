@@ -12,6 +12,8 @@ use crate::registry::{ProfileRegistryResolution, ProfileRegistryStorage};
 use serde_json::json;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
+use std::time::Instant;
+use tracing::instrument;
 
 /// List all profile IDs.
 ///
@@ -170,19 +172,37 @@ unsafe fn parse_c_string(ptr: *const c_char, name: &str) -> FfiResult<String> {
 ///
 /// # Safety
 /// This function catches panics and returns an error string if a panic occurs.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub extern "C" fn keyrx_profile_registry_list_profiles() -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let result: FfiResult<Vec<String>> = with_revolutionary_runtime(|runtime| {
             block_on_ffi(list_profiles(runtime.profile_registry()))
         });
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_list_profiles",
+            "profile_registry",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_list_profiles",
+            "profile_registry",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_profile_registry_list_profiles",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 /// Get a profile by ID.
@@ -195,27 +215,53 @@ pub extern "C" fn keyrx_profile_registry_list_profiles() -> *mut c_char {
 /// # Safety
 /// * `profile_id` must be a valid null-terminated C string
 /// * This function catches panics and returns an error string if a panic occurs
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_profile_registry_get_profile(
     profile_id: *const c_char,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let id_str = match parse_c_string(profile_id, "profile_id") {
             Ok(id) => id,
-            Err(err) => return ffi_response::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_profile_registry_get_profile",
+                    "profile_registry",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_response::<()>(Err(err));
+            }
         };
 
         let result: FfiResult<Profile> = with_revolutionary_runtime(|runtime| {
             block_on_ffi(get_profile(runtime.profile_registry(), &id_str))
         });
 
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_get_profile",
+            "profile_registry",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_get_profile",
+            "profile_registry",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_profile_registry_get_profile",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 /// Save a profile.
@@ -228,32 +274,65 @@ pub unsafe extern "C" fn keyrx_profile_registry_get_profile(
 /// # Safety
 /// * `profile_json` must be a valid null-terminated C string
 /// * This function catches panics and returns an error string if a panic occurs
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_profile_registry_save_profile(
     profile_json: *const c_char,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let json_str = match parse_c_string(profile_json, "profile_json") {
             Ok(json) => json,
-            Err(err) => return ffi_response::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_profile_registry_save_profile",
+                    "profile_registry",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_response::<()>(Err(err));
+            }
         };
 
         // Basic JSON validation before hitting the runtime
         if let Err(e) = serde_json::from_str::<serde_json::Value>(&json_str) {
-            return ffi_response::<()>(Err(FfiError::deserialization_failed(e.to_string())));
+            let err = FfiError::deserialization_failed(e.to_string());
+            crate::ffi_record_metrics!(
+                "keyrx_profile_registry_save_profile",
+                "profile_registry",
+                start,
+                &Err::<(), _>(&err)
+            );
+            return ffi_response::<()>(Err(err));
         }
 
         let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
             block_on_ffi(save_profile(runtime.profile_registry(), &json_str))
         });
 
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_save_profile",
+            "profile_registry",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_save_profile",
+            "profile_registry",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_profile_registry_save_profile",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 /// Delete a profile by ID.
@@ -266,27 +345,53 @@ pub unsafe extern "C" fn keyrx_profile_registry_save_profile(
 /// # Safety
 /// * `profile_id` must be a valid null-terminated C string
 /// * This function catches panics and returns an error string if a panic occurs
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_profile_registry_delete_profile(
     profile_id: *const c_char,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let id_str = match parse_c_string(profile_id, "profile_id") {
             Ok(id) => id,
-            Err(err) => return ffi_response::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_profile_registry_delete_profile",
+                    "profile_registry",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_response::<()>(Err(err));
+            }
         };
 
         let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
             block_on_ffi(delete_profile(runtime.profile_registry(), &id_str))
         });
 
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_delete_profile",
+            "profile_registry",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_delete_profile",
+            "profile_registry",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_profile_registry_delete_profile",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 /// Find profiles compatible with a given layout type.
@@ -299,22 +404,41 @@ pub unsafe extern "C" fn keyrx_profile_registry_delete_profile(
 /// # Safety
 /// * `layout_type` must be a valid null-terminated C string
 /// * This function catches panics and returns an error string if a panic occurs
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_profile_registry_find_compatible_profiles(
     layout_type: *const c_char,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let type_str = match parse_c_string(layout_type, "layout_type") {
             Ok(layout) => layout,
-            Err(err) => return ffi_response::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_profile_registry_find_compatible_profiles",
+                    "profile_registry",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_response::<()>(Err(err));
+            }
         };
 
         // Validate layout type before hitting registry
         if !["standard", "matrix", "split"].contains(&type_str.as_str()) {
-            return ffi_response::<()>(Err(FfiError::invalid_input(format!(
+            let err = FfiError::invalid_input(format!(
                 "Invalid layout type '{}'. Must be 'standard', 'matrix', or 'split'",
                 type_str
-            ))));
+            ));
+            crate::ffi_record_metrics!(
+                "keyrx_profile_registry_find_compatible_profiles",
+                "profile_registry",
+                start,
+                &Err::<(), _>(&err)
+            );
+            return ffi_response::<()>(Err(err));
         }
 
         let result: FfiResult<Vec<Profile>> = with_revolutionary_runtime(|runtime| {
@@ -324,13 +448,27 @@ pub unsafe extern "C" fn keyrx_profile_registry_find_compatible_profiles(
             ))
         });
 
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_find_compatible_profiles",
+            "profile_registry",
+            start,
+            &result
+        );
         ffi_response(result)
     })
     .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_profile_registry_find_compatible_profiles",
+            "profile_registry",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_profile_registry_find_compatible_profiles",
         )))
-    })
+    });
+
+    result_ptr
 }
 
 #[cfg(test)]

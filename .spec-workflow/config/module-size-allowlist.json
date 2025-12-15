@@ -114,6 +114,11 @@
       "path": "core/src/validation/detectors/conflicts.rs",
       "max_lines": 800,
       "reason": "Baseline size before refactors; detector split scheduled."
+    },
+    {
+      "path": "core/src/ffi/domains/profile_registry.rs",
+      "max_lines": 600,
+      "reason": "Grew to 530 lines after adding instrumentation (task 19); will refactor if grows further."
     }
   ]
 }

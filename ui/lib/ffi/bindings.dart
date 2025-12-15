@@ -57,14 +57,10 @@ typedef KeyrxTraceClear = void Function();
 typedef KeyrxTraceGetEventsJsonNative = Pointer<Char> Function();
 typedef KeyrxTraceGetEventsJson = Pointer<Char> Function();
 
-typedef KeyrxTraceGetFilteredEventsJsonNative = Pointer<Char> Function(
-  Pointer<Char> domain,
-  Uint64 minDurationUs,
-);
-typedef KeyrxTraceGetFilteredEventsJson = Pointer<Char> Function(
-  Pointer<Char> domain,
-  int minDurationUs,
-);
+typedef KeyrxTraceGetFilteredEventsJsonNative =
+    Pointer<Char> Function(Pointer<Char> domain, Uint64 minDurationUs);
+typedef KeyrxTraceGetFilteredEventsJson =
+    Pointer<Char> Function(Pointer<Char> domain, int minDurationUs);
 
 typedef KeyrxTraceFreeJsonNative = Void Function(Pointer<Char> json);
 typedef KeyrxTraceFreeJson = void Function(Pointer<Char> json);
@@ -93,7 +89,8 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxTraceGetCount keyrx_trace_get_count;
   late final KeyrxTraceClear keyrx_trace_clear;
   late final KeyrxTraceGetEventsJson keyrx_trace_get_events_json;
-  late final KeyrxTraceGetFilteredEventsJson keyrx_trace_get_filtered_events_json;
+  late final KeyrxTraceGetFilteredEventsJson
+  keyrx_trace_get_filtered_events_json;
   late final KeyrxTraceFreeJson keyrx_trace_free_json;
 
   KeyrxBindings(this._lib) : super(_lib) {
@@ -111,22 +108,32 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
         .lookup<NativeFunction<KeyrxTraceDisableNative>>('keyrx_trace_disable')
         .asFunction<KeyrxTraceDisable>();
     keyrx_trace_is_enabled = _lib
-        .lookup<NativeFunction<KeyrxTraceIsEnabledNative>>('keyrx_trace_is_enabled')
+        .lookup<NativeFunction<KeyrxTraceIsEnabledNative>>(
+          'keyrx_trace_is_enabled',
+        )
         .asFunction<KeyrxTraceIsEnabled>();
     keyrx_trace_get_count = _lib
-        .lookup<NativeFunction<KeyrxTraceGetCountNative>>('keyrx_trace_get_count')
+        .lookup<NativeFunction<KeyrxTraceGetCountNative>>(
+          'keyrx_trace_get_count',
+        )
         .asFunction<KeyrxTraceGetCount>();
     keyrx_trace_clear = _lib
         .lookup<NativeFunction<KeyrxTraceClearNative>>('keyrx_trace_clear')
         .asFunction<KeyrxTraceClear>();
     keyrx_trace_get_events_json = _lib
-        .lookup<NativeFunction<KeyrxTraceGetEventsJsonNative>>('keyrx_trace_get_events_json')
+        .lookup<NativeFunction<KeyrxTraceGetEventsJsonNative>>(
+          'keyrx_trace_get_events_json',
+        )
         .asFunction<KeyrxTraceGetEventsJson>();
     keyrx_trace_get_filtered_events_json = _lib
-        .lookup<NativeFunction<KeyrxTraceGetFilteredEventsJsonNative>>('keyrx_trace_get_filtered_events_json')
+        .lookup<NativeFunction<KeyrxTraceGetFilteredEventsJsonNative>>(
+          'keyrx_trace_get_filtered_events_json',
+        )
         .asFunction<KeyrxTraceGetFilteredEventsJson>();
     keyrx_trace_free_json = _lib
-        .lookup<NativeFunction<KeyrxTraceFreeJsonNative>>('keyrx_trace_free_json')
+        .lookup<NativeFunction<KeyrxTraceFreeJsonNative>>(
+          'keyrx_trace_free_json',
+        )
         .asFunction<KeyrxTraceFreeJson>();
   }
 

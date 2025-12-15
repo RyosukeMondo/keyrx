@@ -6,10 +6,12 @@ use crate::ffi::domains::config::global_config_manager;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
 use crate::ffi::exports::{parse_c_string, parse_device_json};
 use ffi_export::ffi_export;
+use tracing::instrument;
 
 use std::ffi::{c_char, CString};
 use std::ptr;
 use std::sync::{OnceLock, RwLock};
+use std::time::Instant;
 
 fn ffi_json<T: serde::Serialize>(result: FfiResult<T>) -> *mut c_char {
     match serialize_ffi_result(&result) {
@@ -61,17 +63,25 @@ fn reorder_slots(slots: &mut Vec<ProfileSlot>) {
 /// Get the current runtime configuration.
 ///
 /// Returns JSON string: `ok:<json>` or `error:<message>`.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_runtime_get_config() -> *mut c_char {
+    use std::time::Instant;
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     let config = match runtime_config_store().read() {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     };
-    ffi_json(Ok(config.clone()))
+    let result = Ok(config.clone());
+    crate::ffi_record_metrics!("keyrx_runtime_get_config", "runtime", start, &result);
+    ffi_json(result)
 }
 
 /// Add a new runtime slot for a device (or update existing).
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_add_slot(
@@ -79,28 +89,60 @@ pub unsafe extern "C" fn keyrx_runtime_add_slot(
     slot_json: *const c_char,
     _priority: u32,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    use std::time::Instant;
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let device_json = match parse_c_string(device_json, "device_json") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_add_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
         let slot_json_str = match parse_c_string(slot_json, "slot_json") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_add_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let device = match parse_device_json(&device_json) {
             Ok(d) => d,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_add_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let slot: ProfileSlot = match serde_json::from_str(&slot_json_str) {
             Ok(s) => s,
             Err(e) => {
-                return ffi_json::<()>(Err(FfiError::invalid_input(format!(
-                    "Invalid profile slot JSON: {}",
-                    e
-                ))))
+                let err = FfiError::invalid_input(format!("Invalid profile slot JSON: {}", e));
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_add_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
             }
         };
 
@@ -127,31 +169,70 @@ pub unsafe extern "C" fn keyrx_runtime_add_slot(
             reorder_slots(slots);
             Ok(config.clone())
         });
+        crate::ffi_record_metrics!("keyrx_runtime_add_slot", "runtime", start, &result);
         ffi_json(result)
     })
-    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_add_slot"))))
+    .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_runtime_add_slot",
+            "runtime",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
+        ffi_json::<()>(Err(FfiError::internal("panic in runtime_add_slot")))
+    });
+
+    result_ptr
 }
 
 /// Remove a runtime slot for a device.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_remove_slot(
     device_json: *const c_char,
     slot_id: *const c_char,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let device_json = match parse_c_string(device_json, "device_json") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_remove_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
         let slot_id = match parse_c_string(slot_id, "slot_id") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_remove_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let device = match parse_device_json(&device_json) {
             Ok(d) => d,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_remove_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let result: FfiResult<RuntimeConfig> = update_runtime_config(|config| {
@@ -172,12 +253,24 @@ pub unsafe extern "C" fn keyrx_runtime_remove_slot(
 
             Ok(config.clone())
         });
+        crate::ffi_record_metrics!("keyrx_runtime_remove_slot", "runtime", start, &result);
         ffi_json(result)
     })
-    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_remove_slot"))))
+    .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_runtime_remove_slot",
+            "runtime",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
+        ffi_json::<()>(Err(FfiError::internal("panic in runtime_remove_slot")))
+    });
+
+    result_ptr
 }
 
 /// Update slot priority.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id(), priority))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
@@ -185,19 +278,46 @@ pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
     slot_id: *const c_char,
     priority: u32,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let device_json = match parse_c_string(device_json, "device_json") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_reorder_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
         let slot_id = match parse_c_string(slot_id, "slot_id") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_reorder_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let device = match parse_device_json(&device_json) {
             Ok(d) => d,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_reorder_slot",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let result: FfiResult<RuntimeConfig> = update_runtime_config(|config| {
@@ -214,12 +334,24 @@ pub unsafe extern "C" fn keyrx_runtime_reorder_slot(
             reorder_slots(slots);
             Ok(config.clone())
         });
+        crate::ffi_record_metrics!("keyrx_runtime_reorder_slot", "runtime", start, &result);
         ffi_json(result)
     })
-    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_reorder_slot"))))
+    .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_runtime_reorder_slot",
+            "runtime",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
+        ffi_json::<()>(Err(FfiError::internal("panic in runtime_reorder_slot")))
+    });
+
+    result_ptr
 }
 
 /// Toggle a runtime slot active flag.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id(), active))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
@@ -227,19 +359,46 @@ pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
     slot_id: *const c_char,
     active: bool,
 ) -> *mut c_char {
-    std::panic::catch_unwind(|| {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
+    let result_ptr = std::panic::catch_unwind(|| {
         let device_json = match parse_c_string(device_json, "device_json") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_set_slot_active",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
         let slot_id = match parse_c_string(slot_id, "slot_id") {
             Ok(s) => s,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_set_slot_active",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let device = match parse_device_json(&device_json) {
             Ok(d) => d,
-            Err(err) => return ffi_json::<()>(Err(err)),
+            Err(err) => {
+                crate::ffi_record_metrics!(
+                    "keyrx_runtime_set_slot_active",
+                    "runtime",
+                    start,
+                    &Err::<(), _>(&err)
+                );
+                return ffi_json::<()>(Err(err));
+            }
         };
 
         let result: FfiResult<RuntimeConfig> = update_runtime_config(|config| {
@@ -256,19 +415,36 @@ pub unsafe extern "C" fn keyrx_runtime_set_slot_active(
             reorder_slots(slots);
             Ok(config.clone())
         });
+        crate::ffi_record_metrics!("keyrx_runtime_set_slot_active", "runtime", start, &result);
         ffi_json(result)
     })
-    .unwrap_or_else(|_| ffi_json::<()>(Err(FfiError::internal("panic in runtime_set_slot_active"))))
+    .unwrap_or_else(|_| {
+        crate::ffi_record_metrics!(
+            "keyrx_runtime_set_slot_active",
+            "runtime",
+            start,
+            &Err::<(), _>(FfiError::internal("panic"))
+        );
+        ffi_json::<()>(Err(FfiError::internal("panic in runtime_set_slot_active")))
+    });
+
+    result_ptr
 }
 
 /// Get the configuration root path.
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "runtime", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_get_config_root() -> *mut c_char {
     use crate::config::config_dir;
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     let path = config_dir();
-    match CString::new(path.to_string_lossy().as_bytes()) {
+    let result = match CString::new(path.to_string_lossy().as_bytes()) {
         Ok(c_str) => c_str.into_raw(),
         Err(_) => ptr::null_mut(),
-    }
+    };
+    crate::ffi_record_metrics!("keyrx_get_config_root", "runtime", start, &Ok::<_, ()>(()));
+    result
 }

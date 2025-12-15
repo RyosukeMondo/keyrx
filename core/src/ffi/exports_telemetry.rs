@@ -79,6 +79,8 @@ use crate::safety::panic_telemetry::{get_telemetry, reset_telemetry};
 use ffi_export::ffi_export;
 use std::ffi::{c_char, CString};
 use std::ptr;
+use std::time::Instant;
+use tracing::instrument;
 
 /// FFI representation of a panic event.
 #[repr(C)]
@@ -145,12 +147,16 @@ pub struct PanicTelemetryFfi {
 ///     keyrx_free_string(json);
 /// }
 /// ```
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_snapshot_json() -> *mut c_char {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     let telemetry = get_telemetry();
 
-    match serde_json::to_string(&telemetry) {
+    let result = match serde_json::to_string(&telemetry) {
         Ok(json) => match CString::new(json) {
             Ok(c_str) => c_str.into_raw(),
             Err(e) => {
@@ -172,7 +178,14 @@ pub extern "C" fn keyrx_telemetry_snapshot_json() -> *mut c_char {
             );
             ptr::null_mut()
         }
-    }
+    };
+    crate::ffi_record_metrics!(
+        "keyrx_telemetry_snapshot_json",
+        "telemetry",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Gets panic telemetry as an FFI struct.
@@ -194,9 +207,13 @@ pub extern "C" fn keyrx_telemetry_snapshot_json() -> *mut c_char {
 ///     keyrx_telemetry_free_snapshot(telemetry);
 /// }
 /// ```
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_snapshot() -> *mut PanicTelemetryFfi {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     let telemetry = get_telemetry();
 
     // Convert events to FFI representation
@@ -253,7 +270,14 @@ pub extern "C" fn keyrx_telemetry_snapshot() -> *mut PanicTelemetryFfi {
         events: events_ptr,
     });
 
-    Box::into_raw(ffi_telemetry)
+    let result = Box::into_raw(ffi_telemetry);
+    crate::ffi_record_metrics!(
+        "keyrx_telemetry_snapshot",
+        "telemetry",
+        start,
+        &Ok::<_, ()>(())
+    );
+    result
 }
 
 /// Frees a panic telemetry snapshot.
@@ -273,10 +297,20 @@ pub extern "C" fn keyrx_telemetry_snapshot() -> *mut PanicTelemetryFfi {
 ///     keyrx_telemetry_free_snapshot(telemetry);
 /// }
 /// ```
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_telemetry_free_snapshot(telemetry: *mut PanicTelemetryFfi) {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     if telemetry.is_null() {
+        crate::ffi_record_metrics!(
+            "keyrx_telemetry_free_snapshot",
+            "telemetry",
+            start,
+            &Ok::<_, ()>(())
+        );
         return;
     }
 
@@ -305,6 +339,12 @@ pub unsafe extern "C" fn keyrx_telemetry_free_snapshot(telemetry: *mut PanicTele
     }
 
     // telemetry is dropped here, freeing the struct itself
+    crate::ffi_record_metrics!(
+        "keyrx_telemetry_free_snapshot",
+        "telemetry",
+        start,
+        &Ok::<_, ()>(())
+    );
 }
 
 /// Resets all panic telemetry counters and clears events.
@@ -318,10 +358,20 @@ pub unsafe extern "C" fn keyrx_telemetry_free_snapshot(telemetry: *mut PanicTele
 /// ```c
 /// keyrx_telemetry_reset();  // Start fresh
 /// ```
+#[instrument(skip_all, fields(correlation_id = %crate::ffi::tracing::correlation_id()))]
 #[ffi_export(domain = "telemetry", version = "1.0.0")]
 #[no_mangle]
 pub extern "C" fn keyrx_telemetry_reset() -> i32 {
+    let start = Instant::now();
+    crate::ffi::tracing::new_correlation_id();
+
     reset_telemetry();
+    crate::ffi_record_metrics!(
+        "keyrx_telemetry_reset",
+        "telemetry",
+        start,
+        &Ok::<_, ()>(())
+    );
     0
 }
 
