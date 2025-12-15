@@ -9,6 +9,7 @@ import 'package:keyrx_ui/models/flow/edge_style.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
+import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
@@ -118,9 +119,12 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
                 ),
               ),
               ...view.nodes.map(
-                (node) => Positioned(
-                  left: node.position.dx,
-                  top: node.position.dy,
+                (node) => DraggableNode(
+                  key: ValueKey(node.id),
+                  nodeId: node.id,
+                  initialPosition: node.position,
+                  size: node.size,
+                  canvasBounds: Size(canvasWidth, canvasHeight),
                   child: node.child,
                 ),
               ),
