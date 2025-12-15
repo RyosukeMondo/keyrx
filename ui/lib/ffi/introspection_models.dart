@@ -23,7 +23,7 @@ class IntrospectionData {
     return IntrospectionData(
       protocolVersion: json['protocol_version'] as int,
       domains: (json['domains'] as List)
-          .map((d) => DomainMetadata.fromJson(d))
+          .map((d) => DomainMetadata.fromJson(d as Map<String, dynamic>))
           .toList(),
       totalFunctions: json['total_functions'] as int,
       totalEvents: json['total_events'] as int,
@@ -60,10 +60,10 @@ class DomainMetadata {
       description: json['description'] as String,
       version: json['version'] as String,
       functions: (json['functions'] as List)
-          .map((f) => FunctionMetadata.fromJson(f))
+          .map((f) => FunctionMetadata.fromJson(f as Map<String, dynamic>))
           .toList(),
       events: (json['events'] as List)
-          .map((e) => EventMetadata.fromJson(e))
+          .map((e) => EventMetadata.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -107,14 +107,14 @@ class FunctionMetadata {
       rustName: json['rust_name'] as String,
       description: json['description'] as String,
       parameters: (json['parameters'] as List)
-          .map((p) => ParameterMetadata.fromJson(p))
+          .map((p) => ParameterMetadata.fromJson(p as Map<String, dynamic>))
           .toList(),
-      returns: TypeMetadata.fromJson(json['returns']),
+      returns: TypeMetadata.fromJson(json['returns'] as Map<String, dynamic>),
       errors: (json['errors'] as List).cast<String>(),
       eventsEmitted: (json['events_emitted'] as List).cast<String>(),
       deprecated: json['deprecated'] as bool,
       example: json['example'] != null
-          ? ExampleMetadata.fromJson(json['example'])
+          ? ExampleMetadata.fromJson(json['example'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -190,11 +190,11 @@ class TypeMetadata {
       description: json['description'] as String?,
       properties: json['properties'] != null
           ? (json['properties'] as Map<String, dynamic>).map(
-              (k, v) => MapEntry(k, TypeMetadata.fromJson(v)),
+              (k, v) => MapEntry(k, TypeMetadata.fromJson(v as Map<String, dynamic>)),
             )
           : null,
       items: json['items'] != null
-          ? TypeMetadata.fromJson(json['items'])
+          ? TypeMetadata.fromJson(json['items'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -225,7 +225,7 @@ class EventMetadata {
     return EventMetadata(
       name: json['name'] as String,
       description: json['description'] as String,
-      payload: TypeMetadata.fromJson(json['payload']),
+      payload: TypeMetadata.fromJson(json['payload'] as Map<String, dynamic>),
     );
   }
 

@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
 
 import 'pages/debugger.dart';
 import 'pages/console.dart';
@@ -25,6 +25,7 @@ import 'pages/metrics_dashboard.dart';
 import 'pages/wiring.dart';
 import 'pages/flow_editor_page.dart';
 import 'services/service_registry.dart';
+import 'state/app_state.dart';
 import 'state/providers.dart';
 import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
@@ -372,7 +373,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildStatusBar() {
-    return Consumer<AppState>(
+    return provider.Consumer<AppState>(
       builder: (context, appState, _) {
         final facade = context.read<KeyrxFacade>();
 
