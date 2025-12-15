@@ -1,0 +1,13 @@
+{
+  "generated_at": "2025-12-15T00:25:15Z",
+  "summary": {
+    "total_functions": 96,
+    "total_domains": 14,
+    "avg_params_per_function": 1.02,
+    "result_return_type_count": 2,
+    "non_result_return_type_count": 94,
+    "breaking_changes_count": 0
+  },
+  "functions_by_domain": [{"domain":"runtime","count":6},{"domain":"device_registry","count":4},{"domain":"marshal","count":3},{"domain":"discovery","count":1},{"domain":"compat","count":24},{"domain":"engine","count":2},{"domain":"profile_registry","count":5},{"domain":"device_definitions","count":2},{"domain":"base","count":10},{"domain":"transition_log","count":5},{"domain":"telemetry","count":4},{"domain":"migration","count":2},{"domain":"observability","count":18},{"domain":"config","count":10}],
+  "evolution": [{"week":"2025-12-15","added":0,"removed":0},{"week":"2025-12-08","added":160,"removed":28},{"week":"2025-12-01","added":0,"removed":0},{"week":"2025-11-24","added":0,"removed":0},{"week":"2025-11-17","added":0,"removed":0},{"week":"2025-11-10","added":0,"removed":0},{"week":"2025-11-03","added":0,"removed":0},{"week":"2025-10-27","added":0,"removed":0},{"week":"2025-10-20","added":0,"removed":0},{"week":"2025-10-13","added":0,"removed":0},{"week":"2025-10-06","added":0,"removed":0},{"week":"2025-09-29","added":0,"removed":0}]
+}

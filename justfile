@@ -178,6 +178,12 @@ diff-ffi-contracts base_ref="HEAD~1" format="text":
 ffi-metrics format="text":
     @./scripts/ffi_metrics.sh {{ if format == "json" { "--json" } else { "" } }}
 
+# Generate FFI contract metrics dashboard
+ffi-dashboard:
+    @echo "Generating FFI contract metrics dashboard..."
+    @./scripts/generate_contract_metrics.sh
+    @echo "Dashboard available at .spec-workflow/analysis/contract-dashboard.html"
+
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."

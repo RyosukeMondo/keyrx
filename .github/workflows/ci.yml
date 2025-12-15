@@ -255,6 +255,50 @@ jobs:
           echo "Documentation check passed - no warnings found!"
         working-directory: ./core
 
+  ffi-contract-dashboard:
+    name: FFI Contract Dashboard
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for evolution metrics
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+      - name: Generate contract dashboard
+        run: ./scripts/generate_contract_metrics.sh
+      - name: Upload dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffi-contract-dashboard
+          path: |
+            .spec-workflow/analysis/contract-dashboard.html
+            .spec-workflow/analysis/contract-metrics.json
+          retention-days: 90
+      - name: Comment PR with dashboard link
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const metrics = JSON.parse(fs.readFileSync('.spec-workflow/analysis/contract-metrics.json', 'utf8'));
+            const body = `## 📊 FFI Contract Metrics Dashboard
+
+            **Summary:**
+            - Total FFI Functions: ${metrics.summary.total_functions}
+            - Total Domains: ${metrics.summary.total_domains}
+            - Avg Params/Function: ${metrics.summary.avg_params_per_function}
+            - Breaking Changes: ${metrics.summary.breaking_changes_count}
+
+            [📈 View Full Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
   security:
     name: Security Audit
     needs: check
