@@ -1,0 +1,397 @@
+/// Interactive edge widget with click detection, selection, and context menu.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyrx_ui/models/flow/edge_style.dart';
+import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'package:keyrx_ui/models/hardware_profile.dart';
+import 'package:keyrx_ui/models/runtime_config.dart';
+import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/state/selection_state.dart';
+import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+
+/// Interactive wrapper for EdgesPainter with selection and context menu.
+class InteractiveEdgeCanvas extends ConsumerStatefulWidget {
+  const InteractiveEdgeCanvas({
+    required this.edges,
+    required this.paintableEdges,
+    required this.style,
+    super.key,
+  });
+
+  final List<FlowEdge> edges;
+  final List<PaintableEdge> paintableEdges;
+  final EdgeStyle style;
+
+  @override
+  ConsumerState<InteractiveEdgeCanvas> createState() =>
+      _InteractiveEdgeCanvasState();
+}
+
+class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas> {
+  Offset? _hoverPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    final selection = ref.watch(selectionNotifierProvider);
+
+    return MouseRegion(
+      onHover: _handleHover,
+      onExit: (_) => setState(() => _hoverPosition = null),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTapDown: _handleTapDown,
+        onSecondaryTapDown: _handleSecondaryTapDown,
+        child: Focus(
+          autofocus: false,
+          onKeyEvent: _handleKeyEvent,
+          child: CustomPaint(
+            painter: _SelectableEdgesPainter(
+              edges: widget.paintableEdges,
+              style: widget.style,
+              hoverPosition: _hoverPosition,
+              selection: selection,
+              flowEdges: widget.edges,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleHover(PointerHoverEvent event) {
+    setState(() => _hoverPosition = event.localPosition);
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    final edgeIndex = _findEdgeAtPosition(details.localPosition);
+    if (edgeIndex != null) {
+      final edge = widget.edges[edgeIndex];
+      ref
+          .read(selectionNotifierProvider.notifier)
+          .selectEdge(slotId: edge.slotId, from: edge.from, to: edge.to);
+    } else {
+      ref.read(selectionNotifierProvider.notifier).clearSelection();
+    }
+  }
+
+  void _handleSecondaryTapDown(TapDownDetails details) {
+    final edgeIndex = _findEdgeAtPosition(details.localPosition);
+    if (edgeIndex != null) {
+      final edge = widget.edges[edgeIndex];
+
+      // Select the edge first
+      ref
+          .read(selectionNotifierProvider.notifier)
+          .selectEdge(slotId: edge.slotId, from: edge.from, to: edge.to);
+
+      // Show context menu
+      _showContextMenu(details.globalPosition, edge);
+    }
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.delete) {
+      final selection = ref.read(selectionNotifierProvider);
+      if (selection is EdgeSelection) {
+        _deleteEdge(selection);
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
+  int? _findEdgeAtPosition(Offset position) {
+    final hitRadius = widget.style.hoverHitRadius;
+
+    for (var i = 0; i < widget.paintableEdges.length; i++) {
+      final paintableEdge = widget.paintableEdges[i];
+      final distance = _distanceToEdge(paintableEdge, position);
+      if (distance <= hitRadius) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  double _distanceToEdge(PaintableEdge edge, Offset point) {
+    // Sample the cubic Bezier curve at discrete intervals
+    const samples = 20;
+    var minDistance = double.infinity;
+
+    final controls = _computeControls(edge.start, edge.end);
+
+    for (var i = 0; i <= samples; i++) {
+      final t = i / samples;
+      final pos = _cubicPoint(
+        edge.start,
+        controls.$1,
+        controls.$2,
+        edge.end,
+        t,
+      );
+      final distance = (pos - point).distance;
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+    }
+    return minDistance;
+  }
+
+  (Offset, Offset) _computeControls(Offset start, Offset end) {
+    final midX = (start.dx + end.dx) / 2;
+    return (Offset(midX, start.dy), Offset(midX, end.dy));
+  }
+
+  Offset _cubicPoint(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
+    final mt = 1 - t;
+    return (p0 * (mt * mt * mt)) +
+        (p1 * (3 * mt * mt * t)) +
+        (p2 * (3 * mt * t * t)) +
+        (p3 * (t * t * t));
+  }
+
+  void _showContextMenu(Offset position, FlowEdge edge) {
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Rect.fromLTWH(
+          0,
+          0,
+          overlay?.size.width ?? 800,
+          overlay?.size.height ?? 600,
+        ),
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'toggle',
+          child: Row(
+            children: [
+              Icon(edge.active ? Icons.toggle_on : Icons.toggle_off, size: 18),
+              const SizedBox(width: 8),
+              Text(edge.active ? 'Deactivate slot' : 'Activate slot'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Text('Delete slot', style: TextStyle(color: Colors.redAccent)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'delete') {
+        _deleteEdge(
+          EdgeSelection(slotId: edge.slotId, from: edge.from, to: edge.to),
+        );
+      } else if (value == 'toggle') {
+        _toggleEdgeActive(edge);
+      }
+    });
+  }
+
+  Future<void> _deleteEdge(EdgeSelection selection) async {
+    // Find the device ID from the edge
+    final edge = widget.edges.firstWhere(
+      (e) =>
+          e.slotId == selection.slotId &&
+          e.from == selection.from &&
+          e.to == selection.to,
+      orElse: () => throw StateError('Edge not found'),
+    );
+
+    // Parse device ID from the "from" field (format: vendorId:productId:serial)
+    final deviceId = _parseDeviceId(edge.from);
+
+    // Show confirmation dialog
+    final confirmed = await _showDeleteConfirmation();
+    if (!confirmed) return;
+
+    final actions = ref.read(keyFlowActionsProvider);
+    final result = await actions.removeSlot(deviceId, edge.slotId);
+
+    if (!mounted) return;
+
+    if (result.hasError) {
+      _showErrorSnackBar('Failed to delete slot: ${result.errorMessage}');
+    } else {
+      _showSuccessSnackBar('Slot deleted successfully');
+      ref.read(selectionNotifierProvider.notifier).clearSelection();
+    }
+  }
+
+  Future<void> _toggleEdgeActive(FlowEdge edge) async {
+    final deviceId = _parseDeviceId(edge.from);
+
+    // Create updated slot with toggled active state
+    final updatedSlot = ProfileSlot(
+      id: edge.slotId,
+      hardwareProfileId: edge.to,
+      keymapId: _findKeymapForSlot(edge.slotId),
+      priority: edge.priority,
+      active: !edge.active,
+    );
+
+    final actions = ref.read(keyFlowActionsProvider);
+    final result = await actions.updateSlot(deviceId, updatedSlot);
+
+    if (!mounted) return;
+
+    if (result.hasError) {
+      _showErrorSnackBar('Failed to toggle slot: ${result.errorMessage}');
+    } else {
+      _showSuccessSnackBar(edge.active ? 'Slot deactivated' : 'Slot activated');
+    }
+  }
+
+  String _findKeymapForSlot(String slotId) {
+    // Find the second edge with the same slotId (device -> profile -> keymap)
+    final keymapEdge = widget.edges.firstWhere(
+      (e) => e.slotId == slotId && e.from != widget.edges.first.from,
+      orElse: () => throw StateError('Keymap edge not found for slot'),
+    );
+    return keymapEdge.to;
+  }
+
+  DeviceInstanceId _parseDeviceId(String deviceKey) {
+    final parts = deviceKey.split(':');
+    if (parts.length != 3) {
+      throw FormatException('Invalid device key format: $deviceKey');
+    }
+
+    return DeviceInstanceId(
+      vendorId: int.parse(parts[0]),
+      productId: int.parse(parts[1]),
+      serial: parts[2] == 'unknown' ? null : parts[2],
+    );
+  }
+
+  Future<bool> _showDeleteConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Slot'),
+        content: const Text('Are you sure you want to delete this slot?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
+}
+
+/// Custom painter that highlights selected edges.
+class _SelectableEdgesPainter extends EdgesPainter {
+  _SelectableEdgesPainter({
+    required super.edges,
+    required super.style,
+    required super.hoverPosition,
+    required this.selection,
+    required this.flowEdges,
+  });
+
+  final Selection selection;
+  final List<FlowEdge> flowEdges;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // First paint normal edges
+    super.paint(canvas, size);
+
+    // Then highlight selected edge
+    if (selection is EdgeSelection) {
+      _paintSelectedEdge(canvas, selection as EdgeSelection);
+    }
+  }
+
+  void _paintSelectedEdge(Canvas canvas, EdgeSelection selection) {
+    // Find the matching edge
+    for (var i = 0; i < flowEdges.length; i++) {
+      final edge = flowEdges[i];
+      if (edge.slotId == selection.slotId &&
+          edge.from == selection.from &&
+          edge.to == selection.to) {
+        final paintableEdge = edges[i];
+
+        // Draw selection highlight
+        final selectionPaint = Paint()
+          ..color = Colors.blueAccent.withOpacity(0.6)
+          ..strokeWidth = style.activeWidth + 4
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+        final controls = _computeControls(
+          paintableEdge.start,
+          paintableEdge.end,
+        );
+        final path = _buildPath(
+          paintableEdge.start,
+          paintableEdge.end,
+          controls.$1,
+          controls.$2,
+        );
+
+        canvas.drawPath(path, selectionPaint);
+        break;
+      }
+    }
+  }
+
+  (Offset, Offset) _computeControls(Offset start, Offset end) {
+    final midX = (start.dx + end.dx) / 2;
+    return (Offset(midX, start.dy), Offset(midX, end.dy));
+  }
+
+  Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) {
+    return Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SelectableEdgesPainter oldDelegate) {
+    return super.shouldRepaint(oldDelegate) ||
+        selection != oldDelegate.selection;
+  }
+}

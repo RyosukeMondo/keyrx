@@ -64,7 +64,7 @@
   - _Requirements: FR2.1, FR5.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in gesture handling and animations | Task: Create ui/lib/widgets/flow/draggable_node.dart wrapping node widgets with GestureDetector, implement ui/lib/state/drag_controller.dart for drag state management, handle onPanStart/onPanUpdate/onPanEnd gestures, update node positions in nodePositionsProvider on drag end, add constraints to keep nodes within canvas bounds, provide visual feedback during drag (elevation, shadow), ensure smooth 60fps dragging performance | Restrictions: Dragging must work inside InteractiveViewer, ensure no gesture conflicts with pan/zoom, maintain 60fps performance, positions must update correctly with zoom/pan transforms | Success: Nodes can be dragged smoothly, positions persist after drag, constraints prevent nodes from going off-canvas, visual feedback clear, performance at 60fps | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 9. Edge Interaction & Selection
+- [-] 9. Edge Interaction & Selection
   - File: ui/lib/widgets/flow/interactive_edge.dart, ui/lib/state/selection_state.dart
   - Implement edge click detection, selection highlighting, hover effects, context menu for edge actions (delete, toggle active), keyboard support (Delete key)
   - Purpose: Enable users to interact with slot connections

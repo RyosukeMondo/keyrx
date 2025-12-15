@@ -11,6 +11,7 @@ import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import 'package:keyrx_ui/widgets/flow/interactive_edge.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
 
@@ -29,7 +30,6 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmer;
-  Offset? _hoverPosition;
 
   @override
   void initState() {
@@ -105,17 +105,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
             children: [
               Positioned.fill(child: CustomPaint(painter: _GridPainter())),
               Positioned.fill(
-                child: MouseRegion(
-                  onHover: (event) =>
-                      setState(() => _hoverPosition = event.localPosition),
-                  onExit: (_) => setState(() => _hoverPosition = null),
-                  child: CustomPaint(
-                    painter: EdgesPainter(
-                      edges: view.edges,
-                      style: _edgeStyle,
-                      hoverPosition: _hoverPosition,
-                    ),
-                  ),
+                child: InteractiveEdgeCanvas(
+                  edges: graph.edges,
+                  paintableEdges: view.edges,
+                  style: _edgeStyle,
                 ),
               ),
               ...view.nodes.map(
