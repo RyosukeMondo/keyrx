@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/config_ids.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/services/flow_validator.dart';
@@ -21,11 +20,11 @@ void main() {
     });
 
     test('detects disconnected device', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
             isConnected: false,
           ),
         ],
@@ -39,12 +38,11 @@ void main() {
     });
 
     test('detects device with no slots', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
         ],
       );
@@ -57,38 +55,37 @@ void main() {
     });
 
     test('detects priority conflict', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
-          const FlowNode.hardwareProfile(id: 'profile-2'),
-          const FlowNode.keymap(id: 'keymap-1'),
-          const FlowNode.keymap(id: 'keymap-2'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.hardwareProfile(id: 'profile-2'),
+          FlowNode.keymap(id: 'keymap-1'),
+          FlowNode.keymap(id: 'keymap-2'),
         ],
         edges: [
-          const FlowEdge(
+          FlowEdge(
             from: 'device-1',
             to: 'profile-1',
             slotId: 'slot-1',
             priority: 1,
           ),
-          const FlowEdge(
+          FlowEdge(
             from: 'profile-1',
             to: 'keymap-1',
             slotId: 'slot-1',
             priority: 1,
           ),
-          const FlowEdge(
+          FlowEdge(
             from: 'device-1',
             to: 'profile-2',
             slotId: 'slot-2',
             priority: 1, // Same priority as slot-1!
           ),
-          const FlowEdge(
+          FlowEdge(
             from: 'profile-2',
             to: 'keymap-2',
             slotId: 'slot-2',
@@ -107,17 +104,16 @@ void main() {
     });
 
     test('detects invalid edge status', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
-          const FlowNode.keymap(id: 'keymap-1'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.keymap(id: 'keymap-1'),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-1',
@@ -138,9 +134,9 @@ void main() {
     });
 
     test('detects missing source node', () {
-      final graph = FlowGraph(
-        nodes: const [FlowNode.hardwareProfile(id: 'profile-1')],
-        edges: const [
+      const graph = FlowGraph(
+        nodes: [FlowNode.hardwareProfile(id: 'profile-1')],
+        edges: [
           FlowEdge(
             from: 'device-999', // This device doesn't exist
             to: 'profile-1',
@@ -160,15 +156,14 @@ void main() {
     });
 
     test('detects missing target node', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-999', // This profile doesn't exist
@@ -188,8 +183,8 @@ void main() {
     });
 
     test('detects unused hardware profile', () {
-      final graph = FlowGraph(
-        nodes: const [FlowNode.hardwareProfile(id: 'profile-orphan')],
+      const graph = FlowGraph(
+        nodes: [FlowNode.hardwareProfile(id: 'profile-orphan')],
       );
 
       final errors = validator.validate(graph);
@@ -202,9 +197,7 @@ void main() {
     });
 
     test('detects unused keymap', () {
-      final graph = FlowGraph(
-        nodes: const [FlowNode.keymap(id: 'keymap-orphan')],
-      );
+      const graph = FlowGraph(nodes: [FlowNode.keymap(id: 'keymap-orphan')]);
 
       final errors = validator.validate(graph);
 
@@ -216,17 +209,16 @@ void main() {
     });
 
     test('getNodeErrors filters errors for specific node', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
             isConnected: false,
           ),
           FlowNode.device(
             id: 'device-2',
-            deviceId: const DeviceInstanceId(vendorId: 2, productId: 2),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 2, productId: 2),
           ),
         ],
       );
@@ -241,16 +233,15 @@ void main() {
     });
 
     test('getEdgeErrors filters errors for specific edge', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-1',
@@ -268,16 +259,16 @@ void main() {
     });
 
     test('getErrorCounts returns counts by severity', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
             isConnected: false, // info
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-1',
@@ -295,11 +286,11 @@ void main() {
     });
 
     test('isValid returns true for graph with only warnings/info', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
             isConnected: false, // info level
           ),
         ],
@@ -309,16 +300,15 @@ void main() {
     });
 
     test('isValid returns false for graph with errors', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-1',
@@ -333,23 +323,22 @@ void main() {
     });
 
     test('validates complex graph with multiple issues', () {
-      final graph = FlowGraph(
+      const graph = FlowGraph(
         nodes: [
           FlowNode.device(
             id: 'device-1',
-            deviceId: const DeviceInstanceId(vendorId: 1, productId: 1),
-            isConnected: true,
+            deviceId: DeviceInstanceId(vendorId: 1, productId: 1),
           ),
           FlowNode.device(
             id: 'device-2',
-            deviceId: const DeviceInstanceId(vendorId: 2, productId: 2),
+            deviceId: DeviceInstanceId(vendorId: 2, productId: 2),
             isConnected: false, // info: disconnected
           ),
-          const FlowNode.hardwareProfile(id: 'profile-1'),
-          const FlowNode.hardwareProfile(id: 'profile-orphan'), // info: unused
-          const FlowNode.keymap(id: 'keymap-1'),
+          FlowNode.hardwareProfile(id: 'profile-1'),
+          FlowNode.hardwareProfile(id: 'profile-orphan'), // info: unused
+          FlowNode.keymap(id: 'keymap-1'),
         ],
-        edges: const [
+        edges: [
           FlowEdge(
             from: 'device-1',
             to: 'profile-1',

@@ -16,7 +16,6 @@ void main() {
         id: 'slot-a',
         hardwareProfileId: 'hp-a',
         keymapId: 'km-a',
-        priority: 0,
         active: true,
       ),
       _slot(
@@ -54,7 +53,6 @@ void main() {
         id: 'slot-a',
         hardwareProfileId: 'hp-shared',
         keymapId: 'km-shared',
-        priority: 0,
       ),
       _slot(
         id: 'slot-b',
@@ -72,18 +70,8 @@ void main() {
 
   test('marks duplicate priorities as warnings', () {
     final config = _configWithSlots([
-      _slot(
-        id: 'slot-a',
-        hardwareProfileId: 'hp-a',
-        keymapId: 'km-a',
-        priority: 0,
-      ),
-      _slot(
-        id: 'slot-b',
-        hardwareProfileId: 'hp-b',
-        keymapId: 'km-b',
-        priority: 0,
-      ),
+      _slot(id: 'slot-a', hardwareProfileId: 'hp-a', keymapId: 'km-a'),
+      _slot(id: 'slot-b', hardwareProfileId: 'hp-b', keymapId: 'km-b'),
     ], device: device);
 
     final graph = FlowGraph.fromRuntimeConfig(config);
@@ -115,7 +103,7 @@ void main() {
   });
 
   test('returns empty graph for empty config', () {
-    const config = RuntimeConfig(devices: []);
+    const config = RuntimeConfig();
 
     final graph = FlowGraph.fromRuntimeConfig(config);
 
@@ -130,21 +118,17 @@ ProfileSlot _slot({
   required String keymapId,
   int priority = 0,
   bool active = false,
-}) {
-  return ProfileSlot(
-    id: id,
-    hardwareProfileId: hardwareProfileId,
-    keymapId: keymapId,
-    priority: priority,
-    active: active,
-  );
-}
+}) => ProfileSlot(
+  id: id,
+  hardwareProfileId: hardwareProfileId,
+  keymapId: keymapId,
+  priority: priority,
+  active: active,
+);
 
 RuntimeConfig _configWithSlots(
   List<ProfileSlot> slots, {
   required DeviceInstanceId device,
-}) {
-  return RuntimeConfig(
-    devices: [DeviceSlots(device: device, slots: slots)],
-  );
-}
+}) => RuntimeConfig(
+  devices: [DeviceSlots(device: device, slots: slots)],
+);

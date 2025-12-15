@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
+import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service.dart';
 import 'package:keyrx_ui/services/keymap_service.dart';
 import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
-import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:provider/provider.dart';
 
 import 'helpers/fake_services.dart';
@@ -152,9 +152,6 @@ void main() {
         EngineSnapshot(
           timestamp: DateTime.now(),
           activeLayers: const ['layer1'],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
           lastEvent: 'test event',
           latencyUs: 100,
         ),
@@ -186,9 +183,6 @@ void main() {
         EngineSnapshot(
           timestamp: DateTime.now(),
           activeLayers: const ['initial'],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
           latencyUs: 50,
         ),
       );
@@ -203,7 +197,6 @@ void main() {
           activeLayers: const ['updated'],
           activeModifiers: const ['Shift'],
           heldKeys: const ['X'],
-          pendingDecisions: const [],
           latencyUs: 200,
         ),
       );
@@ -230,14 +223,7 @@ void main() {
       );
 
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          latencyUs: 5000,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 5000),
       );
 
       await tester.pumpAndSettle();
@@ -262,14 +248,7 @@ void main() {
 
       // 15000 µs is between caution (10k) and warning (20k)
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          latencyUs: 15000,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 15000),
       );
 
       await tester.pumpAndSettle();
@@ -293,14 +272,7 @@ void main() {
 
       // 25000 µs is above warning threshold (20k)
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          latencyUs: 25000,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 25000),
       );
 
       await tester.pumpAndSettle();
@@ -324,28 +296,14 @@ void main() {
 
       // Start with low latency
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          latencyUs: 1000,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 1000),
       );
       await tester.pumpAndSettle();
       expect(find.text('1000'), findsOneWidget);
 
       // Update to high latency
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          latencyUs: 30000,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 30000),
       );
       await tester.pumpAndSettle();
 
@@ -389,9 +347,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['tap_hold KeyA'],
           latencyUs: 100,
           timing: const EngineTiming(tapTimeoutMs: 200),
@@ -424,9 +379,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['tap_hold X'],
           latencyUs: 100,
           timing: const EngineTiming(tapTimeoutMs: 200),
@@ -471,9 +423,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['TapHold on KeyJ', 'hold action KeyK'],
           latencyUs: 100,
         ),
@@ -506,9 +455,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['combo Ctrl+Shift+P'],
           latencyUs: 100,
         ),
@@ -540,9 +486,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['combo [A, B, C]'],
           latencyUs: 100,
         ),
@@ -572,9 +515,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['combo X+Y'],
           latencyUs: 100,
         ),
@@ -603,9 +543,6 @@ void main() {
       fakeEngine.emit(
         EngineSnapshot(
           timestamp: DateTime.now(),
-          activeLayers: const [],
-          activeModifiers: const [],
-          heldKeys: const [],
           pendingDecisions: const ['tap_hold KeyA', 'combo B+C'],
           latencyUs: 100,
         ),
@@ -651,9 +588,6 @@ void main() {
         EngineSnapshot(
           timestamp: DateTime.now(),
           activeLayers: const ['should_not_appear'],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
           latencyUs: 100,
         ),
       );
@@ -686,9 +620,6 @@ void main() {
         EngineSnapshot(
           timestamp: DateTime.now(),
           activeLayers: const ['layer_to_clear'],
-          activeModifiers: const [],
-          heldKeys: const [],
-          pendingDecisions: const [],
           lastEvent: 'event_to_clear',
           latencyUs: 100,
         ),

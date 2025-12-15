@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/dialogs/add_slot_dialog.dart';
-import 'package:keyrx_ui/models/config_ids.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/models/keymap.dart';
 import 'package:keyrx_ui/models/runtime_config.dart';
@@ -22,18 +21,18 @@ void main() {
 
     setUp(() {
       testProfiles = [
-        HardwareProfile(id: 'profile-1', name: 'Ergo-60'),
-        HardwareProfile(id: 'profile-2', name: 'TKL Layout'),
-        HardwareProfile(id: 'profile-3', name: 'Full-size'),
+        const HardwareProfile(id: 'profile-1', name: 'Ergo-60'),
+        const HardwareProfile(id: 'profile-2', name: 'TKL Layout'),
+        const HardwareProfile(id: 'profile-3', name: 'Full-size'),
       ];
 
       testKeymaps = [
-        Keymap(id: 'keymap-1', name: 'Default'),
-        Keymap(id: 'keymap-2', name: 'Gaming'),
-        Keymap(id: 'keymap-3', name: 'Programming'),
+        const Keymap(id: 'keymap-1', name: 'Default'),
+        const Keymap(id: 'keymap-2', name: 'Gaming'),
+        const Keymap(id: 'keymap-3', name: 'Programming'),
       ];
 
-      testDevice = DeviceInstanceId(
+      testDevice = const DeviceInstanceId(
         vendorId: 1234,
         productId: 5678,
         serial: 'serial1',
@@ -41,35 +40,34 @@ void main() {
       fakeSlotActions = _FakeSlotActions();
     });
 
-    Widget buildTestWidget({List<ProfileSlotSelection>? existingSlots}) {
-      return ProviderScope(
-        overrides: [
-          availableHardwareProfilesProvider.overrideWith(
-            (ref) => Stream.value(testProfiles).asyncMap((v) => v),
-          ),
-          availableKeymapsProvider.overrideWith(
-            (ref) => Stream.value(testKeymaps).asyncMap((v) => v),
-          ),
-          slotActionsProvider.overrideWith((ref) => fakeSlotActions),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showAddSlotDialog(
-                    context,
-                    device: testDevice,
-                    existingSlots: existingSlots ?? [],
-                  );
-                },
-                child: const Text('Open Dialog'),
+    Widget buildTestWidget({List<ProfileSlotSelection>? existingSlots}) =>
+        ProviderScope(
+          overrides: [
+            availableHardwareProfilesProvider.overrideWith(
+              (ref) => Stream.value(testProfiles).asyncMap((v) => v),
+            ),
+            availableKeymapsProvider.overrideWith(
+              (ref) => Stream.value(testKeymaps).asyncMap((v) => v),
+            ),
+            slotActionsProvider.overrideWith((ref) => fakeSlotActions),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showAddSlotDialog(
+                      context,
+                      device: testDevice,
+                      existingSlots: existingSlots ?? [],
+                    );
+                  },
+                  child: const Text('Open Dialog'),
+                ),
               ),
             ),
           ),
-        ),
-      );
-    }
+        );
 
     testWidgets('renders dialog with all elements', (tester) async {
       await tester.pumpWidget(buildTestWidget());
@@ -202,9 +200,7 @@ void main() {
       ];
 
       fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(
-            RuntimeConfig(devices: []),
-          );
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget(existingSlots: existingSlots));
       await tester.tap(find.text('Open Dialog'));
@@ -231,9 +227,7 @@ void main() {
 
     testWidgets('submits slot when form is valid', (tester) async {
       fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(
-            RuntimeConfig(devices: []),
-          );
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -268,9 +262,7 @@ void main() {
       tester,
     ) async {
       fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(
-            RuntimeConfig(devices: []),
-          );
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -301,9 +293,7 @@ void main() {
 
     testWidgets('closes dialog on successful submission', (tester) async {
       fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(
-            RuntimeConfig(devices: []),
-          );
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -375,9 +365,7 @@ void main() {
       // Use a completer to control when the async operation finishes
       fakeSlotActions.addSlotDelay = const Duration(seconds: 2);
       fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(
-            RuntimeConfig(devices: []),
-          );
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -511,7 +499,7 @@ class _FakeSlotActions implements SlotActions {
   final List<_AddSlotCall> addSlotCalls = [];
 
   ConfigOperationResult<RuntimeConfig> addSlotResult =
-      ConfigOperationResult<RuntimeConfig>.success(RuntimeConfig(devices: []));
+      ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
   Duration addSlotDelay = Duration.zero;
 

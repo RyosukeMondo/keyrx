@@ -6,7 +6,7 @@ void main() {
   group('StyledTextField', () {
     testWidgets('renders with label', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(body: StyledTextField(labelText: 'Name')),
         ),
       );
@@ -55,7 +55,9 @@ void main() {
 
     testWidgets('respects enabled state', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: StyledTextField(enabled: false))),
+        const MaterialApp(
+          home: Scaffold(body: StyledTextField(enabled: false)),
+        ),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -64,7 +66,7 @@ void main() {
 
     testWidgets('supports multiline', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: StyledTextField(maxLines: 5))),
+        const MaterialApp(home: Scaffold(body: StyledTextField(maxLines: 5))),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -73,7 +75,7 @@ void main() {
 
     testWidgets('shows hint text', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(body: StyledTextField(hintText: 'Enter text here')),
         ),
       );
@@ -85,11 +87,11 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: StyledTextField(
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: const Icon(Icons.clear),
+              prefixIcon: Icon(Icons.search),
+              suffixIcon: Icon(Icons.clear),
             ),
           ),
         ),
@@ -103,10 +105,10 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: StyledTextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Custom',
                 helperText: 'Helper',
               ),
@@ -123,7 +125,7 @@ void main() {
   group('OutlinedTextField', () {
     testWidgets('renders with outline border', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(body: OutlinedTextField(labelText: 'Email')),
         ),
       );
@@ -152,7 +154,9 @@ void main() {
 
     testWidgets('respects enabled state', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: OutlinedTextField(enabled: false))),
+        const MaterialApp(
+          home: Scaffold(body: OutlinedTextField(enabled: false)),
+        ),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -163,7 +167,7 @@ void main() {
   group('ExpandingTextField', () {
     testWidgets('expands to fill space', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(
               height: 200,
@@ -202,7 +206,7 @@ void main() {
 
     testWidgets('uses monospace font', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(height: 200, child: ExpandingTextField()),
           ),
@@ -215,7 +219,7 @@ void main() {
 
     testWidgets('respects enabled state', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SizedBox(
               height: 200,
@@ -299,7 +303,9 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: NumberTextField(outlined: true))),
+        const MaterialApp(
+          home: Scaffold(body: NumberTextField(outlined: true)),
+        ),
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));

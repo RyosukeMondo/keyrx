@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/models/runtime_config.dart';
@@ -19,9 +18,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const device = DeviceInstanceId(vendorId: 1, productId: 2, serial: 'abc');
-  const baseConfig = RuntimeConfig(
-    devices: [DeviceSlots(device: device, slots: [])],
-  );
+  const baseConfig = RuntimeConfig(devices: [DeviceSlots(device: device)]);
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -33,15 +30,13 @@ void main() {
       final controller = StreamController<RuntimeConfig>();
       final repository = _MockKeyFlowRepository();
 
-      when(
-        () => repository.watchRuntimeConfig(),
-      ).thenAnswer((_) => controller.stream);
+      when(repository.watchRuntimeConfig).thenAnswer((_) => controller.stream);
       when(
         () => repository.getRuntimeConfig(
           forceRefresh: any(named: 'forceRefresh'),
         ),
       ).thenAnswer((_) async => ConfigOperationResult.success(baseConfig));
-      when(() => repository.dispose()).thenAnswer((_) async {});
+      when(repository.dispose).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
@@ -57,12 +52,12 @@ void main() {
         fireImmediately: true,
       );
 
-      final updated = RuntimeConfig(
+      const updated = RuntimeConfig(
         devices: [
           DeviceSlots(
             device: device,
             slots: [
-              const ProfileSlot(
+              ProfileSlot(
                 id: 'slot-a',
                 hardwareProfileId: 'hp-a',
                 keymapId: 'km-a',
@@ -85,16 +80,14 @@ void main() {
 
   test('flowGraphProvider derives graph from runtime config', () async {
     final repository = _MockKeyFlowRepository();
-    when(
-      () => repository.watchRuntimeConfig(),
-    ).thenAnswer((_) => const Stream.empty());
+    when(repository.watchRuntimeConfig).thenAnswer((_) => const Stream.empty());
 
-    final config = RuntimeConfig(
+    const config = RuntimeConfig(
       devices: [
         DeviceSlots(
           device: device,
           slots: [
-            const ProfileSlot(
+            ProfileSlot(
               id: 'slot-a',
               hardwareProfileId: 'hp-a',
               keymapId: 'km-a',
@@ -109,7 +102,7 @@ void main() {
       () =>
           repository.getRuntimeConfig(forceRefresh: any(named: 'forceRefresh')),
     ).thenAnswer((_) async => ConfigOperationResult.success(config));
-    when(() => repository.dispose()).thenAnswer((_) async {});
+    when(repository.dispose).thenAnswer((_) async {});
 
     final container = ProviderContainer(
       overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
@@ -176,12 +169,12 @@ void main() {
     () async {
       final repository = _MockKeyFlowRepository();
       final controller = StreamController<RuntimeConfig>();
-      final initialConfig = RuntimeConfig(
+      const initialConfig = RuntimeConfig(
         devices: [
           DeviceSlots(
             device: device,
             slots: [
-              const ProfileSlot(
+              ProfileSlot(
                 id: 'slot-a',
                 hardwareProfileId: 'hp-a',
                 keymapId: 'km-a',
@@ -190,17 +183,17 @@ void main() {
           ),
         ],
       );
-      final updatedConfig = RuntimeConfig(
+      const updatedConfig = RuntimeConfig(
         devices: [
           DeviceSlots(
             device: device,
             slots: [
-              const ProfileSlot(
+              ProfileSlot(
                 id: 'slot-a',
                 hardwareProfileId: 'hp-a',
                 keymapId: 'km-a',
               ),
-              const ProfileSlot(
+              ProfileSlot(
                 id: 'slot-b',
                 hardwareProfileId: 'hp-b',
                 keymapId: 'km-b',
@@ -211,9 +204,7 @@ void main() {
         ],
       );
 
-      when(
-        () => repository.watchRuntimeConfig(),
-      ).thenAnswer((_) => controller.stream);
+      when(repository.watchRuntimeConfig).thenAnswer((_) => controller.stream);
       when(
         () => repository.getRuntimeConfig(
           forceRefresh: any(named: 'forceRefresh'),
@@ -228,10 +219,9 @@ void main() {
             keymapId: 'km-b',
             priority: 1,
           ),
-          priorityOverride: null,
         ),
       ).thenAnswer((_) async => ConfigOperationResult.success(updatedConfig));
-      when(() => repository.dispose()).thenAnswer((_) async {});
+      when(repository.dispose).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [keyFlowRepositoryProvider.overrideWithValue(repository)],
@@ -241,7 +231,7 @@ void main() {
       await container.read(runtimeConfigProvider.future);
       final actions = container.read(keyFlowActionsProvider);
 
-      await actions.addSlot(
+      actions.addSlot(
         device,
         const ProfileSlot(
           id: 'slot-b',

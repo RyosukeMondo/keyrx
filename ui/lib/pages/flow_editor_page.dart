@@ -26,6 +26,7 @@ import 'package:keyrx_ui/services/flow_validator.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 import 'package:keyrx_ui/dialogs/keyflow_onboarding_dialog.dart';
+import 'package:keyrx_ui/state/analytics_providers.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
@@ -65,6 +66,26 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     // Show onboarding dialog on first visit
     WidgetsBinding.instance.addPostFrameCallback((_) {
       KeyFlowOnboardingDialog.showIfNeeded(context);
+
+      // Track page view with initial metrics
+      _trackPageViewMetrics();
+    });
+  }
+
+  void _trackPageViewMetrics() {
+    final graphAsync = ref.read(flowGraphProvider);
+    graphAsync.whenData((graph) {
+      final deviceCount = graph.nodes.whereType<DeviceFlowNode>().length;
+      final slotCount = graph.edges.length;
+      final nodeCount = graph.nodes.length;
+
+      ref
+          .read(analyticsTrackerProvider.notifier)
+          .trackPageView(
+            deviceCount: deviceCount,
+            slotCount: slotCount,
+            nodeCount: nodeCount,
+          );
     });
   }
 

@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
+import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/widgets/profile_selector.dart';
 
 /// Mock ProfileRegistryService for testing.
 class MockProfileRegistryService implements ProfileRegistryService {
-  final List<String> _profiles;
-  final bool _shouldThrow;
-
   MockProfileRegistryService({List<String>? profiles, bool shouldThrow = false})
     : _profiles = profiles ?? [],
       _shouldThrow = shouldThrow;
+  final List<String> _profiles;
+  final bool _shouldThrow;
 
   @override
   Future<List<String>> listProfiles() async {
@@ -23,29 +22,23 @@ class MockProfileRegistryService implements ProfileRegistryService {
   }
 
   @override
-  Future<Profile?> getProfile(String profileId) async {
-    return null;
-  }
+  Future<Profile?> getProfile(String profileId) async => null;
 
   @override
-  Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async {
-    return ProfileRegistryOperationResult.success();
-  }
+  Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async =>
+      ProfileRegistryOperationResult.success();
 
   @override
-  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async {
-    return ProfileRegistryOperationResult.success();
-  }
+  Future<ProfileRegistryOperationResult> deleteProfile(
+    String profileId,
+  ) async => ProfileRegistryOperationResult.success();
 
   @override
-  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async {
-    return const [];
-  }
+  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async =>
+      const [];
 
   @override
-  Future<List<String>> refresh() async {
-    return _profiles;
-  }
+  Future<List<String>> refresh() async => _profiles;
 
   @override
   Future<void> dispose() async {}
@@ -293,11 +286,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: ProfileSelector(
-              profileService: service,
-              enabled: true,
-              onChanged: (_) {},
-            ),
+            body: ProfileSelector(profileService: service, onChanged: (_) {}),
           ),
         ),
       );

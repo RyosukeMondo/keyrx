@@ -8,6 +8,7 @@ import '../models/hardware_profile.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
 import '../utils/logger.dart';
+import '../services/keyflow_analytics.dart';
 
 /// Mutation operation types for auto-save.
 sealed class SaveOperation {
@@ -49,10 +50,12 @@ class AutoSaveService {
     Duration debounceDelay = const Duration(milliseconds: 500),
     int maxRetries = 3,
     StructuredLogger? logger,
+    KeyFlowAnalytics? analytics,
   }) : _repository = repository,
        _debounceDelay = debounceDelay,
        _maxRetries = maxRetries,
-       _logger = logger ?? getLogger('auto_save_service') {
+       _logger = logger ?? getLogger('auto_save_service'),
+       _analytics = analytics {
     _logger.info(
       'auto_save.init',
       context: {
@@ -66,6 +69,7 @@ class AutoSaveService {
   final Duration _debounceDelay;
   final int _maxRetries;
   final StructuredLogger _logger;
+  final KeyFlowAnalytics? _analytics;
 
   Timer? _debounceTimer;
   SaveOperation? _pendingOperation;
@@ -128,6 +132,14 @@ class AutoSaveService {
         if (result.isSuccess) {
           _logger.info('auto_save.success', context: {'attempt': attempt + 1});
           _updateState(SaveState.saved());
+
+          // Track analytics
+          _analytics?.trackAutoSave(
+            operation: operation.runtimeType.toString(),
+            success: true,
+            retryCount: attempt > 0 ? attempt : null,
+          );
+
           _pendingOperation = null;
           _saving = false;
 
@@ -173,6 +185,15 @@ class AutoSaveService {
       message: errorMessage,
       context: {'attempts': _maxRetries},
     );
+
+    // Track analytics
+    _analytics?.trackAutoSave(
+      operation: operation.runtimeType.toString(),
+      success: false,
+      retryCount: _maxRetries,
+      errorMessage: errorMessage,
+    );
+
     _updateState(SaveState.error(errorMessage));
     _saving = false;
   }

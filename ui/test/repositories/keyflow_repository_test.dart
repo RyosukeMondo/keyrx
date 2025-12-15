@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -99,11 +98,7 @@ void main() {
   group('KeyFlowRepository caching', () {
     test('returns cached config within TTL without new bridge call', () async {
       final api = _FakeRuntimeApi(initialConfig: _configWithSlots(const []));
-      final repo = KeyFlowRepository(
-        runtimeApi: api,
-        cacheTtl: const Duration(minutes: 5),
-        clock: () => now,
-      );
+      final repo = KeyFlowRepository(runtimeApi: api, clock: () => now);
 
       final first = await repo.getRuntimeConfig();
       expect(first.data, isNotNull);
@@ -119,19 +114,13 @@ void main() {
 
     test('refreshes after TTL expiry or when forceRefresh is true', () async {
       final api = _FakeRuntimeApi(initialConfig: _configWithSlots(const []));
-      final repo = KeyFlowRepository(
-        runtimeApi: api,
-        cacheTtl: const Duration(minutes: 5),
-        clock: () => now,
-      );
+      final repo = KeyFlowRepository(runtimeApi: api, clock: () => now);
 
       await repo.getRuntimeConfig();
       expect(api.getConfigCalls, 1);
 
       now = now.add(const Duration(minutes: 6));
-      final refreshedConfig = _configWithSlots([
-        _slot(id: 'fresh', priority: 0),
-      ]);
+      final refreshedConfig = _configWithSlots([_slot(id: 'fresh')]);
       api.setConfig(refreshedConfig);
 
       final refreshed = await repo.getRuntimeConfig();
@@ -150,7 +139,7 @@ void main() {
   group('KeyFlowRepository mutations', () {
     test('auto-assigns next priority when adding a slot', () async {
       final baseConfig = _configWithSlots([
-        _slot(id: 'a', priority: 0),
+        _slot(id: 'a'),
         _slot(id: 'b', priority: 1),
       ], device: device);
       final api = _FakeRuntimeApi(initialConfig: baseConfig);
@@ -196,9 +185,7 @@ void main() {
 
       expect(seen.last, mutated);
 
-      final eventConfig = _configWithSlots([
-        _slot(id: 'c', priority: 0),
-      ], device: device);
+      final eventConfig = _configWithSlots([_slot(id: 'c')], device: device);
       api.setConfig(eventConfig);
       // Trigger bridge event refresh
       registry.handlers[EventType.deviceUpdated]?.call(Uint8List.fromList([]));

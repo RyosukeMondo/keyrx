@@ -58,7 +58,7 @@ class FakeHardwareService with ChangeNotifier implements HardwareService {
 
   @override
   Future<ConfigOperationResult<void>> deleteProfile(String id) async =>
-      ConfigOperationResult.success(null);
+      ConfigOperationResult.success();
 
   @override
   Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async =>
@@ -77,7 +77,7 @@ class FakeKeymapService implements KeymapService {
 
   @override
   Future<ConfigOperationResult<void>> deleteKeymap(String id) async =>
-      ConfigOperationResult.success(null);
+      ConfigOperationResult.success();
 
   @override
   Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async =>
@@ -100,19 +100,19 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
     String deviceKey,
     bool enabled,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => devices;
@@ -161,16 +161,16 @@ void main() {
     });
 
     testWidgets('renders device slots from runtime config', (tester) async {
-      final deviceId = DeviceInstanceId(
+      const deviceId = DeviceInstanceId(
         vendorId: 0x1234,
         productId: 0x5678,
         serial: 'ABC',
       );
-      final runtime = RuntimeConfig(
+      const runtime = RuntimeConfig(
         devices: [
           DeviceSlots(
             device: deviceId,
-            slots: const [
+            slots: [
               ProfileSlot(
                 id: 'slot-1',
                 hardwareProfileId: 'hw-1',
@@ -182,7 +182,6 @@ void main() {
                 id: 'slot-2',
                 hardwareProfileId: 'hw-1',
                 keymapId: 'km-1',
-                active: false,
                 priority: 1,
               ),
             ],
@@ -192,7 +191,7 @@ void main() {
 
       final runtimeService = FakeRuntimeService(runtime);
       final hardwareService = FakeHardwareService([
-        HardwareProfile(
+        const HardwareProfile(
           id: 'hw-1',
           vendorId: 0x1234,
           productId: 0x5678,
@@ -205,7 +204,6 @@ void main() {
           id: 'km-1',
           name: 'Test Keymap',
           virtualLayoutId: 'layout-1',
-          layers: [],
         ),
       ]);
       final deviceRegistry = FakeDeviceRegistryService([

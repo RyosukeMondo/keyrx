@@ -11,9 +11,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
-
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service.dart';
@@ -25,23 +22,14 @@ import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/state/providers.dart';
 import 'package:keyrx_ui/state/providers_setup.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 import '../mocks/mock_keyrx_facade.dart';
 import 'fake_services.dart';
 
 /// Harness that builds a minimal application shell for widget tests.
 class WidgetTestHarness {
-  WidgetTestHarness._({
-    required this.registry,
-    required this.facade,
-    required this.bridge,
-    required this.appState,
-    required this.theme,
-    required this.providerAdapters,
-    required this.overrides,
-    required this.wrapWithScaffold,
-  });
-
   factory WidgetTestHarness({
     ServiceRegistry? registry,
     KeyrxFacade? facade,
@@ -91,6 +79,16 @@ class WidgetTestHarness {
       wrapWithScaffold: wrapWithScaffold,
     );
   }
+  WidgetTestHarness._({
+    required this.registry,
+    required this.facade,
+    required this.bridge,
+    required this.appState,
+    required this.theme,
+    required this.providerAdapters,
+    required this.overrides,
+    required this.wrapWithScaffold,
+  });
 
   final ServiceRegistry registry;
   final KeyrxFacade facade;

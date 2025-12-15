@@ -2,12 +2,11 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
-
-import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
+import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/state/app_state.dart';
 import 'package:keyrx_ui/state/providers.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   group('createProviders', () {

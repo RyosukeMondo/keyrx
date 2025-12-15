@@ -9,27 +9,23 @@ import 'dart:typed_data';
 
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
-import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/bridge_config.dart';
+import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:keyrx_ui/ffi/generated_bindings.dart';
-
+import 'package:keyrx_ui/ffi/profile_registry_ffi.dart';
 import 'package:keyrx_ui/models/models.dart';
-
+import 'package:keyrx_ui/pages/migration_prompt_page.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
+import 'package:keyrx_ui/services/config_result.dart';
 import 'package:keyrx_ui/services/device_profile_service.dart';
 import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
-import 'package:keyrx_ui/services/script_file_service.dart';
-
-import 'package:keyrx_ui/services/config_result.dart';
 import 'package:keyrx_ui/services/runtime_service.dart';
-
+import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/test_service.dart';
-import 'package:keyrx_ui/pages/migration_prompt_page.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
 class FakeDeviceService implements DeviceService {
@@ -390,9 +386,7 @@ class FakeScriptFileService implements ScriptFileService {
   }
 
   @override
-  Future<String?> loadScript(String path) async {
-    return _scripts[path];
-  }
+  Future<String?> loadScript(String path) async => _scripts[path];
 }
 
 /// Fake ApiDocsService with empty documentation.
@@ -436,19 +430,19 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<DeviceRegistryOperationResult> toggleRemap(
     String deviceKey,
     bool enabled,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
-  ) async => DeviceRegistryOperationResult.success();
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async {
@@ -496,37 +490,37 @@ class FakeProfileRegistryService implements ProfileRegistryService {
 /// Fake RuntimeService that returns empty config.
 class FakeRuntimeService implements RuntimeService {
   @override
-  RuntimeConfig? get lastConfig => RuntimeConfig(devices: const []);
+  RuntimeConfig? get lastConfig => const RuntimeConfig();
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> getConfig() async =>
-      ConfigOperationResult.success(RuntimeConfig(devices: []));
+      ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> addSlot(
     DeviceInstanceId device,
     ProfileSlot slot,
-  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+  ) async => ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
     DeviceInstanceId device,
     String slotId,
-  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+  ) async => ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> reorderSlot(
     DeviceInstanceId device,
     String slotId,
     int priority,
-  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+  ) async => ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> setSlotActive(
     DeviceInstanceId device,
     String slotId,
     bool active,
-  ) async => ConfigOperationResult.success(RuntimeConfig(devices: []));
+  ) async => ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -562,7 +556,5 @@ class FakeConfigBindings implements ConfigBindings {
   void deleteHardwareProfile(String id) {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) {
-    return null;
-  }
+  dynamic noSuchMethod(Invocation invocation) => null;
 }

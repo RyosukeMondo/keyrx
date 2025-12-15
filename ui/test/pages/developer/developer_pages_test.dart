@@ -2,21 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-
-import 'package:keyrx_ui/pages/developer/test_runner_page.dart';
 import 'package:keyrx_ui/pages/developer/benchmark_page.dart';
 import 'package:keyrx_ui/pages/developer/doctor_page.dart';
-import 'package:keyrx_ui/services/test_service.dart';
+import 'package:keyrx_ui/pages/developer/test_runner_page.dart';
+import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/benchmark_service.dart';
 import 'package:keyrx_ui/services/doctor_service.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service.dart';
 import 'package:keyrx_ui/services/keymap_service.dart';
 import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
+import 'package:keyrx_ui/services/test_service.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/fake_services.dart';
@@ -81,9 +80,9 @@ void main() {
 
     testWidgets('discovers tests when path provided', (tester) async {
       when(() => mockTestService.discoverTests(any())).thenAnswer(
-        (_) async => TestDiscoveryServiceResult(
+        (_) async => const TestDiscoveryServiceResult(
           tests: [
-            const TestCase(name: 'test_example', file: 'script.rhai', line: 10),
+            TestCase(name: 'test_example', file: 'script.rhai', line: 10),
           ],
         ),
       );
@@ -130,8 +129,8 @@ void main() {
 
     testWidgets('runs benchmark and shows results', (tester) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
-        (_) async => BenchmarkServiceResult(
-          data: const BenchmarkData(
+        (_) async => const BenchmarkServiceResult(
+          data: BenchmarkData(
             minNs: 100,
             maxNs: 500,
             meanNs: 250,
@@ -162,8 +161,8 @@ void main() {
       tester,
     ) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
-        (_) async => BenchmarkServiceResult(
-          data: const BenchmarkData(
+        (_) async => const BenchmarkServiceResult(
+          data: BenchmarkData(
             minNs: 100000,
             maxNs: 2000000, // 2ms
             meanNs: 1500000,
@@ -197,8 +196,8 @@ void main() {
 
     testWidgets('auto-runs diagnostics on open', (tester) async {
       when(() => mockDoctorService.runDiagnostics()).thenAnswer(
-        (_) async => DoctorServiceResult(
-          report: const DiagnosticReport(
+        (_) async => const DoctorServiceResult(
+          report: DiagnosticReport(
             checks: [
               DiagnosticCheckData(name: 'Check 1', status: 'pass'),
               DiagnosticCheckData(name: 'Check 2', status: 'pass'),
@@ -234,13 +233,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       completer.complete(
-        DoctorServiceResult(
-          report: const DiagnosticReport(
-            checks: [],
-            passed: 0,
-            failed: 0,
-            warned: 0,
-          ),
+        const DoctorServiceResult(
+          report: DiagnosticReport(checks: [], passed: 0, failed: 0, warned: 0),
         ),
       );
       await tester.pumpAndSettle();
@@ -248,8 +242,8 @@ void main() {
 
     testWidgets('shows check list with status icons', (tester) async {
       when(() => mockDoctorService.runDiagnostics()).thenAnswer(
-        (_) async => DoctorServiceResult(
-          report: const DiagnosticReport(
+        (_) async => const DoctorServiceResult(
+          report: DiagnosticReport(
             checks: [
               DiagnosticCheckData(name: 'Passed Check', status: 'pass'),
               DiagnosticCheckData(

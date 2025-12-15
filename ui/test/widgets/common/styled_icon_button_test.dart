@@ -81,10 +81,10 @@ void main() {
     testWidgets('is disabled when onPressed is null', (
       WidgetTester tester,
     ) async {
-      var pressed = false;
+      const pressed = false;
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: StyledIconButton(icon: Icons.delete, onPressed: null),
           ),
@@ -121,7 +121,7 @@ void main() {
             body: StyledIconButton(
               icon: Icons.delete,
               onPressed: () {},
-              size: 32.0,
+              size: 32,
             ),
           ),
         ),
@@ -281,7 +281,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: FilledIconButton(icon: Icons.add, onPressed: null),
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keyrx_ui/models/action_binding.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/models/keymap.dart';
-import 'package:keyrx_ui/models/action_binding.dart';
 
 void main() {
   group('HardwareProfile Deserialization Repro', () {

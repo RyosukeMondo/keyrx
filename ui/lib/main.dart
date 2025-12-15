@@ -31,6 +31,8 @@ import 'widgets/migration_wrapper.dart';
 import 'services/facade/facade_state.dart';
 import 'state/providers_setup.dart';
 import 'utils/performance_timeline.dart';
+import 'state/analytics_providers.dart';
+import 'config/feature_flags.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -140,24 +142,30 @@ class _KeyrxMaterialApp extends StatelessWidget {
 }
 
 /// Home page with navigation.
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, this.onFirstFrame});
 
   final VoidCallback? onFirstFrame;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
   DeveloperTool? _selectedDevTool;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _keyFlowEnabled = true; // Default to enabled while loading
 
   List<Widget> _buildPages(ServiceRegistry registry) {
-    return [
-      const RunControlsPage(),
-      const FlowEditorPage(),
+    final pages = <Widget>[const RunControlsPage()];
+
+    // Conditionally add FlowEditorPage based on feature flag
+    if (_keyFlowEnabled) {
+      pages.add(const FlowEditorPage());
+    }
+
+    pages.addAll([
       DevicesPage(
         runtimeService: registry.runtimeService,
         hardwareService: registry.hardwareService,
@@ -167,41 +175,56 @@ class _HomePageState extends State<HomePage> {
       const LayoutsPage(),
       const WiringPage(),
       const MappingPage(),
-    ];
+    ]);
+
+    return pages;
   }
 
-  final List<NavigationDestination> _destinations = const [
-    NavigationDestination(
-      icon: Icon(Icons.dashboard_outlined),
-      selectedIcon: Icon(Icons.dashboard),
-      label: 'Dashboard',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.account_tree_outlined),
-      selectedIcon: Icon(Icons.account_tree),
-      label: 'Flow',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.keyboard_outlined),
-      selectedIcon: Icon(Icons.keyboard),
-      label: 'Devices',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.view_quilt_outlined),
-      selectedIcon: Icon(Icons.view_quilt),
-      label: 'Layouts',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.cable_outlined),
-      selectedIcon: Icon(Icons.cable),
-      label: 'Wiring',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.grid_view_outlined),
-      selectedIcon: Icon(Icons.grid_view),
-      label: 'Mapping',
-    ),
-  ];
+  List<NavigationDestination> _buildDestinations() {
+    final destinations = <NavigationDestination>[
+      const NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: 'Dashboard',
+      ),
+    ];
+
+    // Conditionally add Flow navigation based on feature flag
+    if (_keyFlowEnabled) {
+      destinations.add(
+        const NavigationDestination(
+          icon: Icon(Icons.account_tree_outlined),
+          selectedIcon: Icon(Icons.account_tree),
+          label: 'Flow',
+        ),
+      );
+    }
+
+    destinations.addAll([
+      const NavigationDestination(
+        icon: Icon(Icons.keyboard_outlined),
+        selectedIcon: Icon(Icons.keyboard),
+        label: 'Devices',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.view_quilt_outlined),
+        selectedIcon: Icon(Icons.view_quilt),
+        label: 'Layouts',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.cable_outlined),
+        selectedIcon: Icon(Icons.cable),
+        label: 'Wiring',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.grid_view_outlined),
+        selectedIcon: Icon(Icons.grid_view),
+        label: 'Mapping',
+      ),
+    ]);
+
+    return destinations;
+  }
 
   @override
   void initState() {
@@ -210,7 +233,17 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppState>().loadDeveloperMode();
       widget.onFirstFrame?.call();
+      _loadFeatureFlags();
     });
+  }
+
+  Future<void> _loadFeatureFlags() async {
+    final enabled = await ref.read(keyFlowEnabledProvider.future);
+    if (mounted) {
+      setState(() {
+        _keyFlowEnabled = enabled;
+      });
+    }
   }
 
   @override
@@ -218,6 +251,7 @@ class _HomePageState extends State<HomePage> {
     final registry = context.read<ServiceRegistry>();
     final appState = context.watch<AppState>();
     final pages = _buildPages(registry);
+    final destinations = _buildDestinations();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -260,7 +294,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            destinations: _destinations
+            destinations: destinations
                 .map(
                   (d) => NavigationRailDestination(
                     icon: d.icon,

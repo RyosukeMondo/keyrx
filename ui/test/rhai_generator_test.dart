@@ -17,13 +17,7 @@ void main() {
     group('generates valid remap syntax', () {
       test('generates single remap', () {
         const config = VisualConfig(
-          mappings: [
-            RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
-          ],
+          mappings: [RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB')],
         );
 
         final script = generator.generateScript(config);
@@ -34,16 +28,8 @@ void main() {
       test('generates multiple remaps', () {
         const config = VisualConfig(
           mappings: [
-            RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
-            RemapConfig(
-              sourceKeyId: 'CapsLock',
-              targetKeyId: 'Escape',
-              type: MappingType.simple,
-            ),
+            RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
+            RemapConfig(sourceKeyId: 'CapsLock', targetKeyId: 'Escape'),
           ],
         );
 
@@ -56,11 +42,7 @@ void main() {
       test('escapes special characters in key names', () {
         const config = VisualConfig(
           mappings: [
-            RemapConfig(
-              sourceKeyId: 'Key"Quote',
-              targetKeyId: 'Key\\Slash',
-              type: MappingType.simple,
-            ),
+            RemapConfig(sourceKeyId: 'Key"Quote', targetKeyId: r'Key\Slash'),
           ],
         );
 
@@ -115,11 +97,7 @@ void main() {
 
     group('generates layer syntax', () {
       test('generates layer definition', () {
-        const config = VisualConfig(
-          layerConfigs: [
-            LayerConfig(name: 'nav', isTransparent: true, mappings: []),
-          ],
-        );
+        const config = VisualConfig(layerConfigs: [LayerConfig(name: 'nav')]);
 
         final script = generator.generateScript(config);
 
@@ -274,11 +252,7 @@ void main() {
       test('generates complete script with all features', () {
         const config = VisualConfig(
           mappings: [
-            RemapConfig(
-              sourceKeyId: 'CapsLock',
-              targetKeyId: 'Escape',
-              type: MappingType.simple,
-            ),
+            RemapConfig(sourceKeyId: 'CapsLock', targetKeyId: 'Escape'),
           ],
           tapHoldConfigs: [
             TapHoldConfig(
@@ -290,7 +264,6 @@ void main() {
           layerConfigs: [
             LayerConfig(
               name: 'nav',
-              isTransparent: true,
               mappings: [LayerMapping(sourceKey: 'KeyH', action: 'Left')],
             ),
           ],
@@ -626,11 +599,7 @@ fn on_init() {
       test('simple config survives roundtrip', () {
         const original = VisualConfig(
           mappings: [
-            RemapConfig(
-              sourceKeyId: 'CapsLock',
-              targetKeyId: 'Escape',
-              type: MappingType.simple,
-            ),
+            RemapConfig(sourceKeyId: 'CapsLock', targetKeyId: 'Escape'),
           ],
         );
 
@@ -667,7 +636,6 @@ fn on_init() {
           layerConfigs: [
             LayerConfig(
               name: 'nav',
-              isTransparent: true,
               mappings: [LayerMapping(sourceKey: 'KeyH', action: 'Left')],
             ),
           ],
@@ -725,13 +693,7 @@ fn on_init() {
 
     test('isEmpty returns false when mappings exist', () {
       const config = VisualConfig(
-        mappings: [
-          RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
+        mappings: [RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB')],
       );
       expect(config.isEmpty, false);
     });
@@ -750,9 +712,7 @@ fn on_init() {
     });
 
     test('isEmpty returns false when layers exist', () {
-      const config = VisualConfig(
-        layerConfigs: [LayerConfig(name: 'test', mappings: [])],
-      );
+      const config = VisualConfig(layerConfigs: [LayerConfig(name: 'test')]);
       expect(config.isEmpty, false);
     });
 
@@ -767,14 +727,7 @@ fn on_init() {
 
     test('copyWith creates modified copy', () {
       const original = VisualConfig(
-        mappings: [
-          RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
-        hasAdvancedFeatures: false,
+        mappings: [RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB')],
       );
 
       final modified = original.copyWith(hasAdvancedFeatures: true);
@@ -786,19 +739,13 @@ fn on_init() {
 
     test('copyWith preserves unmodified fields', () {
       const original = VisualConfig(
-        mappings: [
-          RemapConfig(
-            sourceKeyId: 'KeyA',
-            targetKeyId: 'KeyB',
-            type: MappingType.simple,
-          ),
-        ],
+        mappings: [RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB')],
         timingConfig: TimingConfig(tapTimeoutMs: 200),
       );
 
       final modified = original.copyWith(
         tapHoldConfigs: [
-          TapHoldConfig(
+          const TapHoldConfig(
             triggerKey: 'KeyC',
             tapAction: 'KeyC',
             holdAction: 'Ctrl',

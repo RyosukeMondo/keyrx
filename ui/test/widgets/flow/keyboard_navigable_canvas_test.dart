@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
-import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/state/selection_state.dart';
 import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
 
@@ -52,7 +50,7 @@ void main() {
         ),
       ];
 
-      final graph = FlowGraph(nodes: nodes, edges: const []);
+      final graph = FlowGraph(nodes: nodes);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -96,7 +94,7 @@ void main() {
         ),
       ];
 
-      final graph = FlowGraph(nodes: nodes, edges: const []);
+      final graph = FlowGraph(nodes: nodes);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -130,7 +128,6 @@ void main() {
     testWidgets('Escape key clears selection', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [],
           child: MaterialApp(
             home: KeyboardNavigableCanvas(
               transformationController: transformationController,
@@ -263,7 +260,7 @@ void main() {
     });
 
     testWidgets('Ctrl+? triggers help callback', (tester) async {
-      bool helpCalled = false;
+      var helpCalled = false;
 
       await tester.pumpWidget(
         ProviderScope(
@@ -301,7 +298,7 @@ void main() {
         ),
       ];
 
-      final graph = FlowGraph(nodes: nodes, edges: const []);
+      final graph = FlowGraph(nodes: nodes);
 
       await tester.pumpWidget(
         ProviderScope(

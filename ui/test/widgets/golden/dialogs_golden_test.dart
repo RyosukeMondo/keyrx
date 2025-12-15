@@ -12,22 +12,19 @@ void main() {
   final lightHarness = GoldenTestHarness(
     widgetHarness: WidgetTestHarness(
       theme: ThemeData.light(useMaterial3: true),
-      wrapWithScaffold: true,
     ),
   );
 
-  Widget _dialogShell(Widget child, {Color? backgroundColor}) {
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: Center(child: child),
-    );
-  }
+  Widget dialogShell(Widget child, {Color? backgroundColor}) => Scaffold(
+    backgroundColor: backgroundColor,
+    body: Center(child: child),
+  );
 
   group('ConfirmationDialog Goldens', () {
     testGoldens('renders basic confirmation dialog', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const ConfirmationDialog(
             title: 'Confirm Action',
             message: 'Are you sure you want to proceed?',
@@ -42,7 +39,7 @@ void main() {
     testGoldens('renders destructive confirmation dialog', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const ConfirmationDialog(
             title: 'Delete Item',
             message: 'This action cannot be undone.',
@@ -60,7 +57,7 @@ void main() {
     testGoldens('renders confirmation dialog with icon', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const ConfirmationDialog(
             title: 'Save Changes',
             message: 'Do you want to save your changes?',
@@ -78,7 +75,7 @@ void main() {
     testGoldens('renders confirmation dialog in light theme', (tester) async {
       await lightHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const ConfirmationDialog(
             title: 'Confirm Action',
             message: 'Are you sure you want to proceed?',
@@ -98,7 +95,7 @@ void main() {
     testGoldens('renders basic input dialog', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const InputDialog(
             title: 'Enter Name',
             labelText: 'Name',
@@ -114,7 +111,7 @@ void main() {
     testGoldens('renders input dialog with message', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const InputDialog(
             title: 'Create Layer',
             message: 'Enter a name for the new layer',
@@ -131,7 +128,7 @@ void main() {
     testGoldens('renders input dialog with icon', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const InputDialog(
             title: 'Rename',
             labelText: 'New Name',
@@ -148,7 +145,7 @@ void main() {
     testGoldens('renders multiline input dialog', (tester) async {
       await darkHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const InputDialog(
             title: 'Add Description',
             labelText: 'Description',
@@ -165,7 +162,7 @@ void main() {
     testGoldens('renders input dialog in light theme', (tester) async {
       await lightHarness.pump(
         tester,
-        _dialogShell(
+        dialogShell(
           const InputDialog(
             title: 'Enter Name',
             labelText: 'Name',

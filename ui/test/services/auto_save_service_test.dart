@@ -73,14 +73,10 @@ class FakeKeyFlowRepository implements KeyFlowRepository {
   @override
   Future<ConfigOperationResult<RuntimeConfig>> getRuntimeConfig({
     bool forceRefresh = false,
-  }) async {
-    return ConfigOperationResult.error('Not implemented');
-  }
+  }) async => ConfigOperationResult.error('Not implemented');
 
   @override
-  Stream<RuntimeConfig> watchRuntimeConfig() {
-    return const Stream.empty();
-  }
+  Stream<RuntimeConfig> watchRuntimeConfig() => const Stream.empty();
 }
 
 class FakeLogger implements StructuredLogger {
@@ -136,21 +132,20 @@ void main() {
     late FakeLogger fakeLogger;
     late AutoSaveService service;
 
-    final testDevice = DeviceInstanceId(
+    const testDevice = DeviceInstanceId(
       vendorId: 0x1234,
       productId: 0x5678,
       serial: 'TEST-001',
     );
 
-    final testSlot = ProfileSlot(
+    const testSlot = ProfileSlot(
       id: 'slot-1',
       hardwareProfileId: 'profile-1',
       keymapId: 'keymap-1',
-      priority: 0,
       active: true,
     );
 
-    final testConfig = RuntimeConfig(
+    const testConfig = RuntimeConfig(
       devices: [
         DeviceSlots(device: testDevice, slots: [testSlot]),
       ],
@@ -162,7 +157,6 @@ void main() {
       service = AutoSaveService(
         repository: fakeRepo,
         debounceDelay: const Duration(milliseconds: 50),
-        maxRetries: 3,
         logger: fakeLogger,
       );
     });
@@ -183,9 +177,9 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 100));
 
@@ -199,7 +193,7 @@ void main() {
       final states = <SaveState>[];
       final subscription = service.stateStream.listen(states.add);
 
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 150));
 
@@ -220,7 +214,7 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 1000));
 
@@ -235,7 +229,7 @@ void main() {
       final states = <SaveState>[];
       final subscription = service.stateStream.listen(states.add);
 
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 1500));
 
@@ -258,7 +252,7 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(AddSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 1500));
       expect(service.currentState.status, SaveStatus.error);
@@ -276,7 +270,7 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(UpdateSlotOperation(testDevice, testSlot));
+      service.scheduleSave(const UpdateSlotOperation(testDevice, testSlot));
 
       await Future.delayed(const Duration(milliseconds: 150));
 
@@ -291,7 +285,7 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(RemoveSlotOperation(testDevice, 'slot-1'));
+      service.scheduleSave(const RemoveSlotOperation(testDevice, 'slot-1'));
 
       await Future.delayed(const Duration(milliseconds: 150));
 

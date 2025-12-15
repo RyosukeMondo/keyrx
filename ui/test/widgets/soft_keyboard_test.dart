@@ -292,7 +292,7 @@ void main() {
 
     testWidgets('respects custom keySize parameter', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySize: 80.0))),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySize: 80))),
       );
 
       // Get the GridView delegate
@@ -306,7 +306,7 @@ void main() {
 
     testWidgets('respects custom keySpacing parameter', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySpacing: 12.0))),
+        const MaterialApp(home: Scaffold(body: SoftKeyboard(keySpacing: 12))),
       );
 
       // Get the GridView delegate

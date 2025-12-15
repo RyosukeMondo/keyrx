@@ -39,20 +39,9 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
+    registerFallbackValue(EngineSnapshot(timestamp: DateTime.now()));
     registerFallbackValue(
-      EngineSnapshot(
-        activeLayers: const [],
-        heldKeys: const [],
-        pendingDecisions: const [],
-        timestamp: DateTime.now(),
-      ),
-    );
-    registerFallbackValue(
-      const UserMessage(
-        title: 'Error',
-        body: 'An error occurred',
-        category: MessageCategory.error,
-      ),
+      const UserMessage(title: 'Error', body: 'An error occurred'),
     );
     registerFallbackValue(
       const KeyboardDevice(
@@ -76,12 +65,7 @@ void main() {
 
     // Setup engine state stream
     engineStateSubject = BehaviorSubject<EngineSnapshot>.seeded(
-      EngineSnapshot(
-        activeLayers: const [],
-        heldKeys: const [],
-        pendingDecisions: const [],
-        timestamp: DateTime.now(),
-      ),
+      EngineSnapshot(timestamp: DateTime.now()),
     );
 
     // Wire up mocks
@@ -98,13 +82,9 @@ void main() {
     when(() => mockEngine.isInitialized).thenReturn(false);
 
     // Default translator behavior
-    when(() => mockTranslator.translate(any())).thenReturn(
-      const UserMessage(
-        title: 'Error',
-        body: 'An error occurred',
-        category: MessageCategory.error,
-      ),
-    );
+    when(
+      () => mockTranslator.translate(any()),
+    ).thenReturn(const UserMessage(title: 'Error', body: 'An error occurred'));
   });
 
   tearDown(() async {
@@ -298,7 +278,7 @@ void main() {
         () => mockScriptFile.loadScript(scriptPath),
       ).thenAnswer((_) async => scriptContent);
       when(() => mockBridge.validateScript(scriptContent)).thenReturn(
-        ValidationResult(isValid: true, errors: const [], warnings: const []),
+        const ValidationResult(isValid: true, errors: [], warnings: []),
       );
 
       final result = await facade.validateScript(scriptPath);
@@ -320,10 +300,10 @@ void main() {
         () => mockScriptFile.loadScript(scriptPath),
       ).thenAnswer((_) async => 'script');
       when(() => mockBridge.validateScript(any())).thenReturn(
-        ValidationResult(
+        const ValidationResult(
           isValid: true,
-          errors: const [],
-          warnings: const [
+          errors: [],
+          warnings: [
             ValidationWarning(
               code: 'W001',
               category: WarningCategory.safety,
@@ -356,17 +336,16 @@ void main() {
         () => mockScriptFile.loadScript(scriptPath),
       ).thenAnswer((_) async => 'invalid script');
       when(() => mockBridge.validateScript(any())).thenReturn(
-        ValidationResult(
+        const ValidationResult(
           isValid: false,
-          errors: const [
+          errors: [
             ValidationError(
               code: 'E001',
               message: 'Syntax error',
               location: SourceLocation(line: 5, column: 10),
-              suggestions: [],
             ),
           ],
-          warnings: const [],
+          warnings: [],
         ),
       );
 
@@ -537,14 +516,14 @@ void main() {
         total: 3,
         passed: 2,
         failed: 1,
-        durationMs: 150.0,
+        durationMs: 150,
         results: [
-          TestCaseResult(name: 'test1', passed: true, durationMs: 50.0),
-          TestCaseResult(name: 'test2', passed: true, durationMs: 50.0),
+          TestCaseResult(name: 'test1', passed: true, durationMs: 50),
+          TestCaseResult(name: 'test2', passed: true, durationMs: 50),
           TestCaseResult(
             name: 'test3',
             passed: false,
-            durationMs: 50.0,
+            durationMs: 50,
             error: 'Assertion failed',
           ),
         ],
@@ -574,13 +553,9 @@ void main() {
           total: 1,
           passed: 1,
           failed: 0,
-          durationMs: 50.0,
+          durationMs: 50,
           results: [
-            TestCaseResult(
-              name: 'test_addition',
-              passed: true,
-              durationMs: 50.0,
-            ),
+            TestCaseResult(name: 'test_addition', passed: true, durationMs: 50),
           ],
         ),
       );
@@ -643,12 +618,7 @@ void main() {
 
       // Emit engine state change
       engineStateSubject.add(
-        EngineSnapshot(
-          activeLayers: const ['base'],
-          heldKeys: const [],
-          pendingDecisions: const [],
-          timestamp: DateTime.now(),
-        ),
+        EngineSnapshot(activeLayers: const ['base'], timestamp: DateTime.now()),
       );
 
       // Wait for debounce + processing (100ms debounce + buffer)
@@ -681,12 +651,7 @@ void main() {
       // Emit multiple rapid changes
       for (var i = 0; i < 10; i++) {
         engineStateSubject.add(
-          EngineSnapshot(
-            activeLayers: ['layer$i'],
-            heldKeys: const [],
-            pendingDecisions: const [],
-            timestamp: DateTime.now(),
-          ),
+          EngineSnapshot(activeLayers: ['layer$i'], timestamp: DateTime.now()),
         );
       }
 
@@ -710,12 +675,7 @@ void main() {
       final initialCount = states.length;
 
       // Emit same snapshot multiple times
-      final snapshot = EngineSnapshot(
-        activeLayers: const [],
-        heldKeys: const [],
-        pendingDecisions: const [],
-        timestamp: DateTime.now(),
-      );
+      final snapshot = EngineSnapshot(timestamp: DateTime.now());
 
       for (var i = 0; i < 5; i++) {
         engineStateSubject.add(snapshot);
@@ -765,17 +725,17 @@ void main() {
       await facade.dispose();
 
       expect(() => facade.startEngine('/path'), throwsStateError);
-      expect(() => facade.stopEngine(), throwsStateError);
-      expect(() => facade.getEngineStatus(), throwsStateError);
+      expect(facade.stopEngine, throwsStateError);
+      expect(facade.getEngineStatus, throwsStateError);
       expect(() => facade.validateScript('/path'), throwsStateError);
       expect(() => facade.loadScriptContent('/path'), throwsStateError);
       expect(() => facade.saveScript('/path', 'content'), throwsStateError);
-      expect(() => facade.listDevices(), throwsStateError);
+      expect(facade.listDevices, throwsStateError);
       expect(() => facade.selectDevice('/dev/input/event0'), throwsStateError);
 
       expect(() => facade.discoverTests('/path'), throwsStateError);
       expect(() => facade.runTests('/path'), throwsStateError);
-      expect(() => facade.cancelTests(), throwsStateError);
+      expect(facade.cancelTests, throwsStateError);
     });
   });
 
@@ -790,7 +750,6 @@ void main() {
         const UserMessage(
           title: 'Engine Error',
           body: 'The engine could not be initialized',
-          category: MessageCategory.error,
         ),
       );
 

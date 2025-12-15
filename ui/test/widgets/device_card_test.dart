@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/device_identity.dart';
 import 'package:keyrx_ui/models/device_state.dart';
-import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/models/layout_type.dart';
+import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/widgets/device_card.dart';
-import 'package:keyrx_ui/widgets/remap_toggle.dart';
 import 'package:keyrx_ui/widgets/profile_selector.dart';
+import 'package:keyrx_ui/widgets/remap_toggle.dart';
 
 /// Mock DeviceRegistryService for testing.
 class MockDeviceRegistryService implements DeviceRegistryService {
+  MockDeviceRegistryService({
+    List<DeviceState>? devices,
+    bool shouldFail = false,
+  }) : _devices = devices ?? [],
+       _shouldFail = shouldFail;
   final List<DeviceState> _devices;
   final bool _shouldFail;
   String? lastToggledDeviceKey;
@@ -19,16 +24,8 @@ class MockDeviceRegistryService implements DeviceRegistryService {
   String? lastAssignedDeviceKey;
   String? lastAssignedProfileId;
 
-  MockDeviceRegistryService({
-    List<DeviceState>? devices,
-    bool shouldFail = false,
-  }) : _devices = devices ?? [],
-       _shouldFail = shouldFail;
-
   @override
-  Future<List<DeviceState>> getDevices() async {
-    return _devices;
-  }
+  Future<List<DeviceState>> getDevices() async => _devices;
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
@@ -38,9 +35,11 @@ class MockDeviceRegistryService implements DeviceRegistryService {
     lastToggledDeviceKey = deviceKey;
     lastToggledValue = enabled;
     if (_shouldFail) {
-      return DeviceRegistryOperationResult.error('Failed to toggle remap');
+      return const DeviceRegistryOperationResult.error(
+        'Failed to toggle remap',
+      );
     }
-    return DeviceRegistryOperationResult.success();
+    return const DeviceRegistryOperationResult.success();
   }
 
   @override
@@ -51,9 +50,11 @@ class MockDeviceRegistryService implements DeviceRegistryService {
     lastAssignedDeviceKey = deviceKey;
     lastAssignedProfileId = profileId;
     if (_shouldFail) {
-      return DeviceRegistryOperationResult.error('Failed to assign profile');
+      return const DeviceRegistryOperationResult.error(
+        'Failed to assign profile',
+      );
     }
-    return DeviceRegistryOperationResult.success();
+    return const DeviceRegistryOperationResult.success();
   }
 
   @override
@@ -62,15 +63,13 @@ class MockDeviceRegistryService implements DeviceRegistryService {
     String? label,
   ) async {
     if (_shouldFail) {
-      return DeviceRegistryOperationResult.error('Failed to set label');
+      return const DeviceRegistryOperationResult.error('Failed to set label');
     }
-    return DeviceRegistryOperationResult.success();
+    return const DeviceRegistryOperationResult.success();
   }
 
   @override
-  Future<List<DeviceState>> refresh() async {
-    return _devices;
-  }
+  Future<List<DeviceState>> refresh() async => _devices;
 
   @override
   Stream<List<DeviceState>> get devicesStream => Stream.value(_devices);
@@ -87,40 +86,31 @@ class MockDeviceRegistryService implements DeviceRegistryService {
 
 /// Mock ProfileRegistryService for testing.
 class MockProfileRegistryService implements ProfileRegistryService {
-  final List<String> _profiles;
-
   MockProfileRegistryService({List<String>? profiles})
     : _profiles = profiles ?? [];
+  final List<String> _profiles;
 
   @override
-  Future<List<String>> listProfiles() async {
-    return _profiles;
-  }
+  Future<List<String>> listProfiles() async => _profiles;
 
   @override
-  Future<Profile?> getProfile(String profileId) async {
-    return null;
-  }
+  Future<Profile?> getProfile(String profileId) async => null;
 
   @override
-  Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async {
-    return ProfileRegistryOperationResult.success();
-  }
+  Future<ProfileRegistryOperationResult> saveProfile(Profile profile) async =>
+      ProfileRegistryOperationResult.success();
 
   @override
-  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async {
-    return ProfileRegistryOperationResult.success();
-  }
+  Future<ProfileRegistryOperationResult> deleteProfile(
+    String profileId,
+  ) async => ProfileRegistryOperationResult.success();
 
   @override
-  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async {
-    return const [];
-  }
+  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async =>
+      const [];
 
   @override
-  Future<List<String>> refresh() async {
-    return _profiles;
-  }
+  Future<List<String>> refresh() async => _profiles;
 
   @override
   Future<void> dispose() async {}
@@ -171,8 +161,8 @@ void main() {
     });
 
     testWidgets('displays user label when set', (WidgetTester tester) async {
-      final deviceWithLabel = DeviceState(
-        identity: const DeviceIdentity(
+      const deviceWithLabel = DeviceState(
+        identity: DeviceIdentity(
           vendorId: 0x046d,
           productId: 0xc52b,
           serialNumber: 'ABC123',
@@ -417,7 +407,7 @@ void main() {
     testWidgets('calls onEditLabel when Edit Label button is pressed', (
       WidgetTester tester,
     ) async {
-      bool editLabelCalled = false;
+      var editLabelCalled = false;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -443,7 +433,7 @@ void main() {
     testWidgets(
       'calls onManageProfiles when Manage Profiles button is pressed',
       (WidgetTester tester) async {
-        bool manageProfilesCalled = false;
+        var manageProfilesCalled = false;
 
         await tester.pumpWidget(
           MaterialApp(

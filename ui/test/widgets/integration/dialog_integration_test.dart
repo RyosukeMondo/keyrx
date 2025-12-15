@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/widgets/common/dialogs/dialog_helpers.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/confirmation_dialog.dart';
+import 'package:keyrx_ui/widgets/common/dialogs/dialog_helpers.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/input_dialog.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/selection_dialog.dart';
 import 'package:keyrx_ui/widgets/common/styled_text_field.dart';
@@ -16,18 +16,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    DialogHelpers.confirm(
-                      context,
-                      title: 'Test',
-                      message: 'Confirm this action?',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  DialogHelpers.confirm(
+                    context,
+                    title: 'Test',
+                    message: 'Confirm this action?',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -52,18 +50,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await DialogHelpers.confirm(
-                      context,
-                      title: 'Test',
-                      message: 'Confirm?',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await DialogHelpers.confirm(
+                    context,
+                    title: 'Test',
+                    message: 'Confirm?',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -88,18 +84,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await DialogHelpers.confirm(
-                      context,
-                      title: 'Test',
-                      message: 'Confirm?',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await DialogHelpers.confirm(
+                    context,
+                    title: 'Test',
+                    message: 'Confirm?',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -122,18 +116,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    DialogHelpers.input(
-                      context,
-                      title: 'Enter Name',
-                      labelText: 'Name',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  DialogHelpers.input(
+                    context,
+                    title: 'Enter Name',
+                    labelText: 'Name',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -156,18 +148,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await DialogHelpers.input(
-                      context,
-                      title: 'Enter Name',
-                      labelText: 'Name',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await DialogHelpers.input(
+                    context,
+                    title: 'Enter Name',
+                    labelText: 'Name',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -194,24 +184,22 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    DialogHelpers.input(
-                      context,
-                      title: 'Enter Name',
-                      labelText: 'Name',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Name is required';
-                        }
-                        return null;
-                      },
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  DialogHelpers.input(
+                    context,
+                    title: 'Enter Name',
+                    labelText: 'Name',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Name is required';
+                      }
+                      return null;
+                    },
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -235,21 +223,19 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    DialogHelpers.select<String>(
-                      context,
-                      title: 'Choose Option',
-                      options: [
-                        const SelectionOption(label: 'Option 1', value: 'opt1'),
-                        const SelectionOption(label: 'Option 2', value: 'opt2'),
-                      ],
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  DialogHelpers.select<String>(
+                    context,
+                    title: 'Choose Option',
+                    options: [
+                      const SelectionOption(label: 'Option 1', value: 'opt1'),
+                      const SelectionOption(label: 'Option 2', value: 'opt2'),
+                    ],
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -273,21 +259,19 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await DialogHelpers.select<String>(
-                      context,
-                      title: 'Choose Option',
-                      options: [
-                        const SelectionOption(label: 'Option 1', value: 'opt1'),
-                        const SelectionOption(label: 'Option 2', value: 'opt2'),
-                      ],
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await DialogHelpers.select<String>(
+                    context,
+                    title: 'Choose Option',
+                    options: [
+                      const SelectionOption(label: 'Option 1', value: 'opt1'),
+                      const SelectionOption(label: 'Option 2', value: 'opt2'),
+                    ],
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -310,18 +294,16 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () {
-                    DialogHelpers.confirmDelete(
-                      context,
-                      title: 'Delete Item',
-                      message: 'This cannot be undone',
-                    );
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  DialogHelpers.confirmDelete(
+                    context,
+                    title: 'Delete Item',
+                    message: 'This cannot be undone',
+                  );
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -345,30 +327,28 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    result = await DialogHelpers.input(
-                      context,
-                      title: 'Enter Path',
-                      labelText: 'Path',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Required';
-                        }
-                        if (!value.endsWith('.txt')) {
-                          return 'Must be a .txt file';
-                        }
-                        return null;
-                      },
-                    );
-                    if (result != null) {
-                      submitCount++;
-                    }
-                  },
-                  child: const Text('Show Dialog'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await DialogHelpers.input(
+                    context,
+                    title: 'Enter Path',
+                    labelText: 'Path',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      if (!value.endsWith('.txt')) {
+                        return 'Must be a .txt file';
+                      }
+                      return null;
+                    },
+                  );
+                  if (result != null) {
+                    submitCount++;
+                  }
+                },
+                child: const Text('Show Dialog'),
+              ),
             ),
           ),
         ),
@@ -409,26 +389,24 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    confirmed = await DialogHelpers.confirm(
-                      context,
-                      title: 'Proceed?',
-                      message: 'Continue with action?',
-                    );
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  confirmed = await DialogHelpers.confirm(
+                    context,
+                    title: 'Proceed?',
+                    message: 'Continue with action?',
+                  );
 
-                    if (confirmed == true) {
-                      name = await DialogHelpers.input(
-                        context,
-                        title: 'Enter Name',
-                        labelText: 'Name',
-                      );
-                    }
-                  },
-                  child: const Text('Start'),
-                );
-              },
+                  if (confirmed == true) {
+                    name = await DialogHelpers.input(
+                      context,
+                      title: 'Enter Name',
+                      labelText: 'Name',
+                    );
+                  }
+                },
+                child: const Text('Start'),
+              ),
             ),
           ),
         ),

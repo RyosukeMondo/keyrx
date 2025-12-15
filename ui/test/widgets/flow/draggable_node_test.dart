@@ -18,7 +18,7 @@ void main() {
     setUp(() {
       positions = {};
       overrides = [
-        dragControllerProvider.overrideWith(() => DragController()),
+        dragControllerProvider.overrideWith(DragController.new),
         nodePositionsProvider.overrideWith(() => _FakeNodePositions(positions)),
       ];
     });
@@ -28,31 +28,29 @@ void main() {
       Offset? initialPosition,
       Size? size,
       Size? canvasBounds,
-    }) {
-      return ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Stack(
-              children: [
-                DraggableNode(
-                  nodeId: nodeId,
-                  initialPosition: initialPosition ?? const Offset(100, 100),
-                  size: size ?? const Size(120, 80),
-                  canvasBounds: canvasBounds ?? const Size(800, 600),
-                  child: Container(
-                    width: size?.width ?? 120,
-                    height: size?.height ?? 80,
-                    color: Colors.blue,
-                    child: const Center(child: Text('Test Node')),
-                  ),
+    }) => ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              DraggableNode(
+                nodeId: nodeId,
+                initialPosition: initialPosition ?? const Offset(100, 100),
+                size: size ?? const Size(120, 80),
+                canvasBounds: canvasBounds ?? const Size(800, 600),
+                child: Container(
+                  width: size?.width ?? 120,
+                  height: size?.height ?? 80,
+                  color: Colors.blue,
+                  child: const Center(child: Text('Test Node')),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
-    }
+      ),
+    );
 
     testWidgets('renders child widget at initial position', (tester) async {
       await tester.pumpWidget(
@@ -256,10 +254,10 @@ void main() {
       );
 
       // Before drag - no shadow or minimal shadow
-      AnimatedContainer container = tester.widget<AnimatedContainer>(
+      var container = tester.widget<AnimatedContainer>(
         find.byType(AnimatedContainer),
       );
-      BoxDecoration? decoration = container.decoration as BoxDecoration?;
+      var decoration = container.decoration as BoxDecoration?;
       expect(decoration?.boxShadow, isNull);
 
       // During drag
@@ -288,7 +286,7 @@ void main() {
       );
 
       // Before drag
-      Transform transform = tester.widget<Transform>(find.byType(Transform));
+      var transform = tester.widget<Transform>(find.byType(Transform));
       expect(transform.transform.getMaxScaleOnAxis(), 1.0);
 
       // During drag
@@ -425,19 +423,17 @@ class _FakeNodePositions extends NodePositions {
   final Map<String, Offset> positions;
 
   @override
-  Future<Map<String, NodePosition>> build() async {
-    return positions.map(
-      (key, value) => MapEntry(
-        key,
-        NodePosition(
-          x: value.dx,
-          y: value.dy,
-          isManual: true,
-          updatedAt: DateTime.now(),
-        ),
+  Future<Map<String, NodePosition>> build() async => positions.map(
+    (key, value) => MapEntry(
+      key,
+      NodePosition(
+        x: value.dx,
+        y: value.dy,
+        isManual: true,
+        updatedAt: DateTime.now(),
       ),
-    );
-  }
+    ),
+  );
 
   @override
   Future<void> setPosition(

@@ -10,18 +10,17 @@ void main() {
   });
 
   group('KeyFlowOnboardingDialog', () {
-    testWidgets('should show dialog with welcome page',
-        (WidgetTester tester) async {
+    testWidgets('should show dialog with welcome page', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -41,17 +40,17 @@ void main() {
       );
     });
 
-    testWidgets('should navigate through all pages', (WidgetTester tester) async {
+    testWidgets('should navigate through all pages', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -92,12 +91,10 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -122,12 +119,10 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -144,18 +139,17 @@ void main() {
       expect(find.text('Welcome to KeyFlow'), findsNothing);
     });
 
-    testWidgets('should mark as seen when "Don\'t show again" is checked',
-        (WidgetTester tester) async {
+    testWidgets('should mark as seen when "Don\'t show again" is checked', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -169,7 +163,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Navigate to last page and finish
-      for (int i = 0; i < 4; i++) {
+      for (var i = 0; i < 4; i++) {
         await tester.tap(find.text('Next'));
         await tester.pumpAndSettle();
       }
@@ -187,12 +181,10 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -211,18 +203,17 @@ void main() {
       expect(indicators.length, 5);
     });
 
-    testWidgets('should close dialog when close button is tapped',
-        (WidgetTester tester) async {
+    testWidgets('should close dialog when close button is tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Builder(
-              builder: (context) {
-                return ElevatedButton(
-                  onPressed: () => KeyFlowOnboardingDialog.show(context),
-                  child: const Text('Show Onboarding'),
-                );
-              },
+              builder: (context) => ElevatedButton(
+                onPressed: () => KeyFlowOnboardingDialog.show(context),
+                child: const Text('Show Onboarding'),
+              ),
             ),
           ),
         ),
@@ -247,9 +238,7 @@ void main() {
     });
 
     test('shouldShow returns false when already seen', () async {
-      SharedPreferences.setMockInitialValues(
-        {'keyflow_onboarding_seen': true},
-      );
+      SharedPreferences.setMockInitialValues({'keyflow_onboarding_seen': true});
       final shouldShow = await KeyFlowOnboardingDialog.shouldShow();
       expect(shouldShow, isFalse);
     });

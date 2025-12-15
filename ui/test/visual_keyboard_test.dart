@@ -9,29 +9,25 @@ import 'package:keyrx_ui/widgets/mapping_overlay.dart';
 import 'package:keyrx_ui/widgets/visual_keyboard.dart';
 
 /// Minimal layout for testing with just a few keys.
-KeyboardLayout _testLayout() {
-  return KeyboardLayout(
-    name: 'Test',
-    unitSize: 48.0,
-    keySpacing: 4.0,
-    rows: [
-      KeyboardRow(
-        keys: [
-          KeyDefinition(id: 'KeyA', label: 'A', row: 0, column: 0),
-          KeyDefinition(id: 'KeyB', label: 'B', row: 0, column: 1),
-          KeyDefinition(id: 'KeyC', label: 'C', row: 0, column: 2),
-        ],
-      ),
-      KeyboardRow(
-        keys: [
-          KeyDefinition(id: 'KeyD', label: 'D', row: 1, column: 0),
-          KeyDefinition(id: 'KeyE', label: 'E', row: 1, column: 1),
-          KeyDefinition(id: 'KeyF', label: 'F', row: 1, column: 2),
-        ],
-      ),
-    ],
-  );
-}
+KeyboardLayout _testLayout() => const KeyboardLayout(
+  name: 'Test',
+  rows: [
+    KeyboardRow(
+      keys: [
+        KeyDefinition(id: 'KeyA', label: 'A'),
+        KeyDefinition(id: 'KeyB', label: 'B', column: 1),
+        KeyDefinition(id: 'KeyC', label: 'C', column: 2),
+      ],
+    ),
+    KeyboardRow(
+      keys: [
+        KeyDefinition(id: 'KeyD', label: 'D', row: 1),
+        KeyDefinition(id: 'KeyE', label: 'E', row: 1, column: 1),
+        KeyDefinition(id: 'KeyF', label: 'F', row: 1, column: 2),
+      ],
+    ),
+  ],
+);
 
 Widget _buildTestKeyboard({
   KeyboardLayout? layout,
@@ -48,32 +44,30 @@ Widget _buildTestKeyboard({
   bool showMappingOverlay = true,
   bool enableDragDrop = true,
   bool enabled = true,
-}) {
-  return MaterialApp(
-    home: Scaffold(
-      body: SizedBox(
-        width: 800,
-        height: 600,
-        child: VisualKeyboard(
-          layout: layout ?? _testLayout(),
-          onKeyTap: onKeyTap,
-          onKeyLongPress: onKeyLongPress,
-          onMappingCreated: onMappingCreated,
-          onMappingDeleted: onMappingDeleted,
-          mappings: mappings,
-          selectedKeys: selectedKeys,
-          highlightedKeys: highlightedKeys,
-          mappedKeys: mappedKeys,
-          heldKeys: heldKeys,
-          showSecondaryLabels: showSecondaryLabels,
-          showMappingOverlay: showMappingOverlay,
-          enableDragDrop: enableDragDrop,
-          enabled: enabled,
-        ),
+}) => MaterialApp(
+  home: Scaffold(
+    body: SizedBox(
+      width: 800,
+      height: 600,
+      child: VisualKeyboard(
+        layout: layout ?? _testLayout(),
+        onKeyTap: onKeyTap,
+        onKeyLongPress: onKeyLongPress,
+        onMappingCreated: onMappingCreated,
+        onMappingDeleted: onMappingDeleted,
+        mappings: mappings,
+        selectedKeys: selectedKeys,
+        highlightedKeys: highlightedKeys,
+        mappedKeys: mappedKeys,
+        heldKeys: heldKeys,
+        showSecondaryLabels: showSecondaryLabels,
+        showMappingOverlay: showMappingOverlay,
+        enableDragDrop: enableDragDrop,
+        enabled: enabled,
       ),
     ),
-  );
-}
+  ),
+);
 
 void main() {
   group('Keyboard rendering', () {
@@ -109,49 +103,27 @@ void main() {
     testWidgets('renders key with secondary label when enabled', (
       tester,
     ) async {
-      final layout = KeyboardLayout(
+      const layout = KeyboardLayout(
         name: 'Test',
-        unitSize: 48.0,
-        keySpacing: 4.0,
         rows: [
           KeyboardRow(
-            keys: [
-              KeyDefinition(
-                id: 'Key1',
-                label: '1',
-                secondaryLabel: '!',
-                row: 0,
-                column: 0,
-              ),
-            ],
+            keys: [KeyDefinition(id: 'Key1', label: '1', secondaryLabel: '!')],
           ),
         ],
       );
 
-      await tester.pumpWidget(
-        _buildTestKeyboard(layout: layout, showSecondaryLabels: true),
-      );
+      await tester.pumpWidget(_buildTestKeyboard(layout: layout));
 
       expect(find.text('1'), findsOneWidget);
       expect(find.text('!'), findsOneWidget);
     });
 
     testWidgets('hides secondary label when disabled', (tester) async {
-      final layout = KeyboardLayout(
+      const layout = KeyboardLayout(
         name: 'Test',
-        unitSize: 48.0,
-        keySpacing: 4.0,
         rows: [
           KeyboardRow(
-            keys: [
-              KeyDefinition(
-                id: 'Key1',
-                label: '1',
-                secondaryLabel: '!',
-                row: 0,
-                column: 0,
-              ),
-            ],
+            keys: [KeyDefinition(id: 'Key1', label: '1', secondaryLabel: '!')],
           ),
         ],
       );
@@ -294,10 +266,7 @@ void main() {
     testWidgets('drag creates mapping structure exists', (tester) async {
       // Verify the drag-drop infrastructure is set up correctly
       await tester.pumpWidget(
-        _buildTestKeyboard(
-          onMappingCreated: (source, target) {},
-          enableDragDrop: true,
-        ),
+        _buildTestKeyboard(onMappingCreated: (source, target) {}),
       );
 
       // Verify DragTarget widgets are created for each key
@@ -307,7 +276,7 @@ void main() {
     });
 
     testWidgets('dragging to same key does not create mapping', (tester) async {
-      bool mappingCreated = false;
+      var mappingCreated = false;
 
       await tester.pumpWidget(
         _buildTestKeyboard(
@@ -346,11 +315,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
           ],
         ),
       );
@@ -363,11 +328,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
           ],
           showMappingOverlay: false,
         ),
@@ -381,11 +342,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
           ],
         ),
       );
@@ -398,11 +355,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
           ],
         ),
       );
@@ -421,11 +374,7 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
           ],
           onMappingDeleted: (index) => deletedIndex = index,
         ),
@@ -446,16 +395,8 @@ void main() {
       await tester.pumpWidget(
         _buildTestKeyboard(
           mappings: [
-            const RemapConfig(
-              sourceKeyId: 'KeyA',
-              targetKeyId: 'KeyB',
-              type: MappingType.simple,
-            ),
-            const RemapConfig(
-              sourceKeyId: 'KeyC',
-              targetKeyId: 'KeyD',
-              type: MappingType.simple,
-            ),
+            const RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB'),
+            const RemapConfig(sourceKeyId: 'KeyC', targetKeyId: 'KeyD'),
           ],
         ),
       );
@@ -597,21 +538,11 @@ void main() {
     });
 
     test('getKeySize accounts for wider keys', () {
-      final layout = KeyboardLayout(
+      const layout = KeyboardLayout(
         name: 'Test',
-        unitSize: 48.0,
-        keySpacing: 4.0,
         rows: [
           KeyboardRow(
-            keys: [
-              KeyDefinition(
-                id: 'Wide',
-                label: 'Wide',
-                width: 2.0,
-                row: 0,
-                column: 0,
-              ),
-            ],
+            keys: [KeyDefinition(id: 'Wide', label: 'Wide', width: 2)],
           ),
         ],
       );
@@ -641,32 +572,16 @@ void main() {
 
   group('RemapConfig', () {
     test('equality based on all fields', () {
-      const config1 = RemapConfig(
-        sourceKeyId: 'KeyA',
-        targetKeyId: 'KeyB',
-        type: MappingType.simple,
-      );
-      const config2 = RemapConfig(
-        sourceKeyId: 'KeyA',
-        targetKeyId: 'KeyB',
-        type: MappingType.simple,
-      );
-      const config3 = RemapConfig(
-        sourceKeyId: 'KeyA',
-        targetKeyId: 'KeyC',
-        type: MappingType.simple,
-      );
+      const config1 = RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB');
+      const config2 = RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB');
+      const config3 = RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyC');
 
       expect(config1, equals(config2));
       expect(config1, isNot(equals(config3)));
     });
 
     test('different types are not equal', () {
-      const config1 = RemapConfig(
-        sourceKeyId: 'KeyA',
-        targetKeyId: 'KeyB',
-        type: MappingType.simple,
-      );
+      const config1 = RemapConfig(sourceKeyId: 'KeyA', targetKeyId: 'KeyB');
       const config2 = RemapConfig(
         sourceKeyId: 'KeyA',
         targetKeyId: 'KeyB',

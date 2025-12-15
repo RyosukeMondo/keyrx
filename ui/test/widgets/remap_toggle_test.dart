@@ -45,10 +45,7 @@ void main() {
   testWidgets('RemapToggle can be disabled when onChanged is null', (
     WidgetTester tester,
   ) async {
-    await harness.pumpWidget(
-      tester,
-      const RemapToggle(enabled: true, onChanged: null),
-    );
+    await harness.pumpWidget(tester, const RemapToggle(enabled: true));
 
     final switchWidget = tester.widget<Switch>(find.byType(Switch));
     expect(switchWidget.onChanged, isNull);

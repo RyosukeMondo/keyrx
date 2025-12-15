@@ -10,13 +10,13 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
+import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
+import 'package:keyrx_ui/models/device_identity.dart';
+import 'package:keyrx_ui/models/device_state.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade_impl.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
-import 'package:keyrx_ui/models/device_state.dart';
-import 'package:keyrx_ui/models/device_identity.dart';
-import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
@@ -60,7 +60,7 @@ void main() {
     setupEngineInitialization();
     when(() => mockBridge.loadScript(any())).thenReturn(true);
     when(() => mockBridge.validateScript(any())).thenReturn(
-      ValidationResult(isValid: true, errors: const [], warnings: const []),
+      const ValidationResult(isValid: true, errors: [], warnings: []),
     );
     when(
       () => mockBridge.listRegisteredDevices(),

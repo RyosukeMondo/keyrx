@@ -11,6 +11,7 @@ import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import '../services/config_result.dart';
 import 'keyflow_providers.dart';
+import 'analytics_providers.dart';
 
 /// Actions for managing device slots.
 class SlotActions {
@@ -30,7 +31,7 @@ class SlotActions {
     required KeymapId keymapId,
     bool active = false,
     int? priorityOverride,
-  }) {
+  }) async {
     final slot = ProfileSlot(
       id: _generateSlotId(),
       hardwareProfileId: hardwareProfileId,
@@ -39,7 +40,26 @@ class SlotActions {
       priority: priorityOverride ?? 0,
     );
 
-    return _actions.addSlot(device, slot, priorityOverride: priorityOverride);
+    final result = await _actions.addSlot(
+      device,
+      slot,
+      priorityOverride: priorityOverride,
+    );
+
+    // Track analytics
+    if (result.isSuccess) {
+      _ref
+          .read(analyticsTrackerProvider.notifier)
+          .trackSlotAdded(
+            deviceId: device.toString(),
+            profileId: hardwareProfileId.value,
+            keymapId: keymapId.value,
+            priority: slot.priority,
+            autoAssigned: priorityOverride == null,
+          );
+    }
+
+    return result;
   }
 
   /// Update an existing slot.
@@ -54,8 +74,17 @@ class SlotActions {
   Future<ConfigOperationResult<RuntimeConfig>> deleteSlot({
     required DeviceInstanceId device,
     required String slotId,
-  }) {
-    return _actions.removeSlot(device, slotId);
+  }) async {
+    final result = await _actions.removeSlot(device, slotId);
+
+    // Track analytics
+    if (result.isSuccess) {
+      _ref
+          .read(analyticsTrackerProvider.notifier)
+          .trackSlotDeleted(deviceId: device.toString(), slotId: slotId);
+    }
+
+    return result;
   }
 
   /// Toggle a slot's active state.
@@ -80,9 +109,22 @@ class SlotActions {
     for (var i = 0; i < slotsInOrder.length; i++) {
       final slot = slotsInOrder[i];
       if (slot.priority != i) {
+        final oldPriority = slot.priority;
         final updatedSlot = slot.copyWith(priority: i);
         final result = await _actions.updateSlot(device, updatedSlot);
         results.add(result);
+
+        // Track analytics for each reorder
+        if (result.isSuccess) {
+          _ref
+              .read(analyticsTrackerProvider.notifier)
+              .trackSlotReordered(
+                deviceId: device.toString(),
+                slotId: slot.id,
+                oldPriority: oldPriority,
+                newPriority: i,
+              );
+        }
 
         if (result.hasError) {
           break;

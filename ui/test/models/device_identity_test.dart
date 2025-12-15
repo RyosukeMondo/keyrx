@@ -4,7 +4,7 @@ import 'package:keyrx_ui/models/models.dart';
 void main() {
   group('DeviceIdentity', () {
     test('creates instance with required fields', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',
@@ -17,7 +17,7 @@ void main() {
     });
 
     test('toKey returns correct format', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('displayName returns user label when set', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',
@@ -59,7 +59,7 @@ void main() {
     });
 
     test('displayName returns VID:PID when no label', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('serializes to JSON', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',
@@ -99,7 +99,7 @@ void main() {
     });
 
     test('serializes without user_label when null', () {
-      final identity = DeviceIdentity(
+      const identity = DeviceIdentity(
         vendorId: 0x046D,
         productId: 0xC52B,
         serialNumber: 'ABC123',

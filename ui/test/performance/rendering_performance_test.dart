@@ -6,17 +6,17 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/flow/edge_style.dart';
+import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
-import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 
 void main() {
   group('Rendering Performance', () {
     test('viewport calculation performance', () {
       final transform = Matrix4.identity();
-      final screenSize = const Size(1920, 1080);
+      const screenSize = Size(1920, 1080);
 
       final stopwatch = Stopwatch()..start();
       for (var i = 0; i < 1000; i++) {
@@ -35,9 +35,9 @@ void main() {
     });
 
     test('node visibility check performance', () {
-      final viewport = Rect.fromLTWH(0, 0, 1920, 1080);
-      final nodePosition = const Offset(100, 100);
-      final nodeSize = const Size(200, 150);
+      const viewport = Rect.fromLTWH(0, 0, 1920, 1080);
+      const nodePosition = Offset(100, 100);
+      const nodeSize = Size(200, 150);
 
       final stopwatch = Stopwatch()..start();
       for (var i = 0; i < 10000; i++) {
@@ -60,14 +60,14 @@ void main() {
     });
 
     test('edge path cache key equality performance', () {
-      final key1 = const EdgePathCacheKey(
+      const key1 = EdgePathCacheKey(
         startX: 100,
         startY: 200,
         endX: 300,
         endY: 400,
         active: true,
       );
-      final key2 = const EdgePathCacheKey(
+      const key2 = EdgePathCacheKey(
         startX: 100,
         startY: 200,
         endX: 300,
@@ -112,12 +112,12 @@ void main() {
     });
 
     test('rendering metrics calculation', () {
-      final metrics = RenderingMetrics(
+      const metrics = RenderingMetrics(
         totalNodes: 250,
         visibleNodes: 50,
         totalEdges: 500,
         visibleEdges: 100,
-        frameTime: const Duration(milliseconds: 12),
+        frameTime: Duration(milliseconds: 12),
       );
 
       expect(
@@ -133,12 +133,12 @@ void main() {
     });
 
     test('rendering metrics with poor performance', () {
-      final metrics = RenderingMetrics(
+      const metrics = RenderingMetrics(
         totalNodes: 250,
         visibleNodes: 50,
         totalEdges: 500,
         visibleEdges: 100,
-        frameTime: const Duration(milliseconds: 20),
+        frameTime: Duration(milliseconds: 20),
       );
 
       expect(
@@ -176,26 +176,29 @@ void main() {
 
     test('large node set virtualization', () {
       // Simulate 250 nodes (50 devices × 5 slots)
-      final allNodes = List.generate(250, (i) {
-        return OptimizedCanvasNode(
+      final allNodes = List.generate(
+        250,
+        (i) => OptimizedCanvasNode(
           id: 'node_$i',
           position: Offset(100.0 * (i % 10), 100.0 * (i ~/ 10)),
           size: const Size(200, 150),
           child: Container(),
-        );
-      });
+        ),
+      );
 
-      final viewport = Rect.fromLTWH(0, 0, 1920, 1080);
+      const viewport = Rect.fromLTWH(0, 0, 1920, 1080);
 
       final stopwatch = Stopwatch()..start();
-      final visibleNodes = allNodes.where((node) {
-        return isNodeInViewport(
-          nodePosition: node.position,
-          nodeSize: node.size,
-          viewport: viewport,
-          margin: 200.0,
-        );
-      }).toList();
+      final visibleNodes = allNodes
+          .where(
+            (node) => isNodeInViewport(
+              nodePosition: node.position,
+              nodeSize: node.size,
+              viewport: viewport,
+              margin: 200,
+            ),
+          )
+          .toList();
       stopwatch.stop();
 
       // Virtualization should filter out most nodes
@@ -220,15 +223,16 @@ void main() {
 
     test('edge path cache reduces computation', () {
       final cache = <EdgePathCacheKey, Path>{};
-      final edges = List.generate(500, (i) {
-        return PaintableEdge(
-          start: Offset(100.0 * i, 200.0),
-          end: Offset(100.0 * i + 50, 400.0),
+      final edges = List.generate(
+        500,
+        (i) => PaintableEdge(
+          start: Offset(100.0 * i, 200),
+          end: Offset(100.0 * i + 50, 400),
           status: EdgeStatus.valid,
           active: i % 2 == 0,
           priority: i % 5,
-        );
-      });
+        ),
+      );
 
       // First pass - populate cache
       final stopwatch1 = Stopwatch()..start();
@@ -269,21 +273,22 @@ void main() {
       );
 
       print(
-        'Edge path cache: first=${time1}μs, cached=${time2}μs, '
+        'Edge path cache: first=$time1μs, cached=$time2μs, '
         'speedup=${(time1 / time2).toStringAsFixed(2)}x',
       );
     });
 
     testWidgets('optimized edge layer renders without errors', (tester) async {
-      final edges = List.generate(100, (i) {
-        return PaintableEdge(
-          start: Offset(100.0 * i, 200.0),
-          end: Offset(100.0 * i + 50, 400.0),
+      final edges = List.generate(
+        100,
+        (i) => PaintableEdge(
+          start: Offset(100.0 * i, 200),
+          end: Offset(100.0 * i + 50, 400),
           status: EdgeStatus.valid,
           active: i % 2 == 0,
           priority: i % 5,
-        );
-      });
+        ),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -317,17 +322,19 @@ void main() {
         ),
       );
 
-      final viewport = Rect.fromLTWH(0, 0, 1920, 1080);
+      const viewport = Rect.fromLTWH(0, 0, 1920, 1080);
 
       final stopwatch = Stopwatch()..start();
-      final visible = nodes.where((node) {
-        return isNodeInViewport(
-          nodePosition: node.position,
-          nodeSize: node.size,
-          viewport: viewport,
-          margin: 200.0,
-        );
-      }).toList();
+      final visible = nodes
+          .where(
+            (node) => isNodeInViewport(
+              nodePosition: node.position,
+              nodeSize: node.size,
+              viewport: viewport,
+              margin: 200,
+            ),
+          )
+          .toList();
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(5));

@@ -92,7 +92,7 @@ Widget _buildTestWidget({required _FakeEngineService engine}) {
 
   return MultiProvider(
     providers: [Provider<KeyrxFacade>.value(value: facade)],
-    child: MaterialApp(home: ConsolePage()),
+    child: const MaterialApp(home: ConsolePage()),
   );
 }
 

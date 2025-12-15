@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/dialog_helpers.dart';
-import 'package:keyrx_ui/widgets/common/dialogs/selection_dialog.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/multi_action_dialog.dart';
+import 'package:keyrx_ui/widgets/common/dialogs/selection_dialog.dart';
 
 void main() {
   group('DialogHelpers.confirm', () {
@@ -322,9 +322,9 @@ void main() {
         testContext,
         title: 'Choose Color',
         options: [
-          SelectionOption(label: 'Red', value: 'red'),
-          SelectionOption(label: 'Green', value: 'green'),
-          SelectionOption(label: 'Blue', value: 'blue'),
+          const SelectionOption(label: 'Red', value: 'red'),
+          const SelectionOption(label: 'Green', value: 'green'),
+          const SelectionOption(label: 'Blue', value: 'blue'),
         ],
       );
 
@@ -421,9 +421,9 @@ void main() {
         title: 'Choose Action',
         message: 'What would you like to do?',
         actions: [
-          DialogAction(label: 'Save', value: 'save', isPrimary: true),
-          DialogAction(label: 'Discard', value: 'discard'),
-          DialogAction(label: 'Cancel', value: 'cancel'),
+          const DialogAction(label: 'Save', value: 'save', isPrimary: true),
+          const DialogAction(label: 'Discard', value: 'discard'),
+          const DialogAction(label: 'Cancel', value: 'cancel'),
         ],
       );
 

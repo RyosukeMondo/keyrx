@@ -25,23 +25,21 @@ void main() {
 
     setUp(() {
       testEdges = [
-        FlowEdge(
+        const FlowEdge(
           slotId: 'slot-1',
           from: '1234:5678:serial1',
           to: 'profile-1',
           priority: 0,
           active: true,
-          status: EdgeStatus.valid,
         ),
-        FlowEdge(
+        const FlowEdge(
           slotId: 'slot-2',
           from: '1234:5678:serial1',
           to: 'profile-2',
           priority: 1,
-          active: false,
           status: EdgeStatus.invalid,
         ),
-        FlowEdge(
+        const FlowEdge(
           slotId: 'slot-3',
           from: '9999:8888:serial2',
           to: 'profile-3',
@@ -75,37 +73,35 @@ void main() {
         ),
       ];
 
-      testStyle = EdgeStyle(palette: defaultEdgePalette);
+      testStyle = const EdgeStyle(palette: defaultEdgePalette);
     });
 
     Widget buildTestWidget({
       List<FlowEdge>? edges,
       List<PaintableEdge>? paintableEdges,
       EdgeStyle? style,
-    }) {
-      return ProviderScope(
-        overrides: [
-          selectionNotifierProvider.overrideWith(() => SelectionNotifier()),
-          keyFlowActionsProvider.overrideWith((ref) {
-            fakeActions = _FakeKeyFlowActions(ref);
-            return fakeActions;
-          }),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 800,
-              height: 600,
-              child: InteractiveEdgeCanvas(
-                edges: edges ?? testEdges,
-                paintableEdges: paintableEdges ?? testPaintableEdges,
-                style: style ?? testStyle,
-              ),
+    }) => ProviderScope(
+      overrides: [
+        selectionNotifierProvider.overrideWith(SelectionNotifier.new),
+        keyFlowActionsProvider.overrideWith((ref) {
+          fakeActions = _FakeKeyFlowActions(ref);
+          return fakeActions;
+        }),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 800,
+            height: 600,
+            child: InteractiveEdgeCanvas(
+              edges: edges ?? testEdges,
+              paintableEdges: paintableEdges ?? testPaintableEdges,
+              style: style ?? testStyle,
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
 
     testWidgets('renders edges via CustomPaint', (tester) async {
       await tester.pumpWidget(buildTestWidget());
@@ -253,13 +249,12 @@ void main() {
       // Create edges with keymap edge for finding keymap ID
       final edgesWithKeymap = [
         ...testEdges,
-        FlowEdge(
+        const FlowEdge(
           slotId: 'slot-1',
           from: 'profile-1',
           to: 'keymap-1',
           priority: 0,
           active: true,
-          status: EdgeStatus.valid,
         ),
       ];
 
@@ -367,7 +362,7 @@ void main() {
 
       final widget = ProviderScope(
         overrides: [
-          selectionNotifierProvider.overrideWith(() => SelectionNotifier()),
+          selectionNotifierProvider.overrideWith(SelectionNotifier.new),
           keyFlowActionsProvider.overrideWith((ref) {
             actions = _FakeKeyFlowActions(ref);
             actions!.removeSlotResult = ConfigOperationResult.error(
@@ -452,7 +447,7 @@ void main() {
       // Select first edge
       await tester.tapAt(const Offset(200, 150));
       await tester.pump();
-      EdgeSelection selection =
+      var selection =
           container.read(selectionNotifierProvider) as EdgeSelection;
       expect(selection.slotId, 'slot-1');
 
@@ -481,9 +476,9 @@ class _FakeKeyFlowActions implements KeyFlowActions {
   final List<(DeviceInstanceId, ProfileSlot)> updateSlotCalls = [];
 
   ConfigOperationResult<RuntimeConfig> removeSlotResult =
-      ConfigOperationResult.success(RuntimeConfig(devices: []));
+      ConfigOperationResult.success(const RuntimeConfig());
   ConfigOperationResult<RuntimeConfig> updateSlotResult =
-      ConfigOperationResult.success(RuntimeConfig(devices: []));
+      ConfigOperationResult.success(const RuntimeConfig());
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
@@ -508,12 +503,9 @@ class _FakeKeyFlowActions implements KeyFlowActions {
     DeviceInstanceId device,
     ProfileSlot slot, {
     int? priorityOverride,
-  }) async {
-    return ConfigOperationResult.success(RuntimeConfig(devices: []));
-  }
+  }) async => ConfigOperationResult.success(const RuntimeConfig());
 
   @override
-  Future<ConfigOperationResult<RuntimeConfig>> refreshRuntimeConfig() async {
-    return ConfigOperationResult.success(RuntimeConfig(devices: []));
-  }
+  Future<ConfigOperationResult<RuntimeConfig>> refreshRuntimeConfig() async =>
+      ConfigOperationResult.success(const RuntimeConfig());
 }

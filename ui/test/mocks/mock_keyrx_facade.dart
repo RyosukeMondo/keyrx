@@ -51,9 +51,7 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
   ///
   /// Use this when you want complete control over mock behavior.
   /// You must stub all methods before using the mock.
-  factory MockKeyrxFacade.noDefaults() {
-    return MockKeyrxFacade._();
-  }
+  factory MockKeyrxFacade.noDefaults() => MockKeyrxFacade._();
 
   static void _setupDefaultStubs(MockKeyrxFacade mock) {
     // State stream and current state
@@ -103,7 +101,7 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
           total: 0,
           passed: 0,
           failed: 0,
-          durationMs: 0.0,
+          durationMs: 0,
           results: [],
         ),
       ),

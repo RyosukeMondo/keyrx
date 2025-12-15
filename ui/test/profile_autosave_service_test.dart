@@ -69,7 +69,7 @@ void main() {
             async.elapse(duration);
             return Future.value();
           },
-          now: () => DateTime(2024, 1, 1, 12, 0, 0),
+          now: () => DateTime(2024, 1, 1, 12),
           saveOperation: (profile) async {
             savedProfiles.add(profile);
             return const ProfileRegistryOperationResult(success: true);
@@ -131,7 +131,7 @@ void main() {
             observedBackoffs.add(duration);
             return Future.value();
           },
-          now: () => DateTime(2024, 2, 1, 10, 0, 0),
+          now: () => DateTime(2024, 2, 1, 10),
           saveOperation: (profile) async {
             attempts.add(attempts.length + 1);
             if (errors.isNotEmpty) {

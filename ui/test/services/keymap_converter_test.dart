@@ -10,7 +10,7 @@ void main() {
     test(
       'extracts complex mappings from Layer 0 into a separate LayerConfig',
       () {
-        final keymap = Keymap(
+        const keymap = Keymap(
           id: 'test_id',
           name: 'Test Keymap',
           virtualLayoutId: 'layout_id',
@@ -18,16 +18,14 @@ void main() {
             KeymapLayer(
               name: 'Base',
               bindings: {
-                'KEY_A': const ActionBinding.standardKey(value: 'KEY_B'),
-                'KEY_M': const ActionBinding.macro(value: 'print("hello")'),
-                'KEY_L': const ActionBinding.layerToggle(value: '1'),
+                'KEY_A': ActionBinding.standardKey(value: 'KEY_B'),
+                'KEY_M': ActionBinding.macro(value: 'print("hello")'),
+                'KEY_L': ActionBinding.layerToggle(value: '1'),
               },
             ),
             KeymapLayer(
               name: 'Layer 1',
-              bindings: {
-                'KEY_C': const ActionBinding.standardKey(value: 'KEY_D'),
-              },
+              bindings: {'KEY_C': ActionBinding.standardKey(value: 'KEY_D')},
             ),
           ],
         );
@@ -74,16 +72,14 @@ void main() {
     test(
       'does not create LayerConfig for Layer 0 if only simple mappings exist',
       () {
-        final keymap = Keymap(
+        const keymap = Keymap(
           id: 'test_id',
           name: 'Simple Keymap',
           virtualLayoutId: 'layout_id',
           layers: [
             KeymapLayer(
               name: 'Base',
-              bindings: {
-                'KEY_A': const ActionBinding.standardKey(value: 'KEY_B'),
-              },
+              bindings: {'KEY_A': ActionBinding.standardKey(value: 'KEY_B')},
             ),
           ],
         );

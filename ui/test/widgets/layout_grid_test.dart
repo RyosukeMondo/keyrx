@@ -15,28 +15,29 @@ void main() {
     Profile createTestProfile({
       LayoutType layoutType = LayoutType.matrix,
       Map<String, KeyAction>? mappings,
-    }) {
-      return Profile(
-        id: 'test-profile-1',
-        name: 'Test Profile',
-        layoutType: layoutType,
-        mappings: mappings ?? {},
-        createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String(),
-      );
-    }
+    }) => Profile(
+      id: 'test-profile-1',
+      name: 'Test Profile',
+      layoutType: layoutType,
+      mappings: mappings ?? {},
+      createdAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toIso8601String(),
+    );
 
     group('Matrix Layout', () {
       testWidgets('renders correct number of keys for 2x3 matrix', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 3,
           type: LayoutType.matrix,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Should render 6 keys (2 rows × 3 cols)
         expect(find.byType(InkWell), findsNWidgets(6));
@@ -45,13 +46,16 @@ void main() {
       testWidgets('renders correct number of keys for 3x5 matrix', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 3,
           cols: 5,
           type: LayoutType.matrix,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Should render 15 keys (3 rows × 5 cols)
         expect(find.byType(InkWell), findsNWidgets(15));
@@ -60,13 +64,16 @@ void main() {
       testWidgets('displays position labels correctly', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Check for position labels
         expect(find.text('0,0'), findsOneWidget);
@@ -81,7 +88,7 @@ void main() {
         int? tappedRow;
         int? tappedCol;
 
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -94,8 +101,7 @@ void main() {
             height: 200,
             child: LayoutGrid(
               layoutInfo: layoutInfo,
-              keySize: 40.0,
-              keySpacing: 4.0,
+              keySize: 40,
               onKeyTap: (row, col) {
                 tappedRow = row;
                 tappedCol = col;
@@ -121,7 +127,6 @@ void main() {
         WidgetTester tester,
       ) async {
         final profile = createTestProfile(
-          layoutType: LayoutType.matrix,
           mappings: {
             '0,0': const KeyAction.key(key: 'A'),
             '0,1': const KeyAction.chord(keys: ['Ctrl', 'C']),
@@ -129,7 +134,7 @@ void main() {
           },
         );
 
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -147,17 +152,20 @@ void main() {
       });
 
       testWidgets('highlights selected position', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
         );
 
-        final selectedPos = PhysicalPosition(row: 0, col: 1);
+        const selectedPos = PhysicalPosition(row: 0, col: 1);
 
         await harness.pumpWidget(
           tester,
-          LayoutGrid(layoutInfo: layoutInfo, selectedPosition: selectedPos),
+          const LayoutGrid(
+            layoutInfo: layoutInfo,
+            selectedPosition: selectedPos,
+          ),
         );
 
         // Verify widget builds without error
@@ -170,13 +178,16 @@ void main() {
       testWidgets('renders VisualKeyboard for standard layout', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 6,
           cols: 20,
           type: LayoutType.standard,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Should render VisualKeyboard
         expect(find.byType(VisualKeyboard), findsOneWidget);
@@ -194,7 +205,7 @@ void main() {
           },
         );
 
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 6,
           cols: 20,
           type: LayoutType.standard,
@@ -214,13 +225,16 @@ void main() {
       testWidgets('renders two halves for split layout', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 4, // 2 cols per half
           type: LayoutType.split,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Should render 8 keys total (2 halves × 2 rows × 2 cols)
         expect(find.byType(InkWell), findsNWidgets(8));
@@ -229,9 +243,12 @@ void main() {
       testWidgets('displays correct positions in split layout', (
         WidgetTester tester,
       ) async {
-        final layoutInfo = LayoutInfo(rows: 2, cols: 4, type: LayoutType.split);
+        const layoutInfo = LayoutInfo(rows: 2, cols: 4, type: LayoutType.split);
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         // Left half
         expect(find.text('0,0'), findsOneWidget);
@@ -261,7 +278,7 @@ void main() {
           },
         );
 
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 3,
           type: LayoutType.matrix,
@@ -283,7 +300,7 @@ void main() {
 
     group('Custom Key Size and Spacing', () {
       testWidgets('accepts custom key size', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -291,7 +308,7 @@ void main() {
 
         await harness.pumpWidget(
           tester,
-          LayoutGrid(layoutInfo: layoutInfo, keySize: 64.0, keySpacing: 8.0),
+          const LayoutGrid(layoutInfo: layoutInfo, keySize: 64, keySpacing: 8),
         );
 
         // Should build without errors
@@ -305,7 +322,7 @@ void main() {
       ) async {
         final profile = createTestProfile(mappings: {});
 
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -322,7 +339,7 @@ void main() {
       });
 
       testWidgets('handles null profile', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -330,7 +347,7 @@ void main() {
 
         await harness.pumpWidget(
           tester,
-          LayoutGrid(layoutInfo: layoutInfo, profile: null),
+          const LayoutGrid(layoutInfo: layoutInfo),
         );
 
         // Should render without errors
@@ -338,20 +355,23 @@ void main() {
       });
 
       testWidgets('handles single key layout', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 1,
           cols: 1,
           type: LayoutType.matrix,
         );
 
-        await harness.pumpWidget(tester, LayoutGrid(layoutInfo: layoutInfo));
+        await harness.pumpWidget(
+          tester,
+          const LayoutGrid(layoutInfo: layoutInfo),
+        );
 
         expect(find.byType(InkWell), findsOneWidget);
         expect(find.text('0,0'), findsOneWidget);
       });
 
       testWidgets('handles large matrix layout', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 5,
           cols: 5,
           type: LayoutType.matrix,
@@ -359,11 +379,11 @@ void main() {
 
         await harness.pumpWidget(
           tester,
-          SingleChildScrollView(
+          const SingleChildScrollView(
             child: LayoutGrid(
               layoutInfo: layoutInfo,
-              keySize: 40.0,
-              keySpacing: 2.0,
+              keySize: 40,
+              keySpacing: 2,
             ),
           ),
         );
@@ -373,7 +393,7 @@ void main() {
       });
 
       testWidgets('onKeyTap is optional', (WidgetTester tester) async {
-        final layoutInfo = LayoutInfo(
+        const layoutInfo = LayoutInfo(
           rows: 2,
           cols: 2,
           type: LayoutType.matrix,
@@ -381,7 +401,7 @@ void main() {
 
         await harness.pumpWidget(
           tester,
-          LayoutGrid(layoutInfo: layoutInfo, onKeyTap: null),
+          const LayoutGrid(layoutInfo: layoutInfo),
         );
 
         // Should render without errors and taps should do nothing
