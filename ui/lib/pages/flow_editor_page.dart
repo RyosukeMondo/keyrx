@@ -25,6 +25,7 @@ import 'package:keyrx_ui/widgets/flow/validation_overlay.dart';
 import 'package:keyrx_ui/services/flow_validator.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
+import 'package:keyrx_ui/dialogs/keyflow_onboarding_dialog.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
@@ -60,6 +61,11 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
     // Listen to device events for real-time updates
     ref.read(deviceStreamNotifierProvider);
+
+    // Show onboarding dialog on first visit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      KeyFlowOnboardingDialog.showIfNeeded(context);
+    });
   }
 
   void _onTransformChanged() {
