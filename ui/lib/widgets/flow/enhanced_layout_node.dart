@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/flow/flow_graph.dart';
+import 'accessible_flow_canvas.dart';
 
 /// Enhanced hardware profile/layout node widget with Material Design 3 styling
 ///
@@ -28,36 +29,49 @@ class EnhancedLayoutNode extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final status = _getLayoutStatus();
 
-    return Material(
-      elevation: 2,
-      borderRadius: BorderRadius.circular(12),
-      shadowColor: Colors.black.withValues(alpha: 0.2),
-      child: InkWell(
-        onTap: onTap,
+    // Generate semantic label for screen readers
+    final semanticLabel = node.toSemanticLabel(
+      isConnected: true,
+      hasError: !isValid,
+    );
+
+    return Semantics(
+      label: semanticLabel,
+      button: onTap != null,
+      enabled: true,
+      child: Material(
+        elevation: 2,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 220,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: status.borderColor(colorScheme),
-              width: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 220,
+            // Ensure minimum touch target height (48px minimum)
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: status.borderColor(colorScheme),
+                width: 2,
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(theme, status),
-              const SizedBox(height: 12),
-              _buildLayoutInfo(theme, status),
-              const SizedBox(height: 12),
-              _buildLayoutPreview(theme, status),
-              const SizedBox(height: 8),
-              _buildConnectionHandles(status),
-            ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(theme, status),
+                const SizedBox(height: 12),
+                _buildLayoutInfo(theme, status),
+                const SizedBox(height: 12),
+                _buildLayoutPreview(theme, status),
+                const SizedBox(height: 8),
+                _buildConnectionHandles(status),
+              ],
+            ),
           ),
         ),
       ),

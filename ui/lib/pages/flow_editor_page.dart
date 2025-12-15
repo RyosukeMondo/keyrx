@@ -19,6 +19,9 @@ import 'package:keyrx_ui/widgets/flow/interactive_edge.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/save_indicator.dart';
+import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
+import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
+import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
@@ -35,6 +38,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmer;
+  late final TransformationController _transformationController;
 
   // Track previous node IDs to detect additions/removals
   Set<String> _previousNodeIds = {};
@@ -49,6 +53,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     _shimmer = Tween<double>(begin: -1, end: 2).animate(
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
+    _transformationController = TransformationController();
 
     // Listen to device events for real-time updates
     ref.read(deviceStreamNotifierProvider);
@@ -57,6 +62,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   @override
   void dispose() {
     _shimmerController.dispose();
+    _transformationController.dispose();
     super.dispose();
   }
 
@@ -107,38 +113,50 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       backgroundColor: const Color(0xFF121212),
       body: Stack(
         children: [
-          InteractiveViewer(
-            boundaryMargin: const EdgeInsets.all(240),
-            minScale: 0.5,
-            maxScale: 2.5,
-            child: SizedBox(
-              width: canvasWidth,
-              height: canvasHeight,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: CustomPaint(painter: _GridPainter())),
-                  Positioned.fill(
-                    child: InteractiveEdgeCanvas(
-                      edges: graph.edges,
-                      paintableEdges: view.edges,
-                      style: _edgeStyle,
+          KeyboardNavigableCanvas(
+            transformationController: _transformationController,
+            canvasBounds: Size(canvasWidth, canvasHeight),
+            onNodeDetailsRequested: _handleNodeDetailsRequest,
+            onHelpRequested: () => _showKeyboardShortcutsHelp(context),
+            child: InteractiveViewer(
+              transformationController: _transformationController,
+              boundaryMargin: const EdgeInsets.all(240),
+              minScale: 0.5,
+              maxScale: 2.5,
+              child: SizedBox(
+                width: canvasWidth,
+                height: canvasHeight,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(painter: _GridPainter()),
                     ),
-                  ),
-                  ...view.nodes.map(
-                    (node) => _AnimatedNodeWrapper(
-                      key: ValueKey(node.id),
-                      nodeId: node.id,
-                      isNew: !_previousNodeIds.contains(node.id),
-                      child: DraggableNode(
-                        nodeId: node.id,
-                        initialPosition: node.position,
-                        size: node.size,
-                        canvasBounds: Size(canvasWidth, canvasHeight),
-                        child: node.child,
+                    Positioned.fill(
+                      child: InteractiveEdgeCanvas(
+                        edges: graph.edges,
+                        paintableEdges: view.edges,
+                        style: _edgeStyle,
                       ),
                     ),
-                  ),
-                ],
+                    ...view.nodes.map(
+                      (node) => _AnimatedNodeWrapper(
+                        key: ValueKey(node.id),
+                        nodeId: node.id,
+                        isNew: !_previousNodeIds.contains(node.id),
+                        child: FocusIndicator(
+                          nodeId: node.id,
+                          child: DraggableNode(
+                            nodeId: node.id,
+                            initialPosition: node.position,
+                            size: node.size,
+                            canvasBounds: Size(canvasWidth, canvasHeight),
+                            child: node.child,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -153,6 +171,20 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     ref.invalidate(flowGraphProvider);
     ref.invalidate(runtimeConfigProvider);
     ref.invalidate(nodePositionsProvider);
+  }
+
+  void _handleNodeDetailsRequest(String nodeId) {
+    // TODO: Implement node details dialog in a future task
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Node details for $nodeId (to be implemented)'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showKeyboardShortcutsHelp(BuildContext context) {
+    KeyboardShortcutsHelpDialog.show(context);
   }
 
   _CanvasView _buildCanvas(
