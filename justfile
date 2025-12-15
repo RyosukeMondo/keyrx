@@ -184,6 +184,12 @@ ffi-dashboard:
     @./scripts/generate_contract_metrics.sh
     @echo "Dashboard available at .spec-workflow/analysis/contract-dashboard.html"
 
+# Analyze FFI implementation history (velocity, churn, coverage, AI effectiveness)
+analyze-ffi:
+    @echo "Analyzing FFI implementation history..."
+    @./scripts/analyze_ffi_history.sh
+    @echo "Analysis available at .spec-workflow/analysis/implementation-insights.html"
+
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."

@@ -264,6 +264,156 @@ Contract metrics complement implementation logs:
 
 See `docs/FFI_DEVELOPMENT.md` for implementation log usage.
 
+## Implementation History Analysis
+
+### What It Provides
+
+The implementation history analyzer provides insights into FFI development patterns by analyzing implementation logs:
+
+**Velocity Metrics:**
+- Functions/artifacts added per week
+- API endpoints, components, classes created
+- Code change statistics (lines added/removed)
+- Development trend analysis
+
+**Churn Detection:**
+- Files modified frequently (3+ times)
+- Potential design instability indicators
+- Refactoring opportunities
+
+**Coverage Analysis:**
+- Tasks with tests vs untested tasks
+- Coverage percentage trending
+- Gaps in test coverage
+
+**AI Effectiveness:**
+- Success rate of AI-generated implementations
+- Common failure patterns
+- AI agent directive effectiveness
+
+### Usage
+
+#### Generate Analysis Locally
+
+```bash
+just analyze-ffi
+```
+
+This generates:
+- `.spec-workflow/analysis/implementation-analysis.json` - Raw analysis data
+- `.spec-workflow/analysis/implementation-insights.html` - Interactive visualization
+
+Open the analysis dashboard:
+```bash
+xdg-open .spec-workflow/analysis/implementation-insights.html
+# or
+open .spec-workflow/analysis/implementation-insights.html
+```
+
+### How It Works
+
+The analysis script (`scripts/analyze_ffi_history.sh`) performs:
+
+1. **Log Parsing**: Reads all implementation log markdown files
+   - Extracts timestamps, statistics, artifacts
+   - Identifies task IDs and completion status
+   - Parses test coverage indicators
+
+2. **Velocity Calculation**: Tracks development speed
+   - Functions/artifacts added per week
+   - Trending up or down
+   - Average velocity across all weeks
+
+3. **Churn Detection**: Identifies frequently modified files
+   - Files changed in 3+ different tasks
+   - Sorted by modification count
+   - Highlights potential design issues
+
+4. **Coverage Analysis**: Tests vs untested implementations
+   - Searches logs for test-related keywords
+   - Calculates coverage percentage
+   - Identifies gaps
+
+5. **AI Effectiveness**: Measures AI-generated code success
+   - Searches for AI-related markers
+   - Checks for success/failure indicators
+   - Calculates success rate
+
+### Interpreting Results
+
+**Velocity Metrics:**
+- **>5 functions/week**: Excellent - high productivity
+- **2-5 functions/week**: Good - steady progress
+- **<2 functions/week**: Low - review blockers
+
+**Test Coverage:**
+- **>80%**: Excellent - well-tested
+- **50-80%**: Fair - consider more tests
+- **<50%**: Low - significant gaps
+
+**AI Effectiveness:**
+- **>75%**: High - AI agents working well
+- **50-75%**: Moderate - room for improvement
+- **<50%**: Low - review agent directives
+
+**Code Churn:**
+- **0-2 files**: Low - stable code
+- **3-5 files**: Moderate - some iteration
+- **>5 files**: High - potential design issues
+
+### Best Practices
+
+1. **Run Analysis Weekly**: Track trends over time
+2. **Review High-Churn Files**: Consider refactoring
+3. **Address Coverage Gaps**: Add tests to untested tasks
+4. **Optimize AI Effectiveness**: Update agent directives based on failures
+
+### Analysis Data Schema
+
+#### implementation-analysis.json
+
+```json
+{
+  "generated_at": "2025-12-15T00:00:00Z",
+  "summary": {
+    "total_logs": 15,
+    "total_tasks_analyzed": 15,
+    "total_lines_added": 18714,
+    "total_lines_removed": 1347,
+    "net_change": 17367
+  },
+  "velocity": {
+    "total_functions_added": 82,
+    "total_api_endpoints": 16,
+    "total_components": 8,
+    "total_classes": 18,
+    "avg_functions_per_week": 124.00,
+    "weeks_analyzed": 1,
+    "by_week": {
+      "2025-W50": 124
+    }
+  },
+  "churn": {
+    "high_churn_files_count": 2,
+    "files": [
+      {"file": "tasks.md", "modifications": 10},
+      {"file": "justfile", "modifications": 9}
+    ]
+  },
+  "coverage": {
+    "tested_tasks": 1,
+    "untested_tasks": 14,
+    "total_tasks": 15,
+    "coverage_percent": 6.6
+  },
+  "ai_effectiveness": {
+    "ai_generated_logs": 0,
+    "ai_successful_logs": 0,
+    "effectiveness_percent": 0
+  }
+}
+```
+
 ## Future Enhancements
 
 Planned improvements to FFI metrics:
@@ -273,6 +423,8 @@ Planned improvements to FFI metrics:
 3. **Performance Regression Detection**: Automatically detect when FFI calls get slower
 4. **Cross-platform Metrics**: Compare FFI performance across Linux/Windows/macOS
 5. **Contract Complexity Score**: Rate contracts by complexity (params, return types, errors)
+6. **Historical Trend Analysis**: Track implementation velocity over months
+7. **AI Effectiveness Tracking**: Detailed analysis of AI-generated vs manual code quality
 
 ## References
 

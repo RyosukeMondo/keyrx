@@ -1,0 +1,43 @@
+{
+  "generated_at": "2025-12-15T00:32:37Z",
+  "summary": {
+    "total_logs": 15,
+    "total_tasks_analyzed": 15,
+    "total_lines_added": 18714,
+    "total_lines_removed": 1347,
+    "net_change": 17367
+  },
+  "velocity": {
+    "total_functions_added": 82,
+    "total_api_endpoints": 16,
+    "total_components": 8,
+    "total_classes": 18,
+    "avg_functions_per_week": 124.00,
+    "weeks_analyzed": 1,
+    "by_week": {
+      "2025-W50": 124
+    }
+  },
+  "churn": {
+    "high_churn_files_count": 2,
+    "files": [
+      {"file": ".spec-workflow/specs/rust-first-ai-native-ffi/tasks.md", "modifications": 10},
+      {"file": "justfile", "modifications": 9}
+    ]
+  },
+  "coverage": {
+    "tested_tasks": 1,
+    "untested_tasks": 14,
+    "total_tasks": 15,
+    "coverage_percent": 6.6
+  },
+  "ai_effectiveness": {
+    "ai_generated_logs": 0,
+    "ai_successful_logs": 0,
+    "effectiveness_percent": 0,
+    "note": "Based on log content analysis for AI-related keywords and success indicators"
+  },
+  "domain_activity": {
+
+  }
+}

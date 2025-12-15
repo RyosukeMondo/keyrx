@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFI Implementation History Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-subtitle {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+        .chart-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .chart-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+        .insights {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .insight-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #667eea;
+        }
+        .churn-list {
+            list-style: none;
+            padding: 0;
+        }
+        .churn-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .churn-file {
+            font-family: monospace;
+            font-size: 0.9em;
+            flex: 1;
+        }
+        .churn-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .status-good { background: #d4edda; color: #155724; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        .status-danger { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FFI Implementation History Analysis</h1>
+        <div class="subtitle" id="generated-at"></div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Tasks</div>
+                <div class="metric-value" id="total-tasks">-</div>
+                <div class="metric-subtitle" id="total-logs">- implementation logs</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Functions Added</div>
+                <div class="metric-value" id="total-functions">-</div>
+                <div class="metric-subtitle">
+                    <span id="api-endpoints">-</span> APIs •
+                    <span id="components">-</span> Components •
+                    <span id="classes">-</span> Classes
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Code Changes</div>
+                <div class="metric-value" id="net-change">-</div>
+                <div class="metric-subtitle">
+                    +<span id="lines-added">-</span> /
+                    -<span id="lines-removed">-</span> lines
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Avg Velocity</div>
+                <div class="metric-value" id="avg-velocity">-</div>
+                <div class="metric-subtitle">functions/week</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Test Coverage</div>
+                <div class="metric-value" id="coverage-percent">-</div>
+                <div class="metric-subtitle">
+                    <span id="tested-tasks">-</span> tested /
+                    <span id="untested-tasks">-</span> untested
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">AI Effectiveness</div>
+                <div class="metric-value" id="ai-effectiveness">-</div>
+                <div class="metric-subtitle">
+                    <span id="ai-success">-</span> /
+                    <span id="ai-total">-</span> successful
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Development Velocity (Functions/Week)</div>
+            <div class="chart-wrapper">
+                <canvas id="velocityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Domain Activity Distribution</div>
+            <div class="chart-wrapper">
+                <canvas id="domainChart"></canvas>
+            </div>
+        </div>
+
+        <div class="insights">
+            <div class="chart-title">High-Churn Files (Modified 3+ Times)</div>
+            <ul class="churn-list" id="churn-list">
+                <li style="text-align: center; color: #888;">No high-churn files detected</li>
+            </ul>
+        </div>
+
+        <div class="insights">
+            <div class="chart-title">Key Insights</div>
+            <div id="insights-container"></div>
+        </div>
+    </div>
+
+    <script>
+        fetch('implementation-analysis.json')
+            .then(response => response.json())
+            .then(data => {
+                // Update summary metrics
+                document.getElementById('generated-at').textContent =
+                    'Generated: ' + new Date(data.generated_at).toLocaleString();
+                document.getElementById('total-tasks').textContent =
+                    data.summary.total_tasks_analyzed;
+                document.getElementById('total-logs').textContent =
+                    data.summary.total_logs + ' implementation logs';
+                document.getElementById('total-functions').textContent =
+                    data.velocity.total_functions_added;
+                document.getElementById('api-endpoints').textContent =
+                    data.velocity.total_api_endpoints;
+                document.getElementById('components').textContent =
+                    data.velocity.total_components;
+                document.getElementById('classes').textContent =
+                    data.velocity.total_classes;
+                document.getElementById('net-change').textContent =
+                    (data.summary.net_change >= 0 ? '+' : '') + data.summary.net_change;
+                document.getElementById('lines-added').textContent =
+                    data.summary.total_lines_added.toLocaleString();
+                document.getElementById('lines-removed').textContent =
+                    data.summary.total_lines_removed.toLocaleString();
+                document.getElementById('avg-velocity').textContent =
+                    parseFloat(data.velocity.avg_functions_per_week).toFixed(1);
+                document.getElementById('coverage-percent').textContent =
+                    parseFloat(data.coverage.coverage_percent).toFixed(0) + '%';
+                document.getElementById('tested-tasks').textContent =
+                    data.coverage.tested_tasks;
+                document.getElementById('untested-tasks').textContent =
+                    data.coverage.untested_tasks;
+                document.getElementById('ai-effectiveness').textContent =
+                    parseFloat(data.ai_effectiveness.effectiveness_percent).toFixed(0) + '%';
+                document.getElementById('ai-success').textContent =
+                    data.ai_effectiveness.ai_successful_logs;
+                document.getElementById('ai-total').textContent =
+                    data.ai_effectiveness.ai_generated_logs;
+
+                // Velocity chart
+                const weeks = Object.keys(data.velocity.by_week).sort();
+                const velocityData = weeks.map(week => data.velocity.by_week[week]);
+
+                new Chart(document.getElementById('velocityChart'), {
+                    type: 'line',
+                    data: {
+                        labels: weeks,
+                        datasets: [{
+                            label: 'Functions Added',
+                            data: velocityData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                });
+
+                // Domain activity chart
+                const domains = Object.keys(data.domain_activity);
+                const domainCounts = domains.map(d => data.domain_activity[d]);
+
+                if (domains.length > 0) {
+                    new Chart(document.getElementById('domainChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: domains,
+                            datasets: [{
+                                label: 'Tasks',
+                                data: domainCounts,
+                                backgroundColor: '#667eea',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Churn list
+                if (data.churn.files.length > 0) {
+                    const churnList = document.getElementById('churn-list');
+                    churnList.innerHTML = '';
+                    data.churn.files.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'churn-item';
+                        li.innerHTML = `
+                            <span class="churn-file">${item.file}</span>
+                            <span class="churn-count">${item.modifications}x</span>
+                        `;
+                        churnList.appendChild(li);
+                    });
+                }
+
+                // Generate insights
+                const insights = document.getElementById('insights-container');
+
+                // Velocity insight
+                const avgVel = parseFloat(data.velocity.avg_functions_per_week);
+                const velStatus = avgVel > 5 ? 'status-good' : avgVel > 2 ? 'status-warning' : 'status-danger';
+                insights.innerHTML += `
+                    <div class="insight-item">
+                        <div class="insight-title">Development Velocity <span class="${velStatus} status-badge">${avgVel.toFixed(1)}/week</span></div>
+                        <div>${avgVel > 5 ? 'Excellent' : avgVel > 2 ? 'Good' : 'Low'} average velocity. ${
+                            avgVel > 5 ? 'Team is highly productive.' :
+                            avgVel > 2 ? 'Steady progress on FFI development.' :
+                            'Consider reviewing blockers or resource allocation.'
+                        }</div>
+                    </div>
+                `;
+
+                // Coverage insight
+                const coverage = parseFloat(data.coverage.coverage_percent);
+                const covStatus = coverage >= 80 ? 'status-good' : coverage >= 50 ? 'status-warning' : 'status-danger';
+                insights.innerHTML += `
+                    <div class="insight-item">
+                        <div class="insight-title">Test Coverage <span class="${covStatus} status-badge">${coverage.toFixed(0)}%</span></div>
+                        <div>${coverage >= 80 ? 'Excellent' : coverage >= 50 ? 'Fair' : 'Low'} test coverage. ${
+                            coverage >= 80 ? 'Well-tested implementation.' :
+                            coverage >= 50 ? 'Consider adding more tests for untested tasks.' :
+                            'Significant test coverage gaps detected. Add tests for ' + data.coverage.untested_tasks + ' tasks.'
+                        }</div>
+                    </div>
+                `;
+
+                // AI effectiveness insight
+                const aiEff = parseFloat(data.ai_effectiveness.effectiveness_percent);
+                const aiStatus = aiEff >= 75 ? 'status-good' : aiEff >= 50 ? 'status-warning' : 'status-danger';
+                insights.innerHTML += `
+                    <div class="insight-item">
+                        <div class="insight-title">AI Effectiveness <span class="${aiStatus} status-badge">${aiEff.toFixed(0)}%</span></div>
+                        <div>${aiEff >= 75 ? 'High' : aiEff >= 50 ? 'Moderate' : 'Low'} AI-generated code success rate. ${
+                            aiEff >= 75 ? 'AI agents are highly effective.' :
+                            aiEff >= 50 ? 'AI agents show moderate effectiveness.' :
+                            'Review AI agent directives and examples to improve effectiveness.'
+                        }</div>
+                    </div>
+                `;
+
+                // Churn insight
+                if (data.churn.high_churn_files_count > 0) {
+                    insights.innerHTML += `
+                        <div class="insight-item">
+                            <div class="insight-title">Code Churn <span class="status-warning status-badge">${data.churn.high_churn_files_count} files</span></div>
+                            <div>${data.churn.high_churn_files_count} files modified 3+ times. High churn may indicate design instability or refactoring opportunities.</div>
+                        </div>
+                    `;
+                } else {
+                    insights.innerHTML += `
+                        <div class="insight-item">
+                            <div class="insight-title">Code Churn <span class="status-good status-badge">Low</span></div>
+                            <div>No high-churn files detected. Code appears stable with minimal rework.</div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading analysis data:', error);
+                document.querySelector('.container').innerHTML +=
+                    '<div style="color: red; text-align: center; padding: 40px;">Error loading analysis data. Ensure implementation-analysis.json exists.</div>';
+            });
+    </script>
+</body>
+</html>
