@@ -7,58 +7,184 @@
   "functions": [
     {
       "name": "start_discovery",
-      "description": "Start USB HID discovery and return discovered devices",
+      "description": "Start keyboard layout discovery process",
       "parameters": [
         {
-          "name": "timeout_ms",
-          "type": "u32",
-          "description": "Maximum time to scan for devices",
+          "name": "device_id",
+          "type": "string",
+          "description": "Device identifier in format 'vendor_id:product_id'",
+          "required": true
+        },
+        {
+          "name": "rows",
+          "type": "u8",
+          "description": "Number of rows in the keyboard layout",
           "required": true,
           "constraints": {
-            "min": 0,
-            "max": 60000
+            "min": 1,
+            "max": 16
           }
         }
       ],
       "returns": {
-        "type": "array",
-        "description": "List of discovered devices",
-        "items": {
-          "type": "object",
-          "description": "Discovered device identity",
-          "properties": {
-            "vendor_id": { "type": "u16", "description": "USB vendor id" },
-            "product_id": { "type": "u16", "description": "USB product id" },
-            "manufacturer": { "type": "string", "description": "Manufacturer name" },
-            "name": { "type": "string", "description": "Product name" }
-          }
-        }
+        "type": "DiscoverySummary",
+        "description": "Summary of the started discovery session"
       },
       "errors": [
         {
-          "code": "DISCOVERY_ERROR",
-          "description": "Discovery failed"
+          "code": "INVALID_INPUT",
+          "description": "Invalid device_id format or rows value"
         },
         {
-          "code": "INVALID_PARAMETER",
-          "description": "Invalid timeout"
+          "code": "INTERNAL_ERROR",
+          "description": "Failed to start discovery session"
         }
       ],
-      "events_emitted": ["device_found"],
+      "events_emitted": ["discovery_progress", "discovery_summary", "discovery_duplicate"],
       "example": {
-        "input": { "timeout_ms": 5000 },
-        "output": [
-          {
-            "vendor_id": 4660,
-            "product_id": 22136,
-            "manufacturer": "KeyRx",
-            "name": "Revolutionary Keyboard"
-          }
-        ]
+        "input": { "device_id": "1234:5678", "rows": 5 },
+        "output": {
+          "device_id": { "vendor_id": 1234, "product_id": 5678 },
+          "status": "InProgress",
+          "message": "Discovery started",
+          "rows": 5,
+          "cols_per_row": [],
+          "captured": 0,
+          "total": 0,
+          "next": null,
+          "unmapped": [],
+          "duplicates": [],
+          "keymap": {},
+          "aliases": {}
+        }
+      }
+    },
+    {
+      "name": "stop_discovery",
+      "description": "Stop the current discovery session",
+      "parameters": [],
+      "returns": {
+        "type": "DiscoverySummary",
+        "description": "Final summary of the stopped discovery session"
+      },
+      "errors": [
+        {
+          "code": "NOT_FOUND",
+          "description": "No active discovery session found"
+        }
+      ],
+      "events_emitted": ["discovery_summary"],
+      "example": {
+        "input": {},
+        "output": {
+          "device_id": { "vendor_id": 1234, "product_id": 5678 },
+          "status": "Cancelled",
+          "message": "Discovery stopped by user",
+          "rows": 5,
+          "cols_per_row": [10, 10, 10, 10, 10],
+          "captured": 25,
+          "total": 50,
+          "next": null,
+          "unmapped": [],
+          "duplicates": [],
+          "keymap": {},
+          "aliases": {}
+        }
+      }
+    },
+    {
+      "name": "get_discovery_status",
+      "description": "Get the current status of the discovery session",
+      "parameters": [],
+      "returns": {
+        "type": "DiscoverySummary",
+        "description": "Current discovery session status"
+      },
+      "errors": [
+        {
+          "code": "NOT_FOUND",
+          "description": "No active discovery session found"
+        }
+      ],
+      "events_emitted": [],
+      "example": {
+        "input": {},
+        "output": {
+          "device_id": { "vendor_id": 1234, "product_id": 5678 },
+          "status": "InProgress",
+          "message": "Discovery in progress",
+          "rows": 5,
+          "cols_per_row": [10, 10],
+          "captured": 20,
+          "total": 50,
+          "next": { "row": 2, "col": 0 },
+          "unmapped": [1, 2, 3],
+          "duplicates": [],
+          "keymap": {},
+          "aliases": {}
+        }
       }
     }
   ],
   "types": {
+    "DeviceId": {
+      "type": "object",
+      "description": "USB device identifier",
+      "properties": {
+        "vendor_id": { "type": "u16", "description": "USB vendor ID" },
+        "product_id": { "type": "u16", "description": "USB product ID" }
+      }
+    },
+    "SessionStatus": {
+      "type": "enum",
+      "description": "Discovery session status",
+      "values": ["InProgress", "Completed", "Cancelled", "Bypassed"]
+    },
+    "ExpectedPosition": {
+      "type": "object",
+      "description": "Expected position in keyboard matrix",
+      "properties": {
+        "row": { "type": "u8", "description": "Row index" },
+        "col": { "type": "u8", "description": "Column index" }
+      }
+    },
+    "DuplicateWarning": {
+      "type": "object",
+      "description": "Warning about duplicate scan code detection",
+      "properties": {
+        "scan_code": { "type": "u16", "description": "The duplicate scan code" },
+        "existing": { "type": "ExpectedPosition", "description": "Position of existing mapping" },
+        "attempted": { "type": "ExpectedPosition", "description": "Position of attempted duplicate" }
+      }
+    },
+    "DiscoveryProgress": {
+      "type": "object",
+      "description": "Progress information during discovery",
+      "properties": {
+        "captured": { "type": "usize", "description": "Number of keys captured" },
+        "total": { "type": "usize", "description": "Total expected keys" },
+        "current": { "type": "ExpectedPosition?", "description": "Current key position being captured" },
+        "next": { "type": "ExpectedPosition?", "description": "Next expected key position" }
+      }
+    },
+    "DiscoverySummary": {
+      "type": "object",
+      "description": "Complete summary of discovery session state",
+      "properties": {
+        "device_id": { "type": "DeviceId", "description": "Target device identifier" },
+        "status": { "type": "SessionStatus", "description": "Current session status" },
+        "message": { "type": "string", "description": "Status message" },
+        "rows": { "type": "u8", "description": "Number of rows in layout" },
+        "cols_per_row": { "type": "array", "items": { "type": "u8" }, "description": "Columns per row" },
+        "captured": { "type": "usize", "description": "Number of keys captured" },
+        "total": { "type": "usize", "description": "Total expected keys" },
+        "next": { "type": "ExpectedPosition?", "description": "Next expected position" },
+        "unmapped": { "type": "array", "items": { "type": "u16" }, "description": "Unmapped scan codes" },
+        "duplicates": { "type": "array", "items": { "type": "DuplicateWarning" }, "description": "Duplicate warnings" },
+        "keymap": { "type": "object", "description": "Mapping of positions to scan codes" },
+        "aliases": { "type": "object", "description": "Scan code aliases" }
+      }
+    },
     "DiscoveredDevice": {
       "type": "object",
       "description": "Basic device identity and metadata",
@@ -72,14 +198,24 @@
   },
   "events": [
     {
-      "name": "device_found",
-      "description": "Emitted when a device is discovered",
+      "name": "discovery_progress",
+      "description": "Emitted during discovery to report progress",
       "payload": {
-        "type": "object",
-        "properties": {
-          "vendor_id": { "type": "u16" },
-          "product_id": { "type": "u16" }
-        }
+        "type": "DiscoveryProgress"
+      }
+    },
+    {
+      "name": "discovery_duplicate",
+      "description": "Emitted when a duplicate scan code is detected",
+      "payload": {
+        "type": "DuplicateWarning"
+      }
+    },
+    {
+      "name": "discovery_summary",
+      "description": "Emitted when discovery session completes or is stopped",
+      "payload": {
+        "type": "DiscoverySummary"
       }
     }
   ]

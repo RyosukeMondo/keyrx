@@ -5,8 +5,8 @@
 
 use crate::templates::{
     context, render, to_camel_case, to_pascal_case, to_snake_case, CONSTRUCTOR_PARAM_OPTIONAL,
-    CONSTRUCTOR_PARAM_REQUIRED, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED, MODEL_CLASS_TEMPLATE,
-    MODEL_FIELD_TEMPLATE, TO_JSON_FIELD,
+    CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED,
+    MODEL_CLASS_TEMPLATE, MODEL_FIELD_TEMPLATE, TO_JSON_FIELD,
 };
 use crate::type_mapper::{base_type, is_nullable, map_to_dart_native_type, TypeMappingError};
 use keyrx_core::ffi::contract::{FfiContract, TypeDefinition};
@@ -59,8 +59,10 @@ pub fn generate_models_from_types(
         .filter_map(|(name, type_def)| {
             if type_def.is_object() {
                 Some(generate_model_class(name, type_def))
+            } else if type_def.is_enum() {
+                Some(generate_enum_class(name, type_def))
             } else {
-                None // Skip non-object types (primitives, enums, etc.)
+                None // Skip primitives and arrays
             }
         })
         .collect()
@@ -109,6 +111,68 @@ fn generate_model_class(
         _ => Err(ModelGenError {
             type_name: name.to_string(),
             message: "Only object types can be converted to model classes".to_string(),
+        }),
+    }
+}
+
+/// Generate a Dart enum from an enum type definition
+fn generate_enum_class(
+    name: &str,
+    type_def: &TypeDefinition,
+) -> Result<GeneratedModel, ModelGenError> {
+    let enum_name = to_pascal_case(name);
+
+    match type_def {
+        TypeDefinition::Enum { values, .. } => {
+            // Convert enum values to camelCase for Dart enum variants
+            let dart_values: Vec<String> = values
+                .iter()
+                .map(|v| to_camel_case(v))
+                .collect();
+
+            // Generate enum values (e.g., "inProgress, completed, cancelled")
+            let enum_values = dart_values.join(", ");
+
+            // Generate fromJson cases
+            let from_json_cases: Vec<String> = values
+                .iter()
+                .zip(dart_values.iter())
+                .map(|(json_val, dart_val)| {
+                    format!("      case '{}': return {}.{};", json_val, enum_name, dart_val)
+                })
+                .collect();
+            let from_json_cases_str = from_json_cases.join("\n");
+
+            // Generate toJson cases
+            let to_json_cases: Vec<String> = values
+                .iter()
+                .zip(dart_values.iter())
+                .map(|(json_val, dart_val)| {
+                    format!("      case {}.{}: return '{}';", enum_name, dart_val, json_val)
+                })
+                .collect();
+            let to_json_cases_str = to_json_cases.join("\n");
+
+            // Use type_def description if available, otherwise generate a default
+            let doc_comment = format!("Enum for {}", name);
+
+            let mut ctx = context();
+            ctx.insert("doc_comment".to_string(), doc_comment);
+            ctx.insert("enum_name".to_string(), enum_name.clone());
+            ctx.insert("enum_values".to_string(), enum_values);
+            ctx.insert("from_json_cases".to_string(), from_json_cases_str);
+            ctx.insert("to_json_cases".to_string(), to_json_cases_str);
+
+            let code = render(ENUM_CLASS_TEMPLATE, &ctx);
+
+            Ok(GeneratedModel {
+                class_name: enum_name,
+                code,
+            })
+        }
+        _ => Err(ModelGenError {
+            type_name: name.to_string(),
+            message: "Only enum types can be converted to enum classes".to_string(),
         }),
     }
 }

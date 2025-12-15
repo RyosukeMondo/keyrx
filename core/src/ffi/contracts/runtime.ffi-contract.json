@@ -13,7 +13,12 @@
                 "type": "string",
                 "description": "JSON runtime configuration"
             },
-            "errors": []
+            "errors": [
+                {
+                    "code": "INTERNAL_ERROR",
+                    "description": "An internal error occurred"
+                }
+            ]
         },
         {
             "name": "add_slot",
@@ -43,7 +48,24 @@
                 "type": "string",
                 "description": "JSON runtime configuration"
             },
-            "errors": []
+            "errors": [
+                {
+                    "code": "NULL_POINTER",
+                    "description": "A required pointer was null"
+                },
+                {
+                    "code": "INVALID_UTF8",
+                    "description": "Invalid UTF-8 encoding in input string"
+                },
+                {
+                    "code": "INVALID_INPUT",
+                    "description": "Invalid input parameter"
+                },
+                {
+                    "code": "INTERNAL_ERROR",
+                    "description": "An internal error occurred"
+                }
+            ]
         },
         {
             "name": "remove_slot",
@@ -67,7 +89,28 @@
                 "type": "string",
                 "description": "JSON runtime configuration"
             },
-            "errors": []
+            "errors": [
+                {
+                    "code": "NULL_POINTER",
+                    "description": "A required pointer was null"
+                },
+                {
+                    "code": "INVALID_UTF8",
+                    "description": "Invalid UTF-8 encoding in input string"
+                },
+                {
+                    "code": "INVALID_INPUT",
+                    "description": "Invalid input parameter"
+                },
+                {
+                    "code": "NOT_FOUND",
+                    "description": "The requested resource was not found"
+                },
+                {
+                    "code": "INTERNAL_ERROR",
+                    "description": "An internal error occurred"
+                }
+            ]
         },
         {
             "name": "reorder_slot",
@@ -97,7 +140,28 @@
                 "type": "string",
                 "description": "JSON runtime configuration"
             },
-            "errors": []
+            "errors": [
+                {
+                    "code": "NULL_POINTER",
+                    "description": "A required pointer was null"
+                },
+                {
+                    "code": "INVALID_UTF8",
+                    "description": "Invalid UTF-8 encoding in input string"
+                },
+                {
+                    "code": "INVALID_INPUT",
+                    "description": "Invalid input parameter"
+                },
+                {
+                    "code": "NOT_FOUND",
+                    "description": "The requested resource was not found"
+                },
+                {
+                    "code": "INTERNAL_ERROR",
+                    "description": "An internal error occurred"
+                }
+            ]
         },
         {
             "name": "set_slot_active",
@@ -127,20 +191,41 @@
                 "type": "string",
                 "description": "JSON runtime configuration"
             },
-            "errors": []
+            "errors": [
+                {
+                    "code": "NULL_POINTER",
+                    "description": "A required pointer was null"
+                },
+                {
+                    "code": "INVALID_UTF8",
+                    "description": "Invalid UTF-8 encoding in input string"
+                },
+                {
+                    "code": "INVALID_INPUT",
+                    "description": "Invalid input parameter"
+                },
+                {
+                    "code": "NOT_FOUND",
+                    "description": "The requested resource was not found"
+                },
+                {
+                    "code": "INTERNAL_ERROR",
+                    "description": "An internal error occurred"
+                }
+            ]
         },
         {
             "name": "get_config_root",
             "rust_name": "keyrx_get_config_root",
-            "description": "Get configuration root path.",
+            "description": "Absolute path to the configuration root directory",
             "parameters": [],
             "returns": {
-                "type": "*mut c_char",
+                "type": "string",
                 "description": "Config root path"
             },
             "errors": []
         }
     ],
+    "types": {},
     "events": []
 }
-

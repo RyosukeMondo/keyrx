@@ -269,6 +269,37 @@ pub const FROM_JSON_OPTIONAL: &str =
 pub const TO_JSON_FIELD: &str = "      '{{json_key}}': {{field_name}},";
 
 // =============================================================================
+// Enum Templates
+// =============================================================================
+
+/// Template for a Dart enum class with JSON serialization
+///
+/// Placeholders:
+/// - `{{doc_comment}}` - Documentation comment for the enum
+/// - `{{enum_name}}` - Enum name in PascalCase
+/// - `{{enum_values}}` - Comma-separated enum values (e.g., "inProgress, completed")
+/// - `{{from_json_cases}}` - Switch cases for fromJson (e.g., "case 'InProgress': return SessionStatus.inProgress;")
+/// - `{{to_json_cases}}` - Switch cases for toJson (e.g., "case SessionStatus.inProgress: return 'InProgress';")
+pub const ENUM_CLASS_TEMPLATE: &str = r#"/// {{doc_comment}}
+enum {{enum_name}} {
+  {{enum_values}};
+
+  static {{enum_name}} fromJson(String value) {
+    switch (value) {
+{{from_json_cases}}
+      default:
+        throw ArgumentError('Unknown {{enum_name}}: $value');
+    }
+  }
+
+  String toJson() {
+    switch (this) {
+{{to_json_cases}}
+    }
+  }
+}"#;
+
+// =============================================================================
 // FFI Exception Class
 // =============================================================================
 

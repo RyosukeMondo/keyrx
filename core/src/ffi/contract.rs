@@ -38,8 +38,8 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FfiContract {
     /// JSON schema reference for validation.
-    #[serde(rename = "$schema")]
-    pub schema: String,
+    #[serde(rename = "$schema", default)]
+    pub schema: Option<String>,
     /// Contract version (semantic versioning).
     pub version: String,
     /// Domain name (e.g., "discovery", "engine", "profile").
@@ -138,18 +138,6 @@ pub struct ParameterContract {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TypeDefinition {
-    /// A primitive type (string, number, boolean, etc.).
-    Primitive {
-        /// Type name (e.g., "string", "u32", "bool").
-        #[serde(rename = "type")]
-        type_name: String,
-        /// Optional description of this type usage.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        description: Option<String>,
-        /// Optional validation constraints.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        constraints: Option<Constraints>,
-    },
     /// An object type with named properties.
     Object {
         /// Type name (usually "object" or a custom type name).
@@ -160,6 +148,14 @@ pub enum TypeDefinition {
         description: Option<String>,
         /// Map of property names to their type definitions.
         properties: HashMap<String, Box<TypeDefinition>>,
+    },
+    /// An enumeration with a fixed set of string values.
+    Enum {
+        /// Type name (usually "enum" or a custom type name).
+        #[serde(rename = "type")]
+        type_name: String,
+        /// Allowed values for this enum.
+        values: Vec<String>,
     },
     /// An array type containing items of a specific type.
     Array {
@@ -172,13 +168,17 @@ pub enum TypeDefinition {
         #[serde(skip_serializing_if = "Option::is_none")]
         constraints: Option<Constraints>,
     },
-    /// An enumeration with a fixed set of string values.
-    Enum {
-        /// Type name (usually "enum" or a custom type name).
+    /// A primitive type (string, number, boolean, etc.).
+    Primitive {
+        /// Type name (e.g., "string", "u32", "bool").
         #[serde(rename = "type")]
         type_name: String,
-        /// Allowed values for this enum.
-        values: Vec<String>,
+        /// Optional description of this type usage.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+        /// Optional validation constraints.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        constraints: Option<Constraints>,
     },
 }
 
@@ -206,6 +206,11 @@ impl TypeDefinition {
     /// Returns true if this is an array type.
     pub fn is_array(&self) -> bool {
         matches!(self, TypeDefinition::Array { .. })
+    }
+
+    /// Returns true if this is an enum type.
+    pub fn is_enum(&self) -> bool {
+        matches!(self, TypeDefinition::Enum { .. })
     }
 }
 
@@ -459,9 +464,9 @@ impl ContractRegistry {
             {
                 match FfiContract::from_file(&path) {
                     Ok(contract) => registry.register(contract),
-                    Err(_e) => {
+                    Err(e) => {
                         // Failed to load contract - skip this file
-                        // Log error via tracing in production
+                        eprintln!("Warning: Failed to load contract {:?}: {}", path, e);
                     }
                 }
             }

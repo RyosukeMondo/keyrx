@@ -4,6 +4,9 @@
 /// Note: Many models are defined alongside their services for cohesion.
 library;
 
+// Generated FFI models
+export 'generated_models.dart';
+
 // Layout models
 export 'keyboard_layout.dart';
 

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://keyrx.dev/schemas/ffi-contract.schema.json",
+  "version": "1.0.0",
+  "domain": "tracing",
+  "description": "FFI trace event export for Dart DevTools Timeline integration",
+  "protocol_version": 1,
+  "functions": [
+    {
+      "name": "trace_enable",
+      "rust_name": "keyrx_trace_enable",
+      "description": "Enable tracing",
+      "parameters": [],
+      "returns": {
+        "type": "void",
+        "description": "None"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_disable",
+      "rust_name": "keyrx_trace_disable",
+      "description": "Disable tracing",
+      "parameters": [],
+      "returns": {
+        "type": "void",
+        "description": "None"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_is_enabled",
+      "rust_name": "keyrx_trace_is_enabled",
+      "description": "Check if tracing is enabled",
+      "parameters": [],
+      "returns": {
+        "type": "bool",
+        "description": "True if enabled, false otherwise"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_get_count",
+      "rust_name": "keyrx_trace_get_count",
+      "description": "Get the number of captured trace events",
+      "parameters": [],
+      "returns": {
+        "type": "usize",
+        "description": "Number of trace events"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_clear",
+      "rust_name": "keyrx_trace_clear",
+      "description": "Clear all captured trace events",
+      "parameters": [],
+      "returns": {
+        "type": "void",
+        "description": "None"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_get_events_json",
+      "rust_name": "keyrx_trace_get_events_json",
+      "description": "Get all trace events as JSON",
+      "parameters": [],
+      "returns": {
+        "type": "*mut c_char",
+        "description": "JSON string (caller must free)"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_get_filtered_events_json",
+      "rust_name": "keyrx_trace_get_filtered_events_json",
+      "description": "Get filtered trace events as JSON",
+      "parameters": [
+        {
+          "name": "domain",
+          "type": "*const c_char",
+          "description": "Domain filter (null for all domains)",
+          "required": false
+        },
+        {
+          "name": "min_duration_us",
+          "type": "u64",
+          "description": "Minimum duration in microseconds",
+          "required": true
+        }
+      ],
+      "returns": {
+        "type": "*mut c_char",
+        "description": "JSON string (caller must free)"
+      },
+      "errors": []
+    },
+    {
+      "name": "trace_free_json",
+      "rust_name": "keyrx_trace_free_json",
+      "description": "Free JSON string returned by trace functions",
+      "parameters": [
+        {
+          "name": "json",
+          "type": "*mut c_char",
+          "description": "JSON string pointer",
+          "required": true
+        }
+      ],
+      "returns": {
+        "type": "void",
+        "description": "None"
+      },
+      "errors": []
+    }
+  ],
+  "types": {
+    "TraceEvent": {
+      "type": "object",
+      "description": "A captured trace event",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique event identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Event name"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Event domain"
+        },
+        "start_time_us": {
+          "type": "u64",
+          "description": "Start time in microseconds"
+        },
+        "duration_us": {
+          "type": "u64",
+          "description": "Duration in microseconds"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "Correlation identifier for related events"
+        },
+        "args": {
+          "type": "object",
+          "description": "Additional event arguments"
+        },
+        "result_status": {
+          "type": "ResultStatus",
+          "description": "Event result status"
+        }
+      }
+    },
+    "ResultStatus": {
+      "type": "enum",
+      "description": "Event result status",
+      "values": ["Pending", "Success", "Error", "Skipped"]
+    }
+  }
+}
