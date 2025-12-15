@@ -15,6 +15,7 @@ import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/interactive_edge.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
+import 'package:keyrx_ui/widgets/flow/save_indicator.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
@@ -101,40 +102,46 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
-      body: InteractiveViewer(
-        boundaryMargin: const EdgeInsets.all(240),
-        minScale: 0.5,
-        maxScale: 2.5,
-        child: SizedBox(
-          width: canvasWidth,
-          height: canvasHeight,
-          child: Stack(
-            children: [
-              Positioned.fill(child: CustomPaint(painter: _GridPainter())),
-              Positioned.fill(
-                child: InteractiveEdgeCanvas(
-                  edges: graph.edges,
-                  paintableEdges: view.edges,
-                  style: _edgeStyle,
-                ),
-              ),
-              ...view.nodes.map(
-                (node) => _AnimatedNodeWrapper(
-                  key: ValueKey(node.id),
-                  nodeId: node.id,
-                  isNew: !_previousNodeIds.contains(node.id),
-                  child: DraggableNode(
-                    nodeId: node.id,
-                    initialPosition: node.position,
-                    size: node.size,
-                    canvasBounds: Size(canvasWidth, canvasHeight),
-                    child: node.child,
+      body: Stack(
+        children: [
+          InteractiveViewer(
+            boundaryMargin: const EdgeInsets.all(240),
+            minScale: 0.5,
+            maxScale: 2.5,
+            child: SizedBox(
+              width: canvasWidth,
+              height: canvasHeight,
+              child: Stack(
+                children: [
+                  Positioned.fill(child: CustomPaint(painter: _GridPainter())),
+                  Positioned.fill(
+                    child: InteractiveEdgeCanvas(
+                      edges: graph.edges,
+                      paintableEdges: view.edges,
+                      style: _edgeStyle,
+                    ),
                   ),
-                ),
+                  ...view.nodes.map(
+                    (node) => _AnimatedNodeWrapper(
+                      key: ValueKey(node.id),
+                      nodeId: node.id,
+                      isNew: !_previousNodeIds.contains(node.id),
+                      child: DraggableNode(
+                        nodeId: node.id,
+                        initialPosition: node.position,
+                        size: node.size,
+                        canvasBounds: Size(canvasWidth, canvasHeight),
+                        child: node.child,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          // Save indicator positioned in bottom-right corner
+          const Positioned(bottom: 16, right: 16, child: SaveIndicator()),
+        ],
       ),
     );
   }

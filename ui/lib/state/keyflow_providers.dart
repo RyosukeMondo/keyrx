@@ -11,8 +11,10 @@ import '../models/hardware_profile.dart';
 import '../models/keymap.dart';
 import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
+import '../services/auto_save_service.dart';
 import '../services/config_result.dart';
 import 'providers_setup.dart';
+import 'save_state_provider.dart';
 
 part 'keyflow_providers.g.dart';
 
@@ -82,51 +84,41 @@ class KeyFlowActions {
 
   /// Refresh runtime configuration and sync the provider state.
   Future<ConfigOperationResult<RuntimeConfig>> refreshRuntimeConfig() {
-    return _run(() => _repo.getRuntimeConfig(forceRefresh: true));
+    return _repo.getRuntimeConfig(forceRefresh: true);
   }
 
-  /// Add a slot and update runtime state.
-  Future<ConfigOperationResult<RuntimeConfig>> addSlot(
+  /// Add a slot with auto-save and optimistic updates.
+  void addSlot(
     DeviceInstanceId device,
     ProfileSlot slot, {
     int? priorityOverride,
   }) {
-    return _run(
-      () => _repo.addSlot(device, slot, priorityOverride: priorityOverride),
+    final operation = AddSlotOperation(
+      device,
+      slot,
+      priorityOverride: priorityOverride,
     );
+    _scheduleAutoSave(operation);
   }
 
-  /// Update an existing slot and update runtime state.
-  Future<ConfigOperationResult<RuntimeConfig>> updateSlot(
-    DeviceInstanceId device,
-    ProfileSlot slot,
-  ) {
-    return _run(() => _repo.updateSlot(device, slot));
+  /// Update an existing slot with auto-save and optimistic updates.
+  void updateSlot(DeviceInstanceId device, ProfileSlot slot) {
+    final operation = UpdateSlotOperation(device, slot);
+    _scheduleAutoSave(operation);
   }
 
-  /// Remove a slot and update runtime state.
-  Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
-    DeviceInstanceId device,
-    String slotId,
-  ) {
-    return _run(() => _repo.removeSlot(device, slotId));
+  /// Remove a slot with auto-save and optimistic updates.
+  void removeSlot(DeviceInstanceId device, String slotId) {
+    final operation = RemoveSlotOperation(device, slotId);
+    _scheduleAutoSave(operation);
   }
 
   KeyFlowRepository get _repo => _ref.read(keyFlowRepositoryProvider);
+  AutoSaveService get _autoSave => _ref.read(autoSaveServiceProvider);
 
-  Future<ConfigOperationResult<RuntimeConfig>> _run(
-    Future<ConfigOperationResult<RuntimeConfig>> Function() op,
-  ) async {
-    final result = await op();
-    _syncRuntimeState(result);
-    return result;
-  }
-
-  void _syncRuntimeState(ConfigOperationResult<RuntimeConfig> result) {
-    if (result.data != null || result.hasError) {
-      final notifier = _ref.read(runtimeConfigNotifierProvider.notifier);
-      notifier.refresh(force: true);
-    }
+  void _scheduleAutoSave(SaveOperation operation) {
+    // Schedule the save with debouncing
+    _autoSave.scheduleSave(operation);
   }
 }
 

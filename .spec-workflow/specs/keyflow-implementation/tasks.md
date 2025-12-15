@@ -96,7 +96,7 @@
   - _Requirements: FR1.2, US5_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in reactive streams and real-time updates | Task: Create ui/lib/state/device_stream_provider.dart subscribing to BridgeStateUpdate stream from FFI bridge, implement ui/lib/services/device_event_handler.dart to process device connect/disconnect events, update runtimeConfigProvider when devices change, trigger flowGraphProvider recomputation, add fade-in animation for new devices, fade-out for disconnected devices, update node status colors in real-time, invalidate repository cache on changes, ensure <100ms latency from event to UI update | Restrictions: Stream must be properly disposed, handle backpressure, ensure no memory leaks, updates should be efficient (don't rebuild entire tree), maintain state consistency | Success: Devices appear/disappear automatically, animations smooth, status updates instant, <100ms latency, no memory leaks, stream properly managed | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 13. Auto-Save & Persistence
+- [-] 13. Auto-Save & Persistence
   - File: ui/lib/services/auto_save_service.dart, ui/lib/state/save_state_provider.dart
   - Implement auto-save with debouncing (500ms after last change), optimistic UI updates, rollback on failure, save state indicator (saving/saved/error), retry logic
   - Purpose: Persist changes automatically without manual save button
