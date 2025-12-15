@@ -56,7 +56,7 @@
   - _Requirements: NFR1.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in Flutter widget testing | Task: Create comprehensive widget tests for all node widgets: test/widgets/flow/device_node_widget_test.dart (test connected/disconnected states, active/inactive slots, error states), test/widgets/flow/layout_node_widget_test.dart (test valid/invalid profiles), test/widgets/flow/keymap_node_widget_test.dart (test keymap loaded/compilation failed states), use widget test harness for provider mocking, verify text content, colors, icons, tooltips, achieve 80%+ coverage | Restrictions: Tests must be isolated, use mocked data, do not test CustomPainter internals, ensure fast test execution | Success: All node widgets tested thoroughly, all states covered, tests pass reliably, 80%+ coverage achieved | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [-] 8. Node Dragging Implementation
+- [x] 8. Node Dragging Implementation
   - File: ui/lib/widgets/flow/draggable_node.dart, ui/lib/state/drag_controller.dart
   - Implement draggable node widget with smooth dragging, position updates to nodePositionsProvider, constraints (keep within canvas bounds), visual feedback during drag
   - Purpose: Enable users to rearrange nodes for better visualization
