@@ -1018,6 +1018,304 @@ impl MyDomainFfi {
 }
 ```
 
+## AI-Native Workflow
+
+The KeyRX FFI architecture is designed for AI-first development, enabling AI agents to effectively generate and maintain FFI code.
+
+### Philosophy
+
+**Single Source of Truth (SSOT): Rust**
+- Contracts derive from Rust code using `#[ffi_export]` macro
+- Dart bindings are generated, never hand-written
+- Schema changes happen in Rust first, then propagate automatically
+
+**Contract-First Development**
+```
+1. Define/modify Rust API with #[ffi_export]
+2. Run codegen (automatic in watch mode)
+3. Implement UI with generated Dart bindings
+```
+
+**Module Size Constraints**
+- Target ≤500 lines per module
+- Ensures code fits in LLM context windows
+- Enables effective AI agent code generation
+- Enforced via pre-commit hooks and CI
+
+### AI Agent Directives
+
+The `.keyrx/agent.md` file contains rules for AI coding agents:
+
+**Core Constraints:**
+- **Panic safety**: FFI boundaries must catch panics (macro handles this)
+- **Realtime threads**: No locks/allocations on audio threads
+- **No globals**: Use `FfiContext` handle-based state
+- **File size budget**: ≤500 lines per module
+
+**Workflow:**
+1. Mark task as in-progress in tasks.md
+2. Read spec docs + Implementation Logs before coding
+3. Change Rust FFI surface with `#[ffi_export]`
+4. Generate bindings (automatic or `just gen-dart-bindings`)
+5. Implement logic in Rust
+6. Test (unit + property tests, ≥80% coverage)
+7. Log implementation with artifacts
+8. Mark task complete
+
+### Integrated Development
+
+**Single Command Development:**
+```bash
+just dev
+```
+
+Starts:
+- Rust watch mode (auto-rebuild on changes)
+- Automatic Dart binding regeneration
+- Flutter hot reload
+- ABI change detection
+
+**Development Timeline:**
+```
+Edit Rust FFI function
+  ↓ (~2-5s with fast linker)
+Cargo recompiles
+  ↓ (~1s)
+Bindings auto-regenerate
+  ↓ (<1s)
+Flutter hot reload
+  ↓
+Complete feedback loop: ~5-8 seconds
+```
+
+### Contract-First with #[ffi_export]
+
+**The Macro Approach:**
+```rust
+use keyrx_ffi_macros::ffi_export;
+use crate::ffi::{FfiContext, FfiResult, FfiError};
+
+#[ffi_export(domain = "engine", version = "1.0")]
+pub fn start_loop(ctx: &FfiContext, profile_id: &str) -> FfiResult<EngineState> {
+    ctx.require_ready()?;
+
+    let state = start_engine_loop(profile_id)?;
+
+    Ok(EngineState {
+        running: true,
+        profile: profile_id.to_string(),
+    })
+}
+```
+
+**What the Macro Provides:**
+- Automatic C-ABI wrapper generation
+- Null pointer checks
+- UTF-8 validation
+- Panic catching and conversion to errors
+- JSON serialization
+- String ownership management
+
+**Generated Contract:**
+```json
+{
+  "domain": "engine",
+  "version": "1.0",
+  "functions": [
+    {
+      "name": "start_loop",
+      "rust_name": "keyrx_engine_start_loop",
+      "parameters": [...],
+      "return_type": "Result<EngineState>"
+    }
+  ]
+}
+```
+
+### Automated Validation
+
+**Pre-Commit Validation:**
+- Validates all `#[ffi_export]` functions have matching contracts
+- Verifies contract JSON matches Rust signatures
+- Detects orphaned contracts
+- Blocks commits on validation failures
+
+**Contract Validation Script:**
+```bash
+./scripts/validate_ffi_contracts.sh        # Validate
+./scripts/validate_ffi_contracts.sh --fix  # Auto-fix mismatches
+```
+
+**CI Integration:**
+- Breaking change detection
+- Contract validation
+- Module size enforcement
+- Test coverage checks
+
+### Incremental Code Generation
+
+**Smart Regeneration:**
+- SHA256 hashing of contract JSON + Rust source
+- Skips regeneration if unchanged
+- Cache persisted to `.cache/codegen/`
+
+**Performance:**
+```
+Generated: 2 files
+Skipped: 14 files (unchanged)
+Time saved: 3.2s
+```
+
+### Implementation Logging for AI
+
+**Purpose:**
+Create searchable knowledge base for AI agents to:
+- Discover existing FFI functions
+- Learn from past implementations
+- Avoid code duplication
+- Understand design decisions
+
+**Creating Logs:**
+```bash
+just ffi-log <task_id>
+```
+
+**Log Contents:**
+- Functions added/modified
+- Contract changes
+- Files modified
+- Test coverage
+- AI agent notes (what worked, what failed)
+
+**Log Location:**
+```
+.spec-workflow/specs/rust-first-ai-native-ffi/Implementation Logs/
+```
+
+### Tracing & Observability
+
+**FFI Instrumentation:**
+```rust
+use tracing::instrument;
+use crate::ffi::tracing::{new_correlation_id, correlation_id};
+
+#[instrument(skip(ctx), fields(correlation_id = %correlation_id()))]
+#[ffi_export(domain = "engine", version = "1.0")]
+pub fn start_loop(ctx: &FfiContext, profile_id: &str) -> FfiResult<EngineState> {
+    new_correlation_id();
+
+    tracing::info!(profile = profile_id, "Starting engine loop");
+
+    // Implementation
+
+    tracing::info!("Engine loop started successfully");
+    Ok(state)
+}
+```
+
+**DevTools Integration:**
+- FFI calls visible in Flutter DevTools Timeline
+- Correlation ID tracking across FFI boundary
+- Performance metrics (call count, latency, errors)
+- Real-time trace events
+
+**Development with Tracing:**
+```bash
+just dev-trace  # Enables FFI tracing
+```
+
+### Breaking Change Detection
+
+**Automated Detection:**
+```bash
+just diff-ffi-contracts       # vs HEAD~1
+just diff-ffi-contracts main  # vs main branch
+```
+
+**Classifications:**
+- **Major (breaking)**: Removed functions, changed signatures, changed types
+- **Minor (compatible)**: New functions, optional parameters
+- **Patch (non-breaking)**: Documentation, metadata updates
+
+**CI Enforcement:**
+- Detects breaking changes in PRs
+- Requires version bump or `allow-breaking` label
+- Posts PR comments with breaking change details
+- Blocks merges without proper versioning
+
+### Metrics & Dashboards
+
+**Contract Metrics Dashboard:**
+```bash
+just ffi-dashboard
+```
+
+Provides:
+- Total FFI functions by domain
+- Evolution timeline (functions added/removed)
+- Return type distribution
+- Breaking changes history
+
+**Implementation History Analysis:**
+```bash
+just analyze-ffi
+```
+
+Provides:
+- Development velocity (functions per week)
+- Code churn detection
+- Test coverage analysis
+- AI effectiveness metrics
+
+**Module Size Analysis:**
+```bash
+./scripts/analyze_module_sizes.sh
+```
+
+Provides:
+- Files exceeding 500-line limit
+- Splitting recommendations
+- Trend analysis
+
+### AI-Native Best Practices
+
+**DO:**
+- Use `#[ffi_export]` for all FFI functions
+- Run `just dev` for integrated development
+- Keep modules ≤500 lines
+- Log implementations with detailed artifacts
+- Instrument with tracing for observability
+- Test before committing (`just check`)
+
+**DON'T:**
+- Manually edit JSON contracts
+- Hand-write Dart FFI bindings
+- Create modules >500 lines
+- Skip implementation logs
+- Bypass contract validation (`--no-verify`)
+- Use global state (use `FfiContext` instead)
+
+### Quick Reference for AI Agents
+
+**Adding New FFI Function:**
+1. Add function with `#[ffi_export(domain = "X", version = "1.0")]`
+2. Bindings auto-regenerate (watch mode) or run `just gen-dart-bindings`
+3. Use generated Dart bindings in UI
+4. Test: `just test`
+5. Log: `just ffi-log <task_id>`
+
+**Modifying Existing Function:**
+1. Update Rust function (keep `#[ffi_export]` updated)
+2. Bindings auto-regenerate
+3. Update Dart code if signatures changed
+4. Validate: `./scripts/validate_ffi_contracts.sh`
+5. Check for breaking changes: `just diff-ffi-contracts`
+
+**For Complete Documentation:**
+- [FFI Development Guide](./FFI_DEVELOPMENT.md) - Comprehensive workflow
+- [FFI Migration Guide](./FFI_MIGRATION_GUIDE.md) - Migrating to AI-native
+- [Agent Directives](../.keyrx/agent.md) - Rules for AI agents
+
 ## Migration Guide (Legacy → New Architecture)
 
 ### Before (Old Pattern)
