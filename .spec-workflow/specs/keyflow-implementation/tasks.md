@@ -104,7 +104,7 @@
   - _Requirements: FR1.3, FR5.2_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in state synchronization and debouncing | Task: Create ui/lib/services/auto_save_service.dart with 500ms debounced save after mutations, implement ui/lib/state/save_state_provider.dart tracking save status (idle/saving/saved/error), use optimistic UI updates (apply changes immediately, rollback on FFI failure), add inline save indicator in UI (spinner/checkmark/error icon), implement exponential backoff retry on failure (max 3 retries), show toast on persistent errors, ensure <200ms from user action to save confirmation, log all save operations | Restrictions: Must prevent save storms (debounce properly), handle concurrent mutations correctly, ensure data consistency, provide clear feedback to user, don't block UI during save | Success: Changes auto-save after 500ms, optimistic updates work, rollback on failure, save indicator clear, retry logic functional, <200ms save confirmation, no data loss | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 14. Node Visual Enhancements
+- [-] 14. Node Visual Enhancements
   - File: ui/lib/widgets/flow/enhanced_device_node.dart, ui/lib/widgets/flow/enhanced_layout_node.dart, ui/lib/widgets/flow/enhanced_keymap_node.dart
   - Enhance node widgets with status colors (green/blue/red/grey), status icons, tooltips with detailed info, connection handles, visual hierarchy, shadows/elevation
   - Purpose: Improve visual feedback and information density

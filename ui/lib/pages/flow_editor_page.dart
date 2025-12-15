@@ -12,6 +12,9 @@ import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import 'package:keyrx_ui/widgets/flow/enhanced_device_node.dart';
+import 'package:keyrx_ui/widgets/flow/enhanced_keymap_node.dart';
+import 'package:keyrx_ui/widgets/flow/enhanced_layout_node.dart';
 import 'package:keyrx_ui/widgets/flow/interactive_edge.dart';
 import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
@@ -209,45 +212,51 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   Widget _buildNodeWidget(FlowNode node, FlowGraph graph) {
     return node.map(
       device: (value) {
-        final wirings =
-            graph.edges.where((edge) => edge.from == value.id).toList()..sort(
-              (a, b) => a.priority == b.priority
-                  ? a.slotId.compareTo(b.slotId)
-                  : a.priority.compareTo(b.priority),
-            );
+        final edges = graph.edges
+            .where((edge) => edge.from == value.id)
+            .toList();
+        final activeSlotCount = edges.where((e) => e.active).length;
+        final totalSlotCount = edges.length;
+        final hasError = edges.any((e) => e.status == EdgeStatus.invalid);
 
-        return DeviceNodeWidget(
-          data: DeviceNodeData(
-            name:
-                value.label ??
-                'Device ${value.deviceId.vendorId}:${value.deviceId.productId}',
-            vid: _formatId(value.deviceId.vendorId),
-            pid: _formatId(value.deviceId.productId),
-            isConnected: value.isConnected,
-            wirings: wirings
-                .map(
-                  (edge) => DeviceWiring(
-                    id: edge.slotId,
-                    name: '${edge.to} (p${edge.priority})',
-                    isActive: edge.active,
-                  ),
-                )
-                .toList(),
-          ),
+        return EnhancedDeviceNode(
+          node: value,
+          activeSlotCount: activeSlotCount,
+          totalSlotCount: totalSlotCount,
+          hasError: hasError,
+          // onAddSlot can be added later when slot management is implemented
         );
       },
-      hardwareProfile: (value) => LayoutNodeWidget(
-        data: LayoutNodeData(name: value.label ?? value.id, type: 'profile'),
-      ),
-      keymap: (value) => KeymapNodeWidget(
-        data: KeymapNodeData(
-          name: value.label ?? value.id,
-          layers: value.layers ?? 1,
-          isActive: graph.edges.any(
-            (edge) => edge.to == value.id && edge.active,
-          ),
-        ),
-      ),
+      hardwareProfile: (value) {
+        final hasInvalidEdges = graph.edges.any(
+          (edge) =>
+              (edge.from == value.id || edge.to == value.id) &&
+              edge.status == EdgeStatus.invalid,
+        );
+
+        return EnhancedLayoutNode(
+          node: value,
+          layoutType: 'Profile', // Can be enhanced later with actual type
+          isValid: !hasInvalidEdges,
+          errorMessage: hasInvalidEdges
+              ? 'This profile has invalid connections'
+              : null,
+        );
+      },
+      keymap: (value) {
+        final hasInvalidEdges = graph.edges.any(
+          (edge) => edge.to == value.id && edge.status == EdgeStatus.invalid,
+        );
+
+        return EnhancedKeymapNode(
+          node: value,
+          isValid: !hasInvalidEdges,
+          compilationFailed: hasInvalidEdges,
+          errorMessage: hasInvalidEdges
+              ? 'Keymap has compilation errors or invalid connections'
+              : null,
+        );
+      },
     );
   }
 
@@ -260,9 +269,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   Size _nodeSizeFor(FlowNode node) {
     return node.map(
-      device: (_) => const Size(240, 200),
-      hardwareProfile: (_) => const Size(200, 140),
-      keymap: (_) => const Size(180, 120),
+      device: (_) => const Size(260, 220),
+      hardwareProfile: (_) => const Size(220, 160),
+      keymap: (_) => const Size(200, 140),
     );
   }
 }

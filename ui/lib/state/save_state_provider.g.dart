@@ -1,0 +1,47 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'save_state_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$autoSaveServiceHash() => r'bb0f16804248513619389828b1174f370fa6cacf';
+
+/// Provider for the auto-save service instance.
+///
+/// Copied from [autoSaveService].
+@ProviderFor(autoSaveService)
+final autoSaveServiceProvider = Provider<AutoSaveService>.internal(
+  autoSaveService,
+  name: r'autoSaveServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$autoSaveServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AutoSaveServiceRef = ProviderRef<AutoSaveService>;
+String _$saveStateNotifierHash() => r'eb5c8d22695e4b1f23b0b5070585925aca1df066';
+
+/// Provider tracking the current save state.
+///
+/// Copied from [SaveStateNotifier].
+@ProviderFor(SaveStateNotifier)
+final saveStateNotifierProvider =
+    AutoDisposeNotifierProvider<SaveStateNotifier, SaveState>.internal(
+      SaveStateNotifier.new,
+      name: r'saveStateNotifierProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$saveStateNotifierHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$SaveStateNotifier = AutoDisposeNotifier<SaveState>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
