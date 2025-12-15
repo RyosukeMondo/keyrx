@@ -120,7 +120,7 @@
   - _Requirements: FR3.2, FR5.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in CustomPainter animations and performance | Task: Create ui/lib/widgets/flow/animated_edges_painter.dart extending enhanced EdgesPainter, implement ui/lib/animations/edge_animations.dart with subtle pulse animation for active slots, fade in/out animations for edge create/delete, smooth color transitions for validation state changes, optimize Bezier curve calculations, add anti-aliasing for smooth curves, implement Path caching to avoid recalculation, use RepaintBoundary for optimization, ensure 60fps during all animations | Restrictions: Animations must be subtle (not distracting), maintain 60fps performance even with 50+ edges, use efficient painting techniques, avoid unnecessary repaints, respect reduced motion preferences | Success: Animations smooth and subtle, validation transitions clear, Bezier curves smooth with anti-aliasing, performance at 60fps with many edges, reduced motion respected | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 16. Golden Tests
+- [x] 16. Golden Tests
   - File: ui/test/golden/flow_nodes_golden_test.dart, ui/test/golden/flow_edges_golden_test.dart, ui/test/golden/flow_page_golden_test.dart
   - Create golden tests for all node widgets in various states, edge rendering in different styles, full page layout in different scenarios (empty, error, populated)
   - Purpose: Prevent visual regressions in UI components
