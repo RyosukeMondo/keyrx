@@ -1,0 +1,321 @@
+name: FFI Quality Gates
+
+on:
+  pull_request:
+    paths:
+      - 'core/src/ffi/**'
+      - 'core/tools/generate_dart_bindings/**'
+      - 'core/macros/ffi_export/**'
+      - 'core/Cargo.toml'
+
+concurrency:
+  group: ffi-quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  MODULE_MAX_LINES: 500
+  MIN_COVERAGE: 80
+  MAX_TRACING_OVERHEAD: 5
+
+jobs:
+  quality-gate-check:
+    name: FFI Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview, clippy, rustfmt
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-quality-gates
+          cache-on-failure: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 jq bc
+          cargo install tokei --locked
+          cargo install cargo-llvm-cov --locked
+          cargo install nextest --locked
+
+      - name: Check Rust formatting
+        id: fmt
+        run: |
+          cd core
+          cargo fmt --check
+          echo "status=passed" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Run Clippy
+        id: clippy
+        run: |
+          cd core
+          cargo clippy --all-targets --all-features -- -D warnings
+          echo "status=passed" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Validate FFI contracts
+        id: contracts
+        run: |
+          chmod +x scripts/validate_ffi_contracts.sh
+          if scripts/validate_ffi_contracts.sh --check --verbose; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Check module sizes
+        id: module-sizes
+        run: |
+          chmod +x scripts/analyze_module_sizes.sh
+          if scripts/analyze_module_sizes.sh; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            VIOLATIONS=$(python3 -c "import json; data=json.load(open('.spec-workflow/analysis/module-sizes.json')); print(data['summary']['violations'])")
+            echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Detect breaking changes
+        id: breaking-changes
+        run: |
+          chmod +x scripts/detect_ffi_breaking_changes.sh
+          scripts/detect_ffi_breaking_changes.sh \
+            --base "origin/${{ github.base_ref }}" \
+            --format json > breaking_changes.json || true
+
+          MAJOR_COUNT=$(jq -r '.summary.major_count // 0' breaking_changes.json)
+          VERSION_BUMPED=$(jq -r '.summary.version_bumped // false' breaking_changes.json)
+
+          echo "major_count=$MAJOR_COUNT" >> $GITHUB_OUTPUT
+          echo "version_bumped=$VERSION_BUMPED" >> $GITHUB_OUTPUT
+
+          if [ "$MAJOR_COUNT" -gt 0 ] && [ "$VERSION_BUMPED" != "true" ]; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+          else
+            echo "status=passed" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Check for allow-breaking label
+        id: check-label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const hasAllowBreaking = labels.includes('allow-breaking');
+            core.setOutput('allow_breaking', hasAllowBreaking.toString());
+            return hasAllowBreaking;
+
+      - name: Run FFI tests
+        id: tests
+        run: |
+          cd core
+          if cargo nextest run --all-features --filter-expr 'test(ffi)'; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Check test coverage
+        id: coverage
+        run: |
+          cd core
+          cargo llvm-cov --all-features --text -- --test-threads=1 ffi | tee coverage-output.txt
+
+          COVERAGE=$(grep -oP 'TOTAL.*?(\d+\.\d+)%' coverage-output.txt | grep -oP '\d+\.\d+' || echo "0")
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
+          if (( $(echo "$COVERAGE >= ${{ env.MIN_COVERAGE }}" | bc -l) )); then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Check bindings are up-to-date
+        id: bindings
+        run: |
+          cargo build --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml
+          if cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --check --verbose; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            git diff --color=always
+          fi
+        continue-on-error: true
+
+      - name: Generate quality gate report
+        id: report
+        run: |
+          cat > quality-gate-report.md <<EOF
+          # FFI Quality Gate Report
+
+          ## Quality Checks
+
+          | Check | Status | Details |
+          |-------|--------|---------|
+          | Formatting | ${{ steps.fmt.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | Rust code formatting |
+          | Clippy | ${{ steps.clippy.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | No warnings or errors |
+          | Contract Validation | ${{ steps.contracts.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | All contracts valid |
+          | Module Sizes | ${{ steps.module-sizes.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | ${{ steps.module-sizes.outputs.violations || '0' }} violation(s) |
+          | Breaking Changes | ${{ steps.breaking-changes.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | ${{ steps.breaking-changes.outputs.major_count }} breaking change(s) |
+          | FFI Tests | ${{ steps.tests.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | All FFI tests pass |
+          | Test Coverage | ${{ steps.coverage.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | ${{ steps.coverage.outputs.coverage }}% (≥${{ env.MIN_COVERAGE }}% required) |
+          | Dart Bindings | ${{ steps.bindings.outputs.status == 'passed' && '✅ Passed' || '❌ Failed' }} | Bindings are up-to-date |
+
+          ## Summary
+
+          EOF
+
+          # Determine overall status
+          FAILED_CHECKS=0
+
+          if [ "${{ steps.fmt.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Formatting check failed** - Run \`cargo fmt\` to fix" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.clippy.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Clippy check failed** - Fix all warnings and errors" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.contracts.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Contract validation failed** - Run \`scripts/validate_ffi_contracts.sh --fix\`" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.module-sizes.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Module size check failed** - ${{ steps.module-sizes.outputs.violations }} module(s) exceed size limits" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.breaking-changes.outputs.status }}" != "passed" ] && [ "${{ steps.check-label.outputs.allow_breaking }}" != "true" ]; then
+            echo "- ❌ **Breaking changes detected** - Bump version in Cargo.toml or add 'allow-breaking' label" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          elif [ "${{ steps.breaking-changes.outputs.major_count }}" -gt 0 ]; then
+            echo "- ⚠️ **Breaking changes allowed** - PR has 'allow-breaking' label" >> quality-gate-report.md
+          fi
+
+          if [ "${{ steps.tests.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **FFI tests failed** - Fix failing tests" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.coverage.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Coverage below threshold** - Current: ${{ steps.coverage.outputs.coverage }}%, Required: ${{ env.MIN_COVERAGE }}%" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ "${{ steps.bindings.outputs.status }}" != "passed" ]; then
+            echo "- ❌ **Dart bindings out of date** - Run \`just gen-dart-bindings\` and commit" >> quality-gate-report.md
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          if [ $FAILED_CHECKS -eq 0 ]; then
+            echo "✅ **All quality gates passed!**" >> quality-gate-report.md
+          else
+            echo "" >> quality-gate-report.md
+            echo "**$FAILED_CHECKS quality gate(s) failed** - Please fix the issues above" >> quality-gate-report.md
+          fi
+
+          echo "" >> quality-gate-report.md
+          echo "---" >> quality-gate-report.md
+          echo "*See [FFI CI Documentation](../docs/FFI_CI.md) for more information*" >> quality-gate-report.md
+
+          echo "failed_checks=$FAILED_CHECKS" >> $GITHUB_OUTPUT
+
+      - name: Upload quality gate report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-gate-report
+          path: |
+            quality-gate-report.md
+            breaking_changes.json
+            .spec-workflow/analysis/module-sizes.json
+          retention-days: 30
+
+      - name: Comment PR with quality gate report
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-gate-report.md', 'utf8');
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('FFI Quality Gate Report')
+            );
+
+            const commentBody = report;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Add workflow summary
+        if: always()
+        run: |
+          cat quality-gate-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if quality gates not passed
+        if: steps.report.outputs.failed_checks > 0
+        run: |
+          echo "::error::${{ steps.report.outputs.failed_checks }} quality gate(s) failed"
+          echo "See the quality gate report for details"
+          exit 1
+
+  # Additional job to check all quality gates passed
+  all-quality-gates-passed:
+    name: All Quality Gates Passed
+    runs-on: ubuntu-latest
+    needs: [quality-gate-check]
+    if: success()
+
+    steps:
+      - name: All gates passed
+        run: |
+          echo "✅ All FFI quality gates passed successfully!"
+          echo "This PR meets all quality standards for FFI changes."

@@ -1,5 +1,9 @@
 # KeyRx
 
+[![CI](https://github.com/rmondo/keyrx/actions/workflows/ci.yml/badge.svg)](https://github.com/rmondo/keyrx/actions/workflows/ci.yml)
+[![FFI CI](https://github.com/rmondo/keyrx/actions/workflows/ffi-ci.yml/badge.svg)](https://github.com/rmondo/keyrx/actions/workflows/ffi-ci.yml)
+[![FFI Quality Gates](https://github.com/rmondo/keyrx/actions/workflows/ffi-quality-gates.yml/badge.svg)](https://github.com/rmondo/keyrx/actions/workflows/ffi-quality-gates.yml)
+
 The Ultimate Input Remapping Engine - a cross-platform keyboard remapper powered by Rhai scripting.
 
 ## Overview

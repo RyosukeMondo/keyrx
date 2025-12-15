@@ -1,0 +1,397 @@
+name: FFI CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'core/src/ffi/**'
+      - 'core/tools/generate_dart_bindings/**'
+      - 'core/macros/ffi_export/**'
+      - 'scripts/validate_ffi_contracts.sh'
+      - 'scripts/analyze_module_sizes.sh'
+      - 'scripts/detect_ffi_breaking_changes.sh'
+      - '.github/workflows/ffi-ci.yml'
+  pull_request:
+    paths:
+      - 'core/src/ffi/**'
+      - 'core/tools/generate_dart_bindings/**'
+      - 'core/macros/ffi_export/**'
+      - 'scripts/validate_ffi_contracts.sh'
+      - 'scripts/analyze_module_sizes.sh'
+      - 'scripts/detect_ffi_breaking_changes.sh'
+      - '.github/workflows/ffi-ci.yml'
+
+concurrency:
+  group: ffi-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  MODULE_MAX_LINES: 500
+
+jobs:
+  contract-validation:
+    name: Validate FFI Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-ci-contracts
+          cache-on-failure: true
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3 jq
+
+      - name: Validate FFI contracts
+        run: |
+          chmod +x scripts/validate_ffi_contracts.sh
+          scripts/validate_ffi_contracts.sh --check --verbose
+        env:
+          CI: true
+
+      - name: Upload validation report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-validation-report
+          path: .cache/contract-validation/
+          retention-days: 7
+
+  module-size-check:
+    name: Check Module Sizes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install tokei
+        run: cargo install tokei --locked
+
+      - name: Run module size analysis
+        id: module-analysis
+        run: |
+          chmod +x scripts/analyze_module_sizes.sh
+          scripts/analyze_module_sizes.sh || true
+
+          # Extract violation count for summary
+          VIOLATIONS=$(python3 -c "import json; data=json.load(open('.spec-workflow/analysis/module-sizes.json')); print(data['summary']['violations'])")
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Check for violations
+        if: steps.module-analysis.outputs.violations > 0
+        run: |
+          echo "::error::Found ${{ steps.module-analysis.outputs.violations }} module size violations (>${{ env.MODULE_MAX_LINES }} lines)"
+          python3 - .spec-workflow/analysis/module-sizes.json <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1]))
+          for v in report["violations"]:
+              print(f"::error file={v['path']}::Module exceeds {v['effective_limit']} lines: {v['code']} code lines")
+              print(f"  Recommendation: {v['recommendation']}")
+          PY
+          exit 1
+
+      - name: Upload module size dashboard
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: module-size-dashboard
+          path: |
+            .spec-workflow/analysis/module-sizes.json
+            .spec-workflow/analysis/module-sizes.html
+          retention-days: 30
+
+      - name: Comment PR with module size report
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('.spec-workflow/analysis/module-sizes.json', 'utf8'));
+
+            let body = '## 📏 Module Size Analysis\n\n';
+            body += `**Summary:**\n`;
+            body += `- Total files analyzed: ${report.summary.total_files}\n`;
+            body += `- Files over ${report.threshold} lines: ${report.summary.over_threshold}\n`;
+            body += `- Violations (no allowlist): ${report.summary.violations}\n\n`;
+
+            if (report.summary.violations > 0) {
+              body += '### ❌ Violations Found\n\n';
+              body += 'The following modules exceed size limits without allowlist:\n\n';
+              body += '| File | Lines | Limit | Recommendation |\n';
+              body += '|------|-------|-------|----------------|\n';
+              for (const v of report.violations) {
+                body += `| \`${v.path}\` | ${v.code} | ${v.effective_limit} | ${v.recommendation} |\n`;
+              }
+              body += '\n';
+            } else {
+              body += '✅ All modules are within size limits!\n\n';
+            }
+
+            body += `\n[📊 View Full Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  ffi-tests:
+    name: FFI Tests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-tests-${{ matrix.os }}
+          cache-on-failure: true
+
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Run FFI unit tests
+        run: cargo nextest run --all-features --filter-expr 'package(keyrx) and test(ffi)' --profile ci-unit
+        working-directory: ./core
+
+      - name: Run FFI integration tests
+        run: cargo nextest run --all-features --filter-expr 'package(keyrx) and test(integration::ffi)' --profile ci-integration
+        working-directory: ./core
+
+  test-coverage:
+    name: FFI Test Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-coverage
+          cache-on-failure: true
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate FFI coverage report
+        run: |
+          cargo llvm-cov --all-features \
+            --lcov --output-path ffi-lcov.info \
+            -- --test-threads=1 ffi
+
+          cargo llvm-cov --all-features \
+            --text -- --test-threads=1 ffi | tee ffi-coverage-summary.txt
+        working-directory: ./core
+
+      - name: Check coverage threshold
+        id: coverage-check
+        run: |
+          # Extract coverage percentage
+          COVERAGE=$(grep -oP 'TOTAL.*?(\d+\.\d+)%' core/ffi-coverage-summary.txt | grep -oP '\d+\.\d+' || echo "0")
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
+          # Check if coverage meets 80% threshold
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::error::FFI test coverage is $COVERAGE%, below 80% threshold"
+            exit 1
+          fi
+          echo "FFI test coverage: $COVERAGE%"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ffi-coverage-report
+          path: |
+            core/ffi-lcov.info
+            core/ffi-coverage-summary.txt
+          retention-days: 30
+
+      - name: Comment PR with coverage
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('core/ffi-coverage-summary.txt', 'utf8');
+            const coverage = '${{ steps.coverage-check.outputs.coverage }}';
+
+            const emoji = parseFloat(coverage) >= 80 ? '✅' : '❌';
+            const body = `## ${emoji} FFI Test Coverage: ${coverage}%\n\n` +
+                         `**Threshold:** 80%\n\n` +
+                         `<details>\n<summary>Coverage Details</summary>\n\n\`\`\`\n${summary}\n\`\`\`\n</details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  tracing-overhead-check:
+    name: Check Tracing Overhead
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-tracing-bench
+          cache-on-failure: true
+
+      - name: Run tracing overhead benchmarks
+        run: |
+          # Build benchmarks if they exist
+          if [ -f "core/benches/ffi_tracing.rs" ]; then
+            cargo bench --bench ffi_tracing -- --output-format bencher | tee tracing-bench.txt
+
+            # Extract overhead percentage (if benchmark reports it)
+            # For now, just check that benchmarks run successfully
+            echo "Tracing overhead benchmarks completed"
+          else
+            echo "Tracing benchmarks not yet implemented - skipping"
+          fi
+        working-directory: ./core
+        continue-on-error: true
+
+  performance-regression:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core -> target
+          shared-key: ffi-perf-pr
+          cache-on-failure: true
+
+      - name: Install criterion
+        run: cargo install cargo-criterion || true
+
+      - name: Run FFI benchmarks (PR)
+        run: |
+          if [ -f "core/benches/ffi_benchmarks.rs" ]; then
+            cargo criterion --bench ffi_benchmarks --message-format json > pr-bench-results.json || true
+            echo "PR benchmarks completed"
+          else
+            echo "FFI benchmarks not yet implemented - skipping regression check"
+          fi
+        continue-on-error: true
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Run FFI benchmarks (base)
+        run: |
+          cd base/core
+          if [ -f "benches/ffi_benchmarks.rs" ]; then
+            cargo criterion --bench ffi_benchmarks --message-format json > ../../base-bench-results.json || true
+            echo "Base benchmarks completed"
+          fi
+        continue-on-error: true
+
+      - name: Compare performance
+        run: |
+          echo "Performance regression detection would compare pr-bench-results.json vs base-bench-results.json"
+          echo "Failing if any benchmark shows >10% regression"
+          echo "Not yet fully implemented - skipping"
+        continue-on-error: true
+
+  report-summary:
+    name: Report Summary
+    runs-on: ubuntu-latest
+    needs: [contract-validation, module-size-check, ffi-tests, test-coverage]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# FFI CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Contract validation
+          if [ "${{ needs.contract-validation.result }}" == "success" ]; then
+            echo "✅ **Contract Validation:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Contract Validation:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Module size check
+          if [ "${{ needs.module-size-check.result }}" == "success" ]; then
+            echo "✅ **Module Size Check:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Module Size Check:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # FFI tests
+          if [ "${{ needs.ffi-tests.result }}" == "success" ]; then
+            echo "✅ **FFI Tests:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **FFI Tests:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Test coverage
+          if [ "${{ needs.test-coverage.result }}" == "success" ]; then
+            echo "✅ **Test Coverage:** ≥80%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Test Coverage:** <80%" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*View detailed reports in workflow artifacts*" >> $GITHUB_STEP_SUMMARY
