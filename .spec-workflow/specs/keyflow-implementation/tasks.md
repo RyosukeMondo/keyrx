@@ -80,7 +80,7 @@
   - _Requirements: FR2.2, FR2.3, FR2.4, FR1.3_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in dialogs and CRUD operations | Task: Create ui/lib/dialogs/add_slot_dialog.dart with dropdown selectors for hardware profile and keymap, implement add button on device nodes, create ui/lib/widgets/flow/slot_priority_adjuster.dart for dragging priority badges to reorder slots, implement ui/lib/state/slot_actions.dart wrapping keyFlowActionsProvider mutations, add confirmation dialog for delete operations, auto-save changes to RuntimeConfig via repository, show success/error toasts, validate inputs (no duplicate profile+keymap combos) | Restrictions: Dialog must validate selections, prevent invalid combinations, ensure atomic operations (rollback on failure), provide clear error messages, maintain undo capability | Success: Add slot dialog functional with validation, delete works with confirmation, priority reordering smooth, auto-save works, error handling robust | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 11. Interactive Widget Tests
+- [x] 11. Interactive Widget Tests
   - File: ui/test/widgets/flow/draggable_node_test.dart, ui/test/widgets/flow/interactive_edge_test.dart, ui/test/dialogs/add_slot_dialog_test.dart
   - Write widget tests for drag interactions, edge selection, slot management dialogs covering user interactions and state updates
   - Purpose: Ensure interactive features work correctly
