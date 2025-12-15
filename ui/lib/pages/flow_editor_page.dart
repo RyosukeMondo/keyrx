@@ -6,6 +6,7 @@ import 'package:keyrx_ui/models/flow/flow_data.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/models/flow/edge_style.dart';
+import 'package:keyrx_ui/state/device_stream_provider.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
@@ -31,6 +32,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   late final AnimationController _shimmerController;
   late final Animation<double> _shimmer;
 
+  // Track previous node IDs to detect additions/removals
+  Set<String> _previousNodeIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +45,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     _shimmer = Tween<double>(begin: -1, end: 2).animate(
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
+
+    // Listen to device events for real-time updates
+    ref.read(deviceStreamNotifierProvider);
   }
 
   @override
@@ -112,13 +119,17 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
                 ),
               ),
               ...view.nodes.map(
-                (node) => DraggableNode(
+                (node) => _AnimatedNodeWrapper(
                   key: ValueKey(node.id),
                   nodeId: node.id,
-                  initialPosition: node.position,
-                  size: node.size,
-                  canvasBounds: Size(canvasWidth, canvasHeight),
-                  child: node.child,
+                  isNew: !_previousNodeIds.contains(node.id),
+                  child: DraggableNode(
+                    nodeId: node.id,
+                    initialPosition: node.position,
+                    size: node.size,
+                    canvasBounds: Size(canvasWidth, canvasHeight),
+                    child: node.child,
+                  ),
                 ),
               ),
             ],
@@ -149,6 +160,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
         child: _buildNodeWidget(node, graph),
       );
     }).toList();
+
+    // Update tracking for next render
+    _previousNodeIds = nodes.map((n) => n.id).toSet();
 
     final nodeMap = {for (final node in nodes) node.id: node};
     final edges = <PaintableEdge>[];
@@ -429,4 +443,71 @@ class _CanvasNode {
   final Offset position;
   final Size size;
   final Widget child;
+}
+
+/// Wrapper widget that animates node appearance/disappearance.
+///
+/// Provides fade-in animation for new nodes and smooth transitions
+/// for node updates.
+class _AnimatedNodeWrapper extends StatefulWidget {
+  const _AnimatedNodeWrapper({
+    super.key,
+    required this.nodeId,
+    required this.isNew,
+    required this.child,
+  });
+
+  final String nodeId;
+  final bool isNew;
+  final Widget child;
+
+  @override
+  State<_AnimatedNodeWrapper> createState() => _AnimatedNodeWrapperState();
+}
+
+class _AnimatedNodeWrapperState extends State<_AnimatedNodeWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: widget.isNew ? 0.0 : 1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _scaleAnimation = Tween<double>(
+      begin: widget.isNew ? 0.9 : 1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+
+    if (widget.isNew) {
+      _controller.forward();
+    } else {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+    );
+  }
 }
