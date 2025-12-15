@@ -18,7 +18,11 @@ import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
 import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/error_view.dart';
-import 'package:keyrx_ui/widgets/flow/loading_skeleton.dart';
+import 'package:keyrx_ui/widgets/flow/loading_skeleton.dart'
+    hide FlowEmptyState, DisconnectedDevicesState;
+import 'package:keyrx_ui/widgets/flow/empty_state.dart';
+import 'package:keyrx_ui/widgets/flow/validation_overlay.dart';
+import 'package:keyrx_ui/services/flow_validator.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 
@@ -44,6 +48,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   Rect _currentViewport = Rect.zero;
   final FrameTimer _frameTimer = FrameTimer();
   RenderingMetrics? _lastMetrics;
+
+  // Validation
+  final _validator = const FlowValidator();
 
   @override
   void initState() {
@@ -98,8 +105,17 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     final graph = graphAsync.value ?? const FlowGraph();
     final positions = positionsAsync.value ?? const <String, NodePosition>{};
 
+    // Check for empty state scenarios
     if (graph.nodes.isEmpty) {
       return const FlowEmptyState();
+    }
+
+    // Check if all devices are disconnected
+    final deviceNodes = graph.nodes.whereType<DeviceFlowNode>().toList();
+    final connectedDevices = deviceNodes.where((d) => d.isConnected).toList();
+
+    if (deviceNodes.isNotEmpty && connectedDevices.isEmpty) {
+      return FlowWaitingState(deviceCount: deviceNodes.length);
     }
 
     final view = _buildCanvas(graph, positions);
@@ -313,7 +329,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   }
 
   Widget _buildNodeWidget(FlowNode node, FlowGraph graph) {
-    return node.map(
+    // Get validation errors for this node
+    final validationErrors = _validator.getNodeErrors(graph, node.nodeId);
+
+    final nodeWidget = node.map(
       device: (value) {
         final edges = graph.edges
             .where((edge) => edge.from == value.id)
@@ -360,6 +379,36 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
               : null,
         );
       },
+    );
+
+    // Wrap with validation badge if there are errors
+    if (validationErrors.isEmpty) {
+      return nodeWidget;
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        nodeWidget,
+        Positioned(
+          top: -8,
+          right: -8,
+          child: ValidationBadge(
+            errors: validationErrors,
+            onTap: () => _showValidationErrors(node.nodeId, validationErrors),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showValidationErrors(String nodeId, List<ValidationError> errors) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => ValidationErrorsDialog(
+        title: 'Validation Errors for $nodeId',
+        errors: errors,
+      ),
     );
   }
 
