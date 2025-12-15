@@ -88,7 +88,7 @@
   - _Requirements: NFR1.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in interaction testing | Task: Create widget tests for all interactive features: test/widgets/flow/draggable_node_test.dart (test drag gestures, position updates, constraints), test/widgets/flow/interactive_edge_test.dart (test click detection, selection, hover, context menu, keyboard shortcuts), test/dialogs/add_slot_dialog_test.dart (test form validation, profile/keymap selection, submission, cancellation), mock provider interactions, verify state updates, test error handling, achieve 80%+ coverage | Restrictions: Tests must simulate real user interactions, use WidgetTester.drag/tap methods, mock FFI calls, ensure tests are deterministic | Success: All interactive features tested, gesture handling verified, state updates confirmed, error cases covered, 80%+ coverage | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [-] 12. Real-Time Device Updates
+- [x] 12. Real-Time Device Updates
   - File: ui/lib/state/device_stream_provider.dart, ui/lib/services/device_event_handler.dart
   - Implement device state streaming from FFI (BridgeStateUpdate), update flow graph when devices connect/disconnect, animate node appearance/disappearance, update validation states in real-time
   - Purpose: Keep UI synchronized with device state changes without manual refresh
