@@ -52,8 +52,8 @@
 
 #![allow(unsafe_code)]
 
-use ffi_export::ffi_export;
 use crate::ffi::engine_instance::with_global_engine;
+use ffi_export::ffi_export;
 use std::ffi::{c_char, CString};
 
 /// Export all transition log entries as JSON.

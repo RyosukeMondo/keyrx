@@ -11,11 +11,7 @@ void main() {
 
   test('emits structured JSON with context and error fields', () {
     final lines = <String>[];
-    final logger = getLogger(
-      'test_service',
-      level: Level.ALL,
-      sink: lines.add,
-    );
+    final logger = getLogger('test_service', level: Level.ALL, sink: lines.add);
 
     logger.info(
       'device_selected',

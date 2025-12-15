@@ -75,8 +75,8 @@
 
 #![allow(unsafe_code)]
 
-use ffi_export::ffi_export;
 use crate::safety::panic_telemetry::{get_telemetry, reset_telemetry};
+use ffi_export::ffi_export;
 use std::ffi::{c_char, CString};
 use std::ptr;
 

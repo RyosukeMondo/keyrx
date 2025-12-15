@@ -10,7 +10,7 @@ import 'package:keyrx_ui/repositories/keyflow_repository.dart';
 
 class _FakeRuntimeApi implements RuntimeApi {
   _FakeRuntimeApi({required RuntimeConfig initialConfig, this.loadFailure})
-      : _config = initialConfig;
+    : _config = initialConfig;
 
   RuntimeConfig _config;
 
@@ -67,27 +67,25 @@ RuntimeConfig _configWithSlots(
   List<ProfileSlot> slots, {
   DeviceInstanceId? device,
 }) {
-  final dev = device ??
-      const DeviceInstanceId(
-        vendorId: 1,
-        productId: 2,
-        serial: 'abc',
-      );
-  return RuntimeConfig(devices: [DeviceSlots(device: dev, slots: slots)]);
+  final dev =
+      device ??
+      const DeviceInstanceId(vendorId: 1, productId: 2, serial: 'abc');
+  return RuntimeConfig(
+    devices: [DeviceSlots(device: dev, slots: slots)],
+  );
 }
 
 ProfileSlot _slot({
   String id = 'slot-1',
   int priority = 0,
   bool active = false,
-}) =>
-    ProfileSlot(
-      id: id,
-      hardwareProfileId: 'hp',
-      keymapId: 'km',
-      priority: priority,
-      active: active,
-    );
+}) => ProfileSlot(
+  id: id,
+  hardwareProfileId: 'hp',
+  keymapId: 'km',
+  priority: priority,
+  active: active,
+);
 
 void main() {
   late DateTime now;
@@ -131,19 +129,18 @@ void main() {
       expect(api.getConfigCalls, 1);
 
       now = now.add(const Duration(minutes: 6));
-      final refreshedConfig =
-          _configWithSlots([_slot(id: 'fresh', priority: 0)]);
+      final refreshedConfig = _configWithSlots([
+        _slot(id: 'fresh', priority: 0),
+      ]);
       api.setConfig(refreshedConfig);
 
       final refreshed = await repo.getRuntimeConfig();
       expect(api.getConfigCalls, 2);
       expect(refreshed.data, refreshedConfig);
 
-      final forcedConfig =
-          _configWithSlots([_slot(id: 'forced', priority: 1)]);
+      final forcedConfig = _configWithSlots([_slot(id: 'forced', priority: 1)]);
       api.setConfig(forcedConfig);
-      final forced =
-          await repo.getRuntimeConfig(forceRefresh: true);
+      final forced = await repo.getRuntimeConfig(forceRefresh: true);
       expect(api.getConfigCalls, 3);
       expect(forced.data, forcedConfig);
       await repo.dispose();
@@ -152,28 +149,19 @@ void main() {
 
   group('KeyFlowRepository mutations', () {
     test('auto-assigns next priority when adding a slot', () async {
-      final baseConfig = _configWithSlots(
-        [
-          _slot(id: 'a', priority: 0),
-          _slot(id: 'b', priority: 1),
-        ],
-        device: device,
-      );
+      final baseConfig = _configWithSlots([
+        _slot(id: 'a', priority: 0),
+        _slot(id: 'b', priority: 1),
+      ], device: device);
       final api = _FakeRuntimeApi(initialConfig: baseConfig);
-      final repo = KeyFlowRepository(
-        runtimeApi: api,
-        clock: () => now,
-      );
+      final repo = KeyFlowRepository(runtimeApi: api, clock: () => now);
       await repo.getRuntimeConfig(); // seed cache
 
       final newSlot = _slot(id: 'c');
-      final updatedConfig = _configWithSlots(
-        [
-          ...baseConfig.devices.first.slots,
-          newSlot.copyWith(priority: 2),
-        ],
-        device: device,
-      );
+      final updatedConfig = _configWithSlots([
+        ...baseConfig.devices.first.slots,
+        newSlot.copyWith(priority: 2),
+      ], device: device);
       api.addSlotResponse = updatedConfig;
 
       final result = await repo.addSlot(device, newSlot);
@@ -199,22 +187,18 @@ void main() {
 
       await repo.getRuntimeConfig(); // emit cached value
 
-      final mutated = _configWithSlots(
-        [
-          _slot(id: 'a'),
-          _slot(id: 'b', priority: 1),
-        ],
-        device: device,
-      );
+      final mutated = _configWithSlots([
+        _slot(id: 'a'),
+        _slot(id: 'b', priority: 1),
+      ], device: device);
       api.addSlotResponse = mutated;
       await repo.addSlot(device, _slot(id: 'b'));
 
       expect(seen.last, mutated);
 
-      final eventConfig = _configWithSlots(
-        [_slot(id: 'c', priority: 0)],
-        device: device,
-      );
+      final eventConfig = _configWithSlots([
+        _slot(id: 'c', priority: 0),
+      ], device: device);
       api.setConfig(eventConfig);
       // Trigger bridge event refresh
       registry.handlers[EventType.deviceUpdated]?.call(Uint8List.fromList([]));

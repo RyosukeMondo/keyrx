@@ -55,12 +55,14 @@ class WidgetTestHarness {
     final effectiveBridge = bridge ?? FakeBridge();
     final effectiveRegistry = registry ?? _buildRegistry(effectiveBridge);
     final effectiveFacade = facade ?? MockKeyrxFacade.withDefaults();
-    final effectiveAppState = appState ??
+    final effectiveAppState =
+        appState ??
         AppState(
           engineService: effectiveRegistry.engineService,
           errorTranslator: effectiveRegistry.errorTranslator,
         );
-    final providers = providerOverrides ??
+    final providers =
+        providerOverrides ??
         createProviders(
           registry: effectiveRegistry,
           facade: effectiveFacade,
@@ -109,10 +111,7 @@ class WidgetTestHarness {
       overrides: overrides,
       child: MultiProvider(
         providers: providerAdapters,
-        child: MaterialApp(
-          theme: theme,
-          home: body,
-        ),
+        child: MaterialApp(theme: theme, home: body),
       ),
     );
   }
@@ -136,8 +135,7 @@ class WidgetTestHarness {
     WidgetTester tester,
     Widget widget, {
     bool settle = true,
-  }) =>
-      pumpWidget(tester, widget, settle: settle, withScaffold: true);
+  }) => pumpWidget(tester, widget, settle: settle, withScaffold: true);
 
   static ServiceRegistry _buildRegistry(FakeBridge bridge) {
     final profileRegistry = FakeProfileRegistryService();

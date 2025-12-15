@@ -13,10 +13,7 @@ void main() {
     ) async {
       final harness = WidgetTestHarness();
 
-      await harness.pumpPage(
-        tester,
-        const Text('Hello Harness'),
-      );
+      await harness.pumpPage(tester, const Text('Hello Harness'));
 
       tester.expectOne(find.byType(Scaffold));
       tester.expectOne(find.text('Hello Harness'));

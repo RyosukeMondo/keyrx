@@ -31,18 +31,19 @@ class NodePosition {
   }
 
   Map<String, dynamic> toJson() => {
-        'x': x,
-        'y': y,
-        'isManual': isManual,
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'x': x,
+    'y': y,
+    'isManual': isManual,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory NodePosition.fromJson(Map<String, dynamic> json) {
     return NodePosition(
       x: (json['x'] as num).toDouble(),
       y: (json['y'] as num).toDouble(),
       isManual: json['isManual'] as bool? ?? false,
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }

@@ -36,7 +36,7 @@ static CORRELATION_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 // Thread-local storage for current correlation ID
 thread_local! {
-    static CURRENT_CORRELATION_ID: std::cell::Cell<u64> = std::cell::Cell::new(0);
+    static CURRENT_CORRELATION_ID: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 
 /// Configuration for FFI tracing
@@ -99,17 +99,20 @@ pub fn init(config: TracingConfig) {
     }
 
     // Build the environment filter
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| {
-            EnvFilter::new(match config.min_level {
-                Level::TRACE => "trace",
-                Level::DEBUG => "debug",
-                Level::INFO => "info",
-                Level::WARN => "warn",
-                Level::ERROR => "error",
-            })
+    let mut env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::new(match config.min_level {
+            Level::TRACE => "trace",
+            Level::DEBUG => "debug",
+            Level::INFO => "info",
+            Level::WARN => "warn",
+            Level::ERROR => "error",
         })
-        .add_directive("keyrx_core::ffi=trace".parse().unwrap());
+    });
+
+    // Add FFI tracing directive (safe to unwrap as the string is static and valid)
+    if let Ok(directive) = "keyrx_core::ffi=trace".parse() {
+        env_filter = env_filter.add_directive(directive);
+    }
 
     let mut layers = Vec::new();
 
@@ -144,9 +147,7 @@ pub fn init(config: TracingConfig) {
     }
 
     // Initialize the subscriber
-    tracing_subscriber::registry()
-        .with(layers)
-        .init();
+    tracing_subscriber::registry().with(layers).init();
 
     tracing::info!(
         file_output = config.enable_file_output,
@@ -222,7 +223,8 @@ macro_rules! ffi_trace_entry {
     ($name:expr) => {
         tracing::debug!(
             correlation_id = $crate::ffi::tracing::correlation_id(),
-            "FFI call: {}", $name
+            "FFI call: {}",
+            $name
         );
     };
 }

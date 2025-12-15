@@ -360,23 +360,109 @@ If correlation IDs are 0 or missing:
 2. Ensure correlation ID is propagated across threads
 3. Check that `correlation_id()` is called in the same thread
 
-## Integration with Dart (Task 18)
+## Integration with Dart DevTools Timeline
 
-Future work will integrate FFI traces with Dart DevTools timeline:
+FFI traces can be visualized in Flutter DevTools Timeline using the `FfiTracingBridge`.
+
+### Quick Start
 
 ```dart
-// Dart side (future implementation)
-class FfiTracing {
-  static void setCorrelationId(int id) {
-    keyrx.keyrx_set_correlation_id(id);
-  }
+import 'package:keyrx/ffi/tracing_bridge.dart';
 
-  static Future<void> enableTimeline() async {
-    // Subscribe to FFI trace events
-    // Forward to DevTools timeline
-  }
+void main() async {
+  // Enable FFI trace collection
+  FfiTracingBridge.enable();
+
+  // Start Timeline integration (polls every 100ms by default)
+  await FfiTracingBridge.startTimelineIntegration();
+
+  // Your app code here...
+  // FFI calls will now appear in DevTools Timeline
+
+  // When done:
+  FfiTracingBridge.stopTimelineIntegration();
+  FfiTracingBridge.disable();
 }
 ```
+
+### Manual Event Access
+
+You can also access trace events directly without Timeline integration:
+
+```dart
+// Get all events
+final events = FfiTracingBridge.getEvents();
+for (final event in events) {
+  print('FFI call: ${event.name} took ${event.durationUs}μs');
+}
+
+// Get filtered events
+final slowCalls = FfiTracingBridge.getFilteredEvents(
+  FfiTraceFilter(
+    domain: 'engine',
+    minDurationUs: 1000, // Only calls > 1ms
+  ),
+);
+
+// Get statistics
+final stats = FfiTracingBridge.getStats();
+print(stats); // Shows total events, by domain, by status, etc.
+```
+
+### Filtering Options
+
+```dart
+const filter = FfiTraceFilter(
+  domain: 'engine',           // Filter by domain (null = all)
+  minDurationUs: 1000,        // Minimum duration in μs
+  functionPattern: r'keyrx_engine_.*', // Regex pattern
+  resultStatus: FfiResultStatus.error, // Only errors
+);
+
+final filtered = FfiTracingBridge.getFilteredEvents(filter);
+```
+
+### Running with Tracing
+
+Use the `just dev-trace` command to run your app with tracing enabled:
+
+```bash
+# Start development with tracing
+just dev-trace
+
+# Or manually with environment variable
+RUST_LOG=keyrx_core::ffi=trace,info just dev
+```
+
+### Viewing in DevTools
+
+1. Start your app with tracing enabled: `just dev-trace`
+2. Open Flutter DevTools in your browser
+3. Navigate to the Timeline tab
+4. Enable timeline integration in your app:
+   ```dart
+   FfiTracingBridge.enable();
+   await FfiTracingBridge.startTimelineIntegration();
+   ```
+5. Interact with your app
+6. FFI calls will appear in the Timeline with:
+   - Function name as the event name
+   - Duration visualization
+   - Arguments (sanitized)
+   - Correlation IDs
+   - Result status (success/error)
+
+### Performance Considerations
+
+- **Polling Interval**: Default 100ms. Adjust based on your needs:
+  ```dart
+  await FfiTracingBridge.startTimelineIntegration(
+    pollInterval: Duration(milliseconds: 50), // More frequent
+  );
+  ```
+- **Buffer Size**: The Rust side buffers up to 1000 events (circular buffer)
+- **Timeline Impact**: Timeline events themselves have minimal overhead (<1%)
+- **Production**: Disable tracing in production builds for best performance
 
 ## Examples
 
@@ -514,9 +600,81 @@ fn test_correlation_id_generation() {
 }
 ```
 
+### Example 4: Using Trace Export in FFI Functions
+
+```rust
+use keyrx_core::ffi::tracing_export::{
+    emit_trace_event_start, emit_trace_event_end, ResultStatus
+};
+
+#[ffi_export(domain = "engine", version = "1.0")]
+pub extern "C" fn keyrx_engine_process_input(input: u32) -> i32 {
+    // Emit trace event start
+    let event_id = emit_trace_event_start(
+        "keyrx_engine_process_input",
+        "engine",
+        &[("input", &input.to_string())],
+    );
+
+    // Do work
+    let result = match process_input_internal(input) {
+        Ok(_) => {
+            emit_trace_event_end(event_id, ResultStatus::Success);
+            0
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to process input");
+            emit_trace_event_end(event_id, ResultStatus::Error);
+            -1
+        }
+    };
+
+    result
+}
+```
+
+## Testing
+
+Run the tracing module tests:
+
+```bash
+# Test tracing infrastructure
+cargo test --package keyrx_core --lib ffi::tracing
+
+# Test tracing export
+cargo test --package keyrx_core --lib ffi::tracing_export
+```
+
+Example tests:
+
+```rust
+#[test]
+fn test_correlation_id_generation() {
+    let id1 = new_correlation_id();
+    let id2 = new_correlation_id();
+    assert_ne!(id1, id2);
+    assert!(id2 > id1);
+}
+
+#[test]
+fn test_trace_event_lifecycle() {
+    keyrx_trace_enable();
+    keyrx_trace_clear();
+
+    let event_id = emit_trace_event_start("test_fn", "test", &[]);
+    assert!(event_id > 0);
+
+    emit_trace_event_end(event_id, ResultStatus::Success);
+
+    let count = keyrx_trace_get_count();
+    assert_eq!(count, 1);
+}
+```
+
 ## See Also
 
 - [FFI Architecture](ffi-architecture.md)
 - [FFI Development Guide](FFI_DEVELOPMENT.md)
-- Task 18: Dart DevTools Timeline Integration (future)
-- Task 19: FFI Call Instrumentation (future)
+- Task 17: FFI Tracing Infrastructure (completed)
+- Task 18: Dart DevTools Timeline Integration (completed)
+- Task 19: FFI Call Instrumentation (next)

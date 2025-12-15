@@ -17,11 +17,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         .replaceAll(RegExp('^_|_\$'), ''),
   );
 
-  return GoldenToolkit.runWithConfiguration(
-    () async {
-      await loadAppFonts();
-      await testMain();
-    },
-    config: config,
-  );
+  return GoldenToolkit.runWithConfiguration(() async {
+    await loadAppFonts();
+    await testMain();
+  }, config: config);
 }

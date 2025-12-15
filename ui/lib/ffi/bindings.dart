@@ -36,6 +36,40 @@ typedef KeyrxGetConfigRootNative = Pointer<Char> Function();
 typedef KeyrxGetConfigRoot = Pointer<Char> Function();
 
 // ────────────────────────────────────────────────────────────────
+// FFI Tracing Types
+// ────────────────────────────────────────────────────────────────
+
+typedef KeyrxTraceEnableNative = Void Function();
+typedef KeyrxTraceEnable = void Function();
+
+typedef KeyrxTraceDisableNative = Void Function();
+typedef KeyrxTraceDisable = void Function();
+
+typedef KeyrxTraceIsEnabledNative = Bool Function();
+typedef KeyrxTraceIsEnabled = bool Function();
+
+typedef KeyrxTraceGetCountNative = Size Function();
+typedef KeyrxTraceGetCount = int Function();
+
+typedef KeyrxTraceClearNative = Void Function();
+typedef KeyrxTraceClear = void Function();
+
+typedef KeyrxTraceGetEventsJsonNative = Pointer<Char> Function();
+typedef KeyrxTraceGetEventsJson = Pointer<Char> Function();
+
+typedef KeyrxTraceGetFilteredEventsJsonNative = Pointer<Char> Function(
+  Pointer<Char> domain,
+  Uint64 minDurationUs,
+);
+typedef KeyrxTraceGetFilteredEventsJson = Pointer<Char> Function(
+  Pointer<Char> domain,
+  int minDurationUs,
+);
+
+typedef KeyrxTraceFreeJsonNative = Void Function(Pointer<Char> json);
+typedef KeyrxTraceFreeJson = void Function(Pointer<Char> json);
+
+// ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
 
@@ -52,12 +86,48 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxEngineStopLoop? stopLoop;
   late final KeyrxFreeString freeString;
 
+  // FFI Tracing functions
+  late final KeyrxTraceEnable keyrx_trace_enable;
+  late final KeyrxTraceDisable keyrx_trace_disable;
+  late final KeyrxTraceIsEnabled keyrx_trace_is_enabled;
+  late final KeyrxTraceGetCount keyrx_trace_get_count;
+  late final KeyrxTraceClear keyrx_trace_clear;
+  late final KeyrxTraceGetEventsJson keyrx_trace_get_events_json;
+  late final KeyrxTraceGetFilteredEventsJson keyrx_trace_get_filtered_events_json;
+  late final KeyrxTraceFreeJson keyrx_trace_free_json;
+
   KeyrxBindings(this._lib) : super(_lib) {
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
     freeString = _lib
         .lookup<NativeFunction<KeyrxFreeStringNative>>('keyrx_free_string')
         .asFunction<KeyrxFreeString>();
+
+    // Initialize tracing functions
+    keyrx_trace_enable = _lib
+        .lookup<NativeFunction<KeyrxTraceEnableNative>>('keyrx_trace_enable')
+        .asFunction<KeyrxTraceEnable>();
+    keyrx_trace_disable = _lib
+        .lookup<NativeFunction<KeyrxTraceDisableNative>>('keyrx_trace_disable')
+        .asFunction<KeyrxTraceDisable>();
+    keyrx_trace_is_enabled = _lib
+        .lookup<NativeFunction<KeyrxTraceIsEnabledNative>>('keyrx_trace_is_enabled')
+        .asFunction<KeyrxTraceIsEnabled>();
+    keyrx_trace_get_count = _lib
+        .lookup<NativeFunction<KeyrxTraceGetCountNative>>('keyrx_trace_get_count')
+        .asFunction<KeyrxTraceGetCount>();
+    keyrx_trace_clear = _lib
+        .lookup<NativeFunction<KeyrxTraceClearNative>>('keyrx_trace_clear')
+        .asFunction<KeyrxTraceClear>();
+    keyrx_trace_get_events_json = _lib
+        .lookup<NativeFunction<KeyrxTraceGetEventsJsonNative>>('keyrx_trace_get_events_json')
+        .asFunction<KeyrxTraceGetEventsJson>();
+    keyrx_trace_get_filtered_events_json = _lib
+        .lookup<NativeFunction<KeyrxTraceGetFilteredEventsJsonNative>>('keyrx_trace_get_filtered_events_json')
+        .asFunction<KeyrxTraceGetFilteredEventsJson>();
+    keyrx_trace_free_json = _lib
+        .lookup<NativeFunction<KeyrxTraceFreeJsonNative>>('keyrx_trace_free_json')
+        .asFunction<KeyrxTraceFreeJson>();
   }
 
   KeyrxEngineStartLoop? _tryLookupStartLoop() {

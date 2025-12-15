@@ -30,6 +30,7 @@ pub mod logging;
 pub mod marshal;
 pub mod runtime;
 pub mod tracing;
+pub mod tracing_export;
 pub mod traits;
 
 #[cfg(test)]

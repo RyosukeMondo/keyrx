@@ -22,6 +22,10 @@ dev:
 dev-mock-full:
     ./scripts/integrated_dev.sh --mock
 
+# Run integrated development workflow with FFI tracing enabled
+dev-trace:
+    RUST_LOG=keyrx_core::ffi=trace,info ./scripts/integrated_dev.sh
+
 # Watch Rust FFI files and regenerate Dart bindings on change
 dev-watch:
     ./scripts/watch_ffi.sh

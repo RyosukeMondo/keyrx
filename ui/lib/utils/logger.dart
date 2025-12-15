@@ -140,15 +140,14 @@ class StructuredLogger {
     Map<String, Object?> context = const {},
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _emit(
-        Level.FINEST,
-        event,
-        message: message,
-        context: context,
-        error: error,
-        stackTrace: stackTrace,
-      );
+  }) => _emit(
+    Level.FINEST,
+    event,
+    message: message,
+    context: context,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   void debug(
     String event, {
@@ -156,15 +155,14 @@ class StructuredLogger {
     Map<String, Object?> context = const {},
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _emit(
-        Level.FINE,
-        event,
-        message: message,
-        context: context,
-        error: error,
-        stackTrace: stackTrace,
-      );
+  }) => _emit(
+    Level.FINE,
+    event,
+    message: message,
+    context: context,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   void info(
     String event, {
@@ -172,15 +170,14 @@ class StructuredLogger {
     Map<String, Object?> context = const {},
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _emit(
-        Level.INFO,
-        event,
-        message: message,
-        context: context,
-        error: error,
-        stackTrace: stackTrace,
-      );
+  }) => _emit(
+    Level.INFO,
+    event,
+    message: message,
+    context: context,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   void warn(
     String event, {
@@ -188,15 +185,14 @@ class StructuredLogger {
     Map<String, Object?> context = const {},
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _emit(
-        Level.WARNING,
-        event,
-        message: message,
-        context: context,
-        error: error,
-        stackTrace: stackTrace,
-      );
+  }) => _emit(
+    Level.WARNING,
+    event,
+    message: message,
+    context: context,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   void error(
     String event, {
@@ -204,15 +200,14 @@ class StructuredLogger {
     Map<String, Object?> context = const {},
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _emit(
-        Level.SEVERE,
-        event,
-        message: message,
-        context: context,
-        error: error,
-        stackTrace: stackTrace,
-      );
+  }) => _emit(
+    Level.SEVERE,
+    event,
+    message: message,
+    context: context,
+    error: error,
+    stackTrace: stackTrace,
+  );
 
   void _emit(
     Level level,

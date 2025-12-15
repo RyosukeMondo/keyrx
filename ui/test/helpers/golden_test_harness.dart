@@ -16,11 +16,12 @@ class GoldenTestHarness {
     ThemeData? theme,
     this.devices = defaultGoldenDevices,
     bool wrapWithScaffold = true,
-  }) : widgetHarness = widgetHarness ??
-            WidgetTestHarness(
-              theme: theme ?? ThemeData.dark(useMaterial3: true),
-              wrapWithScaffold: wrapWithScaffold,
-            );
+  }) : widgetHarness =
+           widgetHarness ??
+           WidgetTestHarness(
+             theme: theme ?? ThemeData.dark(useMaterial3: true),
+             wrapWithScaffold: wrapWithScaffold,
+           );
 
   final WidgetTestHarness widgetHarness;
   final List<Device> devices;
@@ -37,14 +38,8 @@ class GoldenTestHarness {
     await tester.pumpAndSettle();
   }
 
-  Future<void> expectGolden(
-    WidgetTester tester,
-    String name,
-  ) async {
-    await screenMatchesGolden(
-      tester,
-      name,
-    );
+  Future<void> expectGolden(WidgetTester tester, String name) async {
+    await screenMatchesGolden(tester, name);
   }
 
   Future<void> expectMultiDevice(
@@ -61,10 +56,6 @@ class GoldenTestHarness {
     );
     await tester.pumpAndSettle();
 
-    await multiScreenGolden(
-      tester,
-      name,
-      devices: activeDevices,
-    );
+    await multiScreenGolden(tester, name, devices: activeDevices);
   }
 }

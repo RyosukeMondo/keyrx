@@ -11,10 +11,8 @@ part 'flow_graph.g.dart';
 
 @freezed
 class FlowPosition with _$FlowPosition {
-  const factory FlowPosition({
-    required double x,
-    required double y,
-  }) = _FlowPosition;
+  const factory FlowPosition({required double x, required double y}) =
+      _FlowPosition;
 
   factory FlowPosition.fromJson(Map<String, dynamic> json) =>
       _$FlowPositionFromJson(json);
@@ -91,8 +89,10 @@ class FlowGraph with _$FlowGraph {
         ),
       );
 
-      final devicePriorityCounts =
-          priorityCounts.putIfAbsent(deviceKey, () => {});
+      final devicePriorityCounts = priorityCounts.putIfAbsent(
+        deviceKey,
+        () => {},
+      );
 
       for (final slot in deviceSlots.slots) {
         if (slot.hardwareProfileId.isEmpty || slot.keymapId.isEmpty) {
@@ -112,10 +112,7 @@ class FlowGraph with _$FlowGraph {
         );
         nodeMap.putIfAbsent(
           slot.keymapId,
-          () => FlowNode.keymap(
-            id: slot.keymapId,
-            label: slot.keymapId,
-          ),
+          () => FlowNode.keymap(id: slot.keymapId, label: slot.keymapId),
         );
 
         edges.add(
@@ -145,10 +142,7 @@ class FlowGraph with _$FlowGraph {
       ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
     final sortedEdges = List<FlowEdge>.from(edges)..sort(_edgeSorter);
 
-    return FlowGraph(
-      nodes: nodes,
-      edges: sortedEdges,
-    );
+    return FlowGraph(nodes: nodes, edges: sortedEdges);
   }
 }
 
@@ -171,15 +165,14 @@ String _deviceKey(DeviceInstanceId id) {
 }
 
 String _deviceLabel(DeviceInstanceId id) {
-  final serialSuffix =
-      id.serial?.isNotEmpty == true ? ' (${id.serial})' : '';
+  final serialSuffix = id.serial?.isNotEmpty == true ? ' (${id.serial})' : '';
   return 'Device ${id.vendorId}:${id.productId}$serialSuffix';
 }
 
 extension FlowNodeId on FlowNode {
   String get nodeId => when(
-        device: (id, _, __, ___) => id,
-        hardwareProfile: (id, __) => id,
-        keymap: (id, __, ___) => id,
-      );
+    device: (id, _, __, ___) => id,
+    hardwareProfile: (id, __) => id,
+    keymap: (id, __, ___) => id,
+  );
 }

@@ -28,9 +28,7 @@ class NodePositions extends _$NodePositions {
     Offset position, {
     bool manual = true,
   }) async {
-    final manualPositions = _manualOnly(
-      state.value ?? await future,
-    );
+    final manualPositions = _manualOnly(state.value ?? await future);
     final next = NodePosition(
       x: position.dx,
       y: position.dy,
@@ -48,9 +46,7 @@ class NodePositions extends _$NodePositions {
     Map<String, Offset> positions, {
     bool manual = true,
   }) async {
-    final manualPositions = _manualOnly(
-      state.value ?? await future,
-    );
+    final manualPositions = _manualOnly(state.value ?? await future);
 
     var changed = false;
     final timestamp = DateTime.now();
@@ -75,9 +71,8 @@ class NodePositions extends _$NodePositions {
 
   /// Remove a stored manual position so it falls back to auto layout.
   Future<void> removePosition(String nodeId) async {
-    final manualPositions = _manualOnly(
-      state.value ?? await future,
-    )..remove(nodeId);
+    final manualPositions = _manualOnly(state.value ?? await future)
+      ..remove(nodeId);
     await _updateState(manualPositions);
   }
 
@@ -126,9 +121,7 @@ class NodePositions extends _$NodePositions {
       return;
     }
     final serialized = jsonEncode(
-      manualPositions.map(
-        (key, value) => MapEntry(key, value.toJson()),
-      ),
+      manualPositions.map((key, value) => MapEntry(key, value.toJson())),
     );
     await prefs.setString(StorageKeys.keyFlowNodePositions, serialized);
   }
@@ -141,18 +134,39 @@ Map<String, NodePosition> _autoLayout(FlowGraph graph) {
   const profileX = 460.0;
   const keymapX = 820.0;
 
-  final devices = graph.nodes
-      .where((node) => node.map(device: (_) => true, hardwareProfile: (_) => false, keymap: (_) => false))
-      .toList()
-    ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
-  final profiles = graph.nodes
-      .where((node) => node.map(device: (_) => false, hardwareProfile: (_) => true, keymap: (_) => false))
-      .toList()
-    ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
-  final keymaps = graph.nodes
-      .where((node) => node.map(device: (_) => false, hardwareProfile: (_) => false, keymap: (_) => true))
-      .toList()
-    ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
+  final devices =
+      graph.nodes
+          .where(
+            (node) => node.map(
+              device: (_) => true,
+              hardwareProfile: (_) => false,
+              keymap: (_) => false,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
+  final profiles =
+      graph.nodes
+          .where(
+            (node) => node.map(
+              device: (_) => false,
+              hardwareProfile: (_) => true,
+              keymap: (_) => false,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
+  final keymaps =
+      graph.nodes
+          .where(
+            (node) => node.map(
+              device: (_) => false,
+              hardwareProfile: (_) => false,
+              keymap: (_) => true,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
 
   final positions = <String, NodePosition>{};
 

@@ -21,7 +21,7 @@
 <body>
   <h1>Module Size Dashboard</h1>
   <div class="meta">
-    Threshold: 500 code lines · Generated: 2025-12-14T22:43:35.336361+00:00 · Target: core/src
+    Threshold: 500 code lines · Generated: 2025-12-14T23:58:39.985703+00:00 · Target: core/src
   </div>
   <table>
     <thead>
@@ -301,14 +301,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/state/snapshot.rs</td>
+        <td>core/src/observability/metrics_bridge.rs</td>
         <td>427</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/metrics_bridge.rs</td>
+        <td>core/src/engine/state/snapshot.rs</td>
         <td>427</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -588,6 +588,20 @@
         <td></td>
       </tr>
       <tr>
+        <td>core/src/ffi/exports_compat.rs</td>
+        <td>344</td>
+        <td>20000</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td>Legacy compatibility module scheduled for split (task 15); allow temporarily.</td>
+      </tr>
+      <tr>
+        <td>core/src/ffi/tracing_export.rs</td>
+        <td>343</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>core/src/engine/decision_engine.rs</td>
         <td>343</td>
         <td>500</td>
@@ -623,14 +637,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/marshal/error.rs</td>
+        <td>core/src/definitions/types.rs</td>
         <td>337</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/definitions/types.rs</td>
+        <td>core/src/ffi/marshal/error.rs</td>
         <td>337</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -644,11 +658,11 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/exports_compat.rs</td>
-        <td>335</td>
+        <td>core/src/ffi/exports_engine.rs</td>
+        <td>334</td>
         <td>20000</td>
         <td><span class="pill pill-ok">OK</span></td>
-        <td>Legacy compatibility module scheduled for split (task 15); allow temporarily.</td>
+        <td>Legacy monolith scheduled for split (task 14); do not block commits until refactor lands.</td>
       </tr>
       <tr>
         <td>core/src/cli/commands/bench.rs</td>
@@ -726,13 +740,6 @@
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
-      </tr>
-      <tr>
-        <td>core/src/ffi/exports_engine.rs</td>
-        <td>322</td>
-        <td>20000</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td>Legacy monolith scheduled for split (task 14); do not block commits until refactor lands.</td>
       </tr>
       <tr>
         <td>core/src/engine/processing.rs</td>
@@ -889,14 +896,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/uat/gates_evaluation.rs</td>
+        <td>core/src/ffi/domains/testing.rs</td>
         <td>292</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/domains/testing.rs</td>
+        <td>core/src/uat/gates_evaluation.rs</td>
         <td>292</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1029,14 +1036,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/marshal/impls/array.rs</td>
+        <td>core/src/engine/state/tracker.rs</td>
         <td>268</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/state/tracker.rs</td>
+        <td>core/src/ffi/marshal/impls/array.rs</td>
         <td>268</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1071,14 +1078,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/validation/detectors/mod.rs</td>
+        <td>core/src/observability/bridge.rs</td>
         <td>265</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/bridge.rs</td>
+        <td>core/src/validation/detectors/mod.rs</td>
         <td>265</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1120,14 +1127,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/domains/diagnostics.rs</td>
+        <td>core/src/engine/layout/compositor.rs</td>
         <td>257</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/layout/compositor.rs</td>
+        <td>core/src/ffi/domains/diagnostics.rs</td>
         <td>257</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1190,14 +1197,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/memory.rs</td>
+        <td>core/src/drivers/injector.rs</td>
         <td>246</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/drivers/injector.rs</td>
+        <td>core/src/metrics/memory.rs</td>
         <td>246</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1246,14 +1253,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/marshal/result.rs</td>
+        <td>core/src/engine/fallback.rs</td>
         <td>240</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/fallback.rs</td>
+        <td>core/src/ffi/marshal/result.rs</td>
         <td>240</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1281,14 +1288,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/bin/keyrx/args/subcommands.rs</td>
+        <td>core/src/services/profile.rs</td>
         <td>236</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/services/profile.rs</td>
+        <td>core/src/bin/keyrx/args/subcommands.rs</td>
         <td>236</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1318,6 +1325,13 @@
       <tr>
         <td>core/src/discovery/registry.rs</td>
         <td>229</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/ffi/exports_runtime.rs</td>
+        <td>228</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
@@ -1358,13 +1372,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/exports_runtime.rs</td>
-        <td>221</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/uat/report_data.rs</td>
         <td>221</td>
         <td>500</td>
@@ -1386,13 +1393,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/marshal/impls/string.rs</td>
-        <td>214</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/discovery/types.rs</td>
         <td>214</td>
         <td>500</td>
@@ -1400,7 +1400,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/uat/golden_comparison.rs</td>
+        <td>core/src/ffi/marshal/impls/string.rs</td>
+        <td>214</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/ffi/exports_telemetry.rs</td>
         <td>212</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1421,6 +1428,13 @@
         <td></td>
       </tr>
       <tr>
+        <td>core/src/uat/golden_comparison.rs</td>
+        <td>212</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>core/src/ffi/introspection.rs</td>
         <td>211</td>
         <td>500</td>
@@ -1428,14 +1442,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/limits/enforcer.rs</td>
+        <td>core/src/engine/coalescing/buffer.rs</td>
         <td>211</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/coalescing/buffer.rs</td>
+        <td>core/src/engine/limits/enforcer.rs</td>
         <td>211</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1451,13 +1465,6 @@
       <tr>
         <td>core/src/services/device.rs</td>
         <td>208</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>core/src/ffi/exports_telemetry.rs</td>
-        <td>207</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
@@ -1484,14 +1491,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/transitions/validator.rs</td>
+        <td>core/src/services/mocks/profile.rs</td>
         <td>203</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/services/mocks/profile.rs</td>
+        <td>core/src/engine/transitions/validator.rs</td>
         <td>203</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1533,7 +1540,7 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/marshal/impls/primitives.rs</td>
+        <td>core/src/observability/logger.rs</td>
         <td>196</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1547,7 +1554,7 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/logger.rs</td>
+        <td>core/src/ffi/marshal/impls/primitives.rs</td>
         <td>196</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1687,14 +1694,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/latency.rs</td>
+        <td>core/src/errors/config.rs</td>
         <td>176</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/errors/config.rs</td>
+        <td>core/src/metrics/latency.rs</td>
         <td>176</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1897,13 +1904,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/local_store.rs</td>
-        <td>158</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/ffi/runtime.rs</td>
         <td>158</td>
         <td>500</td>
@@ -1918,14 +1918,21 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/drivers/keycodes/mod.rs</td>
+        <td>core/src/engine/transitions/invariant.rs</td>
         <td>158</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/transitions/invariant.rs</td>
+        <td>core/src/metrics/local_store.rs</td>
+        <td>158</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/drivers/keycodes/mod.rs</td>
         <td>158</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -1989,6 +1996,13 @@
       </tr>
       <tr>
         <td>core/src/scripting/sandbox/capability.rs</td>
+        <td>147</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/ffi/tracing.rs</td>
         <td>147</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2142,13 +2156,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/sampler.rs</td>
-        <td>128</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/observability/macros.rs</td>
         <td>128</td>
         <td>500</td>
@@ -2157,6 +2164,13 @@
       </tr>
       <tr>
         <td>core/src/drivers/windows/mod_tests.rs</td>
+        <td>128</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/metrics/sampler.rs</td>
         <td>128</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2289,15 +2303,15 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/noop_collector.rs</td>
-        <td>106</td>
+        <td>core/src/ffi/exports_transition_log.rs</td>
+        <td>107</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/ffi/exports_transition_log.rs</td>
-        <td>102</td>
+        <td>core/src/metrics/noop_collector.rs</td>
+        <td>106</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
@@ -2345,6 +2359,13 @@
         <td></td>
       </tr>
       <tr>
+        <td>core/src/observability/otel/layer.rs</td>
+        <td>93</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>core/src/migration/mod.rs</td>
         <td>93</td>
         <td>500</td>
@@ -2359,13 +2380,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/otel/layer.rs</td>
-        <td>93</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/engine/layer_actions.rs</td>
         <td>92</td>
         <td>500</td>
@@ -2373,14 +2387,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/otlp.rs</td>
+        <td>core/src/engine/tracing/tracing_types.rs</td>
         <td>91</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/tracing/tracing_types.rs</td>
+        <td>core/src/metrics/otlp.rs</td>
         <td>91</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2450,14 +2464,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/state/key_state.rs</td>
+        <td>core/src/services/traits.rs</td>
         <td>70</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/services/traits.rs</td>
+        <td>core/src/engine/state/key_state.rs</td>
         <td>70</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2485,14 +2499,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/metrics/operation.rs</td>
+        <td>core/src/engine/mod.rs</td>
         <td>65</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/mod.rs</td>
+        <td>core/src/metrics/operation.rs</td>
         <td>65</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2548,14 +2562,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/limits/config.rs</td>
+        <td>core/src/observability/http.rs</td>
         <td>57</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/http.rs</td>
+        <td>core/src/engine/limits/config.rs</td>
         <td>57</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2632,14 +2646,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/traits/script_runtime.rs</td>
+        <td>core/src/services/tests/test_services.rs</td>
         <td>45</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/services/tests/test_services.rs</td>
+        <td>core/src/traits/script_runtime.rs</td>
         <td>45</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2688,6 +2702,13 @@
         <td></td>
       </tr>
       <tr>
+        <td>core/src/ffi/mod.rs</td>
+        <td>34</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>core/src/metrics/mod.rs</td>
         <td>34</td>
         <td>500</td>
@@ -2704,13 +2725,6 @@
       <tr>
         <td>core/src/scripting/mod.rs</td>
         <td>33</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>core/src/ffi/mod.rs</td>
-        <td>32</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
@@ -2786,14 +2800,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/hardware/mod.rs</td>
+        <td>core/src/observability/mod.rs</td>
         <td>18</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/mod.rs</td>
+        <td>core/src/hardware/mod.rs</td>
         <td>18</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2905,6 +2919,13 @@
         <td></td>
       </tr>
       <tr>
+        <td>core/src/services/mocks/mod.rs</td>
+        <td>8</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>core/src/engine/transitions/invariants/mod.rs</td>
         <td>8</td>
         <td>500</td>
@@ -2913,13 +2934,6 @@
       </tr>
       <tr>
         <td>core/src/traits/mod.rs</td>
-        <td>8</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>core/src/services/mocks/mod.rs</td>
         <td>8</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -2954,13 +2968,6 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/mocks/mod.rs</td>
-        <td>6</td>
-        <td>500</td>
-        <td><span class="pill pill-ok">OK</span></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>core/src/validation/common/mod.rs</td>
         <td>6</td>
         <td>500</td>
@@ -2975,14 +2982,21 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/engine/coalescing/mod.rs</td>
+        <td>core/src/observability/otel/mod.rs</td>
         <td>6</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/observability/otel/mod.rs</td>
+        <td>core/src/mocks/mod.rs</td>
+        <td>6</td>
+        <td>500</td>
+        <td><span class="pill pill-ok">OK</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>core/src/engine/coalescing/mod.rs</td>
         <td>6</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
@@ -3003,14 +3017,14 @@
         <td></td>
       </tr>
       <tr>
-        <td>core/src/safety/mod.rs</td>
+        <td>core/src/definitions/mod.rs</td>
         <td>4</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>
         <td></td>
       </tr>
       <tr>
-        <td>core/src/definitions/mod.rs</td>
+        <td>core/src/safety/mod.rs</td>
         <td>4</td>
         <td>500</td>
         <td><span class="pill pill-ok">OK</span></td>

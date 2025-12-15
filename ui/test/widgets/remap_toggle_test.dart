@@ -11,10 +11,7 @@ void main() {
   testWidgets('RemapToggle displays ON label when enabled', (
     WidgetTester tester,
   ) async {
-    await harness.pumpWidget(
-      tester,
-      const RemapToggle(enabled: true),
-    );
+    await harness.pumpWidget(tester, const RemapToggle(enabled: true));
 
     expect(find.text('ON'), findsOneWidget);
     expect(find.text('OFF'), findsNothing);
@@ -24,10 +21,7 @@ void main() {
   testWidgets('RemapToggle displays OFF label when disabled', (
     WidgetTester tester,
   ) async {
-    await harness.pumpWidget(
-      tester,
-      const RemapToggle(enabled: false),
-    );
+    await harness.pumpWidget(tester, const RemapToggle(enabled: false));
 
     expect(find.text('OFF'), findsOneWidget);
     expect(find.text('ON'), findsNothing);
@@ -40,10 +34,7 @@ void main() {
 
     await harness.pumpWidget(
       tester,
-      RemapToggle(
-        enabled: false,
-        onChanged: (value) => changedValue = value,
-      ),
+      RemapToggle(enabled: false, onChanged: (value) => changedValue = value),
     );
 
     await tester.tapAndSettle(find.byType(Switch));
@@ -66,10 +57,7 @@ void main() {
   testWidgets('RemapToggle switch reflects enabled state', (
     WidgetTester tester,
   ) async {
-    await harness.pumpWidget(
-      tester,
-      const RemapToggle(enabled: true),
-    );
+    await harness.pumpWidget(tester, const RemapToggle(enabled: true));
 
     final switchWidget = tester.widget<Switch>(find.byType(Switch));
     expect(switchWidget.value, isTrue);

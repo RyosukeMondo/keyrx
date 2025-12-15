@@ -36,10 +36,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'confirmation_dialog_basic',
-      );
+      await darkHarness.expectGolden(tester, 'confirmation_dialog_basic');
     });
 
     testGoldens('renders destructive confirmation dialog', (tester) async {
@@ -57,10 +54,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'confirmation_dialog_destructive',
-      );
+      await darkHarness.expectGolden(tester, 'confirmation_dialog_destructive');
     });
 
     testGoldens('renders confirmation dialog with icon', (tester) async {
@@ -78,10 +72,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'confirmation_dialog_with_icon',
-      );
+      await darkHarness.expectGolden(tester, 'confirmation_dialog_with_icon');
     });
 
     testGoldens('renders confirmation dialog in light theme', (tester) async {
@@ -117,10 +108,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'input_dialog_basic',
-      );
+      await darkHarness.expectGolden(tester, 'input_dialog_basic');
     });
 
     testGoldens('renders input dialog with message', (tester) async {
@@ -137,10 +125,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'input_dialog_with_message',
-      );
+      await darkHarness.expectGolden(tester, 'input_dialog_with_message');
     });
 
     testGoldens('renders input dialog with icon', (tester) async {
@@ -157,10 +142,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'input_dialog_with_icon',
-      );
+      await darkHarness.expectGolden(tester, 'input_dialog_with_icon');
     });
 
     testGoldens('renders multiline input dialog', (tester) async {
@@ -177,10 +159,7 @@ void main() {
         ),
       );
 
-      await darkHarness.expectGolden(
-        tester,
-        'input_dialog_multiline',
-      );
+      await darkHarness.expectGolden(tester, 'input_dialog_multiline');
     });
 
     testGoldens('renders input dialog in light theme', (tester) async {
@@ -196,10 +175,7 @@ void main() {
         ),
       );
 
-      await lightHarness.expectGolden(
-        tester,
-        'input_dialog_light_theme',
-      );
+      await lightHarness.expectGolden(tester, 'input_dialog_light_theme');
     });
   });
 }
