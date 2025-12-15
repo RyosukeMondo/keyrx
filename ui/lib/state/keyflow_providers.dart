@@ -8,6 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/config_ids.dart';
 import '../models/flow/flow_graph.dart';
 import '../models/hardware_profile.dart';
+import '../models/keymap.dart';
 import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
@@ -122,14 +123,9 @@ class KeyFlowActions {
   }
 
   void _syncRuntimeState(ConfigOperationResult<RuntimeConfig> result) {
-    final notifier = _ref.read(runtimeConfigNotifierProvider.notifier);
-    if (result.data != null) {
-      notifier.state = AsyncValue.data(result.data!);
-    } else if (result.hasError) {
-      notifier.state = AsyncValue.error(
-        StateError(result.errorMessage ?? 'Runtime config unavailable'),
-        StackTrace.current,
-      );
+    if (result.data != null || result.hasError) {
+      final notifier = _ref.read(runtimeConfigNotifierProvider.notifier);
+      notifier.refresh(force: true);
     }
   }
 }
@@ -137,4 +133,32 @@ class KeyFlowActions {
 @riverpod
 KeyFlowActions keyFlowActions(KeyFlowActionsRef ref) {
   return KeyFlowActions(ref);
+}
+
+/// Provider for available hardware profiles.
+@riverpod
+Future<List<HardwareProfile>> availableHardwareProfiles(
+  AvailableHardwareProfilesRef ref,
+) async {
+  final registry = ref.watch(serviceRegistryProvider);
+  final result = await registry.hardwareService.listProfiles();
+
+  if (result.hasError) {
+    throw StateError(result.errorMessage ?? 'Failed to load hardware profiles');
+  }
+
+  return result.data ?? [];
+}
+
+/// Provider for available keymaps.
+@riverpod
+Future<List<Keymap>> availableKeymaps(AvailableKeymapsRef ref) async {
+  final registry = ref.watch(serviceRegistryProvider);
+  final result = await registry.keymapService.listKeymaps();
+
+  if (result.hasError) {
+    throw StateError(result.errorMessage ?? 'Failed to load keymaps');
+  }
+
+  return result.data ?? [];
 }

@@ -74,6 +74,48 @@ final keyFlowActionsProvider = AutoDisposeProvider<KeyFlowActions>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef KeyFlowActionsRef = AutoDisposeProviderRef<KeyFlowActions>;
+String _$availableHardwareProfilesHash() =>
+    r'845a4a0a9eca045e1ca87ea6a80ea892b91f4950';
+
+/// Provider for available hardware profiles.
+///
+/// Copied from [availableHardwareProfiles].
+@ProviderFor(availableHardwareProfiles)
+final availableHardwareProfilesProvider =
+    AutoDisposeFutureProvider<List<HardwareProfile>>.internal(
+      availableHardwareProfiles,
+      name: r'availableHardwareProfilesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$availableHardwareProfilesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AvailableHardwareProfilesRef =
+    AutoDisposeFutureProviderRef<List<HardwareProfile>>;
+String _$availableKeymapsHash() => r'b497c50f90c2c16118975cfe892e9db11ac33f8a';
+
+/// Provider for available keymaps.
+///
+/// Copied from [availableKeymaps].
+@ProviderFor(availableKeymaps)
+final availableKeymapsProvider =
+    AutoDisposeFutureProvider<List<Keymap>>.internal(
+      availableKeymaps,
+      name: r'availableKeymapsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$availableKeymapsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AvailableKeymapsRef = AutoDisposeFutureProviderRef<List<Keymap>>;
 String _$runtimeConfigNotifierHash() =>
     r'cf899419869ce2db7fce829acd2aea4eb80ad4f2';
 

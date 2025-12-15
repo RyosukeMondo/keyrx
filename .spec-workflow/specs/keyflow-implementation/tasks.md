@@ -64,7 +64,7 @@
   - _Requirements: FR2.1, FR5.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in gesture handling and animations | Task: Create ui/lib/widgets/flow/draggable_node.dart wrapping node widgets with GestureDetector, implement ui/lib/state/drag_controller.dart for drag state management, handle onPanStart/onPanUpdate/onPanEnd gestures, update node positions in nodePositionsProvider on drag end, add constraints to keep nodes within canvas bounds, provide visual feedback during drag (elevation, shadow), ensure smooth 60fps dragging performance | Restrictions: Dragging must work inside InteractiveViewer, ensure no gesture conflicts with pan/zoom, maintain 60fps performance, positions must update correctly with zoom/pan transforms | Success: Nodes can be dragged smoothly, positions persist after drag, constraints prevent nodes from going off-canvas, visual feedback clear, performance at 60fps | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [-] 9. Edge Interaction & Selection
+- [x] 9. Edge Interaction & Selection
   - File: ui/lib/widgets/flow/interactive_edge.dart, ui/lib/state/selection_state.dart
   - Implement edge click detection, selection highlighting, hover effects, context menu for edge actions (delete, toggle active), keyboard support (Delete key)
   - Purpose: Enable users to interact with slot connections
@@ -72,7 +72,7 @@
   - _Requirements: FR2.4, FR2.5, FR4.1_
   - _Prompt: Implement the task for spec keyflow-implementation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Flutter Developer with expertise in CustomPainter hit detection and interaction | Task: Create ui/lib/widgets/flow/interactive_edge.dart with hit testing for Bezier curve paths, implement ui/lib/state/selection_state.dart for tracking selected edges, add click detection on edges with tolerance margin, implement selection highlighting (thicker border, different color), add hover effects, create context menu for edge actions (delete slot, toggle active/inactive), support Delete key for selected edges, integrate with keyFlowActionsProvider for mutations | Restrictions: Hit detection must be accurate for curved paths, ensure performance with many edges, context menu should be accessible, keyboard shortcuts must not conflict | Success: Edges can be clicked and selected, selection visually clear, hover effects work, context menu functional, keyboard shortcuts work, mutations trigger correctly | After completion: (1) Edit tasks.md to change [-] to [x], (2) Use log-implementation tool with detailed artifacts_
 
-- [ ] 10. Slot Management (Add/Delete/Reorder)
+- [x] 10. Slot Management (Add/Delete/Reorder)
   - File: ui/lib/dialogs/add_slot_dialog.dart, ui/lib/widgets/flow/slot_priority_adjuster.dart, ui/lib/state/slot_actions.dart
   - Implement Add Slot dialog (select profile + keymap), delete slot with confirmation, reorder slots by dragging priority badges, auto-save after mutations
   - Purpose: Enable full CRUD operations on device slots
