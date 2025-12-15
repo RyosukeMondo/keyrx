@@ -2,25 +2,21 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/models/flow/flow_data.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/models/flow/edge_style.dart';
 import 'package:keyrx_ui/state/device_stream_provider.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
-import 'package:keyrx_ui/widgets/flow/device_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_device_node.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_keymap_node.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_layout_node.dart';
-import 'package:keyrx_ui/widgets/flow/interactive_edge.dart';
-import 'package:keyrx_ui/widgets/flow/keymap_node_widget.dart';
-import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
 import 'package:keyrx_ui/widgets/flow/save_indicator.dart';
 import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
 import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
+import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
+import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
@@ -31,7 +27,7 @@ class FlowEditorPage extends ConsumerStatefulWidget {
 }
 
 class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, ViewportAware {
   static const _canvasWidth = 1800.0;
   static const _canvasHeight = 1200.0;
   static const _edgeStyle = EdgeStyle(palette: defaultEdgePalette);
@@ -42,6 +38,11 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   // Track previous node IDs to detect additions/removals
   Set<String> _previousNodeIds = {};
+
+  // Performance tracking
+  Rect _currentViewport = Rect.zero;
+  final FrameTimer _frameTimer = FrameTimer();
+  RenderingMetrics? _lastMetrics;
 
   @override
   void initState() {
@@ -54,13 +55,31 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
     _transformationController = TransformationController();
+    _transformationController.addListener(_onTransformChanged);
 
     // Listen to device events for real-time updates
     ref.read(deviceStreamNotifierProvider);
   }
 
+  void _onTransformChanged() {
+    // Calculate viewport from current transformation
+    final screenSize = MediaQuery.of(context).size;
+    final newViewport = calculateViewport(
+      transform: _transformationController.value,
+      screenSize: screenSize,
+    );
+
+    // Only rebuild if viewport changed significantly
+    if (hasViewportChanged(newViewport)) {
+      setState(() {
+        _currentViewport = newViewport;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _transformationController.removeListener(_onTransformChanged);
     _shimmerController.dispose();
     _transformationController.dispose();
     super.dispose();
@@ -128,32 +147,26 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
                 height: canvasHeight,
                 child: Stack(
                   children: [
+                    // Grid layer with RepaintBoundary
                     Positioned.fill(
-                      child: CustomPaint(painter: _GridPainter()),
-                    ),
-                    Positioned.fill(
-                      child: InteractiveEdgeCanvas(
-                        edges: graph.edges,
-                        paintableEdges: view.edges,
-                        style: _edgeStyle,
+                      child: RepaintBoundary(
+                        child: CustomPaint(painter: _GridPainter()),
                       ),
                     ),
-                    ...view.nodes.map(
-                      (node) => _AnimatedNodeWrapper(
-                        key: ValueKey(node.id),
-                        nodeId: node.id,
-                        isNew: !_previousNodeIds.contains(node.id),
-                        child: FocusIndicator(
-                          nodeId: node.id,
-                          child: DraggableNode(
-                            nodeId: node.id,
-                            initialPosition: node.position,
-                            size: node.size,
-                            canvasBounds: Size(canvasWidth, canvasHeight),
-                            child: node.child,
-                          ),
+                    // Optimized edge layer with custom RenderObject
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: OptimizedEdgeLayer(
+                          edges: view.edges,
+                          style: _edgeStyle,
                         ),
                       ),
+                    ),
+                    // Virtualized nodes - only render visible ones
+                    ..._buildVirtualizedNodes(
+                      view.nodes,
+                      canvasWidth,
+                      canvasHeight,
                     ),
                   ],
                 ),
@@ -185,6 +198,77 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   void _showKeyboardShortcutsHelp(BuildContext context) {
     KeyboardShortcutsHelpDialog.show(context);
+  }
+
+  /// Build virtualized nodes - only render nodes visible in viewport.
+  List<Widget> _buildVirtualizedNodes(
+    List<_CanvasNode> allNodes,
+    double canvasWidth,
+    double canvasHeight,
+  ) {
+    _frameTimer.start();
+
+    // Initialize viewport if needed
+    if (_currentViewport == Rect.zero) {
+      final screenSize = MediaQuery.of(context).size;
+      _currentViewport = Rect.fromLTWH(
+        0,
+        0,
+        screenSize.width,
+        screenSize.height,
+      );
+    }
+
+    // Filter visible nodes
+    final visibleNodes = allNodes.where((node) {
+      return isNodeInViewport(
+        nodePosition: node.position,
+        nodeSize: node.size,
+        viewport: _currentViewport,
+        margin: 300.0, // Large margin for smooth scrolling
+      );
+    }).toList();
+
+    // Build widgets with RepaintBoundary isolation
+    final widgets = visibleNodes.map((node) {
+      return _AnimatedNodeWrapper(
+        key: ValueKey(node.id),
+        nodeId: node.id,
+        isNew: !_previousNodeIds.contains(node.id),
+        child: RepaintBoundary(
+          child: FocusIndicator(
+            nodeId: node.id,
+            child: DraggableNode(
+              nodeId: node.id,
+              initialPosition: node.position,
+              size: node.size,
+              canvasBounds: Size(canvasWidth, canvasHeight),
+              child: node.child,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+
+    // Track performance metrics
+    final frameTime = _frameTimer.stop();
+    _lastMetrics = RenderingMetrics(
+      totalNodes: allNodes.length,
+      visibleNodes: visibleNodes.length,
+      totalEdges: 0, // Will be filled when edge virtualization is added
+      visibleEdges: 0,
+      frameTime: frameTime,
+    );
+
+    // Log performance issues (in debug mode only)
+    assert(() {
+      if (!_lastMetrics!.meetsPerformanceTarget) {
+        debugPrint('Performance warning: ${_lastMetrics.toString()}');
+      }
+      return true;
+    }());
+
+    return widgets;
   }
 
   _CanvasView _buildCanvas(
