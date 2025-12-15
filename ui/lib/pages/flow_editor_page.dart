@@ -16,6 +16,9 @@ import 'package:keyrx_ui/widgets/flow/save_indicator.dart';
 import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
 import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
 import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
+import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import 'package:keyrx_ui/widgets/flow/error_view.dart';
+import 'package:keyrx_ui/widgets/flow/loading_skeleton.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 
@@ -27,13 +30,11 @@ class FlowEditorPage extends ConsumerStatefulWidget {
 }
 
 class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
-    with SingleTickerProviderStateMixin, ViewportAware {
+    with ViewportAware {
   static const _canvasWidth = 1800.0;
   static const _canvasHeight = 1200.0;
   static const _edgeStyle = EdgeStyle(palette: defaultEdgePalette);
 
-  late final AnimationController _shimmerController;
-  late final Animation<double> _shimmer;
   late final TransformationController _transformationController;
 
   // Track previous node IDs to detect additions/removals
@@ -47,13 +48,6 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   @override
   void initState() {
     super.initState();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-    _shimmer = Tween<double>(begin: -1, end: 2).animate(
-      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
-    );
     _transformationController = TransformationController();
     _transformationController.addListener(_onTransformChanged);
 
@@ -80,7 +74,6 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   @override
   void dispose() {
     _transformationController.removeListener(_onTransformChanged);
-    _shimmerController.dispose();
     _transformationController.dispose();
     super.dispose();
   }
@@ -91,28 +84,22 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     final positionsAsync = ref.watch(nodePositionsProvider);
 
     if (graphAsync.isLoading || positionsAsync.isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF121212),
-        body: _FlowLoadingSkeleton(
-          key: const Key('flow-loading-skeleton'),
-          animation: _shimmer,
-        ),
-      );
+      return const FlowLoadingSkeleton(key: Key('flow-loading-skeleton'));
     }
 
     if (graphAsync.hasError) {
-      return _FlowErrorView(error: graphAsync.error, onRetry: _retryLoad);
+      return FlowErrorView(error: graphAsync.error, onRetry: _retryLoad);
     }
 
     if (positionsAsync.hasError) {
-      return _FlowErrorView(error: positionsAsync.error, onRetry: _retryLoad);
+      return FlowErrorView(error: positionsAsync.error, onRetry: _retryLoad);
     }
 
     final graph = graphAsync.value ?? const FlowGraph();
     final positions = positionsAsync.value ?? const <String, NodePosition>{};
 
     if (graph.nodes.isEmpty) {
-      return const _FlowEmptyState();
+      return const FlowEmptyState();
     }
 
     final view = _buildCanvas(graph, positions);
@@ -413,149 +400,6 @@ class _GridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _FlowLoadingSkeleton extends StatelessWidget {
-  const _FlowLoadingSkeleton({super.key, required this.animation});
-
-  final Animation<double> animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        return Container(
-          color: const Color(0xFF121212),
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _shimmerBar(width: 220),
-              const SizedBox(height: 20),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _shimmerCard(width: 240, height: 180),
-                    _shimmerCard(width: 200, height: 140),
-                    _shimmerCard(width: 180, height: 120),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _shimmerBar({required double width}) {
-    return _shimmerBox(width: width, height: 16, radius: 6);
-  }
-
-  Widget _shimmerCard({required double width, required double height}) {
-    return _shimmerBox(width: width, height: height, radius: 10);
-  }
-
-  Widget _shimmerBox({
-    required double width,
-    required double height,
-    required double radius,
-  }) {
-    final gradient = LinearGradient(
-      begin: Alignment(-1, 0),
-      end: Alignment(1, 0),
-      colors: const [Color(0xFF1E1E1E), Color(0xFF2C2C2C), Color(0xFF1E1E1E)],
-      stops: const [0.1, 0.5, 0.9],
-      transform: _SlidingGradientTransform(slidePercent: animation.value),
-    );
-
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(radius),
-        gradient: gradient,
-      ),
-    );
-  }
-}
-
-class _SlidingGradientTransform extends GradientTransform {
-  const _SlidingGradientTransform({required this.slidePercent});
-
-  final double slidePercent;
-
-  @override
-  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(bounds.width * slidePercent, 0, 0);
-  }
-}
-
-class _FlowErrorView extends StatelessWidget {
-  const _FlowErrorView({required this.error, required this.onRetry});
-
-  final Object? error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-            const SizedBox(height: 12),
-            const Text(
-              'Something went wrong',
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$error',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FlowEmptyState extends StatelessWidget {
-  const _FlowEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.usb_off_rounded, color: Colors.grey, size: 52),
-            SizedBox(height: 12),
-            Text(
-              'No devices connected',
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            SizedBox(height: 6),
-            Text(
-              'Connect a device to populate your flow.',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _CanvasView {
   const _CanvasView({required this.nodes, required this.edges});
 
@@ -583,10 +427,10 @@ class _CanvasNode {
 /// for node updates.
 class _AnimatedNodeWrapper extends StatefulWidget {
   const _AnimatedNodeWrapper({
-    super.key,
     required this.nodeId,
     required this.isNew,
     required this.child,
+    super.key,
   });
 
   final String nodeId;
@@ -613,19 +457,19 @@ class _AnimatedNodeWrapperState extends State<_AnimatedNodeWrapper>
     );
 
     _fadeAnimation = Tween<double>(
-      begin: widget.isNew ? 0.0 : 1.0,
-      end: 1.0,
+      begin: widget.isNew ? 0 : 1,
+      end: 1,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _scaleAnimation = Tween<double>(
-      begin: widget.isNew ? 0.9 : 1.0,
-      end: 1.0,
+      begin: widget.isNew ? 0.9 : 1,
+      end: 1,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     if (widget.isNew) {
       _controller.forward();
     } else {
-      _controller.value = 1.0;
+      _controller.value = 1;
     }
   }
 
