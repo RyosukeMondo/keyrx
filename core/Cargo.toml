@@ -122,6 +122,10 @@ harness = false
 name = "revolutionary_mapping_bench"
 harness = false
 
+[[bench]]
+name = "ffi_tooling_bench"
+harness = false
+
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, optional = true, features = [
     "Win32_Foundation",

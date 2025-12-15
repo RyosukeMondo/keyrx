@@ -115,6 +115,18 @@ test-cargo:
 bench:
     cd core && cargo bench
 
+# Run FFI performance benchmarks with detailed reporting
+bench-ffi *ARGS:
+    ./scripts/benchmark_ffi.sh {{ARGS}}
+
+# Run FFI benchmarks and save as baseline
+bench-ffi-baseline NAME:
+    ./scripts/benchmark_ffi.sh --baseline {{NAME}}
+
+# Run FFI benchmarks and compare against baseline
+bench-ffi-compare NAME:
+    ./scripts/benchmark_ffi.sh --compare {{NAME}}
+
 # Clean build artifacts
 clean:
     cd core && cargo clean
