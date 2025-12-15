@@ -37,6 +37,7 @@
 
 pub mod api;
 pub mod engine;
+pub mod ffi;
 pub mod metrics;
 pub mod observability;
 pub mod scripting;

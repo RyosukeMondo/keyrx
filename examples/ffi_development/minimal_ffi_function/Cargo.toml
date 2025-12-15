@@ -1,0 +1,13 @@
+[package]
+name = "minimal_ffi_function"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# For this example, we'd typically depend on the ffi_export macro
+# ffi_export = { path = "../../../core/macros/ffi_export" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+
+[dev-dependencies]
