@@ -167,7 +167,8 @@ keyrx/
 │   └── [other docs...]
 ├── scripts/
 │   ├── test_feature_combinations.sh
-│   ├── check_ffi_collisions.sh
+│   ├── ffi_watch.sh               # FFI watch mode for auto-regeneration
+│   ├── setup_ffi_tools.sh         # FFI tooling installer
 │   └── migrate_profiles.sh        # NEW: Profile migration script
 ├── .vscode/
 │   └── tasks.json                 # Build tasks

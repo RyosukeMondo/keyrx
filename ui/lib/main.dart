@@ -9,31 +9,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart' as provider;
 
-import 'pages/debugger.dart';
-import 'pages/console.dart';
-import 'pages/devices.dart';
-import 'pages/developer/ffi_tools_page.dart';
-import 'pages/developer/test_runner_page.dart';
-import 'pages/developer/profiler_page.dart';
-import 'pages/layouts.dart';
-import 'pages/migration_prompt_page.dart';
-import 'pages/mapping_page.dart';
-import 'pages/trade_off_page.dart';
-import 'pages/run_controls_page.dart';
 import 'pages/calibration_page.dart';
-import 'pages/metrics_dashboard.dart';
-import 'pages/wiring.dart';
+import 'pages/console.dart';
+import 'pages/debugger.dart';
+import 'pages/developer/ffi_tools_page.dart';
+import 'pages/developer/profiler_page.dart';
+import 'pages/developer/test_runner_page.dart';
+import 'pages/devices.dart';
 import 'pages/flow_editor_page.dart';
+import 'pages/layouts.dart';
+import 'pages/mapping_page.dart';
+import 'pages/metrics_dashboard.dart';
+import 'pages/migration_prompt_page.dart';
+import 'pages/run_controls_page.dart';
+import 'pages/trade_off_page.dart';
+import 'pages/wiring.dart';
+import 'services/facade/facade_state.dart';
 import 'services/service_registry.dart';
+import 'state/analytics_providers.dart';
 import 'state/app_state.dart';
 import 'state/providers.dart';
-import 'widgets/developer_drawer.dart';
-import 'widgets/migration_wrapper.dart';
-import 'services/facade/facade_state.dart';
 import 'state/providers_setup.dart';
 import 'utils/performance_timeline.dart';
-import 'state/analytics_providers.dart';
-import 'config/feature_flags.dart';
+import 'widgets/developer_drawer.dart';
+import 'widgets/migration_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,11 +41,7 @@ void main() {
     context: {'mode': kReleaseMode ? 'release' : 'debug'},
   );
 
-  runApp(
-    ProviderScope(
-      child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame),
-    ),
-  );
+  runApp(ProviderScope(child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame)));
 }
 
 /// Main application widget.
@@ -62,7 +57,7 @@ class KeyrxApp extends ConsumerWidget {
     final apiDocsService = ref.watch(apiDocsServiceProvider);
     final appState = ref.watch(appStateProvider);
 
-    return MultiProvider(
+    return provider.MultiProvider(
       providers: createProviders(
         registry: registry,
         facade: facade,
@@ -85,10 +80,7 @@ class _KeyrxMaterialApp extends StatelessWidget {
       title: 'KeyRx',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
       ),
       home: Builder(
         builder: (context) {
@@ -288,8 +280,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : Icons.developer_mode_outlined,
                       ),
                       tooltip: 'Developer Tools',
-                      onPressed: () =>
-                          _scaffoldKey.currentState?.openEndDrawer(),
+                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                   const SizedBox(height: 16),
                 ],
@@ -358,10 +349,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           Icon(Icons.construction, size: 64, color: Colors.grey[600]),
           const SizedBox(height: 16),
-          Text(
-            '$title - Coming Soon',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text('$title - Coming Soon', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
             'This developer tool is under construction.',
@@ -373,101 +361,81 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildStatusBar() {
-    return provider.Consumer<AppState>(
-      builder: (context, appState, _) {
-        final facade = context.read<KeyrxFacade>();
+    final facade = ref.read(keyrxFacadeProvider);
+    final appState = ref.watch(appStateProvider);
 
-        return Container(
-          height: 24,
-          color: Colors.black87,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              StreamBuilder<FacadeState>(
-                stream: facade.stateStream,
-                initialData: facade.currentState,
-                builder: (context, snapshot) {
-                  final state = snapshot.data ?? facade.currentState;
-                  final statusText = switch (state.engine) {
-                    EngineStatus.running => 'Engine Running',
-                    EngineStatus.ready => 'Engine Ready',
-                    EngineStatus.uninitialized => 'Engine Not Ready',
-                    EngineStatus.initializing => 'Initializing...',
-                    EngineStatus.loading => 'Loading Script...',
-                    EngineStatus.stopping => 'Stopping...',
-                    EngineStatus.paused => 'Engine Paused',
-                    EngineStatus.error => 'Engine Error',
-                  };
+    return Container(
+      height: 24,
+      color: Colors.black87,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          StreamBuilder<FacadeState>(
+            stream: facade.stateStream,
+            initialData: facade.currentState,
+            builder: (context, snapshot) {
+              final state = snapshot.data ?? facade.currentState;
+              final statusText = switch (state.engine) {
+                EngineStatus.running => 'Engine Running',
+                EngineStatus.ready => 'Engine Ready',
+                EngineStatus.uninitialized => 'Engine Not Ready',
+                EngineStatus.initializing => 'Initializing...',
+                EngineStatus.loading => 'Loading Script...',
+                EngineStatus.stopping => 'Stopping...',
+                EngineStatus.paused => 'Engine Paused',
+                EngineStatus.error => 'Engine Error',
+              };
 
-                  final color = switch (state.engine) {
-                    EngineStatus.running => Colors.green,
-                    EngineStatus.ready => Colors.blue,
-                    EngineStatus.error => Colors.red,
-                    _ => Colors.grey,
-                  };
+              final color = switch (state.engine) {
+                EngineStatus.running => Colors.green,
+                EngineStatus.ready => Colors.blue,
+                EngineStatus.error => Colors.red,
+                _ => Colors.grey,
+              };
 
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        state.engine == EngineStatus.error
-                            ? Icons.error
-                            : Icons.check_circle,
-                        size: 14,
-                        color: color,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        statusText,
-                        style: TextStyle(fontSize: 12, color: color),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const Spacer(),
-              if (appState.loadedScript != null)
-                Text(
-                  'Script: ${appState.loadedScript}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              const SizedBox(width: 16),
-              InkWell(
-                onTap: appState.toggleDeveloperMode,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      appState.isDeveloperMode
-                          ? Icons.developer_mode
-                          : Icons.developer_mode_outlined,
-                      size: 14,
-                      color: appState.isDeveloperMode
-                          ? Colors.amber
-                          : Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Dev',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: appState.isDeveloperMode
-                            ? Colors.amber
-                            : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'v${appState.version}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    state.engine == EngineStatus.error ? Icons.error : Icons.check_circle,
+                    size: 14,
+                    color: color,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(statusText, style: TextStyle(fontSize: 12, color: color)),
+                ],
+              );
+            },
           ),
-        );
-      },
+          const Spacer(),
+          if (appState.loadedScript != null)
+            Text('Script: ${appState.loadedScript}', style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 16),
+          InkWell(
+            onTap: appState.toggleDeveloperMode,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  appState.isDeveloperMode ? Icons.developer_mode : Icons.developer_mode_outlined,
+                  size: 14,
+                  color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Dev',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text('v${appState.version}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ],
+      ),
     );
   }
 }

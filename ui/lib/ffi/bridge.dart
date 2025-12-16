@@ -114,6 +114,7 @@ class KeyrxBridge
   KeyrxBindings? _bindings;
   ConfigBindings? _configBindings;
   RuntimeBindings? _runtimeBindings;
+  DynamicLibrary? _lib;
   bool _initialized = false;
   Object? _loadFailure;
   StreamController<BridgeStateUpdate>? _stateController;
@@ -133,7 +134,8 @@ class KeyrxBridge
     Object? loadFailure,
     DynamicLibrary? lib,
   }) : _bindings = bindings,
-       _loadFailure = loadFailure {
+       _loadFailure = loadFailure,
+       _lib = lib {
     if (lib != null) {
       try {
         _freeEventPayload = lib
@@ -263,34 +265,55 @@ class KeyrxBridge
   }
 
   /// Start the engine loop (input capturing).
+  ///
+  /// Note: This function requires platform-specific drivers (Windows or Linux).
+  /// Returns false if the platform driver is not available.
   bool startEngineLoop() {
-    final startFn = bindings!.startLoop;
-    if (startFn == null) {
-      _loadFailure = 'startLoop function not found in shared library';
+    if (_lib == null) return false;
+
+    // Try to lookup the raw FFI function (available on Windows and Linux with drivers)
+    try {
+      final startFn = _lib!.lookupFunction<
+          Int32 Function(),
+          int Function()
+      >('keyrx_engine_start_loop');
+
+      final result = FfiDebugTools.traceSync<int>(
+        operation: 'engine.loop.start',
+        includeTimeline: false,
+        call: () => startFn(),
+      );
+      return result == 0;
+    } catch (e) {
+      // Function not available on this platform
       return false;
     }
-
-    final success = FfiDebugTools.traceSync<bool>(
-      operation: 'engine.loop.start',
-      includeTimeline: false,
-      call: () => startFn() == 0,
-    );
-    return success;
   }
 
   /// Stop the engine loop (input capturing).
+  ///
+  /// Note: This function requires platform-specific drivers (Windows or Linux).
+  /// Returns false if the platform driver is not available.
   bool stopEngineLoop() {
-    final stopFn = bindings!.stopLoop;
-    if (stopFn == null) {
-      _loadFailure = 'stopLoop function not found in shared library';
+    if (_lib == null) return false;
+
+    // Try to lookup the raw FFI function (available on Windows and Linux with drivers)
+    try {
+      final stopFn = _lib!.lookupFunction<
+          Int32 Function(),
+          int Function()
+      >('keyrx_engine_stop_loop');
+
+      final result = FfiDebugTools.traceSync<int>(
+        operation: 'engine.loop.stop',
+        includeTimeline: false,
+        call: () => stopFn(),
+      );
+      return result == 0;
+    } catch (e) {
+      // Function not available on this platform
       return false;
     }
-
-    return FfiDebugTools.traceSync<bool>(
-      operation: 'engine.loop.stop',
-      includeTimeline: false,
-      call: () => stopFn() == 0,
-    );
   }
 
   /// Register a unified event callback for a specific event type.

@@ -11,6 +11,7 @@ _$DeviceStateImpl _$$DeviceStateImplFromJson(Map<String, dynamic> json) =>
       identity: DeviceIdentity.fromJson(
         json['identity'] as Map<String, dynamic>,
       ),
+      deviceEnabled: json['device_enabled'] as bool,
       remapEnabled: json['remap_enabled'] as bool,
       profileId: json['profile_id'] as String?,
       connectedAt: json['connected_at'] as String,
@@ -20,6 +21,7 @@ _$DeviceStateImpl _$$DeviceStateImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$DeviceStateImplToJson(_$DeviceStateImpl instance) =>
     <String, dynamic>{
       'identity': instance.identity,
+      'device_enabled': instance.deviceEnabled,
       'remap_enabled': instance.remapEnabled,
       'profile_id': instance.profileId,
       'connected_at': instance.connectedAt,

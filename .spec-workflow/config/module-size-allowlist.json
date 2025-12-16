@@ -119,6 +119,11 @@
       "path": "core/src/ffi/domains/profile_registry.rs",
       "max_lines": 600,
       "reason": "Grew to 530 lines after adding instrumentation (task 19); will refactor if grows further."
+    },
+    {
+      "path": "core/src/cli/commands/run/execution.rs",
+      "max_lines": 800,
+      "reason": "Grew due to multi-device support; pending split."
     }
   ]
 }

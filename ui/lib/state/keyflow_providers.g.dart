@@ -57,6 +57,26 @@ final flowGraphProvider = AutoDisposeFutureProvider<FlowGraph>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FlowGraphRef = AutoDisposeFutureProviderRef<FlowGraph>;
+String _$deviceStatesHash() => r'a826829e82fbf1fc41c9c85d30701ba0d03c81c7';
+
+/// Provider for device registry states (device enabled/disabled toggles).
+///
+/// Copied from [deviceStates].
+@ProviderFor(deviceStates)
+final deviceStatesProvider =
+    AutoDisposeStreamProvider<List<DeviceState>>.internal(
+      deviceStates,
+      name: r'deviceStatesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$deviceStatesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DeviceStatesRef = AutoDisposeStreamProviderRef<List<DeviceState>>;
 String _$keyFlowActionsHash() => r'a6e8e0db1afa49cb89a695ef34b2e8e521cad85e';
 
 /// See also [keyFlowActions].

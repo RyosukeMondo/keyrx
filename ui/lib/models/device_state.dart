@@ -20,7 +20,12 @@ class DeviceState with _$DeviceState {
     /// Device identity
     required DeviceIdentity identity,
 
+    /// Whether the device is enabled (participates in KeyRx)
+    /// When false, device is in total passthrough mode
+    @JsonKey(name: 'device_enabled') required bool deviceEnabled,
+
     /// Whether remapping is enabled for this device
+    /// Only effective when deviceEnabled is true
     @JsonKey(name: 'remap_enabled') required bool remapEnabled,
 
     /// Assigned profile ID (if any)
@@ -44,6 +49,9 @@ class DeviceState with _$DeviceState {
 
   /// Get a user-friendly status string
   String get statusText {
+    if (!deviceEnabled) {
+      return 'Off';
+    }
     if (!remapEnabled) {
       return 'Passthrough';
     }

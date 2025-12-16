@@ -2,10 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyrx_ui/models/device_identity.dart';
+import 'package:keyrx_ui/models/device_state.dart';
 import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/models/flow/edge_style.dart';
 import 'package:keyrx_ui/state/device_stream_provider.dart';
+import 'package:keyrx_ui/state/drag_controller.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
@@ -18,6 +21,7 @@ import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
 import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/error_view.dart';
+import 'package:keyrx_ui/widgets/flow/flow_canvas_internals.dart';
 import 'package:keyrx_ui/widgets/flow/loading_skeleton.dart'
     hide FlowEmptyState, DisconnectedDevicesState;
 import 'package:keyrx_ui/widgets/flow/empty_state.dart';
@@ -26,6 +30,7 @@ import 'package:keyrx_ui/services/flow_validator.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
 import 'package:keyrx_ui/dialogs/keyflow_onboarding_dialog.dart';
+import 'package:keyrx_ui/dialogs/node_details_dialog.dart';
 import 'package:keyrx_ui/state/analytics_providers.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
@@ -37,14 +42,17 @@ class FlowEditorPage extends ConsumerStatefulWidget {
 
 class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     with ViewportAware {
-  static const _canvasWidth = 1800.0;
-  static const _canvasHeight = 1200.0;
+  static const _canvasWidth = 8000.0;
+  static const _canvasHeight = 6000.0;
   static const _edgeStyle = EdgeStyle(palette: defaultEdgePalette);
 
   late final TransformationController _transformationController;
 
   // Track previous node IDs to detect additions/removals
   Set<String> _previousNodeIds = {};
+
+  // Track if we've done initial fit to viewport
+  bool _hasPerformedInitialFit = false;
 
   // Performance tracking
   Rect _currentViewport = Rect.zero;
@@ -58,6 +66,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   void initState() {
     super.initState();
     _transformationController = TransformationController();
+
+    // Initial zoom will be calculated by _fitNodesToViewport() after first build
+    _transformationController.value = Matrix4.identity();
+
     _transformationController.addListener(_onTransformChanged);
 
     // Listen to device events for real-time updates
@@ -105,6 +117,45 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     }
   }
 
+  void _fitNodesToViewport(List<CanvasNode> nodes) {
+    if (nodes.isEmpty) return;
+
+    // Calculate bounding box of all nodes
+    double minX = double.infinity;
+    double minY = double.infinity;
+    double maxX = double.negativeInfinity;
+    double maxY = double.negativeInfinity;
+
+    for (final node in nodes) {
+      minX = math.min(minX, node.position.dx);
+      minY = math.min(minY, node.position.dy);
+      maxX = math.max(maxX, node.position.dx + node.size.width);
+      maxY = math.max(maxY, node.position.dy + node.size.height);
+    }
+
+    // Add padding around the content
+    const padding = 100.0;
+    final contentWidth = maxX - minX + (padding * 2);
+    final contentHeight = maxY - minY + (padding * 2);
+
+    // Get available viewport size
+    final screenSize = MediaQuery.of(context).size;
+
+    // Calculate zoom to fit content in viewport
+    final scaleX = screenSize.width / contentWidth;
+    final scaleY = screenSize.height / contentHeight;
+    final scale = math.min(scaleX, scaleY).clamp(0.5, 2.5);
+
+    // Center the content
+    final offsetX = (minX - padding) * scale;
+    final offsetY = (minY - padding) * scale;
+
+    // Apply transformation
+    _transformationController.value = Matrix4.identity()
+      ..translate(-offsetX, -offsetY)
+      ..scale(scale);
+  }
+
   @override
   void dispose() {
     _transformationController.removeListener(_onTransformChanged);
@@ -116,8 +167,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   Widget build(BuildContext context) {
     final graphAsync = ref.watch(flowGraphProvider);
     final positionsAsync = ref.watch(nodePositionsProvider);
+    final deviceStatesAsync = ref.watch(deviceStatesProvider);
 
-    if (graphAsync.isLoading || positionsAsync.isLoading) {
+    if (graphAsync.isLoading || positionsAsync.isLoading || deviceStatesAsync.isLoading) {
       return const FlowLoadingSkeleton(key: Key('flow-loading-skeleton'));
     }
 
@@ -131,6 +183,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
     final graph = graphAsync.value ?? const FlowGraph();
     final positions = positionsAsync.value ?? const <String, NodePosition>{};
+    final deviceStates = deviceStatesAsync.value ?? <DeviceState>[];
 
     // Check for empty state scenarios
     if (graph.nodes.isEmpty) {
@@ -145,7 +198,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       return FlowWaitingState(deviceCount: deviceNodes.length);
     }
 
-    final view = _buildCanvas(graph, positions);
+    final view = _buildCanvas(graph, positions, deviceStates);
 
     final canvasWidth = view.nodes.fold<double>(
       _canvasWidth,
@@ -158,29 +211,41 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
           math.max(height, node.position.dy + node.size.height + 200),
     );
 
+    // Auto-fit zoom to show all nodes on first load only
+    if (!_hasPerformedInitialFit && view.nodes.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _fitNodesToViewport(view.nodes);
+          _hasPerformedInitialFit = true;
+        }
+      });
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Stack(
         children: [
-          KeyboardNavigableCanvas(
-            transformationController: _transformationController,
-            canvasBounds: Size(canvasWidth, canvasHeight),
-            onNodeDetailsRequested: _handleNodeDetailsRequest,
-            onHelpRequested: () => _showKeyboardShortcutsHelp(context),
-            child: InteractiveViewer(
+          Positioned.fill(
+            child: KeyboardNavigableCanvas(
               transformationController: _transformationController,
-              boundaryMargin: const EdgeInsets.all(240),
-              minScale: 0.5,
-              maxScale: 2.5,
-              child: SizedBox(
-                width: canvasWidth,
-                height: canvasHeight,
-                child: Stack(
+              canvasBounds: Size(canvasWidth, canvasHeight),
+              onNodeDetailsRequested: _handleNodeDetailsRequest,
+              onHelpRequested: () => _showKeyboardShortcutsHelp(context),
+              child: InteractiveViewer(
+                constrained: false,
+                transformationController: _transformationController,
+                boundaryMargin: const EdgeInsets.all(240),
+                minScale: 0.5,
+                maxScale: 2.5,
+                child: SizedBox(
+                  width: canvasWidth,
+                  height: canvasHeight,
+                  child: Stack(
                   children: [
                     // Grid layer with RepaintBoundary
                     Positioned.fill(
                       child: RepaintBoundary(
-                        child: CustomPaint(painter: _GridPainter()),
+                        child: CustomPaint(painter: GridPainter()),
                       ),
                     ),
                     // Optimized edge layer with custom RenderObject
@@ -203,6 +268,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
               ),
             ),
           ),
+          ),
           // Save indicator positioned in bottom-right corner
           const Positioned(bottom: 16, right: 16, child: SaveIndicator()),
         ],
@@ -217,13 +283,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   }
 
   void _handleNodeDetailsRequest(String nodeId) {
-    // TODO: Implement node details dialog in a future task
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Node details for $nodeId (to be implemented)'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    NodeDetailsDialog.show(context, nodeId);
   }
 
   void _showKeyboardShortcutsHelp(BuildContext context) {
@@ -232,7 +292,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   /// Build virtualized nodes - only render nodes visible in viewport.
   List<Widget> _buildVirtualizedNodes(
-    List<_CanvasNode> allNodes,
+    List<CanvasNode> allNodes,
     double canvasWidth,
     double canvasHeight,
   ) {
@@ -259,24 +319,37 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       );
     }).toList();
 
-    // Build widgets with RepaintBoundary isolation
+    // Build widgets with Positioned at top level (direct child of Stack)
     final widgets = visibleNodes.map((node) {
-      return _AnimatedNodeWrapper(
+      return Consumer(
         key: ValueKey(node.id),
-        nodeId: node.id,
-        isNew: !_previousNodeIds.contains(node.id),
-        child: RepaintBoundary(
-          child: FocusIndicator(
-            nodeId: node.id,
-            child: DraggableNode(
+        builder: (context, ref, _) {
+          // Watch drag state to update position dynamically
+          final dragState = ref.watch(dragControllerProvider);
+          final isDragging = dragState?.nodeId == node.id && dragState?.isDragging == true;
+          final currentPosition = isDragging
+              ? (dragState?.currentPosition ?? node.position)
+              : node.position;
+
+          return Positioned(
+            left: currentPosition.dx,
+            top: currentPosition.dy,
+            child: AnimatedNodeWrapper(
               nodeId: node.id,
-              initialPosition: node.position,
-              size: node.size,
-              canvasBounds: Size(canvasWidth, canvasHeight),
-              child: node.child,
+              isNew: !_previousNodeIds.contains(node.id),
+              child: FocusIndicator(
+                nodeId: node.id,
+                child: DraggableNode(
+                  nodeId: node.id,
+                  initialPosition: node.position,
+                  size: node.size,
+                  canvasBounds: Size(canvasWidth, canvasHeight),
+                  child: node.child,
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
     }).toList();
 
@@ -301,19 +374,20 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     return widgets;
   }
 
-  _CanvasView _buildCanvas(
+  CanvasView _buildCanvas(
     FlowGraph graph,
     Map<String, NodePosition> storedPositions,
+    List<DeviceState> deviceStates,
   ) {
     final resolvedPositions = _resolvePositions(graph, storedPositions);
 
     final nodes = graph.nodes.map((node) {
       final position = resolvedPositions[node.nodeId] ?? Offset.zero;
-      return _CanvasNode(
+      return CanvasNode(
         id: node.nodeId,
         position: position,
         size: _nodeSizeFor(node),
-        child: _buildNodeWidget(node, graph),
+        child: _buildNodeWidget(node, graph, deviceStates),
       );
     }).toList();
 
@@ -338,7 +412,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       );
     }
 
-    return _CanvasView(nodes: nodes, edges: edges);
+    return CanvasView(nodes: nodes, edges: edges);
   }
 
   Map<String, Offset> _resolvePositions(
@@ -355,7 +429,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     return positions;
   }
 
-  Widget _buildNodeWidget(FlowNode node, FlowGraph graph) {
+  Widget _buildNodeWidget(FlowNode node, FlowGraph graph, List<DeviceState> deviceStates) {
     // Get validation errors for this node
     final validationErrors = _validator.getNodeErrors(graph, node.nodeId);
 
@@ -368,11 +442,38 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
         final totalSlotCount = edges.length;
         final hasError = edges.any((e) => e.status == EdgeStatus.invalid);
 
+        // Find matching device state to get deviceEnabled
+        final matchingState = deviceStates.firstWhere(
+          (state) {
+            final matchesVidPid = state.identity.vendorId == value.deviceId.vendorId &&
+                state.identity.productId == value.deviceId.productId;
+
+            // If device instance has no serial or empty serial, match any serial
+            final matchesSerial = (value.deviceId.serial == null ||
+                                   value.deviceId.serial!.isEmpty) ||
+                                  state.identity.serialNumber == value.deviceId.serial;
+
+            return matchesVidPid && matchesSerial;
+          },
+          orElse: () => DeviceState(
+            identity: DeviceIdentity(
+              vendorId: value.deviceId.vendorId,
+              productId: value.deviceId.productId,
+              serialNumber: value.deviceId.serial ?? '',
+            ),
+            deviceEnabled: true, // Default to enabled if not found
+            remapEnabled: false,
+            connectedAt: '',
+            updatedAt: DateTime.now().toIso8601String(),
+          ),
+        );
+
         return EnhancedDeviceNode(
           node: value,
           activeSlotCount: activeSlotCount,
           totalSlotCount: totalSlotCount,
           hasError: hasError,
+          deviceEnabled: matchingState.deviceEnabled,
           // onAddSlot can be added later when slot management is implemented
         );
       },
@@ -441,7 +542,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
   String _formatId(int id) => '0x${id.toRadixString(16).padLeft(4, '0')}';
 
-  Offset _edgeHandle(_CanvasNode node, {required bool isSource}) {
+  Offset _edgeHandle(CanvasNode node, {required bool isSource}) {
     final dx = isSource ? node.size.width : 0.0;
     return node.position + Offset(dx, node.size.height / 2);
   }
@@ -451,115 +552,6 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       device: (_) => const Size(260, 220),
       hardwareProfile: (_) => const Size(220, 160),
       keymap: (_) => const Size(200, 140),
-    );
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF333333).withOpacity(0.4)
-      ..strokeWidth = 1;
-
-    const gridSize = 20.0;
-
-    for (double x = 0; x < size.width; x += gridSize) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += gridSize) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _CanvasView {
-  const _CanvasView({required this.nodes, required this.edges});
-
-  final List<_CanvasNode> nodes;
-  final List<PaintableEdge> edges;
-}
-
-class _CanvasNode {
-  const _CanvasNode({
-    required this.id,
-    required this.position,
-    required this.size,
-    required this.child,
-  });
-
-  final String id;
-  final Offset position;
-  final Size size;
-  final Widget child;
-}
-
-/// Wrapper widget that animates node appearance/disappearance.
-///
-/// Provides fade-in animation for new nodes and smooth transitions
-/// for node updates.
-class _AnimatedNodeWrapper extends StatefulWidget {
-  const _AnimatedNodeWrapper({
-    required this.nodeId,
-    required this.isNew,
-    required this.child,
-    super.key,
-  });
-
-  final String nodeId;
-  final bool isNew;
-  final Widget child;
-
-  @override
-  State<_AnimatedNodeWrapper> createState() => _AnimatedNodeWrapperState();
-}
-
-class _AnimatedNodeWrapperState extends State<_AnimatedNodeWrapper>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-
-    _fadeAnimation = Tween<double>(
-      begin: widget.isNew ? 0 : 1,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _scaleAnimation = Tween<double>(
-      begin: widget.isNew ? 0.9 : 1,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-
-    if (widget.isNew) {
-      _controller.forward();
-    } else {
-      _controller.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }

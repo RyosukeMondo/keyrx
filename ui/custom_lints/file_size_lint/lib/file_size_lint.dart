@@ -1,6 +1,6 @@
 import 'dart:async';
+
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/error/error.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 
@@ -21,8 +21,7 @@ class FileLineLimitLint extends DartLintRule {
         code: LintCode(
           name: 'file_line_limit',
           problemMessage: 'File has {1} lines (max {0}).',
-          correctionMessage:
-              'Split the file or reduce scope to stay under {0} lines.',
+          correctionMessage: 'Split the file or reduce scope to stay under {0} lines.',
         ),
       );
 
@@ -50,10 +49,12 @@ class FileLineLimitLint extends DartLintRule {
 
     // Anchor the diagnostic at the start of the file.
     final highlightLength = result.content.isNotEmpty ? 1 : 0;
-    reporter.reportErrorForOffset(code, 0, highlightLength, [
-      maxLines,
-      lineCount,
-    ]);
+    reporter.atOffset(
+      offset: 0,
+      length: highlightLength,
+      errorCode: code,
+      arguments: [maxLines, lineCount],
+    );
   }
 }
 
@@ -63,8 +64,7 @@ class FunctionLengthLimitLint extends DartLintRule {
         code: LintCode(
           name: 'function_length_limit',
           problemMessage: 'Function has {1} lines (max {0}).',
-          correctionMessage:
-              'Split the function or extract helpers to stay under {0} lines.',
+          correctionMessage: 'Split the function or extract helpers to stay under {0} lines.',
         ),
       );
 
@@ -98,10 +98,12 @@ class FunctionLengthLimitLint extends DartLintRule {
         return;
       }
 
-      reporter.reportErrorForOffset(code, node.offset, node.length, [
-        maxLines,
-        length,
-      ]);
+      reporter.atOffset(
+        offset: node.offset,
+        length: node.length,
+        errorCode: code,
+        arguments: [maxLines, length],
+      );
     }
 
     context.registry

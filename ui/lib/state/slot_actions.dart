@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/config_ids.dart';
 import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
+import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
 import 'keyflow_providers.dart';
 import 'analytics_providers.dart';
@@ -19,7 +20,7 @@ class SlotActions {
 
   final Ref _ref;
 
-  KeyFlowActions get _actions => _ref.read(keyFlowActionsProvider);
+  KeyFlowRepository get _repo => _ref.read(keyFlowRepositoryProvider);
 
   /// Add a new slot to a device.
   ///
@@ -40,7 +41,7 @@ class SlotActions {
       priority: priorityOverride ?? 0,
     );
 
-    final result = await _actions.addSlot(
+    final result = await _repo.addSlot(
       device,
       slot,
       priorityOverride: priorityOverride,
@@ -52,8 +53,8 @@ class SlotActions {
           .read(analyticsTrackerProvider.notifier)
           .trackSlotAdded(
             deviceId: device.toString(),
-            profileId: hardwareProfileId.value,
-            keymapId: keymapId.value,
+            profileId: hardwareProfileId,
+            keymapId: keymapId,
             priority: slot.priority,
             autoAssigned: priorityOverride == null,
           );
@@ -67,7 +68,7 @@ class SlotActions {
     required DeviceInstanceId device,
     required ProfileSlot slot,
   }) {
-    return _actions.updateSlot(device, slot);
+    return _repo.updateSlot(device, slot);
   }
 
   /// Delete a slot from a device.
@@ -75,7 +76,7 @@ class SlotActions {
     required DeviceInstanceId device,
     required String slotId,
   }) async {
-    final result = await _actions.removeSlot(device, slotId);
+    final result = await _repo.removeSlot(device, slotId);
 
     // Track analytics
     if (result.isSuccess) {
@@ -93,7 +94,7 @@ class SlotActions {
     required ProfileSlot slot,
   }) {
     final updatedSlot = slot.copyWith(active: !slot.active);
-    return _actions.updateSlot(device, updatedSlot);
+    return _repo.updateSlot(device, updatedSlot);
   }
 
   /// Reorder slots by updating their priorities.
@@ -111,7 +112,7 @@ class SlotActions {
       if (slot.priority != i) {
         final oldPriority = slot.priority;
         final updatedSlot = slot.copyWith(priority: i);
-        final result = await _actions.updateSlot(device, updatedSlot);
+        final result = await _repo.updateSlot(device, updatedSlot);
         results.add(result);
 
         // Track analytics for each reorder

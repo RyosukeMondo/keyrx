@@ -13,6 +13,7 @@ import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/models/runtime_config.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'package:keyrx_ui/state/slot_actions.dart';
 import 'package:keyrx_ui/state/selection_state.dart';
 import 'package:keyrx_ui/widgets/flow/animated_edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
@@ -467,8 +468,8 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     final confirmed = await _showDeleteConfirmation();
     if (!confirmed) return;
 
-    final actions = ref.read(keyFlowActionsProvider);
-    final result = await actions.removeSlot(deviceId, edge.slotId);
+    final actions = ref.read(slotActionsProvider);
+    final result = await actions.deleteSlot(device: deviceId, slotId: edge.slotId);
 
     if (!mounted) return;
 
@@ -492,8 +493,8 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       active: !edge.active,
     );
 
-    final actions = ref.read(keyFlowActionsProvider);
-    final result = await actions.updateSlot(deviceId, updatedSlot);
+    final actions = ref.read(slotActionsProvider);
+    final result = await actions.updateSlot(device: deviceId, slot: updatedSlot);
 
     if (!mounted) return;
 

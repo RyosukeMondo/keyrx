@@ -35,18 +35,35 @@ This installs:
 - **mold** (Linux) / **zld** (macOS): Fast linkers (2-3x faster)
 - **tokei**: Code metrics analyzer
 
-### 2. Start Integrated Development
+### 2. Choose Your Development Mode
 
+**UI-Only Development (Ultra-Fast, Recommended for UI work):**
 ```bash
-# Start Rust watch + Flutter hot reload in parallel
+# Flutter with mock FFI bridge - instant hot reload, no Rust compilation
+just dev-mock
+```
+- ✅ <1s hot reload (vs 60s+ with FFI)
+- ✅ No Rust toolchain required
+- ✅ Full UI feature development
+- ✅ Realistic mock data
+
+**Integrated Development (Full Stack):**
+```bash
+# Rust watch + Flutter hot reload in parallel
 just dev
 ```
-
-This launches a unified development environment with:
 - Automatic Rust compilation on FFI changes
 - Automatic Dart binding regeneration
 - Flutter hot reload for instant feedback
 - ABI change detection
+
+**FFI Watch Mode (Auto-regenerate bindings):**
+```bash
+./scripts/dev/ffi_watch.sh
+```
+- Watches `core/src/ffi/**/*.rs`
+- Regenerates Dart bindings on change
+- <10s iteration cycle
 
 ### 3. Add Your First FFI Function
 
@@ -142,7 +159,7 @@ just build
 ### Install Git Hooks
 
 ```bash
-./scripts/install-hooks.sh
+./scripts/setup/git_hooks.sh
 ```
 
 Hooks installed:
@@ -524,13 +541,13 @@ Contract validation runs automatically on every commit via the pre-commit hook.
 
 ```bash
 # Validate contracts
-./scripts/validate_ffi_contracts.sh
+./scripts/ffi/validate_contracts.sh
 
 # Verbose output
-./scripts/validate_ffi_contracts.sh --verbose
+./scripts/ffi/validate_contracts.sh --verbose
 
 # Auto-fix mismatches
-./scripts/validate_ffi_contracts.sh --fix
+./scripts/ffi/validate_contracts.sh --fix
 ```
 
 ### Fixing Validation Errors
@@ -544,7 +561,7 @@ Contract validation runs automatically on every commit via the pre-commit hook.
 
 **Fix:**
 ```bash
-./scripts/validate_ffi_contracts.sh --fix
+./scripts/ffi/validate_contracts.sh --fix
 # or
 just gen-dart-bindings
 ```
@@ -845,7 +862,7 @@ Generates `.spec-workflow/analysis/implementation-insights.html` with:
 
 Ensure modules fit in LLM context windows:
 ```bash
-./scripts/analyze_module_sizes.sh
+./scripts/metrics/module_sizes.sh
 ```
 
 Generates `.spec-workflow/analysis/module-sizes.html` showing:
@@ -974,13 +991,13 @@ just ui:setup  # Regenerate Flutter build_runner code
 **Solution:**
 ```bash
 # See validation errors
-./scripts/validate_ffi_contracts.sh --verbose
+./scripts/ffi/validate_contracts.sh --verbose
 
 # Auto-fix
-./scripts/validate_ffi_contracts.sh --fix
+./scripts/ffi/validate_contracts.sh --fix
 
 # Verify fix
-./scripts/validate_ffi_contracts.sh
+./scripts/ffi/validate_contracts.sh
 ```
 
 ### Hot Reload Not Working After FFI Change
@@ -1138,9 +1155,9 @@ git commit --no-verify  # Bypasses validation
 
 | Command | Description |
 |---------|-------------|
-| `./scripts/validate_ffi_contracts.sh` | Validate all contracts |
-| `./scripts/validate_ffi_contracts.sh --fix` | Auto-fix contract mismatches |
-| `./scripts/validate_ffi_contracts.sh --verbose` | Verbose validation output |
+| `./scripts/ffi/validate_contracts.sh` | Validate all contracts |
+| `./scripts/ffi/validate_contracts.sh --fix` | Auto-fix contract mismatches |
+| `./scripts/ffi/validate_contracts.sh --verbose` | Verbose validation output |
 
 ### Logging
 
@@ -1165,7 +1182,7 @@ git commit --no-verify  # Bypasses validation
 | `just ffi-metrics` | Display FFI call metrics (text) |
 | `just ffi-metrics json` | Display FFI call metrics (JSON) |
 | `just analyze-ffi` | Analyze FFI implementation history |
-| `./scripts/analyze_module_sizes.sh` | Analyze module sizes |
+| `./scripts/metrics/module_sizes.sh` | Analyze module sizes |
 
 ### Testing
 

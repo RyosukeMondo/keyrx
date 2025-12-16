@@ -40,15 +40,9 @@ class _DraggableNodeState extends ConsumerState<DraggableNode> {
     final isDragging =
         dragState?.nodeId == widget.nodeId && dragState?.isDragging == true;
 
-    // Calculate current position (either dragging or initial)
-    final currentPosition = isDragging
-        ? (dragState?.currentPosition ?? widget.initialPosition)
-        : widget.initialPosition;
-
-    return Positioned(
-      left: currentPosition.dx,
-      top: currentPosition.dy,
-      child: Semantics(
+    // Just return the draggable widget without Positioned
+    // The parent (flow_editor_page) will wrap this in Positioned
+    return Semantics(
         // Ensure minimum touch target size for accessibility
         explicitChildNodes: true,
         child: MouseRegion(
@@ -96,8 +90,7 @@ class _DraggableNodeState extends ConsumerState<DraggableNode> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   void _onPanStart(DragStartDetails details) {

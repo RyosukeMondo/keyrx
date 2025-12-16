@@ -24,7 +24,13 @@ mixin _$DeviceState {
   /// Device identity
   DeviceIdentity get identity => throw _privateConstructorUsedError;
 
+  /// Whether the device is enabled (participates in KeyRx)
+  /// When false, device is in total passthrough mode
+  @JsonKey(name: 'device_enabled')
+  bool get deviceEnabled => throw _privateConstructorUsedError;
+
   /// Whether remapping is enabled for this device
+  /// Only effective when deviceEnabled is true
   @JsonKey(name: 'remap_enabled')
   bool get remapEnabled => throw _privateConstructorUsedError;
 
@@ -59,6 +65,7 @@ abstract class $DeviceStateCopyWith<$Res> {
   @useResult
   $Res call({
     DeviceIdentity identity,
+    @JsonKey(name: 'device_enabled') bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') bool remapEnabled,
     @JsonKey(name: 'profile_id') String? profileId,
     @JsonKey(name: 'connected_at') String connectedAt,
@@ -84,6 +91,7 @@ class _$DeviceStateCopyWithImpl<$Res, $Val extends DeviceState>
   @override
   $Res call({
     Object? identity = null,
+    Object? deviceEnabled = null,
     Object? remapEnabled = null,
     Object? profileId = freezed,
     Object? connectedAt = null,
@@ -95,6 +103,10 @@ class _$DeviceStateCopyWithImpl<$Res, $Val extends DeviceState>
                 ? _value.identity
                 : identity // ignore: cast_nullable_to_non_nullable
                       as DeviceIdentity,
+            deviceEnabled: null == deviceEnabled
+                ? _value.deviceEnabled
+                : deviceEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
             remapEnabled: null == remapEnabled
                 ? _value.remapEnabled
                 : remapEnabled // ignore: cast_nullable_to_non_nullable
@@ -138,6 +150,7 @@ abstract class _$$DeviceStateImplCopyWith<$Res>
   @useResult
   $Res call({
     DeviceIdentity identity,
+    @JsonKey(name: 'device_enabled') bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') bool remapEnabled,
     @JsonKey(name: 'profile_id') String? profileId,
     @JsonKey(name: 'connected_at') String connectedAt,
@@ -163,6 +176,7 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? identity = null,
+    Object? deviceEnabled = null,
     Object? remapEnabled = null,
     Object? profileId = freezed,
     Object? connectedAt = null,
@@ -174,6 +188,10 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
             ? _value.identity
             : identity // ignore: cast_nullable_to_non_nullable
                   as DeviceIdentity,
+        deviceEnabled: null == deviceEnabled
+            ? _value.deviceEnabled
+            : deviceEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
         remapEnabled: null == remapEnabled
             ? _value.remapEnabled
             : remapEnabled // ignore: cast_nullable_to_non_nullable
@@ -200,6 +218,7 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
 class _$DeviceStateImpl extends _DeviceState {
   const _$DeviceStateImpl({
     required this.identity,
+    @JsonKey(name: 'device_enabled') required this.deviceEnabled,
     @JsonKey(name: 'remap_enabled') required this.remapEnabled,
     @JsonKey(name: 'profile_id') this.profileId,
     @JsonKey(name: 'connected_at') required this.connectedAt,
@@ -213,7 +232,14 @@ class _$DeviceStateImpl extends _DeviceState {
   @override
   final DeviceIdentity identity;
 
+  /// Whether the device is enabled (participates in KeyRx)
+  /// When false, device is in total passthrough mode
+  @override
+  @JsonKey(name: 'device_enabled')
+  final bool deviceEnabled;
+
   /// Whether remapping is enabled for this device
+  /// Only effective when deviceEnabled is true
   @override
   @JsonKey(name: 'remap_enabled')
   final bool remapEnabled;
@@ -235,7 +261,7 @@ class _$DeviceStateImpl extends _DeviceState {
 
   @override
   String toString() {
-    return 'DeviceState(identity: $identity, remapEnabled: $remapEnabled, profileId: $profileId, connectedAt: $connectedAt, updatedAt: $updatedAt)';
+    return 'DeviceState(identity: $identity, deviceEnabled: $deviceEnabled, remapEnabled: $remapEnabled, profileId: $profileId, connectedAt: $connectedAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -245,6 +271,8 @@ class _$DeviceStateImpl extends _DeviceState {
             other is _$DeviceStateImpl &&
             (identical(other.identity, identity) ||
                 other.identity == identity) &&
+            (identical(other.deviceEnabled, deviceEnabled) ||
+                other.deviceEnabled == deviceEnabled) &&
             (identical(other.remapEnabled, remapEnabled) ||
                 other.remapEnabled == remapEnabled) &&
             (identical(other.profileId, profileId) ||
@@ -260,6 +288,7 @@ class _$DeviceStateImpl extends _DeviceState {
   int get hashCode => Object.hash(
     runtimeType,
     identity,
+    deviceEnabled,
     remapEnabled,
     profileId,
     connectedAt,
@@ -283,6 +312,7 @@ class _$DeviceStateImpl extends _DeviceState {
 abstract class _DeviceState extends DeviceState {
   const factory _DeviceState({
     required final DeviceIdentity identity,
+    @JsonKey(name: 'device_enabled') required final bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') required final bool remapEnabled,
     @JsonKey(name: 'profile_id') final String? profileId,
     @JsonKey(name: 'connected_at') required final String connectedAt,
@@ -297,7 +327,14 @@ abstract class _DeviceState extends DeviceState {
   @override
   DeviceIdentity get identity;
 
+  /// Whether the device is enabled (participates in KeyRx)
+  /// When false, device is in total passthrough mode
+  @override
+  @JsonKey(name: 'device_enabled')
+  bool get deviceEnabled;
+
   /// Whether remapping is enabled for this device
+  /// Only effective when deviceEnabled is true
   @override
   @JsonKey(name: 'remap_enabled')
   bool get remapEnabled;

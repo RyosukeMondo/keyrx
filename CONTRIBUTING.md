@@ -23,7 +23,8 @@ Run `just` to see all available commands:
 | Command | Description |
 |---------|-------------|
 | `just setup` | Install tools, dependencies, and git hooks |
-| `just dev` | Run core with auto-reload (cargo watch) |
+| `just dev` | Run integrated workflow (Rust watch + Flutter hot reload) |
+| `just dev-mock` | UI-only development with mock FFI (ultra-fast iteration) |
 | `just ui` | Run Flutter UI in development mode |
 | `just check` | Run all quality checks (fmt, clippy, test) |
 | `just fmt` | Format Rust code |
@@ -31,6 +32,30 @@ Run `just` to see all available commands:
 | `just test` | Run tests with nextest |
 | `just bench` | Run benchmarks |
 | `just clean` | Clean build artifacts |
+
+### Ultra-Speed Development Workflow
+
+For rapid UI iteration without Rust compilation delays:
+
+**UI-Only Development (Recommended for UI work):**
+```bash
+just dev-mock
+# Flutter hot reload: <1s (vs 60s+ with FFI rebuild)
+```
+
+**Integrated Development (Full stack):**
+```bash
+just dev
+# Rust watch + Flutter hot reload in parallel
+```
+
+**FFI Watch Mode (Auto-regenerate bindings):**
+```bash
+./scripts/dev/ffi_watch.sh
+# Watches Rust FFI files, regenerates Dart bindings on change
+```
+
+The mock FFI bridge (`ui/lib/ffi/mock_bridge.dart`) implements the full `KeyrxBridge` interface with realistic data, enabling complete UI development without the Rust toolchain.
 
 ## Building
 
@@ -56,7 +81,7 @@ Windows builds require [cross](https://github.com/cross-rs/cross).
 
 ### Pre-commit Hooks
 
-Git hooks are automatically installed with `just setup` (or `scripts/install-hooks.sh`). The pre-commit hook enforces quality gates across Rust and Flutter:
+Git hooks are automatically installed with `just setup` (or `scripts/setup/git_hooks.sh`). The pre-commit hook enforces quality gates across Rust and Flutter:
 
 1. `cargo fmt --check` (core)
 2. `cargo clippy -- -D warnings` (core)

@@ -14,6 +14,7 @@ class EnhancedDeviceNode extends StatelessWidget {
   final int activeSlotCount;
   final int totalSlotCount;
   final bool hasError;
+  final bool deviceEnabled;
   final VoidCallback? onAddSlot;
   final VoidCallback? onTap;
 
@@ -23,6 +24,7 @@ class EnhancedDeviceNode extends StatelessWidget {
     this.activeSlotCount = 0,
     this.totalSlotCount = 0,
     this.hasError = false,
+    this.deviceEnabled = true,
     this.onAddSlot,
     this.onTap,
   });
@@ -222,6 +224,8 @@ class EnhancedDeviceNode extends StatelessWidget {
   }
 
   Widget _buildSlotInfo(ThemeData theme, _DeviceStatus status) {
+    final inactiveSlotCount = totalSlotCount - activeSlotCount;
+
     return Row(
       children: [
         Icon(Icons.layers_outlined, size: 16, color: status.iconColor),
@@ -232,19 +236,23 @@ class EnhancedDeviceNode extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        if (activeSlotCount > 0) ...[
+        if (totalSlotCount > 0) ...[
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: status.iconBackgroundColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '$activeSlotCount active',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: status.iconColor,
-                fontWeight: FontWeight.w600,
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: status.iconBackgroundColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$activeSlotCount active, $inactiveSlotCount inactive',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: status.iconColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ),
@@ -308,7 +316,7 @@ class EnhancedDeviceNode extends StatelessWidget {
     if (hasError) {
       return _DeviceStatus.error;
     }
-    if (!node.isConnected) {
+    if (!node.isConnected || !deviceEnabled) {
       return _DeviceStatus.disconnected;
     }
     if (activeSlotCount > 0) {

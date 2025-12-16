@@ -8,6 +8,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../ffi/bridge.dart';
+import '../ffi/mock_bridge.dart';
 import '../services/api_docs_service.dart';
 import '../services/facade/facade_state.dart';
 import '../services/facade/keyrx_facade.dart';
@@ -15,8 +16,21 @@ import '../services/service_registry.dart';
 import 'app_state.dart';
 
 final bridgeProvider = Provider<KeyrxBridge>((ref) {
-  final bridge = KeyrxBridge.open();
-  ref.onDispose(bridge.dispose);
+  const useMockBridge = bool.fromEnvironment('MOCK_FFI', defaultValue: false);
+
+  final KeyrxBridge bridge;
+  if (useMockBridge) {
+    bridge = MockKeyrxBridge();
+  } else {
+    bridge = KeyrxBridge.open();
+  }
+
+  ref.onDispose(() async {
+    if (bridge is MockKeyrxBridge) {
+      await bridge.dispose();
+    }
+  });
+
   return bridge;
 });
 

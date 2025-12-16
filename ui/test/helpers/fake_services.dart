@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/ffi/bindings.dart';
 import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/ffi/bridge_config.dart';
@@ -22,9 +23,14 @@ import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
+import 'package:keyrx_ui/services/hardware_service.dart';
+import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:keyrx_ui/services/layout_service.dart';
+import 'package:keyrx_ui/services/profile_autosave_service.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/services/runtime_service.dart';
 import 'package:keyrx_ui/services/script_file_service.dart';
+import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/services/test_service.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
@@ -35,8 +41,7 @@ class FakeDeviceService implements DeviceService {
   Future<List<KeyboardDevice>> listDevices() async => devices;
 
   @override
-  Future<DeviceSelectionResult> selectDevice(String path) async =>
-      DeviceSelectionResult.success();
+  Future<DeviceSelectionResult> selectDevice(String path) async => DeviceSelectionResult.success();
 
   @override
   Future<bool> hasProfile(String deviceId) async => false;
@@ -55,16 +60,8 @@ class FakeTestService implements TestService {
       const TestDiscoveryServiceResult(tests: []);
 
   @override
-  Future<TestRunServiceResult> runTests(
-    String scriptPath, {
-    String? filter,
-  }) async => const TestRunServiceResult(
-    total: 0,
-    passed: 0,
-    failed: 0,
-    durationMs: 0,
-    results: [],
-  );
+  Future<TestRunServiceResult> runTests(String scriptPath, {String? filter}) async =>
+      const TestRunServiceResult(total: 0, passed: 0, failed: 0, durationMs: 0, results: []);
 
   @override
   Future<void> dispose() async {}
@@ -102,8 +99,7 @@ class FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async =>
-      const KeyRegistryResult(entries: []);
+  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(entries: []);
 
   /// Emit a state snapshot to listeners.
   void emit(EngineSnapshot snapshot) {
@@ -147,6 +143,12 @@ class FakeBridge implements KeyrxBridge {
 
   @override
   RuntimeBindings? get runtimeBindings => null;
+
+  @override
+  DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) {
+    // No-op for fake
+    return DeviceRegistryResult.success(null);
+  }
 
   @override
   bool startEngineLoop() => true;
@@ -206,28 +208,18 @@ class FakeBridge implements KeyrxBridge {
       const ScriptValidationResult(valid: true, errors: []);
 
   @override
-  TestDiscoveryResult discoverTests(String path) =>
-      const TestDiscoveryResult(tests: []);
+  TestDiscoveryResult discoverTests(String path) => const TestDiscoveryResult(tests: []);
 
   @override
-  TestRunResult runTests(String path, {String? filter}) => const TestRunResult(
-    total: 0,
-    passed: 0,
-    failed: 0,
-    durationMs: 0,
-    results: [],
-  );
+  TestRunResult runTests(String path, {String? filter}) =>
+      const TestRunResult(total: 0, passed: 0, failed: 0, durationMs: 0, results: []);
 
   @override
-  SimulationResult simulate(
-    List<KeyInput> keys, {
-    String? scriptPath,
-    bool comboMode = false,
-  }) => const SimulationResult(mappings: [], activeLayers: [], pending: []);
+  SimulationResult simulate(List<KeyInput> keys, {String? scriptPath, bool comboMode = false}) =>
+      const SimulationResult(mappings: [], activeLayers: [], pending: []);
 
   @override
-  SessionListResult listSessions(String dirPath) =>
-      const SessionListResult(sessions: []);
+  SessionListResult listSessions(String dirPath) => const SessionListResult(sessions: []);
 
   @override
   SessionAnalysisResult analyzeSession(String path) =>
@@ -262,10 +254,8 @@ class FakeBridge implements KeyrxBridge {
       DeviceRegistryResult.error('Not implemented in fake');
 
   @override
-  DeviceRegistryResult<void> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) => DeviceRegistryResult.error('Not implemented in fake');
+  DeviceRegistryResult<void> assignProfile(String deviceKey, String profileId) =>
+      DeviceRegistryResult.error('Not implemented in fake');
 
   @override
   DeviceRegistryResult<void> setRemapEnabled(String deviceKey, bool enabled) =>
@@ -292,23 +282,19 @@ class FakeBridge implements KeyrxBridge {
       ProfileRegistryResult.error('Not implemented in fake');
 
   @override
-  ProfileRegistryResult<List<Profile>> findCompatibleProfiles(
-    LayoutType layoutType,
-  ) => ProfileRegistryResult.error('Not implemented in fake');
+  ProfileRegistryResult<List<Profile>> findCompatibleProfiles(LayoutType layoutType) =>
+      ProfileRegistryResult.error('Not implemented in fake');
 
   @override
   RecordingStartResult startRecording(String path) =>
       RecordingStartResult.error('Not implemented in fake');
 
   @override
-  RecordingStopResult stopRecording() =>
-      RecordingStopResult.error('Not implemented in fake');
+  RecordingStopResult stopRecording() => RecordingStopResult.error('Not implemented in fake');
 
   @override
-  ValidationResult validateScript(
-    String script, [
-    ValidationOptions? options,
-  ]) => const ValidationResult(isValid: true, errors: [], warnings: []);
+  ValidationResult validateScript(String script, [ValidationOptions? options]) =>
+      const ValidationResult(isValid: true, errors: [], warnings: []);
 
   @override
   List<String> suggestKeys(String partial) => const [];
@@ -317,21 +303,16 @@ class FakeBridge implements KeyrxBridge {
   List<String> allKeyNames() => const [];
 
   @override
-  bool isEventCallbackRegistered(EventType eventType) =>
-      _eventCallbacks.containsKey(eventType);
+  bool isEventCallbackRegistered(EventType eventType) => _eventCallbacks.containsKey(eventType);
 
   @override
-  bool registerEventCallback(
-    EventType eventType,
-    void Function(Uint8List jsonPayload) handler,
-  ) {
+  bool registerEventCallback(EventType eventType, void Function(Uint8List jsonPayload) handler) {
     _eventCallbacks[eventType] = handler;
     return true;
   }
 
   @override
-  bool unregisterEventCallback(EventType eventType) =>
-      _eventCallbacks.remove(eventType) != null;
+  bool unregisterEventCallback(EventType eventType) => _eventCallbacks.remove(eventType) != null;
 
   /// Invoke a registered event callback (used by tests).
   void emitEvent(EventType eventType, Uint8List payload) {
@@ -364,12 +345,7 @@ class FakeBridge implements KeyrxBridge {
     String oldProfilesDir,
     String newProfilesDir, {
     bool createBackup = true,
-  }) async => MigrationReport(
-    totalCount: 0,
-    migratedCount: 0,
-    failedCount: 0,
-    failures: [],
-  );
+  }) async => MigrationReport(totalCount: 0, migratedCount: 0, failedCount: 0, failures: []);
 
   @override
   ConfigPathResult getConfigRoot() => ConfigPathResult.success('.');
@@ -427,22 +403,20 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<void> removeVirtualDevice(String key) async {}
 
   @override
-  Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> toggleRemap(String deviceKey, bool enabled) async =>
+      const DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) async => const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> assignProfile(String deviceKey, String profileId) async =>
+      const DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> setUserLabel(
-    String deviceKey,
-    String? label,
-  ) async => const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> setUserLabel(String deviceKey, String? label) async =>
+      const DeviceRegistryOperationResult.success();
+
+  @override
+  Future<DeviceRegistryOperationResult> toggleDevice(String deviceKey, bool enabled) async =>
+      const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async {
@@ -472,13 +446,11 @@ class FakeProfileRegistryService implements ProfileRegistryService {
       ProfileRegistryOperationResult.success();
 
   @override
-  Future<ProfileRegistryOperationResult> deleteProfile(
-    String profileId,
-  ) async => ProfileRegistryOperationResult.success();
+  Future<ProfileRegistryOperationResult> deleteProfile(String profileId) async =>
+      ProfileRegistryOperationResult.success();
 
   @override
-  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async =>
-      const [];
+  Future<List<Profile>> findCompatibleProfiles(LayoutType layoutType) async => const [];
 
   @override
   Future<List<String>> refresh() async => const [];
@@ -558,3 +530,13 @@ class FakeConfigBindings implements ConfigBindings {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
+
+class FakeStoragePathResolver extends Fake implements StoragePathResolver {}
+
+class FakeProfileAutosaveService extends Fake implements ProfileAutosaveService {}
+
+class FakeLayoutService extends Fake implements LayoutService {}
+
+class FakeHardwareService extends Fake implements HardwareService {}
+
+class FakeKeymapService extends Fake implements KeymapService {}

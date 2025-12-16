@@ -122,7 +122,7 @@ mixin DeviceRegistryFFIMixin {
         );
       }
 
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = ptr!.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<List<dynamic>>(
         raw,
         (json) => json as List<dynamic>,
@@ -143,6 +143,56 @@ mixin DeviceRegistryFFIMixin {
     } finally {
       if (ptr != null && ptr != nullptr) {
         _freeString(ptr);
+      }
+      calloc.free(errorPtr);
+    }
+  }
+
+  /// Set device enabled state.
+  ///
+  /// [deviceKey] - Device identity key (format: "VID:PID:SERIAL")
+  /// [enabled] - Whether device should be enabled
+  ///
+  /// Returns success or error.
+  DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) {
+    final setDeviceFn = bindings?.deviceRegistrySetDeviceEnabled;
+    if (setDeviceFn == null) {
+      return DeviceRegistryResult.error(
+        'deviceRegistrySetDeviceEnabled not available',
+      );
+    }
+
+    final errorPtr = calloc<Pointer<Utf8>>();
+    final keyPtr = deviceKey.toNativeUtf8();
+    Pointer<Char>? resultPtr;
+
+    try {
+      resultPtr = setDeviceFn(keyPtr.cast<Char>(), enabled ? 1 : 0, errorPtr);
+
+      if (errorPtr.value.address != 0) {
+        final error = errorPtr.value.toDartString();
+        bindings?.freeString(errorPtr.value.cast<Char>());
+        return DeviceRegistryResult.error(error);
+      }
+
+      if (resultPtr == nullptr) {
+        return DeviceRegistryResult.error('setDeviceEnabled returned null');
+      }
+
+      final raw = resultPtr!.cast<Utf8>().toDartString();
+      final result = _FfiResultParser.parse<void>(raw, null);
+
+      if (result.hasError) {
+        return DeviceRegistryResult.error(result.errorMessage!);
+      }
+
+      return DeviceRegistryResult.success(null);
+    } catch (e) {
+      return DeviceRegistryResult.error('setDeviceEnabled exception: $e');
+    } finally {
+      calloc.free(keyPtr);
+      if (resultPtr != null && resultPtr != nullptr) {
+        _freeString(resultPtr);
       }
       calloc.free(errorPtr);
     }
@@ -179,7 +229,7 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('setRemapEnabled returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = resultPtr!.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -234,7 +284,7 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('assignProfile returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = resultPtr!.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -295,7 +345,7 @@ mixin DeviceRegistryFFIMixin {
         return DeviceRegistryResult.error('setUserLabel returned null');
       }
 
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = resultPtr!.cast<Utf8>().toDartString();
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {

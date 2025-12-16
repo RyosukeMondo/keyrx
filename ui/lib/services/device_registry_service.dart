@@ -11,17 +11,14 @@ import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ffi/bridge.dart';
-import '../models/device_state.dart';
 import '../models/device_identity.dart';
+import '../models/device_state.dart';
 
 /// Result of a device registry operation.
 class DeviceRegistryOperationResult {
-  const DeviceRegistryOperationResult.success()
-    : success = true,
-      errorMessage = null;
+  const DeviceRegistryOperationResult.success() : success = true, errorMessage = null;
 
-  const DeviceRegistryOperationResult.error(this.errorMessage)
-    : success = false;
+  const DeviceRegistryOperationResult.error(this.errorMessage) : success = false;
 
   final bool success;
   final String? errorMessage;
@@ -38,23 +35,17 @@ abstract class DeviceRegistryService {
   /// Unregister a local virtual device.
   Future<void> removeVirtualDevice(String key);
 
+  /// Toggle device enabled state.
+  Future<DeviceRegistryOperationResult> toggleDevice(String deviceKey, bool enabled);
+
   /// Toggle remap enabled state for a device.
-  Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  );
+  Future<DeviceRegistryOperationResult> toggleRemap(String deviceKey, bool enabled);
 
   /// Assign a profile to a device.
-  Future<DeviceRegistryOperationResult> assignProfile(
-    String deviceKey,
-    String profileId,
-  );
+  Future<DeviceRegistryOperationResult> assignProfile(String deviceKey, String profileId);
 
   /// Set user label for a device.
-  Future<DeviceRegistryOperationResult> setUserLabel(
-    String deviceKey,
-    String? label,
-  );
+  Future<DeviceRegistryOperationResult> setUserLabel(String deviceKey, String? label);
 
   /// Refresh the device list.
   Future<List<DeviceState>> refresh();
@@ -69,14 +60,8 @@ abstract class DeviceRegistryService {
 /// Real DeviceRegistryService that wraps the KeyrxBridge.
 class DeviceRegistryServiceImpl implements DeviceRegistryService {
   DeviceRegistryServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge {
-    _bridge.registerEventCallback(
-      EventType.deviceConnected,
-      _handleDeviceEvent,
-    );
-    _bridge.registerEventCallback(
-      EventType.deviceDisconnected,
-      _handleDeviceEvent,
-    );
+    _bridge.registerEventCallback(EventType.deviceConnected, _handleDeviceEvent);
+    _bridge.registerEventCallback(EventType.deviceDisconnected, _handleDeviceEvent);
     _bridge.registerEventCallback(EventType.deviceUpdated, _handleDeviceEvent);
   }
 
@@ -106,7 +91,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     final key = identity.toKey();
     final existingIndex = current.indexWhere((jsonStr) {
       try {
-        final existing = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+        final existing = DeviceIdentity.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
         return existing.toKey() == key;
       } catch (_) {
         return false;
@@ -132,7 +117,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     current.removeWhere((jsonStr) {
       try {
-        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
         return identity.toKey() == key;
       } catch (_) {
         return false;
@@ -144,24 +129,44 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async {
+  Future<DeviceRegistryOperationResult> toggleDevice(String deviceKey, bool enabled) async {
     if (_bridge.loadFailure != null) {
+      return DeviceRegistryOperationResult.error('Engine unavailable: ${_bridge.loadFailure}');
+    }
+
+    final result = _bridge.setDeviceEnabled(deviceKey, enabled);
+
+    if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
+        _makeUserFriendly(result.errorMessage ?? 'Unknown error', 'toggle device'),
       );
+    }
+
+    // Invalidate cache to force refresh
+    // When device is disabled, remap is also disabled
+    _updateCachedDevice(
+      deviceKey,
+      (device) => device.copyWith(
+        deviceEnabled: enabled,
+        remapEnabled: enabled ? device.remapEnabled : false,
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      ),
+    );
+
+    return DeviceRegistryOperationResult.success();
+  }
+
+  @override
+  Future<DeviceRegistryOperationResult> toggleRemap(String deviceKey, bool enabled) async {
+    if (_bridge.loadFailure != null) {
+      return DeviceRegistryOperationResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.setRemapEnabled(deviceKey, enabled);
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(
-          result.errorMessage ?? 'Unknown error',
-          'toggle remap',
-        ),
+        _makeUserFriendly(result.errorMessage ?? 'Unknown error', 'toggle remap'),
       );
     }
 
@@ -178,24 +183,16 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryOperationResult> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) async {
+  Future<DeviceRegistryOperationResult> assignProfile(String deviceKey, String profileId) async {
     if (_bridge.loadFailure != null) {
-      return DeviceRegistryOperationResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
-      );
+      return DeviceRegistryOperationResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.assignProfile(deviceKey, profileId);
 
     if (result.hasError) {
       return DeviceRegistryOperationResult.error(
-        _makeUserFriendly(
-          result.errorMessage ?? 'Unknown error',
-          'assign profile',
-        ),
+        _makeUserFriendly(result.errorMessage ?? 'Unknown error', 'assign profile'),
       );
     }
 
@@ -212,10 +209,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryOperationResult> setUserLabel(
-    String deviceKey,
-    String? label,
-  ) async {
+  Future<DeviceRegistryOperationResult> setUserLabel(String deviceKey, String? label) async {
     // Check if it's a virtual device first
     final prefs = await SharedPreferences.getInstance();
     final List<String> virtuals = prefs.getStringList(_virtualDevicesKey) ?? [];
@@ -225,7 +219,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     for (int i = 0; i < virtuals.length; i++) {
       try {
-        final identity = DeviceIdentity.fromJson(jsonDecode(virtuals[i]));
+        final identity = DeviceIdentity.fromJson(jsonDecode(virtuals[i]) as Map<String, dynamic>);
         if (identity.toKey() == deviceKey) {
           virtualIndex = i;
           virtualIdentity = identity;
@@ -244,9 +238,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     }
 
     if (_bridge.loadFailure != null) {
-      return DeviceRegistryOperationResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
-      );
+      return DeviceRegistryOperationResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.setUserLabel(deviceKey, label);
@@ -291,31 +283,28 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
     // Load virtual devices
     final prefs = await SharedPreferences.getInstance();
-    final List<String> virtualsJson =
-        prefs.getStringList(_virtualDevicesKey) ?? [];
+    final List<String> virtualsJson = prefs.getStringList(_virtualDevicesKey) ?? [];
     final List<DeviceState> virtualDevices = [];
 
     final now = DateTime.now().toUtc().toIso8601String();
 
     for (final jsonStr in virtualsJson) {
       try {
-        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr));
+        final identity = DeviceIdentity.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
 
         // Should verify if this ID is already in FFI list
-        final isConnected = ffiDevices.any(
-          (d) => d.identity.toKey() == identity.toKey(),
-        );
+        final isConnected = ffiDevices.any((d) => d.identity.toKey() == identity.toKey());
 
         if (!isConnected) {
           // Create a placeholder state for the virtual device
           virtualDevices.add(
             DeviceState(
               identity: identity,
+              deviceEnabled: false, // Default for offline/virtual
               remapEnabled: false, // Default for offline/virtual
               connectedAt: '', // Empty indicates not connected
               updatedAt: now,
-              profileId:
-                  null, // We don't track virtual assignments here yet? Or could we?
+              profileId: null, // We don't track virtual assignments here yet? Or could we?
             ),
           );
         }
@@ -385,17 +374,12 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     return 'Failed to $operation: $cleaned';
   }
 
-  void _updateCachedDevice(
-    String deviceKey,
-    DeviceState Function(DeviceState current) update,
-  ) {
+  void _updateCachedDevice(String deviceKey, DeviceState Function(DeviceState current) update) {
     if (_cachedDevices == null || _cachedDevices!.isEmpty) {
       return;
     }
 
-    final index = _cachedDevices!.indexWhere(
-      (device) => device.identity.toKey() == deviceKey,
-    );
+    final index = _cachedDevices!.indexWhere((device) => device.identity.toKey() == deviceKey);
 
     if (index == -1) {
       return;

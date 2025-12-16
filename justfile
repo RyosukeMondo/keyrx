@@ -7,28 +7,28 @@ default:
 
 # Setup development environment (install tools, dependencies, and hooks)
 setup:
-    ./scripts/setup_dev_env.sh ${SETUP_OPTS}
-    ./scripts/setup_ffi_tools.sh ${SETUP_OPTS}
+    ./scripts/setup/dev_environment.sh ${SETUP_OPTS}
+    ./scripts/setup/ffi_tools.sh ${SETUP_OPTS}
 
 # Install only FFI-specific tooling (fast linkers, cargo-watch, tokei)
 setup-ffi-tools:
-    ./scripts/setup_ffi_tools.sh ${SETUP_OPTS}
+    ./scripts/setup/ffi_tools.sh ${SETUP_OPTS}
 
 # Run integrated development workflow (Rust watch + Flutter hot reload in parallel)
 dev:
-    ./scripts/integrated_dev.sh
+    ./scripts/dev/integrated.sh
 
 # Run integrated development workflow with mock FFI (UI-only development)
 dev-mock-full:
-    ./scripts/integrated_dev.sh --mock
+    ./scripts/dev/integrated.sh --mock
 
 # Run integrated development workflow with FFI tracing enabled
 dev-trace:
-    RUST_LOG=keyrx_core::ffi=trace,info ./scripts/integrated_dev.sh
+    RUST_LOG=keyrx_core::ffi=trace,info ./scripts/dev/integrated.sh
 
 # Watch Rust FFI files and regenerate Dart bindings on change
 dev-watch:
-    ./scripts/watch_ffi.sh
+    ./scripts/dev/ffi_watch.sh
 
 # Run Flutter UI in development mode
 ui:
@@ -117,15 +117,15 @@ bench:
 
 # Run FFI performance benchmarks with detailed reporting
 bench-ffi *ARGS:
-    ./scripts/benchmark_ffi.sh {{ARGS}}
+    ./scripts/metrics/benchmark.sh {{ARGS}}
 
 # Run FFI benchmarks and save as baseline
 bench-ffi-baseline NAME:
-    ./scripts/benchmark_ffi.sh --baseline {{NAME}}
+    ./scripts/metrics/benchmark.sh --baseline {{NAME}}
 
 # Run FFI benchmarks and compare against baseline
 bench-ffi-compare NAME:
-    ./scripts/benchmark_ffi.sh --compare {{NAME}}
+    ./scripts/metrics/benchmark.sh --compare {{NAME}}
 
 # Clean build artifacts
 clean:
@@ -165,47 +165,47 @@ verify-bindings: check-dart-bindings
 ffi-watch:
     @echo "Starting FFI watch mode (cargo-watch)..."
     @echo "Monitoring: core/src/ffi/ and core/src/api.rs"
-    @echo "Trigger: ./scripts/ffi_watch.sh (incremental generation)"
+    @echo "Trigger: ./scripts/dev/ffi_watch.sh (incremental generation)"
     @if ! command -v cargo-watch >/dev/null 2>&1; then \
         echo "Error: cargo-watch not found. Install via:"; \
         echo "  cargo install cargo-watch"; \
         exit 1; \
     fi
-    cd core && cargo watch -c -w src/ffi -w src/api.rs -s '../scripts/ffi_watch.sh' --delay 0.5
+    cd core && cargo watch -c -w src/ffi -w src/api.rs -s '../scripts/dev/ffi_watch.sh' --delay 0.5
 
 # Create an FFI implementation log entry from the template
 ffi-log task_id base_ref="":
     if [ -n "{{base_ref}}" ]; then \
-        scripts/log_ffi_implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
+        scripts/ffi/log_implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
     else \
-        scripts/log_ffi_implementation.sh --task-id {{task_id}}; \
+        scripts/ffi/log_implementation.sh --task-id {{task_id}}; \
     fi
 
 # Detect FFI contract breaking changes against a base reference
 diff-ffi-contracts base_ref="HEAD~1" format="text":
     @echo "Detecting FFI breaking changes..."
-    @./scripts/detect_ffi_breaking_changes.sh --base {{base_ref}} --format {{format}}
+    @./scripts/ffi/detect_breaking_changes.sh --base {{base_ref}} --format {{format}}
 
 # Display FFI call metrics (call count, latency, error rates)
 ffi-metrics format="text":
-    @./scripts/ffi_metrics.sh {{ if format == "json" { "--json" } else { "" } }}
+    @./scripts/metrics/ffi_summary.sh {{ if format == "json" { "--json" } else { "" } }}
 
 # Generate FFI contract metrics dashboard
 ffi-dashboard:
     @echo "Generating FFI contract metrics dashboard..."
-    @./scripts/generate_contract_metrics.sh
+    @./scripts/metrics/contract_dashboard.sh
     @echo "Dashboard available at .spec-workflow/analysis/contract-dashboard.html"
 
 # Analyze FFI implementation history (velocity, churn, coverage, AI effectiveness)
 analyze-ffi:
     @echo "Analyzing FFI implementation history..."
-    @./scripts/analyze_ffi_history.sh
+    @./scripts/metrics/ffi_history.sh
     @echo "Analysis available at .spec-workflow/analysis/implementation-insights.html"
 
 # Run comprehensive build (error docs + bindings + Rust + Flutter)
 build-full:
     @echo "Running comprehensive build..."
-    ./scripts/build.sh --release
+    ./scripts/build/main.sh --release
 
 # Check documentation for warnings (fails if any warnings exist)
 doc-check:
@@ -245,4 +245,4 @@ build-windows:
 
 # Create a new release with the specified version
 release version:
-    ./scripts/release.sh {{version}}
+    ./scripts/release/bump_version.sh {{version}}

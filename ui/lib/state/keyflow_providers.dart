@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/config_ids.dart';
+import '../models/device_state.dart';
 import '../models/flow/flow_graph.dart';
 import '../models/hardware_profile.dart';
 import '../models/keymap.dart';
@@ -75,6 +76,13 @@ Future<RuntimeConfig> runtimeConfig(RuntimeConfigRef ref) {
 Future<FlowGraph> flowGraph(FlowGraphRef ref) async {
   final runtime = await ref.watch(runtimeConfigProvider.future);
   return FlowGraph.fromRuntimeConfig(runtime);
+}
+
+/// Provider for device registry states (device enabled/disabled toggles).
+@riverpod
+Stream<List<DeviceState>> deviceStates(DeviceStatesRef ref) {
+  final registry = ref.watch(serviceRegistryProvider);
+  return registry.deviceRegistryService.devicesStream;
 }
 
 class KeyFlowActions {

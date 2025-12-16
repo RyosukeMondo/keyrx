@@ -1,6 +1,6 @@
 [build]
 # Use a wrapper that prefers sccache but falls back to rustc when missing.
-rustc-wrapper = "scripts/rustc-wrapper.sh"
+rustc-wrapper = "scripts/build/wrappers/rustc.sh"
 # Keep incremental artifacts between builds for faster iterations.
 incremental = true
 
@@ -11,10 +11,10 @@ SCCACHE_CACHE_SIZE = "10G"
 
 # Prefer fast linkers for local development (falls back to ld via scripts/fast_linker.sh).
 [target.x86_64-unknown-linux-gnu]
-linker = "scripts/fast_linker.sh"
+linker = "scripts/build/wrappers/linker.sh"
 
 [target.aarch64-apple-darwin]
-linker = "scripts/fast_linker.sh"
+linker = "scripts/build/wrappers/linker.sh"
 
 [target.x86_64-apple-darwin]
-linker = "scripts/fast_linker.sh"
+linker = "scripts/build/wrappers/linker.sh"

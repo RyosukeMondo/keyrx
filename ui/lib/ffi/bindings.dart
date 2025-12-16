@@ -5,6 +5,7 @@
 library;
 
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 import 'generated/bindings_generated.dart';
 
@@ -66,6 +67,21 @@ typedef KeyrxTraceFreeJsonNative = Void Function(Pointer<Char> json);
 typedef KeyrxTraceFreeJson = void Function(Pointer<Char> json);
 
 // ────────────────────────────────────────────────────────────────
+// Device Registry Types (for missing methods)
+// ────────────────────────────────────────────────────────────────
+
+typedef DeviceRegistrySetDeviceEnabledNative = Pointer<Char> Function(
+  Pointer<Char> deviceKey,
+  Int32 enabled,
+  Pointer<Pointer<Utf8>> error,
+);
+typedef DeviceRegistrySetDeviceEnabled = Pointer<Char> Function(
+  Pointer<Char> deviceKey,
+  int enabled,
+  Pointer<Pointer<Utf8>> error,
+);
+
+// ────────────────────────────────────────────────────────────────
 // Main Bindings Class
 // ────────────────────────────────────────────────────────────────
 
@@ -92,6 +108,9 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   late final KeyrxTraceGetFilteredEventsJson
   keyrx_trace_get_filtered_events_json;
   late final KeyrxTraceFreeJson keyrx_trace_free_json;
+
+  // Device Registry functions (only the ones missing from KeyrxBindingsGenerated)
+  late final DeviceRegistrySetDeviceEnabled? deviceRegistrySetDeviceEnabled;
 
   KeyrxBindings(this._lib) : super(_lib) {
     startLoop = _tryLookupStartLoop();
@@ -135,6 +154,9 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
           'keyrx_trace_free_json',
         )
         .asFunction<KeyrxTraceFreeJson>();
+
+    // Initialize device registry functions (only the ones missing from KeyrxBindingsGenerated)
+    deviceRegistrySetDeviceEnabled = _tryLookupDeviceRegistrySetDeviceEnabled();
   }
 
   KeyrxEngineStartLoop? _tryLookupStartLoop() {
@@ -153,6 +175,17 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
       return _lib
           .lookupFunction<KeyrxEngineStopLoopNative, KeyrxEngineStopLoop>(
             'keyrx_engine_stop_loop',
+          );
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  DeviceRegistrySetDeviceEnabled? _tryLookupDeviceRegistrySetDeviceEnabled() {
+    try {
+      return _lib
+          .lookupFunction<DeviceRegistrySetDeviceEnabledNative, DeviceRegistrySetDeviceEnabled>(
+            'keyrx_device_registry_set_device_enabled',
           );
     } on ArgumentError {
       return null;

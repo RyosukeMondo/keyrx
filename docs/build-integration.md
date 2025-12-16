@@ -38,7 +38,7 @@ Just recipes for common tasks:
 - `just build` - Full build including binding generation
 - `just ci-check` - CI-specific checks including binding verification
 
-### 5. Comprehensive Build Script (`scripts/build.sh`)
+### 5. Comprehensive Build Script (`scripts/build/main.sh`)
 
 Bash script orchestrating the complete build:
 1. Generate error documentation
@@ -95,7 +95,7 @@ This will:
 just build
 
 # Or manually
-./scripts/build.sh
+./scripts/build/main.sh
 ```
 
 #### Release Build
@@ -105,19 +105,19 @@ just build
 just build-full
 
 # Or manually
-./scripts/build.sh --release
+./scripts/build/main.sh --release
 ```
 
 #### Rust-Only Build
 
 ```bash
-./scripts/build.sh --rust-only --release
+./scripts/build/main.sh --rust-only --release
 ```
 
 #### Flutter-Only Build
 
 ```bash
-./scripts/build.sh --flutter-only
+./scripts/build/main.sh --flutter-only
 ```
 
 ## Integration Points
@@ -257,7 +257,7 @@ git add ui/lib/ffi/generated/bindings_generated.dart
 For release builds or CI:
 
 ```bash
-./scripts/build.sh --release
+./scripts/build/main.sh --release
 ```
 
 This ensures all steps run in correct order with proper error handling.

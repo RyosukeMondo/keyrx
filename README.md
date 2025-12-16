@@ -71,7 +71,7 @@ cargo build --release --features otel-tracing
 Use the automated helper to install common tools, fetch dependencies, and run first builds:
 
 ```bash
-./scripts/setup_dev_env.sh           # or: just setup
+./scripts/setup/dev_environment.sh           # or: just setup
 # Optional: SETUP_OPTS="--skip-build --skip-hooks" just setup
 ```
 
@@ -425,9 +425,28 @@ KeyRx includes a Flutter-based GUI for visual configuration and debugging.
 ### Running the UI
 
 ```bash
-just ui            # Development mode
+just ui            # Development mode with Rust FFI
+just dev-mock      # UI-only development (no Rust compilation needed)
 just ui-build      # Production build
 ```
+
+### Ultra-Speed Development
+
+For rapid UI iteration without waiting for Rust compilation (60s → <1s):
+
+```bash
+# Run Flutter with mock FFI bridge (instant hot reload)
+just dev-mock
+
+# Or manually:
+cd ui && flutter run --dart-define=MOCK_FFI=true
+```
+
+The mock FFI bridge (`ui/lib/ffi/mock_bridge.dart`) provides realistic data for all UI features, enabling:
+- ✅ Full UI development without Rust toolchain
+- ✅ Instant hot reload (<1s vs 60s+ with FFI)
+- ✅ UI testing without native dependencies
+- ✅ Parallel UI/FFI development workflows
 
 ### User Interface (Main Screens)
 

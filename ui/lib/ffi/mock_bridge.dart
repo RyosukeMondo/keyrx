@@ -69,6 +69,7 @@ class MockKeyrxBridge implements KeyrxBridge {
         productId: 0x5678,
         serialNumber: 'MOCK-KB-001',
       ),
+      deviceEnabled: true,
       remapEnabled: true,
       profileId: null,
       connectedAt: DateTime.now().toIso8601String(),
@@ -81,6 +82,7 @@ class MockKeyrxBridge implements KeyrxBridge {
         serialNumber: 'MOCK-KB-002',
         userLabel: 'My Gaming KB',
       ),
+      deviceEnabled: true,
       remapEnabled: false,
       profileId: 'gaming',
       connectedAt: DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
@@ -396,6 +398,21 @@ class MockKeyrxBridge implements KeyrxBridge {
   @override
   DeviceRegistryResult<List<DeviceState>> listRegisteredDevices() {
     return DeviceRegistryResult.success(List<DeviceState>.from(_mockDevices));
+  }
+
+  @override
+  DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) {
+    final device = _mockDevices.firstWhere(
+      (d) => d.identity.toKey() == deviceKey,
+      orElse: () => _mockDevices.first,
+    );
+    final index = _mockDevices.indexOf(device);
+    // When disabling device, also disable remap
+    _mockDevices[index] = device.copyWith(
+      deviceEnabled: enabled,
+      remapEnabled: enabled ? device.remapEnabled : false,
+    );
+    return DeviceRegistryResult.success(null);
   }
 
   @override

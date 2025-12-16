@@ -34,7 +34,7 @@ VERIFY_ONLY=false
 
 # Get script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -108,7 +108,7 @@ echo ""
 
 # Step 3: Verify bindings
 echo -e "${BLUE}Step 3: Verifying FFI bindings...${NC}"
-if python3 scripts/verify_bindings.py; then
+if python3 scripts/ffi/verify_bindings.py; then
     echo -e "${GREEN}✓ FFI bindings verified${NC}"
 else
     echo -e "${RED}✗ FFI bindings verification failed${NC}"
