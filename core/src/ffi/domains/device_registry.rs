@@ -20,6 +20,7 @@ use std::ptr;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FfiDeviceState {
     pub identity: DeviceIdentity,
+    pub device_enabled: bool,
     pub remap_enabled: bool,
     pub profile_id: Option<String>,
     pub connected_at: String,
@@ -30,6 +31,7 @@ impl From<DeviceState> for FfiDeviceState {
     fn from(state: DeviceState) -> Self {
         Self {
             identity: state.identity,
+            device_enabled: state.device_enabled,
             remap_enabled: state.remap_enabled,
             profile_id: state.profile_id,
             connected_at: state.connected_at,
@@ -106,6 +108,32 @@ pub async fn list_devices(registry: &DeviceRegistry) -> FfiResult<Vec<FfiDeviceS
     let devices = registry.list_devices().await;
     let ffi_devices = devices.into_iter().map(FfiDeviceState::from).collect();
     Ok(ffi_devices)
+}
+
+/// Set device enabled state.
+///
+/// # Arguments
+/// * `registry` - Device registry
+/// * `device_key` - Device identity key (format: "VID:PID:SERIAL")
+/// * `enabled` - Whether device should be enabled
+///
+/// # Returns
+/// * `Ok(())` on success
+/// * `Err(FfiError)` if device not found or key is invalid
+pub async fn set_device_enabled(
+    registry: &DeviceRegistry,
+    device_key: &str,
+    enabled: bool,
+) -> FfiResult<()> {
+    let identity = DeviceIdentity::from_key(device_key)
+        .map_err(|e| FfiError::invalid_input(format!("Invalid device key: {}", e)))?;
+
+    registry
+        .set_device_enabled(&identity, enabled)
+        .await
+        .map_err(|e| FfiError::not_found(format!("Device not found: {}", e)))?;
+
+    Ok(())
 }
 
 /// Set remap enabled state for a device.
@@ -250,6 +278,46 @@ pub extern "C" fn keyrx_device_registry_list_devices() -> *mut c_char {
         tracing::error!("keyrx_device_registry_list_devices: PANIC caught");
         ffi_response::<()>(Err(FfiError::internal(
             "panic in keyrx_device_registry_list_devices",
+        )))
+    })
+}
+
+/// Set device enabled state.
+///
+/// Returns `ok:` or `error:<message>`.
+///
+/// # Arguments
+/// * `device_key` - Device identity key (format: "VID:PID:SERIAL")
+/// * `enabled` - 1 for enabled, 0 for disabled
+///
+/// # Safety
+/// * `device_key` must be a valid null-terminated C string
+/// * This function catches panics and returns an error string if a panic occurs
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_device_registry_set_device_enabled(
+    device_key: *const c_char,
+    enabled: i32,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        let key_str = match parse_c_string(device_key, "device_key") {
+            Ok(key) => key,
+            Err(err) => return ffi_response::<()>(Err(err)),
+        };
+
+        let enabled = enabled != 0;
+        let result: FfiResult<()> = with_revolutionary_runtime(|runtime| {
+            block_on_ffi(set_device_enabled(
+                runtime.device_registry(),
+                &key_str,
+                enabled,
+            ))
+        });
+
+        ffi_response(result)
+    })
+    .unwrap_or_else(|_| {
+        ffi_response::<()>(Err(FfiError::internal(
+            "panic in keyrx_device_registry_set_device_enabled",
         )))
     })
 }

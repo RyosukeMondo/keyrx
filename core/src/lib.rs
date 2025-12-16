@@ -59,6 +59,7 @@ pub use keyrx_ffi_macros::ffi_export;
 
 pub mod cli;
 pub mod config;
+pub mod daemon;
 pub mod definitions;
 pub mod discovery;
 pub mod drivers;

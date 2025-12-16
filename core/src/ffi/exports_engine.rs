@@ -272,6 +272,16 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
                             &json!({ "identity": identity }),
                         );
                     }
+                    DeviceEvent::DeviceStateChanged { identity, enabled } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "device_state",
+                                "enabled": enabled
+                            }),
+                        );
+                    }
                     DeviceEvent::RemapStateChanged { identity, enabled } => {
                         global_event_registry().invoke(
                             EventType::DeviceUpdated,
@@ -380,6 +390,270 @@ async fn run_engine_loop(stop_rx: &mut tokio::sync::mpsc::Receiver<()>) -> anyho
     clear_global_engine();
     input.stop().await?;
     tracing::info!("Engine loop stopped");
+    Ok(())
+}
+
+// ─── Linux Engine Loop Implementation ────────────────────────────────────
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use crate::drivers::LinuxInput;
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use crate::engine::{AdvancedEngine, TimingConfig};
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use crate::ffi::engine_instance::{clear_global_engine, set_global_engine};
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use crate::ffi::runtime::with_revolutionary_runtime;
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use crate::InputSource;
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use std::sync::{Arc, Mutex};
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+use std::thread;
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+static STOP_SIGNAL_LINUX: OnceLock<Mutex<Option<tokio::sync::mpsc::Sender<()>>>> = OnceLock::new();
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+fn get_stop_sender_linux() -> &'static Mutex<Option<tokio::sync::mpsc::Sender<()>>> {
+    STOP_SIGNAL_LINUX.get_or_init(|| Mutex::new(None))
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+/// # Safety
+///
+/// This function is unsafe because it interacts with global mutable state and is an FFI entry point.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_engine_start_loop() -> i32 {
+    #[allow(clippy::unwrap_used)]
+    let mut guard = get_stop_sender_linux().lock().unwrap();
+    if guard.is_some() {
+        return -1; // Already running
+    }
+
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+    *guard = Some(tx);
+
+    thread::spawn(move || {
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(rt) => rt,
+            Err(e) => {
+                tracing::error!("Failed to create runtime: {}", e);
+                return;
+            }
+        };
+
+        rt.block_on(async move {
+            if let Err(e) = run_engine_loop_linux(&mut rx).await {
+                tracing::error!("Engine loop failed: {}", e);
+            }
+        });
+
+        // Cleanup
+        #[allow(clippy::unwrap_used)]
+        let mut guard = get_stop_sender_linux().lock().unwrap();
+        *guard = None;
+    });
+
+    0
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+/// # Safety
+///
+/// This function is unsafe because it interacts with global mutable state and is an FFI entry point.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_engine_stop_loop() -> i32 {
+    #[allow(clippy::unwrap_used)]
+    let guard = get_stop_sender_linux().lock().unwrap();
+    if let Some(tx) = guard.as_ref() {
+        let tx = tx.clone();
+        // Spawn a thread to send the signal to avoid blocking FFI if channel is full (unlikely)
+        thread::spawn(move || {
+            let _ = tx.blocking_send(());
+        });
+        0
+    } else {
+        -1 // Not running
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-driver"))]
+async fn run_engine_loop_linux(
+    stop_rx: &mut tokio::sync::mpsc::Receiver<()>,
+) -> anyhow::Result<()> {
+    tracing::info!("Starting engine loop from FFI (Linux)");
+
+    // 1. Get Runtime
+    let runtime_arc = with_revolutionary_runtime(|rt| Ok(rt.rhai_runtime().clone()))
+        .map_err(|e| anyhow::anyhow!("Runtime not initialized: {}", e))?;
+
+    // 2. Setup Input
+    let mut input = LinuxInput::new(None)
+        .map_err(|e| anyhow::anyhow!("Failed to initialize LinuxInput: {}", e))?;
+    input.start().await?;
+
+    // 3. Build Engine
+    // Note: We're not fully initializing the engine with device registry/profiles here yet
+    // because that requires more intricate setup that is done in `RunCommand`.
+    // For now, this is sufficient to capture keys and run the script.
+    let engine = AdvancedEngine::new(runtime_arc, TimingConfig::default());
+
+    // We can try to attach device registry if available in RevolutionaryRuntime
+    let device_registry = with_revolutionary_runtime(|rt| Ok(rt.device_registry().clone())).ok();
+    let engine = if let Some(reg) = device_registry {
+        engine.with_device_registry(reg)
+    } else {
+        engine
+    };
+
+    // Wrap in Arc<Mutex> and share globally
+    let engine = Arc::new(Mutex::new(engine));
+    set_global_engine(engine.clone());
+
+    // 3.5 Setup Event Forwarding
+    // We take the receiver from the runtime (if available) and forward events to FFI
+    let events_rx =
+        crate::ffi::runtime::with_revolutionary_runtime(|rt| Ok(rt.take_device_events_rx()))
+            .ok()
+            .flatten();
+
+    if let Some(mut rx) = events_rx {
+        tokio::spawn(async move {
+            use crate::registry::DeviceEvent;
+            use serde_json::json;
+
+            tracing::info!("Starting device event forwarding loop");
+            while let Some(event) = rx.recv().await {
+                // Map DeviceEvent to FFI EventType and payload
+                match event {
+                    DeviceEvent::Registered { identity } => {
+                        global_event_registry()
+                            .invoke(EventType::DeviceConnected, &json!({ "identity": identity }));
+                    }
+                    DeviceEvent::Unregistered { identity } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceDisconnected,
+                            &json!({ "identity": identity }),
+                        );
+                    }
+                    DeviceEvent::DeviceStateChanged { identity, enabled } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "device_state",
+                                "enabled": enabled
+                            }),
+                        );
+                    }
+                    DeviceEvent::RemapStateChanged { identity, enabled } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "remap",
+                                "enabled": enabled
+                            }),
+                        );
+                    }
+                    DeviceEvent::ProfileAssigned {
+                        identity,
+                        profile_id,
+                    } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "profile_assigned",
+                                "profileId": profile_id
+                            }),
+                        );
+                    }
+                    DeviceEvent::ProfileUnassigned { identity } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "profile_unassigned"
+                            }),
+                        );
+                    }
+                    DeviceEvent::LabelChanged { identity, label } => {
+                        global_event_registry().invoke(
+                            EventType::DeviceUpdated,
+                            &json!({
+                                "identity": identity,
+                                "change": "label",
+                                "label": label
+                            }),
+                        );
+                    }
+                }
+            }
+            tracing::info!("Device event forwarding loop ended");
+        });
+    }
+
+    tracing::info!("Engine loop running (Linux)");
+
+    // 4. Loop
+    let mut last_timestamp = 0u64;
+
+    loop {
+        tokio::select! {
+            _ = stop_rx.recv() => {
+                tracing::info!("Stop signal received");
+                break;
+            }
+            res = input.poll_events() => {
+                let events = match res {
+                    Ok(e) => e,
+                    Err(e) => {
+                        tracing::error!("Input polling error: {}", e);
+                        break;
+                    }
+                };
+
+                for event in events {
+                    // Update engine and collect actions
+                    let mut actions = Vec::new();
+                    {
+                        #[allow(clippy::unwrap_used)]
+                        let mut engine_guard = engine.lock().unwrap();
+
+                        // Update engine time
+                        if event.timestamp_us > last_timestamp {
+                            actions.extend(engine_guard.tick(event.timestamp_us));
+                            last_timestamp = event.timestamp_us;
+                        }
+
+                        // Process
+                        actions.extend(engine_guard.process_event(event.clone()));
+                    }
+
+                    // Emit RawInput for Monitor
+                    use crate::ffi::events::global_event_registry;
+                    use crate::ffi::events::EventType;
+                    global_event_registry().invoke(EventType::RawInput, &event);
+
+                    // Pass to discovery session (if active)
+                    crate::ffi::domains::discovery::process_discovery_event(&event);
+
+                    for action in actions {
+                        // Emit RawOutput for Monitor
+                        global_event_registry().invoke(EventType::RawOutput, &action);
+                        if let Err(e) = input.send_output(action).await {
+                            tracing::error!("Failed to send output: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    clear_global_engine();
+    input.stop().await?;
+    tracing::info!("Engine loop stopped (Linux)");
     Ok(())
 }
 

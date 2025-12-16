@@ -4,6 +4,8 @@
 /// legacy callback support. For new code, use the generated bindings directly.
 library;
 
+// ignore_for_file: non_constant_identifier_names, avoid_catching_errors, sort_constructors_first, lines_longer_than_80_chars
+
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
@@ -70,16 +72,18 @@ typedef KeyrxTraceFreeJson = void Function(Pointer<Char> json);
 // Device Registry Types (for missing methods)
 // ────────────────────────────────────────────────────────────────
 
-typedef DeviceRegistrySetDeviceEnabledNative = Pointer<Char> Function(
-  Pointer<Char> deviceKey,
-  Int32 enabled,
-  Pointer<Pointer<Utf8>> error,
-);
-typedef DeviceRegistrySetDeviceEnabled = Pointer<Char> Function(
-  Pointer<Char> deviceKey,
-  int enabled,
-  Pointer<Pointer<Utf8>> error,
-);
+typedef DeviceRegistrySetDeviceEnabledNative =
+    Pointer<Char> Function(
+      Pointer<Char> deviceKey,
+      Int32 enabled,
+      Pointer<Pointer<Utf8>> error,
+    );
+typedef DeviceRegistrySetDeviceEnabled =
+    Pointer<Char> Function(
+      Pointer<Char> deviceKey,
+      int enabled,
+      Pointer<Pointer<Utf8>> error,
+    );
 
 // ────────────────────────────────────────────────────────────────
 // Main Bindings Class
@@ -183,10 +187,10 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
 
   DeviceRegistrySetDeviceEnabled? _tryLookupDeviceRegistrySetDeviceEnabled() {
     try {
-      return _lib
-          .lookupFunction<DeviceRegistrySetDeviceEnabledNative, DeviceRegistrySetDeviceEnabled>(
-            'keyrx_device_registry_set_device_enabled',
-          );
+      return _lib.lookupFunction<
+        DeviceRegistrySetDeviceEnabledNative,
+        DeviceRegistrySetDeviceEnabled
+      >('keyrx_device_registry_set_device_enabled');
     } on ArgumentError {
       return null;
     }

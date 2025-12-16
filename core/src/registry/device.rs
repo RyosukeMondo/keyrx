@@ -17,7 +17,12 @@ pub struct DeviceState {
     /// Device identity
     pub identity: DeviceIdentity,
 
+    /// Whether the device is enabled (participates in KeyRx)
+    /// When false, device is in total passthrough mode
+    pub device_enabled: bool,
+
     /// Whether remapping is enabled for this device
+    /// Only effective when device_enabled is true
     pub remap_enabled: bool,
 
     /// Assigned profile ID (if any)
@@ -31,11 +36,12 @@ pub struct DeviceState {
 }
 
 impl DeviceState {
-    /// Create a new device state with remap disabled
+    /// Create a new device state with device enabled and remap disabled
     pub fn new(identity: DeviceIdentity) -> Self {
         let now = chrono::Utc::now().to_rfc3339();
         Self {
             identity,
+            device_enabled: true,
             remap_enabled: false,
             profile_id: None,
             connected_at: now.clone(),
@@ -57,6 +63,12 @@ pub enum DeviceEvent {
 
     /// A device was unregistered
     Unregistered { identity: DeviceIdentity },
+
+    /// Device enabled state changed
+    DeviceStateChanged {
+        identity: DeviceIdentity,
+        enabled: bool,
+    },
 
     /// Remap state changed for a device
     RemapStateChanged {
@@ -148,9 +160,53 @@ impl DeviceRegistry {
         }
     }
 
-    /// Set remap enabled state for a device
+    /// Set device enabled state
+    ///
+    /// When disabled, device is in total passthrough mode.
+    /// When enabling is set to false, remap_enabled is also set to false.
     ///
     /// Returns Ok(()) if successful, Err if device not found.
+    pub async fn set_device_enabled(
+        &self,
+        identity: &DeviceIdentity,
+        enabled: bool,
+    ) -> Result<(), DeviceRegistryError> {
+        let mut devices = self.devices.write().await;
+
+        let state = devices
+            .get_mut(identity)
+            .ok_or_else(|| DeviceRegistryError::DeviceNotFound(identity.clone()))?;
+
+        if state.device_enabled != enabled {
+            state.device_enabled = enabled;
+            state.touch();
+
+            // When disabling device, also disable remap
+            if !enabled && state.remap_enabled {
+                state.remap_enabled = false;
+                // Emit remap event
+                let _ = self.event_tx.send(DeviceEvent::RemapStateChanged {
+                    identity: identity.clone(),
+                    enabled: false,
+                });
+            }
+
+            // Emit device state event
+            let _ = self.event_tx.send(DeviceEvent::DeviceStateChanged {
+                identity: identity.clone(),
+                enabled,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Set remap enabled state for a device
+    ///
+    /// Only effective when device_enabled is true.
+    /// If device is not enabled, this will return an error.
+    ///
+    /// Returns Ok(()) if successful, Err if device not found or device not enabled.
     pub async fn set_remap_enabled(
         &self,
         identity: &DeviceIdentity,
@@ -161,6 +217,12 @@ impl DeviceRegistry {
         let state = devices
             .get_mut(identity)
             .ok_or_else(|| DeviceRegistryError::DeviceNotFound(identity.clone()))?;
+
+        // Allow disabling remap even if device is disabled
+        // But require device to be enabled when enabling remap
+        if enabled && !state.device_enabled {
+            return Err(DeviceRegistryError::DeviceNotEnabled(identity.clone()));
+        }
 
         if state.remap_enabled != enabled {
             state.remap_enabled = enabled;
@@ -320,6 +382,9 @@ impl Default for DeviceRegistry {
 pub enum DeviceRegistryError {
     #[error("Device not found: {0}")]
     DeviceNotFound(DeviceIdentity),
+
+    #[error("Device not enabled: {0}")]
+    DeviceNotEnabled(DeviceIdentity),
 }
 
 #[cfg(test)]

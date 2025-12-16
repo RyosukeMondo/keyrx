@@ -27,6 +27,39 @@
             }
         },
         {
+            "name": "set_device_enabled",
+            "rust_name": "keyrx_device_registry_set_device_enabled",
+            "description": "Enable/Disable device (total passthrough mode)",
+            "parameters": [
+                {
+                    "name": "device_key",
+                    "type": "string",
+                    "description": "Device unique key",
+                    "required": true
+                },
+                {
+                    "name": "enabled",
+                    "type": "i32",
+                    "description": "Non-zero to enable device, zero for passthrough",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "string",
+                "description": "JSON result object"
+            },
+            "errors": [],
+            "example": {
+                "input": {
+                    "device_key": "1234:5678:0001",
+                    "enabled": true
+                },
+                "output": {
+                    "status": "ok"
+                }
+            }
+        },
+        {
             "name": "set_remap_enabled",
             "rust_name": "keyrx_device_registry_set_remap_enabled",
             "description": "Enable/Disable remapping for a device",

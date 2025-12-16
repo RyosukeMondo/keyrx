@@ -441,6 +441,7 @@ impl ContractRegistry {
     /// # Errors
     ///
     /// Returns [`ContractError::IoError`] if the directory cannot be read.
+    #[allow(clippy::print_stderr)]
     pub fn load_from_dir(dir: &std::path::Path) -> Result<Self, ContractError> {
         let mut registry = Self::new();
 
@@ -584,8 +585,8 @@ mod tests {
             .get_function("start_discovery")
             .expect("Function not found");
         assert_eq!(func.name, "start_discovery");
-        // Contract takes a single JSON params_json parameter containing device_id and rows
-        assert_eq!(func.parameters.len(), 1);
+        // Contract takes device_id and rows parameters
+        assert_eq!(func.parameters.len(), 2);
     }
 
     #[test]
