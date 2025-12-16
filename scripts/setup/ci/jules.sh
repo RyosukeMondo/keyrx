@@ -39,7 +39,7 @@ sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
 # --- 3. FLUTTER SETUP ---
 echo "Running Flutter setup..."
-bash scripts/flutter_setup.sh
+bash scripts/setup/ci/flutter.sh
 
 # --- 4. DONE ---
 echo "Environment Setup Complete. Ready to build!"
