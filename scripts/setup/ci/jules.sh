@@ -16,7 +16,9 @@ echo "Installing system dependencies..."
 cd /app
 
 sudo apt-get update
-sudo apt-get install -y openjdk-17-jdk wget unzip curl git
+# Java 21, git, and curl are pre-installed in Jules VMs.
+# We only need unzip and wget for the Android SDK setup if they aren't present.
+sudo apt-get install -y unzip wget
 
 # --- 2. ANDROID SDK SETUP ---
 echo "Setting up Android SDK..."
