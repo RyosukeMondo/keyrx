@@ -20,36 +20,30 @@ enum FlowErrorType {
 
 /// Extension to get user-friendly error messages.
 extension FlowErrorTypeExt on FlowErrorType {
-  String get message {
-    return switch (this) {
-      FlowErrorType.ffiConnectionFailed =>
-        'Unable to connect to the KeyRx service',
-      FlowErrorType.runtimeConfigNotFound => 'Runtime configuration not found',
-      FlowErrorType.validationError => 'Configuration validation failed',
-      FlowErrorType.unknown => 'Something went wrong',
-    };
-  }
+  String get message => switch (this) {
+    FlowErrorType.ffiConnectionFailed =>
+      'Unable to connect to the KeyRx service',
+    FlowErrorType.runtimeConfigNotFound => 'Runtime configuration not found',
+    FlowErrorType.validationError => 'Configuration validation failed',
+    FlowErrorType.unknown => 'Something went wrong',
+  };
 
-  String get suggestion {
-    return switch (this) {
-      FlowErrorType.ffiConnectionFailed =>
-        'Make sure the KeyRx service is running and try again.',
-      FlowErrorType.runtimeConfigNotFound =>
-        'Please check your device connections and configuration.',
-      FlowErrorType.validationError =>
-        'Please check your flow configuration for errors.',
-      FlowErrorType.unknown => 'Please try again or contact support.',
-    };
-  }
+  String get suggestion => switch (this) {
+    FlowErrorType.ffiConnectionFailed =>
+      'Make sure the KeyRx service is running and try again.',
+    FlowErrorType.runtimeConfigNotFound =>
+      'Please check your device connections and configuration.',
+    FlowErrorType.validationError =>
+      'Please check your flow configuration for errors.',
+    FlowErrorType.unknown => 'Please try again or contact support.',
+  };
 
-  IconData get icon {
-    return switch (this) {
-      FlowErrorType.ffiConnectionFailed => Icons.cloud_off,
-      FlowErrorType.runtimeConfigNotFound => Icons.search_off,
-      FlowErrorType.validationError => Icons.warning,
-      FlowErrorType.unknown => Icons.error_outline,
-    };
-  }
+  IconData get icon => switch (this) {
+    FlowErrorType.ffiConnectionFailed => Icons.cloud_off,
+    FlowErrorType.runtimeConfigNotFound => Icons.search_off,
+    FlowErrorType.validationError => Icons.warning,
+    FlowErrorType.unknown => Icons.error_outline,
+  };
 }
 
 /// Polished error view widget with user-friendly error messages.
@@ -58,10 +52,10 @@ extension FlowErrorTypeExt on FlowErrorType {
 /// and actionable suggestions. Includes a retry button for recovery.
 class FlowErrorView extends StatelessWidget {
   const FlowErrorView({
-    super.key,
-    this.errorType,
     required this.error,
     required this.onRetry,
+    super.key,
+    this.errorType,
   });
 
   /// The error object (for debugging)
@@ -218,7 +212,7 @@ class _TechnicalDetailsExpansionState
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[800]!, width: 1),
+              border: Border.all(color: Colors.grey[800]!),
             ),
             child: SelectableText(
               widget.error?.toString() ?? 'Unknown error',
@@ -240,9 +234,9 @@ class _TechnicalDetailsExpansionState
 /// Used to show specific operation errors without taking over the entire screen.
 class InlineErrorIndicator extends StatelessWidget {
   const InlineErrorIndicator({
+    required this.message,
     super.key,
     this.onDismiss,
-    required this.message,
   });
 
   /// Error message to display
@@ -263,7 +257,7 @@ class InlineErrorIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: theme.colorScheme.error, width: 1),
+          border: Border.all(color: theme.colorScheme.error),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

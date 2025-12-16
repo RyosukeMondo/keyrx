@@ -35,13 +35,11 @@ class KeyFlowOnboardingDialog extends StatefulWidget {
   }
 
   /// Show the onboarding dialog.
-  static Future<void> show(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const KeyFlowOnboardingDialog(),
-    );
-  }
+  static Future<void> show(BuildContext context) => showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const KeyFlowOnboardingDialog(),
+  );
 
   @override
   State<KeyFlowOnboardingDialog> createState() =>

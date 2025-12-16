@@ -96,7 +96,6 @@ class FlowValidator {
             suggestion:
                 'This edge references a node that does not exist. '
                 'Remove the slot or fix the configuration.',
-            severity: ValidationSeverity.error,
           ),
         );
       }
@@ -110,7 +109,6 @@ class FlowValidator {
             suggestion:
                 'This edge references a node that does not exist. '
                 'Remove the slot or fix the configuration.',
-            severity: ValidationSeverity.error,
           ),
         );
       }
@@ -157,7 +155,6 @@ class FlowValidator {
             suggestion:
                 'This slot has validation errors. '
                 'Check that the hardware profile and keymap are correctly configured.',
-            severity: ValidationSeverity.error,
           ),
         );
       }
@@ -228,21 +225,17 @@ class FlowValidator {
   }
 
   /// Gets all errors for a specific node.
-  List<ValidationError> getNodeErrors(FlowGraph graph, String nodeId) {
-    return validate(graph).where((e) => e.nodeId == nodeId).toList();
-  }
+  List<ValidationError> getNodeErrors(FlowGraph graph, String nodeId) =>
+      validate(graph).where((e) => e.nodeId == nodeId).toList();
 
   /// Gets all errors for a specific edge.
-  List<ValidationError> getEdgeErrors(FlowGraph graph, String edgeId) {
-    return validate(graph).where((e) => e.edgeId == edgeId).toList();
-  }
+  List<ValidationError> getEdgeErrors(FlowGraph graph, String edgeId) =>
+      validate(graph).where((e) => e.edgeId == edgeId).toList();
 
   /// Checks if the graph is valid (no errors, only warnings/info allowed).
-  bool isValid(FlowGraph graph) {
-    return validate(
-      graph,
-    ).where((e) => e.severity == ValidationSeverity.error).isEmpty;
-  }
+  bool isValid(FlowGraph graph) => validate(
+    graph,
+  ).where((e) => e.severity == ValidationSeverity.error).isEmpty;
 
   /// Gets count of errors by severity.
   Map<ValidationSeverity, int> getErrorCounts(FlowGraph graph) {

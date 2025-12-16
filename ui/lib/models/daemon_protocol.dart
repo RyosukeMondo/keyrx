@@ -10,6 +10,14 @@ part 'daemon_protocol.g.dart';
 ///
 /// Note: This uses custom JSON serialization to support union types.
 class RequestId {
+  factory RequestId.fromJson(dynamic json) {
+    if (json is int) {
+      return RequestId.number(json);
+    } else if (json is String) {
+      return RequestId.string(json);
+    }
+    throw ArgumentError('Invalid RequestId: $json');
+  }
   const RequestId.number(this.value) : _isNumber = true;
   const RequestId.string(this.value) : _isNumber = false;
 
@@ -22,27 +30,21 @@ class RequestId {
   int get asNumber => value as int;
   String get asString => value as String;
 
-  factory RequestId.fromJson(dynamic json) {
-    if (json is int) {
-      return RequestId.number(json);
-    } else if (json is String) {
-      return RequestId.string(json);
-    }
-    throw ArgumentError('Invalid RequestId: $json');
-  }
-
   dynamic toJson() => value;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is RequestId && value == other.value && _isNumber == other._isNumber;
+      other is RequestId &&
+          value == other.value &&
+          _isNumber == other._isNumber;
 
   @override
   int get hashCode => Object.hash(value, _isNumber);
 
   @override
-  String toString() => _isNumber ? 'RequestId.number($value)' : 'RequestId.string($value)';
+  String toString() =>
+      _isNumber ? 'RequestId.number($value)' : 'RequestId.string($value)';
 }
 
 /// JSON-RPC 2.0 request.
@@ -51,8 +53,8 @@ class JsonRpcRequest with _$JsonRpcRequest {
   const factory JsonRpcRequest({
     required String jsonrpc,
     required String method,
-    Map<String, dynamic>? params,
     required RequestId id,
+    Map<String, dynamic>? params,
   }) = _JsonRpcRequest;
 
   factory JsonRpcRequest.fromJson(Map<String, dynamic> json) =>
@@ -123,9 +125,7 @@ class IncomingMessage with _$IncomingMessage {
   factory IncomingMessage.fromJson(Map<String, dynamic> json) {
     // Check if it's a notification (no 'id' field)
     if (!json.containsKey('id')) {
-      return IncomingMessage.notification(
-        JsonRpcNotification.fromJson(json),
-      );
+      return IncomingMessage.notification(JsonRpcNotification.fromJson(json));
     }
 
     // Check if it's an error (has 'error' field)

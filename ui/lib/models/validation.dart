@@ -12,26 +12,24 @@ class ValidationResult {
     this.coverage,
   });
 
-  factory ValidationResult.fromJson(Map<String, dynamic> json) {
-    return ValidationResult(
-      isValid: json['is_valid'] as bool? ?? false,
-      errors:
-          (json['errors'] as List<dynamic>?)
-              ?.map((e) => ValidationError.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      warnings:
-          (json['warnings'] as List<dynamic>?)
-              ?.map(
-                (e) => ValidationWarning.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const [],
-      coverage: json['coverage'] != null
-          ? CoverageReport.fromJson(json['coverage'] as Map<String, dynamic>)
-          : null,
-    );
-  }
+  factory ValidationResult.fromJson(
+    Map<String, dynamic> json,
+  ) => ValidationResult(
+    isValid: json['is_valid'] as bool? ?? false,
+    errors:
+        (json['errors'] as List<dynamic>?)
+            ?.map((e) => ValidationError.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
+    warnings:
+        (json['warnings'] as List<dynamic>?)
+            ?.map((e) => ValidationWarning.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
+    coverage: json['coverage'] != null
+        ? CoverageReport.fromJson(json['coverage'] as Map<String, dynamic>)
+        : null,
+  );
 
   factory ValidationResult.error(String message) => ValidationResult(
     isValid: false,
@@ -57,20 +55,19 @@ class ValidationError {
     this.suggestions = const [],
   });
 
-  factory ValidationError.fromJson(Map<String, dynamic> json) {
-    return ValidationError(
-      code: json['code'] as String? ?? 'E000',
-      message: json['message'] as String? ?? 'Unknown error',
-      location: json['location'] != null
-          ? SourceLocation.fromJson(json['location'] as Map<String, dynamic>)
-          : null,
-      suggestions:
-          (json['suggestions'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-    );
-  }
+  factory ValidationError.fromJson(Map<String, dynamic> json) =>
+      ValidationError(
+        code: json['code'] as String? ?? 'E000',
+        message: json['message'] as String? ?? 'Unknown error',
+        location: json['location'] != null
+            ? SourceLocation.fromJson(json['location'] as Map<String, dynamic>)
+            : null,
+        suggestions:
+            (json['suggestions'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            const [],
+      );
 
   final String code;
   final String message;
@@ -89,16 +86,15 @@ class ValidationWarning {
     this.location,
   });
 
-  factory ValidationWarning.fromJson(Map<String, dynamic> json) {
-    return ValidationWarning(
-      code: json['code'] as String? ?? 'W000',
-      category: WarningCategory.fromString(json['category'] as String?),
-      message: json['message'] as String? ?? 'Unknown warning',
-      location: json['location'] != null
-          ? SourceLocation.fromJson(json['location'] as Map<String, dynamic>)
-          : null,
-    );
-  }
+  factory ValidationWarning.fromJson(Map<String, dynamic> json) =>
+      ValidationWarning(
+        code: json['code'] as String? ?? 'W000',
+        category: WarningCategory.fromString(json['category'] as String?),
+        message: json['message'] as String? ?? 'Unknown warning',
+        location: json['location'] != null
+            ? SourceLocation.fromJson(json['location'] as Map<String, dynamic>)
+            : null,
+      );
 
   final String code;
   final WarningCategory category;
@@ -112,27 +108,24 @@ enum WarningCategory {
   safety,
   performance;
 
-  static WarningCategory fromString(String? value) {
-    return switch (value?.toLowerCase()) {
-      'conflict' => WarningCategory.conflict,
-      'safety' => WarningCategory.safety,
-      'performance' => WarningCategory.performance,
-      _ => WarningCategory.conflict,
-    };
-  }
+  static WarningCategory fromString(String? value) =>
+      switch (value?.toLowerCase()) {
+        'conflict' => WarningCategory.conflict,
+        'safety' => WarningCategory.safety,
+        'performance' => WarningCategory.performance,
+        _ => WarningCategory.conflict,
+      };
 }
 
 /// Source location for errors and warnings.
 class SourceLocation {
   const SourceLocation({required this.line, this.column, this.context});
 
-  factory SourceLocation.fromJson(Map<String, dynamic> json) {
-    return SourceLocation(
-      line: (json['line'] as num?)?.toInt() ?? 0,
-      column: (json['column'] as num?)?.toInt(),
-      context: json['context'] as String?,
-    );
-  }
+  factory SourceLocation.fromJson(Map<String, dynamic> json) => SourceLocation(
+    line: (json['line'] as num?)?.toInt() ?? 0,
+    column: (json['column'] as num?)?.toInt(),
+    context: json['context'] as String?,
+  );
 
   final int line;
   final int? column;
@@ -150,21 +143,19 @@ class CoverageReport {
     this.layers = const {},
   });
 
-  factory CoverageReport.fromJson(Map<String, dynamic> json) {
-    return CoverageReport(
-      remapped: _parseKeyList(json['remapped']),
-      blocked: _parseKeyList(json['blocked']),
-      tapHold: _parseKeyList(json['tap_hold']),
-      comboTriggers: _parseKeyList(json['combo_triggers']),
-      unaffected: _parseKeyList(json['unaffected']),
-      layers:
-          (json['layers'] as Map<String, dynamic>?)?.map(
-            (k, v) =>
-                MapEntry(k, LayerCoverage.fromJson(v as Map<String, dynamic>)),
-          ) ??
-          const {},
-    );
-  }
+  factory CoverageReport.fromJson(Map<String, dynamic> json) => CoverageReport(
+    remapped: _parseKeyList(json['remapped']),
+    blocked: _parseKeyList(json['blocked']),
+    tapHold: _parseKeyList(json['tap_hold']),
+    comboTriggers: _parseKeyList(json['combo_triggers']),
+    unaffected: _parseKeyList(json['unaffected']),
+    layers:
+        (json['layers'] as Map<String, dynamic>?)?.map(
+          (k, v) =>
+              MapEntry(k, LayerCoverage.fromJson(v as Map<String, dynamic>)),
+        ) ??
+        const {},
+  );
 
   final List<String> remapped;
   final List<String> blocked;
@@ -193,12 +184,10 @@ class CoverageReport {
 class LayerCoverage {
   const LayerCoverage({this.remapped = const [], this.blocked = const []});
 
-  factory LayerCoverage.fromJson(Map<String, dynamic> json) {
-    return LayerCoverage(
-      remapped: CoverageReport._parseKeyList(json['remapped']),
-      blocked: CoverageReport._parseKeyList(json['blocked']),
-    );
-  }
+  factory LayerCoverage.fromJson(Map<String, dynamic> json) => LayerCoverage(
+    remapped: CoverageReport._parseKeyList(json['remapped']),
+    blocked: CoverageReport._parseKeyList(json['blocked']),
+  );
 
   final List<String> remapped;
   final List<String> blocked;

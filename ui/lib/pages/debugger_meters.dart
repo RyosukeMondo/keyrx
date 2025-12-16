@@ -24,10 +24,10 @@ class LatencyThresholds {
 /// Builds the latency card with animated meter.
 class LatencyMeterCard extends StatelessWidget {
   const LatencyMeterCard({
-    super.key,
     required this.latencyUs,
     required this.previousLatency,
     required this.animationDuration,
+    super.key,
   });
 
   final int? latencyUs;
@@ -75,7 +75,7 @@ class LatencyMeterCard extends StatelessWidget {
         : 'Healthy';
 
     // Calculate meter progress (0-1, capped at warning threshold * 2)
-    final maxLatency = LatencyThresholds.warningUs * 2;
+    const maxLatency = LatencyThresholds.warningUs * 2;
     final progress = (latencyUs! / maxLatency).clamp(0.0, 1.0);
 
     // Detect latency change for animation
@@ -114,17 +114,14 @@ class LatencyMeterCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
+                    border: Border.all(color: color.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (latencyChanged)
                         AnimatedOpacity(
-                          opacity: 1.0,
+                          opacity: 1,
                           duration: animationDuration,
                           child: Icon(
                             latencyIncreased
@@ -205,24 +202,22 @@ class LatencyMeterCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThresholdMarker(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 1),
-          ),
+  Widget _buildThresholdMarker(String label, Color color) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+          border: Border.all(color: color),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 10, color: color)),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 4),
+      Text(label, style: TextStyle(fontSize: 10, color: color)),
+    ],
+  );
 
   /// Returns the color based on latency value.
   static Color latencyColor(int? latencyUs) {
@@ -236,10 +231,10 @@ class LatencyMeterCard extends StatelessWidget {
 /// Pending tap-hold decision with countdown timer.
 class PendingTapHoldWidget extends StatefulWidget {
   const PendingTapHoldWidget({
-    super.key,
     required this.decision,
-    this.timing,
     required this.pulse,
+    super.key,
+    this.timing,
   });
 
   final String decision;
@@ -252,7 +247,7 @@ class PendingTapHoldWidget extends StatefulWidget {
 
 class _PendingTapHoldWidgetState extends State<PendingTapHoldWidget> {
   Timer? _timer;
-  double _progress = 1.0;
+  double _progress = 1;
 
   @override
   void initState() {
@@ -341,9 +336,9 @@ class _PendingTapHoldWidgetState extends State<PendingTapHoldWidget> {
 /// Pending combo with pulsing key highlights.
 class PendingComboWidget extends StatelessWidget {
   const PendingComboWidget({
-    super.key,
     required this.decision,
     required this.pulse,
+    super.key,
   });
 
   final String decision;
@@ -378,7 +373,7 @@ class PendingComboWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.blue.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.blue, width: math.max(1.0, w)),
+        border: Border.all(color: Colors.blue, width: math.max(1, w)),
         boxShadow: [
           BoxShadow(
             color: Colors.blue.withValues(alpha: (pulse.value - 1) * 3),

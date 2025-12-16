@@ -4,9 +4,6 @@
 /// including viewport calculations, path caching, and selective repainting.
 library;
 
-import 'dart:ui';
-
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 /// Determines which nodes are visible in the current viewport.
@@ -89,7 +86,7 @@ mixin ViewportAware<T extends StatefulWidget> on State<T> {
 
   /// Threshold for viewport change detection (in pixels).
   /// Only trigger rebuild if viewport moved/resized beyond this value.
-  double get viewportChangeThreshold => 50.0;
+  double get viewportChangeThreshold => 50;
 
   /// Check if viewport has changed significantly.
   bool hasViewportChanged(Rect newViewport) {
@@ -145,15 +142,14 @@ class RenderingMetrics {
       totalNodes > 0 ? (totalNodes - visibleNodes) / totalNodes : 0.0;
 
   @override
-  String toString() {
-    return 'RenderingMetrics(\n'
-        '  nodes: $visibleNodes/$totalNodes visible\n'
-        '  edges: $visibleEdges/$totalEdges visible\n'
-        '  frameTime: ${frameTime.inMilliseconds}ms\n'
-        '  target: ${meetsPerformanceTarget ? "MET" : "EXCEEDED"}\n'
-        '  virtualization: ${(virtualizationEfficiency * 100).toStringAsFixed(1)}%\n'
-        ')';
-  }
+  String toString() =>
+      'RenderingMetrics(\n'
+      '  nodes: $visibleNodes/$totalNodes visible\n'
+      '  edges: $visibleEdges/$totalEdges visible\n'
+      '  frameTime: ${frameTime.inMilliseconds}ms\n'
+      '  target: ${meetsPerformanceTarget ? "MET" : "EXCEEDED"}\n'
+      '  virtualization: ${(virtualizationEfficiency * 100).toStringAsFixed(1)}%\n'
+      ')';
 }
 
 /// Stopwatch-based frame timer for measuring rendering performance.

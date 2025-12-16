@@ -34,12 +34,11 @@ class EdgeSelection extends Selection {
   final String to;
 
   @override
-  bool operator ==(Object other) {
-    return other is EdgeSelection &&
-        other.slotId == slotId &&
-        other.from == from &&
-        other.to == to;
-  }
+  bool operator ==(Object other) =>
+      other is EdgeSelection &&
+      other.slotId == slotId &&
+      other.from == from &&
+      other.to == to;
 
   @override
   int get hashCode => Object.hash(slotId, from, to);
@@ -52,9 +51,8 @@ class NodeSelection extends Selection {
   final String nodeId;
 
   @override
-  bool operator ==(Object other) {
-    return other is NodeSelection && other.nodeId == nodeId;
-  }
+  bool operator ==(Object other) =>
+      other is NodeSelection && other.nodeId == nodeId;
 
   @override
   int get hashCode => nodeId.hashCode;

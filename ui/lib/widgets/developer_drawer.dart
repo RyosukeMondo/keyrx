@@ -26,60 +26,50 @@ enum DeveloperTool {
 
 /// Developer tools navigation drawer widget.
 class DeveloperDrawer extends StatelessWidget {
+  const DeveloperDrawer({
+    required this.onToolSelected,
+    super.key,
+    this.selectedTool,
+    this.onClose,
+  });
   final DeveloperTool? selectedTool;
   final ValueChanged<DeveloperTool> onToolSelected;
   final VoidCallback? onClose;
 
-  const DeveloperDrawer({
-    super.key,
-    this.selectedTool,
-    required this.onToolSelected,
-    this.onClose,
-  });
-
   @override
-  Widget build(BuildContext context) {
-    return NavigationDrawer(
-      selectedIndex: selectedTool?.index,
-      onDestinationSelected: (index) {
-        onToolSelected(DeveloperTool.values[index]);
-      },
+  Widget build(BuildContext context) => NavigationDrawer(
+    selectedIndex: selectedTool?.index,
+    onDestinationSelected: (index) {
+      onToolSelected(DeveloperTool.values[index]);
+    },
+    children: [
+      _buildHeader(context),
+      const Divider(indent: 16, endIndent: 16),
+      ...DeveloperTool.values.map(_buildDestination),
+    ],
+  );
+
+  Widget _buildHeader(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+    child: Row(
       children: [
-        _buildHeader(context),
-        const Divider(indent: 16, endIndent: 16),
-        ...DeveloperTool.values.map(_buildDestination),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-      child: Row(
-        children: [
-          const Icon(Icons.developer_mode, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            'Developer Tools',
-            style: Theme.of(context).textTheme.titleLarge,
+        const Icon(Icons.developer_mode, size: 28),
+        const SizedBox(width: 12),
+        Text('Developer Tools', style: Theme.of(context).textTheme.titleLarge),
+        const Spacer(),
+        if (onClose != null)
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: onClose,
+            tooltip: 'Close',
           ),
-          const Spacer(),
-          if (onClose != null)
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: onClose,
-              tooltip: 'Close',
-            ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 
-  Widget _buildDestination(DeveloperTool tool) {
-    return NavigationDrawerDestination(
-      icon: Icon(tool.icon),
-      selectedIcon: Icon(tool.selectedIcon),
-      label: Text(tool.label),
-    );
-  }
+  Widget _buildDestination(DeveloperTool tool) => NavigationDrawerDestination(
+    icon: Icon(tool.icon),
+    selectedIcon: Icon(tool.selectedIcon),
+    label: Text(tool.label),
+  );
 }

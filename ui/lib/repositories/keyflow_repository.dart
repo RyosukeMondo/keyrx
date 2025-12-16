@@ -165,27 +165,23 @@ class KeyFlowRepository {
   Future<ConfigOperationResult<RuntimeConfig>> updateSlot(
     DeviceInstanceId device,
     ProfileSlot slot,
-  ) {
-    return _performMutation(
-      operation: 'update_slot',
-      invoke: () => _runtimeApi.addSlot(
-        jsonEncode(device.toJson()),
-        jsonEncode(slot.toJson()),
-        slot.priority,
-      ),
-    );
-  }
+  ) => _performMutation(
+    operation: 'update_slot',
+    invoke: () => _runtimeApi.addSlot(
+      jsonEncode(device.toJson()),
+      jsonEncode(slot.toJson()),
+      slot.priority,
+    ),
+  );
 
   /// Remove a slot for a device.
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
     DeviceInstanceId device,
     String slotId,
-  ) {
-    return _performMutation(
-      operation: 'remove_slot',
-      invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
-    );
-  }
+  ) => _performMutation(
+    operation: 'remove_slot',
+    invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
+  );
 
   Future<ConfigOperationResult<RuntimeConfig>> _fetchAndCache(
     String operation,
@@ -305,7 +301,7 @@ class KeyFlowRepository {
     final slots = config.devices
         .firstWhere(
           (d) => d.device == device,
-          orElse: () => DeviceSlots(device: device, slots: const []),
+          orElse: () => DeviceSlots(device: device),
         )
         .slots;
     if (slots.isEmpty) {
@@ -357,7 +353,7 @@ class KeyFlowRepository {
       EventType.deviceUpdated,
       EventType.profileUpdated,
     ]) {
-      _registerEventCallback!(type, _handleBridgeEvent);
+      _registerEventCallback(type, _handleBridgeEvent);
     }
   }
 

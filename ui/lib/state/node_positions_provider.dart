@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:ui';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/storage_keys.dart';
 import '../models/flow/flow_graph.dart';
 import '../models/flow/node_position.dart';
-import 'package:keyrx_ui/state/keyflow_providers.dart';
+import 'keyflow_providers.dart';
 
 part 'node_positions_provider.g.dart';
 
@@ -81,11 +80,10 @@ class NodePositions extends _$NodePositions {
     await _updateState({});
   }
 
-  Map<String, NodePosition> _manualOnly(Map<String, NodePosition> source) {
-    return Map<String, NodePosition>.fromEntries(
-      source.entries.where((entry) => entry.value.isManual),
-    );
-  }
+  Map<String, NodePosition> _manualOnly(Map<String, NodePosition> source) =>
+      Map<String, NodePosition>.fromEntries(
+        source.entries.where((entry) => entry.value.isManual),
+      );
 
   Future<void> _updateState(Map<String, NodePosition> manualPositions) async {
     final graph = await ref.read(flowGraphProvider.future);
@@ -173,7 +171,7 @@ Map<String, NodePosition> _autoLayout(FlowGraph graph) {
   void layoutColumn(List<FlowNode> nodes, double x) {
     var y = startY;
     for (final node in nodes) {
-      positions[node.nodeId] = NodePosition(x: x, y: y, isManual: false);
+      positions[node.nodeId] = NodePosition(x: x, y: y);
       y += verticalGap;
     }
   }

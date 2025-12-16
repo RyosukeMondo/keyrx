@@ -304,9 +304,9 @@ class RecordingStartResult {
 class RecordingStopResult {
   const RecordingStopResult({
     required this.success,
-    this.path,
     required this.eventCount,
     required this.durationMs,
+    this.path,
     this.errorMessage,
   });
 

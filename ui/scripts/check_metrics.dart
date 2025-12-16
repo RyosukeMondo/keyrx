@@ -87,12 +87,11 @@ List<File> _collectDartFiles(Directory libDir, Set<String> ignorePaths) {
   return files;
 }
 
-bool _isGenerated(String path) {
-  return path.endsWith('.g.dart') ||
-      path.endsWith('.freezed.dart') ||
-      path.contains('generated_bindings.dart') ||
-      path.contains('bindings_generated.dart');
-}
+bool _isGenerated(String path) =>
+    path.endsWith('.g.dart') ||
+    path.endsWith('.freezed.dart') ||
+    path.contains('generated_bindings.dart') ||
+    path.contains('bindings_generated.dart');
 
 Set<String> _loadIgnoreList() {
   final file = File(_ignoreFileListPath);
@@ -110,7 +109,7 @@ Set<String> _loadIgnoreList() {
   return lines;
 }
 
-String _normalizePath(String path) => path.replaceAll('\\', '/');
+String _normalizePath(String path) => path.replaceAll(r'\', '/');
 
 class _FunctionLengthVisitor extends RecursiveAstVisitor<void> {
   _FunctionLengthVisitor({

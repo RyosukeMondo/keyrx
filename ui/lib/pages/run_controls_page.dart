@@ -10,14 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider;
 
-import '../models/daemon_protocol.dart';
 import '../models/device_state.dart';
 import '../services/daemon_service.dart';
 import '../services/facade/keyrx_facade.dart';
-import '../state/app_state.dart';
 import '../state/daemon_providers.dart';
 import 'monitor_view.dart';
-import 'run_controls_widgets.dart';
 
 class RunControlsPage extends ConsumerStatefulWidget {
   const RunControlsPage({super.key});
@@ -66,13 +63,19 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Daemon started'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Daemon started'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to start daemon: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to start daemon: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -94,12 +97,17 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
       await Process.run('pkill', ['-f', 'keyrx daemon']);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Daemon stopped')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Daemon stopped')));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to stop daemon: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to stop daemon: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -110,15 +118,16 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
     // Todo: Implement platform-specific service installation
     // Linux: Create systemd unit
     // Mac: Create launchd plist
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Boot configuration updated (Mock)')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Boot configuration updated (Mock)')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final connectionState = ref.watch(daemonConnectionStateProvider);
-    final isConnected = connectionState.value == DaemonConnectionState.connected;
+    final isConnected =
+        connectionState.value == DaemonConnectionState.connected;
 
     return DefaultTabController(
       length: 2,
@@ -143,7 +152,10 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
                 ),
                 label: Text(
                   isConnected ? 'Daemon Active' : 'Daemon Stopped',
-                  style: TextStyle(color: isConnected ? Colors.green : Colors.red, fontSize: 12),
+                  style: TextStyle(
+                    color: isConnected ? Colors.green : Colors.red,
+                    fontSize: 12,
+                  ),
                 ),
                 backgroundColor: isConnected
                     ? Colors.green.withValues(alpha: 0.1)
@@ -178,96 +190,103 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
     );
   }
 
-  Widget _buildDaemonControlCard(bool isConnected) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.dns, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 12),
-                Text('Daemon Service', style: Theme.of(context).textTheme.titleLarge),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'The background service responsible for capturing and remapping input events. '
-              'It must be running for remapping to work.',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: isConnected ? null : (_isStarting ? null : _startDaemon),
-                    icon: _isStarting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.play_arrow),
-                    label: const Text('Start Daemon'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isConnected ? _stopDaemon : null,
-                    icon: const Icon(Icons.stop),
-                    label: const Text('Stop Daemon'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConfigurationCard(bool isConnected) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.settings, color: Theme.of(context).colorScheme.secondary),
-                const SizedBox(width: 12),
-                Text('Configuration', style: Theme.of(context).textTheme.titleLarge),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Remap on Boot'),
-              subtitle: const Text(
-                'Automatically start the daemon and apply mappings when the system starts.',
+  Widget _buildDaemonControlCard(bool isConnected) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.dns, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(
+                'Daemon Service',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              value: _runOnBoot,
-              onChanged: _toggleRunOnBoot,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'The background service responsible for capturing and remapping input events. '
+            'It must be running for remapping to work.',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: isConnected
+                      ? null
+                      : (_isStarting ? null : _startDaemon),
+                  icon: _isStarting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow),
+                  label: const Text('Start Daemon'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isConnected ? _stopDaemon : null,
+                  icon: const Icon(Icons.stop),
+                  label: const Text('Stop Daemon'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildConfigurationCard(bool isConnected) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.settings,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Configuration',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            title: const Text('Remap on Boot'),
+            subtitle: const Text(
+              'Automatically start the daemon and apply mappings when the system starts.',
+            ),
+            value: _runOnBoot,
+            onChanged: _toggleRunOnBoot,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildConnectedDevicesList() {
     // We can use KeyrxFacade for device list or fetch from Daemon
@@ -284,7 +303,10 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
               children: [
                 const Icon(Icons.keyboard),
                 const SizedBox(width: 12),
-                Text('Managed Devices', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Managed Devices',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -299,22 +321,26 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
                 }
 
                 return Column(
-                  children: snapshot.data!.map((device) {
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.keyboard_alt_outlined),
-                      title: Text(device.identity.displayName),
-                      subtitle: Text(device.profileId ?? 'No Profile'),
-                      trailing: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: device.remapEnabled ? Colors.green : Colors.grey,
-                          shape: BoxShape.circle,
+                  children: snapshot.data!
+                      .map(
+                        (device) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.keyboard_alt_outlined),
+                          title: Text(device.identity.displayName),
+                          subtitle: Text(device.profileId ?? 'No Profile'),
+                          trailing: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: device.remapEnabled
+                                  ? Colors.green
+                                  : Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      )
+                      .toList(),
                 );
               },
             ),

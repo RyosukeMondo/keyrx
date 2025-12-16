@@ -86,13 +86,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
 
   void _addEvent(DaemonEvent event) {
     setState(() {
-      _events.insert(
-        0,
-        _EventDisplay(
-          event: event,
-          timestamp: DateTime.now(),
-        ),
-      );
+      _events.insert(0, _EventDisplay(event: event, timestamp: DateTime.now()));
 
       // Limit buffer size
       if (_events.length > _maxEvents) {
@@ -102,9 +96,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
   }
 
   void _clearEvents() {
-    setState(() {
-      _events.clear();
-    });
+    setState(_events.clear);
   }
 
   @override
@@ -118,68 +110,64 @@ class _MonitorViewState extends ConsumerState<MonitorView>
     );
   }
 
-  Widget _buildToolbar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
+  Widget _buildToolbar() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+    ),
+    child: Row(
+      children: [
+        // Connection Status
+        Icon(
+          _connectionState == DaemonConnectionState.connected
+              ? Icons.check_circle
+              : Icons.error_outline,
+          size: 16,
+          color: _connectionState == DaemonConnectionState.connected
+              ? Colors.green
+              : Colors.red,
         ),
-      ),
-      child: Row(
-        children: [
-          // Connection Status
-          Icon(
-            _connectionState == DaemonConnectionState.connected
-                ? Icons.check_circle
-                : Icons.error_outline,
-            size: 16,
-            color: _connectionState == DaemonConnectionState.connected
-                ? Colors.green
-                : Colors.red,
+        const SizedBox(width: 8),
+        Text(
+          _connectionState == DaemonConnectionState.connected
+              ? 'Connected'
+              : 'Disconnected',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const Spacer(),
+        // Filter Button
+        IconButton(
+          icon: Icon(
+            Icons.filter_list,
+            size: 20,
+            color: (_showInput && _showOutput && _showStateChange)
+                ? null
+                : Theme.of(context).colorScheme.primary,
           ),
-          const SizedBox(width: 8),
-          Text(
-            _connectionState == DaemonConnectionState.connected
-                ? 'Connected'
-                : 'Disconnected',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const Spacer(),
-          // Filter Button
-          IconButton(
-            icon: Icon(
-              Icons.filter_list,
-              size: 20,
-              color: (_showInput && _showOutput && _showStateChange)
-                  ? null
-                  : Theme.of(context).colorScheme.primary,
-            ),
-            tooltip: 'Filter events',
-            onPressed: _showFilterDialog,
-          ),
-          // Clear Button
-          IconButton(
-            icon: const Icon(Icons.clear_all, size: 20),
-            tooltip: 'Clear events',
-            onPressed: _events.isEmpty ? null : _clearEvents,
-          ),
-        ],
-      ),
-    );
-  }
+          tooltip: 'Filter events',
+          onPressed: _showFilterDialog,
+        ),
+        // Clear Button
+        IconButton(
+          icon: const Icon(Icons.clear_all, size: 20),
+          tooltip: 'Clear events',
+          onPressed: _events.isEmpty ? null : _clearEvents,
+        ),
+      ],
+    ),
+  );
 
   Widget _buildEventList() {
-    final filteredEvents = _events.where((e) {
-      return e.event.when(
-        input: (_) => _showInput,
-        output: (_) => _showOutput,
-        stateChange: (_) => _showStateChange,
-      );
-    }).toList();
+    final filteredEvents = _events
+        .where(
+          (e) => e.event.when(
+            input: (_) => _showInput,
+            output: (_) => _showOutput,
+            stateChange: (_) => _showStateChange,
+          ),
+        )
+        .toList();
 
     if (filteredEvents.isEmpty) {
       return Center(
@@ -219,14 +207,12 @@ class _MonitorViewState extends ConsumerState<MonitorView>
     );
   }
 
-  Widget _buildEventTile(_EventDisplay eventDisplay) {
-    return eventDisplay.event.when(
-      input: (event) => _buildInputEventTile(event, eventDisplay.timestamp),
-      output: (event) => _buildOutputEventTile(event, eventDisplay.timestamp),
-      stateChange: (event) =>
-          _buildStateChangeEventTile(event, eventDisplay.timestamp),
-    );
-  }
+  Widget _buildEventTile(_EventDisplay eventDisplay) => eventDisplay.event.when(
+    input: (event) => _buildInputEventTile(event, eventDisplay.timestamp),
+    output: (event) => _buildOutputEventTile(event, eventDisplay.timestamp),
+    stateChange: (event) =>
+        _buildStateChangeEventTile(event, eventDisplay.timestamp),
+  );
 
   Widget _buildInputEventTile(InputEvent event, DateTime timestamp) {
     final isPress = event.eventType == 'key_press';
@@ -275,10 +261,9 @@ class _MonitorViewState extends ConsumerState<MonitorView>
       ),
       trailing: Text(
         '${event.keyCode}',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 11,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', fontSize: 11),
       ),
     );
   }
@@ -332,10 +317,9 @@ class _MonitorViewState extends ConsumerState<MonitorView>
       ),
       trailing: Text(
         '${event.keyCode}',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 11,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', fontSize: 11),
       ),
     );
   }
@@ -343,90 +327,77 @@ class _MonitorViewState extends ConsumerState<MonitorView>
   Widget _buildStateChangeEventTile(
     StateChangeEvent event,
     DateTime timestamp,
-  ) {
-    return ListTile(
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      leading: CircleAvatar(
-        radius: 12,
-        backgroundColor: Colors.purple.withValues(alpha: 0.2),
-        child: const Icon(
-          Icons.info_outline,
-          color: Colors.purple,
-          size: 14,
-        ),
-      ),
-      title: Text(
-        event.message,
-        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-      ),
-      subtitle: Text(
-        '${event.type} • ${_timeFormat.format(timestamp)}',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
-      ),
-    );
-  }
+  ) => ListTile(
+    dense: true,
+    visualDensity: VisualDensity.compact,
+    leading: CircleAvatar(
+      radius: 12,
+      backgroundColor: Colors.purple.withValues(alpha: 0.2),
+      child: const Icon(Icons.info_outline, color: Colors.purple, size: 14),
+    ),
+    title: Text(
+      event.message,
+      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+    ),
+    subtitle: Text(
+      '${event.type} • ${_timeFormat.format(timestamp)}',
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+    ),
+  );
 
   void _showFilterDialog() {
     showDialog<void>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Filter Events'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CheckboxListTile(
-                    title: const Text('Input Events'),
-                    subtitle: const Text('Key press/release from devices'),
-                    value: _showInput,
-                    onChanged: (value) {
-                      setDialogState(() => _showInput = value ?? true);
-                      setState(() => _showInput = value ?? true);
-                    },
-                  ),
-                  CheckboxListTile(
-                    title: const Text('Output Events'),
-                    subtitle: const Text('Virtual device output'),
-                    value: _showOutput,
-                    onChanged: (value) {
-                      setDialogState(() => _showOutput = value ?? true);
-                      setState(() => _showOutput = value ?? true);
-                    },
-                  ),
-                  CheckboxListTile(
-                    title: const Text('State Changes'),
-                    subtitle: const Text('Engine state changes'),
-                    value: _showStateChange,
-                    onChanged: (value) {
-                      setDialogState(() => _showStateChange = value ?? true);
-                      setState(() => _showStateChange = value ?? true);
-                    },
-                  ),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Filter Events'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CheckboxListTile(
+                title: const Text('Input Events'),
+                subtitle: const Text('Key press/release from devices'),
+                value: _showInput,
+                onChanged: (value) {
+                  setDialogState(() => _showInput = value ?? true);
+                  setState(() => _showInput = value ?? true);
+                },
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              CheckboxListTile(
+                title: const Text('Output Events'),
+                subtitle: const Text('Virtual device output'),
+                value: _showOutput,
+                onChanged: (value) {
+                  setDialogState(() => _showOutput = value ?? true);
+                  setState(() => _showOutput = value ?? true);
+                },
+              ),
+              CheckboxListTile(
+                title: const Text('State Changes'),
+                subtitle: const Text('Engine state changes'),
+                value: _showStateChange,
+                onChanged: (value) {
+                  setDialogState(() => _showStateChange = value ?? true);
+                  setState(() => _showStateChange = value ?? true);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 /// Internal event display wrapper.
 class _EventDisplay {
-  const _EventDisplay({
-    required this.event,
-    required this.timestamp,
-  });
+  const _EventDisplay({required this.event, required this.timestamp});
 
   final DaemonEvent event;
   final DateTime timestamp;

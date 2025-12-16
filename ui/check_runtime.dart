@@ -21,7 +21,9 @@ void main() async {
   stderr.writeln(configJson);
   stderr.writeln('\n');
 
-  final config = RuntimeConfig.fromJson(jsonDecode(configJson) as Map<String, dynamic>);
+  final config = RuntimeConfig.fromJson(
+    jsonDecode(configJson) as Map<String, dynamic>,
+  );
 
   stderr.writeln('Parsed Runtime Config:');
   stderr.writeln('- Devices: ${config.devices.length}');

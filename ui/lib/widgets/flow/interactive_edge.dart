@@ -4,19 +4,18 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/animations/edge_animations.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
-import 'package:keyrx_ui/models/runtime_config.dart';
-import 'package:keyrx_ui/state/keyflow_providers.dart';
-import 'package:keyrx_ui/state/slot_actions.dart';
-import 'package:keyrx_ui/state/selection_state.dart';
-import 'package:keyrx_ui/widgets/flow/animated_edges_painter.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+
+import '../../animations/edge_animations.dart';
+import '../../models/flow/edge_style.dart';
+import '../../models/flow/flow_graph.dart';
+import '../../models/hardware_profile.dart';
+import '../../models/runtime_config.dart';
+import '../../state/selection_state.dart';
+import '../../state/slot_actions.dart';
+import 'animated_edges_painter.dart';
+import 'edges_painter.dart';
 
 /// Interactive wrapper for EdgesPainter with selection and context menu.
 class InteractiveEdgeCanvas extends ConsumerStatefulWidget {
@@ -90,17 +89,13 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   void _initializeEdgeStates() {
     for (final edge in widget.paintableEdges) {
       final edgeId = _edgeId(edge);
-      _animationStates[edgeId] = EdgeAnimationState(
-        opacity: 1.0,
-        pulsePhase: 0.0,
-        colorTransition: 1.0,
-      );
+      _animationStates[edgeId] = EdgeAnimationState();
     }
   }
 
   void _updatePulsePhase() {
     final phase = _pulseController.value;
-    bool needsRepaint = false;
+    var needsRepaint = false;
 
     for (final edge in widget.paintableEdges) {
       if (edge.active) {
@@ -143,7 +138,7 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   }
 
   void _fadeInEdge(String edgeId) {
-    _animationStates[edgeId] = EdgeAnimationState(opacity: 0.0);
+    _animationStates[edgeId] = EdgeAnimationState(opacity: 0);
 
     final controller = AnimationController(
       vsync: this,
@@ -257,7 +252,7 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     setState(() {
       final current = _animationStates[edgeId];
       if (current != null) {
-        _animationStates[edgeId] = current.copyWith(colorTransition: 0.0);
+        _animationStates[edgeId] = current.copyWith(colorTransition: 0);
       }
     });
 
@@ -265,9 +260,8 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     controller.forward();
   }
 
-  String _edgeId(PaintableEdge edge) {
-    return '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
-  }
+  String _edgeId(PaintableEdge edge) =>
+      '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
 
   bool _edgesEqual(List<PaintableEdge> a, List<PaintableEdge> b) {
     if (a.length != b.length) return false;
@@ -290,7 +284,6 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
           onTapDown: _handleTapDown,
           onSecondaryTapDown: _handleSecondaryTapDown,
           child: Focus(
-            autofocus: false,
             onKeyEvent: _handleKeyEvent,
             child: CustomPaint(
               painter: _SelectableAnimatedEdgesPainter(
@@ -469,7 +462,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     if (!confirmed) return;
 
     final actions = ref.read(slotActionsProvider);
-    final result = await actions.deleteSlot(device: deviceId, slotId: edge.slotId);
+    final result = await actions.deleteSlot(
+      device: deviceId,
+      slotId: edge.slotId,
+    );
 
     if (!mounted) return;
 
@@ -494,7 +490,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     );
 
     final actions = ref.read(slotActionsProvider);
-    final result = await actions.updateSlot(device: deviceId, slot: updatedSlot);
+    final result = await actions.updateSlot(
+      device: deviceId,
+      slot: updatedSlot,
+    );
 
     if (!mounted) return;
 
@@ -626,31 +625,27 @@ class _SelectableAnimatedEdgesPainter extends AnimatedEdgesPainter {
     }
   }
 
-  String _edgeId(PaintableEdge edge) {
-    return '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
-  }
+  String _edgeId(PaintableEdge edge) =>
+      '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
 
   (Offset, Offset) _computeControls(Offset start, Offset end) {
     final midX = (start.dx + end.dx) / 2;
     return (Offset(midX, start.dy), Offset(midX, end.dy));
   }
 
-  Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) {
-    return Path()
-      ..moveTo(start.dx, start.dy)
-      ..cubicTo(
-        control1.dx,
-        control1.dy,
-        control2.dx,
-        control2.dy,
-        end.dx,
-        end.dy,
-      );
-  }
+  Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+      Path()
+        ..moveTo(start.dx, start.dy)
+        ..cubicTo(
+          control1.dx,
+          control1.dy,
+          control2.dx,
+          control2.dy,
+          end.dx,
+          end.dy,
+        );
 
   @override
-  bool shouldRepaint(covariant _SelectableAnimatedEdgesPainter oldDelegate) {
-    return super.shouldRepaint(oldDelegate) ||
-        selection != oldDelegate.selection;
-  }
+  bool shouldRepaint(covariant _SelectableAnimatedEdgesPainter oldDelegate) =>
+      super.shouldRepaint(oldDelegate) || selection != oldDelegate.selection;
 }

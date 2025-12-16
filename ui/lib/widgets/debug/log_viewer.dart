@@ -102,36 +102,30 @@ class _LogViewerState extends State<LogViewer> {
     }).toList();
   }
 
-  Set<String> _getAvailableTargets() {
-    return _allLogs.map((log) => log.target).toSet();
-  }
+  Set<String> _getAvailableTargets() =>
+      _allLogs.map((log) => log.target).toSet();
 
-  Color _getLevelColor(LogLevel level) {
-    return switch (level) {
-      LogLevel.trace => Colors.grey,
-      LogLevel.debug => Colors.blue,
-      LogLevel.info => Colors.green,
-      LogLevel.warn => Colors.orange,
-      LogLevel.error => Colors.red,
-    };
-  }
+  Color _getLevelColor(LogLevel level) => switch (level) {
+    LogLevel.trace => Colors.grey,
+    LogLevel.debug => Colors.blue,
+    LogLevel.info => Colors.green,
+    LogLevel.warn => Colors.orange,
+    LogLevel.error => Colors.red,
+  };
 
-  IconData _getLevelIcon(LogLevel level) {
-    return switch (level) {
-      LogLevel.trace => Icons.bug_report,
-      LogLevel.debug => Icons.code,
-      LogLevel.info => Icons.info_outline,
-      LogLevel.warn => Icons.warning_amber,
-      LogLevel.error => Icons.error_outline,
-    };
-  }
+  IconData _getLevelIcon(LogLevel level) => switch (level) {
+    LogLevel.trace => Icons.bug_report,
+    LogLevel.debug => Icons.code,
+    LogLevel.info => Icons.info_outline,
+    LogLevel.warn => Icons.warning_amber,
+    LogLevel.error => Icons.error_outline,
+  };
 
-  String _formatTimestamp(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}:'
-        '${dt.second.toString().padLeft(2, '0')}.'
-        '${(dt.millisecond ~/ 100).toString()}';
-  }
+  String _formatTimestamp(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:'
+      '${dt.minute.toString().padLeft(2, '0')}:'
+      '${dt.second.toString().padLeft(2, '0')}.'
+      '${(dt.millisecond ~/ 100).toString()}';
 
   @override
   Widget build(BuildContext context) {
@@ -158,22 +152,24 @@ class _LogViewerState extends State<LogViewer> {
                           isDense: true,
                           border: OutlineInputBorder(),
                         ),
-                        items: LogLevel.values.map((level) {
-                          return DropdownMenuItem(
-                            value: level,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getLevelIcon(level),
-                                  size: 16,
-                                  color: _getLevelColor(level),
+                        items: LogLevel.values
+                            .map(
+                              (level) => DropdownMenuItem(
+                                value: level,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getLevelIcon(level),
+                                      size: 16,
+                                      color: _getLevelColor(level),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(level.name.toUpperCase()),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(level.name.toUpperCase()),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (level) {
                           if (level != null) {
                             setState(() {
@@ -195,19 +191,16 @@ class _LogViewerState extends State<LogViewer> {
                           border: OutlineInputBorder(),
                         ),
                         items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('All'),
-                          ),
-                          ...availableTargets.map((target) {
-                            return DropdownMenuItem(
+                          const DropdownMenuItem(child: Text('All')),
+                          ...availableTargets.map(
+                            (target) => DropdownMenuItem(
                               value: target,
                               child: Text(
                                 target,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                          }),
+                            ),
+                          ),
                         ],
                         onChanged: (target) {
                           setState(() {
@@ -476,8 +469,8 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        ...widget.log.fields.entries.map((entry) {
-                          return Padding(
+                        ...widget.log.fields.entries.map(
+                          (entry) => Padding(
                             padding: const EdgeInsets.only(left: 8, bottom: 2),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,8 +495,8 @@ class _LogEntryTileState extends State<_LogEntryTile> {
                                 ),
                               ],
                             ),
-                          );
-                        }),
+                          ),
+                        ),
                       ],
                     ),
                   ),

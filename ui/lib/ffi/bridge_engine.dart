@@ -218,8 +218,8 @@ class BridgeSnapshot {
       }
     }
 
-    List<BridgeLayoutSnapshot> layouts = const [];
-    List<int> sharedModifiers = const [];
+    var layouts = const <BridgeLayoutSnapshot>[];
+    var sharedModifiers = const <int>[];
     final compositor = json['layout_compositor'];
     if (compositor is Map<String, dynamic>) {
       final rawLayouts = compositor['layouts'] as List<dynamic>? ?? const [];
@@ -283,26 +283,25 @@ class BridgeLayoutSnapshot {
     this.modifiers = const [],
   });
 
-  factory BridgeLayoutSnapshot.fromJson(Map<String, dynamic> json) {
-    return BridgeLayoutSnapshot(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      priority: (json['priority'] as num?)?.toInt() ?? 0,
-      enabled: json['enabled'] == true,
-      activeLayers: (json['active_layers'] as List<dynamic>? ?? const [])
-          .map((e) => (e as num?)?.toInt() ?? 0)
-          .toList(),
-      description: json['description']?.toString(),
-      tags: (json['tags'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
-          .where((e) => e.isNotEmpty)
-          .toList(),
-      modifiers: (json['modifiers'] as List<dynamic>? ?? const [])
-          .map((e) => (e as num?)?.toInt())
-          .whereType<int>()
-          .toList(),
-    );
-  }
+  factory BridgeLayoutSnapshot.fromJson(Map<String, dynamic> json) =>
+      BridgeLayoutSnapshot(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        priority: (json['priority'] as num?)?.toInt() ?? 0,
+        enabled: json['enabled'] == true,
+        activeLayers: (json['active_layers'] as List<dynamic>? ?? const [])
+            .map((e) => (e as num?)?.toInt() ?? 0)
+            .toList(),
+        description: json['description']?.toString(),
+        tags: (json['tags'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+        modifiers: (json['modifiers'] as List<dynamic>? ?? const [])
+            .map((e) => (e as num?)?.toInt())
+            .whereType<int>()
+            .toList(),
+      );
 
   final String id;
   final String name;
@@ -417,7 +416,7 @@ class KeyRegistryResult {
 
 /// Script validation error detail.
 class ScriptValidationError {
-  const ScriptValidationError({this.line, this.column, required this.message});
+  const ScriptValidationError({required this.message, this.line, this.column});
 
   final int? line;
   final int? column;

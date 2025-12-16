@@ -2,15 +2,15 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/services/flow_validator.dart';
+import '../../models/flow/flow_graph.dart';
+import '../../services/flow_validator.dart';
 
 /// Badge widget displaying validation error count on a node.
 ///
 /// Shows a red exclamation icon with error count for errors,
 /// yellow warning icon for warnings, and blue info icon for info messages.
 class ValidationBadge extends StatelessWidget {
-  const ValidationBadge({super.key, required this.errors, this.onTap});
+  const ValidationBadge({required this.errors, super.key, this.onTap});
 
   /// List of validation errors to display
   final List<ValidationError> errors;
@@ -98,45 +98,40 @@ class ValidationBadge extends StatelessWidget {
     return parts.join(', ');
   }
 
-  Color _getSeverityColor(ValidationSeverity severity, ThemeData theme) {
-    return switch (severity) {
-      ValidationSeverity.error => theme.colorScheme.errorContainer,
-      ValidationSeverity.warning => const Color(0xFFFFF3CD),
-      ValidationSeverity.info => theme.colorScheme.primaryContainer,
-    };
-  }
+  Color _getSeverityColor(ValidationSeverity severity, ThemeData theme) =>
+      switch (severity) {
+        ValidationSeverity.error => theme.colorScheme.errorContainer,
+        ValidationSeverity.warning => const Color(0xFFFFF3CD),
+        ValidationSeverity.info => theme.colorScheme.primaryContainer,
+      };
 
-  Color _getSeverityBorderColor(ValidationSeverity severity, ThemeData theme) {
-    return switch (severity) {
-      ValidationSeverity.error => theme.colorScheme.error,
-      ValidationSeverity.warning => const Color(0xFFFFC107),
-      ValidationSeverity.info => theme.colorScheme.primary,
-    };
-  }
+  Color _getSeverityBorderColor(ValidationSeverity severity, ThemeData theme) =>
+      switch (severity) {
+        ValidationSeverity.error => theme.colorScheme.error,
+        ValidationSeverity.warning => const Color(0xFFFFC107),
+        ValidationSeverity.info => theme.colorScheme.primary,
+      };
 
-  Color _getSeverityIconColor(ValidationSeverity severity, ThemeData theme) {
-    return switch (severity) {
-      ValidationSeverity.error => theme.colorScheme.error,
-      ValidationSeverity.warning => const Color(0xFFFF8F00),
-      ValidationSeverity.info => theme.colorScheme.primary,
-    };
-  }
+  Color _getSeverityIconColor(ValidationSeverity severity, ThemeData theme) =>
+      switch (severity) {
+        ValidationSeverity.error => theme.colorScheme.error,
+        ValidationSeverity.warning => const Color(0xFFFF8F00),
+        ValidationSeverity.info => theme.colorScheme.primary,
+      };
 
-  IconData _getSeverityIcon(ValidationSeverity severity) {
-    return switch (severity) {
-      ValidationSeverity.error => Icons.error,
-      ValidationSeverity.warning => Icons.warning,
-      ValidationSeverity.info => Icons.info,
-    };
-  }
+  IconData _getSeverityIcon(ValidationSeverity severity) => switch (severity) {
+    ValidationSeverity.error => Icons.error,
+    ValidationSeverity.warning => Icons.warning,
+    ValidationSeverity.info => Icons.info,
+  };
 }
 
 /// Error details dialog showing all validation errors for a node or edge.
 class ValidationErrorsDialog extends StatelessWidget {
   const ValidationErrorsDialog({
-    super.key,
     required this.errors,
     required this.title,
+    super.key,
   });
 
   /// List of errors to display
@@ -235,7 +230,7 @@ class _ValidationErrorItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.grey[800]!, width: 1),
+              border: Border.all(color: Colors.grey[800]!),
             ),
             child: Text(
               'Slot ID: ${error.edgeId}',
@@ -251,21 +246,18 @@ class _ValidationErrorItem extends StatelessWidget {
     );
   }
 
-  IconData _getSeverityIcon(ValidationSeverity severity) {
-    return switch (severity) {
-      ValidationSeverity.error => Icons.error,
-      ValidationSeverity.warning => Icons.warning,
-      ValidationSeverity.info => Icons.info_outline,
-    };
-  }
+  IconData _getSeverityIcon(ValidationSeverity severity) => switch (severity) {
+    ValidationSeverity.error => Icons.error,
+    ValidationSeverity.warning => Icons.warning,
+    ValidationSeverity.info => Icons.info_outline,
+  };
 
-  Color _getSeverityColor(ValidationSeverity severity, ThemeData theme) {
-    return switch (severity) {
-      ValidationSeverity.error => theme.colorScheme.error,
-      ValidationSeverity.warning => const Color(0xFFFFC107),
-      ValidationSeverity.info => theme.colorScheme.primary,
-    };
-  }
+  Color _getSeverityColor(ValidationSeverity severity, ThemeData theme) =>
+      switch (severity) {
+        ValidationSeverity.error => theme.colorScheme.error,
+        ValidationSeverity.warning => const Color(0xFFFFC107),
+        ValidationSeverity.info => theme.colorScheme.primary,
+      };
 }
 
 /// Edge validation indicator shown on invalid edges.
@@ -273,10 +265,10 @@ class _ValidationErrorItem extends StatelessWidget {
 /// Displays a red highlight with error tooltip on edges with validation errors.
 class EdgeValidationIndicator extends StatelessWidget {
   const EdgeValidationIndicator({
-    super.key,
     required this.edge,
     required this.errors,
     required this.onTap,
+    super.key,
   });
 
   /// The edge being validated

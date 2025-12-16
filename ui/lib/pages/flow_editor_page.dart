@@ -2,36 +2,37 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/models/device_identity.dart';
-import 'package:keyrx_ui/models/device_state.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/flow/node_position.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/state/device_stream_provider.dart';
-import 'package:keyrx_ui/state/drag_controller.dart';
-import 'package:keyrx_ui/state/keyflow_providers.dart';
-import 'package:keyrx_ui/state/node_positions_provider.dart';
-import 'package:keyrx_ui/widgets/flow/draggable_node.dart';
-import 'package:keyrx_ui/widgets/flow/enhanced_device_node.dart';
-import 'package:keyrx_ui/widgets/flow/enhanced_keymap_node.dart';
-import 'package:keyrx_ui/widgets/flow/enhanced_layout_node.dart';
-import 'package:keyrx_ui/widgets/flow/save_indicator.dart';
-import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
-import 'package:keyrx_ui/widgets/flow/focus_indicator.dart';
-import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
-import 'package:keyrx_ui/widgets/flow/error_view.dart';
-import 'package:keyrx_ui/widgets/flow/flow_canvas_internals.dart';
-import 'package:keyrx_ui/widgets/flow/loading_skeleton.dart'
+
+import '../dialogs/keyboard_shortcuts_help_dialog.dart';
+import '../dialogs/keyflow_onboarding_dialog.dart';
+import '../dialogs/node_details_dialog.dart';
+import '../models/device_identity.dart';
+import '../models/device_state.dart';
+import '../models/flow/edge_style.dart';
+import '../models/flow/flow_graph.dart';
+import '../models/flow/node_position.dart';
+import '../services/flow_validator.dart';
+import '../state/analytics_providers.dart';
+import '../state/device_stream_provider.dart';
+import '../state/drag_controller.dart';
+import '../state/keyflow_providers.dart';
+import '../state/node_positions_provider.dart';
+import '../utils/rendering_optimizer.dart';
+import '../widgets/flow/draggable_node.dart';
+import '../widgets/flow/edges_painter.dart';
+import '../widgets/flow/empty_state.dart';
+import '../widgets/flow/enhanced_device_node.dart';
+import '../widgets/flow/enhanced_keymap_node.dart';
+import '../widgets/flow/enhanced_layout_node.dart';
+import '../widgets/flow/error_view.dart';
+import '../widgets/flow/flow_canvas_internals.dart';
+import '../widgets/flow/focus_indicator.dart';
+import '../widgets/flow/keyboard_navigable_canvas.dart';
+import '../widgets/flow/loading_skeleton.dart'
     hide FlowEmptyState, DisconnectedDevicesState;
-import 'package:keyrx_ui/widgets/flow/empty_state.dart';
-import 'package:keyrx_ui/widgets/flow/validation_overlay.dart';
-import 'package:keyrx_ui/services/flow_validator.dart';
-import 'package:keyrx_ui/utils/rendering_optimizer.dart';
-import 'package:keyrx_ui/dialogs/keyboard_shortcuts_help_dialog.dart';
-import 'package:keyrx_ui/dialogs/keyflow_onboarding_dialog.dart';
-import 'package:keyrx_ui/dialogs/node_details_dialog.dart';
-import 'package:keyrx_ui/state/analytics_providers.dart';
+import '../widgets/flow/optimized_flow_canvas.dart';
+import '../widgets/flow/save_indicator.dart';
+import '../widgets/flow/validation_overlay.dart';
 
 class FlowEditorPage extends ConsumerStatefulWidget {
   const FlowEditorPage({super.key});
@@ -121,10 +122,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     if (nodes.isEmpty) return;
 
     // Calculate bounding box of all nodes
-    double minX = double.infinity;
-    double minY = double.infinity;
-    double maxX = double.negativeInfinity;
-    double maxY = double.negativeInfinity;
+    var minX = double.infinity;
+    var minY = double.infinity;
+    var maxX = double.negativeInfinity;
+    var maxY = double.negativeInfinity;
 
     for (final node in nodes) {
       minX = math.min(minX, node.position.dx);
@@ -169,7 +170,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     final positionsAsync = ref.watch(nodePositionsProvider);
     final deviceStatesAsync = ref.watch(deviceStatesProvider);
 
-    if (graphAsync.isLoading || positionsAsync.isLoading || deviceStatesAsync.isLoading) {
+    if (graphAsync.isLoading ||
+        positionsAsync.isLoading ||
+        deviceStatesAsync.isLoading) {
       return const FlowLoadingSkeleton(key: Key('flow-loading-skeleton'));
     }
 
@@ -236,38 +239,37 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
                 transformationController: _transformationController,
                 boundaryMargin: const EdgeInsets.all(240),
                 minScale: 0.5,
-                maxScale: 2.5,
                 child: SizedBox(
                   width: canvasWidth,
                   height: canvasHeight,
                   child: Stack(
-                  children: [
-                    // Grid layer with RepaintBoundary
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(painter: GridPainter()),
-                      ),
-                    ),
-                    // Optimized edge layer with custom RenderObject
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: OptimizedEdgeLayer(
-                          edges: view.edges,
-                          style: _edgeStyle,
+                    children: [
+                      // Grid layer with RepaintBoundary
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: CustomPaint(painter: GridPainter()),
                         ),
                       ),
-                    ),
-                    // Virtualized nodes - only render visible ones
-                    ..._buildVirtualizedNodes(
-                      view.nodes,
-                      canvasWidth,
-                      canvasHeight,
-                    ),
-                  ],
+                      // Optimized edge layer with custom RenderObject
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: OptimizedEdgeLayer(
+                            edges: view.edges,
+                            style: _edgeStyle,
+                          ),
+                        ),
+                      ),
+                      // Virtualized nodes - only render visible ones
+                      ..._buildVirtualizedNodes(
+                        view.nodes,
+                        canvasWidth,
+                        canvasHeight,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
           ),
           // Save indicator positioned in bottom-right corner
           const Positioned(bottom: 16, right: 16, child: SaveIndicator()),
@@ -310,48 +312,53 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     }
 
     // Filter visible nodes
-    final visibleNodes = allNodes.where((node) {
-      return isNodeInViewport(
-        nodePosition: node.position,
-        nodeSize: node.size,
-        viewport: _currentViewport,
-        margin: 300.0, // Large margin for smooth scrolling
-      );
-    }).toList();
+    final visibleNodes = allNodes
+        .where(
+          (node) => isNodeInViewport(
+            nodePosition: node.position,
+            nodeSize: node.size,
+            viewport: _currentViewport,
+            margin: 300, // Large margin for smooth scrolling
+          ),
+        )
+        .toList();
 
     // Build widgets with Positioned at top level (direct child of Stack)
-    final widgets = visibleNodes.map((node) {
-      return Consumer(
-        key: ValueKey(node.id),
-        builder: (context, ref, _) {
-          // Watch drag state to update position dynamically
-          final dragState = ref.watch(dragControllerProvider);
-          final isDragging = dragState?.nodeId == node.id && dragState?.isDragging == true;
-          final currentPosition = isDragging
-              ? (dragState?.currentPosition ?? node.position)
-              : node.position;
+    final widgets = visibleNodes
+        .map(
+          (node) => Consumer(
+            key: ValueKey(node.id),
+            builder: (context, ref, _) {
+              // Watch drag state to update position dynamically
+              final dragState = ref.watch(dragControllerProvider);
+              final isDragging =
+                  dragState?.nodeId == node.id && dragState?.isDragging == true;
+              final currentPosition = isDragging
+                  ? (dragState?.currentPosition ?? node.position)
+                  : node.position;
 
-          return Positioned(
-            left: currentPosition.dx,
-            top: currentPosition.dy,
-            child: AnimatedNodeWrapper(
-              nodeId: node.id,
-              isNew: !_previousNodeIds.contains(node.id),
-              child: FocusIndicator(
-                nodeId: node.id,
-                child: DraggableNode(
+              return Positioned(
+                left: currentPosition.dx,
+                top: currentPosition.dy,
+                child: AnimatedNodeWrapper(
                   nodeId: node.id,
-                  initialPosition: node.position,
-                  size: node.size,
-                  canvasBounds: Size(canvasWidth, canvasHeight),
-                  child: node.child,
+                  isNew: !_previousNodeIds.contains(node.id),
+                  child: FocusIndicator(
+                    nodeId: node.id,
+                    child: DraggableNode(
+                      nodeId: node.id,
+                      initialPosition: node.position,
+                      size: node.size,
+                      canvasBounds: Size(canvasWidth, canvasHeight),
+                      child: node.child,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      );
-    }).toList();
+              );
+            },
+          ),
+        )
+        .toList();
 
     // Track performance metrics
     final frameTime = _frameTimer.stop();
@@ -429,7 +436,11 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     return positions;
   }
 
-  Widget _buildNodeWidget(FlowNode node, FlowGraph graph, List<DeviceState> deviceStates) {
+  Widget _buildNodeWidget(
+    FlowNode node,
+    FlowGraph graph,
+    List<DeviceState> deviceStates,
+  ) {
     // Get validation errors for this node
     final validationErrors = _validator.getNodeErrors(graph, node.nodeId);
 
@@ -445,13 +456,15 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
         // Find matching device state to get deviceEnabled
         final matchingState = deviceStates.firstWhere(
           (state) {
-            final matchesVidPid = state.identity.vendorId == value.deviceId.vendorId &&
+            final matchesVidPid =
+                state.identity.vendorId == value.deviceId.vendorId &&
                 state.identity.productId == value.deviceId.productId;
 
             // If device instance has no serial or empty serial, match any serial
-            final matchesSerial = (value.deviceId.serial == null ||
-                                   value.deviceId.serial!.isEmpty) ||
-                                  state.identity.serialNumber == value.deviceId.serial;
+            final matchesSerial =
+                (value.deviceId.serial == null ||
+                    value.deviceId.serial!.isEmpty) ||
+                state.identity.serialNumber == value.deviceId.serial;
 
             return matchesVidPid && matchesSerial;
           },
@@ -547,11 +560,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     return node.position + Offset(dx, node.size.height / 2);
   }
 
-  Size _nodeSizeFor(FlowNode node) {
-    return node.map(
-      device: (_) => const Size(260, 220),
-      hardwareProfile: (_) => const Size(220, 160),
-      keymap: (_) => const Size(200, 140),
-    );
-  }
+  Size _nodeSizeFor(FlowNode node) => node.map(
+    device: (_) => const Size(260, 220),
+    hardwareProfile: (_) => const Size(220, 160),
+    keymap: (_) => const Size(200, 140),
+  );
 }

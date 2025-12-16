@@ -10,18 +10,6 @@ enum FfiBoundaryDirection { dartToNative, nativeToDart }
 class FfiErrorDetails {
   const FfiErrorDetails({required this.code, required this.message, this.hint});
 
-  final String code;
-  final String message;
-  final String? hint;
-
-  Map<String, Object?> toContext() {
-    return {
-      'error_code': code,
-      'error_message': message,
-      if (hint != null) 'hint': hint,
-    };
-  }
-
   factory FfiErrorDetails.from(Object error) {
     final raw = error.toString();
 
@@ -63,6 +51,16 @@ class FfiErrorDetails {
       hint: 'Enable tracing to capture context and inspect native logs.',
     );
   }
+
+  final String code;
+  final String message;
+  final String? hint;
+
+  Map<String, Object?> toContext() => {
+    'error_code': code,
+    'error_message': message,
+    if (hint != null) 'hint': hint,
+  };
 }
 
 /// Lightweight helpers for tracing and logging FFI interactions.
@@ -192,7 +190,6 @@ class FfiDebugTools {
   }
 
   /// Format an error for user-facing surfaces.
-  static FfiErrorDetails formatError(Object error) {
-    return FfiErrorDetails.from(error);
-  }
+  static FfiErrorDetails formatError(Object error) =>
+      FfiErrorDetails.from(error);
 }

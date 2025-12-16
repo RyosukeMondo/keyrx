@@ -5,13 +5,14 @@
 library;
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/log_entry.dart';
 import '../services/console_parser.dart';
 import '../services/facade/keyrx_facade.dart';
-import '../models/log_entry.dart';
 
 /// Interactive Rhai REPL console.
 class ConsolePage extends StatefulWidget {
@@ -60,77 +61,75 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rhai Console'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: _clearHistory,
-            tooltip: 'Clear Console',
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Rhai Console'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.clear_all),
+          onPressed: _clearHistory,
+          tooltip: 'Clear Console',
+        ),
+      ],
+    ),
+    body: Column(
+      children: [
+        // Output area
+        Expanded(
+          child: Container(
+            color: Colors.black87,
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(8),
+              itemCount: _history.length,
+              itemBuilder: (context, index) {
+                final entry = _history[index];
+                return _buildEntry(entry);
+              },
+            ),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Output area
-          Expanded(
-            child: Container(
-              color: Colors.black87,
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(8),
-                itemCount: _history.length,
-                itemBuilder: (context, index) {
-                  final entry = _history[index];
-                  return _buildEntry(entry);
-                },
+        ),
+        // Input area
+        Container(
+          color: Colors.black,
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              const Text(
+                '> ',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontFamily: 'monospace',
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ),
-          // Input area
-          Container(
-            color: Colors.black,
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                const Text(
-                  '> ',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontFamily: 'monospace',
-                    fontSize: 16,
-                  ),
-                ),
-                Expanded(
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: _handleKeyEvent,
-                    child: TextField(
-                      controller: _inputController,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'monospace',
-                        fontSize: 16,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Enter Rhai command...',
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
-                      onSubmitted: _executeCommand,
-                      enabled: !_isBusy,
+              Expanded(
+                child: KeyboardListener(
+                  focusNode: FocusNode(),
+                  onKeyEvent: _handleKeyEvent,
+                  child: TextField(
+                    controller: _inputController,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'monospace',
+                      fontSize: 16,
                     ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter Rhai command...',
+                      hintStyle: TextStyle(color: Colors.grey),
+                    ),
+                    onSubmitted: _executeCommand,
+                    enabled: !_isBusy,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   Widget _buildEntry(ConsoleEntry entry) {
     final parser = widget.parser;
@@ -162,44 +161,40 @@ class _ConsolePageState extends State<ConsolePage> {
     );
   }
 
-  Widget _buildEntryRow(String text, _EntryStyle style) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildBadge(style.label, style.color),
-        const SizedBox(width: 6),
-        Icon(style.icon, color: style.color, size: 16),
-        const SizedBox(width: 6),
-        Expanded(
-          child: SelectableText(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontFamily: 'monospace',
-              fontSize: 14,
-            ),
+  Widget _buildEntryRow(String text, _EntryStyle style) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildBadge(style.label, style.color),
+      const SizedBox(width: 6),
+      Icon(style.icon, color: style.color, size: 16),
+      const SizedBox(width: 6),
+      Expanded(
+        child: SelectableText(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'monospace',
+            fontSize: 14,
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildInitButton() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: ElevatedButton.icon(
-        onPressed: _initializeEngine,
-        icon: const Icon(Icons.power_settings_new, size: 16),
-        label: const Text('Initialize Engine'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          textStyle: const TextStyle(fontSize: 12),
-        ),
       ),
-    );
-  }
+    ],
+  );
+
+  Widget _buildInitButton() => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: ElevatedButton.icon(
+      onPressed: _initializeEngine,
+      icon: const Icon(Icons.power_settings_new, size: 16),
+      label: const Text('Initialize Engine'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        textStyle: const TextStyle(fontSize: 12),
+      ),
+    ),
+  );
 
   _EntryStyle _getEntryStyle(
     ConsoleEntryType entryType,
@@ -294,9 +289,7 @@ class _ConsolePageState extends State<ConsolePage> {
   }
 
   void _clearHistory() {
-    setState(() {
-      _history.clear();
-    });
+    setState(_history.clear);
   }
 
   Future<void> _initializeEngine() async {
@@ -316,39 +309,36 @@ class _ConsolePageState extends State<ConsolePage> {
     _scrollToBottom();
   }
 
-  Widget _buildBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      decoration: BoxDecoration(
-        color: color.withAlpha(38),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withAlpha(128)),
+  Widget _buildBadge(String text, Color color) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+    decoration: BoxDecoration(
+      color: color.withAlpha(38),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withAlpha(128)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: color,
+        fontWeight: FontWeight.bold,
+        fontSize: 11,
+        letterSpacing: 0.5,
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }
 
 /// A single console history entry.
 class ConsoleEntry {
-  final String text;
-  final bool isInput;
-  final bool isError;
-
   ConsoleEntry(
     this.text, {
     this.isInput = false,
     this.isError = false,
     this.logData,
   });
+  final String text;
+  final bool isInput;
+  final bool isError;
 
   final LogEntry? logData;
 }

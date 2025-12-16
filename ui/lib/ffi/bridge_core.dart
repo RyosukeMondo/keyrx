@@ -34,22 +34,20 @@ mixin BridgeCoreMixin {
   }
 
   /// Initialize the KeyRx engine.
-  bool initialize() {
-    return FfiDebugTools.traceSync<bool>(
-      operation: 'core.init',
-      context: {'has_bindings': bindings != null},
-      call: () {
-        if (initialized) return true;
-        if (bindings == null || loadFailure != null) {
-          return false;
-        }
+  bool initialize() => FfiDebugTools.traceSync<bool>(
+    operation: 'core.init',
+    context: {'has_bindings': bindings != null},
+    call: () {
+      if (initialized) return true;
+      if (bindings == null || loadFailure != null) {
+        return false;
+      }
 
-        final result = bindings!.init();
-        initialized = result == 0;
-        return initialized;
-      },
-    );
-  }
+      final result = bindings!.init();
+      initialized = result == 0;
+      return initialized;
+    },
+  );
 
   /// Set the configuration root directory.
   ///

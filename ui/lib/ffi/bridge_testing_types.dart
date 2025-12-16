@@ -66,8 +66,8 @@ class TestResult {
   const TestResult({
     required this.name,
     required this.passed,
-    this.error,
     required this.durationMs,
+    this.error,
   });
 
   final String name;

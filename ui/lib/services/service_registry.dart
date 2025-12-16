@@ -1,5 +1,6 @@
 import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
+import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
 import 'device_profile_service.dart';
 import 'device_registry_service.dart';
@@ -17,7 +18,6 @@ import 'runtime_service.dart';
 import 'script_file_service.dart';
 import 'storage_path_resolver.dart';
 import 'test_service.dart';
-import '../utils/performance_timeline.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
 class ServiceRegistry {
@@ -158,11 +158,11 @@ class ServiceRegistry {
     required KeyrxBridge bridge,
     required ApiDocsService apiDocsService,
     required StoragePathResolver storagePathResolver,
-    ProfileAutosaveService? profileAutosaveService,
     required LayoutService layoutService,
     required HardwareService hardwareService,
     required KeymapService keymapService,
     required RuntimeService runtimeService,
+    ProfileAutosaveService? profileAutosaveService,
   }) {
     final autosave =
         profileAutosaveService ??
@@ -229,30 +229,27 @@ class ServiceRegistry {
     HardwareService? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
-  }) {
-    return ServiceRegistry(
-      errorTranslator: errorTranslator ?? this.errorTranslator,
-      engineService: engineService ?? this.engineService,
-      mappingRepository: mappingRepository ?? this.mappingRepository,
-      deviceService: deviceService ?? this.deviceService,
-      deviceProfileService: deviceProfileService ?? this.deviceProfileService,
-      deviceRegistryService:
-          deviceRegistryService ?? this.deviceRegistryService,
-      profileRegistryService:
-          profileRegistryService ?? this.profileRegistryService,
-      scriptFileService: scriptFileService ?? this.scriptFileService,
-      testService: testService ?? this.testService,
-      bridge: bridge ?? this.bridge,
-      apiDocsService: apiDocsService ?? this.apiDocsService,
-      storagePathResolver: storagePathResolver ?? this.storagePathResolver,
-      profileAutosaveService:
-          profileAutosaveService ?? this.profileAutosaveService,
-      layoutService: layoutService ?? this.layoutService,
-      hardwareService: hardwareService ?? this.hardwareService,
-      keymapService: keymapService ?? this.keymapService,
-      runtimeService: runtimeService ?? this.runtimeService,
-    );
-  }
+  }) => ServiceRegistry(
+    errorTranslator: errorTranslator ?? this.errorTranslator,
+    engineService: engineService ?? this.engineService,
+    mappingRepository: mappingRepository ?? this.mappingRepository,
+    deviceService: deviceService ?? this.deviceService,
+    deviceProfileService: deviceProfileService ?? this.deviceProfileService,
+    deviceRegistryService: deviceRegistryService ?? this.deviceRegistryService,
+    profileRegistryService:
+        profileRegistryService ?? this.profileRegistryService,
+    scriptFileService: scriptFileService ?? this.scriptFileService,
+    testService: testService ?? this.testService,
+    bridge: bridge ?? this.bridge,
+    apiDocsService: apiDocsService ?? this.apiDocsService,
+    storagePathResolver: storagePathResolver ?? this.storagePathResolver,
+    profileAutosaveService:
+        profileAutosaveService ?? this.profileAutosaveService,
+    layoutService: layoutService ?? this.layoutService,
+    hardwareService: hardwareService ?? this.hardwareService,
+    keymapService: keymapService ?? this.keymapService,
+    runtimeService: runtimeService ?? this.runtimeService,
+  );
 
   /// Dispose any owned resources. Extend as more disposable services appear.
   Future<void> dispose() async {

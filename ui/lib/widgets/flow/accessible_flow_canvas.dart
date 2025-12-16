@@ -12,7 +12,7 @@ import '../../state/selection_state.dart';
 /// This widget ensures that all interactive elements have proper semantic
 /// labels for screen readers, and announces state changes appropriately.
 class AccessibleFlowCanvas extends ConsumerWidget {
-  const AccessibleFlowCanvas({super.key, required this.child});
+  const AccessibleFlowCanvas({required this.child, super.key});
 
   final Widget child;
 
@@ -82,66 +82,64 @@ extension FlowNodeSemantics on FlowNode {
     int activeSlotCount = 0,
     int totalSlotCount = 0,
     bool hasError = false,
-  }) {
-    return map(
-      device: (node) {
-        final buffer = StringBuffer();
-        buffer.write(node.label ?? 'Unknown device');
-        buffer.write(' keyboard');
+  }) => map(
+    device: (node) {
+      final buffer = StringBuffer();
+      buffer.write(node.label ?? 'Unknown device');
+      buffer.write(' keyboard');
 
-        if (isConnected) {
-          buffer.write(', connected');
-          if (totalSlotCount > 0) {
-            buffer.write(
-              ', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}',
-            );
-            if (activeSlotCount > 0) {
-              buffer.write(', $activeSlotCount active');
-            }
+      if (isConnected) {
+        buffer.write(', connected');
+        if (totalSlotCount > 0) {
+          buffer.write(
+            ', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}',
+          );
+          if (activeSlotCount > 0) {
+            buffer.write(', $activeSlotCount active');
           }
-        } else {
-          buffer.write(', disconnected');
         }
+      } else {
+        buffer.write(', disconnected');
+      }
 
-        if (hasError) {
-          buffer.write(', has errors');
-        }
+      if (hasError) {
+        buffer.write(', has errors');
+      }
 
-        return buffer.toString();
-      },
-      hardwareProfile: (node) {
-        final buffer = StringBuffer();
-        buffer.write(node.label ?? 'Unknown profile');
-        buffer.write(' hardware profile');
+      return buffer.toString();
+    },
+    hardwareProfile: (node) {
+      final buffer = StringBuffer();
+      buffer.write(node.label ?? 'Unknown profile');
+      buffer.write(' hardware profile');
 
-        if (hasError) {
-          buffer.write(', invalid');
-        } else {
-          buffer.write(', valid');
-        }
+      if (hasError) {
+        buffer.write(', invalid');
+      } else {
+        buffer.write(', valid');
+      }
 
-        return buffer.toString();
-      },
-      keymap: (node) {
-        final buffer = StringBuffer();
-        buffer.write(node.label ?? 'Unknown keymap');
-        buffer.write(' keymap');
+      return buffer.toString();
+    },
+    keymap: (node) {
+      final buffer = StringBuffer();
+      buffer.write(node.label ?? 'Unknown keymap');
+      buffer.write(' keymap');
 
-        final layers = node.layers;
-        if (layers != null && layers > 0) {
-          buffer.write(', $layers layer${layers != 1 ? 's' : ''}');
-        }
+      final layers = node.layers;
+      if (layers != null && layers > 0) {
+        buffer.write(', $layers layer${layers != 1 ? 's' : ''}');
+      }
 
-        if (hasError) {
-          buffer.write(', compilation failed');
-        } else {
-          buffer.write(', valid');
-        }
+      if (hasError) {
+        buffer.write(', compilation failed');
+      } else {
+        buffer.write(', valid');
+      }
 
-        return buffer.toString();
-      },
-    );
-  }
+      return buffer.toString();
+    },
+  );
 }
 
 /// Extension to add semantic labels to flow edges.
@@ -170,9 +168,7 @@ extension FlowEdgeSemantics on FlowEdge {
     buffer.write(' to ');
     buffer.write(toNode.label ?? 'unknown keymap');
 
-    if (priority != null) {
-      buffer.write(', priority ${priority! + 1}');
-    }
+    buffer.write(', priority ${priority + 1}');
 
     switch (status) {
       case EdgeStatus.valid:

@@ -63,8 +63,8 @@ class TestCaseResult {
   const TestCaseResult({
     required this.name,
     required this.passed,
-    this.error,
     required this.durationMs,
+    this.error,
   });
 
   final String name;
@@ -107,9 +107,9 @@ class TestServiceImpl implements TestService {
       );
     }
 
-    final tests = result.tests.map((t) {
-      return TestCase(name: t.name, file: t.file, line: t.line);
-    }).toList();
+    final tests = result.tests
+        .map((t) => TestCase(name: t.name, file: t.file, line: t.line))
+        .toList();
 
     return TestDiscoveryServiceResult(tests: tests);
   }
@@ -131,14 +131,16 @@ class TestServiceImpl implements TestService {
       return TestRunServiceResult.error(result.errorMessage ?? 'Unknown error');
     }
 
-    final results = result.results.map((r) {
-      return TestCaseResult(
-        name: r.name,
-        passed: r.passed,
-        error: r.error,
-        durationMs: r.durationMs,
-      );
-    }).toList();
+    final results = result.results
+        .map(
+          (r) => TestCaseResult(
+            name: r.name,
+            passed: r.passed,
+            error: r.error,
+            durationMs: r.durationMs,
+          ),
+        )
+        .toList();
 
     return TestRunServiceResult(
       total: result.total,

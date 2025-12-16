@@ -1,10 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/animations/edge_animations.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import '../../animations/edge_animations.dart';
+import '../../models/flow/edge_style.dart';
+import 'edges_painter.dart';
 
 /// Extended painter with animations for edges
 class AnimatedEdgesPainter extends CustomPainter {
@@ -286,18 +284,17 @@ class AnimatedEdgesPainter extends CustomPainter {
 }
 
 // Helper functions (duplicated from EdgesPainter to avoid private access)
-Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) {
-  return Path()
-    ..moveTo(start.dx, start.dy)
-    ..cubicTo(
-      control1.dx,
-      control1.dy,
-      control2.dx,
-      control2.dy,
-      end.dx,
-      end.dy,
-    );
-}
+Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+    Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
 
 Path _dashPath(Path source, double dashLength, double gap) {
   final dashed = Path();

@@ -23,18 +23,16 @@ class LogEntry {
     this.span,
   });
 
-  factory LogEntry.fromJson(Map<String, dynamic> json) {
-    return LogEntry(
-      timestamp: json['timestamp'] as int,
-      level: _parseLogLevel(json['level'] as String),
-      target: json['target'] as String,
-      message: json['message'] as String,
-      fields: json['fields'] != null
-          ? Map<String, String>.from(json['fields'] as Map)
-          : const {},
-      span: json['span'] as String?,
-    );
-  }
+  factory LogEntry.fromJson(Map<String, dynamic> json) => LogEntry(
+    timestamp: json['timestamp'] as int,
+    level: _parseLogLevel(json['level'] as String),
+    target: json['target'] as String,
+    message: json['message'] as String,
+    fields: json['fields'] != null
+        ? Map<String, String>.from(json['fields'] as Map)
+        : const {},
+    span: json['span'] as String?,
+  );
 
   final int timestamp;
   final LogLevel level;
@@ -46,16 +44,14 @@ class LogEntry {
   DateTime get dateTime =>
       DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
-  static LogLevel _parseLogLevel(String level) {
-    return switch (level.toUpperCase()) {
-      'TRACE' => LogLevel.trace,
-      'DEBUG' => LogLevel.debug,
-      'INFO' => LogLevel.info,
-      'WARN' => LogLevel.warn,
-      'ERROR' => LogLevel.error,
-      _ => LogLevel.info,
-    };
-  }
+  static LogLevel _parseLogLevel(String level) => switch (level.toUpperCase()) {
+    'TRACE' => LogLevel.trace,
+    'DEBUG' => LogLevel.debug,
+    'INFO' => LogLevel.info,
+    'WARN' => LogLevel.warn,
+    'ERROR' => LogLevel.error,
+    _ => LogLevel.info,
+  };
 }
 
 /// Log severity level.
@@ -82,17 +78,16 @@ class MetricsSnapshot {
     required this.memoryUsed,
   });
 
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) {
-    return MetricsSnapshot(
-      timestamp: json['timestamp'] as int,
-      eventLatencyP50: json['event_latency_p50'] as int,
-      eventLatencyP95: json['event_latency_p95'] as int,
-      eventLatencyP99: json['event_latency_p99'] as int,
-      eventsProcessed: json['events_processed'] as int,
-      errorsCount: json['errors_count'] as int,
-      memoryUsed: json['memory_used'] as int,
-    );
-  }
+  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
+      MetricsSnapshot(
+        timestamp: json['timestamp'] as int,
+        eventLatencyP50: json['event_latency_p50'] as int,
+        eventLatencyP95: json['event_latency_p95'] as int,
+        eventLatencyP99: json['event_latency_p99'] as int,
+        eventsProcessed: json['events_processed'] as int,
+        errorsCount: json['errors_count'] as int,
+        memoryUsed: json['memory_used'] as int,
+      );
 
   final int timestamp;
   final int eventLatencyP50;

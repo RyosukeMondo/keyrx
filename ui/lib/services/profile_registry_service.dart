@@ -7,8 +7,8 @@ library;
 import 'dart:typed_data';
 
 import '../ffi/bridge.dart';
-import '../models/profile.dart';
 import '../models/layout_type.dart';
+import '../models/profile.dart';
 
 /// Result of a profile registry operation.
 class ProfileRegistryOperationResult {

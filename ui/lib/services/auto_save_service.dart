@@ -3,13 +3,12 @@ library;
 
 import 'dart:async';
 
-import '../models/config_ids.dart';
 import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
-import '../utils/logger.dart';
 import '../services/keyflow_analytics.dart';
+import '../utils/logger.dart';
 
 /// Mutation operation types for auto-save.
 sealed class SaveOperation {
@@ -201,23 +200,21 @@ class AutoSaveService {
 
   Future<ConfigOperationResult> _performOperation(
     SaveOperation operation,
-  ) async {
-    return switch (operation) {
-      AddSlotOperation op => await _repository.addSlot(
-        op.device,
-        op.slot,
-        priorityOverride: op.priorityOverride,
-      ),
-      UpdateSlotOperation op => await _repository.updateSlot(
-        op.device,
-        op.slot,
-      ),
-      RemoveSlotOperation op => await _repository.removeSlot(
-        op.device,
-        op.slotId,
-      ),
-    };
-  }
+  ) async => switch (operation) {
+    final AddSlotOperation op => await _repository.addSlot(
+      op.device,
+      op.slot,
+      priorityOverride: op.priorityOverride,
+    ),
+    final UpdateSlotOperation op => await _repository.updateSlot(
+      op.device,
+      op.slot,
+    ),
+    final RemoveSlotOperation op => await _repository.removeSlot(
+      op.device,
+      op.slotId,
+    ),
+  };
 
   /// Calculate exponential backoff delay in milliseconds.
   int _calculateBackoffDelay(int attempt) {

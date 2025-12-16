@@ -197,8 +197,8 @@ class FlowWaitingState extends StatelessWidget {
 /// Encourages users to add their first slot configuration.
 class NoSlotsEmptyState extends StatelessWidget {
   const NoSlotsEmptyState({
-    super.key,
     required this.deviceName,
+    super.key,
     this.onAddSlot,
   });
 
@@ -222,7 +222,7 @@ class NoSlotsEmptyState extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[800]!, width: 1),
+            border: Border.all(color: Colors.grey[800]!),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -58,12 +58,8 @@ sealed class Result<T> with _$Result<T> {
   /// final result = Result.ok(5);
   /// final doubled = result.mapValue((n) => n * 2); // Result.ok(10)
   /// ```
-  Result<R> mapValue<R>(R Function(T) f) {
-    return when(
-      ok: (value) => Result.ok(f(value)),
-      err: (error) => Result.err(error),
-    );
-  }
+  Result<R> mapValue<R>(R Function(T) f) =>
+      when(ok: (value) => Result.ok(f(value)), err: Result.err);
 
   /// Transform the Ok value using a function that returns a Result.
   ///
@@ -80,9 +76,8 @@ sealed class Result<T> with _$Result<T> {
   /// final result = Result.ok(10).andThen((n) => divide(n, 2)); // Result.ok(5)
   /// final error = Result.ok(10).andThen((n) => divide(n, 0)); // Result.err(...)
   /// ```
-  Result<R> andThen<R>(Result<R> Function(T) f) {
-    return when(ok: (value) => f(value), err: (error) => Result.err(error));
-  }
+  Result<R> andThen<R>(Result<R> Function(T) f) =>
+      when(ok: (value) => f(value), err: Result.err);
 
   /// Transform both Ok and Err cases to a single value.
   ///
@@ -96,20 +91,16 @@ sealed class Result<T> with _$Result<T> {
   ///   (error) => 'Error: ${error.userMessage}',
   /// );
   /// ```
-  R fold<R>(R Function(T) onOk, R Function(FacadeError) onErr) {
-    return when(ok: onOk, err: onErr);
-  }
+  R fold<R>(R Function(T) onOk, R Function(FacadeError) onErr) =>
+      when(ok: onOk, err: onErr);
 
   /// Unwrap the Ok value or throw an exception if Err.
   ///
   /// Use with caution - prefer using pattern matching or fold instead.
-  T unwrap() {
-    return when(
-      ok: (value) => value,
-      err: (error) =>
-          throw StateError('Called unwrap on Err: ${error.message}'),
-    );
-  }
+  T unwrap() => when(
+    ok: (value) => value,
+    err: (error) => throw StateError('Called unwrap on Err: ${error.message}'),
+  );
 
   /// Unwrap the Ok value or return a default value if Err.
   ///
@@ -118,9 +109,8 @@ sealed class Result<T> with _$Result<T> {
   /// final result = Result.err<int>(FacadeError.unknown('failed'));
   /// final value = result.unwrapOr(0); // Returns 0
   /// ```
-  T unwrapOr(T defaultValue) {
-    return when(ok: (value) => value, err: (_) => defaultValue);
-  }
+  T unwrapOr(T defaultValue) =>
+      when(ok: (value) => value, err: (_) => defaultValue);
 
   /// Unwrap the Ok value or compute it from the error.
   ///
@@ -129,9 +119,8 @@ sealed class Result<T> with _$Result<T> {
   /// final result = Result.err<int>(FacadeError.validation('Invalid'));
   /// final value = result.unwrapOrElse((err) => err.code == 'VALIDATION_ERROR' ? -1 : 0);
   /// ```
-  T unwrapOrElse(T Function(FacadeError) f) {
-    return when(ok: (value) => value, err: (error) => f(error));
-  }
+  T unwrapOrElse(T Function(FacadeError) f) =>
+      when(ok: (value) => value, err: (error) => f(error));
 }
 
 /// Error type for facade operations.
@@ -139,8 +128,6 @@ sealed class Result<T> with _$Result<T> {
 /// Contains error code, technical message, and user-friendly message.
 @freezed
 class FacadeError with _$FacadeError {
-  const FacadeError._();
-
   /// Create a facade error with all fields.
   const factory FacadeError({
     required String code,
@@ -148,6 +135,7 @@ class FacadeError with _$FacadeError {
     required String userMessage,
     Object? originalError,
   }) = _FacadeError;
+  const FacadeError._();
 
   /// Create an error from a generic exception or error object.
   ///
@@ -184,13 +172,12 @@ class FacadeError with _$FacadeError {
   ///   ));
   /// }
   /// ```
-  factory FacadeError.validation(String message, {String? userMessage}) {
-    return FacadeError(
-      code: 'VALIDATION_ERROR',
-      message: message,
-      userMessage: userMessage ?? 'Invalid input: $message',
-    );
-  }
+  factory FacadeError.validation(String message, {String? userMessage}) =>
+      FacadeError(
+        code: 'VALIDATION_ERROR',
+        message: message,
+        userMessage: userMessage ?? 'Invalid input: $message',
+      );
 
   /// Create an error when a required service is unavailable.
   ///
@@ -205,14 +192,12 @@ class FacadeError with _$FacadeError {
   factory FacadeError.serviceUnavailable(
     String service, {
     String? userMessage,
-  }) {
-    return FacadeError(
-      code: 'SERVICE_UNAVAILABLE',
-      message: 'Service "$service" is not available',
-      userMessage:
-          userMessage ?? 'Service temporarily unavailable. Please try again.',
-    );
-  }
+  }) => FacadeError(
+    code: 'SERVICE_UNAVAILABLE',
+    message: 'Service "$service" is not available',
+    userMessage:
+        userMessage ?? 'Service temporarily unavailable. Please try again.',
+  );
 
   /// Create an error when an operation fails.
   ///
@@ -231,13 +216,11 @@ class FacadeError with _$FacadeError {
     String operation,
     String reason, {
     String? userMessage,
-  }) {
-    return FacadeError(
-      code: 'OPERATION_FAILED',
-      message: 'Operation "$operation" failed: $reason',
-      userMessage: userMessage ?? 'Operation failed: $reason',
-    );
-  }
+  }) => FacadeError(
+    code: 'OPERATION_FAILED',
+    message: 'Operation "$operation" failed: $reason',
+    userMessage: userMessage ?? 'Operation failed: $reason',
+  );
 
   /// Create an error when an operation is attempted in an invalid state.
   ///
@@ -252,14 +235,13 @@ class FacadeError with _$FacadeError {
   ///   ));
   /// }
   /// ```
-  factory FacadeError.invalidState(String currentState, String requiredState) {
-    return FacadeError(
-      code: 'INVALID_STATE',
-      message:
-          'Invalid state: currently $currentState, requires $requiredState',
-      userMessage: 'Cannot perform this action right now. Please try again.',
-    );
-  }
+  factory FacadeError.invalidState(String currentState, String requiredState) =>
+      FacadeError(
+        code: 'INVALID_STATE',
+        message:
+            'Invalid state: currently $currentState, requires $requiredState',
+        userMessage: 'Cannot perform this action right now. Please try again.',
+      );
 
   /// Timeout error factory.
   factory FacadeError.timeout(String operation, {Duration? duration}) {
@@ -277,56 +259,48 @@ class FacadeError with _$FacadeError {
   factory FacadeError.permissionDenied(
     String permission, {
     String? userMessage,
-  }) {
-    return FacadeError(
-      code: 'PERMISSION_DENIED',
-      message: 'Permission denied: $permission',
-      userMessage:
-          userMessage ??
-          'Permission required: $permission. Please grant access in settings.',
-    );
-  }
+  }) => FacadeError(
+    code: 'PERMISSION_DENIED',
+    message: 'Permission denied: $permission',
+    userMessage:
+        userMessage ??
+        'Permission required: $permission. Please grant access in settings.',
+  );
 
   /// Resource not found error factory.
-  factory FacadeError.notFound(String resource, {String? userMessage}) {
-    return FacadeError(
-      code: 'NOT_FOUND',
-      message: 'Resource not found: $resource',
-      userMessage: userMessage ?? 'Requested item not found.',
-    );
-  }
+  factory FacadeError.notFound(String resource, {String? userMessage}) =>
+      FacadeError(
+        code: 'NOT_FOUND',
+        message: 'Resource not found: $resource',
+        userMessage: userMessage ?? 'Requested item not found.',
+      );
 
   /// File I/O error factory.
   factory FacadeError.fileError(
     String path,
     String reason, {
     String? userMessage,
-  }) {
-    return FacadeError(
-      code: 'FILE_ERROR',
-      message: 'File error at "$path": $reason',
-      userMessage: userMessage ?? 'File operation failed: $reason',
-    );
-  }
+  }) => FacadeError(
+    code: 'FILE_ERROR',
+    message: 'File error at "$path": $reason',
+    userMessage: userMessage ?? 'File operation failed: $reason',
+  );
 
   /// Network error factory.
-  factory FacadeError.networkError(String reason, {String? userMessage}) {
-    return FacadeError(
-      code: 'NETWORK_ERROR',
-      message: 'Network error: $reason',
-      userMessage:
-          userMessage ?? 'Network error. Please check your connection.',
-    );
-  }
+  factory FacadeError.networkError(String reason, {String? userMessage}) =>
+      FacadeError(
+        code: 'NETWORK_ERROR',
+        message: 'Network error: $reason',
+        userMessage:
+            userMessage ?? 'Network error. Please check your connection.',
+      );
 
   /// Unknown error factory.
-  factory FacadeError.unknown(String message) {
-    return FacadeError(
-      code: 'UNKNOWN_ERROR',
-      message: message,
-      userMessage: 'An unexpected error occurred. Please try again.',
-    );
-  }
+  factory FacadeError.unknown(String message) => FacadeError(
+    code: 'UNKNOWN_ERROR',
+    message: message,
+    userMessage: 'An unexpected error occurred. Please try again.',
+  );
 
   /// Convert this error to a [UserMessage] for display in the UI.
   ///
@@ -360,18 +334,16 @@ class FacadeError with _$FacadeError {
   }
 
   /// Generate a user-friendly title from the error code.
-  String _titleFromCode(String code) {
-    return switch (code) {
-      'VALIDATION_ERROR' => 'Validation Error',
-      'SERVICE_UNAVAILABLE' => 'Service Unavailable',
-      'OPERATION_FAILED' => 'Operation Failed',
-      'INVALID_STATE' => 'Invalid State',
-      'TIMEOUT' => 'Timeout',
-      'PERMISSION_DENIED' => 'Permission Denied',
-      'NOT_FOUND' => 'Not Found',
-      'FILE_ERROR' => 'File Error',
-      'NETWORK_ERROR' => 'Network Error',
-      _ => 'Error',
-    };
-  }
+  String _titleFromCode(String code) => switch (code) {
+    'VALIDATION_ERROR' => 'Validation Error',
+    'SERVICE_UNAVAILABLE' => 'Service Unavailable',
+    'OPERATION_FAILED' => 'Operation Failed',
+    'INVALID_STATE' => 'Invalid State',
+    'TIMEOUT' => 'Timeout',
+    'PERMISSION_DENIED' => 'Permission Denied',
+    'NOT_FOUND' => 'Not Found',
+    'FILE_ERROR' => 'File Error',
+    'NETWORK_ERROR' => 'Network Error',
+    _ => 'Error',
+  };
 }

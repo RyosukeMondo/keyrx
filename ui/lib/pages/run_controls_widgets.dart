@@ -12,11 +12,11 @@ import 'package:flutter/material.dart';
 /// and recording state in the run controls page.
 class StatusIndicator extends StatelessWidget {
   const StatusIndicator({
-    super.key,
     required this.icon,
     required this.label,
     required this.value,
     required this.isActive,
+    super.key,
     this.activeColor,
   });
 
@@ -75,29 +75,27 @@ class LoadingCard extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 12),
+          Text(message),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// An error card with retry button.
 class ErrorCard extends StatelessWidget {
-  const ErrorCard({super.key, required this.error, required this.onRetry});
+  const ErrorCard({required this.error, required this.onRetry, super.key});
 
   /// The error message to display.
   final String error;
@@ -106,30 +104,28 @@ class ErrorCard extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red),
-            const SizedBox(width: 12),
-            Expanded(child: Text(error)),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red),
+          const SizedBox(width: 12),
+          Expanded(child: Text(error)),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// A large start/stop button for engine control.
 class StartStopButton extends StatelessWidget {
   const StartStopButton({
-    super.key,
     required this.isRunning,
     required this.isBusy,
     required this.onPressed,
+    super.key,
     this.startingLabel = 'Starting...',
     this.stoppingLabel = 'Stopping...',
     this.startLabel = 'Start Engine',

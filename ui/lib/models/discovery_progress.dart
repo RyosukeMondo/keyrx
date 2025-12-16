@@ -9,15 +9,14 @@ class DiscoveryProgress {
     this.nextKey,
   });
 
-  factory DiscoveryProgress.fromJson(Map<String, dynamic> json) {
-    return DiscoveryProgress(
-      captured: (json['captured'] as num).toInt(),
-      total: (json['total'] as num).toInt(),
-      nextKey: json['next'] != null
-          ? DiscoveryPosition.fromJson(json['next'] as Map<String, dynamic>)
-          : null,
-    );
-  }
+  factory DiscoveryProgress.fromJson(Map<String, dynamic> json) =>
+      DiscoveryProgress(
+        captured: (json['captured'] as num).toInt(),
+        total: (json['total'] as num).toInt(),
+        nextKey: json['next'] != null
+            ? DiscoveryPosition.fromJson(json['next'] as Map<String, dynamic>)
+            : null,
+      );
 
   /// Number of keys successfully mapped so far.
   final int captured;
@@ -38,12 +37,11 @@ class DiscoveryProgress {
 class DiscoveryPosition {
   const DiscoveryPosition({required this.row, required this.col});
 
-  factory DiscoveryPosition.fromJson(Map<String, dynamic> json) {
-    return DiscoveryPosition(
-      row: (json['row'] as num).toInt(),
-      col: (json['col'] as num).toInt(),
-    );
-  }
+  factory DiscoveryPosition.fromJson(Map<String, dynamic> json) =>
+      DiscoveryPosition(
+        row: (json['row'] as num).toInt(),
+        col: (json['col'] as num).toInt(),
+      );
 
   final int row;
   final int col;

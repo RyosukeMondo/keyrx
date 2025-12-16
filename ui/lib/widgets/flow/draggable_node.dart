@@ -43,54 +43,54 @@ class _DraggableNodeState extends ConsumerState<DraggableNode> {
     // Just return the draggable widget without Positioned
     // The parent (flow_editor_page) will wrap this in Positioned
     return Semantics(
-        // Ensure minimum touch target size for accessibility
-        explicitChildNodes: true,
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovering = true),
-          onExit: (_) => setState(() => _isHovering = false),
-          cursor: isDragging
-              ? SystemMouseCursors.grabbing
-              : (_isHovering
-                    ? SystemMouseCursors.grab
-                    : SystemMouseCursors.basic),
-          child: GestureDetector(
-            onPanStart: _onPanStart,
-            onPanUpdate: _onPanUpdate,
-            onPanEnd: _onPanEnd,
-            // Ensure minimum touch target size (48x48)
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              // Ensure minimum touch target constraints
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: isDragging
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ]
-                    : _isHovering
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Transform.scale(
-                scale: isDragging ? 1.02 : 1.0,
-                child: widget.child,
-              ),
+      // Ensure minimum touch target size for accessibility
+      explicitChildNodes: true,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        cursor: isDragging
+            ? SystemMouseCursors.grabbing
+            : (_isHovering
+                  ? SystemMouseCursors.grab
+                  : SystemMouseCursors.basic),
+        child: GestureDetector(
+          onPanStart: _onPanStart,
+          onPanUpdate: _onPanUpdate,
+          onPanEnd: _onPanEnd,
+          // Ensure minimum touch target size (48x48)
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            // Ensure minimum touch target constraints
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: isDragging
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : _isHovering
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Transform.scale(
+              scale: isDragging ? 1.02 : 1.0,
+              child: widget.child,
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 
   void _onPanStart(DragStartDetails details) {

@@ -104,7 +104,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
     });
   }
 
-  void _openEditor({
+  Future<void> _openEditor({
     required Keymap keymap,
     required HardwareProfile profile,
     required VirtualLayout layout,
@@ -119,7 +119,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
     _loadData();
   }
 
-  void _createNewKeymap() async {
+  Future<void> _createNewKeymap() async {
     if (_profiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -160,7 +160,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
       id: 'keymap_$timestamp',
       name: '${selectedProfile.name ?? "New"} Keymap',
       virtualLayoutId: layout.id,
-      layers: [KeymapLayer(name: 'Layer 0', bindings: const {})],
+      layers: [const KeymapLayer(name: 'Layer 0')],
     );
 
     if (!mounted) return;
@@ -345,42 +345,42 @@ class _ProfileSelectionDialogState extends State<_ProfileSelectionDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Select Wiring Profile'),
-      content: DropdownButtonFormField<HardwareProfile>(
-        initialValue: _selected,
-        decoration: const InputDecoration(
-          labelText: 'Profile',
-          border: OutlineInputBorder(),
-        ),
-        items: widget.profiles.map((p) {
-          return DropdownMenuItem(
-            value: p,
-            child: Text(
-              '${p.name ?? "Unnamed"} (${p.virtualLayoutId})',
-              overflow: TextOverflow.ellipsis,
-            ),
-          );
-        }).toList(),
-        onChanged: (val) {
-          setState(() {
-            _selected = val;
-          });
-        },
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Select Wiring Profile'),
+    content: DropdownButtonFormField<HardwareProfile>(
+      initialValue: _selected,
+      decoration: const InputDecoration(
+        labelText: 'Profile',
+        border: OutlineInputBorder(),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _selected == null
-              ? null
-              : () => Navigator.pop(context, _selected),
-          child: const Text('Create'),
-        ),
-      ],
-    );
-  }
+      items: widget.profiles
+          .map(
+            (p) => DropdownMenuItem(
+              value: p,
+              child: Text(
+                '${p.name ?? "Unnamed"} (${p.virtualLayoutId})',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (val) {
+        setState(() {
+          _selected = val;
+        });
+      },
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _selected == null
+            ? null
+            : () => Navigator.pop(context, _selected),
+        child: const Text('Create'),
+      ),
+    ],
+  );
 }

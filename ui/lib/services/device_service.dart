@@ -121,17 +121,19 @@ class DeviceServiceImpl implements DeviceService {
     }
 
     // Map DeviceState to KeyboardDevice
-    final devices = result.data!.map((state) {
-      return KeyboardDevice(
-        name:
-            state.identity.userLabel ??
-            state.identity.serialNumber, // Fallback name
-        vendorId: state.identity.vendorId,
-        productId: state.identity.productId,
-        path: state.identity.toKey(), // Use unique key as path
-        hasProfile: state.profileId != null,
-      );
-    }).toList();
+    final devices = result.data!
+        .map(
+          (state) => KeyboardDevice(
+            name:
+                state.identity.userLabel ??
+                state.identity.serialNumber, // Fallback name
+            vendorId: state.identity.vendorId,
+            productId: state.identity.productId,
+            path: state.identity.toKey(), // Use unique key as path
+            hasProfile: state.profileId != null,
+          ),
+        )
+        .toList();
 
     _cachedDevices = devices;
     _log.info('device_refresh_completed', context: {'count': devices.length});

@@ -93,7 +93,6 @@ class _LayoutsPageState extends State<LayoutsPage> {
         id: _generateLayoutId(),
         name: 'New Custom Layout',
         layoutType: VirtualLayoutType.matrix,
-        keys: const [],
       ),
     );
   }
@@ -264,7 +263,7 @@ class _LayoutsPageState extends State<LayoutsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _deleteLayout(),
+            onPressed: _deleteLayout,
             tooltip: 'Delete',
           ),
           const SizedBox(width: 8),

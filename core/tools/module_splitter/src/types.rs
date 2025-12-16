@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use syn::{Item, ItemFn, ItemStruct, ItemEnum, ItemType, ItemConst, ItemStatic, ItemTrait, ItemImpl};
+use syn::{
+    Item, ItemConst, ItemEnum, ItemFn, ItemImpl, ItemStatic, ItemStruct, ItemTrait, ItemType,
+};
 
 /// Analysis result for a module
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,6 +82,7 @@ pub enum GroupingStrategy {
 pub struct GenerationResult {
     pub created_files: Vec<PathBuf>,
     pub mod_file: Option<PathBuf>,
+    #[allow(dead_code)]
     pub backup_file: Option<PathBuf>,
 }
 
@@ -180,7 +183,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -195,7 +202,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -210,7 +221,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -225,7 +240,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -240,7 +259,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -255,7 +278,11 @@ impl TypeInfo {
             is_public,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 
@@ -273,7 +300,11 @@ impl TypeInfo {
             is_public: false,
             line_start,
             line_end: line_start + estimated_lines,
-            attributes: item.attrs.iter().map(|a| quote::quote!(#a).to_string()).collect(),
+            attributes: item
+                .attrs
+                .iter()
+                .map(|a| quote::quote!(#a).to_string())
+                .collect(),
         }
     }
 }

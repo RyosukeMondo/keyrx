@@ -17,11 +17,9 @@ pub struct ModuleGenerator<'a> {
 
 impl<'a> ModuleGenerator<'a> {
     pub fn new(module_path: &'a PathBuf, analysis: &'a ModuleAnalysis) -> Self {
-        let content = fs::read_to_string(module_path)
-            .expect("Failed to read module file");
+        let content = fs::read_to_string(module_path).expect("Failed to read module file");
 
-        let syntax_tree: File = syn::parse_file(&content)
-            .expect("Failed to parse module");
+        let syntax_tree: File = syn::parse_file(&content).expect("Failed to parse module");
 
         Self {
             module_path,
@@ -46,12 +44,8 @@ impl<'a> ModuleGenerator<'a> {
         let mut created_files = Vec::new();
 
         for group in groups {
-            let module_file = self.generate_group_module(
-                &output_dir,
-                group,
-                &common_imports,
-                &module_attrs,
-            )?;
+            let module_file =
+                self.generate_group_module(&output_dir, group, &common_imports, &module_attrs)?;
             created_files.push(module_file);
         }
 
@@ -66,21 +60,28 @@ impl<'a> ModuleGenerator<'a> {
     }
 
     fn create_output_directory(&self) -> Result<PathBuf> {
-        let parent = self.module_path.parent()
+        let parent = self
+            .module_path
+            .parent()
             .context("Module has no parent directory")?;
 
-        let module_stem = self.module_path.file_stem()
+        let module_stem = self
+            .module_path
+            .file_stem()
             .context("Module has no file name")?
             .to_string_lossy();
 
         // Remove "exports_" prefix if present for cleaner naming
-        let dir_name = module_stem.strip_prefix("exports_")
-            .unwrap_or(&module_stem);
+        let dir_name = module_stem.strip_prefix("exports_").unwrap_or(&module_stem);
 
         let output_dir = parent.join(dir_name);
 
-        fs::create_dir_all(&output_dir)
-            .with_context(|| format!("Failed to create output directory: {}", output_dir.display()))?;
+        fs::create_dir_all(&output_dir).with_context(|| {
+            format!(
+                "Failed to create output directory: {}",
+                output_dir.display()
+            )
+        })?;
 
         Ok(output_dir)
     }
@@ -122,7 +123,7 @@ impl<'a> ModuleGenerator<'a> {
 
     fn generate_group_module(
         &self,
-        output_dir: &PathBuf,
+        output_dir: &std::path::Path,
         group: &FunctionGroup,
         common_imports: &[String],
         module_attrs: &[String],
@@ -132,7 +133,8 @@ impl<'a> ModuleGenerator<'a> {
         // Add module documentation
         content.push_str(&format!("//! {} functions\n", group.name));
         content.push_str("//!\n");
-        content.push_str(&format!("//! This module contains {} functions grouped by {}.\n",
+        content.push_str(&format!(
+            "//! This module contains {} functions grouped by {}.\n",
             group.functions.len(),
             match group.grouping_strategy {
                 crate::types::GroupingStrategy::ByDomain => "domain",
@@ -144,7 +146,7 @@ impl<'a> ModuleGenerator<'a> {
 
         // Add module attributes
         for attr in module_attrs {
-            content.push_str(&attr);
+            content.push_str(attr);
             content.push('\n');
         }
         if !module_attrs.is_empty() {
@@ -153,7 +155,7 @@ impl<'a> ModuleGenerator<'a> {
 
         // Add imports
         for import in common_imports {
-            content.push_str(&import);
+            content.push_str(import);
             content.push('\n');
         }
         content.push('\n');
@@ -185,7 +187,11 @@ impl<'a> ModuleGenerator<'a> {
         Ok(module_file)
     }
 
-    fn generate_mod_file(&self, output_dir: &PathBuf, groups: &[FunctionGroup]) -> Result<PathBuf> {
+    fn generate_mod_file(
+        &self,
+        output_dir: &std::path::Path,
+        groups: &[FunctionGroup],
+    ) -> Result<PathBuf> {
         let mut content = String::new();
 
         // Add module documentation
@@ -219,9 +225,7 @@ impl<'a> ModuleGenerator<'a> {
 }
 
 fn sanitize_module_name(name: &str) -> String {
-    name.to_lowercase()
-        .replace('-', "_")
-        .replace(' ', "_")
+    name.to_lowercase().replace(['-', ' '], "_")
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   late KeyrxBridge bridge;
-  bool libraryAvailable = false;
+  var libraryAvailable = false;
 
   setUpAll(() {
     bridge = KeyrxBridge.open();
@@ -66,7 +66,7 @@ void main() {
 
       final result = bridge.simulate([
         const KeyInput(code: 'KeyA', holdMs: 50),
-      ], comboMode: false);
+      ]);
 
       // Should return a result without crashing
       expect(result, isNotNull);

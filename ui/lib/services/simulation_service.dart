@@ -86,9 +86,9 @@ class SimulationServiceImpl implements SimulationService {
       );
     }
 
-    final bridgeKeys = keys.map((k) {
-      return KeyInput(code: k.code, holdMs: k.holdMs);
-    }).toList();
+    final bridgeKeys = keys
+        .map((k) => KeyInput(code: k.code, holdMs: k.holdMs))
+        .toList();
 
     final result = _bridge.simulate(
       bridgeKeys,
@@ -102,13 +102,15 @@ class SimulationServiceImpl implements SimulationService {
       );
     }
 
-    final mappings = result.mappings.map((m) {
-      return SimulationKeyMapping(
-        input: m.input,
-        output: m.output,
-        decision: m.decision,
-      );
-    }).toList();
+    final mappings = result.mappings
+        .map(
+          (m) => SimulationKeyMapping(
+            input: m.input,
+            output: m.output,
+            decision: m.decision,
+          ),
+        )
+        .toList();
 
     return SimulationServiceResult(
       mappings: mappings,

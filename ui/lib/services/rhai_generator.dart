@@ -43,16 +43,14 @@ class VisualConfig {
     List<ComboConfig>? comboConfigs,
     TimingConfig? timingConfig,
     bool? hasAdvancedFeatures,
-  }) {
-    return VisualConfig(
-      mappings: mappings ?? this.mappings,
-      tapHoldConfigs: tapHoldConfigs ?? this.tapHoldConfigs,
-      layerConfigs: layerConfigs ?? this.layerConfigs,
-      comboConfigs: comboConfigs ?? this.comboConfigs,
-      timingConfig: timingConfig ?? this.timingConfig,
-      hasAdvancedFeatures: hasAdvancedFeatures ?? this.hasAdvancedFeatures,
-    );
-  }
+  }) => VisualConfig(
+    mappings: mappings ?? this.mappings,
+    tapHoldConfigs: tapHoldConfigs ?? this.tapHoldConfigs,
+    layerConfigs: layerConfigs ?? this.layerConfigs,
+    comboConfigs: comboConfigs ?? this.comboConfigs,
+    timingConfig: timingConfig ?? this.timingConfig,
+    hasAdvancedFeatures: hasAdvancedFeatures ?? this.hasAdvancedFeatures,
+  );
 
   /// Check if config is empty.
   bool get isEmpty =>
@@ -253,13 +251,11 @@ class RhaiGenerator {
     buffer.writeln('    combo([$keys], "$output");');
   }
 
-  String _escapeKeyName(String key) {
-    return key.replaceAll('"', r'\"').replaceAll(r'\', r'\\');
-  }
+  String _escapeKeyName(String key) =>
+      key.replaceAll('"', r'\"').replaceAll(r'\', r'\\');
 
-  String _escapeString(String s) {
-    return s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-  }
+  String _escapeString(String s) =>
+      s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
   /// Parse a Rhai script and extract visual configuration (best-effort).
   ///
@@ -283,11 +279,7 @@ class RhaiGenerator {
     final remapRegex = RegExp(r'remap\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)');
     for (final match in remapRegex.allMatches(script)) {
       mappings.add(
-        RemapConfig(
-          sourceKeyId: match.group(1)!,
-          targetKeyId: match.group(2)!,
-          type: MappingType.simple,
-        ),
+        RemapConfig(sourceKeyId: match.group(1)!, targetKeyId: match.group(2)!),
       );
     }
 
@@ -355,7 +347,7 @@ class RhaiGenerator {
       final output = match.group(2)!;
 
       // Parse individual keys from the array
-      final keyRegex = RegExp(r'"([^"]+)"');
+      final keyRegex = RegExp('"([^"]+)"');
       final keys = keyRegex
           .allMatches(keysStr)
           .map((m) => m.group(1)!)

@@ -2,19 +2,17 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/services/keyboard_shortcuts.dart';
+import '../services/keyboard_shortcuts.dart';
 
 /// Shows a dialog displaying all available keyboard shortcuts.
 class KeyboardShortcutsHelpDialog extends StatelessWidget {
   const KeyboardShortcutsHelpDialog({super.key});
 
   /// Show the keyboard shortcuts help dialog.
-  static Future<void> show(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => const KeyboardShortcutsHelpDialog(),
-    );
-  }
+  static Future<void> show(BuildContext context) => showDialog<void>(
+    context: context,
+    builder: (context) => const KeyboardShortcutsHelpDialog(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +56,15 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: shortcuts.entries.map((entry) {
-                    return _buildCategory(
-                      theme,
-                      category: entry.key,
-                      shortcuts: entry.value,
-                    );
-                  }).toList(),
+                  children: shortcuts.entries
+                      .map(
+                        (entry) => _buildCategory(
+                          theme,
+                          category: entry.key,
+                          shortcuts: entry.value,
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ),
@@ -98,62 +98,58 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
     ThemeData theme, {
     required String category,
     required List<ShortcutInfo> shortcuts,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Category header
-          Text(
-            category,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.primary,
-            ),
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Category header
+        Text(
+          category,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
           ),
-          const SizedBox(height: 12),
+        ),
+        const SizedBox(height: 12),
 
-          // Shortcuts in this category
-          ...shortcuts.map(
-            (shortcut) => _buildShortcutRow(
-              theme,
-              description: shortcut.description,
-              keys: shortcut.shortcut,
-            ),
+        // Shortcuts in this category
+        ...shortcuts.map(
+          (shortcut) => _buildShortcutRow(
+            theme,
+            description: shortcut.description,
+            keys: shortcut.shortcut,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   Widget _buildShortcutRow(
     ThemeData theme, {
     required String description,
     required String keys,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          // Description
-          Expanded(
-            flex: 3,
-            child: Text(description, style: theme.textTheme.bodyMedium),
-          ),
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      children: [
+        // Description
+        Expanded(
+          flex: 3,
+          child: Text(description, style: theme.textTheme.bodyMedium),
+        ),
 
-          // Keyboard shortcut
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _buildKeyBadge(theme, keys),
-            ),
+        // Keyboard shortcut
+        Expanded(
+          flex: 2,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _buildKeyBadge(theme, keys),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   Widget _buildKeyBadge(ThemeData theme, String keys) {
     // Split combined keys (e.g., "Ctrl+Z" -> ["Ctrl", "Z"])
@@ -161,32 +157,34 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
 
     return Wrap(
       spacing: 4,
-      children: parts.map((key) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 1),
-                blurRadius: 2,
+      children: parts
+          .map(
+            (key) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    offset: const Offset(0, 1),
+                    blurRadius: 2,
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Text(
-            key,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontFamily: 'monospace',
+              child: Text(
+                key,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ),
-          ),
-        );
-      }).toList(),
+          )
+          .toList(),
     );
   }
 }

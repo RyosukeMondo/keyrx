@@ -22,18 +22,16 @@ List<SingleChildWidget> createProviders({
   required KeyrxFacade facade,
   required ApiDocsService apiDocsService,
   required AppState appState,
-}) {
-  return [
-    // Core service registry - foundation for all services
-    Provider<ServiceRegistry>.value(value: registry),
+}) => [
+  // Core service registry - foundation for all services
+  Provider<ServiceRegistry>.value(value: registry),
 
-    // Unified facade - simplified API over services
-    Provider<KeyrxFacade>.value(value: facade),
+  // Unified facade - simplified API over services
+  Provider<KeyrxFacade>.value(value: facade),
 
-    // API documentation service
-    Provider<ApiDocsService>.value(value: apiDocsService),
+  // API documentation service
+  Provider<ApiDocsService>.value(value: apiDocsService),
 
-    // Application state - ChangeNotifier for reactive UI updates
-    ChangeNotifierProvider<AppState>.value(value: appState),
-  ];
-}
+  // Application state - ChangeNotifier for reactive UI updates
+  ChangeNotifierProvider<AppState>.value(value: appState),
+];

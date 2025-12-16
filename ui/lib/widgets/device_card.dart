@@ -18,6 +18,16 @@ import 'remap_toggle.dart';
 /// information display (VID:PID:Serial, label) and action buttons for
 /// editing label and managing profiles.
 class DeviceCard extends StatefulWidget {
+  const DeviceCard({
+    required this.deviceState,
+    required this.deviceService,
+    required this.profileService,
+    super.key,
+    this.onEditLabel,
+    this.onManageProfiles,
+    this.onDeviceUpdated,
+  });
+
   /// The device state to display
   final DeviceState deviceState;
 
@@ -35,16 +45,6 @@ class DeviceCard extends StatefulWidget {
 
   /// Callback invoked when the device state changes optimistically.
   final ValueChanged<DeviceState>? onDeviceUpdated;
-
-  const DeviceCard({
-    super.key,
-    required this.deviceState,
-    required this.deviceService,
-    required this.profileService,
-    this.onEditLabel,
-    this.onManageProfiles,
-    this.onDeviceUpdated,
-  });
 
   @override
   State<DeviceCard> createState() => _DeviceCardState();
@@ -380,7 +380,6 @@ class _DeviceCardState extends State<DeviceCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Text(
@@ -411,46 +410,44 @@ class _DeviceCardState extends State<DeviceCard> {
     );
   }
 
-  Widget _buildInlineLabelEditor(ThemeData theme) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _labelController,
-            autofocus: true,
-            enabled: !_labelInFlight,
-            decoration: InputDecoration(
-              labelText: 'Friendly name',
-              hintText: 'e.g., Work keyboard',
-              isDense: true,
-              border: const OutlineInputBorder(),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.primary),
-              ),
+  Widget _buildInlineLabelEditor(ThemeData theme) => Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: _labelController,
+          autofocus: true,
+          enabled: !_labelInFlight,
+          decoration: InputDecoration(
+            labelText: 'Friendly name',
+            hintText: 'e.g., Work keyboard',
+            isDense: true,
+            border: const OutlineInputBorder(),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: theme.colorScheme.primary),
             ),
-            onSubmitted: (_) => _saveInlineLabel(),
           ),
+          onSubmitted: (_) => _saveInlineLabel(),
         ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: 'Cancel',
-          onPressed: _labelInFlight ? null : _cancelInlineLabelEdit,
-        ),
-        IconButton(
-          icon: _labelInFlight
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.check),
-          tooltip: 'Save',
-          onPressed: _labelInFlight ? null : _saveInlineLabel,
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 8),
+      IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: 'Cancel',
+        onPressed: _labelInFlight ? null : _cancelInlineLabelEdit,
+      ),
+      IconButton(
+        icon: _labelInFlight
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.check),
+        tooltip: 'Save',
+        onPressed: _labelInFlight ? null : _saveInlineLabel,
+      ),
+    ],
+  );
 
   Widget _buildIdentityDetails(ThemeData theme, DeviceIdentity identity) {
     final vid = identity.vendorId.toRadixString(16).padLeft(4, '0');

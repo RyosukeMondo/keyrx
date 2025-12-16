@@ -12,9 +12,8 @@ part 'analytics_providers.g.dart';
 
 /// Provider for SharedPreferences instance.
 @Riverpod(keepAlive: true)
-Future<SharedPreferences> sharedPreferences(Ref ref) async {
-  return await SharedPreferences.getInstance();
-}
+Future<SharedPreferences> sharedPreferences(Ref ref) async =>
+    SharedPreferences.getInstance();
 
 /// Provider for FeatureFlagService.
 @Riverpod(keepAlive: true)
@@ -75,9 +74,8 @@ KeyFlowAnalytics keyFlowAnalytics(Ref ref) {
 @riverpod
 class AnalyticsTracker extends _$AnalyticsTracker {
   @override
-  Future<bool> build() async {
-    return await ref.watch(keyFlowAnalyticsEnabledProvider.future);
-  }
+  Future<bool> build() async =>
+      await ref.watch(keyFlowAnalyticsEnabledProvider.future);
 
   KeyFlowAnalytics get _analytics => ref.read(keyFlowAnalyticsProvider);
 

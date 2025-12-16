@@ -90,115 +90,107 @@ class _EnhancedDeviceNodeWithSlotManagementState
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: widget.isConnected
-                ? Colors.white.withOpacity(0.1)
-                : Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '⌨️',
-            style: TextStyle(
-              fontSize: 18,
-              color: widget.isConnected ? null : Colors.grey,
-            ),
-          ),
+  Widget _buildHeader() => Row(
+    children: [
+      Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: widget.isConnected
+              ? Colors.white.withOpacity(0.1)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.deviceName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                '${widget.device.vendorId}:${widget.device.productId}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSlotsHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'SLOTS (PRIORITY ORDER)',
+        alignment: Alignment.center,
+        child: Text(
+          '⌨️',
           style: TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
+            fontSize: 18,
+            color: widget.isConnected ? null : Colors.grey,
           ),
-        ),
-        Text(
-          '${widget.slots.length} slot${widget.slots.length != 1 ? 's' : ''}',
-          style: const TextStyle(fontSize: 9, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAddSlotButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _handleAddSlot,
-        icon: const Icon(Icons.add, size: 16),
-        label: const Text('Add Slot', style: TextStyle(fontSize: 12)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          side: const BorderSide(color: Color(0xFF444444)),
         ),
       ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'VIRTUAL DEVICE',
-          style: TextStyle(fontSize: 10, color: Colors.grey),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: widget.isConnected
-                ? const Color(0x332ECC71)
-                : const Color(0x337F8C8D),
-          ),
-          child: Text(
-            widget.isConnected ? '● Connected' : '○ Offline',
-            style: TextStyle(
-              fontSize: 9,
-              color: widget.isConnected
-                  ? const Color(0xFF2ECC71)
-                  : const Color(0xFFBDC3C7),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.deviceName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Colors.white,
+              ),
             ),
+            Text(
+              '${widget.device.vendorId}:${widget.device.productId}',
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildSlotsHeader() => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      const Text(
+        'SLOTS (PRIORITY ORDER)',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
+      ),
+      Text(
+        '${widget.slots.length} slot${widget.slots.length != 1 ? 's' : ''}',
+        style: const TextStyle(fontSize: 9, color: Colors.grey),
+      ),
+    ],
+  );
+
+  Widget _buildAddSlotButton() => SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      onPressed: _handleAddSlot,
+      icon: const Icon(Icons.add, size: 16),
+      label: const Text('Add Slot', style: TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        side: const BorderSide(color: Color(0xFF444444)),
+      ),
+    ),
+  );
+
+  Widget _buildFooter() => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      const Text(
+        'VIRTUAL DEVICE',
+        style: TextStyle(fontSize: 10, color: Colors.grey),
+      ),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: widget.isConnected
+              ? const Color(0x332ECC71)
+              : const Color(0x337F8C8D),
+        ),
+        child: Text(
+          widget.isConnected ? '● Connected' : '○ Offline',
+          style: TextStyle(
+            fontSize: 9,
+            color: widget.isConnected
+                ? const Color(0xFF2ECC71)
+                : const Color(0xFFBDC3C7),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
   Future<void> _handleAddSlot() async {
     final existingSlots = widget.slots

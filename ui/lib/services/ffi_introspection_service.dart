@@ -8,11 +8,10 @@ import '../ffi/bindings.dart';
 import '../ffi/introspection_models.dart';
 
 class FfiIntrospectionService {
+  FfiIntrospectionService(this._bindings);
   final KeyrxBindings _bindings;
   IntrospectionData? _cachedData;
   DateTime? _lastFetch;
-
-  FfiIntrospectionService(this._bindings);
 
   /// Get introspection metadata (cached for 5 minutes)
   Future<IntrospectionData> getMetadata({bool forceRefresh = false}) async {
@@ -117,20 +116,18 @@ class FfiIntrospectionService {
 
 /// Function search result
 class FunctionSearchResult {
+  FunctionSearchResult({required this.domain, required this.function});
   final String domain;
   final FunctionMetadata function;
-
-  FunctionSearchResult({required this.domain, required this.function});
 
   String get fullName => '$domain.${function.name}';
 }
 
 /// Event search result
 class EventSearchResult {
+  EventSearchResult({required this.domain, required this.event});
   final String domain;
   final EventMetadata event;
-
-  EventSearchResult({required this.domain, required this.event});
 
   String get fullName => '$domain.${event.name}';
 }

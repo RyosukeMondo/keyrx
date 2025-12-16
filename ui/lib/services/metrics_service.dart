@@ -25,17 +25,16 @@ class MetricsSnapshot {
     required this.memoryUsed,
   });
 
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) {
-    return MetricsSnapshot(
-      timestamp: json['timestamp'] as int,
-      eventLatencyP50: json['event_latency_p50'] as int,
-      eventLatencyP95: json['event_latency_p95'] as int,
-      eventLatencyP99: json['event_latency_p99'] as int,
-      eventsProcessed: json['events_processed'] as int,
-      errorsCount: json['errors_count'] as int,
-      memoryUsed: json['memory_used'] as int,
-    );
-  }
+  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
+      MetricsSnapshot(
+        timestamp: json['timestamp'] as int,
+        eventLatencyP50: json['event_latency_p50'] as int,
+        eventLatencyP95: json['event_latency_p95'] as int,
+        eventLatencyP99: json['event_latency_p99'] as int,
+        eventsProcessed: json['events_processed'] as int,
+        errorsCount: json['errors_count'] as int,
+        memoryUsed: json['memory_used'] as int,
+      );
 
   final int timestamp;
   final int eventLatencyP50; // microseconds
@@ -48,17 +47,15 @@ class MetricsSnapshot {
   DateTime get dateTime =>
       DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'timestamp': timestamp,
-      'event_latency_p50': eventLatencyP50,
-      'event_latency_p95': eventLatencyP95,
-      'event_latency_p99': eventLatencyP99,
-      'events_processed': eventsProcessed,
-      'errors_count': errorsCount,
-      'memory_used': memoryUsed,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp,
+    'event_latency_p50': eventLatencyP50,
+    'event_latency_p95': eventLatencyP95,
+    'event_latency_p99': eventLatencyP99,
+    'events_processed': eventsProcessed,
+    'errors_count': errorsCount,
+    'memory_used': memoryUsed,
+  };
 }
 
 /// Type of threshold violation.
@@ -72,15 +69,13 @@ enum ViolationType {
 
   final int value;
 
-  static ViolationType fromValue(int value) {
-    return switch (value) {
-      0 => ViolationType.latencyWarning,
-      1 => ViolationType.latencyError,
-      2 => ViolationType.memoryWarning,
-      3 => ViolationType.memoryError,
-      _ => throw ArgumentError('Invalid violation type: $value'),
-    };
-  }
+  static ViolationType fromValue(int value) => switch (value) {
+    0 => ViolationType.latencyWarning,
+    1 => ViolationType.latencyError,
+    2 => ViolationType.memoryWarning,
+    3 => ViolationType.memoryError,
+    _ => throw ArgumentError('Invalid violation type: $value'),
+  };
 }
 
 /// Threshold violation event.
@@ -100,18 +95,16 @@ class ThresholdViolation {
   DateTime get dateTime =>
       DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
-  String get message {
-    return switch (type) {
-      ViolationType.latencyWarning =>
-        'Warning: Latency ${actualValue}us exceeds threshold ${thresholdValue}us',
-      ViolationType.latencyError =>
-        'Error: Latency ${actualValue}us exceeds threshold ${thresholdValue}us',
-      ViolationType.memoryWarning =>
-        'Warning: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
-      ViolationType.memoryError =>
-        'Error: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
-    };
-  }
+  String get message => switch (type) {
+    ViolationType.latencyWarning =>
+      'Warning: Latency ${actualValue}us exceeds threshold ${thresholdValue}us',
+    ViolationType.latencyError =>
+      'Error: Latency ${actualValue}us exceeds threshold ${thresholdValue}us',
+    ViolationType.memoryWarning =>
+      'Warning: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
+    ViolationType.memoryError =>
+      'Error: Memory $actualValue bytes exceeds threshold $thresholdValue bytes',
+  };
 }
 
 /// Configuration for performance thresholds.
@@ -124,14 +117,12 @@ class MetricsThresholds {
   });
 
   /// Default thresholds: 50us warn, 100us error, 100MB warn, 500MB error.
-  factory MetricsThresholds.defaults() {
-    return const MetricsThresholds(
-      latencyWarningUs: 50,
-      latencyErrorUs: 100,
-      memoryWarningBytes: 100 * 1024 * 1024,
-      memoryErrorBytes: 500 * 1024 * 1024,
-    );
-  }
+  factory MetricsThresholds.defaults() => const MetricsThresholds(
+    latencyWarningUs: 50,
+    latencyErrorUs: 100,
+    memoryWarningBytes: 100 * 1024 * 1024,
+    memoryErrorBytes: 500 * 1024 * 1024,
+  );
 
   final int latencyWarningUs;
   final int latencyErrorUs;

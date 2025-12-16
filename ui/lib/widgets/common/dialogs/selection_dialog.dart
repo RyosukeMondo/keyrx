@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 /// Provides a consistent UI for selecting a single item from a list.
 class SelectionDialog<T> extends StatelessWidget {
   const SelectionDialog({
-    super.key,
     required this.title,
-    this.message,
     required this.options,
+    super.key,
+    this.message,
     this.selectedOption,
     this.icon,
   });
@@ -29,7 +29,6 @@ class SelectionDialog<T> extends StatelessWidget {
       titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
       contentPadding: EdgeInsets.zero,
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             Icon(icon, color: scheme.primary),
@@ -87,24 +86,22 @@ class SelectionDialog<T> extends StatelessWidget {
   static Future<T?> show<T>(
     BuildContext context, {
     required String title,
-    String? message,
     required List<SelectionOption<T>> options,
+    String? message,
     T? selectedOption,
     IconData? icon,
     bool barrierDismissible = true,
-  }) {
-    return showDialog<T>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => SelectionDialog<T>(
-        title: title,
-        message: message,
-        options: options,
-        selectedOption: selectedOption,
-        icon: icon,
-      ),
-    );
-  }
+  }) => showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => SelectionDialog<T>(
+      title: title,
+      message: message,
+      options: options,
+      selectedOption: selectedOption,
+      icon: icon,
+    ),
+  );
 }
 
 /// Represents an option in a selection dialog.

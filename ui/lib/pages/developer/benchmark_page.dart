@@ -10,7 +10,7 @@ import '../../services/benchmark_service.dart';
 
 /// Benchmark page for running latency performance tests.
 class BenchmarkPage extends StatefulWidget {
-  const BenchmarkPage({super.key, required this.benchmarkService});
+  const BenchmarkPage({required this.benchmarkService, super.key});
 
   final BenchmarkService benchmarkService;
 
@@ -50,123 +50,114 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Latency Benchmark')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildConfigCard(),
-            const SizedBox(height: 24),
-            if (_error != null) _buildErrorBanner(),
-            if (_result != null) ...[
-              if (_result!.hasWarning) _buildWarningBanner(),
-              const SizedBox(height: 16),
-              _buildResultsGrid(),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Latency Benchmark')),
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildConfigCard(),
+          const SizedBox(height: 24),
+          if (_error != null) _buildErrorBanner(),
+          if (_result != null) ...[
+            if (_result!.hasWarning) _buildWarningBanner(),
+            const SizedBox(height: 16),
+            _buildResultsGrid(),
+          ],
+          if (_result == null && !_isRunning) _buildPlaceholder(),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildConfigCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Configuration', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.repeat, size: 20),
+              const SizedBox(width: 8),
+              Text('Iterations: ${_formatNumber(_iterations.toInt())}'),
             ],
-            if (_result == null && !_isRunning) _buildPlaceholder(),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Slider(
+            value: _iterations,
+            min: _minIterations.toDouble(),
+            max: _maxIterations.toDouble(),
+            divisions: 99,
+            label: _formatNumber(_iterations.toInt()),
+            onChanged: _isRunning
+                ? null
+                : (value) => setState(() => _iterations = value),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatNumber(_minIterations),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                _formatNumber(_maxIterations),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _isRunning ? null : _runBenchmark,
+              icon: _isRunning
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.speed),
+              label: Text(_isRunning ? 'Running...' : 'Run Benchmark'),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildConfigCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Configuration',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.repeat, size: 20),
-                const SizedBox(width: 8),
-                Text('Iterations: ${_formatNumber(_iterations.toInt())}'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _iterations,
-              min: _minIterations.toDouble(),
-              max: _maxIterations.toDouble(),
-              divisions: 99,
-              label: _formatNumber(_iterations.toInt()),
-              onChanged: _isRunning
-                  ? null
-                  : (value) => setState(() => _iterations = value),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _formatNumber(_minIterations),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                Text(
-                  _formatNumber(_maxIterations),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isRunning ? null : _runBenchmark,
-                icon: _isRunning
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.speed),
-                label: Text(_isRunning ? 'Running...' : 'Run Benchmark'),
+  Widget _buildErrorBanner() => Card(
+    color: Theme.of(context).colorScheme.errorContainer,
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
-          ],
-        ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => _error = null),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildErrorBanner() {
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _error!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _error = null),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
 
   Widget _buildWarningBanner() {
     final warning = _result?.warning ?? 'Latency exceeds 1ms threshold';
@@ -265,59 +256,53 @@ class _BenchmarkPageState extends State<BenchmarkPage> {
     );
   }
 
-  Widget _buildSummaryCard(BenchmarkData result) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Summary', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 12),
-            _buildSummaryRow('Iterations', _formatNumber(result.iterations)),
-            _buildSummaryRow(
-              'Range',
-              '${_formatLatency(result.minUs)} - ${_formatLatency(result.maxUs)}',
-            ),
-            _buildSummaryRow(
-              'Jitter',
-              _formatLatency(result.maxUs - result.minUs),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Center(
+  Widget _buildSummaryCard(BenchmarkData result) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 48),
-          Icon(Icons.speed_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Run a benchmark to see results',
-            style: TextStyle(color: Colors.grey[500]),
+          Text('Summary', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 12),
+          _buildSummaryRow('Iterations', _formatNumber(result.iterations)),
+          _buildSummaryRow(
+            'Range',
+            '${_formatLatency(result.minUs)} - ${_formatLatency(result.maxUs)}',
+          ),
+          _buildSummaryRow(
+            'Jitter',
+            _formatLatency(result.maxUs - result.minUs),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildSummaryRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+      ],
+    ),
+  );
+
+  Widget _buildPlaceholder() => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 48),
+        Icon(Icons.speed_outlined, size: 64, color: Colors.grey[400]),
+        const SizedBox(height: 16),
+        Text(
+          'Run a benchmark to see results',
+          style: TextStyle(color: Colors.grey[500]),
+        ),
+      ],
+    ),
+  );
 
   Color _getP99Color(double us) {
     final ns = us * 1000;

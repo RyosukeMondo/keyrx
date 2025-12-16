@@ -19,15 +19,13 @@ class ParameterDoc {
     this.defaultValue,
   });
 
-  factory ParameterDoc.fromJson(Map<String, dynamic> json) {
-    return ParameterDoc(
-      name: json['name'] as String,
-      typeName: json['type'] as String,
-      description: json['description'] as String,
-      optional: json['optional'] as bool,
-      defaultValue: json['default'] as String?,
-    );
-  }
+  factory ParameterDoc.fromJson(Map<String, dynamic> json) => ParameterDoc(
+    name: json['name'] as String,
+    typeName: json['type'] as String,
+    description: json['description'] as String,
+    optional: json['optional'] as bool,
+    defaultValue: json['default'] as String?,
+  );
 
   final String name;
   final String typeName;
@@ -35,34 +33,31 @@ class ParameterDoc {
   final bool optional;
   final String? defaultValue;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'type': typeName,
-      'description': description,
-      'optional': optional,
-      if (defaultValue != null) 'default': defaultValue,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'type': typeName,
+    'description': description,
+    'optional': optional,
+    if (defaultValue != null) 'default': defaultValue,
+  };
 }
 
 /// Documentation for a function return type.
 class ReturnTypeDoc {
   const ReturnTypeDoc({required this.typeName, required this.description});
 
-  factory ReturnTypeDoc.fromJson(Map<String, dynamic> json) {
-    return ReturnTypeDoc(
-      typeName: json['type'] as String,
-      description: json['description'] as String,
-    );
-  }
+  factory ReturnTypeDoc.fromJson(Map<String, dynamic> json) => ReturnTypeDoc(
+    typeName: json['type'] as String,
+    description: json['description'] as String,
+  );
 
   final String typeName;
   final String description;
 
-  Map<String, dynamic> toJson() {
-    return {'type': typeName, 'description': description};
-  }
+  Map<String, dynamic> toJson() => {
+    'type': typeName,
+    'description': description,
+  };
 }
 
 /// Documentation for a function.
@@ -79,29 +74,27 @@ class FunctionDoc {
     this.snippet = '',
   });
 
-  factory FunctionDoc.fromJson(Map<String, dynamic> json) {
-    return FunctionDoc(
-      name: json['name'] as String,
-      description: json['description'] as String,
-      parameters:
-          (json['parameters'] as List<dynamic>?)
-              ?.map((e) => ParameterDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      returns: json['returns'] != null
-          ? ReturnTypeDoc.fromJson(json['returns'] as Map<String, dynamic>)
-          : null,
-      examples:
-          (json['examples'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      deprecated: json['deprecated'] as String?,
-      since: json['since'] as String?,
-      notes: json['notes'] as String?,
-      snippet: json['snippet'] as String? ?? '',
-    );
-  }
+  factory FunctionDoc.fromJson(Map<String, dynamic> json) => FunctionDoc(
+    name: json['name'] as String,
+    description: json['description'] as String,
+    parameters:
+        (json['parameters'] as List<dynamic>?)
+            ?.map((e) => ParameterDoc.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    returns: json['returns'] != null
+        ? ReturnTypeDoc.fromJson(json['returns'] as Map<String, dynamic>)
+        : null,
+    examples:
+        (json['examples'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [],
+    deprecated: json['deprecated'] as String?,
+    since: json['since'] as String?,
+    notes: json['notes'] as String?,
+    snippet: json['snippet'] as String? ?? '',
+  );
 
   final String name;
   final String description;
@@ -113,19 +106,17 @@ class FunctionDoc {
   final String? notes;
   final String snippet;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'description': description,
-      'parameters': parameters.map((e) => e.toJson()).toList(),
-      if (returns != null) 'returns': returns!.toJson(),
-      'examples': examples,
-      if (deprecated != null) 'deprecated': deprecated,
-      if (since != null) 'since': since,
-      if (notes != null) 'notes': notes,
-      'snippet': snippet,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'parameters': parameters.map((e) => e.toJson()).toList(),
+    if (returns != null) 'returns': returns!.toJson(),
+    'examples': examples,
+    if (deprecated != null) 'deprecated': deprecated,
+    if (since != null) 'since': since,
+    if (notes != null) 'notes': notes,
+    'snippet': snippet,
+  };
 }
 
 /// Documentation for a type property.
@@ -137,28 +128,24 @@ class PropertyDoc {
     required this.readonly,
   });
 
-  factory PropertyDoc.fromJson(Map<String, dynamic> json) {
-    return PropertyDoc(
-      name: json['name'] as String,
-      typeName: json['type'] as String,
-      description: json['description'] as String,
-      readonly: json['readonly'] as bool,
-    );
-  }
+  factory PropertyDoc.fromJson(Map<String, dynamic> json) => PropertyDoc(
+    name: json['name'] as String,
+    typeName: json['type'] as String,
+    description: json['description'] as String,
+    readonly: json['readonly'] as bool,
+  );
 
   final String name;
   final String typeName;
   final String description;
   final bool readonly;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'type': typeName,
-      'description': description,
-      'readonly': readonly,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'type': typeName,
+    'description': description,
+    'readonly': readonly,
+  };
 }
 
 /// Documentation for a type.
@@ -173,33 +160,31 @@ class TypeDoc {
     this.since,
   });
 
-  factory TypeDoc.fromJson(Map<String, dynamic> json) {
-    return TypeDoc(
-      name: json['name'] as String,
-      description: json['description'] as String,
-      properties:
-          (json['properties'] as List<dynamic>?)
-              ?.map((e) => PropertyDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      methods:
-          (json['methods'] as List<dynamic>?)
-              ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      constructors:
-          (json['constructors'] as List<dynamic>?)
-              ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      examples:
-          (json['examples'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-      since: json['since'] as String?,
-    );
-  }
+  factory TypeDoc.fromJson(Map<String, dynamic> json) => TypeDoc(
+    name: json['name'] as String,
+    description: json['description'] as String,
+    properties:
+        (json['properties'] as List<dynamic>?)
+            ?.map((e) => PropertyDoc.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    methods:
+        (json['methods'] as List<dynamic>?)
+            ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    constructors:
+        (json['constructors'] as List<dynamic>?)
+            ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
+    examples:
+        (json['examples'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [],
+    since: json['since'] as String?,
+  );
 
   final String name;
   final String description;
@@ -209,58 +194,53 @@ class TypeDoc {
   final List<String> examples;
   final String? since;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'description': description,
-      'properties': properties.map((e) => e.toJson()).toList(),
-      'methods': methods.map((e) => e.toJson()).toList(),
-      'constructors': constructors.map((e) => e.toJson()).toList(),
-      'examples': examples,
-      if (since != null) 'since': since,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'description': description,
+    'properties': properties.map((e) => e.toJson()).toList(),
+    'methods': methods.map((e) => e.toJson()).toList(),
+    'constructors': constructors.map((e) => e.toJson()).toList(),
+    'examples': examples,
+    if (since != null) 'since': since,
+  };
 }
 
 /// Documentation for a module.
 class ModuleDoc {
   const ModuleDoc({
     required this.name,
-    this.description,
     required this.functions,
     required this.types,
+    this.description,
   });
 
-  factory ModuleDoc.fromJson(String name, Map<String, dynamic> json) {
-    return ModuleDoc(
-      name: json['name'] as String? ?? name,
-      description: json['description'] as String?,
-      functions:
-          (json['functions'] as List<dynamic>?)
-              ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      types:
-          (json['types'] as List<dynamic>?)
-              ?.map((e) => TypeDoc.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-    );
-  }
+  factory ModuleDoc.fromJson(String name, Map<String, dynamic> json) =>
+      ModuleDoc(
+        name: json['name'] as String? ?? name,
+        description: json['description'] as String?,
+        functions:
+            (json['functions'] as List<dynamic>?)
+                ?.map((e) => FunctionDoc.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
+        types:
+            (json['types'] as List<dynamic>?)
+                ?.map((e) => TypeDoc.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
+      );
 
   final String name;
   final String? description;
   final List<FunctionDoc> functions;
   final List<TypeDoc> types;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      if (description != null) 'description': description,
-      'functions': functions.map((e) => e.toJson()).toList(),
-      'types': types.map((e) => e.toJson()).toList(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    if (description != null) 'description': description,
+    'functions': functions.map((e) => e.toJson()).toList(),
+    'types': types.map((e) => e.toJson()).toList(),
+  };
 }
 
 /// Autocomplete completion item.
@@ -274,16 +254,14 @@ class CompletionItem {
     required this.insertTextFormat,
   });
 
-  factory CompletionItem.fromJson(Map<String, dynamic> json) {
-    return CompletionItem(
-      label: json['label'] as String,
-      kind: json['kind'] as String,
-      detail: json['detail'] as String,
-      documentation: json['documentation'] as String,
-      insertText: json['insert_text'] as String,
-      insertTextFormat: json['insert_text_format'] as String,
-    );
-  }
+  factory CompletionItem.fromJson(Map<String, dynamic> json) => CompletionItem(
+    label: json['label'] as String,
+    kind: json['kind'] as String,
+    detail: json['detail'] as String,
+    documentation: json['documentation'] as String,
+    insertText: json['insert_text'] as String,
+    insertTextFormat: json['insert_text_format'] as String,
+  );
 
   final String label;
   final String kind;
@@ -292,16 +270,14 @@ class CompletionItem {
   final String insertText;
   final String insertTextFormat;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'label': label,
-      'kind': kind,
-      'detail': detail,
-      'documentation': documentation,
-      'insert_text': insertText,
-      'insert_text_format': insertTextFormat,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'kind': kind,
+    'detail': detail,
+    'documentation': documentation,
+    'insert_text': insertText,
+    'insert_text_format': insertTextFormat,
+  };
 }
 
 /// Search result item.
@@ -435,14 +411,10 @@ class ApiDocsServiceImpl implements ApiDocsService {
   }
 
   @override
-  ModuleDoc? getModule(String name) {
-    return _modules[name];
-  }
+  ModuleDoc? getModule(String name) => _modules[name];
 
   @override
-  List<ModuleDoc> getAllModules() {
-    return _modules.values.toList();
-  }
+  List<ModuleDoc> getAllModules() => _modules.values.toList();
 
   @override
   List<SearchResult> search(String query, {int limit = 20}) {
@@ -594,7 +566,7 @@ class ApiDocsServiceImpl implements ApiDocsService {
 
     // Exact match in name gets highest score
     if (lowerName == query) {
-      return 1.0;
+      return 1;
     }
 
     // Name starts with query gets high score
@@ -617,6 +589,6 @@ class ApiDocsServiceImpl implements ApiDocsService {
       return 0.3;
     }
 
-    return 0.0;
+    return 0;
   }
 }

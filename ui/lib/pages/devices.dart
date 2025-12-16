@@ -5,8 +5,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../models/device_state.dart';
 import '../models/device_identity.dart';
+import '../models/device_state.dart';
 import '../models/hardware_profile.dart';
 import '../models/keymap.dart';
 import '../models/runtime_config.dart';
@@ -18,11 +18,11 @@ import '../services/runtime_service.dart';
 
 class DevicesPage extends StatefulWidget {
   const DevicesPage({
-    super.key,
     required this.runtimeService,
     required this.hardwareService,
     required this.keymapService,
     required this.deviceRegistryService,
+    super.key,
   });
 
   final RuntimeService runtimeService;
@@ -62,7 +62,7 @@ class _DevicesPageState extends State<DevicesPage> {
       final hardwareResult = await widget.hardwareService.listProfiles();
       final keymapResult = await widget.keymapService.listKeymaps();
 
-      List<DeviceState> devices = const [];
+      var devices = const <DeviceState>[];
       try {
         devices = await widget.deviceRegistryService.getDevices();
       } catch (e) {
@@ -199,10 +199,13 @@ class _DevicesPageState extends State<DevicesPage> {
   }
 
   List<HardwareProfile> _hardwareOptionsFor(DeviceSlots device) {
-    final filtered = _hardwareProfiles.where((profile) {
-      return profile.vendorId == device.device.vendorId &&
-          profile.productId == device.device.productId;
-    }).toList();
+    final filtered = _hardwareProfiles
+        .where(
+          (profile) =>
+              profile.vendorId == device.device.vendorId &&
+              profile.productId == device.device.productId,
+        )
+        .toList();
     return filtered.isEmpty ? _hardwareProfiles : filtered;
   }
 
@@ -227,26 +230,24 @@ class _DevicesPageState extends State<DevicesPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Devices'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Add Virtual Device',
-            onPressed: _isMutating ? null : _showAddVirtualDeviceDialog,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reload runtime',
-            onPressed: _isMutating ? null : _loadAll,
-          ),
-        ],
-      ),
-      body: RefreshIndicator(onRefresh: _loadAll, child: _buildBody()),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Devices'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          tooltip: 'Add Virtual Device',
+          onPressed: _isMutating ? null : _showAddVirtualDeviceDialog,
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Reload runtime',
+          onPressed: _isMutating ? null : _loadAll,
+        ),
+      ],
+    ),
+    body: RefreshIndicator(onRefresh: _loadAll, child: _buildBody()),
+  );
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -274,7 +275,7 @@ class _DevicesPageState extends State<DevicesPage> {
           _InlineErrorBanner(message: _error!),
           const SizedBox(height: 12),
         ],
-        ...devices.map((device) => _buildDeviceCard(device)),
+        ...devices.map(_buildDeviceCard),
         const SizedBox(height: 12),
       ],
     );
@@ -563,82 +564,73 @@ class _DevicesPageState extends State<DevicesPage> {
       return;
     }
 
-    HardwareProfile selectedHardware = hardwareOptions.first;
-    Keymap selectedKeymap = _keymaps.first;
+    var selectedHardware = hardwareOptions.first;
+    var selectedKeymap = _keymaps.first;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Add Profile Slot'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedHardware.id,
-                    decoration: const InputDecoration(
-                      labelText: 'Wiring (Hardware Profile)',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: hardwareOptions
-                        .map(
-                          (h) => DropdownMenuItem(
-                            value: h.id,
-                            child: Text(h.name ?? h.id),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() {
-                        selectedHardware = hardwareOptions.firstWhere(
-                          (h) => h.id == value,
-                        );
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedKeymap.id,
-                    decoration: const InputDecoration(
-                      labelText: 'Keymap',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _keymaps
-                        .map(
-                          (k) => DropdownMenuItem(
-                            value: k.id,
-                            child: Text(k.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setDialogState(() {
-                        selectedKeymap = _keymaps.firstWhere(
-                          (k) => k.id == value,
-                        );
-                      });
-                    },
-                  ),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Profile Slot'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: selectedHardware.id,
+                decoration: const InputDecoration(
+                  labelText: 'Wiring (Hardware Profile)',
+                  border: OutlineInputBorder(),
+                ),
+                items: hardwareOptions
+                    .map(
+                      (h) => DropdownMenuItem(
+                        value: h.id,
+                        child: Text(h.name ?? h.id),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() {
+                    selectedHardware = hardwareOptions.firstWhere(
+                      (h) => h.id == value,
+                    );
+                  });
+                },
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancel'),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: selectedKeymap.id,
+                decoration: const InputDecoration(
+                  labelText: 'Keymap',
+                  border: OutlineInputBorder(),
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Add'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+                items: _keymaps
+                    .map(
+                      (k) => DropdownMenuItem(value: k.id, child: Text(k.name)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() {
+                    selectedKeymap = _keymaps.firstWhere((k) => k.id == value);
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (confirmed != true) return;
@@ -730,107 +722,105 @@ class _DevicesPageState extends State<DevicesPage> {
 
     final identity = await showDialog<DeviceIdentity>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Virtual Device'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Enter device details to create a virtual hardware profile.',
-                  style: TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: vidController,
-                        decoration: const InputDecoration(
-                          labelText: 'Vendor ID (Hex)',
-                          hintText: 'e.g. 046D',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
+      builder: (context) => AlertDialog(
+        title: const Text('Add Virtual Device'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter device details to create a virtual hardware profile.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: vidController,
+                      decoration: const InputDecoration(
+                        labelText: 'Vendor ID (Hex)',
+                        hintText: 'e.g. 046D',
+                        isDense: true,
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: pidController,
-                        decoration: const InputDecoration(
-                          labelText: 'Product ID (Hex)',
-                          hintText: 'e.g. C52B',
-                          isDense: true,
-                          border: OutlineInputBorder(),
-                        ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: pidController,
+                      decoration: const InputDecoration(
+                        labelText: 'Product ID (Hex)',
+                        hintText: 'e.g. C52B',
+                        isDense: true,
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: serialController,
-                  decoration: const InputDecoration(
-                    labelText: 'Serial Number',
-                    hintText: 'e.g. SN12345678',
-                    isDense: true,
-                    border: OutlineInputBorder(),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: serialController,
+                decoration: const InputDecoration(
+                  labelText: 'Serial Number',
+                  hintText: 'e.g. SN12345678',
+                  isDense: true,
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: labelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Label (Optional)',
-                    hintText: 'My Custom Keyboard',
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(
+                  labelText: 'Label (Optional)',
+                  hintText: 'My Custom Keyboard',
+                  isDense: true,
+                  border: OutlineInputBorder(),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                // Basic validation
-                final vidStr = vidController.text.trim();
-                final pidStr = pidController.text.trim();
-                final serial = serialController.text.trim();
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              // Basic validation
+              final vidStr = vidController.text.trim();
+              final pidStr = pidController.text.trim();
+              final serial = serialController.text.trim();
 
-                if (vidStr.isEmpty || pidStr.isEmpty || serial.isEmpty) {
-                  return; // Should probably show error but simple return for now
-                }
+              if (vidStr.isEmpty || pidStr.isEmpty || serial.isEmpty) {
+                return; // Should probably show error but simple return for now
+              }
 
-                int? vid = int.tryParse(vidStr, radix: 16);
-                int? pid = int.tryParse(pidStr, radix: 16);
+              final vid = int.tryParse(vidStr, radix: 16);
+              final pid = int.tryParse(pidStr, radix: 16);
 
-                if (vid == null || pid == null) {
-                  return;
-                }
+              if (vid == null || pid == null) {
+                return;
+              }
 
-                Navigator.of(context).pop(
-                  DeviceIdentity(
-                    vendorId: vid,
-                    productId: pid,
-                    serialNumber: serial,
-                    userLabel: labelController.text.trim().isEmpty
-                        ? null
-                        : labelController.text.trim(),
-                  ),
-                );
-              },
-              child: const Text('Add Device'),
-            ),
-          ],
-        );
-      },
+              Navigator.of(context).pop(
+                DeviceIdentity(
+                  vendorId: vid,
+                  productId: pid,
+                  serialNumber: serial,
+                  userLabel: labelController.text.trim().isEmpty
+                      ? null
+                      : labelController.text.trim(),
+                ),
+              );
+            },
+            child: const Text('Add Device'),
+          ),
+        ],
+      ),
     );
 
     if (identity == null) return;
@@ -839,7 +829,7 @@ class _DevicesPageState extends State<DevicesPage> {
     try {
       await widget.deviceRegistryService.addVirtualDevice(identity);
       await _loadAll();
-      _showSnack('Virtual device added', isError: false);
+      _showSnack('Virtual device added');
     } catch (e) {
       _showSnack('Failed to add virtual device: $e', isError: true);
     } finally {
@@ -857,30 +847,27 @@ class _DevicesPageState extends State<DevicesPage> {
 
     final newLabel = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Rename Device'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Device Name',
-              hintText: 'Enter a custom name for this device',
-            ),
-            autofocus: true,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Device'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Device Name',
+            hintText: 'Enter a custom name for this device',
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
 
     if (newLabel == null || newLabel == currentLabel) return;
@@ -927,32 +914,30 @@ class _InlineErrorBanner extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.errorContainer,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: Theme.of(context).colorScheme.onErrorContainer,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.errorContainer,
+    borderRadius: BorderRadius.circular(12),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _InlineInfoBanner extends StatelessWidget {
@@ -961,26 +946,24 @@ class _InlineInfoBanner extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    padding: const EdgeInsets.all(12),
+    child: Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(message)),
+      ],
+    ),
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -989,31 +972,29 @@ class _EmptyState extends StatelessWidget {
   final Future<void> Function() onRefresh;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 24),
-        const Icon(Icons.devices_other_outlined, size: 64),
-        const SizedBox(height: 16),
-        Text(
-          'No connected devices with runtime slots',
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Connect a device, then add wiring/keymap slots to control it.',
-          style: Theme.of(context).textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: onRefresh,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Refresh devices'),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const SizedBox(height: 24),
+      const Icon(Icons.devices_other_outlined, size: 64),
+      const SizedBox(height: 16),
+      Text(
+        'No connected devices with runtime slots',
+        style: Theme.of(context).textTheme.titleMedium,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'Connect a device, then add wiring/keymap slots to control it.',
+        style: Theme.of(context).textTheme.bodyMedium,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 16),
+      FilledButton.icon(
+        onPressed: onRefresh,
+        icon: const Icon(Icons.refresh),
+        label: const Text('Refresh devices'),
+      ),
+    ],
+  );
 }

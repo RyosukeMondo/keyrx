@@ -28,12 +28,12 @@ class DeviceInstanceId with _$DeviceInstanceId {
 class HardwareProfile with _$HardwareProfile {
   const factory HardwareProfile({
     required HardwareProfileId id,
+    @JsonKey(name: 'virtual_layout_id')
+    required VirtualLayoutId virtualLayoutId,
     @Default(0) @JsonKey(name: 'vendor_id') int vendorId,
     @Default(0) @JsonKey(name: 'product_id') int productId,
     @JsonKey(name: 'serial_number') String? serialNumber,
     String? name,
-    @JsonKey(name: 'virtual_layout_id')
-    required VirtualLayoutId virtualLayoutId,
     @Default(<int, VirtualKeyId>{}) Map<int, VirtualKeyId> wiring,
   }) = _HardwareProfile;
 

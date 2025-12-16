@@ -28,14 +28,14 @@ class DeviceState with _$DeviceState {
     /// Only effective when deviceEnabled is true
     @JsonKey(name: 'remap_enabled') required bool remapEnabled,
 
-    /// Assigned profile ID (if any)
-    @JsonKey(name: 'profile_id') String? profileId,
-
     /// Connection timestamp (ISO 8601)
     @JsonKey(name: 'connected_at') required String connectedAt,
 
     /// Last update timestamp (ISO 8601)
     @JsonKey(name: 'updated_at') required String updatedAt,
+
+    /// Assigned profile ID (if any)
+    @JsonKey(name: 'profile_id') String? profileId,
   }) = _DeviceState;
 
   const DeviceState._();

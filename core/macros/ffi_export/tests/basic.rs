@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+#![allow(private_interfaces)]
 //! Basic tests for #[ffi_export] macro
 
 use ffi_export::ffi_export;
@@ -29,13 +31,13 @@ pub fn start_test(profile_id: &str) -> Result<TestState, TestError> {
 
 /// Get a configuration value.
 #[ffi_export(domain = "config")]
-pub fn get_value(key: &str) -> Result<String, TestError> {
-    Ok(format!("value_{}", key))
+pub fn get_value(_key: &str) -> Result<String, TestError> {
+    Ok(format!("value_{}", _key))
 }
 
 /// Set volume with optional parameter.
 #[ffi_export(domain = "audio")]
-pub fn set_volume(device_id: &str, volume: Option<u32>) -> Result<(), TestError> {
+pub fn set_volume(_device_id: &str, _volume: Option<u32>) -> Result<(), TestError> {
     Ok(())
 }
 
@@ -47,7 +49,7 @@ pub fn add_numbers(a: i32, b: i32) -> Result<i32, TestError> {
 
 /// Function with boolean parameter.
 #[ffi_export(domain = "config")]
-pub fn set_enabled(enabled: bool) -> Result<(), TestError> {
+pub fn set_enabled(_enabled: bool) -> Result<(), TestError> {
     Ok(())
 }
 

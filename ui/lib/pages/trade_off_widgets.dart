@@ -10,10 +10,10 @@ import 'trade_off_chart.dart';
 /// Widget for displaying a metric tile with colored background.
 class MetricTile extends StatelessWidget {
   const MetricTile({
-    super.key,
     required this.label,
     required this.value,
     required this.color,
+    super.key,
   });
 
   final String label;
@@ -56,10 +56,10 @@ class MetricTile extends StatelessWidget {
 /// Widget for displaying a statistic tile with icon.
 class StatTile extends StatelessWidget {
   const StatTile({
-    super.key,
     required this.label,
     required this.value,
     required this.icon,
+    super.key,
   });
 
   final String label;
@@ -104,10 +104,10 @@ class StatTile extends StatelessWidget {
 /// Widget for displaying a preset region row.
 class PresetRow extends StatelessWidget {
   const PresetRow({
-    super.key,
     required this.preset,
     required this.isSelected,
     required this.onTap,
+    super.key,
   });
 
   final PresetRegion preset;
@@ -193,10 +193,10 @@ class PresetRow extends StatelessWidget {
 /// Widget for displaying a recommendation banner.
 class RecommendationBanner extends StatelessWidget {
   const RecommendationBanner({
-    super.key,
     required this.recommendedTimeout,
     required this.userTypingMean,
     required this.onApply,
+    super.key,
   });
 
   final double recommendedTimeout;
@@ -246,10 +246,10 @@ class RecommendationBanner extends StatelessWidget {
 /// Dialog for editing typing model parameters.
 class ModelEditDialog extends StatefulWidget {
   const ModelEditDialog({
-    super.key,
     required this.initialMean,
     required this.initialStdDev,
     required this.onApply,
+    super.key,
   });
 
   final double initialMean;
@@ -272,46 +272,44 @@ class _ModelEditDialogState extends State<ModelEditDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit Typing Model'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Mean Key Duration: ${_tempMean.toInt()} ms'),
-          Slider(
-            value: _tempMean,
-            min: 100,
-            max: 400,
-            divisions: 30,
-            onChanged: (v) => setState(() => _tempMean = v),
-          ),
-          const SizedBox(height: UiConstants.defaultPadding),
-          Text('Standard Deviation: ${_tempStdDev.toInt()} ms'),
-          Slider(
-            value: _tempStdDev,
-            min: 20,
-            max: 100,
-            divisions: 16,
-            onChanged: (v) => setState(() => _tempStdDev = v),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Edit Typing Model'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Mean Key Duration: ${_tempMean.toInt()} ms'),
+        Slider(
+          value: _tempMean,
+          min: 100,
+          max: 400,
+          divisions: 30,
+          onChanged: (v) => setState(() => _tempMean = v),
         ),
-        FilledButton(
-          onPressed: () {
-            widget.onApply(_tempMean, _tempStdDev);
-            Navigator.pop(context);
-          },
-          child: const Text('Apply'),
+        const SizedBox(height: UiConstants.defaultPadding),
+        Text('Standard Deviation: ${_tempStdDev.toInt()} ms'),
+        Slider(
+          value: _tempStdDev,
+          min: 20,
+          max: 100,
+          divisions: 16,
+          onChanged: (v) => setState(() => _tempStdDev = v),
         ),
       ],
-    );
-  }
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          widget.onApply(_tempMean, _tempStdDev);
+          Navigator.pop(context);
+        },
+        child: const Text('Apply'),
+      ),
+    ],
+  );
 }
 
 /// Dialog for displaying help information.
@@ -319,52 +317,50 @@ class TradeOffHelpDialog extends StatelessWidget {
   const TradeOffHelpDialog({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Understanding Trade-offs'),
-      content: const SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Tap-Hold Timeout',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: UiConstants.smallPadding),
-            Text(
-              'This is the time threshold that determines whether a key '
-              'press is interpreted as a "tap" or a "hold".\n\n'
-              '- Shorter timeout: Faster hold activation, but more '
-              'accidental holds during fast typing\n'
-              '- Longer timeout: Fewer accidental holds, but slower '
-              'hold activation',
-            ),
-            SizedBox(height: UiConstants.defaultPadding),
-            Text('Miss Rate', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: UiConstants.smallPadding),
-            Text(
-              'The estimated percentage of key presses that will be '
-              'incorrectly classified. This is calculated using a '
-              'statistical model of your typing speed.',
-            ),
-            SizedBox(height: UiConstants.defaultPadding),
-            Text('Presets', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: UiConstants.smallPadding),
-            Text(
-              '- Gaming: 100-150ms - Optimized for fast reactions\n'
-              '- Typing: 175-250ms - Balanced for daily use\n'
-              '- Relaxed: 300-500ms - Slower, more forgiving',
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Understanding Trade-offs'),
+    content: const SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Tap-Hold Timeout',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: UiConstants.smallPadding),
+          Text(
+            'This is the time threshold that determines whether a key '
+            'press is interpreted as a "tap" or a "hold".\n\n'
+            '- Shorter timeout: Faster hold activation, but more '
+            'accidental holds during fast typing\n'
+            '- Longer timeout: Fewer accidental holds, but slower '
+            'hold activation',
+          ),
+          SizedBox(height: UiConstants.defaultPadding),
+          Text('Miss Rate', style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: UiConstants.smallPadding),
+          Text(
+            'The estimated percentage of key presses that will be '
+            'incorrectly classified. This is calculated using a '
+            'statistical model of your typing speed.',
+          ),
+          SizedBox(height: UiConstants.defaultPadding),
+          Text('Presets', style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: UiConstants.smallPadding),
+          Text(
+            '- Gaming: 100-150ms - Optimized for fast reactions\n'
+            '- Typing: 175-250ms - Balanced for daily use\n'
+            '- Relaxed: 300-500ms - Slower, more forgiving',
+          ),
+        ],
       ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Got it'),
-        ),
-      ],
-    );
-  }
+    ),
+    actions: [
+      FilledButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Got it'),
+      ),
+    ],
+  );
 }

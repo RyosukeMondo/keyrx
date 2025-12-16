@@ -10,18 +10,19 @@ PluginBase createPlugin() => _FileSizeLintPlugin();
 class _FileSizeLintPlugin extends PluginBase {
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
-    FileLineLimitLint(maxLines: 500),
-    FunctionLengthLimitLint(maxLines: 50),
+    const FileLineLimitLint(maxLines: 500),
+    const FunctionLengthLimitLint(maxLines: 50),
   ];
 }
 
 class FileLineLimitLint extends DartLintRule {
-  FileLineLimitLint({required this.maxLines})
+  const FileLineLimitLint({required this.maxLines})
     : super(
-        code: LintCode(
+        code: const LintCode(
           name: 'file_line_limit',
           problemMessage: 'File has {1} lines (max {0}).',
-          correctionMessage: 'Split the file or reduce scope to stay under {0} lines.',
+          correctionMessage:
+              'Split the file or reduce scope to stay under {0} lines.',
         ),
       );
 
@@ -59,12 +60,13 @@ class FileLineLimitLint extends DartLintRule {
 }
 
 class FunctionLengthLimitLint extends DartLintRule {
-  FunctionLengthLimitLint({required this.maxLines})
+  const FunctionLengthLimitLint({required this.maxLines})
     : super(
-        code: LintCode(
+        code: const LintCode(
           name: 'function_length_limit',
           problemMessage: 'Function has {1} lines (max {0}).',
-          correctionMessage: 'Split the function or extract helpers to stay under {0} lines.',
+          correctionMessage:
+              'Split the function or extract helpers to stay under {0} lines.',
         ),
       );
 

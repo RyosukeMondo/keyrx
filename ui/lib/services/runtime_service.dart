@@ -48,88 +48,79 @@ class RuntimeServiceImpl implements RuntimeService {
   RuntimeConfig? get lastConfig => _lastConfig;
 
   @override
-  Future<ConfigOperationResult<RuntimeConfig>> getConfig() async {
-    return _guard('get runtime config', (bindings) {
-      try {
-        final raw = bindings.getConfig();
-        return _parseConfig(raw);
-      } catch (e) {
-        return ConfigOperationResult.error('get runtime config failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<RuntimeConfig>> getConfig() async =>
+      _guard('get runtime config', (bindings) {
+        try {
+          final raw = bindings.getConfig();
+          return _parseConfig(raw);
+        } catch (e) {
+          return ConfigOperationResult.error('get runtime config failed: $e');
+        }
+      });
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> addSlot(
     DeviceInstanceId device,
     ProfileSlot slot,
-  ) async {
-    return _guard('add slot', (bindings) {
-      try {
-        final deviceJson = jsonEncode(device.toJson());
-        final slotJson = jsonEncode(slot.toJson());
-        final raw = bindings.addSlot(
-          deviceJson,
-          slotJson,
-          0,
-        ); // 0 = default priority? Or hardcoded? Check signature.
-        // Wait, generated addSlot takes (String, String, int). 0 is fine if compatible with backend.
-        return _parseConfig(raw);
-      } catch (e) {
-        return ConfigOperationResult.error('add slot failed: $e');
-      }
-    });
-  }
+  ) async => _guard('add slot', (bindings) {
+    try {
+      final deviceJson = jsonEncode(device.toJson());
+      final slotJson = jsonEncode(slot.toJson());
+      final raw = bindings.addSlot(
+        deviceJson,
+        slotJson,
+        0,
+      ); // 0 = default priority? Or hardcoded? Check signature.
+      // Wait, generated addSlot takes (String, String, int). 0 is fine if compatible with backend.
+      return _parseConfig(raw);
+    } catch (e) {
+      return ConfigOperationResult.error('add slot failed: $e');
+    }
+  });
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
     DeviceInstanceId device,
     String slotId,
-  ) async {
-    return _guard('remove slot', (bindings) {
-      try {
-        final deviceJson = jsonEncode(device.toJson());
-        final raw = bindings.removeSlot(deviceJson, slotId);
-        return _parseConfig(raw);
-      } catch (e) {
-        return ConfigOperationResult.error('remove slot failed: $e');
-      }
-    });
-  }
+  ) async => _guard('remove slot', (bindings) {
+    try {
+      final deviceJson = jsonEncode(device.toJson());
+      final raw = bindings.removeSlot(deviceJson, slotId);
+      return _parseConfig(raw);
+    } catch (e) {
+      return ConfigOperationResult.error('remove slot failed: $e');
+    }
+  });
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> reorderSlot(
     DeviceInstanceId device,
     String slotId,
     int priority,
-  ) async {
-    return _guard('reorder slot', (bindings) {
-      try {
-        final deviceJson = jsonEncode(device.toJson());
-        final raw = bindings.reorderSlot(deviceJson, slotId, priority);
-        return _parseConfig(raw);
-      } catch (e) {
-        return ConfigOperationResult.error('reorder slot failed: $e');
-      }
-    });
-  }
+  ) async => _guard('reorder slot', (bindings) {
+    try {
+      final deviceJson = jsonEncode(device.toJson());
+      final raw = bindings.reorderSlot(deviceJson, slotId, priority);
+      return _parseConfig(raw);
+    } catch (e) {
+      return ConfigOperationResult.error('reorder slot failed: $e');
+    }
+  });
 
   @override
   Future<ConfigOperationResult<RuntimeConfig>> setSlotActive(
     DeviceInstanceId device,
     String slotId,
     bool active,
-  ) async {
-    return _guard('set slot active', (bindings) {
-      try {
-        final deviceJson = jsonEncode(device.toJson());
-        final raw = bindings.setSlotActive(deviceJson, slotId, active);
-        return _parseConfig(raw);
-      } catch (e) {
-        return ConfigOperationResult.error('set slot active failed: $e');
-      }
-    });
-  }
+  ) async => _guard('set slot active', (bindings) {
+    try {
+      final deviceJson = jsonEncode(device.toJson());
+      final raw = bindings.setSlotActive(deviceJson, slotId, active);
+      return _parseConfig(raw);
+    } catch (e) {
+      return ConfigOperationResult.error('set slot active failed: $e');
+    }
+  });
 
   Future<ConfigOperationResult<RuntimeConfig>> _guard(
     String operation,

@@ -8,20 +8,19 @@ import 'accessible_flow_canvas.dart';
 /// - Blue: Valid profile
 /// - Red: Invalid profile (not found or error)
 class EnhancedLayoutNode extends StatelessWidget {
-  final HardwareProfileFlowNode node;
-  final String? layoutType;
-  final bool isValid;
-  final String? errorMessage;
-  final VoidCallback? onTap;
-
   const EnhancedLayoutNode({
-    super.key,
     required this.node,
+    super.key,
     this.layoutType,
     this.isValid = true,
     this.errorMessage,
     this.onTap,
   });
+  final HardwareProfileFlowNode node;
+  final String? layoutType;
+  final bool isValid;
+  final String? errorMessage;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -78,104 +77,96 @@ class EnhancedLayoutNode extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(ThemeData theme, _LayoutStatus status) {
-    return Row(
-      children: [
-        // Icon with colored background
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: status.iconBackgroundColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(status.icon, color: status.iconColor, size: 24),
+  Widget _buildHeader(ThemeData theme, _LayoutStatus status) => Row(
+    children: [
+      // Icon with colored background
+      Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: status.iconBackgroundColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                node.label ?? 'Unknown Profile',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+        child: Icon(status.icon, color: status.iconColor, size: 24),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              node.label ?? 'Unknown Profile',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 2),
-              _buildStatusChip(theme, status),
-            ],
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            const SizedBox(height: 2),
+            _buildStatusChip(theme, status),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildStatusChip(ThemeData theme, _LayoutStatus status) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: status.iconBackgroundColor.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: status.iconBackgroundColor.withValues(alpha: 0.3),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(status.statusIcon, size: 12, color: status.iconColor),
+        const SizedBox(width: 4),
+        Text(
+          status.label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: status.iconColor,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
 
-  Widget _buildStatusChip(ThemeData theme, _LayoutStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  Widget _buildLayoutInfo(ThemeData theme, _LayoutStatus status) => Tooltip(
+    message:
+        errorMessage ??
+        'Layout Type: ${layoutType ?? 'Unknown'}\n'
+            'Profile ID: ${node.id}',
+    child: Container(
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: status.iconBackgroundColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: status.iconBackgroundColor.withValues(alpha: 0.3),
-        ),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(status.statusIcon, size: 12, color: status.iconColor),
-          const SizedBox(width: 4),
-          Text(
-            status.label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: status.iconColor,
-              fontWeight: FontWeight.w600,
+          Icon(
+            Icons.view_module_outlined,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Type: ${layoutType ?? 'Unknown'}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLayoutInfo(ThemeData theme, _LayoutStatus status) {
-    return Tooltip(
-      message:
-          errorMessage ??
-          'Layout Type: ${layoutType ?? 'Unknown'}\n'
-              'Profile ID: ${node.id}',
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.3,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.view_module_outlined,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'Type: ${layoutType ?? 'Unknown'}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
 
   Widget _buildLayoutPreview(ThemeData theme, _LayoutStatus status) {
     // Visual representation of keyboard layout
@@ -228,7 +219,7 @@ class EnhancedLayoutNode extends StatelessWidget {
               decoration: BoxDecoration(
                 color: status.iconColor.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
-                border: Border.all(color: status.iconColor, width: 1),
+                border: Border.all(color: status.iconColor),
               ),
             ),
           ),
@@ -244,7 +235,7 @@ class EnhancedLayoutNode extends StatelessWidget {
               decoration: BoxDecoration(
                 color: status.iconColor.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
-                border: Border.all(color: status.iconColor, width: 1),
+                border: Border.all(color: status.iconColor),
               ),
             ),
           ),
@@ -253,9 +244,8 @@ class EnhancedLayoutNode extends StatelessWidget {
     );
   }
 
-  _LayoutStatus _getLayoutStatus() {
-    return isValid ? _LayoutStatus.valid : _LayoutStatus.invalid;
-  }
+  _LayoutStatus _getLayoutStatus() =>
+      isValid ? _LayoutStatus.valid : _LayoutStatus.invalid;
 }
 
 enum _LayoutStatus {
@@ -298,9 +288,7 @@ enum _LayoutStatus {
     }
   }
 
-  Color get iconBackgroundColor {
-    return iconColor;
-  }
+  Color get iconBackgroundColor => iconColor;
 
   Color borderColor(ColorScheme colorScheme) {
     switch (this) {

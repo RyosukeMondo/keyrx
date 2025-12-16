@@ -43,7 +43,7 @@ class KeyMappings {
     'p',
     '[',
     ']',
-    '\\',
+    r'\',
     'capslock',
     'a',
     's',

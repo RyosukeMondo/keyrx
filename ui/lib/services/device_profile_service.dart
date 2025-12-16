@@ -31,17 +31,16 @@ class DeviceProfileLookupResult {
 class VisualKeyOverride {
   const VisualKeyOverride({this.width = 1.0, this.isSkipped = false});
 
+  factory VisualKeyOverride.fromJson(Map<String, dynamic> json) =>
+      VisualKeyOverride(
+        width: (json['w'] as num?)?.toDouble() ?? 1.0,
+        isSkipped: json['s'] as bool? ?? false,
+      );
+
   final double width;
   final bool isSkipped;
 
   Map<String, dynamic> toJson() => {'w': width, if (isSkipped) 's': true};
-
-  factory VisualKeyOverride.fromJson(Map<String, dynamic> json) {
-    return VisualKeyOverride(
-      width: (json['w'] as num?)?.toDouble() ?? 1.0,
-      isSkipped: json['s'] as bool? ?? false,
-    );
-  }
 }
 
 /// Abstraction for device profile operations.
@@ -61,7 +60,10 @@ abstract class DeviceProfileService {
   /// Get visual layout overrides for a device.
   ///
   /// Returns a map of "rX_cY" -> VisualKeyOverride.
-  Future<Map<String, VisualKeyOverride>> getVisualOverrides(int vendorId, int productId);
+  Future<Map<String, VisualKeyOverride>> getVisualOverrides(
+    int vendorId,
+    int productId,
+  );
 
   /// Save visual layout overrides for a device.
   Future<void> saveVisualOverrides(
@@ -100,9 +102,14 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
   final Map<String, Map<String, VisualKeyOverride>> _overrideCache = {};
 
   @override
-  Future<DeviceProfileLookupResult> getProfile(int vendorId, int productId) async {
+  Future<DeviceProfileLookupResult> getProfile(
+    int vendorId,
+    int productId,
+  ) async {
     if (_bridge.loadFailure != null) {
-      return DeviceProfileLookupResult.error('Engine unavailable: ${_bridge.loadFailure}');
+      return DeviceProfileLookupResult.error(
+        'Engine unavailable: ${_bridge.loadFailure}',
+      );
     }
 
     // Check cache first
@@ -114,7 +121,9 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
     final result = _bridge.getDeviceProfile(vendorId, productId);
 
     if (result.hasError) {
-      return DeviceProfileLookupResult.error(result.errorMessage ?? 'Unknown error');
+      return DeviceProfileLookupResult.error(
+        result.errorMessage ?? 'Unknown error',
+      );
     }
 
     if (result.profile != null) {
@@ -142,7 +151,10 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
   }
 
   @override
-  Future<Map<String, VisualKeyOverride>> getVisualOverrides(int vendorId, int productId) async {
+  Future<Map<String, VisualKeyOverride>> getVisualOverrides(
+    int vendorId,
+    int productId,
+  ) async {
     final cacheKey = _getCacheKey(vendorId, productId);
     if (_overrideCache.containsKey(cacheKey)) {
       return _overrideCache[cacheKey]!;
@@ -206,15 +218,20 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
   }
 
   /// Helper to read profiles directly from storage without side effects.
-  Future<List<DeviceProfile>> _readProfilesFromStorage(int vendorId, int productId) async {
+  Future<List<DeviceProfile>> _readProfilesFromStorage(
+    int vendorId,
+    int productId,
+  ) async {
     final cacheKey = _getCacheKey(vendorId, productId);
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString('profiles_$cacheKey');
 
     if (jsonStr != null) {
       try {
-        final List<dynamic> jsonList = json.decode(jsonStr) as List<dynamic>;
-        return jsonList.map((e) => DeviceProfile.fromJson(e as Map<String, dynamic>)).toList();
+        final jsonList = json.decode(jsonStr) as List<dynamic>;
+        return jsonList
+            .map((e) => DeviceProfile.fromJson(e as Map<String, dynamic>))
+            .toList();
       } catch (e) {
         // print('Error parsing profiles: $e');
       }
@@ -223,18 +240,26 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
   }
 
   @override
-  Future<void> saveProfile(DeviceProfile profile, {bool setActive = false}) async {
+  Future<void> saveProfile(
+    DeviceProfile profile, {
+    bool setActive = false,
+  }) async {
     final cacheKey = _getCacheKey(profile.vendorId, profile.productId);
     final prefs = await SharedPreferences.getInstance();
 
     // Load existing directly from storage to avoid infinite recursion loop via listProfiles fallback
-    final profiles = await _readProfilesFromStorage(profile.vendorId, profile.productId);
+    final profiles = await _readProfilesFromStorage(
+      profile.vendorId,
+      profile.productId,
+    );
     // Use a mutable list
     final mutableProfiles = List<DeviceProfile>.from(profiles);
 
     // Update or Add
     final index = mutableProfiles.indexWhere(
-      (p) => p.discoveredAt.toIso8601String() == profile.discoveredAt.toIso8601String(),
+      (p) =>
+          p.discoveredAt.toIso8601String() ==
+          profile.discoveredAt.toIso8601String(),
     );
 
     if (index >= 0) {
@@ -257,11 +282,16 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
     final cacheKey = _getCacheKey(profile.vendorId, profile.productId);
     final prefs = await SharedPreferences.getInstance();
 
-    final profiles = await _readProfilesFromStorage(profile.vendorId, profile.productId);
+    final profiles = await _readProfilesFromStorage(
+      profile.vendorId,
+      profile.productId,
+    );
     final mutableProfiles = List<DeviceProfile>.from(profiles);
 
     mutableProfiles.removeWhere(
-      (p) => p.discoveredAt.toIso8601String() == profile.discoveredAt.toIso8601String(),
+      (p) =>
+          p.discoveredAt.toIso8601String() ==
+          profile.discoveredAt.toIso8601String(),
     );
 
     final jsonList = mutableProfiles.map((p) => p.toJson()).toList();
@@ -270,7 +300,10 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
     // If we deleted the active one, we can't easily "unset" it in Rust.
     // We just leave it as is in Rust until another one is set active.
     // But we should clear our local active pointer if it matches.
-    final activeId = await getActiveProfileId(profile.vendorId, profile.productId);
+    final activeId = await getActiveProfileId(
+      profile.vendorId,
+      profile.productId,
+    );
     if (activeId == profile.discoveredAt.toIso8601String()) {
       await prefs.remove('active_profile_$cacheKey');
     }
@@ -290,7 +323,10 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
 
       // Save active ID locally
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('active_profile_$cacheKey', profile.discoveredAt.toIso8601String());
+      await prefs.setString(
+        'active_profile_$cacheKey',
+        profile.discoveredAt.toIso8601String(),
+      );
     }
   }
 
@@ -319,9 +355,8 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
     _overrideCache.clear();
   }
 
-  String _getCacheKey(int vendorId, int productId) {
-    return '${vendorId.toRadixString(16).padLeft(4, '0')}:${productId.toRadixString(16).padLeft(4, '0')}';
-  }
+  String _getCacheKey(int vendorId, int productId) =>
+      '${vendorId.toRadixString(16).padLeft(4, '0')}:${productId.toRadixString(16).padLeft(4, '0')}';
 
   /// Clear the profile cache.
   ///

@@ -178,46 +178,44 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     );
   }
 
-  Widget _buildControlBar(ThemeData theme) {
-    return Card(
-      margin: const EdgeInsets.all(8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.analytics, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Text(
-              'Performance Metrics',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+  Widget _buildControlBar(ThemeData theme) => Card(
+    margin: const EdgeInsets.all(8),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(Icons.analytics, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Text(
+            'Performance Metrics',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const Spacer(),
-            // Clear history button
-            Tooltip(
-              message: 'Clear history',
-              child: IconButton(
-                icon: const Icon(Icons.clear_all),
-                onPressed: _isRunning ? _clearHistory : null,
-              ),
+          ),
+          const Spacer(),
+          // Clear history button
+          Tooltip(
+            message: 'Clear history',
+            child: IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: _isRunning ? _clearHistory : null,
             ),
-            // Start/Stop toggle
-            Tooltip(
-              message: _isRunning ? 'Stop monitoring' : 'Start monitoring',
-              child: IconButton(
-                icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
-                onPressed: _isRunning ? _stopMetrics : _startMetrics,
-                color: _isRunning
-                    ? theme.colorScheme.primary
-                    : theme.iconTheme.color,
-              ),
+          ),
+          // Start/Stop toggle
+          Tooltip(
+            message: _isRunning ? 'Stop monitoring' : 'Start monitoring',
+            child: IconButton(
+              icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
+              onPressed: _isRunning ? _stopMetrics : _startMetrics,
+              color: _isRunning
+                  ? theme.colorScheme.primary
+                  : theme.iconTheme.color,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildViolationsBanner(ThemeData theme) {
     final latest = _recentViolations.last;
@@ -257,29 +255,27 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.analytics_outlined,
-            size: 64,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+  Widget _buildEmptyState(ThemeData theme) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.analytics_outlined,
+          size: 64,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _isRunning
+              ? 'Waiting for metrics data...'
+              : 'Click play to start monitoring',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
-          Text(
-            _isRunning
-                ? 'Waiting for metrics data...'
-                : 'Click play to start monitoring',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   Widget _buildMetricsSummary(ThemeData theme) {
     final snapshot = _currentSnapshot!;
@@ -315,34 +311,32 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     required String value,
     required IconData icon,
     required Color color,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+  }) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildLatencyChart(ThemeData theme) {
     if (_history.isEmpty) {
@@ -379,35 +373,26 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
               child: LineChart(
                 LineChartData(
                   gridData: FlGridData(
-                    show: true,
                     drawVerticalLine: false,
                     horizontalInterval: maxY / 5,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                        strokeWidth: 1,
-                      );
-                    },
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      strokeWidth: 1,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 60,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            _formatLatency(value.toInt()),
-                            style: theme.textTheme.bodySmall,
-                          );
-                        },
+                        getTitlesWidget: (value, meta) => Text(
+                          _formatLatency(value.toInt()),
+                          style: theme.textTheme.bodySmall,
+                        ),
                       ),
                     ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    rightTitles: const AxisTitles(),
+                    topTitles: const AxisTitles(),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -452,18 +437,18 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                   ],
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          final labels = ['P50', 'P95', 'P99'];
-                          return LineTooltipItem(
-                            '${labels[spot.barIndex]}: ${_formatLatency(spot.y.toInt())}',
-                            TextStyle(
-                              color: spot.bar.color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        }).toList();
-                      },
+                      getTooltipItems: (touchedSpots) => touchedSpots.map((
+                        spot,
+                      ) {
+                        final labels = ['P50', 'P95', 'P99'];
+                        return LineTooltipItem(
+                          '${labels[spot.barIndex]}: ${_formatLatency(spot.y.toInt())}',
+                          TextStyle(
+                            color: spot.bar.color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
@@ -516,35 +501,26 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
               child: LineChart(
                 LineChartData(
                   gridData: FlGridData(
-                    show: true,
                     drawVerticalLine: false,
                     horizontalInterval: maxY / 4,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                        strokeWidth: 1,
-                      );
-                    },
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      strokeWidth: 1,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 60,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            _formatMemory(value.toInt()),
-                            style: theme.textTheme.bodySmall,
-                          );
-                        },
+                        getTitlesWidget: (value, meta) => Text(
+                          _formatMemory(value.toInt()),
+                          style: theme.textTheme.bodySmall,
+                        ),
                       ),
                     ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    rightTitles: const AxisTitles(),
+                    topTitles: const AxisTitles(),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -569,15 +545,18 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                   maxY: maxY * 1.1,
                   lineBarsData: [
                     LineChartBarData(
-                      spots: points.asMap().entries.map((entry) {
-                        return FlSpot(
-                          entry.key.toDouble(),
-                          entry.value.memoryUsed.toDouble(),
-                        );
-                      }).toList(),
+                      spots: points
+                          .asMap()
+                          .entries
+                          .map(
+                            (entry) => FlSpot(
+                              entry.key.toDouble(),
+                              entry.value.memoryUsed.toDouble(),
+                            ),
+                          )
+                          .toList(),
                       isCurved: true,
                       color: Colors.purple,
-                      barWidth: 2,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
@@ -588,17 +567,17 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
                   ],
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            _formatMemory(spot.y.toInt()),
-                            const TextStyle(
-                              color: Colors.purple,
-                              fontWeight: FontWeight.bold,
+                      getTooltipItems: (touchedSpots) => touchedSpots
+                          .map(
+                            (spot) => LineTooltipItem(
+                              _formatMemory(spot.y.toInt()),
+                              const TextStyle(
+                                color: Colors.purple,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          );
-                        }).toList();
-                      },
+                          )
+                          .toList(),
                     ),
                   ),
                 ),
@@ -614,36 +593,33 @@ class _MetricsDashboardState extends State<MetricsDashboard> {
     List<_MetricsPoint> points,
     double Function(_MetricsPoint) getValue,
     Color color,
-  ) {
-    return LineChartBarData(
-      spots: points.asMap().entries.map((entry) {
-        return FlSpot(entry.key.toDouble(), getValue(entry.value));
-      }).toList(),
-      isCurved: true,
-      color: color,
-      barWidth: 2,
-      isStrokeCapRound: true,
-      dotData: const FlDotData(show: false),
-    );
-  }
+  ) => LineChartBarData(
+    spots: points
+        .asMap()
+        .entries
+        .map((entry) => FlSpot(entry.key.toDouble(), getValue(entry.value)))
+        .toList(),
+    isCurved: true,
+    color: color,
+    isStrokeCapRound: true,
+    dotData: const FlDotData(show: false),
+  );
 
-  Widget _buildLegendItem(ThemeData theme, String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 16,
-          height: 3,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+  Widget _buildLegendItem(ThemeData theme, String label, Color color) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 16,
+        height: 3,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
         ),
-        const SizedBox(width: 6),
-        Text(label, style: theme.textTheme.bodySmall),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 6),
+      Text(label, style: theme.textTheme.bodySmall),
+    ],
+  );
 
   String _formatLatency(int microseconds) {
     if (microseconds < 1000) {

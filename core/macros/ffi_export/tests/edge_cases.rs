@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+#![allow(private_interfaces)]
 //! Edge case tests for #[ffi_export] macro
 
 use ffi_export::ffi_export;
@@ -41,9 +43,9 @@ pub fn vec_param(items: Vec<String>) -> Result<usize, TestError> {
 /// Function with multiple optional parameters.
 #[ffi_export(domain = "test")]
 pub fn multiple_optional(
-    required: &str,
-    opt1: Option<u32>,
-    opt2: Option<String>,
+    _required: &str,
+    _opt1: Option<u32>,
+    _opt2: Option<String>,
 ) -> Result<(), TestError> {
     Ok(())
 }
@@ -65,13 +67,7 @@ pub fn calculate(value: f64) -> Result<f64, TestError> {
 
 /// Function with all primitive types.
 #[ffi_export(domain = "test")]
-pub fn all_primitives(
-    s: &str,
-    u: u32,
-    i: i32,
-    f: f64,
-    b: bool,
-) -> Result<String, TestError> {
+pub fn all_primitives(s: &str, u: u32, i: i32, f: f64, b: bool) -> Result<String, TestError> {
     Ok(format!("{} {} {} {} {}", s, u, i, f, b))
 }
 

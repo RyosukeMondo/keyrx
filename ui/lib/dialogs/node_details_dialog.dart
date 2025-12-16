@@ -3,8 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/state/keyflow_providers.dart';
+import '../models/flow/flow_graph.dart';
+import '../state/keyflow_providers.dart';
 
 /// Shows detailed information about a flow graph node.
 class NodeDetailsDialog extends ConsumerWidget {
@@ -13,12 +13,11 @@ class NodeDetailsDialog extends ConsumerWidget {
   final String nodeId;
 
   /// Show the node details dialog.
-  static Future<void> show(BuildContext context, String nodeId) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => NodeDetailsDialog(nodeId: nodeId),
-    );
-  }
+  static Future<void> show(BuildContext context, String nodeId) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => NodeDetailsDialog(nodeId: nodeId),
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,7 +54,7 @@ class NodeDetailsDialog extends ConsumerWidget {
           },
           loading: () => const Center(
             child: Padding(
-              padding: EdgeInsets.all(48.0),
+              padding: EdgeInsets.all(48),
               child: CircularProgressIndicator(),
             ),
           ),
@@ -65,37 +64,40 @@ class NodeDetailsDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ThemeData theme, FlowNode node) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          Icon(_getNodeIcon(node), size: 28, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _getNodeTitle(node),
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+  Widget _buildHeader(BuildContext context, ThemeData theme, FlowNode node) =>
+      Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          children: [
+            Icon(
+              _getNodeIcon(node),
+              size: 28,
+              color: theme.colorScheme.primary,
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Close',
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _getNodeTitle(node),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'Close',
+            ),
+          ],
+        ),
+      );
 
-  Widget _buildContent(ThemeData theme, FlowNode node, FlowGraph graph) {
-    return node.map(
-      device: (device) => _buildDeviceDetails(theme, device, graph),
-      hardwareProfile: (profile) => _buildProfileDetails(theme, profile),
-      keymap: (keymap) => _buildKeymapDetails(theme, keymap),
-    );
-  }
+  Widget _buildContent(ThemeData theme, FlowNode node, FlowGraph graph) =>
+      node.map(
+        device: (device) => _buildDeviceDetails(theme, device, graph),
+        hardwareProfile: (profile) => _buildProfileDetails(theme, profile),
+        keymap: (keymap) => _buildKeymapDetails(theme, keymap),
+      );
 
   Widget _buildDeviceDetails(
     ThemeData theme,
@@ -139,120 +141,98 @@ class NodeDetailsDialog extends ConsumerWidget {
   Widget _buildProfileDetails(
     ThemeData theme,
     HardwareProfileFlowNode profile,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDetailRow(theme, 'Profile ID', profile.id),
-        if (profile.label != null) ...[
-          const SizedBox(height: 12),
-          _buildDetailRow(theme, 'Label', profile.label!),
-        ],
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildDetailRow(theme, 'Profile ID', profile.id),
+      if (profile.label != null) ...[
+        const SizedBox(height: 12),
+        _buildDetailRow(theme, 'Label', profile.label!),
       ],
-    );
-  }
+    ],
+  );
 
-  Widget _buildKeymapDetails(ThemeData theme, KeymapFlowNode keymap) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDetailRow(theme, 'Keymap ID', keymap.id),
-        if (keymap.label != null) ...[
-          const SizedBox(height: 12),
-          _buildDetailRow(theme, 'Label', keymap.label!),
-        ],
-        if (keymap.layers != null) ...[
-          const SizedBox(height: 12),
-          _buildDetailRow(theme, 'Layers', '${keymap.layers}'),
-        ],
+  Widget _buildKeymapDetails(ThemeData theme, KeymapFlowNode keymap) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildDetailRow(theme, 'Keymap ID', keymap.id),
+      if (keymap.label != null) ...[
+        const SizedBox(height: 12),
+        _buildDetailRow(theme, 'Label', keymap.label!),
       ],
-    );
-  }
+      if (keymap.layers != null) ...[
+        const SizedBox(height: 12),
+        _buildDetailRow(theme, 'Layers', '${keymap.layers}'),
+      ],
+    ],
+  );
 
-  Widget _buildDetailRow(ThemeData theme, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDetailRow(ThemeData theme, String label, String value) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 140,
+        child: Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
+    ],
+  );
+
+  Widget _buildFooter(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(16),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        SizedBox(
-          width: 140,
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurfaceVariant,
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildError(BuildContext context, ThemeData theme, Object error) =>
+      Padding(
+        padding: const EdgeInsets.all(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load node details',
+              style: theme.textTheme.titleLarge,
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
+      );
 
-  Widget _buildFooter(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
+  IconData _getNodeIcon(FlowNode node) => node.map(
+    device: (_) => Icons.keyboard_outlined,
+    hardwareProfile: (_) => Icons.widgets_outlined,
+    keymap: (_) => Icons.map_outlined,
+  );
 
-  Widget _buildError(BuildContext context, ThemeData theme, Object error) {
-    return Padding(
-      padding: const EdgeInsets.all(48),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: theme.colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load node details',
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error.toString(),
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getNodeIcon(FlowNode node) {
-    return node.map(
-      device: (_) => Icons.keyboard_outlined,
-      hardwareProfile: (_) => Icons.widgets_outlined,
-      keymap: (_) => Icons.map_outlined,
-    );
-  }
-
-  String _getNodeTitle(FlowNode node) {
-    return node.map(
-      device: (d) => d.label ?? 'Device Node',
-      hardwareProfile: (p) => p.label ?? 'Hardware Profile',
-      keymap: (k) => k.label ?? 'Keymap',
-    );
-  }
+  String _getNodeTitle(FlowNode node) => node.map(
+    device: (d) => d.label ?? 'Device Node',
+    hardwareProfile: (p) => p.label ?? 'Hardware Profile',
+    keymap: (k) => k.label ?? 'Keymap',
+  );
 }

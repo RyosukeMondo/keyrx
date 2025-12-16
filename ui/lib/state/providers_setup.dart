@@ -16,7 +16,7 @@ import '../services/service_registry.dart';
 import 'app_state.dart';
 
 final bridgeProvider = Provider<KeyrxBridge>((ref) {
-  const useMockBridge = bool.fromEnvironment('MOCK_FFI', defaultValue: false);
+  const useMockBridge = bool.fromEnvironment('MOCK_FFI');
 
   final KeyrxBridge bridge;
   if (useMockBridge) {

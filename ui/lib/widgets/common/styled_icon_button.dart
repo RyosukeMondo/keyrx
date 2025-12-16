@@ -21,14 +21,14 @@ import 'package:flutter/material.dart';
 /// ```
 class StyledIconButton extends StatefulWidget {
   const StyledIconButton({
-    super.key,
     required this.icon,
     required this.onPressed,
+    super.key,
     this.tooltip,
     this.color,
     this.hoverColor,
     this.size = 24.0,
-    this.padding = const EdgeInsets.all(8.0),
+    this.padding = const EdgeInsets.all(8),
   });
 
   /// The icon to display.
@@ -65,7 +65,7 @@ class _StyledIconButtonState extends State<StyledIconButton> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final bool enabled = widget.onPressed != null;
+    final enabled = widget.onPressed != null;
 
     final iconColor = enabled
         ? (_isPressed
@@ -117,9 +117,9 @@ class _StyledIconButtonState extends State<StyledIconButton> {
 /// ```
 class CompactIconButton extends StatelessWidget {
   const CompactIconButton({
-    super.key,
     required this.icon,
     required this.onPressed,
+    super.key,
     this.tooltip,
     this.color,
     this.hoverColor,
@@ -141,17 +141,15 @@ class CompactIconButton extends StatelessWidget {
   final Color? hoverColor;
 
   @override
-  Widget build(BuildContext context) {
-    return StyledIconButton(
-      icon: icon,
-      onPressed: onPressed,
-      tooltip: tooltip,
-      color: color,
-      hoverColor: hoverColor,
-      size: 18.0,
-      padding: const EdgeInsets.all(4.0),
-    );
-  }
+  Widget build(BuildContext context) => StyledIconButton(
+    icon: icon,
+    onPressed: onPressed,
+    tooltip: tooltip,
+    color: color,
+    hoverColor: hoverColor,
+    size: 18,
+    padding: const EdgeInsets.all(4),
+  );
 }
 
 /// A styled icon button with a background fill.
@@ -169,14 +167,14 @@ class CompactIconButton extends StatelessWidget {
 /// ```
 class FilledIconButton extends StatefulWidget {
   const FilledIconButton({
-    super.key,
     required this.icon,
     required this.onPressed,
+    super.key,
     this.tooltip,
     this.backgroundColor,
     this.foregroundColor,
     this.size = 24.0,
-    this.padding = const EdgeInsets.all(12.0),
+    this.padding = const EdgeInsets.all(12),
   });
 
   /// The icon to display.
@@ -213,7 +211,7 @@ class _FilledIconButtonState extends State<FilledIconButton> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final bool enabled = widget.onPressed != null;
+    final enabled = widget.onPressed != null;
 
     final backgroundColor = enabled
         ? (_isPressed

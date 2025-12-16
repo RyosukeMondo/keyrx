@@ -40,9 +40,9 @@ class KeymapLayer with _$KeymapLayer {
 class Keymap with _$Keymap {
   const factory Keymap({
     required KeymapId id,
-    @Default('Untitled Keymap') String name,
     @JsonKey(name: 'virtual_layout_id')
     required VirtualLayoutId virtualLayoutId,
+    @Default('Untitled Keymap') String name,
     @Default(<KeymapLayer>[]) List<KeymapLayer> layers,
     @Default(<Combo>[]) List<Combo> combos,
   }) = _Keymap;

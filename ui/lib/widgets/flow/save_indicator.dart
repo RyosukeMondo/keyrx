@@ -70,34 +70,30 @@ class SaveIndicator extends ConsumerWidget {
     );
   }
 
-  Widget _buildIcon(SaveState state) {
-    return switch (state.status) {
-      SaveStatus.saving => const SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-        ),
+  Widget _buildIcon(SaveState state) => switch (state.status) {
+    SaveStatus.saving => const SizedBox(
+      width: 16,
+      height: 16,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
       ),
-      SaveStatus.saved => const Icon(
-        Icons.check_circle,
-        size: 16,
-        color: Colors.green,
-      ),
-      SaveStatus.error => const Icon(Icons.error, size: 16, color: Colors.red),
-      SaveStatus.idle => const SizedBox.shrink(),
-    };
-  }
+    ),
+    SaveStatus.saved => const Icon(
+      Icons.check_circle,
+      size: 16,
+      color: Colors.green,
+    ),
+    SaveStatus.error => const Icon(Icons.error, size: 16, color: Colors.red),
+    SaveStatus.idle => const SizedBox.shrink(),
+  };
 
-  String _getStatusText(SaveState state) {
-    return switch (state.status) {
-      SaveStatus.saving => 'Saving...',
-      SaveStatus.saved => 'Saved',
-      SaveStatus.error => 'Failed to save',
-      SaveStatus.idle => '',
-    };
-  }
+  String _getStatusText(SaveState state) => switch (state.status) {
+    SaveStatus.saving => 'Saving...',
+    SaveStatus.saved => 'Saved',
+    SaveStatus.error => 'Failed to save',
+    SaveStatus.idle => '',
+  };
 
   Color _getBackgroundColor(BuildContext context, SaveState state) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -162,32 +158,28 @@ class InlineSaveIndicator extends ConsumerWidget {
     );
   }
 
-  Widget _buildIcon(SaveState state) {
-    return switch (state.status) {
-      SaveStatus.saving => const SizedBox(
-        width: 14,
-        height: 14,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-        ),
+  Widget _buildIcon(SaveState state) => switch (state.status) {
+    SaveStatus.saving => const SizedBox(
+      width: 14,
+      height: 14,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
       ),
-      SaveStatus.saved => const Icon(
-        Icons.check_circle,
-        size: 14,
-        color: Colors.green,
-      ),
-      SaveStatus.error => const Icon(Icons.error, size: 14, color: Colors.red),
-      SaveStatus.idle => const SizedBox.shrink(),
-    };
-  }
+    ),
+    SaveStatus.saved => const Icon(
+      Icons.check_circle,
+      size: 14,
+      color: Colors.green,
+    ),
+    SaveStatus.error => const Icon(Icons.error, size: 14, color: Colors.red),
+    SaveStatus.idle => const SizedBox.shrink(),
+  };
 
-  String _getStatusText(SaveState state) {
-    return switch (state.status) {
-      SaveStatus.saving => 'Saving',
-      SaveStatus.saved => 'Saved',
-      SaveStatus.error => 'Error',
-      SaveStatus.idle => '',
-    };
-  }
+  String _getStatusText(SaveState state) => switch (state.status) {
+    SaveStatus.saving => 'Saving',
+    SaveStatus.saved => 'Saved',
+    SaveStatus.error => 'Error',
+    SaveStatus.idle => '',
+  };
 }

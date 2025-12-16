@@ -10,7 +10,7 @@ import '../../services/session_service.dart';
 
 /// Replay page for replaying and verifying recorded sessions.
 class ReplayPage extends StatefulWidget {
-  const ReplayPage({super.key, required this.sessionService});
+  const ReplayPage({required this.sessionService, super.key});
 
   final SessionService sessionService;
 
@@ -76,29 +76,27 @@ class _ReplayPageState extends State<ReplayPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Session Replay'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _loadSessions,
-            tooltip: 'Refresh sessions',
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          // Session list panel
-          SizedBox(width: 280, child: _buildSessionList()),
-          const VerticalDivider(width: 1),
-          // Replay panel
-          Expanded(child: _buildReplayPanel()),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Session Replay'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _isLoading ? null : _loadSessions,
+          tooltip: 'Refresh sessions',
+        ),
+      ],
+    ),
+    body: Row(
+      children: [
+        // Session list panel
+        SizedBox(width: 280, child: _buildSessionList()),
+        const VerticalDivider(width: 1),
+        // Replay panel
+        Expanded(child: _buildReplayPanel()),
+      ],
+    ),
+  );
 
   Widget _buildSessionList() {
     if (_isLoading) {
@@ -145,20 +143,18 @@ class _ReplayPageState extends State<ReplayPage> {
     required IconData icon,
     required String title,
     required String subtitle,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(subtitle, style: TextStyle(color: Colors.grey[500])),
-        ],
-      ),
-    );
-  }
+  }) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 48, color: Colors.grey),
+        const SizedBox(height: 16),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Text(subtitle, style: TextStyle(color: Colors.grey[500])),
+      ],
+    ),
+  );
 
   Widget _buildReplayPanel() {
     if (_selectedSession == null) {
@@ -209,92 +205,86 @@ class _ReplayPageState extends State<ReplayPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildInfoRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+      ],
+    ),
+  );
+
+  Widget _buildControlsCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            'Playback Controls',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            title: const Text('Verify Mode'),
+            subtitle: const Text(
+              'Compare replay output against recorded decisions',
+            ),
+            value: _verifyMode,
+            onChanged: _isReplaying
+                ? null
+                : (value) => setState(() => _verifyMode = value),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _isReplaying ? null : _replaySession,
+              icon: _isReplaying
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.play_arrow),
+              label: Text(_isReplaying ? 'Replaying...' : 'Replay Session'),
+            ),
+          ),
         ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildControlsCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Playback Controls',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Verify Mode'),
-              subtitle: const Text(
-                'Compare replay output against recorded decisions',
-              ),
-              value: _verifyMode,
-              onChanged: _isReplaying
-                  ? null
-                  : (value) => setState(() => _verifyMode = value),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isReplaying ? null : _replaySession,
-                icon: _isReplaying
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.play_arrow),
-                label: Text(_isReplaying ? 'Replaying...' : 'Replay Session'),
+  Widget _buildErrorBanner() => Card(
+    color: Theme.of(context).colorScheme.errorContainer,
+    margin: const EdgeInsets.only(bottom: 16),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
-          ],
-        ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => _error = null),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildErrorBanner() {
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _error!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _error = null),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
 
   Widget _buildResultCard() {
     final result = _replayResult!;
@@ -356,50 +346,46 @@ class _ReplayPageState extends State<ReplayPage> {
     );
   }
 
-  Widget _buildResultRow(String label, String value, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          Text(
-            value,
-            style: TextStyle(fontWeight: FontWeight.w500, color: color),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildResultRow(String label, String value, {Color? color}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.w500, color: color),
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildMismatchTile(SessionReplayMismatch mismatch) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.red.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Event #${mismatch.seq}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Expected: ${mismatch.recorded}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          Text(
-            'Actual: ${mismatch.actual}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildMismatchTile(SessionReplayMismatch mismatch) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.red.shade100,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Event #${mismatch.seq}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Expected: ${mismatch.recorded}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        Text(
+          'Actual: ${mismatch.actual}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    ),
+  );
 
   String _formatDuration(double ms) {
     if (ms < 1000) return '${ms.toStringAsFixed(0)}ms';

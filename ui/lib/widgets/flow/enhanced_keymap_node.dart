@@ -8,20 +8,19 @@ import 'accessible_flow_canvas.dart';
 /// - Green: Valid keymap loaded
 /// - Red: Compilation failed or invalid
 class EnhancedKeymapNode extends StatelessWidget {
-  final KeymapFlowNode node;
-  final bool isValid;
-  final bool compilationFailed;
-  final String? errorMessage;
-  final VoidCallback? onTap;
-
   const EnhancedKeymapNode({
-    super.key,
     required this.node,
+    super.key,
     this.isValid = true,
     this.compilationFailed = false,
     this.errorMessage,
     this.onTap,
   });
+  final KeymapFlowNode node;
+  final bool isValid;
+  final bool compilationFailed;
+  final String? errorMessage;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -78,67 +77,63 @@ class EnhancedKeymapNode extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(ThemeData theme, _KeymapStatus status) {
-    return Row(
-      children: [
-        // Icon with colored background
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: status.iconBackgroundColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(status.icon, color: status.iconColor, size: 24),
+  Widget _buildHeader(ThemeData theme, _KeymapStatus status) => Row(
+    children: [
+      // Icon with colored background
+      Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: status.iconBackgroundColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                node.label ?? 'Unknown Keymap',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+        child: Icon(status.icon, color: status.iconColor, size: 24),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              node.label ?? 'Unknown Keymap',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 2),
-              _buildStatusChip(theme, status),
-            ],
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            const SizedBox(height: 2),
+            _buildStatusChip(theme, status),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildStatusChip(ThemeData theme, _KeymapStatus status) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: status.iconBackgroundColor.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: status.iconBackgroundColor.withValues(alpha: 0.3),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(status.statusIcon, size: 12, color: status.iconColor),
+        const SizedBox(width: 4),
+        Text(
+          status.label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: status.iconColor,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatusChip(ThemeData theme, _KeymapStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: status.iconBackgroundColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: status.iconBackgroundColor.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(status.statusIcon, size: 12, color: status.iconColor),
-          const SizedBox(width: 4),
-          Text(
-            status.label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: status.iconColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 
   Widget _buildKeymapInfo(ThemeData theme, _KeymapStatus status) {
     final layerCount = node.layers ?? 0;
@@ -226,7 +221,7 @@ class EnhancedKeymapNode extends StatelessWidget {
             decoration: BoxDecoration(
               color: status.iconColor.withValues(alpha: 0.5),
               shape: BoxShape.circle,
-              border: Border.all(color: status.iconColor, width: 1),
+              border: Border.all(color: status.iconColor),
             ),
           ),
         ),
@@ -282,9 +277,7 @@ enum _KeymapStatus {
     }
   }
 
-  Color get iconBackgroundColor {
-    return iconColor;
-  }
+  Color get iconBackgroundColor => iconColor;
 
   Color borderColor(ColorScheme colorScheme) {
     switch (this) {

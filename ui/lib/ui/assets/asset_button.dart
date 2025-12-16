@@ -3,30 +3,29 @@ import 'app_assets.dart';
 
 /// Custom button widget using generated SD assets
 class AssetButton extends StatelessWidget {
+  const AssetButton({
+    required this.text,
+    required this.onPressed,
+    super.key,
+    this.type = AssetButtonType.primary,
+    this.width,
+    this.height,
+  });
   final String text;
   final VoidCallback? onPressed;
   final AssetButtonType type;
   final double? width;
   final double? height;
 
-  const AssetButton({
-    super.key,
-    required this.text,
-    required this.onPressed,
-    this.type = AssetButtonType.primary,
-    this.width,
-    this.height,
-  });
-
   @override
   Widget build(BuildContext context) {
-    final String assetPath = switch (type) {
+    final assetPath = switch (type) {
       AssetButtonType.primary => AppAssets.primaryButton,
       AssetButtonType.secondary => AppAssets.secondaryButton,
       AssetButtonType.danger => AppAssets.dangerButton,
     };
 
-    final Color textColor = switch (type) {
+    final textColor = switch (type) {
       AssetButtonType.primary => Colors.white,
       AssetButtonType.secondary => Colors.white70,
       AssetButtonType.danger => Colors.white,

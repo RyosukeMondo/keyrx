@@ -5,12 +5,12 @@ import 'grid_generator.dart';
 
 class LayoutSelector extends StatelessWidget {
   const LayoutSelector({
-    super.key,
     required this.layouts,
     required this.onSelectLayout,
     required this.onDeleteLayout,
     required this.onCreateFreeform,
     required this.onCreateGrid,
+    super.key,
   });
 
   final List<VirtualLayout> layouts;
@@ -20,73 +20,68 @@ class LayoutSelector extends StatelessWidget {
   final ValueChanged<List<VirtualKeyDef>> onCreateGrid;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Create New Layout',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _BentoCard(
-                    title: 'Freeform',
-                    subtitle: 'Start blank',
-                    icon: Icons.edit_note,
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    onColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                    onTap: onCreateFreeform,
-                  ),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Create New Layout',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 240,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _BentoCard(
+                  title: 'Freeform',
+                  subtitle: 'Start blank',
+                  icon: Icons.edit_note,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  onColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                  onTap: onCreateFreeform,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: _GridGeneratorCard(onCreateGrid: onCreateGrid),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'Saved Layouts',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 16),
-          if (layouts.isEmpty) const Text('No saved layouts found.'),
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 300,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
               ),
-              itemCount: layouts.length,
-              itemBuilder: (context, index) {
-                final layout = layouts[index];
-                return _BentoCard(
-                  title: layout.name,
-                  subtitle:
-                      '${layout.layoutType.label} • ${layout.keys.length} keys',
-                  icon: Icons.keyboard_alt_outlined,
-                  onTap: () => onSelectLayout(layout),
-                  onDelete: () => onDeleteLayout(layout.id),
-                );
-              },
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: _GridGeneratorCard(onCreateGrid: onCreateGrid),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 32),
+        Text('Saved Layouts', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 16),
+        if (layouts.isEmpty) const Text('No saved layouts found.'),
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 300,
+              childAspectRatio: 1.5,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: layouts.length,
+            itemBuilder: (context, index) {
+              final layout = layouts[index];
+              return _BentoCard(
+                title: layout.name,
+                subtitle:
+                    '${layout.layoutType.label} • ${layout.keys.length} keys',
+                icon: Icons.keyboard_alt_outlined,
+                onTap: () => onSelectLayout(layout),
+                onDelete: () => onDeleteLayout(layout.id),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _BentoCard extends StatelessWidget {
@@ -120,7 +115,7 @@ class _BentoCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -198,7 +193,7 @@ class _GridGeneratorCardState extends State<_GridGeneratorCard> {
       color: theme.colorScheme.surfaceContainerHighest,
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

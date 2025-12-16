@@ -121,8 +121,6 @@ enum DiscoveryStatus {
 /// ```
 @freezed
 class FacadeState with _$FacadeState {
-  const FacadeState._();
-
   const factory FacadeState({
     /// Current engine status.
     required EngineStatus engine,
@@ -135,6 +133,9 @@ class FacadeState with _$FacadeState {
 
     /// Current device discovery status.
     required DiscoveryStatus discovery,
+
+    /// Timestamp of this state snapshot.
+    required DateTime timestamp,
 
     /// Path to the currently loaded script, if any.
     String? scriptPath,
@@ -153,10 +154,8 @@ class FacadeState with _$FacadeState {
 
     /// Last error message, if any operation failed.
     String? lastError,
-
-    /// Timestamp of this state snapshot.
-    required DateTime timestamp,
   }) = _FacadeState;
+  const FacadeState._();
 
   /// Create the initial facade state.
   ///
@@ -195,28 +194,24 @@ class FacadeState with _$FacadeState {
     EngineStatus status, {
     String? scriptPath,
     String? error,
-  }) {
-    return copyWith(
-      engine: status,
-      scriptPath: scriptPath ?? this.scriptPath,
-      lastError: error,
-      timestamp: DateTime.now(),
-    );
-  }
+  }) => copyWith(
+    engine: status,
+    scriptPath: scriptPath ?? this.scriptPath,
+    lastError: error,
+    timestamp: DateTime.now(),
+  );
 
   /// Create a copy with updated device status.
   FacadeState withDeviceStatus(
     DeviceStatus status, {
     String? devicePath,
     String? error,
-  }) {
-    return copyWith(
-      device: status,
-      selectedDevicePath: devicePath ?? selectedDevicePath,
-      lastError: error,
-      timestamp: DateTime.now(),
-    );
-  }
+  }) => copyWith(
+    device: status,
+    selectedDevicePath: devicePath ?? selectedDevicePath,
+    lastError: error,
+    timestamp: DateTime.now(),
+  );
 
   /// Create a copy with updated validation status.
   FacadeState withValidationStatus(
@@ -224,27 +219,23 @@ class FacadeState with _$FacadeState {
     int? errorCount,
     int? warningCount,
     String? error,
-  }) {
-    return copyWith(
-      validation: status,
-      validationErrorCount: errorCount,
-      validationWarningCount: warningCount,
-      lastError: error,
-      timestamp: DateTime.now(),
-    );
-  }
+  }) => copyWith(
+    validation: status,
+    validationErrorCount: errorCount,
+    validationWarningCount: warningCount,
+    lastError: error,
+    timestamp: DateTime.now(),
+  );
 
   /// Create a copy with updated discovery status.
   FacadeState withDiscoveryStatus(
     DiscoveryStatus status, {
     int? deviceCount,
     String? error,
-  }) {
-    return copyWith(
-      discovery: status,
-      discoveredDeviceCount: deviceCount,
-      lastError: error,
-      timestamp: DateTime.now(),
-    );
-  }
+  }) => copyWith(
+    discovery: status,
+    discoveredDeviceCount: deviceCount,
+    lastError: error,
+    timestamp: DateTime.now(),
+  );
 }

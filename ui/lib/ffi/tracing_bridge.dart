@@ -33,16 +33,38 @@ enum FfiResultStatus {
   const FfiResultStatus(this.value);
   final int value;
 
-  static FfiResultStatus fromValue(int value) {
-    return FfiResultStatus.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => FfiResultStatus.pending,
-    );
-  }
+  static FfiResultStatus fromValue(int value) =>
+      FfiResultStatus.values.firstWhere(
+        (e) => e.value == value,
+        orElse: () => FfiResultStatus.pending,
+      );
 }
 
 /// A trace event representing an FFI call
 class FfiTraceEvent {
+  FfiTraceEvent({
+    required this.id,
+    required this.name,
+    required this.domain,
+    required this.startTimeUs,
+    required this.correlationId,
+    required this.args,
+    required this.resultStatus,
+    this.durationUs,
+  });
+
+  /// Create from JSON
+  factory FfiTraceEvent.fromJson(Map<String, dynamic> json) => FfiTraceEvent(
+    id: json['id'] as int,
+    name: json['name'] as String,
+    domain: json['domain'] as String,
+    startTimeUs: json['start_time_us'] as int,
+    durationUs: json['duration_us'] as int?,
+    correlationId: json['correlation_id'] as int,
+    args: Map<String, String>.from(json['args'] as Map),
+    resultStatus: FfiResultStatus.fromValue(json['result_status'] as int),
+  );
+
   /// Unique event ID
   final int id;
 
@@ -67,55 +89,34 @@ class FfiTraceEvent {
   /// Result status
   final FfiResultStatus resultStatus;
 
-  FfiTraceEvent({
-    required this.id,
-    required this.name,
-    required this.domain,
-    required this.startTimeUs,
-    this.durationUs,
-    required this.correlationId,
-    required this.args,
-    required this.resultStatus,
-  });
-
-  /// Create from JSON
-  factory FfiTraceEvent.fromJson(Map<String, dynamic> json) {
-    return FfiTraceEvent(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      domain: json['domain'] as String,
-      startTimeUs: json['start_time_us'] as int,
-      durationUs: json['duration_us'] as int?,
-      correlationId: json['correlation_id'] as int,
-      args: Map<String, String>.from(json['args'] as Map),
-      resultStatus: FfiResultStatus.fromValue(json['result_status'] as int),
-    );
-  }
-
   /// Convert to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'domain': domain,
-      'start_time_us': startTimeUs,
-      'duration_us': durationUs,
-      'correlation_id': correlationId,
-      'args': args,
-      'result_status': resultStatus.value,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'domain': domain,
+    'start_time_us': startTimeUs,
+    'duration_us': durationUs,
+    'correlation_id': correlationId,
+    'args': args,
+    'result_status': resultStatus.value,
+  };
 
   @override
-  String toString() {
-    return 'FfiTraceEvent(id: $id, name: $name, domain: $domain, '
-        'duration: ${durationUs != null ? '${durationUs}μs' : 'pending'}, '
-        'status: $resultStatus)';
-  }
+  String toString() =>
+      'FfiTraceEvent(id: $id, name: $name, domain: $domain, '
+      'duration: ${durationUs != null ? '$durationUsμs' : 'pending'}, '
+      'status: $resultStatus)';
 }
 
 /// Filter options for trace events
 class FfiTraceFilter {
+  const FfiTraceFilter({
+    this.domain,
+    this.minDurationUs = 0,
+    this.functionPattern,
+    this.resultStatus,
+  });
+
   /// Filter by domain (null for all domains)
   final String? domain;
 
@@ -127,13 +128,6 @@ class FfiTraceFilter {
 
   /// Filter by result status (null for all statuses)
   final FfiResultStatus? resultStatus;
-
-  const FfiTraceFilter({
-    this.domain,
-    this.minDurationUs = 0,
-    this.functionPattern,
-    this.resultStatus,
-  });
 
   /// No filtering
   static const none = FfiTraceFilter();
@@ -167,13 +161,12 @@ class FfiTraceFilter {
 /// bridge.disable();
 /// ```
 class FfiTracingBridge {
+  FfiTracingBridge(this._bindings);
   final KeyrxBindings _bindings;
 
   Timer? _pollingTimer;
   bool _timelineIntegrationActive = false;
   final Set<int> _processedEventIds = {};
-
-  FfiTracingBridge(this._bindings);
 
   /// Enable FFI trace event collection
   void enable() {
@@ -187,14 +180,10 @@ class FfiTracingBridge {
   }
 
   /// Check if trace event collection is enabled
-  bool isEnabled() {
-    return _bindings.keyrx_trace_is_enabled();
-  }
+  bool isEnabled() => _bindings.keyrx_trace_is_enabled();
 
   /// Get the number of buffered trace events
-  int getCount() {
-    return _bindings.keyrx_trace_get_count();
-  }
+  int getCount() => _bindings.keyrx_trace_get_count();
 
   /// Clear all buffered trace events
   void clear() {
@@ -211,7 +200,7 @@ class FfiTracingBridge {
 
     try {
       final jsonStr = jsonPtr.cast<Utf8>().toDartString();
-      final List<dynamic> jsonList = json.decode(jsonStr) as List<dynamic>;
+      final jsonList = json.decode(jsonStr) as List<dynamic>;
       return jsonList
           .map((e) => FfiTraceEvent.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -240,7 +229,7 @@ class FfiTracingBridge {
 
       try {
         final jsonStr = jsonPtr.cast<Utf8>().toDartString();
-        final List<dynamic> jsonList = json.decode(jsonStr) as List<dynamic>;
+        final jsonList = json.decode(jsonStr) as List<dynamic>;
         var events = jsonList
             .map((e) => FfiTraceEvent.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -333,7 +322,7 @@ class FfiTracingBridge {
   /// Add a single event to the Dart Timeline
   void _addEventToTimeline(FfiTraceEvent event) {
     // Build arguments for Timeline
-    final Map<String, dynamic> arguments = {
+    final arguments = <String, dynamic>{
       'domain': event.domain,
       'correlation_id': event.correlationId,
       'status': event.resultStatus.name,
@@ -367,10 +356,10 @@ class FfiTracingBridge {
       return FfiTraceStats.empty();
     }
 
-    final Map<String, int> byDomain = {};
-    final Map<FfiResultStatus, int> byStatus = {};
-    int totalDurationUs = 0;
-    int completedCount = 0;
+    final byDomain = <String, int>{};
+    final byStatus = <FfiResultStatus, int>{};
+    var totalDurationUs = 0;
+    var completedCount = 0;
     int? minDurationUs;
     int? maxDurationUs;
 
@@ -410,15 +399,6 @@ class FfiTracingBridge {
 
 /// Statistics about FFI trace events
 class FfiTraceStats {
-  final int totalEvents;
-  final int completedEvents;
-  final int pendingEvents;
-  final Map<String, int> byDomain;
-  final Map<FfiResultStatus, int> byStatus;
-  final int avgDurationUs;
-  final int? minDurationUs;
-  final int? maxDurationUs;
-
   const FfiTraceStats({
     required this.totalEvents,
     required this.completedEvents,
@@ -430,24 +410,29 @@ class FfiTraceStats {
     this.maxDurationUs,
   });
 
-  factory FfiTraceStats.empty() {
-    return const FfiTraceStats(
-      totalEvents: 0,
-      completedEvents: 0,
-      pendingEvents: 0,
-      byDomain: {},
-      byStatus: {},
-      avgDurationUs: 0,
-    );
-  }
+  factory FfiTraceStats.empty() => const FfiTraceStats(
+    totalEvents: 0,
+    completedEvents: 0,
+    pendingEvents: 0,
+    byDomain: {},
+    byStatus: {},
+    avgDurationUs: 0,
+  );
+  final int totalEvents;
+  final int completedEvents;
+  final int pendingEvents;
+  final Map<String, int> byDomain;
+  final Map<FfiResultStatus, int> byStatus;
+  final int avgDurationUs;
+  final int? minDurationUs;
+  final int? maxDurationUs;
 
   @override
-  String toString() {
-    return 'FfiTraceStats(\n'
-        '  total: $totalEvents, completed: $completedEvents, pending: $pendingEvents\n'
-        '  by domain: $byDomain\n'
-        '  by status: $byStatus\n'
-        '  duration: avg=${avgDurationUs}μs, min=$minDurationUs, max=$maxDurationUs\n'
-        ')';
-  }
+  String toString() =>
+      'FfiTraceStats(\n'
+      '  total: $totalEvents, completed: $completedEvents, pending: $pendingEvents\n'
+      '  by domain: $byDomain\n'
+      '  by status: $byStatus\n'
+      '  duration: avg=$avgDurationUsμs, min=$minDurationUs, max=$maxDurationUs\n'
+      ')';
 }

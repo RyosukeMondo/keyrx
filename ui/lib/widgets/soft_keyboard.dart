@@ -7,6 +7,12 @@ import 'package:flutter/material.dart';
 
 /// Data model for a key in the soft keyboard palette.
 class KeyInfo {
+  const KeyInfo({
+    required this.variant,
+    required this.display,
+    required this.category,
+  });
+
   /// Key variant name (matches Rust KeyCode enum)
   final String variant;
 
@@ -15,12 +21,6 @@ class KeyInfo {
 
   /// Category for grouping
   final String category;
-
-  const KeyInfo({
-    required this.variant,
-    required this.display,
-    required this.category,
-  });
 }
 
 /// Widget displaying a palette of all available output keys.
@@ -28,6 +28,14 @@ class KeyInfo {
 /// Shows all KeyCode values in a searchable grid, organized by category.
 /// Users can search/filter keys and select them for remapping.
 class SoftKeyboard extends StatefulWidget {
+  const SoftKeyboard({
+    super.key,
+    this.onKeySelected,
+    this.selectedKey,
+    this.keySize = 56.0,
+    this.keySpacing = 8.0,
+  });
+
   /// Callback when a key is selected
   final void Function(String keyVariant)? onKeySelected;
 
@@ -39,14 +47,6 @@ class SoftKeyboard extends StatefulWidget {
 
   /// Spacing between keys in pixels
   final double keySpacing;
-
-  const SoftKeyboard({
-    super.key,
-    this.onKeySelected,
-    this.selectedKey,
-    this.keySize = 56.0,
-    this.keySpacing = 8.0,
-  });
 
   @override
   State<SoftKeyboard> createState() => _SoftKeyboardState();
@@ -158,7 +158,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
     KeyInfo(variant: 'Equal', display: '=', category: 'Symbols'),
     KeyInfo(variant: 'LeftBracket', display: '[', category: 'Symbols'),
     KeyInfo(variant: 'RightBracket', display: ']', category: 'Symbols'),
-    KeyInfo(variant: 'Backslash', display: '\\', category: 'Symbols'),
+    KeyInfo(variant: 'Backslash', display: r'\', category: 'Symbols'),
     KeyInfo(variant: 'Semicolon', display: ';', category: 'Symbols'),
     KeyInfo(variant: 'Apostrophe', display: "'", category: 'Symbols'),
     KeyInfo(variant: 'Comma', display: ',', category: 'Symbols'),
@@ -200,11 +200,14 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
     }
 
     final query = _searchQuery.toLowerCase();
-    return _allKeys.where((key) {
-      return key.variant.toLowerCase().contains(query) ||
-          key.display.toLowerCase().contains(query) ||
-          key.category.toLowerCase().contains(query);
-    }).toList();
+    return _allKeys
+        .where(
+          (key) =>
+              key.variant.toLowerCase().contains(query) ||
+              key.display.toLowerCase().contains(query) ||
+              key.category.toLowerCase().contains(query),
+        )
+        .toList();
   }
 
   @override
@@ -217,7 +220,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
       children: [
         // Search bar
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Search keys...',
@@ -233,7 +236,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
                     )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
             onChanged: (value) {
@@ -246,7 +249,7 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
 
         // Results count
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             '${filteredKeys.length} keys',
             style: theme.textTheme.bodySmall?.copyWith(
@@ -280,12 +283,11 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
                   ),
                 )
               : GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: widget.keySize,
                     mainAxisSpacing: widget.keySpacing,
                     crossAxisSpacing: widget.keySpacing,
-                    childAspectRatio: 1.0,
                   ),
                   itemCount: filteredKeys.length,
                   itemBuilder: (context, index) {
@@ -307,16 +309,16 @@ class _SoftKeyboardState extends State<SoftKeyboard> {
       color: isSelected
           ? theme.colorScheme.primary
           : theme.colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(4.0),
+      borderRadius: BorderRadius.circular(4),
       elevation: isSelected ? 4.0 : 1.0,
       child: InkWell(
         onTap: () {
           widget.onKeySelected?.call(keyInfo.variant);
         },
-        borderRadius: BorderRadius.circular(4.0),
+        borderRadius: BorderRadius.circular(4),
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(4.0),
+            padding: const EdgeInsets.all(4),
             child: Text(
               keyInfo.display,
               style: theme.textTheme.bodyMedium?.copyWith(

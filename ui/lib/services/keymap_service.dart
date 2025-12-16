@@ -12,40 +12,37 @@ class KeymapService {
   final KeyrxBridge _bridge;
 
   /// List all keymaps.
-  Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async {
-    return _guard('list keymaps', (bindings) {
-      try {
-        final keymaps = bindings.listKeymaps();
-        return ConfigOperationResult.success(keymaps);
-      } catch (e) {
-        return ConfigOperationResult.error('list keymaps failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async =>
+      _guard('list keymaps', (bindings) {
+        try {
+          final keymaps = bindings.listKeymaps();
+          return ConfigOperationResult.success(keymaps);
+        } catch (e) {
+          return ConfigOperationResult.error('list keymaps failed: $e');
+        }
+      });
 
   /// Persist or update a keymap definition.
-  Future<ConfigOperationResult<Keymap>> saveKeymap(Keymap keymap) async {
-    return _guard('save keymap', (bindings) {
-      try {
-        final saved = bindings.saveKeymap(keymap);
-        return ConfigOperationResult.success(saved);
-      } catch (e) {
-        return ConfigOperationResult.error('save keymap failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<Keymap>> saveKeymap(Keymap keymap) async =>
+      _guard('save keymap', (bindings) {
+        try {
+          final saved = bindings.saveKeymap(keymap);
+          return ConfigOperationResult.success(saved);
+        } catch (e) {
+          return ConfigOperationResult.error('save keymap failed: $e');
+        }
+      });
 
   /// Delete a keymap by id.
-  Future<ConfigOperationResult<void>> deleteKeymap(String id) async {
-    return _guard('delete keymap', (bindings) {
-      try {
-        bindings.deleteKeymap(id);
-        return ConfigOperationResult.success(null);
-      } catch (e) {
-        return ConfigOperationResult.error('delete keymap failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<void>> deleteKeymap(String id) async =>
+      _guard('delete keymap', (bindings) {
+        try {
+          bindings.deleteKeymap(id);
+          return ConfigOperationResult.success();
+        } catch (e) {
+          return ConfigOperationResult.error('delete keymap failed: $e');
+        }
+      });
 
   Future<ConfigOperationResult<T>> _guard<T>(
     String operation,

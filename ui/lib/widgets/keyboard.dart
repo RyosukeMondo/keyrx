@@ -12,16 +12,13 @@ import 'visual_keyboard.dart';
 ///
 /// This is a wrapper around [VisualKeyboard] for backward compatibility.
 class KeyboardWidget extends StatelessWidget {
+  const KeyboardWidget({super.key, this.onKeySelected, this.selectedKey});
   final void Function(String key)? onKeySelected;
   final String? selectedKey;
 
-  const KeyboardWidget({super.key, this.onKeySelected, this.selectedKey});
-
   @override
-  Widget build(BuildContext context) {
-    return VisualKeyboard(
-      onKeyTap: onKeySelected != null ? (key) => onKeySelected!(key.id) : null,
-      selectedKeys: selectedKey != null ? {selectedKey!} : {},
-    );
-  }
+  Widget build(BuildContext context) => VisualKeyboard(
+    onKeyTap: onKeySelected != null ? (key) => onKeySelected!(key.id) : null,
+    selectedKeys: selectedKey != null ? {selectedKey!} : {},
+  );
 }

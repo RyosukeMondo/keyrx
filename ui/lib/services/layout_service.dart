@@ -14,16 +14,15 @@ class LayoutService with ChangeNotifier {
   final KeyrxBridge _bridge;
 
   /// List all virtual layouts stored in the config directory.
-  Future<ConfigOperationResult<List<VirtualLayout>>> listLayouts() async {
-    return _guard('list layouts', (bindings) {
-      try {
-        final layouts = bindings.listVirtualLayouts();
-        return ConfigOperationResult.success(layouts);
-      } catch (e) {
-        return ConfigOperationResult.error('list layouts failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<List<VirtualLayout>>> listLayouts() async =>
+      _guard('list layouts', (bindings) {
+        try {
+          final layouts = bindings.listVirtualLayouts();
+          return ConfigOperationResult.success(layouts);
+        } catch (e) {
+          return ConfigOperationResult.error('list layouts failed: $e');
+        }
+      });
 
   /// Persist a virtual layout definition and return the saved value.
   Future<ConfigOperationResult<VirtualLayout>> saveLayout(
@@ -49,7 +48,7 @@ class LayoutService with ChangeNotifier {
     final result = await _guard<void>('delete layout', (bindings) {
       try {
         bindings.deleteVirtualLayout(id);
-        return ConfigOperationResult.success(null);
+        return ConfigOperationResult.success();
       } catch (e) {
         return ConfigOperationResult.error('delete layout failed: $e');
       }

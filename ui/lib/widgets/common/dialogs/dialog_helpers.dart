@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'confirmation_dialog.dart';
-import 'input_dialog.dart';
-import 'selection_dialog.dart';
 import 'info_dialog.dart';
+import 'input_dialog.dart';
 import 'multi_action_dialog.dart';
+import 'selection_dialog.dart';
 
 /// Convenient helper functions for showing common dialogs.
 ///
@@ -23,17 +24,15 @@ class DialogHelpers {
     String cancelLabel = 'Cancel',
     bool isDestructive = false,
     IconData? icon,
-  }) {
-    return ConfirmationDialog.show(
-      context,
-      title: title,
-      message: message,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
-      isDestructive: isDestructive,
-      icon: icon,
-    );
-  }
+  }) => ConfirmationDialog.show(
+    context,
+    title: title,
+    message: message,
+    confirmLabel: confirmLabel,
+    cancelLabel: cancelLabel,
+    isDestructive: isDestructive,
+    icon: icon,
+  );
 
   /// Shows a destructive action confirmation dialog.
   ///
@@ -45,17 +44,15 @@ class DialogHelpers {
     required String message,
     String confirmLabel = 'Delete',
     String cancelLabel = 'Cancel',
-  }) {
-    return ConfirmationDialog.show(
-      context,
-      title: title,
-      message: message,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
-      isDestructive: true,
-      icon: Icons.delete_outline,
-    );
-  }
+  }) => ConfirmationDialog.show(
+    context,
+    title: title,
+    message: message,
+    confirmLabel: confirmLabel,
+    cancelLabel: cancelLabel,
+    isDestructive: true,
+    icon: Icons.delete_outline,
+  );
 
   /// Shows a clear/reset confirmation dialog.
   ///
@@ -67,17 +64,15 @@ class DialogHelpers {
     required String message,
     String confirmLabel = 'Clear',
     String cancelLabel = 'Cancel',
-  }) {
-    return ConfirmationDialog.show(
-      context,
-      title: title,
-      message: message,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
-      isDestructive: true,
-      icon: Icons.warning_amber,
-    );
-  }
+  }) => ConfirmationDialog.show(
+    context,
+    title: title,
+    message: message,
+    confirmLabel: confirmLabel,
+    cancelLabel: cancelLabel,
+    isDestructive: true,
+    icon: Icons.warning_amber,
+  );
 
   /// Shows an input dialog for collecting text.
   ///
@@ -92,19 +87,17 @@ class DialogHelpers {
     String? Function(String?)? validator,
     IconData? icon,
     int maxLines = 1,
-  }) {
-    return InputDialog.show(
-      context,
-      title: title,
-      message: message,
-      labelText: labelText,
-      hintText: hintText,
-      initialValue: initialValue,
-      validator: validator,
-      icon: icon,
-      maxLines: maxLines,
-    );
-  }
+  }) => InputDialog.show(
+    context,
+    title: title,
+    message: message,
+    labelText: labelText,
+    hintText: hintText,
+    initialValue: initialValue,
+    validator: validator,
+    icon: icon,
+    maxLines: maxLines,
+  );
 
   /// Shows an input dialog for file paths.
   ///
@@ -116,23 +109,21 @@ class DialogHelpers {
     String message = 'Enter the file path',
     String initialValue = '',
     String? hintText,
-  }) {
-    return InputDialog.show(
-      context,
-      title: title,
-      message: message,
-      labelText: 'Path',
-      hintText: hintText ?? 'e.g., scripts/my-config.rhai',
-      initialValue: initialValue,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Path cannot be empty';
-        }
-        return null;
-      },
-      icon: Icons.folder_outlined,
-    );
-  }
+  }) => InputDialog.show(
+    context,
+    title: title,
+    message: message,
+    labelText: 'Path',
+    hintText: hintText ?? 'e.g., scripts/my-config.rhai',
+    initialValue: initialValue,
+    validator: (value) {
+      if (value == null || value.trim().isEmpty) {
+        return 'Path cannot be empty';
+      }
+      return null;
+    },
+    icon: Icons.folder_outlined,
+  );
 
   /// Shows a selection dialog for choosing from a list.
   ///
@@ -140,20 +131,18 @@ class DialogHelpers {
   static Future<T?> select<T>(
     BuildContext context, {
     required String title,
-    String? message,
     required List<SelectionOption<T>> options,
+    String? message,
     T? selectedOption,
     IconData? icon,
-  }) {
-    return SelectionDialog.show<T>(
-      context,
-      title: title,
-      message: message,
-      options: options,
-      selectedOption: selectedOption,
-      icon: icon,
-    );
-  }
+  }) => SelectionDialog.show<T>(
+    context,
+    title: title,
+    message: message,
+    options: options,
+    selectedOption: selectedOption,
+    icon: icon,
+  );
 
   /// Shows an information/help dialog.
   ///
@@ -165,16 +154,14 @@ class DialogHelpers {
     String closeLabel = 'Close',
     IconData? icon,
     double maxHeight = 500.0,
-  }) {
-    return InfoDialog.show(
-      context,
-      title: title,
-      content: content,
-      closeLabel: closeLabel,
-      icon: icon,
-      maxHeight: maxHeight,
-    );
-  }
+  }) => InfoDialog.show(
+    context,
+    title: title,
+    content: content,
+    closeLabel: closeLabel,
+    icon: icon,
+    maxHeight: maxHeight,
+  );
 
   /// Shows a help dialog with an info icon.
   ///
@@ -184,16 +171,14 @@ class DialogHelpers {
     required String title,
     required Widget content,
     double maxHeight = 500.0,
-  }) {
-    return InfoDialog.show(
-      context,
-      title: title,
-      content: content,
-      closeLabel: 'Got it',
-      icon: Icons.help_outline,
-      maxHeight: maxHeight,
-    );
-  }
+  }) => InfoDialog.show(
+    context,
+    title: title,
+    content: content,
+    closeLabel: 'Got it',
+    icon: Icons.help_outline,
+    maxHeight: maxHeight,
+  );
 
   /// Shows a multi-action dialog with custom actions.
   ///
@@ -204,15 +189,13 @@ class DialogHelpers {
     required String message,
     required List<DialogAction<T>> actions,
     IconData? icon,
-  }) {
-    return MultiActionDialog.show<T>(
-      context,
-      title: title,
-      message: message,
-      actions: actions,
-      icon: icon,
-    );
-  }
+  }) => MultiActionDialog.show<T>(
+    context,
+    title: title,
+    message: message,
+    actions: actions,
+    icon: icon,
+  );
 
   /// Shows a dialog with three actions: Cancel, Primary, Secondary.
   ///
@@ -226,17 +209,15 @@ class DialogHelpers {
     required String secondaryLabel,
     String cancelLabel = 'Cancel',
     IconData? icon,
-  }) {
-    return MultiActionDialog.show<int>(
-      context,
-      title: title,
-      message: message,
-      actions: [
-        DialogAction<int>(label: cancelLabel, value: 0),
-        DialogAction<int>(label: primaryLabel, value: 1, isPrimary: true),
-        DialogAction<int>(label: secondaryLabel, value: 2),
-      ],
-      icon: icon,
-    );
-  }
+  }) => MultiActionDialog.show<int>(
+    context,
+    title: title,
+    message: message,
+    actions: [
+      DialogAction<int>(label: cancelLabel, value: 0),
+      DialogAction<int>(label: primaryLabel, value: 1, isPrimary: true),
+      DialogAction<int>(label: secondaryLabel, value: 2),
+    ],
+    icon: icon,
+  );
 }

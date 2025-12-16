@@ -174,15 +174,17 @@ class SessionServiceImpl implements SessionService {
       );
     }
 
-    final sessions = result.sessions.map((s) {
-      return SessionRecord(
-        path: s.path,
-        name: s.name,
-        created: s.created,
-        eventCount: s.eventCount,
-        durationMs: s.durationMs,
-      );
-    }).toList();
+    final sessions = result.sessions
+        .map(
+          (s) => SessionRecord(
+            path: s.path,
+            name: s.name,
+            created: s.created,
+            eventCount: s.eventCount,
+            durationMs: s.durationMs,
+          ),
+        )
+        .toList();
 
     return SessionListServiceResult(sessions: sessions);
   }
@@ -247,13 +249,15 @@ class SessionServiceImpl implements SessionService {
       );
     }
 
-    final mismatches = result.mismatches.map((m) {
-      return SessionReplayMismatch(
-        seq: m.seq,
-        recorded: m.recorded,
-        actual: m.actual,
-      );
-    }).toList();
+    final mismatches = result.mismatches
+        .map(
+          (m) => SessionReplayMismatch(
+            seq: m.seq,
+            recorded: m.recorded,
+            actual: m.actual,
+          ),
+        )
+        .toList();
 
     return SessionReplayServiceResult(
       data: SessionReplayData(

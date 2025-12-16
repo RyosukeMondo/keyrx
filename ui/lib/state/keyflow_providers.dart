@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/config_ids.dart';
 import '../models/device_state.dart';
 import '../models/flow/flow_graph.dart';
 import '../models/hardware_profile.dart';
@@ -68,9 +67,8 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 }
 
 @riverpod
-Future<RuntimeConfig> runtimeConfig(RuntimeConfigRef ref) {
-  return ref.watch(runtimeConfigNotifierProvider.future);
-}
+Future<RuntimeConfig> runtimeConfig(RuntimeConfigRef ref) =>
+    ref.watch(runtimeConfigNotifierProvider.future);
 
 @riverpod
 Future<FlowGraph> flowGraph(FlowGraphRef ref) async {
@@ -91,9 +89,8 @@ class KeyFlowActions {
   final Ref _ref;
 
   /// Refresh runtime configuration and sync the provider state.
-  Future<ConfigOperationResult<RuntimeConfig>> refreshRuntimeConfig() {
-    return _repo.getRuntimeConfig(forceRefresh: true);
-  }
+  Future<ConfigOperationResult<RuntimeConfig>> refreshRuntimeConfig() =>
+      _repo.getRuntimeConfig(forceRefresh: true);
 
   /// Add a slot with auto-save and optimistic updates.
   void addSlot(
@@ -131,9 +128,7 @@ class KeyFlowActions {
 }
 
 @riverpod
-KeyFlowActions keyFlowActions(KeyFlowActionsRef ref) {
-  return KeyFlowActions(ref);
-}
+KeyFlowActions keyFlowActions(KeyFlowActionsRef ref) => KeyFlowActions(ref);
 
 /// Provider for available hardware profiles.
 @riverpod

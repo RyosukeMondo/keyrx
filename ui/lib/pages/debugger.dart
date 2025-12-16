@@ -5,6 +5,6 @@
 // - debugger_widgets.dart: TagSectionCard, PendingDecisionsCard, TimingCard, EventLogWidget, TimelineWidget
 // - debugger_meters.dart: LatencyMeterCard, PendingTapHoldWidget, PendingComboWidget
 
+export 'debugger_meters.dart';
 export 'debugger_page.dart';
 export 'debugger_widgets.dart';
-export 'debugger_meters.dart';

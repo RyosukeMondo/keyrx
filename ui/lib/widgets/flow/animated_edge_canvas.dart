@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/animations/edge_animations.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/widgets/flow/animated_edges_painter.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import '../../animations/edge_animations.dart';
+import '../../models/flow/edge_style.dart';
+import 'animated_edges_painter.dart';
+import 'edges_painter.dart';
 
 /// Animated wrapper for edge rendering with pulse and transition effects
 class AnimatedEdgeCanvas extends StatefulWidget {
@@ -82,11 +82,7 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
   void _initializeEdgeStates() {
     for (final edge in widget.edges) {
       final edgeId = _edgeId(edge);
-      _animationStates[edgeId] = EdgeAnimationState(
-        opacity: 1.0,
-        pulsePhase: 0.0,
-        colorTransition: 1.0,
-      );
+      _animationStates[edgeId] = EdgeAnimationState();
     }
   }
 
@@ -133,7 +129,7 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
 
   void _fadeInEdge(String edgeId) {
     // Start with transparent
-    _animationStates[edgeId] = EdgeAnimationState(opacity: 0.0);
+    _animationStates[edgeId] = EdgeAnimationState(opacity: 0);
 
     // Create fade-in animation
     final controller = AnimationController(
@@ -254,7 +250,7 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
     setState(() {
       final current = _animationStates[edgeId];
       if (current != null) {
-        _animationStates[edgeId] = current.copyWith(colorTransition: 0.0);
+        _animationStates[edgeId] = current.copyWith(colorTransition: 0);
       }
     });
 
@@ -262,9 +258,8 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
     controller.forward();
   }
 
-  String _edgeId(PaintableEdge edge) {
-    return '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
-  }
+  String _edgeId(PaintableEdge edge) =>
+      '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
 
   bool _edgesEqual(List<PaintableEdge> a, List<PaintableEdge> b) {
     if (a.length != b.length) return false;
@@ -275,19 +270,17 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: CustomPaint(
-        painter: AnimatedEdgesPainter(
-          edges: widget.edges,
-          style: widget.style,
-          hoverPosition: widget.hoverPosition,
-          animationStates: _animationStates,
-          pulseEnabled: widget.pulseEnabled,
-          previousColors: _previousColors,
-        ),
-        child: widget.child,
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: CustomPaint(
+      painter: AnimatedEdgesPainter(
+        edges: widget.edges,
+        style: widget.style,
+        hoverPosition: widget.hoverPosition,
+        animationStates: _animationStates,
+        pulseEnabled: widget.pulseEnabled,
+        previousColors: _previousColors,
       ),
-    );
-  }
+      child: widget.child,
+    ),
+  );
 }

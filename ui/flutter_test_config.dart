@@ -14,7 +14,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         .toLowerCase()
         .replaceAll(RegExp('[^a-z0-9]+'), '_')
         .replaceAll(RegExp('_+'), '_')
-        .replaceAll(RegExp('^_|_\$'), ''),
+        .replaceAll(RegExp(r'^_|_$'), ''),
   );
 
   return GoldenToolkit.runWithConfiguration(() async {

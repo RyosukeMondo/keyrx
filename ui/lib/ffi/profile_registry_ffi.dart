@@ -13,8 +13,8 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 
-import '../models/profile.dart';
 import '../models/layout_type.dart';
+import '../models/profile.dart';
 import 'bindings.dart';
 
 /// Result wrapper for profile registry operations.

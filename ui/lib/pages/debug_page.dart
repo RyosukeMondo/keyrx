@@ -109,41 +109,39 @@ class _DebugPageState extends State<DebugPage>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Performance Metrics'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _showThresholdSettings,
-            tooltip: 'Configure thresholds',
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _exportMetrics,
-            tooltip: 'Export metrics',
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
-            Tab(icon: Icon(Icons.info_outline), text: 'Info'),
-          ],
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Performance Metrics'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings),
+          onPressed: _showThresholdSettings,
+          tooltip: 'Configure thresholds',
         ),
-      ),
-      body: TabBarView(
+        IconButton(
+          icon: const Icon(Icons.download),
+          onPressed: _exportMetrics,
+          tooltip: 'Export metrics',
+        ),
+      ],
+      bottom: TabBar(
         controller: _tabController,
-        children: [
-          // Metrics dashboard tab
-          MetricsDashboard(metricsService: widget.metricsService),
-          // Info tab
-          _buildInfoTab(),
+        tabs: const [
+          Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
+          Tab(icon: Icon(Icons.info_outline), text: 'Info'),
         ],
       ),
-    );
-  }
+    ),
+    body: TabBarView(
+      controller: _tabController,
+      children: [
+        // Metrics dashboard tab
+        MetricsDashboard(metricsService: widget.metricsService),
+        // Info tab
+        _buildInfoTab(),
+      ],
+    ),
+  );
 
   Widget _buildInfoTab() {
     final theme = Theme.of(context);
@@ -226,51 +224,47 @@ class _DebugPageState extends State<DebugPage>
     required String title,
     required IconData icon,
     required List<Widget> children,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+  }) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+          Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          Expanded(child: Text(value)),
+          const SizedBox(height: 16),
+          ...children,
         ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildInfoRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 140,
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(child: Text(value)),
+      ],
+    ),
+  );
 
   String _formatMemory(int bytes) {
     if (bytes < 1024) {
@@ -385,73 +379,71 @@ class _ThresholdSettingsDialogState extends State<_ThresholdSettingsDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Configure Thresholds'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Latency Thresholds (microseconds)',
-              style: TextStyle(fontWeight: FontWeight.bold),
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Configure Thresholds'),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Latency Thresholds (microseconds)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _latencyWarnController,
+            decoration: const InputDecoration(
+              labelText: 'Warning',
+              suffixText: 'μs',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _latencyWarnController,
-              decoration: const InputDecoration(
-                labelText: 'Warning',
-                suffixText: 'μs',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _latencyErrorController,
+            decoration: const InputDecoration(
+              labelText: 'Error',
+              suffixText: 'μs',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _latencyErrorController,
-              decoration: const InputDecoration(
-                labelText: 'Error',
-                suffixText: 'μs',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Memory Thresholds (megabytes)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _memoryWarnController,
+            decoration: const InputDecoration(
+              labelText: 'Warning',
+              suffixText: 'MB',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Memory Thresholds (megabytes)',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _memoryErrorController,
+            decoration: const InputDecoration(
+              labelText: 'Error',
+              suffixText: 'MB',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _memoryWarnController,
-              decoration: const InputDecoration(
-                labelText: 'Warning',
-                suffixText: 'MB',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _memoryErrorController,
-              decoration: const InputDecoration(
-                labelText: 'Error',
-                suffixText: 'MB',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
+            keyboardType: TextInputType.number,
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(onPressed: _save, child: const Text('Save')),
-      ],
-    );
-  }
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      ElevatedButton(onPressed: _save, child: const Text('Save')),
+    ],
+  );
 }

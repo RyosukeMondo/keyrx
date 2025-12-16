@@ -8,16 +8,15 @@ import '../../services/api_docs_service.dart';
 /// including functions, types, parameters, and code examples with syntax
 /// highlighting.
 class ApiBrowser extends StatefulWidget {
-  final ApiDocsService docsService;
-  final String? initialModule;
-  final String? initialFunction;
-
   const ApiBrowser({
-    super.key,
     required this.docsService,
+    super.key,
     this.initialModule,
     this.initialFunction,
   });
+  final ApiDocsService docsService;
+  final String? initialModule;
+  final String? initialFunction;
 
   @override
   State<ApiBrowser> createState() => _ApiBrowserState();
@@ -143,40 +142,36 @@ class _ApiBrowserState extends State<ApiBrowser> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor),
+  Widget _buildSearchBar() => Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+    ),
+    child: TextField(
+      controller: _searchController,
+      focusNode: _searchFocusNode,
+      decoration: InputDecoration(
+        hintText: 'Search API documentation...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                  _onSearchChanged('');
+                },
+              )
+            : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
         ),
       ),
-      child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
-        decoration: InputDecoration(
-          hintText: 'Search API documentation...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _onSearchChanged('');
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
-        onChanged: _onSearchChanged,
-      ),
-    );
-  }
+      onChanged: _onSearchChanged,
+    ),
+  );
 
   Widget _buildSearchResults() {
     if (_searchResults.isEmpty) {
@@ -264,16 +259,16 @@ class _ApiBrowserState extends State<ApiBrowser> {
                         ),
                       ),
                     ),
-                    ...module.functions.map((func) {
-                      return ListTile(
+                    ...module.functions.map(
+                      (func) => ListTile(
                         contentPadding: const EdgeInsets.only(left: 48),
                         leading: const Icon(Icons.functions, size: 18),
                         title: Text(func.name),
                         dense: true,
                         selected: _selectedItem == func,
                         onTap: () => _onFunctionSelected(func),
-                      );
-                    }),
+                      ),
+                    ),
                   ],
                   if (module.types.isNotEmpty) ...[
                     Padding(
@@ -287,16 +282,16 @@ class _ApiBrowserState extends State<ApiBrowser> {
                         ),
                       ),
                     ),
-                    ...module.types.map((type) {
-                      return ListTile(
+                    ...module.types.map(
+                      (type) => ListTile(
                         contentPadding: const EdgeInsets.only(left: 48),
                         leading: const Icon(Icons.class_outlined, size: 18),
                         title: Text(type.name),
                         dense: true,
                         selected: _selectedItem == type,
                         onTap: () => _onTypeSelected(type),
-                      );
-                    }),
+                      ),
+                    ),
                   ],
                 ],
               );
@@ -346,441 +341,412 @@ class _ApiBrowserState extends State<ApiBrowser> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildModuleOverview(ModuleDoc module) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(module.name, style: Theme.of(context).textTheme.headlineMedium),
-          if (module.description != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              module.description!,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
-          const SizedBox(height: 24),
-          _buildSection(
-            'Functions',
-            '${module.functions.length} function(s)',
-            Icons.functions,
-          ),
-          const SizedBox(height: 16),
-          _buildSection(
-            'Types',
-            '${module.types.length} type(s)',
-            Icons.class_outlined,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSection(String title, String subtitle, IconData icon) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(subtitle),
-      ),
-    );
-  }
-
-  Widget _buildFunctionViewer(FunctionDoc function) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.functions),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  function.name,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-              if (function.deprecated != null)
-                Chip(
-                  label: const Text('DEPRECATED'),
-                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
+  Widget _buildModuleOverview(ModuleDoc module) => SingleChildScrollView(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(module.name, style: Theme.of(context).textTheme.headlineMedium),
+        if (module.description != null) ...[
+          const SizedBox(height: 8),
           Text(
-            function.description,
+            module.description!,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
-          if (function.deprecated != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      function.deprecated!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          if (function.parameters.isNotEmpty) ...[
-            Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...function.parameters.map((param) => _buildParameterCard(param)),
-            const SizedBox(height: 24),
-          ],
-          if (function.returns != null) ...[
-            Text('Returns', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            _buildReturnCard(function.returns!),
-            const SizedBox(height: 24),
-          ],
-          if (function.examples.isNotEmpty) ...[
-            Text('Examples', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...function.examples.map((example) => _buildCodeExample(example)),
-          ],
-          if (function.notes != null) ...[
-            const SizedBox(height: 24),
-            Text('Notes', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      function.notes!,
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildTypeViewer(TypeDoc type) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.class_outlined),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  type.name,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(type.description, style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 24),
-          if (type.properties.isNotEmpty) ...[
-            Text('Properties', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...type.properties.map((prop) => _buildPropertyCard(prop)),
-            const SizedBox(height: 24),
-          ],
-          if (type.constructors.isNotEmpty) ...[
-            Text('Constructors', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...type.constructors.map((ctor) => _buildMethodCard(ctor)),
-            const SizedBox(height: 24),
-          ],
-          if (type.methods.isNotEmpty) ...[
-            Text('Methods', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...type.methods.map((method) => _buildMethodCard(method)),
-            const SizedBox(height: 24),
-          ],
-          if (type.examples.isNotEmpty) ...[
-            Text('Examples', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ...type.examples.map((example) => _buildCodeExample(example)),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildParameterCard(ParameterDoc param) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  param.name,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    param.typeName,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                ),
-                if (param.optional) ...[
-                  const SizedBox(width: 8),
-                  Chip(
-                    label: const Text('optional'),
-                    labelStyle: const TextStyle(fontSize: 10),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-                if (param.defaultValue != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '= ${param.defaultValue}',
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(param.description),
-          ],
+        const SizedBox(height: 24),
+        _buildSection(
+          'Functions',
+          '${module.functions.length} function(s)',
+          Icons.functions,
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 16),
+        _buildSection(
+          'Types',
+          '${module.types.length} type(s)',
+          Icons.class_outlined,
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildReturnCard(ReturnTypeDoc returns) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+  Widget _buildSection(String title, String subtitle, IconData icon) => Card(
+    child: ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle),
+    ),
+  );
+
+  Widget _buildFunctionViewer(FunctionDoc function) => SingleChildScrollView(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                returns.typeName,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
+            const Icon(Icons.functions),
             const SizedBox(width: 8),
-            Expanded(child: Text(returns.description)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPropertyCard(PropertyDoc prop) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  prop.name,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    prop.typeName,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                ),
-                if (prop.readonly) ...[
-                  const SizedBox(width: 8),
-                  Chip(
-                    label: const Text('readonly'),
-                    labelStyle: const TextStyle(fontSize: 10),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ],
+            Expanded(
+              child: Text(
+                function.name,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(prop.description),
+            if (function.deprecated != null)
+              Chip(
+                label: const Text('DEPRECATED'),
+                backgroundColor: Theme.of(context).colorScheme.errorContainer,
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMethodCard(FunctionDoc method) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () => _onFunctionSelected(method),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.functions, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    method.name,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                method.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+        const SizedBox(height: 16),
+        Text(
+          function.description,
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
-      ),
-    );
-  }
-
-  Widget _buildCodeExample(String code) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        if (function.deprecated != null) ...[
+          const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                const Icon(Icons.code, size: 16),
+                Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
                 const SizedBox(width: 8),
-                const Text('Example'),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 16),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: code));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Code copied to clipboard'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  tooltip: 'Copy to clipboard',
-                  visualDensity: VisualDensity.compact,
+                Expanded(
+                  child: Text(
+                    function.deprecated!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Padding(
+        ],
+        const SizedBox(height: 24),
+        if (function.parameters.isNotEmpty) ...[
+          Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...function.parameters.map(_buildParameterCard),
+          const SizedBox(height: 24),
+        ],
+        if (function.returns != null) ...[
+          Text('Returns', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          _buildReturnCard(function.returns!),
+          const SizedBox(height: 24),
+        ],
+        if (function.examples.isNotEmpty) ...[
+          Text('Examples', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...function.examples.map(_buildCodeExample),
+        ],
+        if (function.notes != null) ...[
+          const SizedBox(height: 24),
+          Text('Notes', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Container(
             padding: const EdgeInsets.all(12),
-            child: SyntaxHighlightedCode(code: code),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    function.notes!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
+      ],
+    ),
+  );
+
+  Widget _buildTypeViewer(TypeDoc type) => SingleChildScrollView(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.class_outlined),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                type.name,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(type.description, style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 24),
+        if (type.properties.isNotEmpty) ...[
+          Text('Properties', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...type.properties.map(_buildPropertyCard),
+          const SizedBox(height: 24),
+        ],
+        if (type.constructors.isNotEmpty) ...[
+          Text('Constructors', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...type.constructors.map(_buildMethodCard),
+          const SizedBox(height: 24),
+        ],
+        if (type.methods.isNotEmpty) ...[
+          Text('Methods', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...type.methods.map(_buildMethodCard),
+          const SizedBox(height: 24),
+        ],
+        if (type.examples.isNotEmpty) ...[
+          Text('Examples', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ...type.examples.map(_buildCodeExample),
+        ],
+      ],
+    ),
+  );
+
+  Widget _buildParameterCard(ParameterDoc param) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                param.name,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  param.typeName,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+              if (param.optional) ...[
+                const SizedBox(width: 8),
+                const Chip(
+                  label: Text('optional'),
+                  labelStyle: TextStyle(fontSize: 10),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+              if (param.defaultValue != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '= ${param.defaultValue}',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(param.description),
+        ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildReturnCard(ReturnTypeDoc returns) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              returns.typeName,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(returns.description)),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildPropertyCard(PropertyDoc prop) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                prop.name,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  prop.typeName,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+              if (prop.readonly) ...[
+                const SizedBox(width: 8),
+                const Chip(
+                  label: Text('readonly'),
+                  labelStyle: TextStyle(fontSize: 10),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(prop.description),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildMethodCard(FunctionDoc method) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    child: InkWell(
+      onTap: () => _onFunctionSelected(method),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.functions, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  method.name,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              method.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildCodeExample(String code) => Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Theme.of(context).dividerColor),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.code, size: 16),
+              const SizedBox(width: 8),
+              const Text('Example'),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 16),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Code copied to clipboard'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                tooltip: 'Copy to clipboard',
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: SyntaxHighlightedCode(code: code),
+        ),
+      ],
+    ),
+  );
 
   IconData _getIconForType(String type) {
     switch (type) {
@@ -800,9 +766,8 @@ class _ApiBrowserState extends State<ApiBrowser> {
 
 /// Widget for displaying syntax-highlighted Rhai code.
 class SyntaxHighlightedCode extends StatelessWidget {
+  const SyntaxHighlightedCode({required this.code, super.key});
   final String code;
-
-  const SyntaxHighlightedCode({super.key, required this.code});
 
   @override
   Widget build(BuildContext context) {
@@ -878,7 +843,7 @@ class SyntaxHighlightedCode extends StatelessWidget {
           final start = pos;
           pos++;
           while (pos < line.length && line[pos] != quote) {
-            if (line[pos] == '\\' && pos + 1 < line.length) {
+            if (line[pos] == r'\' && pos + 1 < line.length) {
               pos += 2;
             } else {
               pos++;
@@ -895,9 +860,9 @@ class SyntaxHighlightedCode extends StatelessWidget {
         }
 
         // Numbers
-        if (RegExp(r'[0-9]').hasMatch(line[pos])) {
+        if (RegExp('[0-9]').hasMatch(line[pos])) {
           final start = pos;
-          while (pos < line.length && RegExp(r'[0-9._]').hasMatch(line[pos])) {
+          while (pos < line.length && RegExp('[0-9._]').hasMatch(line[pos])) {
             pos++;
           }
           spans.add(
@@ -910,10 +875,10 @@ class SyntaxHighlightedCode extends StatelessWidget {
         }
 
         // Keywords and identifiers
-        if (RegExp(r'[a-zA-Z_]').hasMatch(line[pos])) {
+        if (RegExp('[a-zA-Z_]').hasMatch(line[pos])) {
           final start = pos;
           while (pos < line.length &&
-              RegExp(r'[a-zA-Z0-9_]').hasMatch(line[pos])) {
+              RegExp('[a-zA-Z0-9_]').hasMatch(line[pos])) {
             pos++;
           }
           final word = line.substring(start, pos);

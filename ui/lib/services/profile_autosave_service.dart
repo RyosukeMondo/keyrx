@@ -26,6 +26,58 @@ class AutosaveStatus {
     this.targetDirectory,
   });
 
+  /// Convenience factory for idle state.
+  factory AutosaveStatus.idle({DateTime? lastSavedAt, String? profileId}) =>
+      AutosaveStatus(
+        state: AutosaveState.idle,
+        profileId: profileId,
+        lastSavedAt: lastSavedAt,
+      );
+
+  /// Convenience factory for queued state.
+  factory AutosaveStatus.queued(String profileId) =>
+      AutosaveStatus(state: AutosaveState.queued, profileId: profileId);
+
+  /// Convenience factory for saving state.
+  factory AutosaveStatus.saving({
+    required String profileId,
+    required int attempt,
+    required String targetDirectory,
+  }) => AutosaveStatus(
+    state: AutosaveState.saving,
+    profileId: profileId,
+    attempt: attempt,
+    targetDirectory: targetDirectory,
+  );
+
+  /// Convenience factory for success state.
+  factory AutosaveStatus.success({
+    required String profileId,
+    required DateTime savedAt,
+    required String targetDirectory,
+  }) => AutosaveStatus(
+    state: AutosaveState.success,
+    profileId: profileId,
+    lastSavedAt: savedAt,
+    targetDirectory: targetDirectory,
+  );
+
+  /// Convenience factory for error state.
+  factory AutosaveStatus.error({
+    required String profileId,
+    required String message,
+    required int attempt,
+    String? targetDirectory,
+    DateTime? lastSavedAt,
+  }) => AutosaveStatus(
+    state: AutosaveState.error,
+    profileId: profileId,
+    attempt: attempt,
+    errorMessage: message,
+    lastSavedAt: lastSavedAt,
+    targetDirectory: targetDirectory,
+  );
+
   /// Current lifecycle state.
   final AutosaveState state;
 
@@ -43,66 +95,6 @@ class AutosaveStatus {
 
   /// Directory path where the profile is being saved.
   final String? targetDirectory;
-
-  /// Convenience factory for idle state.
-  factory AutosaveStatus.idle({DateTime? lastSavedAt, String? profileId}) {
-    return AutosaveStatus(
-      state: AutosaveState.idle,
-      profileId: profileId,
-      lastSavedAt: lastSavedAt,
-    );
-  }
-
-  /// Convenience factory for queued state.
-  factory AutosaveStatus.queued(String profileId) {
-    return AutosaveStatus(state: AutosaveState.queued, profileId: profileId);
-  }
-
-  /// Convenience factory for saving state.
-  factory AutosaveStatus.saving({
-    required String profileId,
-    required int attempt,
-    required String targetDirectory,
-  }) {
-    return AutosaveStatus(
-      state: AutosaveState.saving,
-      profileId: profileId,
-      attempt: attempt,
-      targetDirectory: targetDirectory,
-    );
-  }
-
-  /// Convenience factory for success state.
-  factory AutosaveStatus.success({
-    required String profileId,
-    required DateTime savedAt,
-    required String targetDirectory,
-  }) {
-    return AutosaveStatus(
-      state: AutosaveState.success,
-      profileId: profileId,
-      lastSavedAt: savedAt,
-      targetDirectory: targetDirectory,
-    );
-  }
-
-  /// Convenience factory for error state.
-  factory AutosaveStatus.error({
-    required String profileId,
-    required String message,
-    required int attempt,
-    String? targetDirectory,
-    DateTime? lastSavedAt,
-  }) {
-    return AutosaveStatus(
-      state: AutosaveState.error,
-      profileId: profileId,
-      attempt: attempt,
-      errorMessage: message,
-      lastSavedAt: lastSavedAt,
-      targetDirectory: targetDirectory,
-    );
-  }
 }
 
 /// Provides debounced autosave with retry/backoff semantics.
@@ -271,7 +263,6 @@ class ProfileAutosaveService {
           profileId: profileId,
           message: 'Unable to prepare profiles directory: $e',
           attempt: 1,
-          targetDirectory: null,
           lastSavedAt: _status.lastSavedAt,
         ),
       );

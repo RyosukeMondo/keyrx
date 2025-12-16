@@ -13,15 +13,15 @@ final daemonServiceProvider = Provider<DaemonService>((ref) {
   final service = DaemonService();
 
   // Dispose the service when the provider is disposed
-  ref.onDispose(() {
-    service.dispose();
-  });
+  ref.onDispose(service.dispose);
 
   return service;
 });
 
 /// Provider for daemon connection state.
-final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((ref) {
+final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((
+  ref,
+) {
   final service = ref.watch(daemonServiceProvider);
   return service.connectionState;
 });

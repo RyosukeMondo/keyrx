@@ -2,33 +2,30 @@ import 'package:flutter/material.dart';
 
 /// Full-screen loading overlay that blocks interaction while active.
 class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({
+    required this.child,
+    required this.isLoading,
+    super.key,
+    this.message,
+    this.barrierColor,
+  });
   final Widget child;
   final bool isLoading;
   final String? message;
   final Color? barrierColor;
 
-  const LoadingOverlay({
-    super.key,
-    required this.child,
-    required this.isLoading,
-    this.message,
-    this.barrierColor,
-  });
-
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        IgnorePointer(ignoring: isLoading, child: child),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          child: isLoading ? _buildOverlay(context) : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Stack(
+    children: [
+      IgnorePointer(ignoring: isLoading, child: child),
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: isLoading ? _buildOverlay(context) : const SizedBox.shrink(),
+      ),
+    ],
+  );
 
   Widget _buildOverlay(BuildContext context) {
     final color = barrierColor ?? Colors.black54;

@@ -54,9 +54,9 @@ enum MappingType {
 /// Overlay widget that draws mapping arrows on top of the keyboard.
 class MappingOverlay extends StatelessWidget {
   const MappingOverlay({
-    super.key,
     required this.mappings,
     required this.layout,
+    super.key,
     this.selectedMappingIndex,
     this.onMappingTap,
     this.onMappingDelete,
@@ -86,34 +86,32 @@ class MappingOverlay extends StatelessWidget {
   final Offset? dragCurrentPosition;
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Visuals layer (arrows) - Ignore pointer events so keys below can be clicked
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              painter: _MappingPainter(
-                mappings: mappings,
-                layout: layout,
-                selectedIndex: selectedMappingIndex,
-                dragStartKey: dragStartKey,
-                dragCurrentPosition: dragCurrentPosition,
-                colorScheme: Theme.of(context).colorScheme,
-              ),
+  Widget build(BuildContext context) => Stack(
+    children: [
+      // Visuals layer (arrows) - Ignore pointer events so keys below can be clicked
+      Positioned.fill(
+        child: IgnorePointer(
+          child: CustomPaint(
+            painter: _MappingPainter(
+              mappings: mappings,
+              layout: layout,
+              selectedIndex: selectedMappingIndex,
+              dragStartKey: dragStartKey,
+              dragCurrentPosition: dragCurrentPosition,
+              colorScheme: Theme.of(context).colorScheme,
             ),
           ),
         ),
-        // Interactive layer (delete buttons)
-        Stack(
-          children: [
-            for (int i = 0; i < mappings.length; i++)
-              _buildDeleteButton(context, i),
-          ],
-        ),
-      ],
-    );
-  }
+      ),
+      // Interactive layer (delete buttons)
+      Stack(
+        children: [
+          for (int i = 0; i < mappings.length; i++)
+            _buildDeleteButton(context, i),
+        ],
+      ),
+    ],
+  );
 
   Widget _buildDeleteButton(BuildContext context, int index) {
     final mapping = mappings[index];
@@ -156,10 +154,7 @@ class MappingOverlay extends StatelessWidget {
                   ? Theme.of(context).colorScheme.error
                   : Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
-                width: 1,
-              ),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -210,7 +205,7 @@ class _MappingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Draw existing mappings
-    for (int i = 0; i < mappings.length; i++) {
+    for (var i = 0; i < mappings.length; i++) {
       _drawMapping(canvas, mappings[i], isSelected: i == selectedIndex);
     }
 
@@ -388,10 +383,9 @@ class _MappingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MappingPainter oldDelegate) {
-    return mappings != oldDelegate.mappings ||
-        selectedIndex != oldDelegate.selectedIndex ||
-        dragStartKey != oldDelegate.dragStartKey ||
-        dragCurrentPosition != oldDelegate.dragCurrentPosition;
-  }
+  bool shouldRepaint(_MappingPainter oldDelegate) =>
+      mappings != oldDelegate.mappings ||
+      selectedIndex != oldDelegate.selectedIndex ||
+      dragStartKey != oldDelegate.dragStartKey ||
+      dragCurrentPosition != oldDelegate.dragCurrentPosition;
 }

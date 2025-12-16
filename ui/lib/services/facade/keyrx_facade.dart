@@ -25,12 +25,12 @@
 /// ```
 library;
 
+import '../../ffi/bridge.dart';
 import '../service_registry.dart';
 import '../test_service.dart';
-import '../../ffi/bridge.dart';
 import 'facade_state.dart';
-import 'result.dart';
 import 'keyrx_facade_impl.dart';
+import 'result.dart';
 
 /// Unified facade for all KeyRx operations.
 ///
@@ -46,9 +46,8 @@ abstract class KeyrxFacade {
   /// Create a real facade implementation wrapping the provided services.
   ///
   /// This is the standard factory for production use.
-  factory KeyrxFacade.real(ServiceRegistry registry) {
-    return KeyrxFacadeImpl(registry);
-  }
+  factory KeyrxFacade.real(ServiceRegistry registry) =>
+      KeyrxFacadeImpl(registry);
 
   /// Create a mock facade for testing.
   ///

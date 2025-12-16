@@ -84,14 +84,16 @@ class DoctorServiceImpl implements DoctorService {
       return DoctorServiceResult.error(result.errorMessage ?? 'Unknown error');
     }
 
-    final checks = result.checks.map((c) {
-      return DiagnosticCheckData(
-        name: c.name,
-        status: c.status,
-        details: c.details,
-        remediation: c.remediation,
-      );
-    }).toList();
+    final checks = result.checks
+        .map(
+          (c) => DiagnosticCheckData(
+            name: c.name,
+            status: c.status,
+            details: c.details,
+            remediation: c.remediation,
+          ),
+        )
+        .toList();
 
     return DoctorServiceResult(
       report: DiagnosticReport(

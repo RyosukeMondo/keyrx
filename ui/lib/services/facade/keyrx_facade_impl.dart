@@ -6,12 +6,13 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:rxdart/rxdart.dart';
 
-import '../service_registry.dart';
-import '../test_service.dart';
 import '../../ffi/bridge.dart' hide ScriptValidationResult;
 import '../../models/log_entry.dart';
+import '../service_registry.dart';
+import '../test_service.dart';
 import 'facade_state.dart';
 import 'keyrx_facade.dart';
 import 'result.dart';
@@ -72,7 +73,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
         .listen(
           (engineSnapshot) {
             // Map engine snapshot to engine status
-            EngineStatus engineStatus = currentState.engine;
+            var engineStatus = currentState.engine;
 
             // If we have active layers or held keys, the engine is actively running
             if (engineSnapshot.activeLayers.isNotEmpty ||
@@ -315,7 +316,6 @@ class KeyrxFacadeImpl implements KeyrxFacade {
                 message: e.message,
                 line: e.location?.line,
                 column: e.location?.column,
-                severity: IssueSeverity.error,
               ),
             )
             .toList(),

@@ -1,9 +1,7 @@
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import '../../models/flow/edge_style.dart';
+import '../../models/flow/flow_graph.dart';
 
 class PaintableEdge {
   const PaintableEdge({
@@ -21,14 +19,13 @@ class PaintableEdge {
   final int priority;
 
   @override
-  bool operator ==(Object other) {
-    return other is PaintableEdge &&
-        other.start == start &&
-        other.end == end &&
-        other.status == status &&
-        other.active == active &&
-        other.priority == priority;
-  }
+  bool operator ==(Object other) =>
+      other is PaintableEdge &&
+      other.start == start &&
+      other.end == end &&
+      other.status == status &&
+      other.active == active &&
+      other.priority == priority;
 
   @override
   int get hashCode => Object.hash(start, end, status, active, priority);
@@ -60,7 +57,7 @@ class EdgesPainter extends CustomPainter {
     for (final edge in _computedEdges) {
       final isHovered =
           _hoverPosition != null &&
-          edge.isNear(_hoverPosition!, style.hoverHitRadius);
+          edge.isNear(_hoverPosition, style.hoverHitRadius);
       final strokeWidth = isHovered
           ? style.hoverWidth
           : edge.edge.active
@@ -169,9 +166,7 @@ class _ComputedEdge {
   final Offset control1;
   final Offset control2;
 
-  bool isNear(Offset point, double radius) {
-    return _distanceTo(point) <= radius;
-  }
+  bool isNear(Offset point, double radius) => _distanceTo(point) <= radius;
 
   Offset sample(double t, {double normalOffset = 0}) {
     final clampedT = t.clamp(0.0, 1.0);
@@ -214,18 +209,17 @@ class _ComputedEdge {
   }
 }
 
-Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) {
-  return Path()
-    ..moveTo(start.dx, start.dy)
-    ..cubicTo(
-      control1.dx,
-      control1.dy,
-      control2.dx,
-      control2.dy,
-      end.dx,
-      end.dy,
-    );
-}
+Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+    Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
 
 Path _dashPath(Path source, double dashLength, double gap) {
   final dashed = Path();

@@ -7,8 +7,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/test_service.dart';
 import '../../services/facade/keyrx_facade.dart';
+import '../../services/test_service.dart';
 
 /// Test Runner page for discovering and executing tests.
 class TestRunnerPage extends StatefulWidget {
@@ -162,145 +162,135 @@ class _TestRunnerPageState extends State<TestRunnerPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Test Runner'),
-        actions: [
-          if (_discoveredTests.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildStatusChips(),
-            ),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Test Runner'),
+      actions: [
+        if (_discoveredTests.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _buildStatusChips(),
+          ),
+      ],
+    ),
+    body: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildScriptInput(),
+          const SizedBox(height: 16),
+          if (_discoveredTests.isNotEmpty) ...[
+            _buildFilterAndActions(),
+            const SizedBox(height: 16),
+          ],
+          if (_error != null) _buildErrorBanner(),
+          Expanded(child: _buildTestList()),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildScriptInput(),
-            const SizedBox(height: 16),
-            if (_discoveredTests.isNotEmpty) ...[
-              _buildFilterAndActions(),
-              const SizedBox(height: 16),
-            ],
-            if (_error != null) _buildErrorBanner(),
-            Expanded(child: _buildTestList()),
-          ],
+    ),
+  );
+
+  Widget _buildScriptInput() => Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: _scriptPathController,
+          decoration: const InputDecoration(
+            labelText: 'Script Path',
+            hintText: 'path/to/script.rhai',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.description),
+          ),
+          onSubmitted: (_) => _discoverTests(),
         ),
       ),
-    );
-  }
+      const SizedBox(width: 8),
+      FilledButton.icon(
+        onPressed: _isDiscovering ? null : _discoverTests,
+        icon: _isDiscovering
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.search),
+        label: const Text('Discover'),
+      ),
+    ],
+  );
 
-  Widget _buildScriptInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _scriptPathController,
-            decoration: const InputDecoration(
-              labelText: 'Script Path',
-              hintText: 'path/to/script.rhai',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.description),
-            ),
-            onSubmitted: (_) => _discoverTests(),
+  Widget _buildFilterAndActions() => Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: _filterController,
+          decoration: const InputDecoration(
+            labelText: 'Filter tests',
+            hintText: 'Type to filter...',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.filter_list),
+            isDense: true,
           ),
+          onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(width: 8),
-        FilledButton.icon(
-          onPressed: _isDiscovering ? null : _discoverTests,
-          icon: _isDiscovering
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.search),
-          label: const Text('Discover'),
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 8),
+      FilledButton.icon(
+        onPressed: _isRunning ? null : _runAllTests,
+        icon: _isRunning
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.play_arrow),
+        label: const Text('Run All'),
+      ),
+    ],
+  );
 
-  Widget _buildFilterAndActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _filterController,
-            decoration: const InputDecoration(
-              labelText: 'Filter tests',
-              hintText: 'Type to filter...',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.filter_list),
-              isDense: true,
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        const SizedBox(width: 8),
-        FilledButton.icon(
-          onPressed: _isRunning ? null : _runAllTests,
-          icon: _isRunning
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.play_arrow),
-          label: const Text('Run All'),
-        ),
-      ],
-    );
-  }
+  Widget _buildStatusChips() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Chip(
+        avatar: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+        label: Text('$_passed passed'),
+        visualDensity: VisualDensity.compact,
+      ),
+      const SizedBox(width: 8),
+      Chip(
+        avatar: const Icon(Icons.cancel, color: Colors.red, size: 18),
+        label: Text('$_failed failed'),
+        visualDensity: VisualDensity.compact,
+      ),
+    ],
+  );
 
-  Widget _buildStatusChips() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Chip(
-          avatar: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-          label: Text('$_passed passed'),
-          visualDensity: VisualDensity.compact,
-        ),
-        const SizedBox(width: 8),
-        Chip(
-          avatar: const Icon(Icons.cancel, color: Colors.red, size: 18),
-          label: Text('$_failed failed'),
-          visualDensity: VisualDensity.compact,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorBanner() {
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _error!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
+  Widget _buildErrorBanner() => Card(
+    color: Theme.of(context).colorScheme.errorContainer,
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => setState(() => _error = null),
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => _error = null),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildTestList() {
     final tests = _filteredTests;

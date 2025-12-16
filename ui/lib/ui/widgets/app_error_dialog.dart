@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 
 /// Standardized error dialog for consistent user messaging.
 class AppErrorDialog extends StatelessWidget {
+  const AppErrorDialog({
+    required this.title,
+    required this.message,
+    super.key,
+    this.primaryActionLabel = 'OK',
+    this.onPrimaryAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+    this.icon = Icons.error_outline,
+  });
   final String title;
   final String message;
   final String primaryActionLabel;
@@ -9,17 +19,6 @@ class AppErrorDialog extends StatelessWidget {
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
   final IconData icon;
-
-  const AppErrorDialog({
-    super.key,
-    required this.title,
-    required this.message,
-    this.primaryActionLabel = 'OK',
-    this.onPrimaryAction,
-    this.secondaryActionLabel,
-    this.onSecondaryAction,
-    this.icon = Icons.error_outline,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +31,6 @@ class AppErrorDialog extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, color: scheme.error),
           const SizedBox(width: 12),
@@ -75,19 +73,17 @@ class AppErrorDialog extends StatelessWidget {
     VoidCallback? onSecondaryAction,
     IconData icon = Icons.error_outline,
     bool barrierDismissible = false,
-  }) {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => AppErrorDialog(
-        title: title,
-        message: message,
-        primaryActionLabel: primaryActionLabel,
-        onPrimaryAction: onPrimaryAction,
-        secondaryActionLabel: secondaryActionLabel,
-        onSecondaryAction: onSecondaryAction,
-        icon: icon,
-      ),
-    );
-  }
+  }) => showDialog<void>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => AppErrorDialog(
+      title: title,
+      message: message,
+      primaryActionLabel: primaryActionLabel,
+      onPrimaryAction: onPrimaryAction,
+      secondaryActionLabel: secondaryActionLabel,
+      onSecondaryAction: onSecondaryAction,
+      icon: icon,
+    ),
+  );
 }

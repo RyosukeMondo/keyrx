@@ -3,8 +3,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';
-import 'package:keyrx_ui/state/selection_state.dart';
+
+import '../../state/selection_state.dart';
+import 'keyboard_navigable_canvas.dart';
 
 /// Wraps a node widget with a focus indicator for keyboard navigation.
 ///
@@ -12,7 +13,7 @@ import 'package:keyrx_ui/state/selection_state.dart';
 /// navigation. The outline meets WCAG visibility requirements with high
 /// contrast and 2px width.
 class FocusIndicator extends ConsumerWidget {
-  const FocusIndicator({super.key, required this.nodeId, required this.child});
+  const FocusIndicator({required this.nodeId, required this.child, super.key});
 
   final String nodeId;
   final Widget child;

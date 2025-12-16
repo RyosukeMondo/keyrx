@@ -103,16 +103,16 @@ class Profile with _$Profile {
     /// Layout type this profile is designed for
     @JsonKey(name: 'layout_type') required LayoutType layoutType,
 
-    /// Key mappings: physical position key → action
-    /// Only contains entries for remapped keys (sparse map)
-    /// Serialized as {"row,col": action} in JSON
-    @Default({}) Map<String, KeyAction> mappings,
-
     /// Creation timestamp (ISO 8601)
     @JsonKey(name: 'created_at') required String createdAt,
 
     /// Last modification timestamp (ISO 8601)
     @JsonKey(name: 'updated_at') required String updatedAt,
+
+    /// Key mappings: physical position key → action
+    /// Only contains entries for remapped keys (sparse map)
+    /// Serialized as {"row,col": action} in JSON
+    @Default({}) Map<String, KeyAction> mappings,
   }) = _Profile;
 
   const Profile._();
@@ -122,14 +122,10 @@ class Profile with _$Profile {
       _$ProfileFromJson(json);
 
   /// Get the action for a physical position
-  KeyAction? getAction(PhysicalPosition pos) {
-    return mappings[pos.toKey()];
-  }
+  KeyAction? getAction(PhysicalPosition pos) => mappings[pos.toKey()];
 
   /// Check if this profile is compatible with a given layout type
-  bool isCompatibleWith(LayoutType other) {
-    return layoutType.isCompatibleWith(other);
-  }
+  bool isCompatibleWith(LayoutType other) => layoutType.isCompatibleWith(other);
 
   /// Get the number of mapped keys
   int get mappingCount => mappings.length;

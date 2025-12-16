@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 /// Does not handle positioning or interaction.
 class VirtualKeyVisual extends StatelessWidget {
   const VirtualKeyVisual({
-    super.key,
     required this.label,
     required this.id,
+    super.key,
     this.isSelected = false,
     this.isMapped = false,
     this.isHovered = false,
@@ -29,8 +29,8 @@ class VirtualKeyVisual extends StatelessWidget {
 
     Color? backgroundColor;
     Color borderColor;
-    double borderWidth = 1.0;
-    FontWeight fontWeight = FontWeight.normal;
+    var borderWidth = 1;
+    var fontWeight = FontWeight.normal;
     Color? textColor;
 
     if (isSelected) {
@@ -86,15 +86,14 @@ class VirtualKeyVisual extends StatelessWidget {
 
 /// Paints a grid background.
 class VirtualLayoutGridPainter extends CustomPainter {
-  final double step;
-  final double? subStep;
-  final Color color;
-
   VirtualLayoutGridPainter({
     required this.step,
     required this.color,
     this.subStep,
   });
+  final double step;
+  final double? subStep;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {

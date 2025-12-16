@@ -26,16 +26,14 @@ class ErrorRegistryEntry {
   ErrorRegistryEntry withContext({
     String? messageOverride,
     String? actionOverride,
-  }) {
-    return ErrorRegistryEntry(
-      code: code,
-      title: title,
-      message: messageOverride ?? message,
-      action: actionOverride ?? action,
-      docsSection: docsSection,
-      category: category,
-    );
-  }
+  }) => ErrorRegistryEntry(
+    code: code,
+    title: title,
+    message: messageOverride ?? message,
+    action: actionOverride ?? action,
+    docsSection: docsSection,
+    category: category,
+  );
 
   /// Render a UI-friendly message string including next steps and docs link.
   String body({required String docsPath, String? details}) {
@@ -61,13 +59,12 @@ class ErrorRegistryEntry {
   }
 
   /// Build a UserMessage for UI surfaces.
-  UserMessage toUserMessage({required String docsPath, String? details}) {
-    return UserMessage(
-      title: '[$code] $title',
-      body: body(docsPath: docsPath, details: details),
-      category: category,
-    );
-  }
+  UserMessage toUserMessage({required String docsPath, String? details}) =>
+      UserMessage(
+        title: '[$code] $title',
+        body: body(docsPath: docsPath, details: details),
+        category: category,
+      );
 }
 
 /// Centralized error handler that maps common errors to actionable messages.

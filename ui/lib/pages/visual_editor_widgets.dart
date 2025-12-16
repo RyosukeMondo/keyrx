@@ -6,11 +6,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/rhai_generator.dart';
 import '../services/api_docs_service.dart';
-import '../widgets/visual_keyboard.dart';
-import '../widgets/scripting/api_browser.dart';
+import '../services/rhai_generator.dart';
 import '../widgets/common/dialogs/dialogs.dart';
+import '../widgets/scripting/api_browser.dart';
+import '../widgets/visual_keyboard.dart';
 
 export '../services/rhai_generator.dart' show TapHoldConfig;
 export '../widgets/visual_keyboard.dart' show RemapConfig, MappingType;
@@ -18,8 +18,8 @@ export '../widgets/visual_keyboard.dart' show RemapConfig, MappingType;
 /// Lightweight inline message used for helper and validation text.
 class InlineMessage extends StatelessWidget {
   const InlineMessage({
-    super.key,
     required this.message,
+    super.key,
     this.variant = InlineMessageVariant.info,
     this.icon,
   });
@@ -30,20 +30,20 @@ class InlineMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final Color foreground = switch (variant) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = switch (variant) {
       InlineMessageVariant.info => scheme.onSurfaceVariant,
       InlineMessageVariant.success => scheme.onSecondaryContainer,
       InlineMessageVariant.warning => scheme.onTertiaryContainer,
       InlineMessageVariant.error => scheme.onErrorContainer,
     };
-    final Color background = switch (variant) {
+    final background = switch (variant) {
       InlineMessageVariant.info => scheme.surfaceContainerLowest,
       InlineMessageVariant.success => scheme.secondaryContainer,
       InlineMessageVariant.warning => scheme.tertiaryContainer,
       InlineMessageVariant.error => scheme.errorContainer,
     };
-    final IconData icon =
+    final icon =
         this.icon ??
         switch (variant) {
           InlineMessageVariant.info => Icons.info_outline,
@@ -85,49 +85,47 @@ enum InlineMessageVariant { info, success, warning, error }
 
 /// Warning banner shown when script has advanced features.
 class AdvancedFeaturesWarning extends StatelessWidget {
-  const AdvancedFeaturesWarning({super.key, required this.onViewCode});
+  const AdvancedFeaturesWarning({required this.onViewCode, super.key});
 
   final VoidCallback onViewCode;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_amber,
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'This script contains advanced features that cannot be edited visually. '
-              'Use the code view to edit.',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    color: Theme.of(context).colorScheme.errorContainer,
+    child: Row(
+      children: [
+        Icon(
+          Icons.warning_amber,
+          color: Theme.of(context).colorScheme.onErrorContainer,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'This script contains advanced features that cannot be edited visually. '
+            'Use the code view to edit.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
             ),
           ),
-          TextButton(onPressed: onViewCode, child: const Text('View Code')),
-        ],
-      ),
-    );
-  }
+        ),
+        TextButton(onPressed: onViewCode, child: const Text('View Code')),
+      ],
+    ),
+  );
 }
 
 /// Side panel showing list of mappings and tap-hold configs.
 class MappingPanel extends StatelessWidget {
   const MappingPanel({
-    super.key,
     required this.mappings,
     required this.tapHoldConfigs,
     required this.onMappingDeleted,
     required this.onTapHoldDeleted,
     required this.onMappingSelected,
     required this.onClearAll,
+    super.key,
     this.selectedKeyId,
   });
 
@@ -140,97 +138,85 @@ class MappingPanel extends StatelessWidget {
   final String? selectedKeyId;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      border: Border(
+        top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Remaps Column
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(
+                context,
+                'Mappings',
+                mappings.length,
+                showClear: true,
+              ),
+              Expanded(child: _buildMappingList(context)),
+            ],
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Remaps Column
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(
-                  context,
-                  'Mappings',
-                  mappings.length,
-                  showClear: true,
-                ),
-                Expanded(child: _buildMappingList(context)),
-              ],
-            ),
-          ),
-          const VerticalDivider(width: 1),
-          // Tap-Hold / Combos Column
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(
-                  context,
-                  'Tap-Hold & Combos',
-                  tapHoldConfigs.length,
-                ),
-                Expanded(
-                  child: tapHoldConfigs.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No advanced configs',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: tapHoldConfigs.length,
-                          itemBuilder: (context, index) =>
-                              _buildTapHoldTile(context, index),
+        const VerticalDivider(width: 1),
+        // Tap-Hold / Combos Column
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context, 'Tap-Hold & Combos', tapHoldConfigs.length),
+              Expanded(
+                child: tapHoldConfigs.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No advanced configs',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
-                ),
-              ],
-            ),
+                      )
+                    : ListView.builder(
+                        itemCount: tapHoldConfigs.length,
+                        itemBuilder: _buildTapHoldTile,
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   Widget _buildHeader(
     BuildContext context,
     String title,
     int count, {
     bool showClear = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '$title ($count)',
-            style: Theme.of(context).textTheme.titleSmall,
+  }) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('$title ($count)', style: Theme.of(context).textTheme.titleSmall),
+        if (showClear)
+          IconButton(
+            icon: const Icon(Icons.delete_sweep, size: 20),
+            tooltip: 'Clear All',
+            onPressed: mappings.isEmpty ? null : onClearAll,
           ),
-          if (showClear)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep, size: 20),
-              tooltip: 'Clear All',
-              onPressed: mappings.isEmpty ? null : onClearAll,
-            ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 
   Widget _buildMappingList(BuildContext context) {
     if (mappings.isEmpty) {
@@ -249,7 +235,7 @@ class MappingPanel extends StatelessWidget {
     }
     return ListView.builder(
       itemCount: mappings.length,
-      itemBuilder: (context, index) => _buildMappingTile(context, index),
+      itemBuilder: _buildMappingTile,
     );
   }
 
@@ -294,23 +280,21 @@ class MappingPanel extends StatelessWidget {
     );
   }
 
-  String _getMappingTypeLabel(MappingType type) {
-    return switch (type) {
-      MappingType.simple => 'Remap',
-      MappingType.tapHold => 'Tap-Hold',
-      MappingType.layer => 'Layer',
-    };
-  }
+  String _getMappingTypeLabel(MappingType type) => switch (type) {
+    MappingType.simple => 'Remap',
+    MappingType.tapHold => 'Tap-Hold',
+    MappingType.layer => 'Layer',
+  };
 }
 
 /// Code editor view with toolbar and optional documentation panel.
 class CodeEditorView extends StatefulWidget {
   const CodeEditorView({
-    super.key,
     required this.controller,
     required this.isModified,
     required this.onCodeChanged,
     required this.onParseToVisual,
+    super.key,
   });
 
   final TextEditingController controller;
@@ -326,15 +310,13 @@ class _CodeEditorViewState extends State<CodeEditorView> {
   bool _showDocs = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildToolbar(context),
-        Expanded(child: _buildContent(context)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _buildToolbar(context),
+      Expanded(child: _buildContent(context)),
+    ],
+  );
 
   Widget _buildContent(BuildContext context) {
     if (!_showDocs) {
@@ -345,7 +327,7 @@ class _CodeEditorViewState extends State<CodeEditorView> {
       children: [
         Expanded(flex: 2, child: _buildEditor(context)),
         const VerticalDivider(width: 1),
-        Expanded(flex: 1, child: _buildDocsPanel(context)),
+        Expanded(child: _buildDocsPanel(context)),
       ],
     );
   }
@@ -362,147 +344,137 @@ class _CodeEditorViewState extends State<CodeEditorView> {
     );
   }
 
-  Widget _buildToolbar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        children: [
-          Icon(
-            Icons.code,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          Text('Rhai Script', style: Theme.of(context).textTheme.titleSmall),
-          const Spacer(),
-          if (widget.isModified)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                label: const Text('Modified'),
-                labelStyle: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          IconButton(
-            icon: Icon(_showDocs ? Icons.menu_book : Icons.menu_book_outlined),
-            tooltip: _showDocs ? 'Hide Documentation' : 'Show Documentation',
-            onPressed: () {
-              setState(() {
-                _showDocs = !_showDocs;
-              });
-            },
-          ),
-          TextButton.icon(
-            icon: const Icon(Icons.sync, size: 18),
-            label: const Text('Parse to Visual'),
-            onPressed: widget.isModified ? widget.onParseToVisual : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditor(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      child: TextField(
-        controller: widget.controller,
-        maxLines: null,
-        expands: true,
-        textAlignVertical: TextAlignVertical.top,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
+  Widget _buildToolbar(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    child: Row(
+      children: [
+        Icon(
+          Icons.code,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
         ),
-        onChanged: widget.onCodeChanged,
+        const SizedBox(width: 8),
+        Text('Rhai Script', style: Theme.of(context).textTheme.titleSmall),
+        const Spacer(),
+        if (widget.isModified)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Chip(
+              label: const Text('Modified'),
+              labelStyle: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        IconButton(
+          icon: Icon(_showDocs ? Icons.menu_book : Icons.menu_book_outlined),
+          tooltip: _showDocs ? 'Hide Documentation' : 'Show Documentation',
+          onPressed: () {
+            setState(() {
+              _showDocs = !_showDocs;
+            });
+          },
+        ),
+        TextButton.icon(
+          icon: const Icon(Icons.sync, size: 18),
+          label: const Text('Parse to Visual'),
+          onPressed: widget.isModified ? widget.onParseToVisual : null,
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildEditor(BuildContext context) => Container(
+    color: Theme.of(context).colorScheme.surfaceContainerLowest,
+    child: TextField(
+      controller: widget.controller,
+      maxLines: null,
+      expands: true,
+      textAlignVertical: TextAlignVertical.top,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.all(16),
       ),
-    );
-  }
+      onChanged: widget.onCodeChanged,
+    ),
+  );
 }
 
 /// Dialog helpers for visual editor.
 class VisualEditorDialogs {
   /// Show sync warning when code is modified.
-  static Future<SyncAction?> showSyncWarning(BuildContext context) {
-    return showDialog<SyncAction>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber),
-            SizedBox(width: 12),
-            Text('Unsaved Code Changes'),
-          ],
-        ),
-        content: const Text(
-          'The code has been modified. Do you want to parse it back to visual mode, '
-          'or discard changes and regenerate from visual config?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, SyncAction.parse),
-            child: const Text('Parse Code'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, SyncAction.discard),
-            child: const Text('Discard'),
-          ),
+  static Future<SyncAction?> showSyncWarning(
+    BuildContext context,
+  ) => showDialog<SyncAction>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.warning_amber),
+          SizedBox(width: 12),
+          Text('Unsaved Code Changes'),
         ],
       ),
-    );
-  }
+      content: const Text(
+        'The code has been modified. Do you want to parse it back to visual mode, '
+        'or discard changes and regenerate from visual config?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, SyncAction.parse),
+          child: const Text('Parse Code'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, SyncAction.discard),
+          child: const Text('Discard'),
+        ),
+      ],
+    ),
+  );
 
   /// Show confirmation dialog for clearing config.
-  static Future<bool?> showClearConfirmation(BuildContext context) {
-    return DialogHelpers.confirmClear(
-      context,
-      title: 'Clear Configuration',
-      message:
-          'Are you sure you want to clear all mappings? This cannot be undone.',
-      confirmLabel: 'Clear',
-    );
-  }
+  static Future<bool?> showClearConfirmation(
+    BuildContext context,
+  ) => DialogHelpers.confirmClear(
+    context,
+    title: 'Clear Configuration',
+    message:
+        'Are you sure you want to clear all mappings? This cannot be undone.',
+  );
 
   /// Show load script dialog.
-  static Future<String?> showLoadDialog(BuildContext context) {
-    return DialogHelpers.inputPath(
-      context,
-      title: 'Load Script',
-      message: 'Enter the path to the script to load',
-      initialValue: 'scripts/',
-      hintText: 'scripts/my-config.rhai',
-    );
-  }
+  static Future<String?> showLoadDialog(BuildContext context) =>
+      DialogHelpers.inputPath(
+        context,
+        title: 'Load Script',
+        message: 'Enter the path to the script to load',
+        initialValue: 'scripts/',
+        hintText: 'scripts/my-config.rhai',
+      );
 
   /// Show save script dialog.
   static Future<String?> showSaveDialog(
     BuildContext context,
     String suggestedPath,
-  ) {
-    return DialogHelpers.inputPath(
-      context,
-      title: 'Save Script',
-      message:
-          'Enter the path where the script should be saved.\n'
-          'The script can be loaded with: keyrx run --script <path>',
-      initialValue: suggestedPath,
-      hintText: 'scripts/my-config.rhai',
-    );
-  }
+  ) => DialogHelpers.inputPath(
+    context,
+    title: 'Save Script',
+    message:
+        'Enter the path where the script should be saved.\n'
+        'The script can be loaded with: keyrx run --script <path>',
+    initialValue: suggestedPath,
+    hintText: 'scripts/my-config.rhai',
+  );
 }
 
 /// Action to take when syncing code and visual views.

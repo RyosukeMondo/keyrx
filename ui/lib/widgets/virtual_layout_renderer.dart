@@ -4,11 +4,11 @@ import 'virtual_layout_common.dart';
 
 class VirtualLayoutRenderer extends StatelessWidget {
   const VirtualLayoutRenderer({
-    super.key,
     required this.layout,
     required this.selectedKeyId,
     required this.mappedKeyIds,
     required this.onKeyTap,
+    super.key,
   });
 
   final VirtualLayout layout;
@@ -38,7 +38,7 @@ class VirtualLayoutRenderer extends StatelessWidget {
       child: InteractiveViewer(
         boundaryMargin: const EdgeInsets.all(100),
         minScale: 0.1,
-        maxScale: 2.0,
+        maxScale: 2,
         constrained: false, // Allow unbounded canvas
         child: SizedBox(
           width: width < 800 ? 800 : width, // Min size

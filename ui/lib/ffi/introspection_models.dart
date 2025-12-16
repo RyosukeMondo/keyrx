@@ -7,11 +7,6 @@ import 'dart:convert';
 
 /// Introspection metadata for all FFI functions
 class IntrospectionData {
-  final int protocolVersion;
-  final List<DomainMetadata> domains;
-  final int totalFunctions;
-  final int totalEvents;
-
   IntrospectionData({
     required this.protocolVersion,
     required this.domains,
@@ -19,16 +14,19 @@ class IntrospectionData {
     required this.totalEvents,
   });
 
-  factory IntrospectionData.fromJson(Map<String, dynamic> json) {
-    return IntrospectionData(
-      protocolVersion: json['protocol_version'] as int,
-      domains: (json['domains'] as List)
-          .map((d) => DomainMetadata.fromJson(d as Map<String, dynamic>))
-          .toList(),
-      totalFunctions: json['total_functions'] as int,
-      totalEvents: json['total_events'] as int,
-    );
-  }
+  factory IntrospectionData.fromJson(Map<String, dynamic> json) =>
+      IntrospectionData(
+        protocolVersion: json['protocol_version'] as int,
+        domains: (json['domains'] as List)
+            .map((d) => DomainMetadata.fromJson(d as Map<String, dynamic>))
+            .toList(),
+        totalFunctions: json['total_functions'] as int,
+        totalEvents: json['total_events'] as int,
+      );
+  final int protocolVersion;
+  final List<DomainMetadata> domains;
+  final int totalFunctions;
+  final int totalEvents;
 
   Map<String, dynamic> toJson() => {
     'protocol_version': protocolVersion,
@@ -40,12 +38,6 @@ class IntrospectionData {
 
 /// Domain metadata
 class DomainMetadata {
-  final String name;
-  final String description;
-  final String version;
-  final List<FunctionMetadata> functions;
-  final List<EventMetadata> events;
-
   DomainMetadata({
     required this.name,
     required this.description,
@@ -54,19 +46,22 @@ class DomainMetadata {
     required this.events,
   });
 
-  factory DomainMetadata.fromJson(Map<String, dynamic> json) {
-    return DomainMetadata(
-      name: json['name'] as String,
-      description: json['description'] as String,
-      version: json['version'] as String,
-      functions: (json['functions'] as List)
-          .map((f) => FunctionMetadata.fromJson(f as Map<String, dynamic>))
-          .toList(),
-      events: (json['events'] as List)
-          .map((e) => EventMetadata.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-  }
+  factory DomainMetadata.fromJson(Map<String, dynamic> json) => DomainMetadata(
+    name: json['name'] as String,
+    description: json['description'] as String,
+    version: json['version'] as String,
+    functions: (json['functions'] as List)
+        .map((f) => FunctionMetadata.fromJson(f as Map<String, dynamic>))
+        .toList(),
+    events: (json['events'] as List)
+        .map((e) => EventMetadata.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
+  final String name;
+  final String description;
+  final String version;
+  final List<FunctionMetadata> functions;
+  final List<EventMetadata> events;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -79,16 +74,6 @@ class DomainMetadata {
 
 /// Function metadata
 class FunctionMetadata {
-  final String name;
-  final String rustName;
-  final String description;
-  final List<ParameterMetadata> parameters;
-  final TypeMetadata returns;
-  final List<String> errors;
-  final List<String> eventsEmitted;
-  final bool deprecated;
-  final ExampleMetadata? example;
-
   FunctionMetadata({
     required this.name,
     required this.rustName,
@@ -101,23 +86,31 @@ class FunctionMetadata {
     this.example,
   });
 
-  factory FunctionMetadata.fromJson(Map<String, dynamic> json) {
-    return FunctionMetadata(
-      name: json['name'] as String,
-      rustName: json['rust_name'] as String,
-      description: json['description'] as String,
-      parameters: (json['parameters'] as List)
-          .map((p) => ParameterMetadata.fromJson(p as Map<String, dynamic>))
-          .toList(),
-      returns: TypeMetadata.fromJson(json['returns'] as Map<String, dynamic>),
-      errors: (json['errors'] as List).cast<String>(),
-      eventsEmitted: (json['events_emitted'] as List).cast<String>(),
-      deprecated: json['deprecated'] as bool,
-      example: json['example'] != null
-          ? ExampleMetadata.fromJson(json['example'] as Map<String, dynamic>)
-          : null,
-    );
-  }
+  factory FunctionMetadata.fromJson(Map<String, dynamic> json) =>
+      FunctionMetadata(
+        name: json['name'] as String,
+        rustName: json['rust_name'] as String,
+        description: json['description'] as String,
+        parameters: (json['parameters'] as List)
+            .map((p) => ParameterMetadata.fromJson(p as Map<String, dynamic>))
+            .toList(),
+        returns: TypeMetadata.fromJson(json['returns'] as Map<String, dynamic>),
+        errors: (json['errors'] as List).cast<String>(),
+        eventsEmitted: (json['events_emitted'] as List).cast<String>(),
+        deprecated: json['deprecated'] as bool,
+        example: json['example'] != null
+            ? ExampleMetadata.fromJson(json['example'] as Map<String, dynamic>)
+            : null,
+      );
+  final String name;
+  final String rustName;
+  final String description;
+  final List<ParameterMetadata> parameters;
+  final TypeMetadata returns;
+  final List<String> errors;
+  final List<String> eventsEmitted;
+  final bool deprecated;
+  final ExampleMetadata? example;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -134,12 +127,6 @@ class FunctionMetadata {
 
 /// Parameter metadata
 class ParameterMetadata {
-  final String name;
-  final String typeName;
-  final String description;
-  final bool required;
-  final Map<String, dynamic>? constraints;
-
   ParameterMetadata({
     required this.name,
     required this.typeName,
@@ -148,15 +135,19 @@ class ParameterMetadata {
     this.constraints,
   });
 
-  factory ParameterMetadata.fromJson(Map<String, dynamic> json) {
-    return ParameterMetadata(
-      name: json['name'] as String,
-      typeName: json['type_name'] as String,
-      description: json['description'] as String,
-      required: json['required'] as bool,
-      constraints: json['constraints'] as Map<String, dynamic>?,
-    );
-  }
+  factory ParameterMetadata.fromJson(Map<String, dynamic> json) =>
+      ParameterMetadata(
+        name: json['name'] as String,
+        typeName: json['type_name'] as String,
+        description: json['description'] as String,
+        required: json['required'] as bool,
+        constraints: json['constraints'] as Map<String, dynamic>?,
+      );
+  final String name;
+  final String typeName;
+  final String description;
+  final bool required;
+  final Map<String, dynamic>? constraints;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -169,12 +160,6 @@ class ParameterMetadata {
 
 /// Type metadata
 class TypeMetadata {
-  final String typeName;
-  final String kind; // "primitive", "object", "array", "enum"
-  final String? description;
-  final Map<String, TypeMetadata>? properties;
-  final TypeMetadata? items;
-
   TypeMetadata({
     required this.typeName,
     required this.kind,
@@ -183,21 +168,25 @@ class TypeMetadata {
     this.items,
   });
 
-  factory TypeMetadata.fromJson(Map<String, dynamic> json) {
-    return TypeMetadata(
-      typeName: json['type_name'] as String,
-      kind: json['kind'] as String,
-      description: json['description'] as String?,
-      properties: json['properties'] != null
-          ? (json['properties'] as Map<String, dynamic>).map(
-              (k, v) => MapEntry(k, TypeMetadata.fromJson(v as Map<String, dynamic>)),
-            )
-          : null,
-      items: json['items'] != null
-          ? TypeMetadata.fromJson(json['items'] as Map<String, dynamic>)
-          : null,
-    );
-  }
+  factory TypeMetadata.fromJson(Map<String, dynamic> json) => TypeMetadata(
+    typeName: json['type_name'] as String,
+    kind: json['kind'] as String,
+    description: json['description'] as String?,
+    properties: json['properties'] != null
+        ? (json['properties'] as Map<String, dynamic>).map(
+            (k, v) =>
+                MapEntry(k, TypeMetadata.fromJson(v as Map<String, dynamic>)),
+          )
+        : null,
+    items: json['items'] != null
+        ? TypeMetadata.fromJson(json['items'] as Map<String, dynamic>)
+        : null,
+  );
+  final String typeName;
+  final String kind; // "primitive", "object", "array", "enum"
+  final String? description;
+  final Map<String, TypeMetadata>? properties;
+  final TypeMetadata? items;
 
   Map<String, dynamic> toJson() => {
     'type_name': typeName,
@@ -211,23 +200,20 @@ class TypeMetadata {
 
 /// Event metadata
 class EventMetadata {
-  final String name;
-  final String description;
-  final TypeMetadata payload;
-
   EventMetadata({
     required this.name,
     required this.description,
     required this.payload,
   });
 
-  factory EventMetadata.fromJson(Map<String, dynamic> json) {
-    return EventMetadata(
-      name: json['name'] as String,
-      description: json['description'] as String,
-      payload: TypeMetadata.fromJson(json['payload'] as Map<String, dynamic>),
-    );
-  }
+  factory EventMetadata.fromJson(Map<String, dynamic> json) => EventMetadata(
+    name: json['name'] as String,
+    description: json['description'] as String,
+    payload: TypeMetadata.fromJson(json['payload'] as Map<String, dynamic>),
+  );
+  final String name;
+  final String description;
+  final TypeMetadata payload;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -238,24 +224,18 @@ class EventMetadata {
 
 /// Example metadata
 class ExampleMetadata {
-  final dynamic input;
-  final dynamic output;
-
   ExampleMetadata({required this.input, required this.output});
 
-  factory ExampleMetadata.fromJson(Map<String, dynamic> json) {
-    return ExampleMetadata(input: json['input'], output: json['output']);
-  }
+  factory ExampleMetadata.fromJson(Map<String, dynamic> json) =>
+      ExampleMetadata(input: json['input'], output: json['output']);
+  final dynamic input;
+  final dynamic output;
 
   Map<String, dynamic> toJson() => {'input': input, 'output': output};
 }
 
 /// FFI Result wrapper
 class FfiResult<T> {
-  final bool success;
-  final T? data;
-  final FfiError? error;
-
   FfiResult.ok(this.data) : success = true, error = null;
 
   FfiResult.err(this.error) : success = false, data = null;
@@ -276,23 +256,23 @@ class FfiResult<T> {
       throw FormatException('Invalid FFI result format: $json');
     }
   }
+  final bool success;
+  final T? data;
+  final FfiError? error;
 }
 
 /// FFI Error
 class FfiError {
+  FfiError({required this.code, required this.message, this.details});
+
+  factory FfiError.fromJson(Map<String, dynamic> json) => FfiError(
+    code: json['code'] as String,
+    message: json['message'] as String,
+    details: json['details'] as Map<String, dynamic>?,
+  );
   final String code;
   final String message;
   final Map<String, dynamic>? details;
-
-  FfiError({required this.code, required this.message, this.details});
-
-  factory FfiError.fromJson(Map<String, dynamic> json) {
-    return FfiError(
-      code: json['code'] as String,
-      message: json['message'] as String,
-      details: json['details'] as Map<String, dynamic>?,
-    );
-  }
 
   Map<String, dynamic> toJson() => {
     'code': code,

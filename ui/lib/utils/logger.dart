@@ -34,7 +34,7 @@ class LoggingConfigurator {
   }
 
   static Level _defaultLevel() {
-    final envLevel = const String.fromEnvironment('KEYRX_LOG_LEVEL');
+    const envLevel = String.fromEnvironment('KEYRX_LOG_LEVEL');
     final parsed = _parseLevel(envLevel);
     if (parsed != null) {
       return parsed;
@@ -78,18 +78,15 @@ class LoggingConfigurator {
     };
   }
 
-  static Map<String, dynamic> _sanitizeMap(Map<dynamic, dynamic> input) {
-    return input.map((key, value) {
-      return MapEntry(key.toString(), _coerce(value));
-    });
-  }
+  static Map<String, dynamic> _sanitizeMap(Map<dynamic, dynamic> input) =>
+      input.map((key, value) => MapEntry(key.toString(), _coerce(value)));
 
   static dynamic _coerce(dynamic value) {
     if (value == null ||
         value is num ||
         value is bool ||
         value is String ||
-        value is Null) {
+        value == null) {
       return value;
     }
 
@@ -102,7 +99,7 @@ class LoggingConfigurator {
     }
 
     if (value is Map) {
-      return _sanitizeMap(value as Map<dynamic, dynamic>);
+      return _sanitizeMap(value);
     }
 
     if (value is Iterable) {

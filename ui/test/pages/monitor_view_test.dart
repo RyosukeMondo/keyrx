@@ -12,12 +12,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keyrx_ui/models/daemon_protocol.dart';
+import 'package:keyrx_ui/pages/monitor_view.dart';
+import 'package:keyrx_ui/services/daemon_service.dart';
+import 'package:keyrx_ui/state/daemon_providers.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../lib/models/daemon_protocol.dart';
-import '../../lib/pages/monitor_view.dart';
-import '../../lib/services/daemon_service.dart';
-import '../../lib/state/daemon_providers.dart';
 
 // Mocks
 class MockDaemonService extends Mock implements DaemonService {}
@@ -34,16 +33,14 @@ void main() {
 
     // Default mock behavior
     when(() => mockService.events).thenAnswer((_) => eventsController.stream);
-    when(() => mockService.connectionState)
-        .thenAnswer((_) => stateController.stream);
+    when(
+      () => mockService.connectionState,
+    ).thenAnswer((_) => stateController.stream);
     when(() => mockService.connect()).thenAnswer((_) async {});
     when(() => mockService.subscribeEvents()).thenAnswer((_) async {});
-    when(() => mockService.getStatus()).thenAnswer(
-      (_) async => EngineStatus(
-        status: 'stopped',
-        devices: [],
-      ),
-    );
+    when(
+      () => mockService.getStatus(),
+    ).thenAnswer((_) async => const EngineStatus(status: 'stopped'));
   });
 
   tearDown(() {
@@ -51,18 +48,10 @@ void main() {
     stateController.close();
   });
 
-  Widget createTestWidget() {
-    return ProviderScope(
-      overrides: [
-        daemonServiceProvider.overrideWithValue(mockService),
-      ],
-      child: const MaterialApp(
-        home: Scaffold(
-          body: MonitorView(),
-        ),
-      ),
-    );
-  }
+  Widget createTestWidget() => ProviderScope(
+    overrides: [daemonServiceProvider.overrideWithValue(mockService)],
+    child: const MaterialApp(home: Scaffold(body: MonitorView())),
+  );
 
   group('MonitorView - Connection Status', () {
     testWidgets('shows disconnected state initially', (tester) async {
@@ -110,7 +99,7 @@ void main() {
 
       // Emit input event
       eventsController.add(
-        DaemonEvent.input(
+        const DaemonEvent.input(
           InputEvent(
             timestampUs: 1234567890,
             devicePath: '/dev/input/event0',
@@ -136,7 +125,7 @@ void main() {
 
       // Emit output event
       eventsController.add(
-        DaemonEvent.output(
+        const DaemonEvent.output(
           OutputEvent(
             timestampUs: 1234567890,
             keyName: 'B',
@@ -158,7 +147,7 @@ void main() {
 
       // Emit state change event
       eventsController.add(
-        DaemonEvent.stateChange(
+        const DaemonEvent.stateChange(
           StateChangeEvent(
             type: 'engine.started',
             timestampUs: 1234567890,
@@ -178,7 +167,7 @@ void main() {
 
       // Emit multiple events
       eventsController.add(
-        DaemonEvent.input(
+        const DaemonEvent.input(
           InputEvent(
             timestampUs: 1234567890,
             devicePath: '/dev/input/event0',
@@ -192,7 +181,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       eventsController.add(
-        DaemonEvent.input(
+        const DaemonEvent.input(
           InputEvent(
             timestampUs: 1234567891,
             devicePath: '/dev/input/event0',
@@ -272,7 +261,7 @@ void main() {
 
       // Emit input event
       eventsController.add(
-        DaemonEvent.input(
+        const DaemonEvent.input(
           InputEvent(
             timestampUs: 1234567890,
             devicePath: '/dev/input/event0',
@@ -306,7 +295,7 @@ void main() {
 
       // Emit event
       eventsController.add(
-        DaemonEvent.input(
+        const DaemonEvent.input(
           InputEvent(
             timestampUs: 1234567890,
             devicePath: '/dev/input/event0',

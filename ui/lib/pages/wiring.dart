@@ -12,15 +12,15 @@ import 'package:provider/provider.dart';
 
 import '../models/device_state.dart';
 import '../models/hardware_profile.dart';
-import '../models/keyboard_layout.dart';
 import '../models/key_codes_windows.dart';
+import '../models/keyboard_layout.dart';
 import '../models/virtual_layout.dart';
 import '../services/device_registry_service.dart';
 import '../services/hardware_service.dart';
 import '../services/layout_service.dart';
 import '../services/service_registry.dart';
-import '../widgets/visual_keyboard.dart';
 import '../widgets/virtual_layout_renderer.dart';
+import '../widgets/visual_keyboard.dart';
 
 class WiringPage extends StatefulWidget {
   const WiringPage({super.key});
@@ -126,7 +126,7 @@ class _WiringPageState extends State<WiringPage> {
 
     final profilesResult = await _hardwareService.listProfiles();
     final layoutsResult = await _layoutService.listLayouts();
-    List<DeviceState> devices = [];
+    var devices = <DeviceState>[];
     try {
       devices = await _deviceRegistryService.getDevices();
     } catch (e) {
@@ -571,287 +571,279 @@ class _WiringPageState extends State<WiringPage> {
     );
   }
 
-  Widget _buildEditor() {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            setState(() {
-              _isEditing = false;
-              _selectedProfile = null;
-            });
-          },
-        ),
-        title: Text(_selectedProfile == null ? 'New Profile' : 'Edit Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isSaving ? null : _saveProfile,
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 1000;
-          final panels = [
-            Expanded(child: _buildPhysicalPanel()),
-            Expanded(child: _buildVirtualPanel()),
-          ];
-
-          if (isWide) {
-            return Column(
-              children: [
-                _buildProfilePicker(), // Collapsible form
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: panels,
-                  ),
-                ),
-              ],
-            );
-          } else {
-            return ListView(
-              children: [
-                _buildProfilePicker(),
-                _buildPhysicalPanel(),
-                _buildVirtualPanel(),
-              ],
-            );
-          }
+  Widget _buildEditor() => Scaffold(
+    appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          setState(() {
+            _isEditing = false;
+            _selectedProfile = null;
+          });
         },
       ),
-    );
-  }
+      title: Text(_selectedProfile == null ? 'New Profile' : 'Edit Profile'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.save),
+          onPressed: _isSaving ? null : _saveProfile,
+        ),
+      ],
+    ),
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 1000;
+        final panels = [
+          Expanded(child: _buildPhysicalPanel()),
+          Expanded(child: _buildVirtualPanel()),
+        ];
+
+        if (isWide) {
+          return Column(
+            children: [
+              _buildProfilePicker(), // Collapsible form
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: panels,
+                ),
+              ),
+            ],
+          );
+        } else {
+          return ListView(
+            children: [
+              _buildProfilePicker(),
+              _buildPhysicalPanel(),
+              _buildVirtualPanel(),
+            ],
+          );
+        }
+      },
+    ),
+  );
 
   // --- Helper Widgets for Editor ---
 
-  Widget _buildProfilePicker() {
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.all(12),
-      child: ExpansionTile(
-        initiallyExpanded:
-            _selectedProfile == null, // Expand only if creating new
-        shape: Border.all(color: Colors.transparent),
-        title: Text(
-          _nameController.text.isEmpty
-              ? 'Profile Settings'
-              : _nameController.text,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+  Widget _buildProfilePicker() => Card(
+    elevation: 1,
+    margin: const EdgeInsets.all(12),
+    child: ExpansionTile(
+      initiallyExpanded:
+          _selectedProfile == null, // Expand only if creating new
+      shape: Border.all(color: Colors.transparent),
+      title: Text(
+        _nameController.text.isEmpty
+            ? 'Profile Settings'
+            : _nameController.text,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        '${_vendorController.text.padLeft(4, '0')}:${_productController.text.padLeft(4, '0')} • ${_selectedLayoutId ?? "No Layout"}',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      childrenPadding: const EdgeInsets.all(16),
+      children: [
+        // 1. Display Name
+        TextField(
+          controller: _nameController,
+          decoration: const InputDecoration(
+            labelText: 'Display Name',
+            border: OutlineInputBorder(),
+          ),
         ),
-        subtitle: Text(
-          '${_vendorController.text.padLeft(4, '0')}:${_productController.text.padLeft(4, '0')} • ${_selectedLayoutId ?? "No Layout"}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        childrenPadding: const EdgeInsets.all(16),
-        children: [
-          // 1. Display Name
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Display Name',
-              border: OutlineInputBorder(),
+        const SizedBox(height: 12),
+
+        // 2. Row: Target Device | Hardware Identity
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 5,
+              child: DropdownButtonFormField<String>(
+                initialValue: _findMatchingDeviceKey(),
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Target Device',
+                  border: OutlineInputBorder(),
+                  helperText: 'Select a connected or virtual device',
+                ),
+                items: _knownDevices.map((d) {
+                  final key = d.identity.toKey();
+                  final label =
+                      d.identity.userLabel ??
+                      '${d.identity.vendorId.toRadixString(16).padLeft(4, '0')}:${d.identity.productId.toRadixString(16).padLeft(4, '0')}';
+                  final serial = d.identity.serialNumber.isNotEmpty
+                      ? ' (${d.identity.serialNumber})'
+                      : '';
+                  return DropdownMenuItem(
+                    value: key,
+                    child: Text(
+                      '$label$serial',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  final device = _knownDevices.firstWhere(
+                    (d) => d.identity.toKey() == value,
+                    orElse: () => _knownDevices.first,
+                  );
+                  setState(() {
+                    _vendorController.text = device.identity.vendorId
+                        .toString();
+                    _productController.text = device.identity.productId
+                        .toString();
+                    _serialController.text = device.identity.serialNumber;
+
+                    // Auto-name if empty or default
+                    if (_nameController.text.isEmpty ||
+                        _nameController.text == 'New Hardware') {
+                      _nameController.text =
+                          device.identity.userLabel ??
+                          '${device.identity.toKey()} Profile';
+                    }
+                  });
+                },
+                validator: (value) =>
+                    value == null ? 'Please select a device' : null,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-
-          // 2. Row: Target Device | Hardware Identity
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 5,
-                child: DropdownButtonFormField<String>(
-                  initialValue: _findMatchingDeviceKey(),
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Target Device',
-                    border: OutlineInputBorder(),
-                    helperText: 'Select a connected or virtual device',
-                  ),
-                  items: _knownDevices.map((d) {
-                    final key = d.identity.toKey();
-                    final label =
-                        d.identity.userLabel ??
-                        '${d.identity.vendorId.toRadixString(16).padLeft(4, '0')}:${d.identity.productId.toRadixString(16).padLeft(4, '0')}';
-                    final serial = d.identity.serialNumber.isNotEmpty
-                        ? ' (${d.identity.serialNumber})'
-                        : '';
-                    return DropdownMenuItem(
-                      value: key,
-                      child: Text(
-                        '$label$serial',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    final device = _knownDevices.firstWhere(
-                      (d) => d.identity.toKey() == value,
-                      orElse: () => _knownDevices.first,
-                    );
-                    setState(() {
-                      _vendorController.text = device.identity.vendorId
-                          .toString();
-                      _productController.text = device.identity.productId
-                          .toString();
-                      _serialController.text = device.identity.serialNumber;
-
-                      // Auto-name if empty or default
-                      if (_nameController.text.isEmpty ||
-                          _nameController.text == 'New Hardware') {
-                        _nameController.text =
-                            device.identity.userLabel ??
-                            '${device.identity.toKey()} Profile';
-                      }
-                    });
-                  },
-                  validator: (value) =>
-                      value == null ? 'Please select a device' : null,
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 4,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hardware Identity',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        _InfoChip(
+                          label:
+                              'VID: ${_vendorController.text.isEmpty ? '?' : int.tryParse(_vendorController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
+                        ),
+                        _InfoChip(
+                          label:
+                              'PID: ${_productController.text.isEmpty ? '?' : int.tryParse(_productController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
+                        ),
+                        _InfoChip(
+                          label:
+                              'SN: ${_serialController.text.isEmpty ? 'None' : _serialController.text}',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 4,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hardware Identity',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          _InfoChip(
-                            label:
-                                'VID: ${_vendorController.text.isEmpty ? '?' : int.tryParse(_vendorController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
-                          ),
-                          _InfoChip(
-                            label:
-                                'PID: ${_productController.text.isEmpty ? '?' : int.tryParse(_productController.text)?.toRadixString(16).padLeft(4, '0').toUpperCase()}',
-                          ),
-                          _InfoChip(
-                            label:
-                                'SN: ${_serialController.text.isEmpty ? 'None' : _serialController.text}',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 3. Virtual Layout
-          DropdownButtonFormField<String>(
-            initialValue: _selectedLayoutId,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Virtual layout',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              ..._layouts.map(
-                (layout) => DropdownMenuItem(
-                  value: layout.id,
-                  child: Text('${layout.name} • ${layout.id}'),
-                ),
-              ),
-              // Robustness: If the selected layout ID is missing (deleted/not loaded),
-              // add a placeholder item to prevent DropdownButton assertion crash.
-              if (_selectedLayoutId != null &&
-                  !_layouts.any((l) => l.id == _selectedLayoutId))
-                DropdownMenuItem(
-                  value: _selectedLayoutId,
-                  child: Text(
-                    'Unknown Layout ($_selectedLayoutId)',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _selectedLayoutId = value;
-                _selectedVirtualKeyId = null;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          if (_selectedPhysicalKeyId != null)
-            TextButton.icon(
-              onPressed: _clearMappingForSelectedPhysical,
-              icon: const Icon(Icons.link_off),
-              label: const Text('Unmap selected key'),
-            ),
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 12),
 
-  Widget _buildPhysicalPanel() {
-    return Card(
-      margin: const EdgeInsets.all(12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Physical Keys',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        // 3. Virtual Layout
+        DropdownButtonFormField<String>(
+          initialValue: _selectedLayoutId,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Virtual layout',
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            ..._layouts.map(
+              (layout) => DropdownMenuItem(
+                value: layout.id,
+                child: Text('${layout.name} • ${layout.id}'),
               ),
-              const SizedBox(height: 4),
-              Text(
-                _selectedPhysicalKeyId == null
-                    ? 'Tap a physical key to start wiring'
-                    : 'Selected: $_selectedPhysicalKeyId',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 280,
-                child: VisualKeyboard(
-                  layout: KeyboardLayout.full(),
-                  onKeyTap: _handlePhysicalKeyTap,
-                  selectedKeys: _selectedPhysicalKeyId == null
-                      ? {}
-                      : {_selectedPhysicalKeyId!},
-                  mappedKeys: _mappedPhysicalKeyIds,
-                  showMappingOverlay: false,
-                  enableDragDrop: false,
+            ),
+            // Robustness: If the selected layout ID is missing (deleted/not loaded),
+            // add a placeholder item to prevent DropdownButton assertion crash.
+            if (_selectedLayoutId != null &&
+                !_layouts.any((l) => l.id == _selectedLayoutId))
+              DropdownMenuItem(
+                value: _selectedLayoutId,
+                child: Text(
+                  'Unknown Layout ($_selectedLayoutId)',
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
-            ],
+          ],
+          onChanged: (value) {
+            setState(() {
+              _selectedLayoutId = value;
+              _selectedVirtualKeyId = null;
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        if (_selectedPhysicalKeyId != null)
+          TextButton.icon(
+            onPressed: _clearMappingForSelectedPhysical,
+            icon: const Icon(Icons.link_off),
+            label: const Text('Unmap selected key'),
           ),
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _errorMessage!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ],
+    ),
+  );
+
+  Widget _buildPhysicalPanel() => Card(
+    margin: const EdgeInsets.all(12),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Physical Keys',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _selectedPhysicalKeyId == null
+                  ? 'Tap a physical key to start wiring'
+                  : 'Selected: $_selectedPhysicalKeyId',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 280,
+              child: VisualKeyboard(
+                layout: KeyboardLayout.full(),
+                onKeyTap: _handlePhysicalKeyTap,
+                selectedKeys: _selectedPhysicalKeyId == null
+                    ? {}
+                    : {_selectedPhysicalKeyId!},
+                mappedKeys: _mappedPhysicalKeyIds,
+                showMappingOverlay: false,
+                enableDragDrop: false,
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildVirtualPanel() {
     final layout = _selectedLayout;
@@ -903,9 +895,7 @@ class _WiringPageState extends State<WiringPage> {
   }
 
   // Get all virtual keys that are target of some mapping
-  Set<String> get _allMappedVirtualKeyIds {
-    return _wiringDraft.values.toSet();
-  }
+  Set<String> get _allMappedVirtualKeyIds => _wiringDraft.values.toSet();
 
   @override
   Widget build(BuildContext context) {
@@ -928,11 +918,12 @@ class _WiringPageState extends State<WiringPage> {
     if (vid == null || pid == null) return null;
 
     try {
-      final match = _knownDevices.firstWhere((d) {
-        return d.identity.vendorId == vid &&
+      final match = _knownDevices.firstWhere(
+        (d) =>
+            d.identity.vendorId == vid &&
             d.identity.productId == pid &&
-            d.identity.serialNumber == serial;
-      });
+            d.identity.serialNumber == serial,
+      );
       return match.identity.toKey();
     } catch (_) {
       return null;
@@ -946,22 +937,20 @@ class _InfoChip extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Theme.of(context).dividerColor),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: Theme.of(context).dividerColor),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 12,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }

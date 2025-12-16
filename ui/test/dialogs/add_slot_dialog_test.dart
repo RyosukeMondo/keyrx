@@ -21,44 +21,77 @@ void main() {
 
     setUp(() {
       testProfiles = [
-        const HardwareProfile(id: 'profile-1', name: 'Ergo-60', virtualLayoutId: 'layout-1'),
-        const HardwareProfile(id: 'profile-2', name: 'TKL Layout', virtualLayoutId: 'layout-1'),
-        const HardwareProfile(id: 'profile-3', name: 'Full-size', virtualLayoutId: 'layout-1'),
+        const HardwareProfile(
+          id: 'profile-1',
+          name: 'Ergo-60',
+          virtualLayoutId: 'layout-1',
+        ),
+        const HardwareProfile(
+          id: 'profile-2',
+          name: 'TKL Layout',
+          virtualLayoutId: 'layout-1',
+        ),
+        const HardwareProfile(
+          id: 'profile-3',
+          name: 'Full-size',
+          virtualLayoutId: 'layout-1',
+        ),
       ];
 
       testKeymaps = [
-        const Keymap(id: 'keymap-1', name: 'Default', virtualLayoutId: 'layout-1'),
-        const Keymap(id: 'keymap-2', name: 'Gaming', virtualLayoutId: 'layout-1'),
-        const Keymap(id: 'keymap-3', name: 'Programming', virtualLayoutId: 'layout-1'),
+        const Keymap(
+          id: 'keymap-1',
+          name: 'Default',
+          virtualLayoutId: 'layout-1',
+        ),
+        const Keymap(
+          id: 'keymap-2',
+          name: 'Gaming',
+          virtualLayoutId: 'layout-1',
+        ),
+        const Keymap(
+          id: 'keymap-3',
+          name: 'Programming',
+          virtualLayoutId: 'layout-1',
+        ),
       ];
 
-      testDevice = const DeviceInstanceId(vendorId: 1234, productId: 5678, serial: 'serial1');
+      testDevice = const DeviceInstanceId(
+        vendorId: 1234,
+        productId: 5678,
+        serial: 'serial1',
+      );
       fakeSlotActions = _FakeSlotActions();
     });
 
-    Widget buildTestWidget({List<ProfileSlotSelection>? existingSlots}) => ProviderScope(
-      overrides: [
-        availableHardwareProfilesProvider.overrideWith(
-          (ref) => Stream.value(testProfiles).asyncMap((v) => v),
-        ),
-        availableKeymapsProvider.overrideWith(
-          (ref) => Stream.value(testKeymaps).asyncMap((v) => v),
-        ),
-        slotActionsProvider.overrideWith((ref) => fakeSlotActions),
-      ],
-      child: MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showAddSlotDialog(context, device: testDevice, existingSlots: existingSlots ?? []);
-              },
-              child: const Text('Open Dialog'),
+    Widget buildTestWidget({List<ProfileSlotSelection>? existingSlots}) =>
+        ProviderScope(
+          overrides: [
+            availableHardwareProfilesProvider.overrideWith(
+              (ref) => Stream.value(testProfiles).asyncMap((v) => v),
+            ),
+            availableKeymapsProvider.overrideWith(
+              (ref) => Stream.value(testKeymaps).asyncMap((v) => v),
+            ),
+            slotActionsProvider.overrideWith((ref) => fakeSlotActions),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showAddSlotDialog(
+                      context,
+                      device: testDevice,
+                      existingSlots: existingSlots ?? [],
+                    );
+                  },
+                  child: const Text('Open Dialog'),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
 
     testWidgets('renders dialog with all elements', (tester) async {
       await tester.pumpWidget(buildTestWidget());
@@ -103,7 +136,9 @@ void main() {
       expect(find.text('Programming'), findsOneWidget);
     });
 
-    testWidgets('validates that profile is selected before submission', (tester) async {
+    testWidgets('validates that profile is selected before submission', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
@@ -117,7 +152,9 @@ void main() {
       expect(fakeSlotActions.addSlotCalls, isEmpty);
     });
 
-    testWidgets('validates that keymap is selected before submission', (tester) async {
+    testWidgets('validates that keymap is selected before submission', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
@@ -137,9 +174,14 @@ void main() {
       expect(fakeSlotActions.addSlotCalls, isEmpty);
     });
 
-    testWidgets('validates against duplicate profile+keymap combinations', (tester) async {
+    testWidgets('validates against duplicate profile+keymap combinations', (
+      tester,
+    ) async {
       final existingSlots = [
-        ProfileSlotSelection(hardwareProfileId: 'profile-1', keymapId: 'keymap-1'),
+        ProfileSlotSelection(
+          hardwareProfileId: 'profile-1',
+          keymapId: 'keymap-1',
+        ),
       ];
 
       await tester.pumpWidget(buildTestWidget(existingSlots: existingSlots));
@@ -163,20 +205,26 @@ void main() {
 
       // Error message should appear
       expect(
-        find.text('This profile + keymap combination already exists for this device'),
+        find.text(
+          'This profile + keymap combination already exists for this device',
+        ),
         findsOneWidget,
       );
       expect(fakeSlotActions.addSlotCalls, isEmpty);
     });
 
-    testWidgets('allows duplicate check to pass with different combinations', (tester) async {
+    testWidgets('allows duplicate check to pass with different combinations', (
+      tester,
+    ) async {
       final existingSlots = [
-        ProfileSlotSelection(hardwareProfileId: 'profile-1', keymapId: 'keymap-1'),
+        ProfileSlotSelection(
+          hardwareProfileId: 'profile-1',
+          keymapId: 'keymap-1',
+        ),
       ];
 
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-        const RuntimeConfig(),
-      );
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget(existingSlots: existingSlots));
       await tester.tap(find.text('Open Dialog'));
@@ -202,9 +250,8 @@ void main() {
     });
 
     testWidgets('submits slot when form is valid', (tester) async {
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-        const RuntimeConfig(),
-      );
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -235,10 +282,11 @@ void main() {
       expect(fakeSlotActions.addSlotCalls[0].active, false); // default
     });
 
-    testWidgets('submits with active=true when checkbox is checked', (tester) async {
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-        const RuntimeConfig(),
-      );
+    testWidgets('submits with active=true when checkbox is checked', (
+      tester,
+    ) async {
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -268,9 +316,8 @@ void main() {
     });
 
     testWidgets('closes dialog on successful submission', (tester) async {
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-        const RuntimeConfig(),
-      );
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -310,9 +357,10 @@ void main() {
     });
 
     testWidgets('shows error message on submission failure', (tester) async {
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.error(
-        'FFI error: device disconnected',
-      );
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.error(
+            'FFI error: device disconnected',
+          );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -340,9 +388,8 @@ void main() {
     testWidgets('disables buttons while saving', (tester) async {
       // Use a completer to control when the async operation finishes
       fakeSlotActions.addSlotDelay = const Duration(seconds: 2);
-      fakeSlotActions.addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-        const RuntimeConfig(),
-      );
+      fakeSlotActions.addSlotResult =
+          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));
@@ -364,10 +411,14 @@ void main() {
       await tester.pump();
 
       // Buttons should be disabled and show loading indicator
-      final addButton = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Add'));
+      final addButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Add'),
+      );
       expect(addButton.onPressed, isNull);
 
-      final cancelButton = tester.widget<TextButton>(find.widgetWithText(TextButton, 'Cancel'));
+      final cancelButton = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Cancel'),
+      );
       expect(cancelButton.onPressed, isNull);
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -409,7 +460,11 @@ void main() {
             body: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () {
-                  showAddSlotDialog(context, device: testDevice, existingSlots: []);
+                  showAddSlotDialog(
+                    context,
+                    device: testDevice,
+                    existingSlots: [],
+                  );
                 },
                 child: const Text('Open Dialog'),
               ),
@@ -441,7 +496,11 @@ void main() {
             body: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () {
-                  showAddSlotDialog(context, device: testDevice, existingSlots: []);
+                  showAddSlotDialog(
+                    context,
+                    device: testDevice,
+                    existingSlots: [],
+                  );
                 },
                 child: const Text('Open Dialog'),
               ),
@@ -463,9 +522,8 @@ void main() {
 class _FakeSlotActions implements SlotActions {
   final List<_AddSlotCall> addSlotCalls = [];
 
-  ConfigOperationResult<RuntimeConfig> addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
-    const RuntimeConfig(),
-  );
+  ConfigOperationResult<RuntimeConfig> addSlotResult =
+      ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
 
   Duration addSlotDelay = Duration.zero;
 
@@ -474,8 +532,8 @@ class _FakeSlotActions implements SlotActions {
     required DeviceInstanceId device,
     required String hardwareProfileId,
     required String keymapId,
-    required bool active,
     int? priorityOverride,
+    bool active = false,
   }) async {
     addSlotCalls.add(
       _AddSlotCall(

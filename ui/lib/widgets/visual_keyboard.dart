@@ -93,58 +93,56 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
   KeyboardLayout get _layout => widget.layout ?? KeyboardLayout.ansi104();
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = _calculateScale(constraints);
-        final scaledLayout = _createScaledLayout(scale);
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final scale = _calculateScale(constraints);
+      final scaledLayout = _createScaledLayout(scale);
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SingleChildScrollView(
-            child: SizedBox(
-              width: scaledLayout.totalWidth,
-              height: scaledLayout.totalHeight,
-              child: Stack(
-                children: [
-                  // Key widgets layer
-                  ..._buildKeyWidgets(scaledLayout),
-                  // Mapping overlay layer
-                  if (widget.showMappingOverlay)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        ignoring: false,
-                        child: MappingOverlay(
-                          mappings: widget.mappings,
-                          layout: scaledLayout,
-                          selectedMappingIndex: _selectedMappingIndex,
-                          onMappingTap: (index) {
-                            setState(() {
-                              _selectedMappingIndex =
-                                  _selectedMappingIndex == index ? null : index;
-                            });
-                          },
-                          onMappingDelete: widget.onMappingDeleted,
-                          dragStartKey: _dragStartKeyId,
-                          dragCurrentPosition: _dragCurrentPosition,
-                        ),
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
+          child: SizedBox(
+            width: scaledLayout.totalWidth,
+            height: scaledLayout.totalHeight,
+            child: Stack(
+              children: [
+                // Key widgets layer
+                ..._buildKeyWidgets(scaledLayout),
+                // Mapping overlay layer
+                if (widget.showMappingOverlay)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: false,
+                      child: MappingOverlay(
+                        mappings: widget.mappings,
+                        layout: scaledLayout,
+                        selectedMappingIndex: _selectedMappingIndex,
+                        onMappingTap: (index) {
+                          setState(() {
+                            _selectedMappingIndex =
+                                _selectedMappingIndex == index ? null : index;
+                          });
+                        },
+                        onMappingDelete: widget.onMappingDeleted,
+                        dragStartKey: _dragStartKeyId,
+                        dragCurrentPosition: _dragCurrentPosition,
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
 
   double _calculateScale(BoxConstraints constraints) {
     final availableWidth = constraints.maxWidth;
     final layoutWidth = _layout.totalWidth;
 
     if (layoutWidth <= availableWidth) {
-      return 1.0;
+      return 1;
     }
     return (availableWidth / layoutWidth).clamp(
       UiConstants.minKeyboardScale,
@@ -217,107 +215,105 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
     Widget child,
     ({double width, double height}) size,
     KeyboardLayout layout,
-  ) {
-    return DragTarget<String>(
-      onWillAcceptWithDetails: (details) {
-        // Accept if source is different from target
-        return details.data != key.id;
-      },
-      onAcceptWithDetails: (details) {
-        // Create mapping
-        widget.onMappingCreated?.call(details.data, key.id);
-        setState(() {
-          _dragStartKeyId = null;
-          _dragCurrentPosition = null;
-          _selectedMappingIndex = null;
-        });
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isAccepting = candidateData.isNotEmpty;
+  ) => DragTarget<String>(
+    onWillAcceptWithDetails: (details) {
+      // Accept if source is different from target
+      return details.data != key.id;
+    },
+    onAcceptWithDetails: (details) {
+      // Create mapping
+      widget.onMappingCreated?.call(details.data, key.id);
+      setState(() {
+        _dragStartKeyId = null;
+        _dragCurrentPosition = null;
+        _selectedMappingIndex = null;
+      });
+    },
+    builder: (context, candidateData, rejectedData) {
+      final isAccepting = candidateData.isNotEmpty;
 
-        return LongPressDraggable<String>(
-          data: key.id,
-          delay: const Duration(milliseconds: 150),
-          feedback: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              width: size.width,
-              height: size.height,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 2,
-                ),
+      return LongPressDraggable<String>(
+        data: key.id,
+        delay: const Duration(milliseconds: 150),
+        feedback: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            width: size.width,
+            height: size.height,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
               ),
-              child: Center(
-                child: Text(
-                  key.label,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+            ),
+            child: Center(
+              child: Text(
+                key.label,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          childWhenDragging: Opacity(opacity: 0.4, child: child),
-          onDragStarted: () {
+        ),
+        childWhenDragging: Opacity(opacity: 0.4, child: child),
+        onDragStarted: () {
+          setState(() {
+            _dragStartKeyId = key.id;
+            _selectedMappingIndex = null;
+          });
+        },
+        onDragUpdate: (details) {
+          // Get the RenderBox of this widget to convert global to local
+          final renderBox = context.findRenderObject() as RenderBox?;
+          if (renderBox != null) {
             setState(() {
-              _dragStartKeyId = key.id;
-              _selectedMappingIndex = null;
+              _dragCurrentPosition = renderBox.globalToLocal(
+                details.globalPosition,
+              );
             });
-          },
-          onDragUpdate: (details) {
-            // Get the RenderBox of this widget to convert global to local
-            final renderBox = context.findRenderObject() as RenderBox?;
-            if (renderBox != null) {
-              setState(() {
-                _dragCurrentPosition = renderBox.globalToLocal(
-                  details.globalPosition,
-                );
-              });
-            }
-          },
-          onDraggableCanceled: (_, __) {
-            setState(() {
-              _dragStartKeyId = null;
-              _dragCurrentPosition = null;
-            });
-          },
-          onDragEnd: (_) {
-            setState(() {
-              _dragStartKeyId = null;
-              _dragCurrentPosition = null;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(
-              milliseconds: TimingConfig.animationDurationMs,
-            ),
-            decoration: isAccepting
-                ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  )
-                : null,
-            child: child,
+          }
+        },
+        onDraggableCanceled: (_, __) {
+          setState(() {
+            _dragStartKeyId = null;
+            _dragCurrentPosition = null;
+          });
+        },
+        onDragEnd: (_) {
+          setState(() {
+            _dragStartKeyId = null;
+            _dragCurrentPosition = null;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(
+            milliseconds: TimingConfig.animationDurationMs,
           ),
-        );
-      },
-    );
-  }
+          decoration: isAccepting
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                )
+              : null,
+          child: child,
+        ),
+      );
+    },
+  );
 }
 
 /// A compact visual keyboard for embedding in smaller spaces.
@@ -334,13 +330,11 @@ class CompactVisualKeyboard extends StatelessWidget {
   final Set<String> highlightedKeys;
 
   @override
-  Widget build(BuildContext context) {
-    return VisualKeyboard(
-      layout: KeyboardLayout.compact(),
-      onKeyTap: onKeyTap,
-      selectedKeys: selectedKeys,
-      highlightedKeys: highlightedKeys,
-      showSecondaryLabels: false,
-    );
-  }
+  Widget build(BuildContext context) => VisualKeyboard(
+    layout: KeyboardLayout.compact(),
+    onKeyTap: onKeyTap,
+    selectedKeys: selectedKeys,
+    highlightedKeys: highlightedKeys,
+    showSecondaryLabels: false,
+  );
 }

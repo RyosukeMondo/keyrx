@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 /// last action optionally styled as primary.
 class MultiActionDialog<T> extends StatelessWidget {
   const MultiActionDialog({
-    super.key,
     required this.title,
     required this.message,
     required this.actions,
+    super.key,
     this.icon,
   });
 
@@ -30,7 +30,6 @@ class MultiActionDialog<T> extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             Icon(icon, color: scheme.primary),
@@ -72,18 +71,16 @@ class MultiActionDialog<T> extends StatelessWidget {
     required List<DialogAction<T>> actions,
     IconData? icon,
     bool barrierDismissible = true,
-  }) {
-    return showDialog<T>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => MultiActionDialog<T>(
-        title: title,
-        message: message,
-        actions: actions,
-        icon: icon,
-      ),
-    );
-  }
+  }) => showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => MultiActionDialog<T>(
+      title: title,
+      message: message,
+      actions: actions,
+      icon: icon,
+    ),
+  );
 }
 
 /// Represents an action button in a multi-action dialog.

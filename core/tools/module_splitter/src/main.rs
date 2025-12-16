@@ -4,8 +4,8 @@ use colored::Colorize;
 use std::path::PathBuf;
 
 mod analyzer;
-mod grouper;
 mod generator;
+mod grouper;
 mod types;
 
 use analyzer::ModuleAnalyzer;
@@ -68,13 +68,21 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Analyze { module, max_size, format } => {
+        Commands::Analyze {
+            module,
+            max_size,
+            format,
+        } => {
             analyze_module(&module, max_size, &format)?;
         }
         Commands::Preview { module, max_size } => {
             preview_split(&module, max_size)?;
         }
-        Commands::Apply { module, max_size, yes } => {
+        Commands::Apply {
+            module,
+            max_size,
+            yes,
+        } => {
             apply_split(&module, max_size, yes)?;
         }
     }
@@ -108,8 +116,10 @@ fn analyze_module(module_path: &PathBuf, max_size: usize, format: &str) -> Resul
                     analysis.code_lines,
                     max_size
                 );
-                println!("  Recommended: Split into {} modules",
-                    (analysis.code_lines + max_size - 1) / max_size);
+                println!(
+                    "  Recommended: Split into {} modules",
+                    analysis.code_lines.div_ceil(max_size)
+                );
             } else {
                 println!(
                     "\n{} Module is within size limit ({} <= {})",
@@ -151,7 +161,8 @@ fn preview_split(module_path: &PathBuf, max_size: usize) -> Result<()> {
     println!();
 
     for (idx, group) in groups.iter().enumerate() {
-        println!("  {}. {} ({} lines, {} functions)",
+        println!(
+            "  {}. {} ({} lines, {} functions)",
             idx + 1,
             group.name.bright_blue().bold(),
             group.estimated_lines,
@@ -200,7 +211,8 @@ fn apply_split(module_path: &PathBuf, max_size: usize, skip_confirm: bool) -> Re
     println!("  Will create {} new modules\n", groups.len());
 
     for (idx, group) in groups.iter().enumerate() {
-        println!("  {}. {} ({} lines, {} functions)",
+        println!(
+            "  {}. {} ({} lines, {} functions)",
             idx + 1,
             group.name.bright_blue().bold(),
             group.estimated_lines,

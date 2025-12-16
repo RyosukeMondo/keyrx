@@ -7,16 +7,11 @@
 /// - Optimized rebuilds
 library;
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/flow/flow_graph.dart';
+
 import '../../models/flow/edge_style.dart';
 import '../../utils/rendering_optimizer.dart';
 import '../flow/edges_painter.dart';
-import '../flow/interactive_edge.dart';
 
 /// Optimized canvas view model.
 class OptimizedCanvasView {
@@ -31,16 +26,16 @@ class OptimizedCanvasView {
   final Rect viewport;
 
   /// Filter nodes to only those visible in viewport.
-  List<OptimizedCanvasNode> get visibleNodes {
-    return nodes.where((node) {
-      return isNodeInViewport(
-        nodePosition: node.position,
-        nodeSize: node.size,
-        viewport: viewport,
-        margin: 200.0, // Render margin for smooth scrolling
-      );
-    }).toList();
-  }
+  List<OptimizedCanvasNode> get visibleNodes => nodes
+      .where(
+        (node) => isNodeInViewport(
+          nodePosition: node.position,
+          nodeSize: node.size,
+          viewport: viewport,
+          margin: 200, // Render margin for smooth scrolling
+        ),
+      )
+      .toList();
 
   /// Filter edges to only those with both endpoints visible.
   List<PaintableEdge> get visibleEdges {
@@ -70,9 +65,9 @@ class OptimizedCanvasNode {
 /// when other parts of the canvas change.
 class OptimizedNodeWrapper extends StatelessWidget {
   const OptimizedNodeWrapper({
-    super.key,
     required this.nodeId,
     required this.child,
+    super.key,
   });
 
   final String nodeId;
@@ -91,9 +86,9 @@ class OptimizedNodeWrapper extends StatelessWidget {
 /// compared to CustomPainter.
 class OptimizedEdgeLayer extends LeafRenderObjectWidget {
   const OptimizedEdgeLayer({
-    super.key,
     required this.edges,
     required this.style,
+    super.key,
     this.hoverPosition,
   });
 
@@ -102,13 +97,8 @@ class OptimizedEdgeLayer extends LeafRenderObjectWidget {
   final Offset? hoverPosition;
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
-    return RenderEdgeLayer(
-      edges: edges,
-      style: style,
-      hoverPosition: hoverPosition,
-    );
-  }
+  RenderObject createRenderObject(BuildContext context) =>
+      RenderEdgeLayer(edges: edges, style: style, hoverPosition: hoverPosition);
 
   @override
   void updateRenderObject(BuildContext context, RenderEdgeLayer renderObject) {
@@ -171,9 +161,7 @@ class RenderEdgeLayer extends RenderBox {
   bool get sizedByParent => true;
 
   @override
-  Size computeDryLayout(BoxConstraints constraints) {
-    return constraints.biggest;
-  }
+  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -214,9 +202,7 @@ class RenderEdgeLayer extends RenderBox {
     canvas.drawPath(path, paint);
 
     // Draw priority badge
-    if (edge.priority != null) {
-      _drawPriorityBadge(canvas, edge, color);
-    }
+    _drawPriorityBadge(canvas, edge, color);
   }
 
   Path _getCachedPath(PaintableEdge edge) {
@@ -341,18 +327,17 @@ class RenderEdgeLayer extends RenderBox {
 }
 
 // Helper functions for Bezier curve calculations
-Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) {
-  return Path()
-    ..moveTo(start.dx, start.dy)
-    ..cubicTo(
-      control1.dx,
-      control1.dy,
-      control2.dx,
-      control2.dy,
-      end.dx,
-      end.dy,
-    );
-}
+Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+    Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
 
 Path _dashPath(Path source, double dashLength, double gap) {
   final dashed = Path();

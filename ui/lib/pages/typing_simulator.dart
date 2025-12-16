@@ -13,10 +13,10 @@ import '../config/config.dart';
 /// Dialog for typing speed simulation.
 class TypingSimulationDialog extends StatefulWidget {
   const TypingSimulationDialog({
-    super.key,
     required this.sampleText,
     required this.onComplete,
     required this.onCancel,
+    super.key,
   });
 
   final String sampleText;
@@ -78,7 +78,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
 
     // Calculate inter-key delays
     final delays = <double>[];
-    for (int i = 1; i < _keyPressTimestamps.length; i++) {
+    for (var i = 1; i < _keyPressTimestamps.length; i++) {
       final delay = (_keyPressTimestamps[i] - _keyPressTimestamps[i - 1])
           .toDouble();
       // Filter out unreasonable delays (> pause threshold = likely pause)
@@ -140,7 +140,7 @@ class _TypingSimulationDialogState extends State<TypingSimulationDialog> {
           const SizedBox(width: UiConstants.smallPadding),
           const Expanded(child: Text('Typing Speed Simulation')),
           Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: UiConstants.smallPadding,
               vertical: UiConstants.tinyPadding,
             ),
@@ -265,9 +265,7 @@ class TypingStatistics {
   double calculateRecommendedTimeout({
     double minTimeout = 100,
     double maxTimeout = 1000,
-  }) {
-    return (mean + stdDev).clamp(minTimeout, maxTimeout);
-  }
+  }) => (mean + stdDev).clamp(minTimeout, maxTimeout);
 
   /// Calculate estimated miss rate using cumulative distribution function.
   ///

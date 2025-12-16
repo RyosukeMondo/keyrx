@@ -111,13 +111,11 @@ class DeviceEventHandler {
   }
 
   /// Get statistics about event handling latency.
-  Map<String, dynamic> getStats() {
-    return {
-      'has_subscription': _subscription != null,
-      'refresh_pending': _refreshPending,
-      'target_latency_ms': _maxLatency.inMilliseconds,
-    };
-  }
+  Map<String, dynamic> getStats() => {
+    'has_subscription': _subscription != null,
+    'refresh_pending': _refreshPending,
+    'target_latency_ms': _maxLatency.inMilliseconds,
+  };
 
   void dispose() {
     _logger.info('device_handler.dispose');

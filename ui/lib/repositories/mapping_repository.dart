@@ -82,9 +82,8 @@ class MappingRepository extends ChangeNotifier {
   }
 
   /// Generate a Rhai script from current mappings.
-  String generateScript() {
-    return ScriptGenerator.build(mappings: _mappings.values, combos: _combos);
-  }
+  String generateScript() =>
+      ScriptGenerator.build(mappings: _mappings.values, combos: _combos);
 
   /// Load mappings from visual editor remap configs.
   void loadFromRemapConfigs(List<RemapConfig> remaps) {
@@ -100,12 +99,10 @@ class MappingRepository extends ChangeNotifier {
   }
 
   /// Export to visual editor remap configs.
-  List<RemapConfig> toRemapConfigs() {
-    return _mappings.values
-        .where((m) => m.type == KeyActionType.remap && m.to != null)
-        .map((m) => RemapConfig(sourceKeyId: m.from, targetKeyId: m.to!))
-        .toList();
-  }
+  List<RemapConfig> toRemapConfigs() => _mappings.values
+      .where((m) => m.type == KeyActionType.remap && m.to != null)
+      .map((m) => RemapConfig(sourceKeyId: m.from, targetKeyId: m.to!))
+      .toList();
 }
 
 /// Tap-hold mapping configuration.

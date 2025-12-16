@@ -449,11 +449,10 @@ class _MetricsWidgetState extends State<MetricsWidget> {
     );
   }
 
-  String _formatTimestamp(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}:'
-        '${dt.second.toString().padLeft(2, '0')}';
-  }
+  String _formatTimestamp(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:'
+      '${dt.minute.toString().padLeft(2, '0')}:'
+      '${dt.second.toString().padLeft(2, '0')}';
 
   @override
   void dispose() {

@@ -11,7 +11,7 @@ import '../../services/session_service.dart';
 
 /// Session analyzer page for viewing and analyzing recorded sessions.
 class AnalyzerPage extends StatefulWidget {
-  const AnalyzerPage({super.key, required this.sessionService});
+  const AnalyzerPage({required this.sessionService, super.key});
 
   final SessionService sessionService;
 
@@ -80,29 +80,27 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Session Analyzer'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _loadSessions,
-            tooltip: 'Refresh sessions',
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          // Session list panel
-          SizedBox(width: 280, child: _buildSessionList()),
-          const VerticalDivider(width: 1),
-          // Analysis panel
-          Expanded(child: _buildAnalysisPanel()),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Session Analyzer'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _isLoading ? null : _loadSessions,
+          tooltip: 'Refresh sessions',
+        ),
+      ],
+    ),
+    body: Row(
+      children: [
+        // Session list panel
+        SizedBox(width: 280, child: _buildSessionList()),
+        const VerticalDivider(width: 1),
+        // Analysis panel
+        Expanded(child: _buildAnalysisPanel()),
+      ],
+    ),
+  );
 
   Widget _buildSessionList() {
     if (_isLoading) {
@@ -157,20 +155,18 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
     required IconData icon,
     required String title,
     required String subtitle,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(subtitle, style: TextStyle(color: Colors.grey[500])),
-        ],
-      ),
-    );
-  }
+  }) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 48, color: Colors.grey),
+        const SizedBox(height: 16),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Text(subtitle, style: TextStyle(color: Colors.grey[500])),
+      ],
+    ),
+  );
 
   Widget _buildAnalysisPanel() {
     if (_selectedSession == null) {
@@ -248,21 +244,19 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(value, style: Theme.of(context).textTheme.headlineSmall),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+  Widget _buildStatCard(String label, String value, IconData icon) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 8),
+          Text(value, style: Theme.of(context).textTheme.headlineSmall),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildDecisionBreakdown() {
     final breakdown = _analysis!.decisionBreakdown;
@@ -403,18 +397,16 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
     );
   }
 
-  Widget _buildLatencyMetric(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color),
-        ),
-      ],
-    );
-  }
+  Widget _buildLatencyMetric(String label, String value, Color color) => Column(
+    children: [
+      Text(label, style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color),
+      ),
+    ],
+  );
 
   String _formatDuration(double ms) {
     if (ms < 1000) return '${ms.toStringAsFixed(0)}ms';

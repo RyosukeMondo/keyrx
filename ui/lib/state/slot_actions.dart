@@ -11,8 +11,8 @@ import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
-import 'keyflow_providers.dart';
 import 'analytics_providers.dart';
+import 'keyflow_providers.dart';
 
 /// Actions for managing device slots.
 class SlotActions {
@@ -67,9 +67,7 @@ class SlotActions {
   Future<ConfigOperationResult<RuntimeConfig>> updateSlot({
     required DeviceInstanceId device,
     required ProfileSlot slot,
-  }) {
-    return _repo.updateSlot(device, slot);
-  }
+  }) => _repo.updateSlot(device, slot);
 
   /// Delete a slot from a device.
   Future<ConfigOperationResult<RuntimeConfig>> deleteSlot({
@@ -136,12 +134,8 @@ class SlotActions {
     return results;
   }
 
-  String _generateSlotId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
-  }
+  String _generateSlotId() => DateTime.now().millisecondsSinceEpoch.toString();
 }
 
 /// Provider for slot actions.
-final slotActionsProvider = Provider<SlotActions>((ref) {
-  return SlotActions(ref);
-});
+final slotActionsProvider = Provider<SlotActions>(SlotActions.new);

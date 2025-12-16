@@ -65,8 +65,9 @@ class FakeHardwareService with ChangeNotifier implements HardwareService {
       ConfigOperationResult.success(profiles);
 
   @override
-  Future<ConfigOperationResult<HardwareProfile>> saveProfile(HardwareProfile profile) async =>
-      ConfigOperationResult.success(profile);
+  Future<ConfigOperationResult<HardwareProfile>> saveProfile(
+    HardwareProfile profile,
+  ) async => ConfigOperationResult.success(profile);
 }
 
 class FakeKeymapService implements KeymapService {
@@ -96,16 +97,28 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<List<DeviceState>> getDevices() async => devices;
 
   @override
-  Future<DeviceRegistryOperationResult> assignProfile(String deviceKey, String profileId) async =>
-      const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> assignProfile(
+    String deviceKey,
+    String profileId,
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> setUserLabel(String deviceKey, String? label) async =>
-      const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> setUserLabel(
+    String deviceKey,
+    String? label,
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> toggleRemap(String deviceKey, bool enabled) async =>
-      const DeviceRegistryOperationResult.success();
+  Future<DeviceRegistryOperationResult> toggleDevice(
+    String deviceKey,
+    bool enabled,
+  ) async => const DeviceRegistryOperationResult.success();
+
+  @override
+  Future<DeviceRegistryOperationResult> toggleRemap(
+    String deviceKey,
+    bool enabled,
+  ) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => devices;
@@ -125,7 +138,9 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
 
 void main() {
   group('DevicesPage', () {
-    testWidgets('shows empty state when runtime has no devices', (tester) async {
+    testWidgets('shows empty state when runtime has no devices', (
+      tester,
+    ) async {
       final runtimeService = FakeRuntimeService(const RuntimeConfig());
       final hardwareService = FakeHardwareService(const []);
       final keymapService = FakeKeymapService(const []);
@@ -144,12 +159,19 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('No connected devices with runtime slots'), findsOneWidget);
+      expect(
+        find.text('No connected devices with runtime slots'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.devices_other_outlined), findsOneWidget);
     });
 
     testWidgets('renders device slots from runtime config', (tester) async {
-      const deviceId = DeviceInstanceId(vendorId: 0x1234, productId: 0x5678, serial: 'ABC');
+      const deviceId = DeviceInstanceId(
+        vendorId: 0x1234,
+        productId: 0x5678,
+        serial: 'ABC',
+      );
       const runtime = RuntimeConfig(
         devices: [
           DeviceSlots(
@@ -162,7 +184,12 @@ void main() {
                 active: true,
                 priority: 2,
               ),
-              ProfileSlot(id: 'slot-2', hardwareProfileId: 'hw-1', keymapId: 'km-1', priority: 1),
+              ProfileSlot(
+                id: 'slot-2',
+                hardwareProfileId: 'hw-1',
+                keymapId: 'km-1',
+                priority: 1,
+              ),
             ],
           ),
         ],
@@ -179,7 +206,11 @@ void main() {
         ),
       ]);
       final keymapService = FakeKeymapService([
-        const Keymap(id: 'km-1', name: 'Test Keymap', virtualLayoutId: 'layout-1'),
+        const Keymap(
+          id: 'km-1',
+          name: 'Test Keymap',
+          virtualLayoutId: 'layout-1',
+        ),
       ]);
       final deviceRegistry = FakeDeviceRegistryService([
         const DeviceState(

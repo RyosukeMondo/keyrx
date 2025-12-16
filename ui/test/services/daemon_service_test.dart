@@ -13,15 +13,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keyrx_ui/models/daemon_protocol.dart';
+import 'package:keyrx_ui/services/daemon_service.dart';
 import 'package:mocktail/mocktail.dart';
-
-import '../../lib/models/daemon_protocol.dart';
-import '../../lib/services/daemon_service.dart';
 
 // Mocks
 class MockSocket extends Mock implements Socket {}
 
-class MockStreamSubscription extends Mock implements StreamSubscription<List<int>> {}
+class MockStreamSubscription extends Mock
+    implements StreamSubscription<List<int>> {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,10 +40,7 @@ void main() {
       final service = DaemonService(socketPath: '/nonexistent/path.sock');
 
       // Should timeout connecting to non-existent socket
-      await expectLater(
-        service.connect(),
-        throwsA(isA<DaemonException>()),
-      );
+      await expectLater(service.connect(), throwsA(isA<DaemonException>()));
 
       expect(service.state, DaemonConnectionState.error);
     });
@@ -57,7 +54,7 @@ void main() {
       // Try second connection while first is in progress
       // Note: This will throw before the first connection completes
       expect(
-        () => service.connect(),
+        service.connect,
         throwsA(
           isA<DaemonException>().having(
             (e) => e.message,
@@ -78,10 +75,7 @@ void main() {
       final subscription = service.connectionState.listen(states.add);
 
       // Attempt connection (will fail)
-      await expectLater(
-        service.connect(),
-        throwsA(isA<DaemonException>()),
-      );
+      await expectLater(service.connect(), throwsA(isA<DaemonException>()));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
@@ -112,10 +106,7 @@ void main() {
       final service = DaemonService(socketPath: '/tmp/test.sock');
 
       await expectLater(
-        service.sendRequest<void>(
-          'test.method',
-          parseResult: (_) {},
-        ),
+        service.sendRequest<void>('test.method', parseResult: (_) {}),
         throwsA(
           isA<DaemonException>().having(
             (e) => e.message,
@@ -150,10 +141,8 @@ void main() {
       expect(
         message,
         isA<IncomingMessage>().having(
-          (m) => m.maybeWhen(
-            response: (r) => r.id.asNumber,
-            orElse: () => null,
-          ),
+          (m) =>
+              m.maybeWhen(response: (r) => r.id.asNumber, orElse: () => null),
           'response id',
           1,
         ),
@@ -163,10 +152,7 @@ void main() {
     test('parses JSON-RPC error response', () {
       final json = {
         'jsonrpc': '2.0',
-        'error': {
-          'code': -32600,
-          'message': 'Invalid request',
-        },
+        'error': {'code': -32600, 'message': 'Invalid request'},
         'id': 1,
       };
 
@@ -175,10 +161,7 @@ void main() {
       expect(
         message,
         isA<IncomingMessage>().having(
-          (m) => m.maybeWhen(
-            error: (e) => e.error.code,
-            orElse: () => null,
-          ),
+          (m) => m.maybeWhen(error: (e) => e.error.code, orElse: () => null),
           'error code',
           -32600,
         ),
@@ -202,10 +185,7 @@ void main() {
       expect(
         message,
         isA<IncomingMessage>().having(
-          (m) => m.maybeWhen(
-            notification: (n) => n.method,
-            orElse: () => null,
-          ),
+          (m) => m.maybeWhen(notification: (n) => n.method, orElse: () => null),
           'notification method',
           'events.input',
         ),
@@ -225,10 +205,7 @@ void main() {
         // Missing 'method' for notification
       };
 
-      expect(
-        () => IncomingMessage.fromJson(json),
-        throwsA(anything),
-      );
+      expect(() => IncomingMessage.fromJson(json), throwsA(anything));
     });
   });
 
@@ -254,7 +231,7 @@ void main() {
     });
 
     test('DaemonEvent.fromNotification parses input event', () {
-      final notification = JsonRpcNotification(
+      const notification = JsonRpcNotification(
         jsonrpc: '2.0',
         method: DaemonNotifications.eventInput,
         params: {
@@ -272,10 +249,7 @@ void main() {
       expect(
         event,
         isA<DaemonEvent>().having(
-          (e) => e.maybeWhen(
-            input: (i) => i.keyName,
-            orElse: () => null,
-          ),
+          (e) => e.maybeWhen(input: (i) => i.keyName, orElse: () => null),
           'key name',
           'A',
         ),
@@ -283,7 +257,7 @@ void main() {
     });
 
     test('DaemonEvent.fromNotification parses output event', () {
-      final notification = JsonRpcNotification(
+      const notification = JsonRpcNotification(
         jsonrpc: '2.0',
         method: DaemonNotifications.eventOutput,
         params: {
@@ -299,10 +273,7 @@ void main() {
       expect(
         event,
         isA<DaemonEvent>().having(
-          (e) => e.maybeWhen(
-            output: (o) => o.keyName,
-            orElse: () => null,
-          ),
+          (e) => e.maybeWhen(output: (o) => o.keyName, orElse: () => null),
           'key name',
           'B',
         ),
@@ -310,7 +281,7 @@ void main() {
     });
 
     test('DaemonEvent.fromNotification parses state change event', () {
-      final notification = JsonRpcNotification(
+      const notification = JsonRpcNotification(
         jsonrpc: '2.0',
         method: DaemonNotifications.eventStateChange,
         params: {
@@ -325,10 +296,7 @@ void main() {
       expect(
         event,
         isA<DaemonEvent>().having(
-          (e) => e.maybeWhen(
-            stateChange: (s) => s.type,
-            orElse: () => null,
-          ),
+          (e) => e.maybeWhen(stateChange: (s) => s.type, orElse: () => null),
           'event type',
           'engine.started',
         ),
@@ -336,7 +304,7 @@ void main() {
     });
 
     test('DaemonEvent.fromNotification throws on unknown method', () {
-      final notification = JsonRpcNotification(
+      const notification = JsonRpcNotification(
         jsonrpc: '2.0',
         method: 'unknown.method',
         params: {},
@@ -358,7 +326,6 @@ void main() {
         service.startEngine(
           configPath: '/path/to/config',
           scriptPath: '/path/to/script',
-          useAllDevices: true,
         ),
         throwsA(
           isA<DaemonException>().having(
@@ -404,9 +371,7 @@ void main() {
       final service = DaemonService(socketPath: '/tmp/test.sock');
 
       await expectLater(
-        service.subscribeEvents(
-          eventTypes: ['input', 'output'],
-        ),
+        service.subscribeEvents(eventTypes: ['input', 'output']),
         throwsA(
           isA<DaemonException>().having(
             (e) => e.message,
@@ -473,21 +438,21 @@ void main() {
       // Would require socket injection to simulate error
     }, skip: true);
 
-    test('disconnection during pending requests completes with error', () async {
-      final service = DaemonService(socketPath: '/tmp/test.sock');
+    test(
+      'disconnection during pending requests completes with error',
+      () async {
+        final service = DaemonService(socketPath: '/tmp/test.sock');
 
-      // Try to start a request while not connected
-      final requestFuture = service.sendRequest<void>(
-        'test.method',
-        parseResult: (_) {},
-      );
+        // Try to start a request while not connected
+        final requestFuture = service.sendRequest<void>(
+          'test.method',
+          parseResult: (_) {},
+        );
 
-      // Should immediately fail
-      await expectLater(
-        requestFuture,
-        throwsA(isA<DaemonException>()),
-      );
-    });
+        // Should immediately fail
+        await expectLater(requestFuture, throwsA(isA<DaemonException>()));
+      },
+    );
 
     test('response with unknown ID is ignored', () {
       // Would require injecting socket data
@@ -543,25 +508,22 @@ void main() {
     });
 
     test('DaemonException formats with and without error code', () {
-      final exception1 = DaemonException('Test error');
+      const exception1 = DaemonException('Test error');
       expect(exception1.toString(), 'DaemonException: Test error');
 
-      final exception2 = DaemonException('Test error', errorCode: 42);
-      expect(
-        exception2.toString(),
-        'DaemonException (code 42): Test error',
-      );
+      const exception2 = DaemonException('Test error', errorCode: 42);
+      expect(exception2.toString(), 'DaemonException (code 42): Test error');
     });
   });
 
   group('DaemonService - Protocol Models', () {
     test('RequestId handles number and string IDs', () {
-      final numId = RequestId.number(123);
+      const numId = RequestId.number(123);
       expect(numId.isNumber, true);
       expect(numId.asNumber, 123);
       expect(numId.toJson(), 123);
 
-      final strId = RequestId.string('abc');
+      const strId = RequestId.string('abc');
       expect(strId.isString, true);
       expect(strId.asString, 'abc');
       expect(strId.toJson(), 'abc');
@@ -590,10 +552,7 @@ void main() {
     });
 
     test('EngineStatus handles null optional fields', () {
-      final json = {
-        'status': 'stopped',
-        'devices': <Map<String, dynamic>>[],
-      };
+      final json = {'status': 'stopped', 'devices': <Map<String, dynamic>>[]};
 
       final status = EngineStatus.fromJson(json);
 
@@ -605,10 +564,7 @@ void main() {
     });
 
     test('DaemonDeviceInfo fromJson parses correctly', () {
-      final json = {
-        'name': 'Test Keyboard',
-        'path': '/dev/input/event3',
-      };
+      final json = {'name': 'Test Keyboard', 'path': '/dev/input/event3'};
 
       final device = DaemonDeviceInfo.fromJson(json);
 

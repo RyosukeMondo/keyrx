@@ -60,34 +60,32 @@ class StyledTextField extends StatelessWidget {
   final FocusNode? focusNode;
 
   @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      maxLines: maxLines,
-      expands: expands,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      textAlign: textAlign,
-      textAlignVertical: textAlignVertical,
-      style: style,
-      autofocus: autofocus,
-      obscureText: obscureText,
-      autocorrect: autocorrect,
-      focusNode: focusNode,
-      decoration:
-          decoration ??
-          InputDecoration(
-            labelText: labelText,
-            hintText: hintText,
-            suffixText: suffixText,
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-          ),
-    );
-  }
+  Widget build(BuildContext context) => TextField(
+    controller: controller,
+    enabled: enabled,
+    maxLines: maxLines,
+    expands: expands,
+    keyboardType: keyboardType,
+    inputFormatters: inputFormatters,
+    onChanged: onChanged,
+    onSubmitted: onSubmitted,
+    textAlign: textAlign,
+    textAlignVertical: textAlignVertical,
+    style: style,
+    autofocus: autofocus,
+    obscureText: obscureText,
+    autocorrect: autocorrect,
+    focusNode: focusNode,
+    decoration:
+        decoration ??
+        InputDecoration(
+          labelText: labelText,
+          hintText: hintText,
+          suffixText: suffixText,
+          prefixIcon: prefixIcon,
+          suffixIcon: suffixIcon,
+        ),
+  );
 }
 
 /// Text field with outline border, commonly used for forms.
@@ -132,30 +130,28 @@ class OutlinedTextField extends StatelessWidget {
   final FocusNode? focusNode;
 
   @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      style: style,
-      autofocus: autofocus,
-      obscureText: obscureText,
-      autocorrect: autocorrect,
-      focusNode: focusNode,
-      decoration: InputDecoration(
-        labelText: labelText,
-        hintText: hintText,
-        suffixText: suffixText,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-        border: const OutlineInputBorder(),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => TextField(
+    controller: controller,
+    enabled: enabled,
+    maxLines: maxLines,
+    keyboardType: keyboardType,
+    inputFormatters: inputFormatters,
+    onChanged: onChanged,
+    onSubmitted: onSubmitted,
+    style: style,
+    autofocus: autofocus,
+    obscureText: obscureText,
+    autocorrect: autocorrect,
+    focusNode: focusNode,
+    decoration: InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      suffixText: suffixText,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      border: const OutlineInputBorder(),
+    ),
+  );
 }
 
 /// Multiline text field that expands to fill available space.

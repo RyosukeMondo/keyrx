@@ -9,6 +9,15 @@ class NodePosition {
     DateTime? updatedAt,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
+  factory NodePosition.fromJson(Map<String, dynamic> json) => NodePosition(
+    x: (json['x'] as num).toDouble(),
+    y: (json['y'] as num).toDouble(),
+    isManual: json['isManual'] as bool? ?? false,
+    updatedAt:
+        DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0),
+  );
+
   final double x;
   final double y;
   final bool isManual;
@@ -21,14 +30,12 @@ class NodePosition {
     double? y,
     bool? isManual,
     DateTime? updatedAt,
-  }) {
-    return NodePosition(
-      x: x ?? this.x,
-      y: y ?? this.y,
-      isManual: isManual ?? this.isManual,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
+  }) => NodePosition(
+    x: x ?? this.x,
+    y: y ?? this.y,
+    isManual: isManual ?? this.isManual,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   Map<String, dynamic> toJson() => {
     'x': x,
@@ -36,17 +43,6 @@ class NodePosition {
     'isManual': isManual,
     'updatedAt': updatedAt.toIso8601String(),
   };
-
-  factory NodePosition.fromJson(Map<String, dynamic> json) {
-    return NodePosition(
-      x: (json['x'] as num).toDouble(),
-      y: (json['y'] as num).toDouble(),
-      isManual: json['isManual'] as bool? ?? false,
-      updatedAt:
-          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
 
   @override
   int get hashCode => Object.hash(x, y, isManual);

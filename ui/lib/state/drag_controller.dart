@@ -25,14 +25,12 @@ class DragState {
     Offset? initialPosition,
     Offset? currentOffset,
     bool? isDragging,
-  }) {
-    return DragState(
-      nodeId: nodeId ?? this.nodeId,
-      initialPosition: initialPosition ?? this.initialPosition,
-      currentOffset: currentOffset ?? this.currentOffset,
-      isDragging: isDragging ?? this.isDragging,
-    );
-  }
+  }) => DragState(
+    nodeId: nodeId ?? this.nodeId,
+    initialPosition: initialPosition ?? this.initialPosition,
+    currentOffset: currentOffset ?? this.currentOffset,
+    isDragging: isDragging ?? this.isDragging,
+  );
 }
 
 /// Controller for managing drag state across the flow canvas.
@@ -76,9 +74,8 @@ class DragController extends _$DragController {
   }
 
   /// Check if a specific node is currently being dragged.
-  bool isDragging(String nodeId) {
-    return state?.nodeId == nodeId && state?.isDragging == true;
-  }
+  bool isDragging(String nodeId) =>
+      state?.nodeId == nodeId && state?.isDragging == true;
 
   /// Get the current position for a specific node if it's being dragged.
   Offset? getDragPosition(String nodeId) {

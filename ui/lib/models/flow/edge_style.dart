@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
+import 'flow_graph.dart';
 
 class EdgePalette {
   const EdgePalette({
@@ -33,6 +33,7 @@ const defaultEdgePalette = EdgePalette(
 
 class EdgeStyle {
   const EdgeStyle({
+    required this.palette,
     this.activeWidth = 3.0,
     this.inactiveWidth = 2.2,
     this.hoverWidth = 4.0,
@@ -40,7 +41,6 @@ class EdgeStyle {
     this.dashGap = 6.0,
     this.hoverHitRadius = 12.0,
     this.priorityBadgeRadius = 14.0,
-    required this.palette,
   });
 
   final double activeWidth;

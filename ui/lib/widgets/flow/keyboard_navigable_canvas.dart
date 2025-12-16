@@ -2,14 +2,12 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/flow/node_position.dart';
-import 'package:keyrx_ui/services/keyboard_shortcuts.dart';
-import 'package:keyrx_ui/state/keyflow_providers.dart';
-import 'package:keyrx_ui/state/node_positions_provider.dart';
-import 'package:keyrx_ui/state/selection_state.dart';
+import '../../models/flow/flow_graph.dart';
+import '../../services/keyboard_shortcuts.dart';
+import '../../state/keyflow_providers.dart';
+import '../../state/node_positions_provider.dart';
+import '../../state/selection_state.dart';
 
 /// Controller for managing keyboard-based zoom operations.
 class ZoomController {
@@ -52,12 +50,10 @@ class FocusTracker {
   final List<FlowNode> nodes;
   int _focusedIndex;
 
-  FocusTracker copyWith({List<FlowNode>? nodes}) {
-    return FocusTracker(
-      nodes: nodes ?? this.nodes,
-      initialFocusedIndex: _focusedIndex,
-    );
-  }
+  FocusTracker copyWith({List<FlowNode>? nodes}) => FocusTracker(
+    nodes: nodes ?? this.nodes,
+    initialFocusedIndex: _focusedIndex,
+  );
 
   int get focusedIndex => _focusedIndex;
 
@@ -77,9 +73,7 @@ class FocusTracker {
   }
 
   /// Check if a node is focused.
-  bool isNodeFocused(String nodeId) {
-    return focusedNodeId == nodeId;
-  }
+  bool isNodeFocused(String nodeId) => focusedNodeId == nodeId;
 }
 
 /// Provider for focus tracking state.
@@ -99,10 +93,10 @@ final focusTrackerProvider = StateProvider<FocusTracker>(
 /// - Ctrl+? for help
 class KeyboardNavigableCanvas extends ConsumerStatefulWidget {
   const KeyboardNavigableCanvas({
-    super.key,
     required this.child,
     required this.transformationController,
     required this.canvasBounds,
+    super.key,
     this.onNodeDetailsRequested,
     this.onHelpRequested,
   });

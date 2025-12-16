@@ -11,6 +11,7 @@ import 'dart:ffi';
 import 'package:flutter/foundation.dart'; // For @visibleForTesting
 
 import 'bindings.dart';
+import 'bridge_config.dart';
 import 'bridge_core.dart';
 import 'bridge_device_profile.dart';
 import 'bridge_discovery.dart';
@@ -19,21 +20,18 @@ import 'bridge_migration.dart';
 import 'bridge_session.dart';
 import 'bridge_testing.dart';
 import 'bridge_validation.dart';
-import 'bridge_config.dart';
-
+import 'debug_tools.dart';
 import 'device_registry_ffi.dart';
-import 'profile_registry_ffi.dart';
 import 'event_types.dart';
 import 'generated/bindings_generated.dart';
 import 'generated_bindings.dart';
-import 'debug_tools.dart';
+import 'profile_registry_ffi.dart';
 
 // Re-export all types from mixin modules for public API compatibility.
 export 'bridge_device_profile.dart'
     show DeviceProfile, DeviceProfileResult, PhysicalKey, ProfileSource;
 export 'bridge_discovery.dart'
     show DeviceListResult, DiscoveryStartResult, KeyboardDevice;
-export 'event_types.dart' show EventType;
 export 'bridge_engine.dart'
     show
         BridgeStateUpdate,
@@ -80,6 +78,7 @@ export 'bridge_validation.dart'
         ValidationResult,
         ValidationWarning,
         WarningCategory;
+export 'event_types.dart' show EventType;
 
 /// Bridge to the KeyRx Core library.
 ///
@@ -107,28 +106,6 @@ class KeyrxBridge
         ProfileRegistryFFIMixin,
         BridgeConfigMixin,
         BridgeMigrationMixin {
-  static const int expectedProtocolVersion = 1;
-
-  static KeyrxBridge? _currentInstance;
-
-  KeyrxBindings? _bindings;
-  ConfigBindings? _configBindings;
-  RuntimeBindings? _runtimeBindings;
-  DynamicLibrary? _lib;
-  bool _initialized = false;
-  Object? _loadFailure;
-  StreamController<BridgeStateUpdate>? _stateController;
-
-  // Unified event callback handlers
-  final Map<EventType, void Function(Uint8List)> _eventHandlers = {};
-
-  /// Keep NativeCallables alive for the duration of the registration.
-  final Map<EventType, NativeCallable> _nativeCallables = {};
-  NativeCallable<EventCallbackNative>? _stateCallable;
-
-  // Manual binding for memory management
-  late final FreeEventPayload? _freeEventPayload;
-
   KeyrxBridge._({
     KeyrxBindings? bindings,
     Object? loadFailure,
@@ -179,6 +156,27 @@ class KeyrxBridge
       return KeyrxBridge._(loadFailure: e);
     }
   }
+  static const int expectedProtocolVersion = 1;
+
+  static KeyrxBridge? _currentInstance;
+
+  KeyrxBindings? _bindings;
+  ConfigBindings? _configBindings;
+  RuntimeBindings? _runtimeBindings;
+  DynamicLibrary? _lib;
+  bool _initialized = false;
+  Object? _loadFailure;
+  StreamController<BridgeStateUpdate>? _stateController;
+
+  // Unified event callback handlers
+  final Map<EventType, void Function(Uint8List)> _eventHandlers = {};
+
+  /// Keep NativeCallables alive for the duration of the registration.
+  final Map<EventType, NativeCallable> _nativeCallables = {};
+  NativeCallable<EventCallbackNative>? _stateCallable;
+
+  // Manual binding for memory management
+  late final FreeEventPayload? _freeEventPayload;
 
   void _checkProtocolVersion() {
     if (_bindings == null) return;
@@ -273,15 +271,14 @@ class KeyrxBridge
 
     // Try to lookup the raw FFI function (available on Windows and Linux with drivers)
     try {
-      final startFn = _lib!.lookupFunction<
-          Int32 Function(),
-          int Function()
-      >('keyrx_engine_start_loop');
+      final startFn = _lib!.lookupFunction<Int32 Function(), int Function()>(
+        'keyrx_engine_start_loop',
+      );
 
       final result = FfiDebugTools.traceSync<int>(
         operation: 'engine.loop.start',
         includeTimeline: false,
-        call: () => startFn(),
+        call: startFn,
       );
       return result == 0;
     } catch (e) {
@@ -299,15 +296,14 @@ class KeyrxBridge
 
     // Try to lookup the raw FFI function (available on Windows and Linux with drivers)
     try {
-      final stopFn = _lib!.lookupFunction<
-          Int32 Function(),
-          int Function()
-      >('keyrx_engine_stop_loop');
+      final stopFn = _lib!.lookupFunction<Int32 Function(), int Function()>(
+        'keyrx_engine_stop_loop',
+      );
 
       final result = FfiDebugTools.traceSync<int>(
         operation: 'engine.loop.stop',
         includeTimeline: false,
-        call: () => stopFn(),
+        call: stopFn,
       );
       return result == 0;
     } catch (e) {
@@ -390,9 +386,8 @@ class KeyrxBridge
   }
 
   /// Check if an event callback is registered.
-  bool isEventCallbackRegistered(EventType eventType) {
-    return _eventHandlers.containsKey(eventType);
-  }
+  bool isEventCallbackRegistered(EventType eventType) =>
+      _eventHandlers.containsKey(eventType);
 
   void _setupStateStream() {
     // onState is a required binding now, but _bindings itself is nullable

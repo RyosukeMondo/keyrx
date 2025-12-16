@@ -14,17 +14,17 @@ import '../ffi/bridge.dart';
 /// When bypass mode is active (remapping disabled), shows a red banner with
 /// a "Re-enable" button. Polls the bypass status periodically.
 class BypassIndicator extends StatefulWidget {
+  const BypassIndicator({
+    required this.bridge,
+    super.key,
+    this.pollInterval = const Duration(milliseconds: 500),
+  });
+
   /// The bridge instance to query bypass status.
   final KeyrxBridge bridge;
 
   /// Polling interval for checking bypass status.
   final Duration pollInterval;
-
-  const BypassIndicator({
-    super.key,
-    required this.bridge,
-    this.pollInterval = const Duration(milliseconds: 500),
-  });
 
   @override
   State<BypassIndicator> createState() => _BypassIndicatorState();

@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 /// destructive action styling.
 class ConfirmationDialog extends StatelessWidget {
   const ConfirmationDialog({
-    super.key,
     required this.title,
     required this.message,
+    super.key,
     this.confirmLabel = 'Confirm',
     this.cancelLabel = 'Cancel',
     this.isDestructive = false,
@@ -33,7 +33,6 @@ class ConfirmationDialog extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             Icon(icon, color: isDestructive ? scheme.error : scheme.primary),
@@ -78,18 +77,16 @@ class ConfirmationDialog extends StatelessWidget {
     bool isDestructive = false,
     IconData? icon,
     bool barrierDismissible = true,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => ConfirmationDialog(
-        title: title,
-        message: message,
-        confirmLabel: confirmLabel,
-        cancelLabel: cancelLabel,
-        isDestructive: isDestructive,
-        icon: icon,
-      ),
-    );
-  }
+  }) => showDialog<bool>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => ConfirmationDialog(
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      isDestructive: isDestructive,
+      icon: icon,
+    ),
+  );
 }

@@ -4,8 +4,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../lib/services/daemon_service.dart';
-import '../../lib/state/daemon_providers.dart';
+import 'package:keyrx_ui/services/daemon_service.dart';
+import 'package:keyrx_ui/state/daemon_providers.dart';
 
 void main() {
   group('Daemon Providers', () {
@@ -20,18 +20,21 @@ void main() {
       expect(service1, isA<DaemonService>());
     });
 
-    test('daemonServiceProvider disposes service on container dispose', () async {
-      final container = ProviderContainer();
+    test(
+      'daemonServiceProvider disposes service on container dispose',
+      () async {
+        final container = ProviderContainer();
 
-      final service = container.read(daemonServiceProvider);
-      expect(service, isNotNull);
+        final service = container.read(daemonServiceProvider);
+        expect(service, isNotNull);
 
-      // Dispose container
-      container.dispose();
+        // Dispose container
+        container.dispose();
 
-      // Service should be disposed (state = disconnected)
-      expect(service.state, DaemonConnectionState.disconnected);
-    });
+        // Service should be disposed (state = disconnected)
+        expect(service.state, DaemonConnectionState.disconnected);
+      },
+    );
 
     test('daemonConnectionStateProvider provides stream', () {
       final container = ProviderContainer();
@@ -76,10 +79,7 @@ void main() {
         returnsNormally,
       );
 
-      expect(
-        () => container.read(daemonEventsProvider),
-        returnsNormally,
-      );
+      expect(() => container.read(daemonEventsProvider), returnsNormally);
     });
   });
 }

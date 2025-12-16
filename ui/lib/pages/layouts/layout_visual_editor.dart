@@ -4,9 +4,9 @@ import '../../widgets/virtual_layout_common.dart';
 
 class LayoutVisualEditor extends StatefulWidget {
   const LayoutVisualEditor({
-    super.key,
     required this.keys,
     required this.onKeysChanged,
+    super.key,
   });
 
   final List<VirtualKeyDef> keys;
@@ -45,9 +45,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
   }
 
   void _clearSelection() {
-    setState(() {
-      _selectedIds.clear();
-    });
+    setState(_selectedIds.clear);
   }
 
   void _updateKey(VirtualKeyDef updatedKey) {
@@ -87,9 +85,9 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
         .where((e) => e != null)
         .toSet();
 
-    int r = 1;
+    var r = 1;
     while (r < 100) {
-      for (int c = 1; c <= 40; c++) {
+      for (var c = 1; c <= 40; c++) {
         if (!occupied.contains('$r-$c')) {
           return (r: r, c: c);
         }
@@ -119,8 +117,8 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     // Let's just spawn at x=0, y=0 (Unit coordinates).
 
     // Default position: 50, 50 (Pixels)
-    double finalX = 50.0;
-    double finalY = 50.0;
+    var finalX = 50;
+    var finalY = 50;
 
     if (position != null) {
       finalX = position.dx;
@@ -167,18 +165,18 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     if (selectedKeys.isEmpty) return;
 
     // Calculate bounds
-    double minX = double.infinity;
-    double maxX = -double.infinity;
-    double minY = double.infinity;
-    double maxY = -double.infinity;
-    double maxRight = -double.infinity;
-    double maxBottom = -double.infinity;
+    var minX = double.infinity;
+    var maxX = -double.infinity;
+    var minY = double.infinity;
+    var maxY = -double.infinity;
+    var maxRight = -double.infinity;
+    var maxBottom = -double.infinity;
 
-    for (var k in selectedKeys) {
-      double x = k.position?.x ?? 0;
-      double y = k.position?.y ?? 0;
-      double w = k.size?.width ?? 50;
-      double h = k.size?.height ?? 50;
+    for (final k in selectedKeys) {
+      final x = k.position?.x ?? 0;
+      final y = k.position?.y ?? 0;
+      final w = k.size?.width ?? 50;
+      final h = k.size?.height ?? 50;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
@@ -189,20 +187,20 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
 
     final newKeys = List<VirtualKeyDef>.from(widget.keys);
 
-    for (int i = 0; i < newKeys.length; i++) {
+    for (var i = 0; i < newKeys.length; i++) {
       if (_selectedIds.contains(newKeys[i].id)) {
-        var k = newKeys[i];
-        double x = k.position?.x ?? 0;
-        double y = k.position?.y ?? 0;
-        double w = k.size?.width ?? 50;
-        double h = k.size?.height ?? 50;
+        final k = newKeys[i];
+        var x = k.position?.x ?? 0;
+        var y = k.position?.y ?? 0;
+        final w = k.size?.width ?? 50;
+        final h = k.size?.height ?? 50;
 
         switch (alignment) {
           case 'left':
             x = minX;
             break;
           case 'center': // Horizontal Center
-            double center = (minX + maxRight) / 2;
+            final center = (minX + maxRight) / 2;
             x = center - (w / 2);
             break;
           case 'right':
@@ -212,7 +210,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
             y = minY;
             break;
           case 'middle': // Vertical Center
-            double center = (minY + maxBottom) / 2;
+            final center = (minY + maxBottom) / 2;
             y = center - (h / 2);
             break;
           case 'bottom':
@@ -233,129 +231,121 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Toolbar
-        Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border(bottom: Divider.createBorderSide(context)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              IconButton(onPressed: () => _addKey(), icon: const Text('+ Key')),
-              const VerticalDivider(),
-              IconButton(
-                onPressed: () => _alignKeys('left'),
-                icon: const Icon(Icons.align_horizontal_left),
-              ),
-              IconButton(
-                onPressed: () => _alignKeys('center'),
-                icon: const Icon(Icons.align_horizontal_center),
-              ),
-              IconButton(
-                onPressed: () => _alignKeys('right'),
-                icon: const Icon(Icons.align_horizontal_right),
-              ),
-              IconButton(
-                onPressed: () => _alignKeys('top'),
-                icon: const Icon(Icons.align_vertical_top),
-              ),
-              IconButton(
-                onPressed: () => _alignKeys('middle'),
-                icon: const Icon(Icons.align_vertical_center),
-              ),
-              IconButton(
-                onPressed: () => _alignKeys('bottom'),
-                icon: const Icon(Icons.align_vertical_bottom),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () =>
-                    setState(() => _showProperties = !_showProperties),
-                icon: Icon(
-                  _showProperties
-                      ? Icons.keyboard_double_arrow_right
-                      : Icons.keyboard_double_arrow_left,
-                ),
-                tooltip: _showProperties
-                    ? 'Hide Properties'
-                    : 'Show Properties',
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => Column(
+    children: [
+      // Toolbar
+      Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(bottom: Divider.createBorderSide(context)),
         ),
-        Expanded(
-          child: Row(
-            children: [
-              // Visual Area
-              Expanded(
-                flex: 3,
-                child: Container(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            IconButton(onPressed: _addKey, icon: const Text('+ Key')),
+            const VerticalDivider(),
+            IconButton(
+              onPressed: () => _alignKeys('left'),
+              icon: const Icon(Icons.align_horizontal_left),
+            ),
+            IconButton(
+              onPressed: () => _alignKeys('center'),
+              icon: const Icon(Icons.align_horizontal_center),
+            ),
+            IconButton(
+              onPressed: () => _alignKeys('right'),
+              icon: const Icon(Icons.align_horizontal_right),
+            ),
+            IconButton(
+              onPressed: () => _alignKeys('top'),
+              icon: const Icon(Icons.align_vertical_top),
+            ),
+            IconButton(
+              onPressed: () => _alignKeys('middle'),
+              icon: const Icon(Icons.align_vertical_center),
+            ),
+            IconButton(
+              onPressed: () => _alignKeys('bottom'),
+              icon: const Icon(Icons.align_vertical_bottom),
+            ),
+            const Spacer(),
+            IconButton(
+              onPressed: () =>
+                  setState(() => _showProperties = !_showProperties),
+              icon: Icon(
+                _showProperties
+                    ? Icons.keyboard_double_arrow_right
+                    : Icons.keyboard_double_arrow_left,
+              ),
+              tooltip: _showProperties ? 'Hide Properties' : 'Show Properties',
+            ),
+          ],
+        ),
+      ),
+      Expanded(
+        child: Row(
+          children: [
+            // Visual Area
+            Expanded(
+              flex: 3,
+              child: Container(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: SingleChildScrollView(
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: 4000,
-                        height: 4000,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: VirtualLayoutGridPainter(
-                                  step: 60.0,
-                                  color: Theme.of(
-                                    context,
-                                  ).dividerColor.withValues(alpha: 0.1),
-                                  subStep: 15.0, // Sub-grid for visual hints
-                                ),
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: 4000,
+                      height: 4000,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: CustomPaint(
+                              painter: VirtualLayoutGridPainter(
+                                step: 60,
+                                color: Theme.of(
+                                  context,
+                                ).dividerColor.withValues(alpha: 0.1),
+                                subStep: 15, // Sub-grid for visual hints
                               ),
                             ),
-                            _buildKeyCanvas(),
-                          ],
-                        ),
+                          ),
+                          _buildKeyCanvas(),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-              // Property Bar
-              if (_showProperties) ...[
-                const VerticalDivider(width: 1),
-                SizedBox(
-                  width: 300,
-                  child: _PropertyBar(
-                    selectedKey: _primarySelectedKey,
-                    onUpdate: _updateKey,
-                    selectedCount: _selectedIds.length,
-                    onDelete: _deleteSelectedKeys,
-                  ),
+            ),
+            // Property Bar
+            if (_showProperties) ...[
+              const VerticalDivider(width: 1),
+              SizedBox(
+                width: 300,
+                child: _PropertyBar(
+                  selectedKey: _primarySelectedKey,
+                  onUpdate: _updateKey,
+                  selectedCount: _selectedIds.length,
+                  onDelete: _deleteSelectedKeys,
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
   Widget _buildKeyCanvas() {
     // Pixel-based coordinates with 5px snapping
-    const double canvasSize = 4000.0;
+    const canvasSize = 4000;
 
     return SizedBox(
       width: canvasSize,
       height: canvasSize,
       child: GestureDetector(
-        onTap: () {
-          // print('Canvas tapped - clearing selection');
-          _clearSelection();
-        },
+        onTap: _clearSelection,
         onDoubleTapDown: (details) {
           // Double Tap: Add key at snapped pixel position
           final pos = details.localPosition;
@@ -419,10 +409,10 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
           children: [
             for (final key in widget.keys)
               Positioned(
-                left: (key.position?.x ?? 0),
-                top: (key.position?.y ?? 0),
-                width: (key.size?.width ?? 50),
-                height: (key.size?.height ?? 50),
+                left: key.position?.x ?? 0,
+                top: key.position?.y ?? 0,
+                width: key.size?.width ?? 50,
+                height: key.size?.height ?? 50,
                 child: GestureDetector(
                   onTap: () => _selectKey(key.id),
                   onDoubleTap: () {
@@ -448,7 +438,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                       _dragStartLocalPosition =
                           details.globalPosition; // Using global to be safe
                       _initialKeyPositions = {
-                        for (var k in widget.keys)
+                        for (final k in widget.keys)
                           if (_selectedIds.contains(k.id))
                             k.id: Offset(
                               k.position?.x ?? 0,
@@ -489,8 +479,8 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                     // Final Snap
                     final newKeys = widget.keys.map((k) {
                       if (_selectedIds.contains(k.id)) {
-                        double x = k.position?.x ?? 0;
-                        double y = k.position?.y ?? 0;
+                        var x = k.position?.x ?? 0;
+                        var y = k.position?.y ?? 0;
                         // Snap to 10px grid
                         x = (x / 10).roundToDouble() * 10;
                         y = (y / 10).roundToDouble() * 10;

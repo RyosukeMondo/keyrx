@@ -59,7 +59,7 @@ ConfigOperationResult<T> parseConfigFfiResult<T>(
 
   final payload = trimmed.substring('ok:'.length).trim();
   if (payload.isEmpty) {
-    return ConfigOperationResult.success(null);
+    return ConfigOperationResult.success();
   }
 
   if (decoder == null) {

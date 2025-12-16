@@ -1,7 +1,9 @@
 //! Contract JSON generation from Rust function signatures
 
 use crate::parser::FfiExportConfig;
-use crate::types::{describe_type, extract_result_ok_type, is_option_type, rust_type_to_contract_type};
+use crate::types::{
+    describe_type, extract_result_ok_type, is_option_type, rust_type_to_contract_type,
+};
 use serde::{Deserialize, Serialize};
 use syn::{FnArg, ItemFn, Pat, ReturnType};
 
@@ -64,12 +66,10 @@ pub fn generate_contract_entry(
     let returns = extract_return_type(&func.sig.output)?;
 
     // Generate error specifications (placeholder for now)
-    let errors = vec![
-        ContractError {
-            code: "INTERNAL_ERROR".to_string(),
-            description: "Internal error occurred".to_string(),
-        },
-    ];
+    let errors = vec![ContractError {
+        code: "INTERNAL_ERROR".to_string(),
+        description: "Internal error occurred".to_string(),
+    }];
 
     Ok(ContractFunction {
         name,
@@ -109,7 +109,9 @@ fn extract_doc_comments(attrs: &[syn::Attribute]) -> String {
 }
 
 /// Extract parameters from function signature
-fn extract_parameters(inputs: &syn::punctuated::Punctuated<FnArg, syn::token::Comma>) -> syn::Result<Vec<ContractParameter>> {
+fn extract_parameters(
+    inputs: &syn::punctuated::Punctuated<FnArg, syn::token::Comma>,
+) -> syn::Result<Vec<ContractParameter>> {
     let mut parameters = Vec::new();
 
     for input in inputs {
@@ -189,6 +191,7 @@ fn extract_return_type(output: &ReturnType) -> syn::Result<ContractReturnType> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use syn::parse_quote;
@@ -204,7 +207,10 @@ mod tests {
         };
 
         let description = extract_doc_comments(&func.attrs);
-        assert_eq!(description, "This is a test function.\nIt does something useful.");
+        assert_eq!(
+            description,
+            "This is a test function.\nIt does something useful."
+        );
     }
 
     #[test]

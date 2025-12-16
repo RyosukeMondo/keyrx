@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/models/flow/flow_data.dart';
+import '../../models/flow/flow_data.dart';
 
 class DeviceNodeWidget extends StatelessWidget {
+  const DeviceNodeWidget({required this.data, super.key});
   final DeviceNodeData data;
-
-  const DeviceNodeWidget({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {

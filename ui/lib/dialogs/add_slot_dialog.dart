@@ -81,7 +81,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
             ),
             const SizedBox(height: 8),
             hardwareProfilesAsync.when(
-              data: (profiles) => _buildProfileDropdown(profiles),
+              data: _buildProfileDropdown,
               loading: () => const LinearProgressIndicator(),
               error: (error, _) => Text(
                 'Failed to load profiles: $error',
@@ -95,7 +95,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
             ),
             const SizedBox(height: 8),
             keymapsAsync.when(
-              data: (keymaps) => _buildKeymapDropdown(keymaps),
+              data: _buildKeymapDropdown,
               loading: () => const LinearProgressIndicator(),
               error: (error, _) => Text(
                 'Failed to load keymaps: $error',
@@ -149,7 +149,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
     }
 
     return DropdownButtonFormField<HardwareProfileId>(
-      value: _selectedProfileId,
+      initialValue: _selectedProfileId,
       decoration: const InputDecoration(
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -159,15 +159,17 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
         'Select a hardware profile',
         style: TextStyle(fontSize: 13),
       ),
-      items: profiles.map((profile) {
-        return DropdownMenuItem(
-          value: profile.id,
-          child: Text(
-            profile.name ?? profile.id,
-            style: const TextStyle(fontSize: 13),
-          ),
-        );
-      }).toList(),
+      items: profiles
+          .map(
+            (profile) => DropdownMenuItem(
+              value: profile.id,
+              child: Text(
+                profile.name ?? profile.id,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          )
+          .toList(),
       onChanged: (value) {
         setState(() {
           _selectedProfileId = value;
@@ -186,22 +188,24 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
     }
 
     return DropdownButtonFormField<KeymapId>(
-      value: _selectedKeymapId,
+      initialValue: _selectedKeymapId,
       decoration: const InputDecoration(
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         isDense: true,
       ),
       hint: const Text('Select a keymap', style: TextStyle(fontSize: 13)),
-      items: keymaps.map((keymap) {
-        return DropdownMenuItem(
-          value: keymap.id,
-          child: Text(
-            keymap.name ?? keymap.id,
-            style: const TextStyle(fontSize: 13),
-          ),
-        );
-      }).toList(),
+      items: keymaps
+          .map(
+            (keymap) => DropdownMenuItem(
+              value: keymap.id,
+              child: Text(
+                keymap.name ?? keymap.id,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          )
+          .toList(),
       onChanged: (value) {
         setState(() {
           _selectedKeymapId = value;
@@ -296,10 +300,8 @@ Future<bool?> showAddSlotDialog(
   BuildContext context, {
   required DeviceInstanceId device,
   required List<ProfileSlotSelection> existingSlots,
-}) {
-  return showDialog<bool>(
-    context: context,
-    builder: (context) =>
-        AddSlotDialog(device: device, existingSlots: existingSlots),
-  );
-}
+}) => showDialog<bool>(
+  context: context,
+  builder: (context) =>
+      AddSlotDialog(device: device, existingSlots: existingSlots),
+);

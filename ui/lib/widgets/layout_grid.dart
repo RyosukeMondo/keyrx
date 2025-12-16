@@ -12,17 +12,16 @@ import 'visual_keyboard.dart';
 
 /// Layout information for rendering grids
 class LayoutInfo {
-  final int rows;
-  final int cols;
-  final LayoutType type;
-  final List<int>? colsPerRow;
-
   const LayoutInfo({
     required this.rows,
     required this.cols,
     required this.type,
     this.colsPerRow,
   });
+  final int rows;
+  final int cols;
+  final LayoutType type;
+  final List<int>? colsPerRow;
 }
 
 /// Widget that dynamically renders device layouts as interactive grids.
@@ -30,6 +29,17 @@ class LayoutInfo {
 /// Supports Matrix (macro pads), Standard (keyboards), and Split layouts.
 /// Shows current key mappings and allows key selection for remapping.
 class LayoutGrid extends StatelessWidget {
+  const LayoutGrid({
+    required this.layoutInfo,
+    super.key,
+    this.profile,
+    this.onKeyTap,
+    this.selectedPosition,
+    this.highlightedPositions = const {},
+    this.keySize = 48.0,
+    this.keySpacing = 4.0,
+  });
+
   /// Layout information (rows, columns, type)
   final LayoutInfo layoutInfo;
 
@@ -51,17 +61,6 @@ class LayoutGrid extends StatelessWidget {
 
   /// Spacing between keys in pixels
   final double keySpacing;
-
-  const LayoutGrid({
-    super.key,
-    required this.layoutInfo,
-    this.profile,
-    this.onKeyTap,
-    this.selectedPosition,
-    this.highlightedPositions = const {},
-    this.keySize = 48.0,
-    this.keySpacing = 4.0,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +110,6 @@ class LayoutGrid extends StatelessWidget {
         maxCrossAxisExtent: keySize + keySpacing * 2,
         mainAxisSpacing: keySpacing,
         crossAxisSpacing: keySpacing,
-        childAspectRatio: 1.0,
       ),
       itemCount: layoutInfo.rows * layoutInfo.cols,
       itemBuilder: (context, index) {
@@ -127,7 +125,7 @@ class LayoutGrid extends StatelessWidget {
     final layout = KeyboardLayout.ansi104();
 
     // Map selected position to key ID
-    final Set<String> selectedKeys = {};
+    final selectedKeys = <String>{};
     if (selectedPosition != null) {
       final key = _getKeyFromPosition(selectedPosition!, layout);
       if (key != null) {
@@ -136,7 +134,7 @@ class LayoutGrid extends StatelessWidget {
     }
 
     // Map highlighted positions to key IDs
-    final Set<String> highlightedKeys = {};
+    final highlightedKeys = <String>{};
     for (final pos in highlightedPositions) {
       final key = _getKeyFromPosition(pos, layout);
       if (key != null) {
@@ -145,7 +143,7 @@ class LayoutGrid extends StatelessWidget {
     }
 
     // Map profile mappings to key IDs
-    final Set<String> mappedKeys = {};
+    final mappedKeys = <String>{};
     if (profile != null) {
       for (final keyString in profile!.mappings.keys) {
         final pos = PhysicalPosition.fromKey(keyString);
@@ -192,9 +190,9 @@ class LayoutGrid extends StatelessWidget {
     KeyDefinition key,
     KeyboardLayout layout,
   ) {
-    for (int r = 0; r < layout.rows.length; r++) {
+    for (var r = 0; r < layout.rows.length; r++) {
       final row = layout.rows[r];
-      for (int c = 0; c < row.keys.length; c++) {
+      for (var c = 0; c < row.keys.length; c++) {
         if (row.keys[c].id == key.id) {
           return PhysicalPosition(row: r, col: c);
         }
@@ -245,7 +243,6 @@ class LayoutGrid extends StatelessWidget {
         maxCrossAxisExtent: keySize + keySpacing * 2,
         mainAxisSpacing: keySpacing,
         crossAxisSpacing: keySpacing,
-        childAspectRatio: 1.0,
       ),
       itemCount: layoutInfo.rows * halfCols,
       itemBuilder: (context, index) {
@@ -268,7 +265,7 @@ class LayoutGrid extends StatelessWidget {
     final hasMapping = action != null;
 
     // Determine key label
-    String label = '$row,$col';
+    var label = '$row,$col';
     if (hasMapping) {
       label = _getActionLabel(action);
     }
@@ -284,7 +281,6 @@ class LayoutGrid extends StatelessWidget {
           padding: const EdgeInsets.all(4),
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -332,9 +328,7 @@ class LayoutGrid extends StatelessWidget {
   }
 
   /// Get the display label for a key action
-  String _getActionLabel(KeyAction action) {
-    return keyActionLabel(action);
-  }
+  String _getActionLabel(KeyAction action) => keyActionLabel(action);
 
   /// Get the color for a key based on its state
   Color _getKeyColor(
@@ -357,12 +351,10 @@ class LayoutGrid extends StatelessWidget {
 }
 
 /// Public helper to describe a [KeyAction] for UI labels.
-String keyActionLabel(KeyAction action) {
-  return action.when(
-    key: (key) => key,
-    chord: (keys) => keys.join('+'),
-    script: (script) => 'Script',
-    block: () => 'BLOCK',
-    pass: () => 'PASS',
-  );
-}
+String keyActionLabel(KeyAction action) => action.when(
+  key: (key) => key,
+  chord: (keys) => keys.join('+'),
+  script: (script) => 'Script',
+  block: () => 'BLOCK',
+  pass: () => 'PASS',
+);

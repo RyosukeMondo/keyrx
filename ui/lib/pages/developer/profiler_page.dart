@@ -109,71 +109,67 @@ class _ProfilerPageState extends State<ProfilerPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profiler')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildFlamegraphCard(context),
-            const SizedBox(height: 20),
-            _buildAllocationCard(context),
-          ],
-        ),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Profiler')),
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFlamegraphCard(context),
+          const SizedBox(height: 20),
+          _buildAllocationCard(context),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildFlamegraphCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.local_fire_department_outlined),
-                const SizedBox(width: 8),
-                Text(
-                  'Flame Graph',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: _flamegraphLoading ? null : _loadFlamegraph,
-                  icon: _flamegraphLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(_flamegraphLoading ? 'Loading...' : 'Load'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _flamegraphPathController,
-              decoration: const InputDecoration(
-                labelText: 'SVG path',
-                hintText: 'bench-flamegraph.svg',
-                prefixIcon: Icon(Icons.insert_drive_file_outlined),
+  Widget _buildFlamegraphCard(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_fire_department_outlined),
+              const SizedBox(width: 8),
+              Text(
+                'Flame Graph',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: _flamegraphLoading ? null : _loadFlamegraph,
+                icon: _flamegraphLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(_flamegraphLoading ? 'Loading...' : 'Load'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _flamegraphPathController,
+            decoration: const InputDecoration(
+              labelText: 'SVG path',
+              hintText: 'bench-flamegraph.svg',
+              prefixIcon: Icon(Icons.insert_drive_file_outlined),
             ),
-            const SizedBox(height: 12),
-            _buildFlamegraphContent(context),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          _buildFlamegraphContent(context),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildFlamegraphContent(BuildContext context) {
     if (_flamegraphLoading) {
@@ -213,61 +209,58 @@ class _ProfilerPageState extends State<ProfilerPage> {
           child: SvgPicture.string(
             _flamegraphSvg!,
             allowDrawingOutsideViewBox: true,
-            fit: BoxFit.contain,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAllocationCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.storage_outlined),
-                const SizedBox(width: 8),
-                Text(
-                  'Allocation Report',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: _allocationLoading ? null : _loadAllocationReport,
-                  icon: _allocationLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: Text(_allocationLoading ? 'Loading...' : 'Load'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _allocationPathController,
-              decoration: const InputDecoration(
-                labelText: 'Report path',
-                hintText: 'bench-allocations.json',
-                prefixIcon: Icon(Icons.description_outlined),
+  Widget _buildAllocationCard(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.storage_outlined),
+              const SizedBox(width: 8),
+              Text(
+                'Allocation Report',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: _allocationLoading ? null : _loadAllocationReport,
+                icon: _allocationLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(_allocationLoading ? 'Loading...' : 'Load'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _allocationPathController,
+            decoration: const InputDecoration(
+              labelText: 'Report path',
+              hintText: 'bench-allocations.json',
+              prefixIcon: Icon(Icons.description_outlined),
             ),
-            const SizedBox(height: 12),
-            _buildAllocationContent(context),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          _buildAllocationContent(context),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildAllocationContent(BuildContext context) {
     if (_allocationLoading) {
@@ -340,62 +333,55 @@ class _ProfilerPageState extends State<ProfilerPage> {
   Widget _buildSummaryCards(
     BuildContext context,
     AllocationSummaryView summary,
-  ) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _buildStatChip(
-          label: 'Avg allocation',
-          value: _formatBytes(summary.avgAllocationSize),
-          icon: Icons.speed_outlined,
-        ),
-        _buildStatChip(
-          label: 'Efficiency',
-          value: '${_formatPercent(summary.memoryEfficiency * 100)} freed',
-          icon: Icons.check_circle_outline,
-        ),
-        _buildStatChip(
-          label: 'Hot spots',
-          value: _formatNumber(summary.hotSpotCount),
-          icon: Icons.whatshot_outlined,
-        ),
-        _buildStatChip(
-          label: 'Largest site',
-          value: _formatBytes(summary.largestSiteBytes),
-          icon: Icons.storage,
-        ),
-      ],
-    );
-  }
+  ) => Wrap(
+    spacing: 12,
+    runSpacing: 12,
+    children: [
+      _buildStatChip(
+        label: 'Avg allocation',
+        value: _formatBytes(summary.avgAllocationSize),
+        icon: Icons.speed_outlined,
+      ),
+      _buildStatChip(
+        label: 'Efficiency',
+        value: '${_formatPercent(summary.memoryEfficiency * 100)} freed',
+        icon: Icons.check_circle_outline,
+      ),
+      _buildStatChip(
+        label: 'Hot spots',
+        value: _formatNumber(summary.hotSpotCount),
+        icon: Icons.whatshot_outlined,
+      ),
+      _buildStatChip(
+        label: 'Largest site',
+        value: _formatBytes(summary.largestSiteBytes),
+        icon: Icons.storage,
+      ),
+    ],
+  );
 
-  Widget _buildWarnings(BuildContext context, List<String> warnings) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Warnings', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        ...warnings.map(
-          (w) => Card(
-            color: Colors.orange.shade100.withValues(alpha: 0.15),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.warning_amber_outlined,
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(w)),
-                ],
-              ),
+  Widget _buildWarnings(BuildContext context, List<String> warnings) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Warnings', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 8),
+      ...warnings.map(
+        (w) => Card(
+          color: Colors.orange.shade100.withValues(alpha: 0.15),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                const SizedBox(width: 8),
+                Expanded(child: Text(w)),
+              ],
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
   Widget _buildHotSpots(
     BuildContext context,
@@ -420,63 +406,59 @@ class _ProfilerPageState extends State<ProfilerPage> {
     );
   }
 
-  Widget _buildHotSpotTile(AllocationHotSpotView site) {
-    return Card(
-      child: ExpansionTile(
-        title: Text(site.location),
-        subtitle: Text(
-          '${_formatBytes(site.totalBytes)} • '
-          '${_formatNumber(site.count)} allocs • '
-          '${_formatPercent(site.percentage)}',
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        children: [
-          if (site.stackTrace.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Stack trace (${site.stackTrace.length} frames)',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
-                ...site.stackTrace.map(
-                  (frame) => Text(
-                    frame,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[300]),
-                  ),
-                ),
-              ],
-            )
-          else
-            Text(
-              'Stack trace not captured for this site.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-        ],
+  Widget _buildHotSpotTile(AllocationHotSpotView site) => Card(
+    child: ExpansionTile(
+      title: Text(site.location),
+      subtitle: Text(
+        '${_formatBytes(site.totalBytes)} • '
+        '${_formatNumber(site.count)} allocs • '
+        '${_formatPercent(site.percentage)}',
       ),
-    );
-  }
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      children: [
+        if (site.stackTrace.isNotEmpty)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Stack trace (${site.stackTrace.length} frames)',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              ...site.stackTrace.map(
+                (frame) => Text(
+                  frame,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[300]),
+                ),
+              ),
+            ],
+          )
+        else
+          Text(
+            'Stack trace not captured for this site.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+      ],
+    ),
+  );
 
   Widget _buildStatChip({
     required String label,
     required String value,
     required IconData icon,
-  }) {
-    return Chip(
-      avatar: Icon(icon, size: 18),
-      label: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
+  }) => Chip(
+    avatar: Icon(icon, size: 18),
+    label: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
 
   Widget _buildErrorBanner(BuildContext context, String message) {
     final scheme = Theme.of(context).colorScheme;
@@ -505,34 +487,32 @@ class _ProfilerPageState extends State<ProfilerPage> {
     required IconData icon,
     required String title,
     required String message,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade900,
-        border: Border.all(color: Colors.grey.shade800),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 36, color: Colors.grey.shade500),
-          const SizedBox(height: 8),
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+  }) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 24),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      color: Colors.grey.shade900,
+      border: Border.all(color: Colors.grey.shade800),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 36, color: Colors.grey.shade500),
+        const SizedBox(height: 8),
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
   String _formatBytes(num bytes) {
     const units = ['B', 'KB', 'MB', 'GB'];

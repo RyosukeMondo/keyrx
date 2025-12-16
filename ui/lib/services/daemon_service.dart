@@ -27,17 +27,12 @@ class DaemonException implements Exception {
 }
 
 /// Connection state for the daemon.
-enum DaemonConnectionState {
-  disconnected,
-  connecting,
-  connected,
-  error,
-}
+enum DaemonConnectionState { disconnected, connecting, connected, error }
 
 /// Service for communicating with the KeyRx daemon.
 class DaemonService {
   DaemonService({String? socketPath})
-      : _socketPath = socketPath ?? _defaultSocketPath();
+    : _socketPath = socketPath ?? _defaultSocketPath();
 
   final String _socketPath;
   Socket? _socket;
@@ -149,8 +144,8 @@ class DaemonService {
   /// Send a JSON-RPC request and wait for response.
   Future<T> sendRequest<T>(
     String method, {
-    Map<String, dynamic>? params,
     required T Function(dynamic) parseResult,
+    Map<String, dynamic>? params,
   }) async {
     if (!isConnected) {
       throw const DaemonException('Not connected to daemon');
@@ -214,17 +209,11 @@ class DaemonService {
 
   /// Stop the engine.
   Future<void> stopEngine() async {
-    await sendRequest<void>(
-      DaemonMethods.engineStop,
-      parseResult: (_) {},
-    );
+    await sendRequest<void>(DaemonMethods.engineStop, parseResult: (_) {});
   }
 
   /// Reload config and/or script.
-  Future<void> reloadEngine({
-    String? configPath,
-    String? scriptPath,
-  }) async {
+  Future<void> reloadEngine({String? configPath, String? scriptPath}) async {
     await sendRequest<void>(
       DaemonMethods.engineReload,
       params: {

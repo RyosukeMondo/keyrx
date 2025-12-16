@@ -7,15 +7,15 @@
 /// - Real-time event monitoring
 library;
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'dart:ffi';
+
 import 'package:ffi/ffi.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../services/ffi_introspection_service.dart';
 import '../../ffi/introspection_models.dart';
-
+import '../../services/ffi_introspection_service.dart';
 import '../../services/service_registry.dart';
 
 /// FFI Tools page for developer introspection
@@ -95,61 +95,59 @@ class _FfiToolsPageState extends State<FfiToolsPage>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('FFI Developer Tools'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadMetadata,
-            tooltip: 'Refresh metadata',
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.functions), text: 'Functions'),
-            Tab(icon: Icon(Icons.history), text: 'Call History'),
-            Tab(icon: Icon(Icons.monitor), text: 'Events'),
-          ],
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('FFI Developer Tools'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loadMetadata,
+          tooltip: 'Refresh metadata',
         ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(icon: Icon(Icons.functions), text: 'Functions'),
+          Tab(icon: Icon(Icons.history), text: 'Call History'),
+          Tab(icon: Icon(Icons.monitor), text: 'Events'),
+        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _loadMetadata,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+    ),
+    body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadMetadata,
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildFunctionBrowser(),
-                _buildCallHistory(),
-                _buildEventMonitor(),
-              ],
             ),
-    );
-  }
+          )
+        : TabBarView(
+            controller: _tabController,
+            children: [
+              _buildFunctionBrowser(),
+              _buildCallHistory(),
+              _buildEventMonitor(),
+            ],
+          ),
+  );
 
   Widget _buildFunctionBrowser() {
     if (_metadata == null) {
@@ -748,13 +746,6 @@ class _FfiToolsPageState extends State<FfiToolsPage>
 
 /// FFI call record for history
 class FfiCallRecord {
-  final DateTime timestamp;
-  final String domain;
-  final String function;
-  final Map<String, String> parameters;
-  final String result;
-  final bool success;
-
   FfiCallRecord({
     required this.timestamp,
     required this.domain,
@@ -763,17 +754,22 @@ class FfiCallRecord {
     required this.result,
     required this.success,
   });
+  final DateTime timestamp;
+  final String domain;
+  final String function;
+  final Map<String, String> parameters;
+  final String result;
+  final bool success;
 }
 
 /// FFI event record for monitoring
 class FfiEventRecord {
-  final DateTime timestamp;
-  final String name;
-  final Map<String, dynamic> payload;
-
   FfiEventRecord({
     required this.timestamp,
     required this.name,
     required this.payload,
   });
+  final DateTime timestamp;
+  final String name;
+  final Map<String, dynamic> payload;
 }

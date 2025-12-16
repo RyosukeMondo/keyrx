@@ -25,9 +25,9 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
   static const double _minTimeout = 100;
   static const double _maxTimeout = 1000;
 
-  double _typingMean = 180.0;
-  double _typingStdDev = 50.0;
-  double _currentTimeout = 200.0;
+  double _typingMean = 180;
+  double _typingStdDev = 50;
+  double _currentTimeout = 200;
 
   bool _hasUserProfile = false;
   double? _userTypingMean;
@@ -105,60 +105,56 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
     );
   }
 
-  Widget _buildExplanationCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(UiConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.info_outline, color: theme.colorScheme.primary),
-                const SizedBox(width: UiConstants.smallPadding),
-                Text(
-                  'Understanding Tap-Hold Timing',
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: UiConstants.defaultMargin),
-            Text(
-              'The tap-hold timeout determines how long you must hold a key '
-              'before it triggers the "hold" action instead of "tap". '
-              'A shorter timeout means faster hold activation but higher '
-              'chance of accidental holds during fast typing.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChartCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(UiConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Miss Rate vs. Timeout', style: theme.textTheme.titleMedium),
-            const SizedBox(height: UiConstants.smallPadding),
-            SizedBox(
-              height: 300,
-              child: TradeOffChart(
-                statistics: _statistics,
-                currentTimeout: _currentTimeout,
-                userTypingMean: _userTypingMean,
-                userTypingStdDev: _userTypingStdDev,
+  Widget _buildExplanationCard(ThemeData theme) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(UiConstants.defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: theme.colorScheme.primary),
+              const SizedBox(width: UiConstants.smallPadding),
+              Text(
+                'Understanding Tap-Hold Timing',
+                style: theme.textTheme.titleMedium,
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: UiConstants.defaultMargin),
+          Text(
+            'The tap-hold timeout determines how long you must hold a key '
+            'before it triggers the "hold" action instead of "tap". '
+            'A shorter timeout means faster hold activation but higher '
+            'chance of accidental holds during fast typing.',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildChartCard(ThemeData theme) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(UiConstants.defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Miss Rate vs. Timeout', style: theme.textTheme.titleMedium),
+          const SizedBox(height: UiConstants.smallPadding),
+          SizedBox(
+            height: 300,
+            child: TradeOffChart(
+              statistics: _statistics,
+              currentTimeout: _currentTimeout,
+              userTypingMean: _userTypingMean,
+              userTypingStdDev: _userTypingStdDev,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildSliderCard(ThemeData theme) {
     final currentMissRate = _statistics.calculateMissRate(_currentTimeout);
@@ -262,104 +258,99 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
     return null;
   }
 
-  Widget _buildPresetsCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(UiConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Preset Configurations', style: theme.textTheme.titleMedium),
-            const SizedBox(height: UiConstants.defaultMargin),
-            ...PresetRegion.defaults.map(
-              (preset) => PresetRow(
-                preset: preset,
-                isSelected: preset.containsTimeout(_currentTimeout),
-                onTap: () =>
-                    setState(() => _currentTimeout = preset.middleValue),
-              ),
+  Widget _buildPresetsCard(ThemeData theme) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(UiConstants.defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Preset Configurations', style: theme.textTheme.titleMedium),
+          const SizedBox(height: UiConstants.defaultMargin),
+          ...PresetRegion.defaults.map(
+            (preset) => PresetRow(
+              preset: preset,
+              isSelected: preset.containsTimeout(_currentTimeout),
+              onTap: () => setState(() => _currentTimeout = preset.middleValue),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildStatisticsCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(UiConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Typing Model Parameters',
-                  style: theme.textTheme.titleMedium,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: _showModelEditDialog,
-                  tooltip: 'Edit parameters',
-                ),
-              ],
-            ),
-            const SizedBox(height: UiConstants.defaultMargin),
-            Row(
-              children: [
-                Expanded(
-                  child: StatTile(
-                    label: 'Mean Key Duration',
-                    value: '${_typingMean.toInt()} ms',
-                    icon: Icons.timer,
-                  ),
-                ),
-                const SizedBox(width: UiConstants.defaultPadding),
-                Expanded(
-                  child: StatTile(
-                    label: 'Std Deviation',
-                    value: '${_typingStdDev.toInt()} ms',
-                    icon: Icons.show_chart,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: UiConstants.defaultPadding),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _startSimulation,
-                icon: const Icon(Icons.speed),
-                label: const Text('Simulate My Typing Speed'),
+  Widget _buildStatisticsCard(ThemeData theme) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(UiConstants.defaultPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Typing Model Parameters',
+                style: theme.textTheme.titleMedium,
               ),
-            ),
-            if (_hasUserProfile && _recommendedTimeout != null) ...[
-              const SizedBox(height: UiConstants.defaultMargin),
-              RecommendationBanner(
-                recommendedTimeout: _recommendedTimeout!,
-                userTypingMean: _userTypingMean!,
-                onApply: () =>
-                    setState(() => _currentTimeout = _recommendedTimeout!),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                onPressed: _showModelEditDialog,
+                tooltip: 'Edit parameters',
               ),
             ],
-            const SizedBox(height: UiConstants.defaultMargin),
-            Text(
-              _hasUserProfile
-                  ? 'Profile based on your measured typing speed. '
-                        'The purple band on the chart shows your typing range.'
-                  : 'Measure your actual typing speed to get personalized '
-                        'recommendations and see your profile on the chart.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+          const SizedBox(height: UiConstants.defaultMargin),
+          Row(
+            children: [
+              Expanded(
+                child: StatTile(
+                  label: 'Mean Key Duration',
+                  value: '${_typingMean.toInt()} ms',
+                  icon: Icons.timer,
+                ),
               ),
+              const SizedBox(width: UiConstants.defaultPadding),
+              Expanded(
+                child: StatTile(
+                  label: 'Std Deviation',
+                  value: '${_typingStdDev.toInt()} ms',
+                  icon: Icons.show_chart,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: UiConstants.defaultPadding),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _startSimulation,
+              icon: const Icon(Icons.speed),
+              label: const Text('Simulate My Typing Speed'),
+            ),
+          ),
+          if (_hasUserProfile && _recommendedTimeout != null) ...[
+            const SizedBox(height: UiConstants.defaultMargin),
+            RecommendationBanner(
+              recommendedTimeout: _recommendedTimeout!,
+              userTypingMean: _userTypingMean!,
+              onApply: () =>
+                  setState(() => _currentTimeout = _recommendedTimeout!),
             ),
           ],
-        ),
+          const SizedBox(height: UiConstants.defaultMargin),
+          Text(
+            _hasUserProfile
+                ? 'Profile based on your measured typing speed. '
+                      'The purple band on the chart shows your typing range.'
+                : 'Measure your actual typing speed to get personalized '
+                      'recommendations and see your profile on the chart.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   void _showModelEditDialog() {
     showDialog(

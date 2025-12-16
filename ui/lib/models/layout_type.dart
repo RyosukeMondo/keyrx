@@ -55,9 +55,7 @@ extension LayoutTypeExtension on LayoutType {
   }
 
   /// Check if this layout type is compatible with another
-  bool isCompatibleWith(LayoutType other) {
-    return this == other;
-  }
+  bool isCompatibleWith(LayoutType other) => this == other;
 
   /// Convert to JSON string representation
   String toJsonString() {

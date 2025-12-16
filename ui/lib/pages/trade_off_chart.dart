@@ -50,9 +50,7 @@ class PresetRegion {
   ];
 
   /// Check if a timeout value is within this preset's range.
-  bool containsTimeout(double timeout) {
-    return timeout >= minMs && timeout <= maxMs;
-  }
+  bool containsTimeout(double timeout) => timeout >= minMs && timeout <= maxMs;
 
   /// Get the middle value of this preset's range.
   double get middleValue => (minMs + maxMs) / 2;
@@ -75,9 +73,9 @@ class TradeOffChartConfig {
 /// and estimated miss rate.
 class TradeOffChart extends StatelessWidget {
   const TradeOffChart({
-    super.key,
     required this.statistics,
     required this.currentTimeout,
+    super.key,
     this.config = const TradeOffChartConfig(),
     this.userTypingMean,
     this.userTypingStdDev,
@@ -123,49 +121,43 @@ class TradeOffChart extends StatelessWidget {
     );
   }
 
-  FlGridData _buildGridData(ThemeData theme) {
-    return FlGridData(
-      show: true,
-      drawVerticalLine: true,
-      horizontalInterval: 5,
-      verticalInterval: 100,
-      getDrawingHorizontalLine: (value) => FlLine(
-        color: theme.dividerColor.withValues(alpha: 0.3),
-        strokeWidth: 1,
-      ),
-      getDrawingVerticalLine: (value) => FlLine(
-        color: theme.dividerColor.withValues(alpha: 0.3),
-        strokeWidth: 1,
-      ),
-    );
-  }
+  FlGridData _buildGridData(ThemeData theme) => FlGridData(
+    horizontalInterval: 5,
+    verticalInterval: 100,
+    getDrawingHorizontalLine: (value) => FlLine(
+      color: theme.dividerColor.withValues(alpha: 0.3),
+      strokeWidth: 1,
+    ),
+    getDrawingVerticalLine: (value) => FlLine(
+      color: theme.dividerColor.withValues(alpha: 0.3),
+      strokeWidth: 1,
+    ),
+  );
 
-  FlTitlesData _buildTitlesData(ThemeData theme) {
-    return FlTitlesData(
-      leftTitles: AxisTitles(
-        axisNameWidget: const Text('Miss Rate (%)'),
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 40,
-          interval: 5,
-          getTitlesWidget: (value, meta) =>
-              Text('${value.toInt()}%', style: theme.textTheme.bodySmall),
-        ),
+  FlTitlesData _buildTitlesData(ThemeData theme) => FlTitlesData(
+    leftTitles: AxisTitles(
+      axisNameWidget: const Text('Miss Rate (%)'),
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 40,
+        interval: 5,
+        getTitlesWidget: (value, meta) =>
+            Text('${value.toInt()}%', style: theme.textTheme.bodySmall),
       ),
-      bottomTitles: AxisTitles(
-        axisNameWidget: const Text('Tap-Hold Timeout (ms)'),
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 30,
-          interval: 200,
-          getTitlesWidget: (value, meta) =>
-              Text('${value.toInt()}', style: theme.textTheme.bodySmall),
-        ),
+    ),
+    bottomTitles: AxisTitles(
+      axisNameWidget: const Text('Tap-Hold Timeout (ms)'),
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 30,
+        interval: 200,
+        getTitlesWidget: (value, meta) =>
+            Text('${value.toInt()}', style: theme.textTheme.bodySmall),
       ),
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-    );
-  }
+    ),
+    topTitles: const AxisTitles(),
+    rightTitles: const AxisTitles(),
+  );
 
   LineChartBarData _buildPresetRegionBar(PresetRegion preset) {
     // Create a subtle background bar for the preset region
@@ -174,28 +166,26 @@ class TradeOffChart extends StatelessWidget {
         FlSpot(preset.minMs.toDouble(), 0),
         FlSpot(preset.maxMs.toDouble(), 0),
       ],
-      isCurved: false,
       color: Colors.transparent,
       barWidth: 0,
       dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(show: false),
+      belowBarData: BarAreaData(),
     );
   }
 
-  LineChartBarData _buildMainCurve(ThemeData theme, List<FlSpot> spots) {
-    return LineChartBarData(
-      spots: spots,
-      isCurved: true,
-      curveSmoothness: 0.3,
-      color: theme.colorScheme.primary,
-      barWidth: 3,
-      dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(
-        show: true,
-        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-      ),
-    );
-  }
+  LineChartBarData _buildMainCurve(ThemeData theme, List<FlSpot> spots) =>
+      LineChartBarData(
+        spots: spots,
+        isCurved: true,
+        curveSmoothness: 0.3,
+        color: theme.colorScheme.primary,
+        barWidth: 3,
+        dotData: const FlDotData(show: false),
+        belowBarData: BarAreaData(
+          show: true,
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      );
 
   ExtraLinesData _buildExtraLines(ThemeData theme, double currentMissRate) {
     final verticalLines = <VerticalLine>[];
@@ -216,7 +206,6 @@ class TradeOffChart extends StatelessWidget {
         VerticalLine(
           x: userTypingMean!.clamp(config.minTimeout, config.maxTimeout),
           color: Colors.purple,
-          strokeWidth: 2,
           label: VerticalLineLabel(
             show: true,
             alignment: Alignment.topLeft,
@@ -245,7 +234,6 @@ class TradeOffChart extends StatelessWidget {
       VerticalLine(
         x: currentTimeout,
         color: theme.colorScheme.secondary,
-        strokeWidth: 2,
         dashArray: [5, 5],
         label: VerticalLineLabel(
           show: true,
@@ -264,25 +252,23 @@ class TradeOffChart extends StatelessWidget {
     return ExtraLinesData(verticalLines: verticalLines);
   }
 
-  LineTouchData _buildTouchData(ThemeData theme) {
-    return LineTouchData(
-      touchTooltipData: LineTouchTooltipData(
-        getTooltipItems: (touchedSpots) {
-          return touchedSpots.map((spot) {
-            return LineTooltipItem(
+  LineTouchData _buildTouchData(ThemeData theme) => LineTouchData(
+    touchTooltipData: LineTouchTooltipData(
+      getTooltipItems: (touchedSpots) => touchedSpots
+          .map(
+            (spot) => LineTooltipItem(
               'Timeout: ${spot.x.toInt()}ms\nMiss Rate: ${spot.y.toStringAsFixed(1)}%',
               TextStyle(color: theme.colorScheme.onSurface),
-            );
-          }).toList();
-        },
-      ),
-    );
-  }
+            ),
+          )
+          .toList(),
+    ),
+  );
 
   List<FlSpot> _generateChartData() {
     final spots = <FlSpot>[];
     for (
-      double timeout = config.minTimeout;
+      var timeout = config.minTimeout;
       timeout <= config.maxTimeout;
       timeout += 10
     ) {

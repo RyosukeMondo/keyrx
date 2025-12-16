@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 /// optional scrolling for long content.
 class InfoDialog extends StatelessWidget {
   const InfoDialog({
-    super.key,
     required this.title,
     required this.content,
+    super.key,
     this.closeLabel = 'Close',
     this.icon,
     this.maxHeight = 500.0,
@@ -31,7 +31,6 @@ class InfoDialog extends StatelessWidget {
       contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             Icon(icon, color: scheme.primary),
@@ -62,17 +61,15 @@ class InfoDialog extends StatelessWidget {
     IconData? icon,
     double maxHeight = 500.0,
     bool barrierDismissible = true,
-  }) {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => InfoDialog(
-        title: title,
-        content: content,
-        closeLabel: closeLabel,
-        icon: icon,
-        maxHeight: maxHeight,
-      ),
-    );
-  }
+  }) => showDialog<void>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => InfoDialog(
+      title: title,
+      content: content,
+      closeLabel: closeLabel,
+      icon: icon,
+      maxHeight: maxHeight,
+    ),
+  );
 }

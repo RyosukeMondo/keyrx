@@ -10,7 +10,7 @@ import '../../services/doctor_service.dart';
 
 /// Doctor page for running system diagnostics.
 class DoctorPage extends StatefulWidget {
-  const DoctorPage({super.key, required this.doctorService});
+  const DoctorPage({required this.doctorService, super.key});
 
   final DoctorService doctorService;
 
@@ -48,23 +48,21 @@ class _DoctorPageState extends State<DoctorPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Diagnostics'),
-        actions: [
-          if (_report != null) _buildSummaryChips(),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isRunning ? null : _runDiagnostics,
-            tooltip: 'Re-run diagnostics',
-          ),
-        ],
-      ),
-      body: _buildBody(),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('System Diagnostics'),
+      actions: [
+        if (_report != null) _buildSummaryChips(),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _isRunning ? null : _runDiagnostics,
+          tooltip: 'Re-run diagnostics',
+        ),
+      ],
+    ),
+    body: _buildBody(),
+  );
 
   Widget _buildSummaryChips() {
     final report = _report!;
@@ -83,26 +81,24 @@ class _DoctorPageState extends State<DoctorPage> {
     );
   }
 
-  Widget _buildCountChip(int count, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withAlpha(30),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            '$count',
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildCountChip(int count, Color color, IconData icon) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withAlpha(30),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          '$count',
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildBody() {
     if (_isRunning) {
@@ -129,36 +125,34 @@ class _DoctorPageState extends State<DoctorPage> {
     return _buildCheckList();
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-          const SizedBox(height: 16),
-          Text(
-            'Diagnostics failed',
-            style: Theme.of(context).textTheme.titleMedium,
+  Widget _buildErrorState() => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+        const SizedBox(height: 16),
+        Text(
+          'Diagnostics failed',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[500]),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _runDiagnostics,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: _runDiagnostics,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Retry'),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildCheckList() {
     final checks = _report!.checks;
@@ -252,41 +246,39 @@ class _DoctorPageState extends State<DoctorPage> {
     return const Text('Failed', style: TextStyle(color: Colors.red));
   }
 
-  Widget _buildExpandedContent(DiagnosticCheckData check) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (check.details != null) ...[
-            Text('Details', style: Theme.of(context).textTheme.labelMedium),
-            const SizedBox(height: 4),
-            Text(check.details!, style: Theme.of(context).textTheme.bodySmall),
-          ],
-          if (check.remediation != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              'How to fix',
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: Colors.blue),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                check.remediation!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ],
+  Widget _buildExpandedContent(DiagnosticCheckData check) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (check.details != null) ...[
+          Text('Details', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 4),
+          Text(check.details!, style: Theme.of(context).textTheme.bodySmall),
         ],
-      ),
-    );
-  }
+        if (check.remediation != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            'How to fix',
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: Colors.blue),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              check.remediation!,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
 }

@@ -54,7 +54,7 @@ class _DebuggerPageState extends State<DebuggerPage>
       duration: const Duration(milliseconds: TimingConfig.pulseAnimationMs),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+    _pulseAnimation = Tween<double>(begin: 1, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -113,12 +113,11 @@ class _DebuggerPageState extends State<DebuggerPage>
     Set<String> newModifiers,
     Set<String> newHeldKeys,
     Set<String> newLayouts,
-  ) {
-    return !_setEquals(newLayers, _previousLayers) ||
-        !_setEquals(newModifiers, _previousModifiers) ||
-        !_setEquals(newHeldKeys, _previousHeldKeys) ||
-        !_setEquals(newLayouts, _previousLayouts);
-  }
+  ) =>
+      !_setEquals(newLayers, _previousLayers) ||
+      !_setEquals(newModifiers, _previousModifiers) ||
+      !_setEquals(newHeldKeys, _previousHeldKeys) ||
+      !_setEquals(newLayouts, _previousLayouts);
 
   bool _setEquals(Set<String> a, Set<String> b) {
     if (a.length != b.length) return false;
@@ -191,7 +190,6 @@ class _DebuggerPageState extends State<DebuggerPage>
         children: [
           // State panel with animation
           Expanded(
-            flex: 1,
             child: AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) => _buildStatePanel(latest),
@@ -291,62 +289,59 @@ class _DebuggerPageState extends State<DebuggerPage>
     );
   }
 
-  Widget _buildLastEventCard(EngineSnapshot? snapshot) {
-    return AnimatedContainer(
-      duration: _animationDuration,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: snapshot?.lastEvent != null
-            ? Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.3),
-                width: 1,
-              )
-            : null,
-      ),
-      child: snapshot?.lastEvent != null
-          ? Card(
-              margin: EdgeInsets.zero,
-              child: ListTile(
-                leading: AnimatedScale(
-                  scale: _pulseAnimation.value,
-                  duration: _animationDuration,
-                  child: const Icon(Icons.event_note),
-                ),
-                title: const Text('Last Event'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      snapshot!.lastEvent!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      snapshot.timestamp.toLocal().toIso8601String(),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
+  Widget _buildLastEventCard(EngineSnapshot? snapshot) => AnimatedContainer(
+    duration: _animationDuration,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      border: snapshot?.lastEvent != null
+          ? Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.3),
             )
-          : Card(
-              margin: EdgeInsets.zero,
-              child: ListTile(
-                leading: const Icon(Icons.event_note, color: Colors.grey),
-                title: const Text('Last Event'),
-                subtitle: Text(
-                  'Waiting for events...',
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                    fontStyle: FontStyle.italic,
+          : null,
+    ),
+    child: snapshot?.lastEvent != null
+        ? Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: AnimatedScale(
+                scale: _pulseAnimation.value,
+                duration: _animationDuration,
+                child: const Icon(Icons.event_note),
+              ),
+              title: const Text('Last Event'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    snapshot!.lastEvent!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    snapshot.timestamp.toLocal().toIso8601String(),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          )
+        : Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: const Icon(Icons.event_note, color: Colors.grey),
+              title: const Text('Last Event'),
+              subtitle: Text(
+                'Waiting for events...',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ),
-    );
-  }
+          ),
+  );
 
   void _toggleRecording() {
     setState(() {
@@ -355,8 +350,6 @@ class _DebuggerPageState extends State<DebuggerPage>
   }
 
   void _clearLog() {
-    setState(() {
-      _recent.clear();
-    });
+    setState(_recent.clear);
   }
 }

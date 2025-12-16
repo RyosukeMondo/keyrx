@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 /// Provides a consistent UI for collecting text input from users.
 class InputDialog extends StatefulWidget {
   const InputDialog({
-    super.key,
     required this.title,
-    this.message,
     required this.labelText,
+    super.key,
+    this.message,
     this.hintText,
     this.initialValue = '',
     this.confirmLabel = 'OK',
@@ -38,8 +38,8 @@ class InputDialog extends StatefulWidget {
   static Future<String?> show(
     BuildContext context, {
     required String title,
-    String? message,
     required String labelText,
+    String? message,
     String? hintText,
     String initialValue = '',
     String confirmLabel = 'OK',
@@ -48,24 +48,22 @@ class InputDialog extends StatefulWidget {
     IconData? icon,
     int maxLines = 1,
     bool barrierDismissible = true,
-  }) {
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (_) => InputDialog(
-        title: title,
-        message: message,
-        labelText: labelText,
-        hintText: hintText,
-        initialValue: initialValue,
-        confirmLabel: confirmLabel,
-        cancelLabel: cancelLabel,
-        validator: validator,
-        icon: icon,
-        maxLines: maxLines,
-      ),
-    );
-  }
+  }) => showDialog<String>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (_) => InputDialog(
+      title: title,
+      message: message,
+      labelText: labelText,
+      hintText: hintText,
+      initialValue: initialValue,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      validator: validator,
+      icon: icon,
+      maxLines: maxLines,
+    ),
+  );
 }
 
 class _InputDialogState extends State<InputDialog> {
@@ -107,7 +105,6 @@ class _InputDialogState extends State<InputDialog> {
       contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (widget.icon != null) ...[
             Icon(widget.icon, color: scheme.primary),

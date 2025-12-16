@@ -19,10 +19,10 @@ import '../pages/migration_prompt_page.dart';
 /// Otherwise shows the child widget (main app).
 class MigrationWrapper extends StatefulWidget {
   const MigrationWrapper({
-    super.key,
     required this.child,
     required this.onCheckMigrationNeeded,
     required this.onRunMigration,
+    super.key,
   });
 
   /// The main app widget to show after migration check

@@ -39,110 +39,106 @@ class _FlowLoadingSkeletonState extends State<FlowLoadingSkeleton>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: Semantics(
-        label: 'Loading flow graph, please wait',
-        child: AnimatedBuilder(
-          animation: _shimmerAnimation,
-          builder: (context, child) {
-            return Container(
-              color: const Color(0xFF121212),
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header skeleton
-                  _ShimmerBar(animation: _shimmerAnimation, width: 220),
-                  const SizedBox(height: 20),
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF121212),
+    body: Semantics(
+      label: 'Loading flow graph, please wait',
+      child: AnimatedBuilder(
+        animation: _shimmerAnimation,
+        builder: (context, child) => Container(
+          color: const Color(0xFF121212),
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header skeleton
+              _ShimmerBar(animation: _shimmerAnimation, width: 220),
+              const SizedBox(height: 20),
 
-                  // Flow nodes skeleton
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Flow nodes skeleton
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left column - Device nodes
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Left column - Device nodes
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 260,
-                              height: 220,
-                            ),
-                            const SizedBox(height: 24),
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 260,
-                              height: 220,
-                            ),
-                          ],
+                        _ShimmerCard(
+                          animation: _shimmerAnimation,
+                          width: 260,
+                          height: 220,
                         ),
-
-                        // Middle column - Profile nodes
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 40),
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 220,
-                              height: 160,
-                            ),
-                            const SizedBox(height: 32),
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 220,
-                              height: 160,
-                            ),
-                          ],
-                        ),
-
-                        // Right column - Keymap nodes
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 60),
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 200,
-                              height: 140,
-                            ),
-                            const SizedBox(height: 40),
-                            _ShimmerCard(
-                              animation: _shimmerAnimation,
-                              width: 200,
-                              height: 140,
-                            ),
-                          ],
+                        const SizedBox(height: 24),
+                        _ShimmerCard(
+                          animation: _shimmerAnimation,
+                          width: 260,
+                          height: 220,
                         ),
                       ],
                     ),
-                  ),
 
-                  // Connection lines skeleton
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ShimmerBar(
+                    // Middle column - Profile nodes
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 40),
+                        _ShimmerCard(
                           animation: _shimmerAnimation,
-                          width: double.infinity,
-                          height: 2,
+                          width: 220,
+                          height: 160,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 32),
+                        _ShimmerCard(
+                          animation: _shimmerAnimation,
+                          width: 220,
+                          height: 160,
+                        ),
+                      ],
+                    ),
+
+                    // Right column - Keymap nodes
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 60),
+                        _ShimmerCard(
+                          animation: _shimmerAnimation,
+                          width: 200,
+                          height: 140,
+                        ),
+                        const SizedBox(height: 40),
+                        _ShimmerCard(
+                          animation: _shimmerAnimation,
+                          width: 200,
+                          height: 140,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Connection lines skeleton
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ShimmerBar(
+                      animation: _shimmerAnimation,
+                      width: double.infinity,
+                      height: 2,
+                    ),
                   ),
                 ],
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// Shimmer bar widget for small loading placeholders.
@@ -158,14 +154,12 @@ class _ShimmerBar extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) {
-    return _ShimmerBox(
-      animation: animation,
-      width: width,
-      height: height,
-      radius: 6,
-    );
-  }
+  Widget build(BuildContext context) => _ShimmerBox(
+    animation: animation,
+    width: width,
+    height: height,
+    radius: 6,
+  );
 }
 
 /// Shimmer card widget for node placeholders.
@@ -181,14 +175,12 @@ class _ShimmerCard extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) {
-    return _ShimmerBox(
-      animation: animation,
-      width: width,
-      height: height,
-      radius: 12,
-    );
-  }
+  Widget build(BuildContext context) => _ShimmerBox(
+    animation: animation,
+    width: width,
+    height: height,
+    radius: 12,
+  );
 }
 
 /// Base shimmer box with animated gradient.
@@ -208,8 +200,6 @@ class _ShimmerBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradient = LinearGradient(
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
       colors: const [Color(0xFF1E1E1E), Color(0xFF2C2C2C), Color(0xFF1E1E1E)],
       stops: const [0.1, 0.5, 0.9],
       transform: _SlidingGradientTransform(slidePercent: animation.value),
@@ -234,9 +224,8 @@ class _SlidingGradientTransform extends GradientTransform {
   final double slidePercent;
 
   @override
-  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(bounds.width * slidePercent, 0, 0);
-  }
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) =>
+      Matrix4.translationValues(bounds.width * slidePercent, 0, 0);
 }
 
 /// Inline loading spinner for specific operations.
@@ -245,9 +234,9 @@ class _SlidingGradientTransform extends GradientTransform {
 /// adding/deleting slots without blocking the entire UI.
 class InlineLoadingSpinner extends StatelessWidget {
   const InlineLoadingSpinner({
+    required this.message,
     super.key,
     this.size = 16,
-    required this.message,
   });
 
   /// Loading message to display
@@ -311,21 +300,19 @@ class CompactLoadingSpinner extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Loading',
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            color ?? Theme.of(context).colorScheme.primary,
-          ),
+  Widget build(BuildContext context) => Semantics(
+    label: 'Loading',
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(
+          color ?? Theme.of(context).colorScheme.primary,
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// Empty state widget for when no devices are connected.
@@ -477,10 +464,8 @@ class _PulsingIconState extends State<_PulsingIcon>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _animation,
-      child: Icon(widget.icon, size: widget.size, color: widget.color),
-    );
-  }
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _animation,
+    child: Icon(widget.icon, size: widget.size, color: widget.color),
+  );
 }

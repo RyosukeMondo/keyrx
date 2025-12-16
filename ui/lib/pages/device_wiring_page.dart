@@ -38,8 +38,10 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
   // Mapping State
   String? _selectedPhysicalKeyId;
 
-  DeviceRegistryService get _deviceRegistry =>
-      Provider.of<ServiceRegistry>(context, listen: false).deviceRegistryService;
+  DeviceRegistryService get _deviceRegistry => Provider.of<ServiceRegistry>(
+    context,
+    listen: false,
+  ).deviceRegistryService;
 
   DeviceProfileService get _profileService =>
       Provider.of<ServiceRegistry>(context, listen: false).deviceProfileService;
@@ -57,7 +59,10 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
     });
 
     // Capture services early to avoid context usage across async gaps
-    final runtimeService = Provider.of<ServiceRegistry>(context, listen: false).runtimeService;
+    final runtimeService = Provider.of<ServiceRegistry>(
+      context,
+      listen: false,
+    ).runtimeService;
 
     try {
       final registryDevices = await _deviceRegistry.getDevices();
@@ -81,11 +86,16 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
           );
 
           if (!isConnected) {
-            String userLabel = 'Offline';
-            final vid = configDevice.device.vendorId.toRadixString(16).padLeft(4, '0');
-            final pid = configDevice.device.productId.toRadixString(16).padLeft(4, '0');
+            var userLabel = 'Offline';
+            final vid = configDevice.device.vendorId
+                .toRadixString(16)
+                .padLeft(4, '0');
+            final pid = configDevice.device.productId
+                .toRadixString(16)
+                .padLeft(4, '0');
 
-            if (configDevice.device.serial != null && configDevice.device.serial!.isNotEmpty) {
+            if (configDevice.device.serial != null &&
+                configDevice.device.serial!.isNotEmpty) {
               userLabel = 'Offline (${configDevice.device.serial})';
             } else {
               userLabel = 'Offline (0x$vid:0x$pid)';
@@ -103,7 +113,6 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
                 remapEnabled: false,
                 connectedAt: '',
                 updatedAt: DateTime.now().toIso8601String(),
-                profileId: null,
               ),
             );
           }
@@ -120,7 +129,9 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
         } else if (_selectedDevice != null) {
           // Refresh selected device
           final updated = mergedDevices
-              .where((d) => d.identity.toKey() == _selectedDevice!.identity.toKey())
+              .where(
+                (d) => d.identity.toKey() == _selectedDevice!.identity.toKey(),
+              )
               .firstOrNull;
           if (updated != null) {
             _selectedDevice = updated;
@@ -169,7 +180,11 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
 
     // Update keymap
     final updatedKeymap = Map<int, PhysicalKey>.from(_profile!.keymap);
-    updatedKeymap[scanCode] = PhysicalKey(scanCode: scanCode, row: row, col: col);
+    updatedKeymap[scanCode] = PhysicalKey(
+      scanCode: scanCode,
+      row: row,
+      col: col,
+    );
 
     final updatedProfile = DeviceProfile(
       schemaVersion: _profile!.schemaVersion,
@@ -205,7 +220,8 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
   Future<void> _clearMapping(int scanCode) async {
     if (_profile == null) return;
 
-    final updatedKeymap = Map<int, PhysicalKey>.from(_profile!.keymap)..remove(scanCode);
+    final updatedKeymap = Map<int, PhysicalKey>.from(_profile!.keymap)
+      ..remove(scanCode);
 
     final updatedProfile = DeviceProfile(
       schemaVersion: _profile!.schemaVersion,
@@ -234,80 +250,87 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
         _selectedPhysicalKeyId = key.id;
       });
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('No scancode defined for ${key.label}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No scancode defined for ${key.label}')),
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profiles (Device Wiring)'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDevices)],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Toolbar: Device Selector
-          _buildToolbar(),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Profiles (Device Wiring)'),
+      actions: [
+        IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDevices),
+      ],
+    ),
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Toolbar: Device Selector
+        _buildToolbar(),
 
-          if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: InlineMessage(message: _errorMessage!, variant: InlineMessageVariant.error),
-            ),
-
-          // Content
-          Expanded(child: _buildContent()),
-
-          // Palette
-          _buildMatrixPalette(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolbar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        children: [
-          const Icon(Icons.keyboard_outlined),
-          const SizedBox(width: 12),
-          const Text('Device:', style: TextStyle(fontWeight: FontWeight.w500)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: DropdownButton<String>(
-              value: _selectedDevice?.identity.toKey(),
-              hint: const Text('Select a device'),
-              isExpanded: true,
-              underline: Container(),
-              items: _devices.map((d) {
-                return DropdownMenuItem(
-                  value: d.identity.toKey(),
-                  child: Text(d.identity.displayName),
-                );
-              }).toList(),
-              onChanged: (key) {
-                if (key != null) {
-                  final device = _devices.firstWhere((d) => d.identity.toKey() == key);
-                  _selectDevice(device);
-                }
-              },
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: InlineMessage(
+              message: _errorMessage!,
+              variant: InlineMessageVariant.error,
             ),
           ),
-        ],
-      ),
-    );
-  }
+
+        // Content
+        Expanded(child: _buildContent()),
+
+        // Palette
+        _buildMatrixPalette(),
+      ],
+    ),
+  );
+
+  Widget _buildToolbar() => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    child: Row(
+      children: [
+        const Icon(Icons.keyboard_outlined),
+        const SizedBox(width: 12),
+        const Text('Device:', style: TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: DropdownButton<String>(
+            value: _selectedDevice?.identity.toKey(),
+            hint: const Text('Select a device'),
+            isExpanded: true,
+            underline: Container(),
+            items: _devices
+                .map(
+                  (d) => DropdownMenuItem(
+                    value: d.identity.toKey(),
+                    child: Text(d.identity.displayName),
+                  ),
+                )
+                .toList(),
+            onChanged: (key) {
+              if (key != null) {
+                final device = _devices.firstWhere(
+                  (d) => d.identity.toKey() == key,
+                );
+                _selectDevice(device);
+              }
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildContent() {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_devices.isEmpty) {
-      return const Center(child: Text('No devices found. Connect a supported device.'));
+      return const Center(
+        child: Text('No devices found. Connect a supported device.'),
+      );
     }
     if (_selectedDevice == null) {
       return const Center(child: Text('Select a device to configure.'));
@@ -330,34 +353,37 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
     }
 
     return LayoutBuilder(
-      builder: (context, constraints) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text('Typical Key Layout (Physical)', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(
-                'Tap a key to assign its matrix position (Row/Col).',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Center(
-                  child: VisualKeyboard(
-                    layout: KeyboardLayout.ansi104(),
-                    onKeyTap: _handlePhysicalKeyTap,
-                    selectedKeys: _selectedPhysicalKeyId != null ? {_selectedPhysicalKeyId!} : {},
-                    mappedKeys: mappedKeyIds,
-                    showMappingOverlay: false,
-                    enableDragDrop: false,
-                  ),
+      builder: (context, constraints) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              'Typical Key Layout (Physical)',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap a key to assign its matrix position (Row/Col).',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: VisualKeyboard(
+                  layout: KeyboardLayout.ansi104(),
+                  onKeyTap: _handlePhysicalKeyTap,
+                  selectedKeys: _selectedPhysicalKeyId != null
+                      ? {_selectedPhysicalKeyId!}
+                      : {},
+                  mappedKeys: mappedKeyIds,
+                  showMappingOverlay: false,
+                  enableDragDrop: false,
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -397,7 +423,10 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     color: theme.colorScheme.surfaceContainerHighest,
                     child: Row(
                       children: [
@@ -426,7 +455,8 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
                           ),
                         IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => setState(() => _selectedPhysicalKeyId = null),
+                          onPressed: () =>
+                              setState(() => _selectedPhysicalKeyId = null),
                         ),
                       ],
                     ),
@@ -448,24 +478,30 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
     if (_profile == null) return const SizedBox.shrink();
 
     final rows = <Widget>[];
-    for (int r = 0; r < _profile!.rows; r++) {
-      final cols = _profile!.colsPerRow.length > r ? _profile!.colsPerRow[r] : 0;
+    for (var r = 0; r < _profile!.rows; r++) {
+      final cols = _profile!.colsPerRow.length > r
+          ? _profile!.colsPerRow[r]
+          : 0;
       final buttons = <Widget>[];
 
-      for (int c = 0; c < cols; c++) {
+      for (var c = 0; c < cols; c++) {
         final isMapped = _profile!.keymap.values.any(
           (pk) => pk.row == r && pk.col == c && pk.scanCode != scanCode,
         );
 
         buttons.add(
           Padding(
-            padding: const EdgeInsets.all(4.0),
+            padding: const EdgeInsets.all(4),
             child: ActionChip(
               label: Text('R${r}C$c'),
               backgroundColor: isMapped
-                  ? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
                   : null,
-              onPressed: scanCode == null ? null : () => _saveMapping(scanCode, r, c),
+              onPressed: scanCode == null
+                  ? null
+                  : () => _saveMapping(scanCode, r, c),
             ),
           ),
         );
@@ -476,8 +512,11 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-              child: Text('Row $r', style: Theme.of(context).textTheme.labelMedium),
+              padding: const EdgeInsets.only(bottom: 8, top: 8),
+              child: Text(
+                'Row $r',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
             ),
             Wrap(children: buttons),
           ],

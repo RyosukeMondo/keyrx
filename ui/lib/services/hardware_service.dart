@@ -14,16 +14,17 @@ class HardwareService with ChangeNotifier {
   final KeyrxBridge _bridge;
 
   /// List all hardware profiles.
-  Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async {
-    return _guard('list hardware profiles', (bindings) {
-      try {
-        final profiles = bindings.listHardwareProfiles();
-        return ConfigOperationResult.success(profiles);
-      } catch (e) {
-        return ConfigOperationResult.error('list hardware profiles failed: $e');
-      }
-    });
-  }
+  Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async =>
+      _guard('list hardware profiles', (bindings) {
+        try {
+          final profiles = bindings.listHardwareProfiles();
+          return ConfigOperationResult.success(profiles);
+        } catch (e) {
+          return ConfigOperationResult.error(
+            'list hardware profiles failed: $e',
+          );
+        }
+      });
 
   /// Persist or update a hardware profile.
   Future<ConfigOperationResult<HardwareProfile>> saveProfile(
@@ -51,7 +52,7 @@ class HardwareService with ChangeNotifier {
     final result = await _guard<void>('delete hardware profile', (bindings) {
       try {
         bindings.deleteHardwareProfile(id);
-        return ConfigOperationResult.success(null);
+        return ConfigOperationResult.success();
       } catch (e) {
         return ConfigOperationResult.error(
           'delete hardware profile failed: $e',

@@ -24,21 +24,18 @@ class EdgeAnimationState {
     double? opacity,
     double? pulsePhase,
     double? colorTransition,
-  }) {
-    return EdgeAnimationState(
-      opacity: opacity ?? this.opacity,
-      pulsePhase: pulsePhase ?? this.pulsePhase,
-      colorTransition: colorTransition ?? this.colorTransition,
-    );
-  }
+  }) => EdgeAnimationState(
+    opacity: opacity ?? this.opacity,
+    pulsePhase: pulsePhase ?? this.pulsePhase,
+    colorTransition: colorTransition ?? this.colorTransition,
+  );
 
   @override
-  bool operator ==(Object other) {
-    return other is EdgeAnimationState &&
-        other.opacity == opacity &&
-        other.pulsePhase == pulsePhase &&
-        other.colorTransition == colorTransition;
-  }
+  bool operator ==(Object other) =>
+      other is EdgeAnimationState &&
+      other.opacity == opacity &&
+      other.pulsePhase == pulsePhase &&
+      other.colorTransition == colorTransition;
 
   @override
   int get hashCode => Object.hash(opacity, pulsePhase, colorTransition);
@@ -79,14 +76,11 @@ class EdgeAnimations {
   }
 
   /// Applies easing curve for fade animations
-  static double fadeEasing(double t) {
-    return Curves.easeInOut.transform(t);
-  }
+  static double fadeEasing(double t) => Curves.easeInOut.transform(t);
 
   /// Applies easing curve for color transitions
-  static double colorTransitionEasing(double t) {
-    return Curves.easeInOutCubic.transform(t);
-  }
+  static double colorTransitionEasing(double t) =>
+      Curves.easeInOutCubic.transform(t);
 
   /// Interpolates between two colors with easing
   static Color lerpColor(Color a, Color b, double t) {
@@ -96,12 +90,10 @@ class EdgeAnimations {
 
   /// Calculates anti-aliased stroke width adjustment
   /// Adds slight blur for smoother edges
-  static Paint applyAntiAliasing(Paint paint) {
-    return paint
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true;
-  }
+  static Paint applyAntiAliasing(Paint paint) => paint
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..isAntiAlias = true;
 }
 
 /// Cache key for edge paths to avoid recomputation
@@ -121,14 +113,13 @@ class EdgePathCacheKey {
   final bool active;
 
   @override
-  bool operator ==(Object other) {
-    return other is EdgePathCacheKey &&
-        other.startX == startX &&
-        other.startY == startY &&
-        other.endX == endX &&
-        other.endY == endY &&
-        other.active == active;
-  }
+  bool operator ==(Object other) =>
+      other is EdgePathCacheKey &&
+      other.startX == startX &&
+      other.startY == startY &&
+      other.endX == endX &&
+      other.endY == endY &&
+      other.active == active;
 
   @override
   int get hashCode => Object.hash(startX, startY, endX, endY, active);

@@ -20,14 +20,12 @@ class PhysicalKey {
     this.alias,
   });
 
-  factory PhysicalKey.fromJson(Map<String, dynamic> json) {
-    return PhysicalKey(
-      scanCode: (json['scan_code'] as num).toInt(),
-      row: (json['row'] as num).toInt(),
-      col: (json['col'] as num).toInt(),
-      alias: json['alias']?.toString(),
-    );
-  }
+  factory PhysicalKey.fromJson(Map<String, dynamic> json) => PhysicalKey(
+    scanCode: (json['scan_code'] as num).toInt(),
+    row: (json['row'] as num).toInt(),
+    col: (json['col'] as num).toInt(),
+    alias: json['alias']?.toString(),
+  );
 
   final int scanCode;
   final int row;
@@ -51,14 +49,13 @@ enum ProfileSource {
   const ProfileSource(this.label);
   final String label;
 
-  factory ProfileSource.fromString(String source) {
-    return switch (source.toLowerCase()) {
-      'discovered' => ProfileSource.discovered,
-      'default' => ProfileSource.defaultSource,
-      'migrated' => ProfileSource.migrated,
-      _ => ProfileSource.defaultSource,
-    };
-  }
+  factory ProfileSource.fromString(String source) =>
+      switch (source.toLowerCase()) {
+        'discovered' => ProfileSource.discovered,
+        'default' => ProfileSource.defaultSource,
+        'migrated' => ProfileSource.migrated,
+        _ => ProfileSource.defaultSource,
+      };
 }
 
 /// Device profile containing layout and keymap information.
@@ -67,13 +64,13 @@ class DeviceProfile {
     required this.schemaVersion,
     required this.vendorId,
     required this.productId,
-    this.name,
     required this.discoveredAt,
     required this.rows,
     required this.colsPerRow,
     required this.keymap,
     required this.aliases,
     required this.source,
+    this.name,
   });
 
   factory DeviceProfile.fromJson(Map<String, dynamic> json) {

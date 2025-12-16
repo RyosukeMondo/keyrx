@@ -143,8 +143,8 @@ class _MonitorPageState extends State<MonitorPage> {
     final appState = context.read<AppState>();
     final facade = context.read<KeyrxFacade>();
 
-    String? scriptPath = appState.loadedScript;
-    bool isDefaultScript = false;
+    var scriptPath = appState.loadedScript;
+    var isDefaultScript = false;
 
     // If no script loaded, use/create a default monitor script
     if (scriptPath == null) {
@@ -292,7 +292,7 @@ class _MonitorPageState extends State<MonitorPage> {
                   icon: const Icon(Icons.delete_sweep),
                   tooltip: 'Clear History',
                   onPressed: () {
-                    setState(() => _events.clear());
+                    setState(_events.clear);
                   },
                 ),
                 const SizedBox(width: 8),
@@ -301,14 +301,16 @@ class _MonitorPageState extends State<MonitorPage> {
             body: TabBarView(
               children: [
                 // Tab 1: Visual Table
-                _events.isEmpty
-                    ? _buildEmptyState(isRunning)
-                    : _buildTableView(),
+                if (_events.isEmpty)
+                  _buildEmptyState(isRunning)
+                else
+                  _buildTableView(),
 
                 // Tab 2: Text Log
-                _events.isEmpty
-                    ? _buildEmptyState(isRunning)
-                    : _buildTextView(),
+                if (_events.isEmpty)
+                  _buildEmptyState(isRunning)
+                else
+                  _buildTextView(),
               ],
             ),
           ),
@@ -317,68 +319,62 @@ class _MonitorPageState extends State<MonitorPage> {
     );
   }
 
-  Widget _buildTableView() {
-    return Column(
-      children: [
-        _buildHeader(),
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.only(bottom: 100),
-            itemCount: _events.length,
-            itemBuilder: (context, index) {
-              return _buildEventRow(_events[index]);
-            },
-          ),
+  Widget _buildTableView() => Column(
+    children: [
+      _buildHeader(),
+      Expanded(
+        child: ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.only(bottom: 100),
+          itemCount: _events.length,
+          itemBuilder: (context, index) => _buildEventRow(_events[index]),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
-  Widget _buildTextView() {
-    return ListView.builder(
-      controller: _scrollController, // Share scroll controller (optional)
-      padding: const EdgeInsets.all(16),
-      itemCount: _events.length,
-      itemBuilder: (context, index) {
-        final event = _events[index];
-        final isInput = event.type == EventType.rawInput;
-        final typeStr = isInput ? "INPUT " : "OUTPUT";
-        final timeStr =
-            "${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}:${event.timestamp.second.toString().padLeft(2, '0')}.${event.timestamp.millisecond.toString().padLeft(3, '0')}";
+  Widget _buildTextView() => ListView.builder(
+    controller: _scrollController, // Share scroll controller (optional)
+    padding: const EdgeInsets.all(16),
+    itemCount: _events.length,
+    itemBuilder: (context, index) {
+      final event = _events[index];
+      final isInput = event.type == EventType.rawInput;
+      final typeStr = isInput ? 'INPUT ' : 'OUTPUT';
+      final timeStr =
+          "${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}:${event.timestamp.second.toString().padLeft(2, '0')}.${event.timestamp.millisecond.toString().padLeft(3, '0')}";
 
-        final content = _formatEventText(event);
+      final content = _formatEventText(event);
 
-        return SelectableText.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: "[$timeStr] ",
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                ),
+      return SelectableText.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '[$timeStr] ',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontFamily: 'monospace',
+                fontSize: 12,
               ),
-              TextSpan(
-                text: "[$typeStr] ",
-                style: TextStyle(
-                  color: isInput ? Colors.blue[300] : Colors.orange[300],
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+            ),
+            TextSpan(
+              text: '[$typeStr] ',
+              style: TextStyle(
+                color: isInput ? Colors.blue[300] : Colors.orange[300],
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
-              TextSpan(
-                text: content,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+            TextSpan(
+              text: content,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 
   String _formatEventText(MonitorEvent event) {
     // Parse common fields
@@ -387,12 +383,12 @@ class _MonitorPageState extends State<MonitorPage> {
       if (data.containsKey('ScanCode')) {
         final sc = data['ScanCode'];
         final state = data['State'];
-        return "ScanCode $sc ($state)";
+        return 'ScanCode $sc ($state)';
       } else if (data.containsKey('VirtualKey')) {
         final vk = data['VirtualKey'];
         final state = data['State'];
-        final name = _vkMap[vk] ?? "VK $vk";
-        return "$name ($state)";
+        final name = _vkMap[vk] ?? 'VK $vk';
+        return '$name ($state)';
       } else if (data.containsKey('SendInput')) {
         final input = data['SendInput'];
         if (input is Map && input.containsKey('wScan')) {
@@ -406,85 +402,79 @@ class _MonitorPageState extends State<MonitorPage> {
     return event.rawJson;
   }
 
-  Widget _buildStatusBadge(bool isRunning) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isRunning
-            ? Colors.green.withValues(alpha: 0.2)
-            : Colors.grey.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isRunning ? Colors.green : Colors.grey),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.fiber_manual_record,
-            size: 10,
+  Widget _buildStatusBadge(bool isRunning) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: isRunning
+          ? Colors.green.withValues(alpha: 0.2)
+          : Colors.grey.withValues(alpha: 0.2),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: isRunning ? Colors.green : Colors.grey),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.fiber_manual_record,
+          size: 10,
+          color: isRunning ? Colors.green : Colors.grey,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          isRunning ? 'RUNNING' : 'STOPPED',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
             color: isRunning ? Colors.green : Colors.grey,
           ),
-          const SizedBox(width: 4),
-          Text(
-            isRunning ? 'RUNNING' : 'STOPPED',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: isRunning ? Colors.green : Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildEmptyState(bool isRunning) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.monitor_heart_outlined, size: 64, color: Colors.grey[700]),
-          const SizedBox(height: 16),
-          Text(
-            isRunning
-                ? 'Monitoring Active\nWaiting for input...'
-                : 'Monitor Stopped\nClick "Start Monitor" to begin',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey[500]),
-          ),
-          if (isRunning) ...[
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
-          ],
+  Widget _buildEmptyState(bool isRunning) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.monitor_heart_outlined, size: 64, color: Colors.grey[700]),
+        const SizedBox(height: 16),
+        Text(
+          isRunning
+              ? 'Monitoring Active\nWaiting for input...'
+              : 'Monitor Stopped\nClick "Start Monitor" to begin',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+        ),
+        if (isRunning) ...[
+          const SizedBox(height: 24),
+          const CircularProgressIndicator(),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      color: Colors.black12,
-      child: const Row(
-        children: [
-          Expanded(
-            child: Text(
-              'HARDWARE INPUT',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
+  Widget _buildHeader() => Container(
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+    color: Colors.black12,
+    child: const Row(
+      children: [
+        Expanded(
+          child: Text(
+            'HARDWARE INPUT',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'OS OUTPUT',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            'OS OUTPUT',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
-          SizedBox(width: 80), // Time column
-        ],
-      ),
-    );
-  }
+        ),
+        SizedBox(width: 80), // Time column
+      ],
+    ),
+  );
 
   Widget _buildEventRow(MonitorEvent event) {
     final isInput = event.type == EventType.rawInput;
@@ -538,8 +528,8 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   Widget _buildEventContent(MonitorEvent event, Color color) {
-    String summary = "Unknown";
-    String details = "";
+    var summary = 'Unknown';
+    var details = '';
 
     // Parse common fields
     final data = event.data;
@@ -547,26 +537,26 @@ class _MonitorPageState extends State<MonitorPage> {
       if (data.containsKey('ScanCode')) {
         final sc = data['ScanCode'];
         final state = data['State'];
-        summary = "ScanCode $sc";
-        details = "$state";
+        summary = 'ScanCode $sc';
+        details = '$state';
       } else if (data.containsKey('VirtualKey')) {
         final vk = data['VirtualKey'];
         final state = data['State'];
-        final name = _vkMap[vk] ?? "VK $vk";
+        final name = _vkMap[vk] ?? 'VK $vk';
         summary = name;
-        details = "$state";
+        details = '$state';
       } else if (data.containsKey('SendInput')) {
         final input = data['SendInput'];
         if (input is Map && input.containsKey('wScan')) {
           final scan = input['wScan'];
           final flags = input['dwFlags'];
           final isUp = (flags & 2) != 0; // KEYEVENTF_KEYUP = 0x0002
-          summary = "Sent ScanCode $scan";
-          details = isUp ? "Up" : "Down";
+          summary = 'Sent ScanCode $scan';
+          details = isUp ? 'Up' : 'Down';
         }
       } else {
         // Fallback for generic map
-        summary = "Event Data";
+        summary = 'Event Data';
         details = event.rawJson;
       }
     } else {
@@ -593,15 +583,14 @@ class _MonitorPageState extends State<MonitorPage> {
 }
 
 class MonitorEvent {
-  final EventType type;
-  final DateTime timestamp;
-  final dynamic data;
-  final String rawJson;
-
   MonitorEvent({
     required this.type,
     required this.timestamp,
     required this.data,
     required this.rawJson,
   });
+  final EventType type;
+  final DateTime timestamp;
+  final dynamic data;
+  final String rawJson;
 }

@@ -39,22 +39,21 @@ class SurfaceStyles {
 
 /// Reusable, theme-aware container for grouped content.
 class SurfaceContainer extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry margin;
-  final BorderRadiusGeometry borderRadius;
-  final Color? color;
-  final double elevation;
-
   const SurfaceContainer({
-    super.key,
     required this.child,
+    super.key,
     this.padding = SurfaceStyles.defaultPadding,
     this.margin = SurfaceStyles.defaultMargin,
     this.borderRadius = SurfaceStyles.defaultRadius,
     this.color,
     this.elevation = SurfaceStyles.defaultElevation,
   });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry margin;
+  final BorderRadiusGeometry borderRadius;
+  final Color? color;
+  final double elevation;
 
   @override
   Widget build(BuildContext context) {

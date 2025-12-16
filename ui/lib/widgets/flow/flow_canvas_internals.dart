@@ -7,7 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
+import 'edges_painter.dart';
 
 /// Grid painter for flow canvas background.
 class GridPainter extends CustomPainter {
@@ -113,10 +113,8 @@ class _AnimatedNodeWrapperState extends State<AnimatedNodeWrapper>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
-    );
-  }
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _fadeAnimation,
+    child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+  );
 }

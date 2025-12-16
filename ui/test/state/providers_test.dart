@@ -49,7 +49,8 @@ void main() {
       );
 
       final serviceRegistryProvider =
-          providers.firstWhere((p) => p is Provider<ServiceRegistry>) as Provider<ServiceRegistry>;
+          providers.firstWhere((p) => p is Provider<ServiceRegistry>)
+              as Provider<ServiceRegistry>;
 
       expect(serviceRegistryProvider, isNotNull);
     });
@@ -89,7 +90,8 @@ void main() {
       );
 
       final facadeProvider =
-          providers.firstWhere((p) => p is Provider<KeyrxFacade>) as Provider<KeyrxFacade>;
+          providers.firstWhere((p) => p is Provider<KeyrxFacade>)
+              as Provider<KeyrxFacade>;
 
       expect(facadeProvider, isNotNull);
     });

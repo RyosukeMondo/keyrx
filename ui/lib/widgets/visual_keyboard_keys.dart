@@ -20,10 +20,10 @@ import '../models/keyboard_layout.dart';
 /// - Drag source (being dragged for mapping)
 class KeyWidget extends StatelessWidget {
   const KeyWidget({
-    super.key,
     required this.keyDef,
     required this.width,
     required this.height,
+    super.key,
     this.isSelected = false,
     this.isHighlighted = false,
     this.isMapped = false,

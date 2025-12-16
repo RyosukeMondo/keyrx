@@ -10,12 +10,12 @@ import 'debugger_meters.dart';
 /// Builds a tag section card with chips and change tracking.
 class TagSectionCard extends StatelessWidget {
   const TagSectionCard({
-    super.key,
     required this.title,
     required this.items,
-    this.previousItems,
     required this.pulseAnimation,
     required this.animationDuration,
+    super.key,
+    this.previousItems,
   });
 
   final String title;
@@ -103,7 +103,7 @@ class TagSectionCard extends StatelessWidget {
             const Divider(),
             if (chips.isEmpty)
               AnimatedOpacity(
-                opacity: 1.0,
+                opacity: 1,
                 duration: animationDuration,
                 child: Text(
                   'None',
@@ -144,10 +144,10 @@ class TagSectionCard extends StatelessWidget {
 /// Displays layout compositor state including priorities and shared modifiers.
 class LayoutsCard extends StatelessWidget {
   const LayoutsCard({
-    super.key,
     required this.layouts,
     required this.sharedModifiers,
     required this.animationDuration,
+    super.key,
   });
 
   final List<LayoutState> layouts;
@@ -335,11 +335,11 @@ class _LayoutRow extends StatelessWidget {
 /// Builds the pending decisions card with categorized decisions.
 class PendingDecisionsCard extends StatelessWidget {
   const PendingDecisionsCard({
-    super.key,
     required this.pending,
-    this.timing,
     required this.pulseAnimation,
     required this.animationDuration,
+    super.key,
+    this.timing,
   });
 
   final List<String> pending;
@@ -435,7 +435,7 @@ class PendingDecisionsCard extends StatelessWidget {
 
 /// Builds the timing configuration card.
 class TimingCard extends StatelessWidget {
-  const TimingCard({super.key, required this.timing});
+  const TimingCard({required this.timing, super.key});
 
   final EngineTiming timing;
 
@@ -483,50 +483,45 @@ class TimingCard extends StatelessWidget {
 
 /// Builds the event log list view.
 class EventLogWidget extends StatelessWidget {
-  const EventLogWidget({super.key, required this.events});
+  const EventLogWidget({required this.events, super.key});
 
   final List<EngineSnapshot> events;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'Event Log',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
-        Expanded(
-          child: events.isEmpty
-              ? const Center(child: Text('Waiting for engine events...'))
-              : ListView.builder(
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    final snap = events[index];
-                    final ts = snap.timestamp.toLocal().toIso8601String();
-                    return ListTile(
-                      dense: true,
-                      leading: Text('${index + 1}'),
-                      title: Text(snap.lastEvent ?? 'Snapshot'),
-                      subtitle: Text(ts),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text('Event Log', style: Theme.of(context).textTheme.titleLarge),
+      ),
+      Expanded(
+        child: events.isEmpty
+            ? const Center(child: Text('Waiting for engine events...'))
+            : ListView.builder(
+                itemCount: events.length,
+                itemBuilder: (context, index) {
+                  final snap = events[index];
+                  final ts = snap.timestamp.toLocal().toIso8601String();
+                  return ListTile(
+                    dense: true,
+                    leading: Text('${index + 1}'),
+                    title: Text(snap.lastEvent ?? 'Snapshot'),
+                    subtitle: Text(ts),
+                  );
+                },
+              ),
+      ),
+    ],
+  );
 }
 
 /// Builds the latency timeline visualization.
 class TimelineWidget extends StatelessWidget {
   const TimelineWidget({
-    super.key,
     required this.events,
     required this.animationDuration,
+    super.key,
   });
 
   final List<EngineSnapshot> events;

@@ -142,23 +142,21 @@ class _FeatureTourState extends State<FeatureTour> {
     );
   }
 
-  Widget _buildOverlay() {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.7),
-        child: GestureDetector(
-          onTap: () {}, // Prevent taps from reaching content below
-        ),
+  Widget _buildOverlay() => Positioned.fill(
+    child: Container(
+      color: Colors.black.withOpacity(0.7),
+      child: GestureDetector(
+        onTap: () {}, // Prevent taps from reaching content below
       ),
-    );
-  }
+    ),
+  );
 
   Widget _buildTooltip(_TourStep step) {
     final theme = Theme.of(context);
     final isFirstStep = _currentStep == 0;
     final isLastStep = _currentStep == _steps.length - 1;
 
-    Widget tooltip = Container(
+    final Widget tooltip = Container(
       width: 350,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -290,13 +288,11 @@ class FeatureTourButton extends StatelessWidget {
   final VoidCallback onStart;
 
   @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.help_outline),
-      tooltip: 'Start feature tour',
-      onPressed: onStart,
-    );
-  }
+  Widget build(BuildContext context) => IconButton(
+    icon: const Icon(Icons.help_outline),
+    tooltip: 'Start feature tour',
+    onPressed: onStart,
+  );
 }
 
 /// Hint widget to prompt users to take the tour.

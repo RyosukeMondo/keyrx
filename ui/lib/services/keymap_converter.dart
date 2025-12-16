@@ -2,8 +2,8 @@
 library;
 
 import '../models/keymap.dart';
-import 'rhai_generator.dart';
 import '../widgets/mapping_overlay.dart'; // Implements RemapConfig
+import 'rhai_generator.dart';
 
 /// Converts `Keymap` models to `VisualConfig` for script generation.
 class KeymapConverter {
@@ -79,13 +79,7 @@ class KeymapConverter {
 
       binding.map(
         standardKey: (b) {
-          remaps.add(
-            RemapConfig(
-              sourceKeyId: source,
-              targetKeyId: b.value,
-              type: MappingType.simple,
-            ),
-          );
+          remaps.add(RemapConfig(sourceKeyId: source, targetKeyId: b.value));
         },
         macro: (_) {
           // Macros on base layer are handled by _extractLayerConfig(onlyComplex: true)
@@ -149,10 +143,6 @@ class KeymapConverter {
       );
     }
 
-    return LayerConfig(
-      name: layer.name,
-      isTransparent: true, // Default to transparent for overlay layers
-      mappings: layerMappings,
-    );
+    return LayerConfig(name: layer.name, mappings: layerMappings);
   }
 }
