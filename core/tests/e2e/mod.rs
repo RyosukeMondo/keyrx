@@ -21,3 +21,5 @@
 //! # Run specific e2e test
 //! cargo test --test e2e_workflow_name
 //! ```
+
+mod multi_device_workflow;

@@ -64,6 +64,7 @@ tracing-opentelemetry = { workspace = true, optional = true }
 regex = "1.12.2"
 flate2.workspace = true
 reqwest-tracing = "0.5.8"
+inventory = "0.3.15"
 
 [features]
 # Enable platform drivers by default on their respective platforms

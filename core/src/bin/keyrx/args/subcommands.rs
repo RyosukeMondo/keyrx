@@ -133,8 +133,16 @@ pub enum Commands {
         validate_only: bool,
 
         /// Path to keyboard device (e.g., /dev/input/event3). Auto-detects if not specified.
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["all", "devices"])]
         device: Option<PathBuf>,
+
+        /// Use all available keyboards (multi-device mode)
+        #[arg(long, conflicts_with_all = ["device", "devices"])]
+        all: bool,
+
+        /// Comma-separated list of device paths for multi-device mode
+        #[arg(long, value_delimiter = ',', conflicts_with_all = ["device", "all"])]
+        devices: Option<Vec<PathBuf>>,
 
         /// Record session to a .krx file for replay/analysis
         #[arg(long)]

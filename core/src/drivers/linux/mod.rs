@@ -5,6 +5,7 @@ mod device_info;
 mod discovery;
 mod helpers;
 mod keymap;
+mod multi_device;
 mod reader;
 mod writer;
 
@@ -24,6 +25,7 @@ use async_trait::async_trait;
 use crossbeam_channel::Sender;
 use device_info::try_get_keyboard_info;
 pub use discovery::list_keyboards;
+pub use multi_device::MultiDeviceInput;
 use reader::EvdevReader;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};

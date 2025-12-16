@@ -47,6 +47,10 @@ pub struct RunCommand {
     pub disable_cache: bool,
     /// Clear script cache before running.
     pub clear_cache: bool,
+    /// Use all available keyboards (multi-device mode).
+    pub use_all_devices: bool,
+    /// Specific device paths for multi-device mode.
+    pub device_paths: Option<Vec<PathBuf>>,
 }
 
 impl RunCommand {
@@ -70,7 +74,53 @@ impl RunCommand {
             validate_only: false,
             disable_cache: false,
             clear_cache: false,
+            use_all_devices: false,
+            device_paths: None,
         }
+    }
+
+    /// Configure multi-device mode.
+    ///
+    /// # Panics
+    ///
+    /// Panics if configuration is invalid:
+    /// - Both `use_all` and `device_paths` are set
+    /// - `device_paths` contains duplicates
+    /// - `device_paths` is empty
+    /// - Multi-device conflicts with single device mode
+    #[allow(clippy::panic)]
+    pub fn with_multi_device(mut self, use_all: bool, device_paths: Option<Vec<PathBuf>>) -> Self {
+        // Validation 1: Cannot specify both --all and --devices
+        if use_all && device_paths.is_some() {
+            panic!("Invalid configuration: Cannot specify both --all and --devices");
+        }
+
+        // Validation 2: Cannot use multi-device with single device
+        if self.device_path.is_some() && (use_all || device_paths.is_some()) {
+            panic!("Invalid configuration: Cannot specify --device with --all or --devices");
+        }
+
+        // Validation 3: Check for empty device list
+        if let Some(ref paths) = device_paths {
+            if paths.is_empty() {
+                panic!("Invalid configuration: --devices requires at least one device path");
+            }
+
+            // Validation 4: Check for duplicate device paths
+            let mut seen = std::collections::HashSet::new();
+            for path in paths {
+                if !seen.insert(path) {
+                    panic!(
+                        "Invalid configuration: Duplicate device path: {}",
+                        path.display()
+                    );
+                }
+            }
+        }
+
+        self.use_all_devices = use_all;
+        self.device_paths = device_paths;
+        self
     }
 
     /// Set validate-only mode (load script, validate, then exit).

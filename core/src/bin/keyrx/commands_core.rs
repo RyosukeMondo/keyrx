@@ -35,6 +35,8 @@ pub fn execute_run(
     no_capture: bool,
     validate_only: bool,
     device: Option<PathBuf>,
+    all: bool,
+    devices: Option<Vec<PathBuf>>,
     record: Option<PathBuf>,
     trace: Option<PathBuf>,
     tap_timeout: Option<u32>,
@@ -52,7 +54,8 @@ pub fn execute_run(
         .with_trace_path(trace)
         .with_config(config)
         .with_validate_only(validate_only)
-        .with_cache_options(no_cache, clear_cache);
+        .with_cache_options(no_cache, clear_cache)
+        .with_multi_device(all, devices);
     cmd.execute(ctx)
 }
 

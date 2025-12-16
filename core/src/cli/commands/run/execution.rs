@@ -33,7 +33,7 @@ use tracing::debug;
 use tracing::info;
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-use crate::drivers::LinuxInput;
+use crate::drivers::{LinuxInput, MultiDeviceInput};
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use signal_hook::consts::{SIGINT, SIGTERM};
@@ -247,6 +247,17 @@ impl RunCommand {
         profile_registry: Arc<ProfileRegistry>,
         device_definitions: Arc<DeviceDefinitionLibrary>,
     ) -> Result<()> {
+        // Check if multi-device mode is enabled
+        if self.use_all_devices || self.device_paths.is_some() {
+            return self
+                .run_with_platform_driver_deferred_init_multi(
+                    builder,
+                    profile_registry,
+                    device_definitions,
+                )
+                .await;
+        }
+
         self.output.success("Using Linux input driver");
 
         let mut input = self.initialize_linux_input()?;
@@ -358,6 +369,128 @@ impl RunCommand {
     }
 
     #[cfg(all(target_os = "linux", feature = "linux-driver"))]
+    pub(crate) async fn run_with_platform_driver_deferred_init_multi(
+        &self,
+        builder: &RuntimeBuilder<'_>,
+        profile_registry: Arc<ProfileRegistry>,
+        device_definitions: Arc<DeviceDefinitionLibrary>,
+    ) -> Result<()> {
+        self.output.success("Using Linux multi-device input driver");
+
+        let mut input = self.initialize_multi_device_input()?;
+        let device_infos = input.device_infos().to_vec();
+
+        let mut device_runtime = DeviceRuntime::new(&self.output);
+        let _runtime_guard = self.install_revolutionary_runtime(
+            &device_runtime.registry,
+            &profile_registry,
+            &device_definitions,
+        )?;
+
+        // Register all devices
+        for device_info in &device_infos {
+            if let Ok(serial) = crate::identity::linux::extract_serial_number(&device_info.path) {
+                let identity =
+                    DeviceIdentity::new(device_info.vendor_id, device_info.product_id, serial);
+                device_runtime
+                    .register_identity(identity, &self.output)
+                    .await;
+            }
+        }
+
+        let mut runtime = RhaiRuntime::new()?;
+        if let Some(path) = &self.script_path {
+            self.output
+                .success(&format!("Loading script: {}", path.display()));
+            let path_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid UTF-8 in path: {:?}", path))?;
+            runtime.load_file(path_str)?;
+            runtime.run_script()?;
+
+            if runtime.has_hook("on_init") {
+                runtime.call_hook("on_init")?;
+                self.output.success("Script initialized (on_init called)");
+            }
+        }
+
+        let mut registry = runtime.registry().clone();
+
+        let timing_config = self.timing_config_from_config();
+        registry.set_timing_config(timing_config.clone());
+
+        let script_path_str = self.script_path.as_ref().map(|p| p.display().to_string());
+        let mut engine = builder
+            .build_engine(runtime, registry)
+            .with_device_registry(device_runtime.registry.clone());
+
+        let recording_mgr = RecordingManager::new(self.record_path.clone(), &self.output);
+        let mut recorder =
+            recording_mgr.create_recorder(&engine, script_path_str, timing_config)?;
+        let mut seq = 0u64;
+
+        let tracing_mgr = TracingManager::new(self.trace_path.clone(), &self.output);
+        let tracer = tracing_mgr.create_tracer()?;
+
+        input.start().await?;
+
+        self.output.success("Engine started. Press Ctrl+C to stop.");
+        info!(
+            service = "keyrx",
+            event = "engine_started",
+            component = "cli_run",
+            driver = "linux_multi_device",
+            device_count = device_infos.len(),
+            "Engine running with Linux multi-device input driver"
+        );
+
+        let running = self.setup_signal_handlers()?;
+
+        let mut last_timestamp = 0u64;
+        let exit_reason = loop {
+            if !running.load(Ordering::SeqCst) {
+                break "signal";
+            }
+
+            match input.poll_events().await {
+                Ok(events) => {
+                    if !events.is_empty() {
+                        self.process_events(
+                            &mut engine,
+                            &mut input,
+                            events,
+                            &mut last_timestamp,
+                            &mut recorder,
+                            &mut seq,
+                            tracer.as_ref(),
+                            Some(&mut device_runtime),
+                        )
+                        .await?;
+                    } else {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                    }
+                }
+                Err(e) if e.code() == "DRIVER_DEVICE_DISCONNECTED" => {
+                    break "emergency_exit";
+                }
+                Err(e) => return Err(e.into()),
+            }
+        };
+
+        if exit_reason == "signal" {
+            self.output.success("Signal received, stopping...");
+        } else {
+            self.output.success("Emergency exit triggered, stopping...");
+        }
+        input.stop().await?;
+        device_runtime.persist(&self.output).await;
+        recording_mgr.finish_recording(recorder)?;
+        tracing_mgr.finish_tracing(tracer);
+        self.output.success("Engine stopped.");
+        Ok(())
+    }
+
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
     fn initialize_linux_input(&self) -> Result<LinuxInput> {
         if let Some(ref device) = self.device_path {
             self.output
@@ -379,6 +512,65 @@ impl RunCommand {
                     .error(&format!("Failed to initialize driver: {e:#}"));
                 Err(anyhow::anyhow!("{}", e))
             }
+        }
+    }
+
+    #[cfg(all(target_os = "linux", feature = "linux-driver"))]
+    fn initialize_multi_device_input(&self) -> Result<MultiDeviceInput> {
+        if self.use_all_devices {
+            self.output
+                .success("Using all available keyboards (multi-device mode)...");
+            match MultiDeviceInput::from_all_keyboards() {
+                Ok(input) => {
+                    let count = input.device_infos().len();
+                    self.output
+                        .success(&format!("Opened {} keyboard device(s)", count));
+                    for (idx, info) in input.device_infos().iter().enumerate() {
+                        self.output.success(&format!(
+                            "  [{}] {} ({})",
+                            idx + 1,
+                            info.path.display(),
+                            info.name
+                        ));
+                    }
+                    Ok(input)
+                }
+                Err(e) => {
+                    self.output
+                        .error(&format!("Failed to initialize multi-device driver: {e:#}"));
+                    Err(anyhow::anyhow!("{}", e))
+                }
+            }
+        } else if let Some(ref paths) = self.device_paths {
+            self.output.success(&format!(
+                "Using {} specified keyboard device(s)...",
+                paths.len()
+            ));
+            match MultiDeviceInput::new(paths.clone()) {
+                Ok(input) => {
+                    let count = input.device_infos().len();
+                    self.output
+                        .success(&format!("Opened {} keyboard device(s)", count));
+                    for (idx, info) in input.device_infos().iter().enumerate() {
+                        self.output.success(&format!(
+                            "  [{}] {} ({})",
+                            idx + 1,
+                            info.path.display(),
+                            info.name
+                        ));
+                    }
+                    Ok(input)
+                }
+                Err(e) => {
+                    self.output
+                        .error(&format!("Failed to initialize multi-device driver: {e:#}"));
+                    Err(anyhow::anyhow!("{}", e))
+                }
+            }
+        } else {
+            Err(anyhow::anyhow!(
+                "Multi-device mode requires --all or --devices"
+            ))
         }
     }
 

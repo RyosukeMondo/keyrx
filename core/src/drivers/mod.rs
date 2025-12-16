@@ -32,7 +32,7 @@ pub use windows::WindowsInput;
 pub use windows::WindowsRawInput;
 
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-pub use linux::LinuxInput;
+pub use linux::{LinuxInput, MultiDeviceInput};
 
 /// Platform-specific input driver.
 ///
