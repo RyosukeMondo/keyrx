@@ -8,12 +8,14 @@ library;
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-
-import 'generated/bindings_generated.dart';
+import 'generated_bindings.dart';
 
 // ────────────────────────────────────────────────────────────────
 // Legacy Callback Types (Backward Compatibility)
 // ────────────────────────────────────────────────────────────────
+
+typedef EventCallbackNative = Void Function(Pointer<Uint8>, IntPtr);
+typedef EventCallback = void Function(Pointer<Uint8>, int);
 
 typedef KeyrxFreeStringNative = Void Function(Pointer<Char> ptr);
 typedef KeyrxFreeString = void Function(Pointer<Char> ptr);
@@ -95,8 +97,24 @@ typedef DeviceRegistrySetDeviceEnabled =
 /// - All auto-generated bindings from KeyrxBindingsGenerated
 /// - Legacy callback support for backward compatibility
 /// - Optional functions that may not exist in all builds
-class KeyrxBindings extends KeyrxBindingsGenerated {
+class KeyrxBindings {
   final DynamicLibrary _lib;
+
+  late final BaseBindings base;
+  late final CompatBindings compat;
+  late final ConfigBindings config;
+  late final DeviceDefinitionsBindings deviceDefinitions;
+  late final DeviceRegistryBindings deviceRegistry;
+  late final DiscoveryBindings discovery;
+  late final EngineBindings engine;
+  late final MarshalBindings marshal;
+  late final MigrationBindings migration;
+  late final ObservabilityBindings observability;
+  late final ProfileRegistryBindings profileRegistry;
+  late final RuntimeBindings runtime;
+  late final TelemetryBindings telemetry;
+  late final TracingBindings tracing;
+  late final TransitionLogBindings transitionLog;
 
   late final KeyrxEngineStartLoop? startLoop;
   late final KeyrxEngineStopLoop? stopLoop;
@@ -116,7 +134,23 @@ class KeyrxBindings extends KeyrxBindingsGenerated {
   // Device Registry functions (only the ones missing from KeyrxBindingsGenerated)
   late final DeviceRegistrySetDeviceEnabled? deviceRegistrySetDeviceEnabled;
 
-  KeyrxBindings(this._lib) : super(_lib) {
+  KeyrxBindings(this._lib) {
+    base = BaseBindings(_lib);
+    compat = CompatBindings(_lib);
+    config = ConfigBindings(_lib);
+    deviceDefinitions = DeviceDefinitionsBindings(_lib);
+    deviceRegistry = DeviceRegistryBindings(_lib);
+    discovery = DiscoveryBindings(_lib);
+    engine = EngineBindings(_lib);
+    marshal = MarshalBindings(_lib);
+    migration = MigrationBindings(_lib);
+    observability = ObservabilityBindings(_lib);
+    profileRegistry = ProfileRegistryBindings(_lib);
+    runtime = RuntimeBindings(_lib);
+    telemetry = TelemetryBindings(_lib);
+    tracing = TracingBindings(_lib);
+    transitionLog = TransitionLogBindings(_lib);
+
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
     freeString = _lib
