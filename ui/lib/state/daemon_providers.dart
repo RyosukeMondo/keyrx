@@ -28,14 +28,14 @@ final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((
 });
 
 /// Provider for daemon status.
-final daemonStatusProvider = FutureProvider<EngineStatus>((ref) async {
+final daemonStatusProvider = FutureProvider<EngineStatus>((ref) {
   final service = ref.watch(daemonServiceProvider);
   if (ref.watch(daemonConnectionStateProvider).value ==
       DaemonConnectionState.connected) {
-    return await service.getStatus();
+    return service.getStatus();
   } else {
     // Return a default/empty status when not connected
-    return EngineStatus(status: 'disconnected', devices: []);
+    return const EngineStatus(status: 'disconnected');
   }
 });
 

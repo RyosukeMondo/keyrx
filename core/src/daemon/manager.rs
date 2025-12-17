@@ -199,29 +199,28 @@ impl EngineManager {
                         "Simulated script compilation failure"
                     );
                     // No need to rollback here as we haven't modified the state yet
-                    return Err(anyhow!("Simulated script compilation failed for {}", path.display()));
+                    return Err(anyhow!(
+                        "Simulated script compilation failed for {}",
+                        path.display()
+                    ));
                 }
             }
         }
-        
+
         // --- All checks passed, commit the new state ---
         state.config_path = new_config_path.clone();
         state.script_path = new_script_path.clone();
 
         // 5. If everything succeeded, send notifications
         if state.config_path != old_config_path {
-             if let Some(path) = new_config_path {
-                let _ = self
-                    .event_tx
-                    .send(EngineEvent::ConfigReloaded(path));
+            if let Some(path) = new_config_path {
+                let _ = self.event_tx.send(EngineEvent::ConfigReloaded(path));
             }
         }
 
         if state.script_path != old_script_path {
             if let Some(path) = new_script_path {
-                let _ = self
-                    .event_tx
-                    .send(EngineEvent::ScriptReloaded(path));
+                let _ = self.event_tx.send(EngineEvent::ScriptReloaded(path));
             }
         }
 
