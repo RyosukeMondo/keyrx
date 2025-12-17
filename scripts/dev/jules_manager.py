@@ -5,6 +5,7 @@ Jules Session Racer
 Autonomous supervisor for multiple parallel Jules sessions.
 Watches multiple sessions for the SAME task. The first one to succeed wins.
 - Applies the winner's patch.
+- Commits and pushes the changes (optional).
 - Triggers the chained command.
 - Ignores the slower/failed sessions.
 
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("jules_racer")
 
-def run_command(cmd, exit_on_error=True, capture_output=True):
+def run_command(cmd, exit_on_error=True, capture_output=True, log_output=True):
     """Run a shell command and return stdout."""
     logger.debug(f"Exec: {cmd}")
     try:
@@ -40,10 +41,12 @@ def run_command(cmd, exit_on_error=True, capture_output=True):
             stderr=subprocess.PIPE if capture_output else None, 
             text=True
         )
+        if log_output and capture_output and result.stdout:
+            logger.debug(f"Stdout: {result.stdout.strip()}")
         return result.stdout.strip() if capture_output else ""
     except subprocess.CalledProcessError as e:
         logger.error(f"Command failed: {cmd}")
-        if capture_output:
+        if capture_output and e.stderr:
             logger.error(f"Stderr: {e.stderr.strip()}")
         if exit_on_error:
             sys.exit(1)
@@ -51,8 +54,6 @@ def run_command(cmd, exit_on_error=True, capture_output=True):
 
 def get_session_status(session_id):
     """Parse jules remote list to find status of a specific session."""
-    # We list specifically the session to reduce output parsing if possible, 
-    # but 'jules remote list' usually lists all. We filter by grep in python.
     output = run_command("jules remote list --session", exit_on_error=False)
     if not output:
         return "UNKNOWN"
@@ -64,6 +65,24 @@ def get_session_status(session_id):
                 return match.group(1).upper()
             
     return "UNKNOWN"
+
+def get_session_description(session_id):
+    """Parses jules remote list to find the description of a specific session."""
+    output = run_command("jules remote list --session", exit_on_error=False)
+    if not output:
+        return f"Jules session {session_id} commit"
+    
+    for line in output.split('\n'):
+        if session_id in line:
+            # Regex to capture description between ID and Repo columns
+            match = re.search(fr"{session_id}\s*(.*?)\s*RyosukeMondo/keyrx", line)
+            if match:
+                desc = match.group(1).strip()
+                if desc.startswith("Task: "):
+                    desc = desc[len("Task: "):]
+                return f"feat: {desc} (jules-{session_id})"
+            
+    return f"feat: Jules session {session_id} commit"
 
 def extract_session_id(output):
     """Extracts ID: <number> from jules output."""
@@ -80,6 +99,7 @@ def main():
     parser.add_argument("--interval", type=int, default=30, help="Polling interval in seconds")
     parser.add_argument("--no-apply", action="store_true", help="Disable auto-apply")
     parser.add_argument("--next-cmd", help="Command to run after the winner finishes.")
+    parser.add_argument("--no-commit-push", action="store_true", help="Disable auto-commit and push after applying")
     
     args = parser.parse_args()
     
@@ -106,7 +126,6 @@ def main():
                 failed_sessions.add(session_id)
             
             else:
-                # logger.info(f"Session {session_id}: {status}")
                 pass
         
         if winner:
@@ -122,21 +141,33 @@ def main():
     if winner:
         if not args.no_apply:
             logger.info(f"Auto-applying changes from winner {winner}...")
-            run_command(f"jules remote pull --session {winner} --apply")
+            run_command(f"jules remote pull --session {winner} --apply", exit_on_error=True)
             logger.info("Changes applied.")
+
+        if not args.no_commit_push:
+            logger.info("Committing and pushing changes...")
+            commit_message = get_session_description(winner)
+            run_command(f"git add .") 
+            run_command(f"git commit -m \"{commit_message}\"", exit_on_error=True)
+            run_command(f"git push", exit_on_error=True)
+            logger.info("Changes committed and pushed.")
         
         if args.next_cmd:
             logger.info(f"Triggering chained command: {args.next_cmd}")
             output = run_command(args.next_cmd, exit_on_error=True)
             logger.info(f"Command output:\n{output}")
             
-            # If the next command was a jules new, we could conceptually start watching THAT new ID.
-            # For simplicity in this 'racer' script, we just trigger it and exit. 
-            # To make it recursive, we'd need to spawn a new racer for the new ID.
             new_id = extract_session_id(output)
             if new_id:
                 logger.info(f"Next task started with Session ID: {new_id}")
-                logger.info("To continue watching, run a manager on this new ID.")
+            else:
+                logger.info("Next command finished.")
+        
+        logger.info("Workflow completed successfully.")
+        sys.exit(0)
+    else:
+        logger.error("No winner found.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
