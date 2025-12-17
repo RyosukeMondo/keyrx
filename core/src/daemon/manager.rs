@@ -1,11 +1,10 @@
 //! Engine lifecycle manager for daemon mode.
 
-use crate::config::app::get_default_profile_path;
 use crate::daemon::protocol::{DeviceInfo, EngineStatus};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::MultiDeviceInput;
-use crate::engine::AdvancedEngine;
-use crate::registry::{DeviceRegistry, ProfileRegistry};
+use crate::engine::{AdvancedEngine, TimingConfig};
+use crate::registry::{DeviceRegistry, ProfileRegistry, ProfileRegistryStorage};
 use crate::scripting::RhaiRuntime;
 use crate::traits::{InputSource, ScriptRuntime};
 use anyhow::{anyhow, Context, Result};
@@ -18,8 +17,9 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
 /// Engine state.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum EngineState {
+    #[default]
     Stopped,
     Running,
     Error(String),
@@ -41,12 +41,6 @@ struct EngineManagerState {
     events_processed: u64,
     engine_task: Option<JoinHandle<Result<()>>>,
     stop_token: Option<CancellationToken>,
-}
-
-impl Default for EngineState {
-    fn default() -> Self {
-        EngineState::Stopped
-    }
 }
 
 /// Events emitted by the engine manager.
@@ -115,8 +109,9 @@ impl EngineManager {
 
         // 2. Registries
         let (device_registry, _device_events_rx) = DeviceRegistry::new();
-        let profile_registry = Arc::new(ProfileRegistry::new(&get_default_profile_path()));
-        profile_registry.load_profiles().await.ok(); // Ignore errors for now
+        // ProfileRegistry::new() takes no arguments now
+        let profile_registry = Arc::new(ProfileRegistry::new());
+        profile_registry.load_all_profiles().await.ok(); // Ignore errors for now
 
         // 3. Scripting Runtime
         let mut runtime = RhaiRuntime::new().context("Failed to create Rhai runtime")?;
@@ -132,9 +127,10 @@ impl EngineManager {
         }
 
         // 4. Engine
-        let mut engine = AdvancedEngine::new(runtime)
-            .with_device_registry(device_registry.clone())
-            .with_profile_registry(profile_registry.clone());
+        // AdvancedEngine::new takes (script, timing_config)
+        let mut engine = AdvancedEngine::new(runtime, TimingConfig::default())
+            .with_device_registry(device_registry.clone());
+        // .with_profile_registry removed as it does not exist
 
         let devices = input
             .device_infos()
@@ -155,7 +151,10 @@ impl EngineManager {
             let stop_token = stop_token.clone();
 
             tokio::spawn(async move {
-                input.start().await.context("Failed to start input driver")?;
+                input
+                    .start()
+                    .await
+                    .context("Failed to start input driver")?;
 
                 loop {
                     tokio::select! {
@@ -170,8 +169,13 @@ impl EngineManager {
                                         let mut state = state_clone.lock().await;
                                         state.events_processed += events.len() as u64;
 
-                                        let output_events = engine.process_events(events).await?;
-                                        input.send_events(output_events).await?;
+                                        // Process events individually as AdvancedEngine doesn't have batch processing
+                                        for event in events {
+                                            let output_actions = engine.process_event(event);
+                                            for action in output_actions {
+                                                input.send_output(action).await?;
+                                            }
+                                        }
                                     } else {
                                         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
                                     }
@@ -223,7 +227,11 @@ impl EngineManager {
         if let Some(handle) = state.engine_task.take() {
             match handle.await {
                 Ok(Ok(_)) => {
-                    info!(service = "keyrx", event = "engine_task_stopped_gracefully", "Engine task stopped gracefully");
+                    info!(
+                        service = "keyrx",
+                        event = "engine_task_stopped_gracefully",
+                        "Engine task stopped gracefully"
+                    );
                 }
                 Ok(Err(e)) => {
                     error!(service = "keyrx", event = "engine_task_error", error = %e, "Engine task finished with an error");

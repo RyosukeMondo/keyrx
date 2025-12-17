@@ -18,9 +18,7 @@ class RunControlsPage extends ConsumerStatefulWidget {
 }
 
 class _RunControlsPageState extends ConsumerState<RunControlsPage> {
-
   @override
-
   Widget build(BuildContext context) {
     final connectionState = ref.watch(daemonConnectionStateProvider);
     final isConnected =
@@ -118,9 +116,11 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: isConnected ? () {
-                    ref.read(daemonServiceProvider).startEngine();
-                  } : null,
+                  onPressed: isConnected
+                      ? () {
+                          ref.read(daemonServiceProvider).startEngine();
+                        }
+                      : null,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Start Engine'),
                   style: FilledButton.styleFrom(
@@ -133,9 +133,11 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
               const SizedBox(width: 16),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: isConnected ? () {
-                    ref.read(daemonServiceProvider).stopEngine();
-                  } : null,
+                  onPressed: isConnected
+                      ? () {
+                          ref.read(daemonServiceProvider).stopEngine();
+                        }
+                      : null,
                   icon: const Icon(Icons.stop),
                   label: const Text('Stop Engine'),
                   style: OutlinedButton.styleFrom(
@@ -150,8 +152,6 @@ class _RunControlsPageState extends ConsumerState<RunControlsPage> {
       ),
     ),
   );
-
-
 
   Widget _buildConnectedDevicesList(WidgetRef ref) {
     final statusAsync = ref.watch(daemonStatusProvider);

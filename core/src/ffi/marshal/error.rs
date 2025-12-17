@@ -387,10 +387,13 @@ impl MarshalErrorC {
 ///
 /// Replaces null bytes with "\0" to avoid CString errors.
 #[allow(clippy::unwrap_used)] // Fallback is guaranteed valid
+#[allow(clippy::expect_used)] // Fallback expectation is safe for static strings
 fn to_c_string(s: &str, fallback: &str) -> *mut c_char {
     let cleaned = s.replace('\0', "\\0");
     CString::new(cleaned)
-        .unwrap_or_else(|_| CString::new(fallback).unwrap())
+        .unwrap_or_else(|_| {
+            CString::new(fallback).expect("Fallback string for to_c_string must be valid")
+        })
         .into_raw()
 }
 
@@ -497,7 +500,10 @@ mod tests {
         let error = MarshalError::buffer_overflow("device_name", 255);
         assert_eq!(error.code(), "BUFFER_OVERFLOW");
         assert!(error.message().contains("too large"));
-        assert!(error.hint().unwrap().contains("255"));
+        assert!(error
+            .hint()
+            .expect("Hint should be present for buffer overflow")
+            .contains("255"));
         assert_eq!(
             error.context().get("field"),
             Some(&"device_name".to_string())
@@ -533,7 +539,10 @@ mod tests {
     fn test_marshal_failed_error() {
         let error = MarshalError::marshal_failed("DeviceInfo", "buffer overflow");
         assert_eq!(error.code(), "MARSHAL_FAILED");
-        assert!(error.hint().unwrap().contains("overflow"));
+        assert!(error
+            .hint()
+            .expect("Hint should be present for marshal failed")
+            .contains("overflow"));
         assert_eq!(error.context().get("type"), Some(&"DeviceInfo".to_string()));
     }
 
@@ -616,7 +625,9 @@ mod tests {
         assert!(!c_str.is_null());
         #[allow(unsafe_code)]
         unsafe {
-            let back = CString::from_raw(c_str).into_string().unwrap();
+            let back = CString::from_raw(c_str)
+                .into_string()
+                .expect("CString should be convertible to String");
             assert_eq!(back, "test\\0string");
         }
     }

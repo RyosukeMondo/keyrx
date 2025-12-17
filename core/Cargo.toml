@@ -12,10 +12,10 @@ name = "keyrx"
 path = "src/bin/keyrx/main.rs"
 
 [dependencies]
+keyrx_ffi_runtime = { path = "keyrx_ffi_runtime" }
 lazy_static = "1.4.0"
-flutter_rust_bridge = "2"
 tokio.workspace = true
-tokio-util = { workspace = true, features = ["sync"] }
+tokio-util = { workspace = true }
 rhai = { workspace = true, features = ["sync"] }
 serde.workspace = true
 serde_json.workspace = true
@@ -25,7 +25,6 @@ thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-tracing-log = "0.2"
 tracing-appender = "0.2"
 log = "0.4"
 crossbeam-channel.workspace = true
@@ -51,12 +50,10 @@ walkdir.workspace = true
 keyrx-ffi-macros = { path = "ffi-macros" }
 keyrx-core-macros = { path = "core-macros" }
 keyrx_ffi_macro = { path = "keyrx_ffi_macro" }
-keyrx_ffi_runtime = { path = "keyrx_ffi_runtime" }
 ffi_export = { path = "macros/ffi_export" }
 reqwest.workspace = true
 reqwest-middleware.workspace = true
 http = "1"
-tokio-util.workspace = true
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }
@@ -66,7 +63,6 @@ tracing-opentelemetry = { workspace = true, optional = true }
 regex = "1.12.2"
 flate2.workspace = true
 reqwest-tracing = "0.5.8"
-inventory = "0.3.15"
 
 [features]
 # Enable platform drivers by default on their respective platforms

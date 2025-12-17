@@ -367,6 +367,7 @@ impl FfiErrorData {
     /// Converts all string fields to null-terminated C strings.
     /// Replaces null bytes in strings with a placeholder to avoid CString errors.
     #[allow(clippy::unwrap_used)] // Static fallback strings are guaranteed to be valid
+    #[allow(clippy::expect_used)] // Static fallback expectations are safe
     fn from_error(error: FfiError) -> Self {
         // Hash the error code string to get a numeric code
         // Simple hash for demo - in production, use a proper error code registry
@@ -376,7 +377,10 @@ impl FfiErrorData {
         // Replace null bytes to avoid CString errors
         let message_str = error.message.replace('\0', "\\0");
         let message = CString::new(message_str)
-            .unwrap_or_else(|_| CString::new("Invalid error message").unwrap())
+            .unwrap_or_else(|_| {
+                CString::new("Invalid error message")
+                    .expect("Fallback message string must be valid")
+            })
             .into_raw();
 
         // Convert optional hint to C string
@@ -384,7 +388,9 @@ impl FfiErrorData {
             // Use details as hint if available
             let hint_str = details.to_string().replace('\0', "\\0");
             CString::new(hint_str)
-                .unwrap_or_else(|_| CString::new("Invalid hint").unwrap())
+                .unwrap_or_else(|_| {
+                    CString::new("Invalid hint").expect("Fallback hint string must be valid")
+                })
                 .into_raw()
         } else {
             ptr::null_mut()
@@ -478,7 +484,12 @@ mod tests {
         assert!(!result.is_err());
 
         let rust_result = result.into_result();
-        assert_eq!(rust_result.unwrap().value, 42);
+        assert_eq!(
+            rust_result
+                .expect("OK FfiResult should produce Ok rust result")
+                .value,
+            42
+        );
     }
 
     #[test]

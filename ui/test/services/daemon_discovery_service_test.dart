@@ -2,10 +2,10 @@
 
 import 'dart:async';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/models/daemon_protocol.dart';
 import 'package:keyrx_ui/services/daemon_discovery_service.dart';
 import 'package:keyrx_ui/services/daemon_service.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -20,7 +20,9 @@ void main() {
   setUp(() {
     mockDaemonService = MockDaemonService();
     daemonEventController = StreamController<DaemonEvent>.broadcast();
-    when(mockDaemonService.events).thenAnswer((_) => daemonEventController.stream);
+    when(
+      mockDaemonService.events,
+    ).thenAnswer((_) => daemonEventController.stream);
     discoveryService = DaemonDiscoveryService(mockDaemonService);
   });
 
@@ -30,44 +32,54 @@ void main() {
   });
 
   test('startDiscovery calls the correct daemon method', () async {
-    when(mockDaemonService.sendRequest<void>(
-      DaemonMethods.discoveryStart,
-      parseResult: anyNamed('parseResult'),
-    )).thenAnswer((_) async {});
+    when(
+      mockDaemonService.sendRequest<void>(
+        DaemonMethods.discoveryStart,
+        parseResult: anyNamed('parseResult'),
+      ),
+    ).thenAnswer((_) async {});
 
     await discoveryService.startDiscovery();
 
-    verify(mockDaemonService.sendRequest<void>(
-      DaemonMethods.discoveryStart,
-      parseResult: anyNamed('parseResult'),
-    )).called(1);
+    verify(
+      mockDaemonService.sendRequest<void>(
+        DaemonMethods.discoveryStart,
+        parseResult: anyNamed('parseResult'),
+      ),
+    ).called(1);
     expect(discoveryService.isDiscovering, isTrue);
   });
 
   test('stopDiscovery calls the correct daemon method', () async {
     // Start discovery first
-    when(mockDaemonService.sendRequest<void>(
-      DaemonMethods.discoveryStart,
-      parseResult: anyNamed('parseResult'),
-    )).thenAnswer((_) async {});
+    when(
+      mockDaemonService.sendRequest<void>(
+        DaemonMethods.discoveryStart,
+        parseResult: anyNamed('parseResult'),
+      ),
+    ).thenAnswer((_) async {});
     await discoveryService.startDiscovery();
 
     // Then stop it
-    when(mockDaemonService.sendRequest<void>(
-      DaemonMethods.discoveryStop,
-      parseResult: anyNamed('parseResult'),
-    )).thenAnswer((_) async {});
+    when(
+      mockDaemonService.sendRequest<void>(
+        DaemonMethods.discoveryStop,
+        parseResult: anyNamed('parseResult'),
+      ),
+    ).thenAnswer((_) async {});
     await discoveryService.stopDiscovery();
 
-    verify(mockDaemonService.sendRequest<void>(
-      DaemonMethods.discoveryStop,
-      parseResult: anyNamed('parseResult'),
-    )).called(1);
+    verify(
+      mockDaemonService.sendRequest<void>(
+        DaemonMethods.discoveryStop,
+        parseResult: anyNamed('parseResult'),
+      ),
+    ).called(1);
     expect(discoveryService.isDiscovering, isFalse);
   });
 
   test('discoveryEvents stream emits DiscoveryCandidate events', () async {
-    final candidate = DiscoveryCandidate(
+    const candidate = DiscoveryCandidate(
       deviceId: 'test_device',
       vendorId: 1234,
       productId: 5678,
@@ -77,16 +89,16 @@ void main() {
     final discoveryEvents = <DiscoveryCandidate>[];
     discoveryService.discoveryEvents.listen(discoveryEvents.add);
 
-    daemonEventController.add(DaemonEvent.discovery(candidate));
+    daemonEventController.add(const DaemonEvent.discovery(candidate));
 
-    await Future.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
 
     expect(discoveryEvents, hasLength(1));
     expect(discoveryEvents.first, equals(candidate));
   });
 
   test('non-discovery events are ignored', () async {
-    final inputEvent = InputEvent(
+    const inputEvent = InputEvent(
       timestampUs: 0,
       devicePath: 'test_path',
       deviceName: 'test_device',
@@ -98,9 +110,9 @@ void main() {
     final discoveryEvents = <DiscoveryCandidate>[];
     discoveryService.discoveryEvents.listen(discoveryEvents.add);
 
-    daemonEventController.add(DaemonEvent.input(inputEvent));
+    daemonEventController.add(const DaemonEvent.input(inputEvent));
 
-    await Future.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
 
     expect(discoveryEvents, isEmpty);
   });
