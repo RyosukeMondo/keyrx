@@ -16,6 +16,8 @@ class DaemonManager {
     } on DaemonException {
       // Ignore initial connection errors, will retry or show status
     }
+    // Also subscribe to events on initialization
+    await _service.subscribeEvents();
   }
 
   Future<void> restartDaemon() async {
@@ -25,6 +27,7 @@ class DaemonManager {
     }
     // TODO: Implement actual process restart if needed, for now just reconnect
     await _service.connect();
+    await _service.subscribeEvents();
   }
 }
 
