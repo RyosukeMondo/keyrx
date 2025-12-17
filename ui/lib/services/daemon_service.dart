@@ -213,7 +213,7 @@ class DaemonService {
   }
 
   /// Reload config and/or script.
-  Future<void> reloadEngine({String? configPath, String? scriptPath}) async {
+  Future<void> reloadConfig({String? configPath, String? scriptPath}) async {
     await sendRequest<void>(
       DaemonMethods.engineReload,
       params: {

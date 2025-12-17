@@ -161,7 +161,7 @@ class SlotActions {
   Future<void> _reloadDaemon() async {
     try {
       if (_daemon.isConnected) {
-        await _daemon.reloadEngine();
+        await _daemon.reloadConfig();
       }
     } on DaemonException catch (e) {
       // Non-fatal, UI has already been updated optimistically.
