@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< HEAD
 import 'package:intl/intl.dart';
 import '../../models/daemon_protocol.dart';
 import '../../state/daemon_providers.dart';
@@ -40,35 +39,10 @@ class _EventListHandlerState extends ConsumerState<_EventListHandler> {
       next.whenData((event) {
         setState(() {
           _events.insert(0, event);
-=======
-import 'package:keyrx_ui/models/daemon_protocol.dart';
-import 'package:keyrx_ui/state/daemon_providers.dart';
-
-/// Displays a scrolling list of daemon events.
-///
-/// Intended to be implemented by Jules Task C.
-class DaemonEventList extends ConsumerStatefulWidget {
-  const DaemonEventList({super.key});
-
-  @override
-  ConsumerState<DaemonEventList> createState() => _DaemonEventListState();
-}
-
-class _DaemonEventListState extends ConsumerState<DaemonEventList> {
-  final List<DaemonEvent> _events = [];
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen<AsyncValue<DaemonEvent>>(daemonEventsProvider, (_, asyncValue) {
-      if (asyncValue is AsyncData<DaemonEvent>) {
-        setState(() {
-          _events.insert(0, asyncValue.value);
->>>>>>> 15e8196d (feat(ui): implement DaemonEventList widget)
           if (_events.length > 100) {
             _events.removeLast();
           }
         });
-<<<<<<< HEAD
       });
     });
 
@@ -115,39 +89,6 @@ class _DaemonEventListState extends ConsumerState<DaemonEventList> {
           ).format(DateTime.fromMillisecondsSinceEpoch(e.timestampUs ~/ 1000)),
         ),
       ),
-=======
-      }
-    });
-
-    if (_events.isEmpty) {
-      return const Center(child: Text('Awaiting daemon events...'));
-    }
-
-    return ListView.builder(
-      itemCount: _events.length,
-      itemBuilder: (context, index) {
-        final event = _events[index];
-        return event.when(
-          input: (inputEvent) => ListTile(
-            leading: const Icon(Icons.keyboard_arrow_down),
-            title: Text('Input: ${inputEvent.keyName}'),
-            subtitle: Text(
-              '${inputEvent.eventType} on ${inputEvent.deviceName}',
-            ),
-          ),
-          output: (outputEvent) => ListTile(
-            leading: const Icon(Icons.keyboard_arrow_up),
-            title: Text('Output: ${outputEvent.keyName}'),
-            subtitle: Text('${outputEvent.actionType}'),
-          ),
-          stateChange: (stateChangeEvent) => ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text('State Change: ${stateChangeEvent.type}'),
-            subtitle: Text(stateChangeEvent.message),
-          ),
-        );
-      },
->>>>>>> 15e8196d (feat(ui): implement DaemonEventList widget)
     );
   }
 }
