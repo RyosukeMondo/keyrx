@@ -2,6 +2,8 @@ import '../ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
+import 'daemon_manager.dart';
+import 'daemon_service.dart';
 import 'device_profile_service.dart';
 import 'device_registry_service.dart';
 import 'device_service.dart';
@@ -39,6 +41,7 @@ class ServiceRegistry {
     required this.hardwareService,
     required this.keymapService,
     required this.runtimeService,
+    required this.daemonManager,
   });
 
   /// Build a registry with real implementations, allowing overrides for tests.
@@ -59,6 +62,7 @@ class ServiceRegistry {
     HardwareService? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
+    DaemonManager? daemonManager,
   }) {
     final bootstrapSpan = PerformanceTimelineTracer.start(
       'services.bootstrap',
@@ -105,6 +109,7 @@ class ServiceRegistry {
     final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
     final runtime =
         runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
+    final daemon = daemonManager ?? DaemonManager(DaemonService());
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
     final autosave =
@@ -132,6 +137,7 @@ class ServiceRegistry {
       hardwareService: hardware,
       keymapService: keymaps,
       runtimeService: runtime,
+      daemonManager: daemon,
     );
 
     bootstrapSpan.finish(
@@ -162,6 +168,7 @@ class ServiceRegistry {
     required HardwareService hardwareService,
     required KeymapService keymapService,
     required RuntimeService runtimeService,
+    required DaemonManager daemonManager,
     ProfileAutosaveService? profileAutosaveService,
   }) {
     final autosave =
@@ -189,6 +196,7 @@ class ServiceRegistry {
       hardwareService: hardwareService,
       keymapService: keymapService,
       runtimeService: runtimeService,
+      daemonManager: daemonManager,
     );
   }
 
@@ -209,6 +217,7 @@ class ServiceRegistry {
   final HardwareService hardwareService;
   final KeymapService keymapService;
   final RuntimeService runtimeService;
+  final DaemonManager daemonManager;
 
   /// Convenience for producing a registry with selective overrides.
   ServiceRegistry copyWith({
@@ -229,6 +238,7 @@ class ServiceRegistry {
     HardwareService? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
+    DaemonManager? daemonManager,
   }) => ServiceRegistry(
     errorTranslator: errorTranslator ?? this.errorTranslator,
     engineService: engineService ?? this.engineService,
@@ -249,6 +259,7 @@ class ServiceRegistry {
     hardwareService: hardwareService ?? this.hardwareService,
     keymapService: keymapService ?? this.keymapService,
     runtimeService: runtimeService ?? this.runtimeService,
+    daemonManager: daemonManager ?? this.daemonManager,
   );
 
   /// Dispose any owned resources. Extend as more disposable services appear.
