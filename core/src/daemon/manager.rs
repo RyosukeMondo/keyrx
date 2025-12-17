@@ -1,20 +1,21 @@
 //! Engine lifecycle manager for daemon mode.
 
+use crate::config::app::get_default_profile_path;
 use crate::daemon::protocol::{DeviceInfo, EngineStatus};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::MultiDeviceInput;
-use crate::engine::{AdvancedEngine, TimingConfig};
-use crate::registry::{DeviceRegistry, ProfileRegistry, ProfileRegistryResolution};
+use crate::engine::AdvancedEngine;
+use crate::registry::{DeviceRegistry, ProfileRegistry};
 use crate::scripting::RhaiRuntime;
 use crate::traits::{InputSource, ScriptRuntime};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::{broadcast, Mutex};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, info, warn};
+use tracing::{error, info, warn};
 
 /// Engine state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +31,7 @@ pub struct EngineManager {
     event_tx: broadcast::Sender<EngineEvent>,
 }
 
+#[derive(Default)]
 struct EngineManagerState {
     state: EngineState,
     config_path: Option<PathBuf>,
@@ -37,8 +39,14 @@ struct EngineManagerState {
     devices: Vec<DeviceInfo>,
     started_at: Option<Instant>,
     events_processed: u64,
-    cancel_token: CancellationToken,
-    engine_task: Option<JoinHandle<()>>,
+    engine_task: Option<JoinHandle<Result<()>>>,
+    stop_token: Option<CancellationToken>,
+}
+
+impl Default for EngineState {
+    fn default() -> Self {
+        EngineState::Stopped
+    }
 }
 
 /// Events emitted by the engine manager.
@@ -70,14 +78,7 @@ impl EngineManager {
 
         Self {
             state: Arc::new(Mutex::new(EngineManagerState {
-                state: EngineState::Stopped,
-                config_path: None,
-                script_path: None,
-                devices: Vec::new(),
-                started_at: None,
-                events_processed: 0,
-                cancel_token: CancellationToken::new(),
-                engine_task: None,
+                ..Default::default()
             })),
             event_tx,
         }
@@ -108,124 +109,96 @@ impl EngineManager {
             "Starting engine"
         );
 
-        // --- Engine Initialization ---
-        let (device_registry, _) = DeviceRegistry::new();
-        let profile_registry = Arc::new(ProfileRegistry::new());
-        // Load profiles to populate registry
-        let _ = profile_registry.list_profiles().await;
+        // 1. Input source
+        let mut input = MultiDeviceInput::from_all_keyboards()
+            .context("Failed to initialize multi-device input")?;
 
-        let mut runtime = RhaiRuntime::new()?;
+        // 2. Registries
+        let (device_registry, _device_events_rx) = DeviceRegistry::new();
+        let profile_registry = Arc::new(ProfileRegistry::new(&get_default_profile_path()));
+        profile_registry.load_profiles().await.ok(); // Ignore errors for now
+
+        // 3. Scripting Runtime
+        let mut runtime = RhaiRuntime::new().context("Failed to create Rhai runtime")?;
         if let Some(path) = &script_path {
             let path_str = path
                 .to_str()
-                .ok_or_else(|| anyhow!("Invalid script path"))?;
+                .ok_or_else(|| anyhow!("Invalid UTF-8 in script path"))?;
             runtime.load_file(path_str)?;
             runtime.run_script()?;
+            if runtime.has_hook("on_init") {
+                runtime.call_hook("on_init")?;
+            }
         }
 
-        let mut engine = AdvancedEngine::new(runtime, TimingConfig::default())
-            .with_device_registry(device_registry.clone());
+        // 4. Engine
+        let mut engine = AdvancedEngine::new(runtime)
+            .with_device_registry(device_registry.clone())
+            .with_profile_registry(profile_registry.clone());
 
-        let cancel_token = CancellationToken::new();
-        let state_clone = self.state.clone();
+        let devices = input
+            .device_infos()
+            .iter()
+            .map(|di| DeviceInfo {
+                path: di.path.display().to_string(),
+                name: di.name.clone(),
+                vendor_id: Some(format!("0x{:04x}", di.vendor_id)),
+                product_id: Some(format!("0x{:04x}", di.product_id)),
+            })
+            .collect::<Vec<_>>();
 
-        // --- Platform-specific Input and Task Spawning ---
-        #[cfg(all(target_os = "linux", feature = "linux-driver"))]
-        let (devices, engine_task) = {
-            let mut input = MultiDeviceInput::from_all_keyboards()?;
-            let devices: Vec<DeviceInfo> = input
-                .device_infos()
-                .iter()
-                .map(|d| DeviceInfo {
-                    path: d.path.to_string_lossy().to_string(),
-                    name: d.name.clone(),
-                    vendor_id: Some(format!("0x{:04x}", d.vendor_id)),
-                    product_id: Some(format!("0x{:04x}", d.product_id)),
-                })
-                .collect();
+        let stop_token = CancellationToken::new();
 
-            let engine_cancel_token = cancel_token.clone();
-            let task = tokio::spawn(async move {
-                info!(
-                    service = "keyrx",
-                    event = "engine_loop_started",
-                    "Engine loop started"
-                );
-                if let Err(e) = input.start().await {
-                    warn!(service = "keyrx", event = "input_start_failed", error = %e, "Failed to start input source");
-                    return;
-                }
+        // --- Spawn Engine Task ---
+        let engine_task = {
+            let state_clone = self.state.clone();
+            let stop_token = stop_token.clone();
+
+            tokio::spawn(async move {
+                input.start().await.context("Failed to start input driver")?;
 
                 loop {
                     tokio::select! {
-                        _ = engine_cancel_token.cancelled() => {
-                            debug!(service = "keyrx", event = "engine_loop_cancelled", "Cancellation signal received");
+                        _ = stop_token.cancelled() => {
+                            info!(service = "keyrx", event = "engine_loop_cancelled", "Engine loop cancelled");
                             break;
                         }
-                        Ok(events) = input.poll_events() => {
-                            if !events.is_empty() {
-                                state_clone.lock().await.events_processed += events.len() as u64;
-                                // Process each event
-                                for event in events {
-                                    // Process synchronously, returns Vec<OutputAction>
-                                    let _output = engine.process_event(event);
-                                    // TODO: Handle output actions (send to virtual device)
+                        events_res = input.poll_events() => {
+                            match events_res {
+                                Ok(events) => {
+                                    if !events.is_empty() {
+                                        let mut state = state_clone.lock().await;
+                                        state.events_processed += events.len() as u64;
+
+                                        let output_events = engine.process_events(events).await?;
+                                        input.send_events(output_events).await?;
+                                    } else {
+                                        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(service = "keyrx", event = "input_poll_error", error = %e, "Error polling input events");
+                                    // Decide on error handling: continue, stop, etc.
+                                    // For now, we'll log and continue.
                                 }
                             }
                         }
-                        else => {
-                            warn!(service = "keyrx", event = "event_poll_error", "Error polling for input events (channel closed?)");
-                            break;
-                        }
                     }
                 }
-
-                if let Err(e) = input.stop().await {
-                    warn!(service = "keyrx", event = "input_stop_failed", error = %e, "Failed to stop input source");
-                }
-                info!(
-                    service = "keyrx",
-                    event = "engine_loop_stopped",
-                    "Engine loop stopped"
-                );
-            });
-            (devices, task)
+                input.stop().await.context("Failed to stop input driver")?;
+                Ok(())
+            })
         };
 
-        #[cfg(not(all(target_os = "linux", feature = "linux-driver")))]
-        let (devices, engine_task) = {
-            warn!(
-                service = "keyrx",
-                event = "mock_engine_start",
-                "No platform driver available, starting mock engine loop."
-            );
-            let devices = self.discover_devices().await?;
-            let engine_cancel_token = cancel_token.clone();
-            let task = tokio::spawn(async move {
-                info!(
-                    service = "keyrx",
-                    event = "engine_loop_started",
-                    "Mock engine loop started"
-                );
-                engine_cancel_token.cancelled().await;
-                info!(
-                    service = "keyrx",
-                    event = "engine_loop_stopped",
-                    "Mock engine loop stopped"
-                );
-            });
-            (devices, task)
-        };
-
-        // --- Final State Update ---
+        // --- Update State ---
         state.state = EngineState::Running;
         state.config_path = config_path;
         state.script_path = script_path;
         state.devices = devices.clone();
         state.started_at = Some(Instant::now());
         state.events_processed = 0;
-        state.cancel_token = cancel_token;
         state.engine_task = Some(engine_task);
+        state.stop_token = Some(stop_token);
 
         let _ = self.event_tx.send(EngineEvent::Started);
 
@@ -243,22 +216,34 @@ impl EngineManager {
         info!(service = "keyrx", event = "engine_stop", "Stopping engine");
 
         // --- Signal and Wait for Task Completion ---
-        state.cancel_token.cancel();
-        if let Some(task) = state.engine_task.take() {
-            if let Err(e) = task.await {
-                warn!(service = "keyrx", event = "engine_task_join_error", error = %e, "Engine task did not shut down cleanly");
-                state.state = EngineState::Error(format!("Engine task failed: {}", e));
-            } else {
-                state.state = EngineState::Stopped;
+        if let Some(token) = state.stop_token.take() {
+            token.cancel();
+        }
+
+        if let Some(handle) = state.engine_task.take() {
+            match handle.await {
+                Ok(Ok(_)) => {
+                    info!(service = "keyrx", event = "engine_task_stopped_gracefully", "Engine task stopped gracefully");
+                }
+                Ok(Err(e)) => {
+                    error!(service = "keyrx", event = "engine_task_error", error = %e, "Engine task finished with an error");
+                    state.state = EngineState::Error(e.to_string());
+                }
+                Err(e) => {
+                    error!(service = "keyrx", event = "engine_task_panic", error = %e, "Engine task panicked");
+                    state.state = EngineState::Error(format!("Engine task panicked: {}", e));
+                }
             }
-        } else {
-            // This case should ideally not happen if the state is consistent
-            state.state = EngineState::Stopped;
         }
 
         // --- Update State ---
+        if !matches!(state.state, EngineState::Error(_)) {
+            state.state = EngineState::Stopped;
+        }
         state.devices.clear();
         state.started_at = None;
+        state.stop_token = None;
+        state.engine_task = None;
 
         // --- Emit Event ---
         let _ = self.event_tx.send(EngineEvent::Stopped);
