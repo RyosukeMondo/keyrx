@@ -11,7 +11,7 @@ mod tests {
     /// Helper to create a minimal valid contract for testing.
     fn create_minimal_contract() -> FfiContract {
         FfiContract {
-            schema: "https://example.com/ffi-contract.schema.json".to_string(),
+            schema: Some("https://example.com/ffi-contract.schema.json".to_string()),
             version: "1.0.0".to_string(),
             domain: "test".to_string(),
             description: "Test domain".to_string(),

@@ -4,6 +4,7 @@
 /// device slots, with automatic state synchronization.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/config_ids.dart';
@@ -11,7 +12,9 @@ import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
+import '../services/daemon_service.dart';
 import 'analytics_providers.dart';
+import 'daemon_providers.dart';
 import 'keyflow_providers.dart';
 
 /// Actions for managing device slots.
@@ -21,6 +24,7 @@ class SlotActions {
   final Ref _ref;
 
   KeyFlowRepository get _repo => _ref.read(keyFlowRepositoryProvider);
+  DaemonService get _daemon => _ref.read(daemonServiceProvider);
 
   /// Add a new slot to a device.
   ///
@@ -47,7 +51,7 @@ class SlotActions {
       priorityOverride: priorityOverride,
     );
 
-    // Track analytics
+    // Track analytics and reload daemon
     if (result.isSuccess) {
       _ref
           .read(analyticsTrackerProvider.notifier)
@@ -58,6 +62,7 @@ class SlotActions {
             priority: slot.priority,
             autoAssigned: priorityOverride == null,
           );
+      await _reloadDaemon();
     }
 
     return result;
@@ -67,7 +72,13 @@ class SlotActions {
   Future<ConfigOperationResult<RuntimeConfig>> updateSlot({
     required DeviceInstanceId device,
     required ProfileSlot slot,
-  }) => _repo.updateSlot(device, slot);
+  }) async {
+    final result = await _repo.updateSlot(device, slot);
+    if (result.isSuccess) {
+      await _reloadDaemon();
+    }
+    return result;
+  }
 
   /// Delete a slot from a device.
   Future<ConfigOperationResult<RuntimeConfig>> deleteSlot({
@@ -76,11 +87,12 @@ class SlotActions {
   }) async {
     final result = await _repo.removeSlot(device, slotId);
 
-    // Track analytics
+    // Track analytics and reload daemon
     if (result.isSuccess) {
       _ref
           .read(analyticsTrackerProvider.notifier)
           .trackSlotDeleted(deviceId: device.toString(), slotId: slotId);
+      await _reloadDaemon();
     }
 
     return result;
@@ -90,9 +102,13 @@ class SlotActions {
   Future<ConfigOperationResult<RuntimeConfig>> toggleSlotActive({
     required DeviceInstanceId device,
     required ProfileSlot slot,
-  }) {
+  }) async {
     final updatedSlot = slot.copyWith(active: !slot.active);
-    return _repo.updateSlot(device, updatedSlot);
+    final result = await _repo.updateSlot(device, updatedSlot);
+    if (result.isSuccess) {
+      await _reloadDaemon();
+    }
+    return result;
   }
 
   /// Reorder slots by updating their priorities.
@@ -104,6 +120,7 @@ class SlotActions {
     required List<ProfileSlot> slotsInOrder,
   }) async {
     final results = <ConfigOperationResult<RuntimeConfig>>[];
+    var anySuccess = false;
 
     for (var i = 0; i < slotsInOrder.length; i++) {
       final slot = slotsInOrder[i];
@@ -115,6 +132,7 @@ class SlotActions {
 
         // Track analytics for each reorder
         if (result.isSuccess) {
+          anySuccess = true;
           _ref
               .read(analyticsTrackerProvider.notifier)
               .trackSlotReordered(
@@ -131,7 +149,25 @@ class SlotActions {
       }
     }
 
+    if (anySuccess) {
+      await _reloadDaemon();
+    }
+
     return results;
+  }
+
+  /// Reloads the daemon engine configuration.
+  /// Handles daemon disconnection gracefully.
+  Future<void> _reloadDaemon() async {
+    try {
+      if (_daemon.isConnected) {
+        await _daemon.reloadEngine();
+      }
+    } on DaemonException catch (e) {
+      // Non-fatal, UI has already been updated optimistically.
+      // Log the error for debugging.
+      debugPrint('Failed to reload daemon after slot change: $e');
+    }
   }
 
   String _generateSlotId() => DateTime.now().millisecondsSinceEpoch.toString();

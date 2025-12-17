@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/daemon_protocol.dart';
 import '../services/daemon_service.dart';
 
 /// Provider for the daemon service singleton.
@@ -24,6 +25,18 @@ final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((
 ) {
   final service = ref.watch(daemonServiceProvider);
   return service.connectionState;
+});
+
+/// Provider for daemon status.
+final daemonStatusProvider = FutureProvider<EngineStatus>((ref) async {
+  final service = ref.watch(daemonServiceProvider);
+  if (ref.watch(daemonConnectionStateProvider).value ==
+      DaemonConnectionState.connected) {
+    return await service.getStatus();
+  } else {
+    // Return a default/empty status when not connected
+    return EngineStatus(status: 'disconnected', devices: []);
+  }
 });
 
 /// Provider for daemon events.

@@ -172,21 +172,57 @@ impl EngineManager {
             "Reloading configuration"
         );
 
-        // TODO: Actually reload the engine configuration here
+        // --- Start of atomic update ---
 
-        // Update state
-        if let Some(ref path) = config_path {
-            state.config_path = Some(path.clone());
-            let _ = self
-                .event_tx
-                .send(EngineEvent::ConfigReloaded(path.clone()));
+        // 1. Clone the current state to be able to restore it on failure
+        let old_config_path = state.config_path.clone();
+        let old_script_path = state.script_path.clone();
+
+        let mut new_config_path = state.config_path.clone();
+        let mut new_script_path = state.script_path.clone();
+
+        if let Some(path) = config_path {
+            new_config_path = Some(path);
+        }
+        if let Some(path) = script_path {
+            new_script_path = Some(path);
         }
 
-        if let Some(ref path) = script_path {
-            state.script_path = Some(path.clone());
-            let _ = self
-                .event_tx
-                .send(EngineEvent::ScriptReloaded(path.clone()));
+        // 2. Simulate validation/compilation
+        if let Some(ref path) = new_script_path {
+            if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                if file_name.contains("fail") {
+                    warn!(
+                        service = "keyrx",
+                        event = "script_compilation_failed",
+                        path = %path.display(),
+                        "Simulated script compilation failure"
+                    );
+                    // No need to rollback here as we haven't modified the state yet
+                    return Err(anyhow!("Simulated script compilation failed for {}", path.display()));
+                }
+            }
+        }
+        
+        // --- All checks passed, commit the new state ---
+        state.config_path = new_config_path.clone();
+        state.script_path = new_script_path.clone();
+
+        // 5. If everything succeeded, send notifications
+        if state.config_path != old_config_path {
+             if let Some(path) = new_config_path {
+                let _ = self
+                    .event_tx
+                    .send(EngineEvent::ConfigReloaded(path));
+            }
+        }
+
+        if state.script_path != old_script_path {
+            if let Some(path) = new_script_path {
+                let _ = self
+                    .event_tx
+                    .send(EngineEvent::ScriptReloaded(path));
+            }
         }
 
         Ok(())

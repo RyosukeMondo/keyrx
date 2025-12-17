@@ -838,7 +838,7 @@ mod tests {
 
     fn make_ffi_contract(domain: &str, functions: Vec<FunctionContract>) -> FfiContract {
         FfiContract {
-            schema: "".to_string(),
+            schema: Some("".to_string()),
             version: "1.0.0".to_string(),
             domain: domain.to_string(),
             description: "Test contract".to_string(),
