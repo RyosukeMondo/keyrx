@@ -1,5 +1,6 @@
 /// Preview-specific widgets
 library;
 
-// Export preview components
-// TODO: Add exports as widgets are extracted
+export 'key_preview.dart';
+export 'matrix_preview.dart';
+export 'split_preview.dart';

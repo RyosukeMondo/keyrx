@@ -6,8 +6,10 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 
 import '../models/daemon_protocol.dart';
 
@@ -29,19 +31,41 @@ class DaemonException implements Exception {
 }
 
 /// Connection state for the daemon.
-enum DaemonConnectionState { disconnected, connecting, connected, error }
+enum DaemonConnectionState {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+  error,
+}
+
+class _QueuedRequest {
+  _QueuedRequest({
+    required this.id,
+    required this.request,
+    required this.completer,
+  });
+  final int id;
+  final JsonRpcRequest request;
+  final Completer<dynamic> completer;
+}
 
 /// Service for communicating with the KeyRx daemon.
 class DaemonService {
   DaemonService({String? socketPath})
-    : _socketPath = socketPath ?? _defaultSocketPath();
+    : _socketPath = socketPath ?? _defaultSocketPath(),
+      _log = Logger('DaemonService');
 
   final String _socketPath;
+  final Logger _log;
   Socket? _socket;
   int _requestId = 0;
   DaemonConnectionState _state = DaemonConnectionState.disconnected;
+  bool _explicitDisconnect = false;
+  int _reconnectAttempts = 0;
 
   final Map<int, Completer<dynamic>> _pendingRequests = {};
+  final List<_QueuedRequest> _requestQueue = [];
   final StreamController<DaemonEvent> _eventController =
       StreamController<DaemonEvent>.broadcast();
   final StreamController<DaemonConnectionState> _stateController =
@@ -80,57 +104,62 @@ class DaemonService {
 
   /// Connect to the daemon.
   Future<void> connect() async {
-    if (_state == DaemonConnectionState.connected) {
-      return; // Already connected
+    _explicitDisconnect = false;
+
+    if (state == DaemonConnectionState.connected ||
+        state == DaemonConnectionState.connecting) {
+      _log.info('Connection attempt ignored, already connected or connecting.');
+      return;
     }
 
-    if (_state == DaemonConnectionState.connecting) {
-      throw const DaemonException('Connection already in progress');
-    }
+    await _connect();
+  }
 
-    _updateState(DaemonConnectionState.connecting);
+  Future<void> _connect() async {
+    if (state == DaemonConnectionState.connected) return;
+
+    _updateState(
+      _reconnectAttempts == 0
+          ? DaemonConnectionState.connecting
+          : DaemonConnectionState.reconnecting,
+    );
 
     try {
-      debugPrint('DaemonService: Connecting to $_socketPath');
-
-      // Connect to Unix socket
+      _log.info('Connecting to daemon at $_socketPath...');
       _socket = await Socket.connect(
         InternetAddress(_socketPath, type: InternetAddressType.unix),
         0,
         timeout: const Duration(seconds: 5),
       );
+      _log.info('Successfully connected to daemon.');
 
-      debugPrint('DaemonService: Connected');
-
-      // Listen for incoming messages
       _socketSubscription = _socket!.listen(
         _handleData,
         onError: _handleError,
         onDone: _handleDisconnect,
-        cancelOnError: false,
+        cancelOnError: true,
       );
 
       _updateState(DaemonConnectionState.connected);
+      _reconnectAttempts = 0;
+      unawaited(_sendQueuedRequests());
     } on SocketException catch (e) {
-      debugPrint('DaemonService: Connection failed: $e');
-      _updateState(DaemonConnectionState.error);
-      throw DaemonException('Failed to connect to daemon: ${e.message}');
+      _log.warning('Failed to connect to daemon', e);
+      _clearSocket();
+      _handleDisconnect();
     }
   }
 
   /// Disconnect from the daemon.
   Future<void> disconnect() async {
-    debugPrint('DaemonService: Disconnecting');
+    _log.info('Disconnecting from daemon...');
+    _explicitDisconnect = true;
+    _reconnectAttempts = 0; // Stop any reconnection attempts
 
-    await _socketSubscription?.cancel();
-    _socketSubscription = null;
-
-    await _socket?.close();
-    _socket = null;
-
+    _clearSocket();
     _receiveBuffer = '';
 
-    // Complete all pending requests with error
+    // Complete all pending requests with an error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
         completer.completeError(
@@ -139,6 +168,16 @@ class DaemonService {
       }
     }
     _pendingRequests.clear();
+
+    // Fail any queued requests
+    for (final queuedRequest in _requestQueue) {
+      if (!queuedRequest.completer.isCompleted) {
+        queuedRequest.completer.completeError(
+          const DaemonException('Disconnected from daemon'),
+        );
+      }
+    }
+    _requestQueue.clear();
 
     _updateState(DaemonConnectionState.disconnected);
   }
@@ -149,10 +188,6 @@ class DaemonService {
     required T Function(dynamic) parseResult,
     Map<String, dynamic>? params,
   }) async {
-    if (!isConnected) {
-      throw const DaemonException('Not connected to daemon');
-    }
-
     final id = ++_requestId;
     final request = JsonRpcRequest(
       jsonrpc: '2.0',
@@ -162,29 +197,80 @@ class DaemonService {
     );
 
     final completer = Completer<dynamic>();
+    final queuedRequest = _QueuedRequest(
+      id: id,
+      request: request,
+      completer: completer,
+    );
+
+    if (!isConnected) {
+      _log.fine('Queueing request: $method');
+      _requestQueue.add(queuedRequest);
+    } else {
+      _sendRequest(queuedRequest);
+    }
+
+    final result = await completer.future;
+    return parseResult(result);
+  }
+
+  void _sendRequest(_QueuedRequest queuedRequest) {
+    final id = queuedRequest.id;
+    final request = queuedRequest.request;
+    final completer = queuedRequest.completer;
+
     _pendingRequests[id] = completer;
 
     try {
-      // Send request
       final requestJson = jsonEncode(request.toJson());
-      debugPrint('DaemonService → $requestJson');
+      _log.finer('→ $requestJson');
       _socket!.write('$requestJson\n');
-      await _socket!.flush();
+      _socket!.flush();
 
-      // Wait for response (with timeout)
-      final result = await completer.future.timeout(
+      // Handle response timeout
+      completer.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          _pendingRequests.remove(id);
-          throw const DaemonException('Request timed out');
+          if (_pendingRequests.containsKey(id)) {
+            _pendingRequests.remove(id);
+            if (!completer.isCompleted) {
+              completer.completeError(
+                const DaemonException('Request timed out'),
+              );
+            }
+          }
         },
       );
-
-      return parseResult(result);
     } on SocketException catch (e) {
       _pendingRequests.remove(id);
-      throw DaemonException('Daemon communication error: ${e.message}');
+      if (!completer.isCompleted) {
+        completer.completeError(
+          DaemonException('Daemon communication error: ${e.message}'),
+        );
+      }
     }
+  }
+
+  @visibleForTesting
+  Future<void> sendRequestRaw(Map<String, dynamic> request) async {
+    if (!isConnected) {
+      throw const DaemonException('Not connected to daemon');
+    }
+
+    final requestJson = jsonEncode(request);
+    _log.finer('→ $requestJson');
+    _socket!.write('$requestJson\n');
+    await _socket!.flush();
+  }
+
+  Future<void> _sendQueuedRequests() async {
+    if (_requestQueue.isEmpty) return;
+
+    _log.info('Sending ${_requestQueue.length} queued requests...');
+    final requests = List<_QueuedRequest>.from(_requestQueue);
+    _requestQueue.clear();
+
+    requests.forEach(_sendRequest);
   }
 
   /// Start the engine.
@@ -268,7 +354,7 @@ class DaemonService {
 
       if (line.isEmpty) continue;
 
-      debugPrint('DaemonService ← $line');
+      _log.finer('← $line');
 
       try {
         final json = jsonDecode(line) as Map<String, dynamic>;
@@ -319,23 +405,62 @@ class DaemonService {
       final event = DaemonEvent.fromNotification(notification);
       _eventController.add(event);
     } on Object catch (e) {
-      debugPrint(
-        'DaemonService: Unknown notification: ${notification.method}, '
-        'error: $e',
-      );
+      _log.warning('Failed to parse notification: ${notification.method}', e);
     }
   }
 
   /// Handle socket error.
   void _handleError(dynamic error) {
-    debugPrint('DaemonService: Socket error: $error');
-    _updateState(DaemonConnectionState.error);
+    _log.warning('Socket error', error);
+    _clearSocket();
+    _handleDisconnect();
   }
 
   /// Handle socket disconnect.
   void _handleDisconnect() {
-    debugPrint('DaemonService: Socket disconnected');
-    disconnect();
+    _log.info('Daemon disconnected.');
+    _clearSocket();
+
+    if (state == DaemonConnectionState.disconnected) {
+      return;
+    }
+
+    if (_explicitDisconnect) {
+      _log.info('Explicit disconnect, not reconnecting.');
+      _updateState(DaemonConnectionState.disconnected);
+    } else {
+      _log.info('Unexpected disconnect, attempting to reconnect...');
+      _reconnect();
+    }
+  }
+
+  void _clearSocket() {
+    _socketSubscription?.cancel();
+    _socketSubscription = null;
+    _socket?.destroy();
+    _socket = null;
+  }
+
+  Future<void> _reconnect() async {
+    if (_explicitDisconnect || state == DaemonConnectionState.connecting) {
+      return;
+    }
+    _updateState(DaemonConnectionState.reconnecting);
+
+    _reconnectAttempts++;
+    final delay = Duration(
+      seconds: min(
+        pow(2, _reconnectAttempts).toInt(),
+        60, // Max delay
+      ),
+    );
+
+    _log.info('Reconnecting in $delay...');
+    await Future<void>.delayed(delay);
+
+    if (!_explicitDisconnect) {
+      await _connect();
+    }
   }
 
   /// Update connection state.

@@ -5,9 +5,11 @@
 // mapping configuration.
 
 import 'package:flutter/material.dart';
+
 import '../models/keyboard_layout.dart';
 import '../models/layout_type.dart';
 import '../models/profile.dart';
+import 'preview/preview.dart';
 import 'visual_keyboard.dart';
 
 /// Layout information for rendering grids
@@ -66,58 +68,31 @@ class LayoutGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (layoutInfo.type) {
       case LayoutType.matrix:
-        return _buildMatrixLayout(context);
+        return MatrixPreview(
+          rows: layoutInfo.rows,
+          cols: layoutInfo.cols,
+          colsPerRow: layoutInfo.colsPerRow,
+          profile: profile,
+          onKeyTap: onKeyTap,
+          selectedPosition: selectedPosition,
+          highlightedPositions: highlightedPositions,
+          keySize: keySize,
+          keySpacing: keySpacing,
+        );
       case LayoutType.standard:
         return _buildStandardLayout(context);
       case LayoutType.split:
-        return _buildSplitLayout(context);
+        return SplitPreview(
+          rows: layoutInfo.rows,
+          cols: layoutInfo.cols,
+          profile: profile,
+          onKeyTap: onKeyTap,
+          selectedPosition: selectedPosition,
+          highlightedPositions: highlightedPositions,
+          keySize: keySize,
+          keySpacing: keySpacing,
+        );
     }
-  }
-
-  /// Build matrix layout using GridView
-  Widget _buildMatrixLayout(BuildContext context) {
-    final perRow = layoutInfo.colsPerRow;
-
-    if (perRow != null && perRow.isNotEmpty) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (int row = 0; row < perRow.length; row++) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (int col = 0; col < perRow[row]; col++)
-                  Padding(
-                    padding: EdgeInsets.all(keySpacing / 2),
-                    child: SizedBox(
-                      width: keySize,
-                      height: keySize,
-                      child: _buildKey(context, row, col),
-                    ),
-                  ),
-              ],
-            ),
-            if (row != perRow.length - 1) SizedBox(height: keySpacing),
-          ],
-        ],
-      );
-    }
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: keySize + keySpacing * 2,
-        mainAxisSpacing: keySpacing,
-        crossAxisSpacing: keySpacing,
-      ),
-      itemCount: layoutInfo.rows * layoutInfo.cols,
-      itemBuilder: (context, index) {
-        final row = index ~/ layoutInfo.cols;
-        final col = index % layoutInfo.cols;
-        return _buildKey(context, row, col);
-      },
-    );
   }
 
   /// Build standard keyboard layout using VisualKeyboard
@@ -200,161 +175,4 @@ class LayoutGrid extends StatelessWidget {
     }
     return null;
   }
-
-  /// Build split keyboard layout
-  /// Shows two independent grids side by side
-  Widget _buildSplitLayout(BuildContext context) {
-    final halfCols = layoutInfo.cols ~/ 2;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Left half
-        Expanded(child: _buildSplitHalf(context, 0, 0, halfCols, isLeft: true)),
-        SizedBox(width: keySpacing * 4), // Gap between halves
-        // Right half
-        Expanded(
-          child: _buildSplitHalf(
-            context,
-            0,
-            halfCols,
-            layoutInfo.cols,
-            isLeft: false,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build one half of a split keyboard
-  Widget _buildSplitHalf(
-    BuildContext context,
-    int startRow,
-    int startCol,
-    int endCol, {
-    required bool isLeft,
-  }) {
-    final halfCols = endCol - startCol;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: keySize + keySpacing * 2,
-        mainAxisSpacing: keySpacing,
-        crossAxisSpacing: keySpacing,
-      ),
-      itemCount: layoutInfo.rows * halfCols,
-      itemBuilder: (context, index) {
-        final row = index ~/ halfCols;
-        final col = startCol + (index % halfCols);
-        return _buildKey(context, row, col);
-      },
-    );
-  }
-
-  /// Build a single key widget
-  Widget _buildKey(BuildContext context, int row, int col) {
-    final theme = Theme.of(context);
-    final position = PhysicalPosition(row: row, col: col);
-    final isSelected = selectedPosition == position;
-    final isHighlighted = highlightedPositions.contains(position);
-
-    // Get the mapping for this position
-    final action = profile?.getAction(position);
-    final hasMapping = action != null;
-
-    // Determine key label
-    var label = '$row,$col';
-    if (hasMapping) {
-      label = _getActionLabel(action);
-    }
-
-    return Material(
-      color: _getKeyColor(theme, isSelected, hasMapping, isHighlighted),
-      borderRadius: BorderRadius.circular(4),
-      elevation: isSelected ? 4 : 1,
-      child: InkWell(
-        onTap: onKeyTap != null ? () => onKeyTap!(row, col) : null,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '$row,$col',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
-                    color: isSelected
-                        ? theme.colorScheme.onPrimary.withValues(alpha: 0.7)
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-                if (hasMapping) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: isSelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                ],
-                if (isHighlighted && !isSelected)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Icon(
-                      Icons.search,
-                      size: 14,
-                      color: theme.colorScheme.onTertiaryContainer,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Get the display label for a key action
-  String _getActionLabel(KeyAction action) => keyActionLabel(action);
-
-  /// Get the color for a key based on its state
-  Color _getKeyColor(
-    ThemeData theme,
-    bool isSelected,
-    bool hasMapping,
-    bool isHighlighted,
-  ) {
-    if (isSelected) {
-      return theme.colorScheme.primary;
-    }
-    if (isHighlighted) {
-      return theme.colorScheme.tertiaryContainer;
-    }
-    if (hasMapping) {
-      return theme.colorScheme.secondaryContainer;
-    }
-    return theme.colorScheme.surfaceContainerHighest;
-  }
 }
-
-/// Public helper to describe a [KeyAction] for UI labels.
-String keyActionLabel(KeyAction action) => action.when(
-  key: (key) => key,
-  chord: (keys) => keys.join('+'),
-  script: (script) => 'Script',
-  block: () => 'BLOCK',
-  pass: () => 'PASS',
-);

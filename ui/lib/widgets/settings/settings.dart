@@ -2,4 +2,4 @@
 library;
 
 // Export settings components
-// TODO: Add exports as widgets are extracted
+export 'threshold_settings_dialog.dart';
