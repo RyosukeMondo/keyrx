@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations
+
 /// Service for communicating with the KeyRx daemon via IPC.
 library;
 
@@ -32,7 +34,7 @@ enum DaemonConnectionState { disconnected, connecting, connected, error }
 /// Service for communicating with the KeyRx daemon.
 class DaemonService {
   DaemonService({String? socketPath})
-    : _socketPath = socketPath ?? _defaultSocketPath();
+      : _socketPath = socketPath ?? _defaultSocketPath();
 
   final String _socketPath;
   Socket? _socket;
@@ -69,7 +71,7 @@ class DaemonService {
       }
       return '/tmp/keyrx/daemon.sock';
     } else if (Platform.isWindows) {
-      // TODO: Named pipe support
+      // TODO(rmondo): Implement named pipe support
       throw UnsupportedError('Windows not yet supported');
     } else {
       throw UnsupportedError('Platform not supported');
@@ -109,10 +111,10 @@ class DaemonService {
       );
 
       _updateState(DaemonConnectionState.connected);
-    } catch (e) {
+    } on SocketException catch (e) {
       debugPrint('DaemonService: Connection failed: $e');
       _updateState(DaemonConnectionState.error);
-      throw DaemonException('Failed to connect to daemon: $e');
+      throw DaemonException('Failed to connect to daemon: ${e.message}');
     }
   }
 
@@ -143,7 +145,8 @@ class DaemonService {
 
   /// Send a JSON-RPC request and wait for response.
   Future<T> sendRequest<T>(
-    String method, {
+    String method,
+    {
     required T Function(dynamic) parseResult,
     Map<String, dynamic>? params,
   }) async {
@@ -179,9 +182,9 @@ class DaemonService {
       );
 
       return parseResult(result);
-    } catch (e) {
+    } on SocketException catch (e) {
       _pendingRequests.remove(id);
-      rethrow;
+      throw DaemonException('Daemon communication error: ${e.message}');
     }
   }
 
@@ -277,7 +280,7 @@ class DaemonService {
           error: _handleErrorResponse,
           notification: _handleNotification,
         );
-      } catch (e) {
+      } on FormatException catch (e) {
         debugPrint('DaemonService: Failed to parse message: $e');
       }
     }
@@ -316,8 +319,11 @@ class DaemonService {
     try {
       final event = DaemonEvent.fromNotification(notification);
       _eventController.add(event);
-    } catch (e) {
-      debugPrint('DaemonService: Unknown notification: ${notification.method}');
+    } on Object catch (e) {
+      debugPrint(
+        'DaemonService: Unknown notification: ${notification.method}, '
+        'error: $e',
+      );
     }
   }
 
