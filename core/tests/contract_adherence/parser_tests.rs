@@ -6,7 +6,7 @@
 use std::path::PathBuf;
 
 use super::parser::{
-    parse_ffi_exports_from_str, ParseError, ParsedFunction, ParsedParam, ParsedType,
+    parse_ffi_export_from_str, ParseError, ParsedFunction, ParsedParam, ParsedType,
 };
 
 // ============================================================================
@@ -16,7 +16,7 @@ use super::parser::{
 #[test]
 fn test_parse_empty_source() {
     let source = "";
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("empty.rs"))
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("empty.rs"))
         .expect("empty source should parse");
     assert!(funcs.is_empty(), "empty source should yield no functions");
 }
@@ -30,7 +30,7 @@ fn test_parse_source_with_only_comments_and_items() {
         /// This is a doc comment
         struct Placeholder;
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("comments.rs"))
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("comments.rs"))
         .expect("source with comments should parse");
     assert!(funcs.is_empty(), "non-FFI items should yield no functions");
 }
@@ -41,7 +41,7 @@ fn test_parse_source_with_use_statements_only() {
         use std::ffi::{c_char, CStr, CString};
         use std::ptr;
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("uses.rs"))
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("uses.rs"))
         .expect("use-only source should parse");
     assert!(funcs.is_empty());
 }
@@ -56,7 +56,7 @@ fn test_function_requires_no_mangle_attribute() {
         // Missing #[no_mangle] - should NOT be extracted
         pub unsafe extern "C" fn missing_no_mangle() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert!(
         funcs.is_empty(),
         "function without #[no_mangle] should be ignored"
@@ -70,7 +70,7 @@ fn test_function_requires_pub_visibility() {
         #[no_mangle]
         unsafe extern "C" fn private_fn() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert!(funcs.is_empty(), "non-public function should be ignored");
 }
 
@@ -85,7 +85,7 @@ fn test_function_requires_extern_c_abi() {
         #[no_mangle]
         pub extern "system" fn wrong_abi() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert!(
         funcs.is_empty(),
         "function without extern \"C\" should be ignored"
@@ -100,7 +100,7 @@ fn test_function_with_multiple_attributes() {
         #[allow(unused)]
         pub unsafe extern "C" fn multi_attr_fn() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "multi_attr_fn");
 }
@@ -121,7 +121,7 @@ fn test_no_mangle_attribute_position_varies() {
         #[no_mangle]
         pub unsafe extern "C" fn attr_last() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 3);
 }
 
@@ -137,7 +137,7 @@ fn test_parse_const_pointer_param() {
         #[no_mangle]
         pub unsafe extern "C" fn with_const_ptr(s: *const c_char) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
 
     let param = &funcs[0].params[0];
@@ -155,7 +155,7 @@ fn test_parse_mut_pointer_param() {
         #[no_mangle]
         pub unsafe extern "C" fn with_mut_ptr(s: *mut c_char) { }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
 
     let param = &funcs[0].params[0];
@@ -172,7 +172,7 @@ fn test_parse_double_pointer_param() {
         #[no_mangle]
         pub unsafe extern "C" fn with_double_ptr(err: *mut *mut c_char) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
 
     let param = &funcs[0].params[0];
@@ -188,7 +188,7 @@ fn test_parse_primitive_params() {
         #[no_mangle]
         pub unsafe extern "C" fn primitives(a: i32, b: u32, c: i64, d: bool) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].params.len(), 4);
 
@@ -206,7 +206,7 @@ fn test_parse_usize_param() {
         #[no_mangle]
         pub unsafe extern "C" fn with_usize(len: usize) -> usize { len }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs[0].params[0].rust_type, "usize");
 }
 
@@ -218,7 +218,7 @@ fn test_parse_option_callback_param() {
             cb: Option<unsafe extern "C" fn(*const u8, usize)>,
         ) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
 
     let param = &funcs[0].params[0];
@@ -239,7 +239,7 @@ fn test_parse_multiple_params() {
             len: usize,
         ) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].params.len(), 4);
 
@@ -259,7 +259,7 @@ fn test_parse_void_return() {
         #[no_mangle]
         pub unsafe extern "C" fn void_return() { }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs[0].return_type, ParsedType::Unit);
 }
 
@@ -269,7 +269,7 @@ fn test_parse_i32_return() {
         #[no_mangle]
         pub unsafe extern "C" fn i32_return() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(
         funcs[0].return_type,
         ParsedType::Primitive("i32".to_string())
@@ -282,7 +282,7 @@ fn test_parse_u32_return() {
         #[no_mangle]
         pub unsafe extern "C" fn u32_return() -> u32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(
         funcs[0].return_type,
         ParsedType::Primitive("u32".to_string())
@@ -299,7 +299,7 @@ fn test_parse_const_pointer_return() {
             std::ptr::null()
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(
         funcs[0].return_type,
         ParsedType::Pointer {
@@ -319,7 +319,7 @@ fn test_parse_mut_pointer_return() {
             std::ptr::null_mut()
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(
         funcs[0].return_type,
         ParsedType::Pointer {
@@ -341,7 +341,7 @@ fn test_parse_keyrx_init_pattern() {
             0
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_init");
     assert_eq!(funcs[0].params.len(), 0);
@@ -361,7 +361,7 @@ fn test_parse_keyrx_version_pattern() {
             std::ptr::null_mut()
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_version");
     assert_eq!(
@@ -383,7 +383,7 @@ fn test_parse_keyrx_free_string_pattern() {
             // free the string
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_free_string");
     assert_eq!(funcs[0].params.len(), 1);
@@ -402,7 +402,7 @@ fn test_parse_keyrx_register_callback_pattern() {
             0
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_register_event_callback");
     assert_eq!(funcs[0].params.len(), 2);
@@ -416,7 +416,7 @@ fn test_parse_keyrx_free_event_payload_pattern() {
             // free the payload
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_free_event_payload");
     assert_eq!(funcs[0].params.len(), 2);
@@ -434,7 +434,7 @@ fn test_parse_config_save_pattern() {
             std::ptr::null_mut()
         }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("exports.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("exports.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "keyrx_config_save_keymap");
     assert_eq!(funcs[0].params.len(), 1);
@@ -459,14 +459,14 @@ fn test_parse_invalid_syntax_returns_error() {
         // Invalid Rust syntax - missing closing brace
         pub fn broken( {
     "#;
-    let result = parse_ffi_exports_from_str(source, PathBuf::from("broken.rs"));
+    let result = parse_ffi_export_from_str(source, PathBuf::from("broken.rs"));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_parse_error_is_syn_error() {
     let source = "fn broken(";
-    let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+    let result = parse_ffi_export_from_str(source, PathBuf::from("test.rs"));
     match result {
         Err(ParseError::SynError(_)) => {} // expected
         _ => panic!("expected SynError"),
@@ -479,7 +479,7 @@ fn test_parse_incomplete_function() {
         #[no_mangle]
         pub unsafe extern "C" fn incomplete
     "#;
-    let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+    let result = parse_ffi_export_from_str(source, PathBuf::from("test.rs"));
     assert!(result.is_err(), "incomplete function should fail to parse");
 }
 
@@ -492,7 +492,7 @@ fn test_parse_unclosed_string() {
             0
         }
     "#;
-    let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+    let result = parse_ffi_export_from_str(source, PathBuf::from("test.rs"));
     assert!(result.is_err(), "unclosed string should fail to parse");
 }
 
@@ -512,7 +512,7 @@ fn test_parse_multiple_functions_preserves_order() {
         #[no_mangle]
         pub unsafe extern "C" fn gamma() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 3);
     assert_eq!(funcs[0].name, "alpha");
     assert_eq!(funcs[1].name, "beta");
@@ -532,7 +532,7 @@ fn test_parse_mixed_ffi_and_regular_functions() {
         #[no_mangle]
         pub unsafe extern "C" fn another_ffi() {}
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 2);
     assert_eq!(funcs[0].name, "ffi_func");
     assert_eq!(funcs[1].name, "another_ffi");
@@ -659,7 +659,7 @@ fn test_line_number_tracking() {
 #[no_mangle]
 pub unsafe extern "C" fn on_line_five() -> i32 { 0 }
 "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     // Line numbers are 1-indexed, function is on line 5
     assert!(funcs[0].line_number >= 4 && funcs[0].line_number <= 6);
@@ -676,7 +676,7 @@ fn test_file_path_preserved() {
         pub unsafe extern "C" fn test_fn() -> i32 { 0 }
     "#;
     let path = PathBuf::from("/path/to/source/exports.rs");
-    let funcs = parse_ffi_exports_from_str(source, path.clone()).unwrap();
+    let funcs = parse_ffi_export_from_str(source, path.clone()).unwrap();
     assert_eq!(funcs[0].file_path, path);
 }
 
@@ -690,7 +690,7 @@ fn test_function_name_with_underscores() {
         #[no_mangle]
         pub unsafe extern "C" fn __keyrx__internal__func__() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs[0].name, "__keyrx__internal__func__");
 }
 
@@ -700,7 +700,7 @@ fn test_qualified_type_path() {
         #[no_mangle]
         pub unsafe extern "C" fn with_qualified_type(ptr: *const std::ffi::c_char) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     // The type should be parsed (exact format may vary based on implementation)
     assert!(funcs[0].params[0].is_pointer);
@@ -714,7 +714,7 @@ fn test_param_with_underscore_prefix() {
         #[no_mangle]
         pub unsafe extern "C" fn with_unused_param(_unused: *const c_char) -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs[0].params[0].name, "_unused");
 }
 
@@ -725,7 +725,7 @@ fn test_parse_function_without_unsafe() {
         #[no_mangle]
         pub extern "C" fn safe_ffi() -> i32 { 0 }
     "#;
-    let funcs = parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).unwrap();
+    let funcs = parse_ffi_export_from_str(source, PathBuf::from("test.rs")).unwrap();
     assert_eq!(funcs.len(), 1);
     assert_eq!(funcs[0].name, "safe_ffi");
 }

@@ -148,13 +148,13 @@ impl ParsedFunction {
 ///
 /// This function reads the file, parses it using `syn`, and extracts all FFI-exported
 /// functions that have both the `extern "C"` ABI and `#[no_mangle]` attribute.
-pub fn parse_ffi_exports(file_path: &Path) -> Result<Vec<ParsedFunction>, ParseError> {
+pub fn parse_ffi_export(file_path: &Path) -> Result<Vec<ParsedFunction>, ParseError> {
     let source = fs::read_to_string(file_path)?;
-    parse_ffi_exports_from_str(&source, file_path.to_path_buf())
+    parse_ffi_export_from_str(&source, file_path.to_path_buf())
 }
 
-/// Parse FFI exports from a string (for testing purposes).
-pub fn parse_ffi_exports_from_str(
+/// Parse FFI export from a string (for testing purposes).
+pub fn parse_ffi_export_from_str(
     source: &str,
     file_path: PathBuf,
 ) -> Result<Vec<ParsedFunction>, ParseError> {
@@ -548,7 +548,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(funcs[0].name, "keyrx_init");
@@ -571,7 +571,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(funcs[0].name, "keyrx_free_string");
@@ -596,7 +596,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(
@@ -635,7 +635,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(funcs[0].name, "keyrx_valid");
@@ -656,7 +656,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(funcs[0].name, "keyrx_register_callback");
@@ -694,7 +694,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 3);
 
@@ -714,7 +714,7 @@ mod tests {
         "#;
 
         let funcs =
-            parse_ffi_exports_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
+            parse_ffi_export_from_str(source, PathBuf::from("test.rs")).expect("parse failed");
 
         assert_eq!(funcs.len(), 1);
         assert_eq!(funcs[0].return_type, ParsedType::Unit);
@@ -727,7 +727,7 @@ mod tests {
             pub fn broken( {
         "#;
 
-        let result = parse_ffi_exports_from_str(source, PathBuf::from("test.rs"));
+        let result = parse_ffi_export_from_str(source, PathBuf::from("test.rs"));
         assert!(result.is_err());
     }
 }

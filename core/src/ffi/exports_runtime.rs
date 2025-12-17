@@ -4,7 +4,7 @@
 use crate::config::models::{DeviceSlots, ProfileSlot, RuntimeConfig};
 use crate::ffi::domains::config::global_config_manager;
 use crate::ffi::error::{serialize_ffi_result, FfiError, FfiResult};
-use crate::ffi::exports::{parse_c_string, parse_device_json};
+use crate::ffi::ffi_export::{parse_c_string, parse_device_json};
 use ffi_export::ffi_export;
 use tracing::instrument;
 

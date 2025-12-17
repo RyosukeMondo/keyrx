@@ -47,11 +47,13 @@ fn main() {
 /// Track FFI source files to trigger binding regeneration when they change
 fn track_ffi_files() {
     // Track old-style exports files
-    if let Ok(entries) = std::fs::read_dir("src/ffi") {
+    if let Ok(entries) = ::std::fs::read_dir("src/ffi") {
         for entry in entries.flatten() {
             let path = entry.path();
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                if name.starts_with("exports_") && name.ends_with(".rs") {
+                if (name.starts_with("exports_") || name.starts_with("ffi_export"))
+                    && name.ends_with(".rs")
+                {
                     println!("cargo:rerun-if-changed=src/ffi/{}", name);
                 }
             }
@@ -61,7 +63,7 @@ fn track_ffi_files() {
     // Track new-style domain files
     let domains_dir = Path::new("src/ffi/domains");
     if domains_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(domains_dir) {
+        if let Ok(entries) = ::std::fs::read_dir(domains_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
@@ -95,7 +97,7 @@ fn track_api_doc_files() {
     // Track generator files
     let generator_dir = Path::new("src/scripting/docs/generators");
     if generator_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(generator_dir) {
+        if let Ok(entries) = ::std::fs::read_dir(generator_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
@@ -113,7 +115,7 @@ fn track_api_doc_files() {
     // Track scripting module files that contain documented functions
     let scripting_dir = Path::new("src/scripting");
     if scripting_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(scripting_dir) {
+        if let Ok(entries) = ::std::fs::read_dir(scripting_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(name) = path.file_name().and_then(|n| n.to_str()) {

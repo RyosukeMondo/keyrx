@@ -11,7 +11,7 @@
 
 mod contract_adherence;
 
-use contract_adherence::parser::parse_ffi_exports;
+use contract_adherence::parser::parse_ffi_export;
 use contract_adherence::reporter::generate_full_report;
 use contract_adherence::validator::validate_all_functions;
 use keyrx_core::ffi::contract::ContractRegistry;
@@ -33,7 +33,7 @@ fn verify_ffi_contract_adherence() {
     for entry in WalkDir::new(&src_dir).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
         if path.extension().map_or(false, |ext| ext == "rs") {
-            match parse_ffi_exports(path) {
+            match parse_ffi_export(path) {
                 Ok(funcs) => parsed_functions.extend(funcs),
                 Err(e) => {
                     // Log parse errors but continue - some files may have syntax issues

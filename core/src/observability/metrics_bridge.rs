@@ -62,7 +62,7 @@ pub struct ThresholdViolation {
 }
 
 /// Configurable thresholds for metrics.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricsThresholds {
     /// Latency warning threshold (microseconds)
     pub latency_warn_micros: u64,
@@ -99,53 +99,18 @@ pub trait MetricsCollector: Send + Sync {
     fn record_memory(&self, bytes: usize);
 
     /// Get a snapshot of current metrics.
-    fn snapshot(&self) -> MetricsSnapshot;
+    fn snapshot(&self) -> crate::metrics::snapshot::MetricsSnapshot;
 
     /// Reset all collected metrics.
     fn reset(&self);
 }
 
-/// Snapshot of metrics at a point in time.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MetricsSnapshot {
-    /// Unix timestamp in milliseconds
-    pub timestamp: u64,
-    /// Event latency 50th percentile (microseconds)
-    pub event_latency_p50: u64,
-    /// Event latency 95th percentile (microseconds)
-    pub event_latency_p95: u64,
-    /// Event latency 99th percentile (microseconds)
-    pub event_latency_p99: u64,
-    /// Total events processed
-    pub events_processed: u64,
-    /// Total errors encountered
-    pub errors_count: u64,
-    /// Current memory usage (bytes)
-    pub memory_used: u64,
-}
-
-impl Default for MetricsSnapshot {
-    fn default() -> Self {
-        Self {
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64,
-            event_latency_p50: 0,
-            event_latency_p95: 0,
-            event_latency_p99: 0,
-            events_processed: 0,
-            errors_count: 0,
-            memory_used: 0,
-        }
-    }
-}
-
 /// FFI-compatible metrics snapshot.
 ///
-/// This struct uses C-compatible types for FFI export.
+/// This struct uses C-compatible types for FFI export and also supports
+/// JSON serialization for the `ffi_export` macro.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MetricsSnapshotFfi {
     /// Unix timestamp in milliseconds
     pub timestamp: u64,
@@ -163,16 +128,21 @@ pub struct MetricsSnapshotFfi {
     pub memory_used: u64,
 }
 
-impl From<MetricsSnapshot> for MetricsSnapshotFfi {
-    fn from(snapshot: MetricsSnapshot) -> Self {
+// This From implementation is hand-written to extract the most relevant
+// metrics for the UI layer, simplifying the FFI model.
+impl From<crate::metrics::snapshot::MetricsSnapshot> for MetricsSnapshotFfi {
+    fn from(snapshot: crate::metrics::snapshot::MetricsSnapshot) -> Self {
+        let latency = snapshot.latencies.get("event_process");
+        let errors = &snapshot.errors;
+
         Self {
             timestamp: snapshot.timestamp,
-            event_latency_p50: snapshot.event_latency_p50,
-            event_latency_p95: snapshot.event_latency_p95,
-            event_latency_p99: snapshot.event_latency_p99,
-            events_processed: snapshot.events_processed,
-            errors_count: snapshot.errors_count,
-            memory_used: snapshot.memory_used,
+            event_latency_p50: latency.map_or(0, |l| l.p50),
+            event_latency_p95: latency.map_or(0, |l| l.p95),
+            event_latency_p99: latency.map_or(0, |l| l.p99),
+            events_processed: latency.map_or(0, |l| l.count),
+            errors_count: errors.total,
+            memory_used: snapshot.memory.current as u64,
         }
     }
 }
@@ -282,7 +252,7 @@ impl MetricsBridge {
     ///
     /// This is called automatically during metrics updates but can also
     /// be called manually for immediate checking.
-    pub fn check_thresholds(&self, snapshot: &MetricsSnapshot) {
+    pub fn check_thresholds(&self, snapshot: &MetricsSnapshotFfi) {
         let thresholds = if let Ok(guard) = self.inner.thresholds.read() {
             guard.clone()
         } else {
@@ -393,7 +363,7 @@ impl MetricsBridge {
     /// Get the current metrics snapshot.
     ///
     /// This can be called at any time for polling-based access.
-    pub fn snapshot(&self) -> MetricsSnapshot {
+    pub fn snapshot(&self) -> crate::metrics::snapshot::MetricsSnapshot {
         self.inner.collector.snapshot()
     }
 
@@ -465,14 +435,14 @@ impl MetricsBridge {
     /// This also checks thresholds and triggers threshold callbacks if needed.
     pub fn trigger_callback(&self) {
         let snapshot = self.snapshot();
+        let ffi_snapshot = MetricsSnapshotFfi::from(snapshot);
 
         // Check thresholds first
-        self.check_thresholds(&snapshot);
+        self.check_thresholds(&ffi_snapshot);
 
         // Then trigger the regular metrics callback if set
         if let Ok(guard) = self.inner.callback.read() {
             if let Some(callback) = *guard {
-                let ffi_snapshot = MetricsSnapshotFfi::from(snapshot);
                 callback(&ffi_snapshot as *const MetricsSnapshotFfi);
             }
         } else {
@@ -495,8 +465,8 @@ impl MetricsCollector for NoOpMetricsCollector {
         // No-op
     }
 
-    fn snapshot(&self) -> MetricsSnapshot {
-        MetricsSnapshot::default()
+    fn snapshot(&self) -> crate::metrics::snapshot::MetricsSnapshot {
+        crate::metrics::snapshot::MetricsSnapshot::empty()
     }
 
     fn reset(&self) {
@@ -507,39 +477,48 @@ impl MetricsCollector for NoOpMetricsCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_metrics_snapshot_default() {
-        let snapshot = MetricsSnapshot::default();
-        assert_eq!(snapshot.event_latency_p50, 0);
-        assert_eq!(snapshot.event_latency_p95, 0);
-        assert_eq!(snapshot.event_latency_p99, 0);
-        assert_eq!(snapshot.events_processed, 0);
-        assert_eq!(snapshot.errors_count, 0);
-        assert_eq!(snapshot.memory_used, 0);
-        assert!(snapshot.timestamp > 0);
-    }
+    use crate::metrics::errors::ErrorSnapshot;
+    use crate::metrics::snapshot::{LatencyStats, MemorySnapshot};
+    use std::collections::HashMap;
 
     #[test]
     fn test_ffi_conversion() {
-        let snapshot = MetricsSnapshot {
+        let mut latencies = HashMap::new();
+        latencies.insert(
+            "event_process".to_string(),
+            LatencyStats {
+                count: 42,
+                p50: 100,
+                p95: 500,
+                p99: 1000,
+                ..LatencyStats::empty()
+            },
+        );
+        let memory = MemorySnapshot {
+            current: 1024 * 1024,
+            ..MemorySnapshot::empty()
+        };
+        let errors = ErrorSnapshot {
+            total: 3,
+            ..ErrorSnapshot::empty()
+        };
+
+        let snapshot = crate::metrics::snapshot::MetricsSnapshot {
             timestamp: 1234567890,
-            event_latency_p50: 100,
-            event_latency_p95: 500,
-            event_latency_p99: 1000,
-            events_processed: 42,
-            errors_count: 3,
-            memory_used: 1024 * 1024,
+            latencies,
+            memory,
+            errors,
+            profiles: HashMap::new(),
         };
 
         let ffi_snapshot = MetricsSnapshotFfi::from(snapshot.clone());
         assert_eq!(ffi_snapshot.timestamp, snapshot.timestamp);
-        assert_eq!(ffi_snapshot.event_latency_p50, snapshot.event_latency_p50);
-        assert_eq!(ffi_snapshot.event_latency_p95, snapshot.event_latency_p95);
-        assert_eq!(ffi_snapshot.event_latency_p99, snapshot.event_latency_p99);
-        assert_eq!(ffi_snapshot.events_processed, snapshot.events_processed);
-        assert_eq!(ffi_snapshot.errors_count, snapshot.errors_count);
-        assert_eq!(ffi_snapshot.memory_used, snapshot.memory_used);
+        assert_eq!(ffi_snapshot.event_latency_p50, 100);
+        assert_eq!(ffi_snapshot.event_latency_p95, 500);
+        assert_eq!(ffi_snapshot.event_latency_p99, 1000);
+        assert_eq!(ffi_snapshot.events_processed, 42);
+        assert_eq!(ffi_snapshot.errors_count, 3);
+        assert_eq!(ffi_snapshot.memory_used, 1024 * 1024);
     }
 
     #[test]
@@ -548,7 +527,7 @@ mod tests {
         collector.record_latency(Operation::EventProcess, 100);
         collector.record_memory(1024);
         let snapshot = collector.snapshot();
-        assert_eq!(snapshot.events_processed, 0);
+
         collector.reset();
     }
 

@@ -99,8 +99,8 @@ fn test_file_location_display_format() {
 
 #[test]
 fn test_file_location_display_with_nested_path() {
-    let loc = FileLocation::new(PathBuf::from("core/src/ffi/exports.rs"), 100);
-    assert_eq!(loc.to_string(), "core/src/ffi/exports.rs:100");
+    let loc = FileLocation::new(PathBuf::from("core/src/ffi/ffi_export.rs"), 100);
+    assert_eq!(loc.to_string(), "core/src/ffi/ffi_export.rs:100");
 }
 
 #[test]
