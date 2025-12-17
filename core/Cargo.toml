@@ -55,6 +55,7 @@ ffi_export = { path = "macros/ffi_export" }
 reqwest.workspace = true
 reqwest-middleware.workspace = true
 http = "1"
+tokio-util.workspace = true
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }

@@ -34,7 +34,7 @@ enum DaemonConnectionState { disconnected, connecting, connected, error }
 /// Service for communicating with the KeyRx daemon.
 class DaemonService {
   DaemonService({String? socketPath})
-      : _socketPath = socketPath ?? _defaultSocketPath();
+    : _socketPath = socketPath ?? _defaultSocketPath();
 
   final String _socketPath;
   Socket? _socket;
@@ -145,8 +145,7 @@ class DaemonService {
 
   /// Send a JSON-RPC request and wait for response.
   Future<T> sendRequest<T>(
-    String method,
-    {
+    String method, {
     required T Function(dynamic) parseResult,
     Map<String, dynamic>? params,
   }) async {

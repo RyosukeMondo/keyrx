@@ -142,10 +142,7 @@ async fn handle_request(request: JsonRpcRequest, manager: &EngineManager) -> Out
                 let config_path = params.config_path.map(PathBuf::from);
                 let script_path = params.script_path.map(PathBuf::from);
 
-                match manager
-                    .start(config_path, script_path, params.use_all_devices)
-                    .await
-                {
+                match manager.start(config_path, script_path).await {
                     Ok(devices) => {
                         let result = json!({
                             "status": "started",
