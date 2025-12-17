@@ -1,26 +1,34 @@
-// ignore_for_file: unused_field, flutter_style_todos, sort_constructors_first
+// ignore_for_file: sort_constructors_first, flutter_style_todos
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../state/daemon_providers.dart';
 import 'daemon_service.dart';
 
 /// Manages high-level daemon lifecycle (auto-connect, retry logic).
-///
-/// Intended to be implemented by Jules Task B.
 class DaemonManager {
   final DaemonService _service;
 
   DaemonManager(this._service);
 
   Future<void> initialize() async {
-    // TODO: Jules Task B - Implement auto-connect logic
+    try {
+      await _service.connect();
+    } on DaemonException {
+      // Ignore initial connection errors, will retry or show status
+    }
   }
 
   Future<void> restartDaemon() async {
-    // TODO: Jules Task B - Implement restart logic
+    if (_service.isConnected) {
+      await _service.stopEngine();
+      await _service.disconnect();
+    }
+    // TODO: Implement actual process restart if needed, for now just reconnect
+    await _service.connect();
   }
 }
 
 final daemonManagerProvider = Provider<DaemonManager>((ref) {
-  // TODO: Jules Task B - Wiring
-  throw UnimplementedError();
+  final service = ref.watch(daemonServiceProvider);
+  return DaemonManager(service);
 });
