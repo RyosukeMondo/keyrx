@@ -380,9 +380,9 @@ Keymap _$KeymapFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Keymap {
   String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'virtual_layout_id')
   String get virtualLayoutId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
   List<KeymapLayer> get layers => throw _privateConstructorUsedError;
   List<Combo> get combos => throw _privateConstructorUsedError;
 
@@ -402,8 +402,8 @@ abstract class $KeymapCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String name,
     @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
+    String name,
     List<KeymapLayer> layers,
     List<Combo> combos,
   });
@@ -425,8 +425,8 @@ class _$KeymapCopyWithImpl<$Res, $Val extends Keymap>
   @override
   $Res call({
     Object? id = null,
-    Object? name = null,
     Object? virtualLayoutId = null,
+    Object? name = null,
     Object? layers = null,
     Object? combos = null,
   }) {
@@ -436,13 +436,13 @@ class _$KeymapCopyWithImpl<$Res, $Val extends Keymap>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
             virtualLayoutId: null == virtualLayoutId
                 ? _value.virtualLayoutId
                 : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
                       as String,
             layers: null == layers
                 ? _value.layers
@@ -468,8 +468,8 @@ abstract class _$$KeymapImplCopyWith<$Res> implements $KeymapCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String name,
     @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
+    String name,
     List<KeymapLayer> layers,
     List<Combo> combos,
   });
@@ -490,8 +490,8 @@ class __$$KeymapImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? name = null,
     Object? virtualLayoutId = null,
+    Object? name = null,
     Object? layers = null,
     Object? combos = null,
   }) {
@@ -501,13 +501,13 @@ class __$$KeymapImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
         virtualLayoutId: null == virtualLayoutId
             ? _value.virtualLayoutId
             : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
                   as String,
         layers: null == layers
             ? _value._layers
@@ -527,8 +527,8 @@ class __$$KeymapImplCopyWithImpl<$Res>
 class _$KeymapImpl extends _Keymap {
   const _$KeymapImpl({
     required this.id,
-    this.name = 'Untitled Keymap',
     @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
+    this.name = 'Untitled Keymap',
     final List<KeymapLayer> layers = const <KeymapLayer>[],
     final List<Combo> combos = const <Combo>[],
   }) : _layers = layers,
@@ -541,11 +541,11 @@ class _$KeymapImpl extends _Keymap {
   @override
   final String id;
   @override
-  @JsonKey()
-  final String name;
-  @override
   @JsonKey(name: 'virtual_layout_id')
   final String virtualLayoutId;
+  @override
+  @JsonKey()
+  final String name;
   final List<KeymapLayer> _layers;
   @override
   @JsonKey()
@@ -566,7 +566,7 @@ class _$KeymapImpl extends _Keymap {
 
   @override
   String toString() {
-    return 'Keymap(id: $id, name: $name, virtualLayoutId: $virtualLayoutId, layers: $layers, combos: $combos)';
+    return 'Keymap(id: $id, virtualLayoutId: $virtualLayoutId, name: $name, layers: $layers, combos: $combos)';
   }
 
   @override
@@ -575,9 +575,9 @@ class _$KeymapImpl extends _Keymap {
         (other.runtimeType == runtimeType &&
             other is _$KeymapImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name) &&
             (identical(other.virtualLayoutId, virtualLayoutId) ||
                 other.virtualLayoutId == virtualLayoutId) &&
+            (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality().equals(other._layers, _layers) &&
             const DeepCollectionEquality().equals(other._combos, _combos));
   }
@@ -587,8 +587,8 @@ class _$KeymapImpl extends _Keymap {
   int get hashCode => Object.hash(
     runtimeType,
     id,
-    name,
     virtualLayoutId,
+    name,
     const DeepCollectionEquality().hash(_layers),
     const DeepCollectionEquality().hash(_combos),
   );
@@ -610,8 +610,8 @@ class _$KeymapImpl extends _Keymap {
 abstract class _Keymap extends Keymap {
   const factory _Keymap({
     required final String id,
-    final String name,
     @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
+    final String name,
     final List<KeymapLayer> layers,
     final List<Combo> combos,
   }) = _$KeymapImpl;
@@ -622,10 +622,10 @@ abstract class _Keymap extends Keymap {
   @override
   String get id;
   @override
-  String get name;
-  @override
   @JsonKey(name: 'virtual_layout_id')
   String get virtualLayoutId;
+  @override
+  String get name;
   @override
   List<KeymapLayer> get layers;
   @override

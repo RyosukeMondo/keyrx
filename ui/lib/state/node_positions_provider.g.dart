@@ -6,7 +6,7 @@ part of 'node_positions_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$nodePositionsHash() => r'92004601885764a328dc1326674b61a55ce939a0';
+String _$nodePositionsHash() => r'53992f6ef71c39ca4c7a5a149b9500709095d2bc';
 
 /// See also [NodePositions].
 @ProviderFor(NodePositions)

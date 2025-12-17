@@ -10,8 +10,8 @@ _$JsonRpcRequestImpl _$$JsonRpcRequestImplFromJson(Map<String, dynamic> json) =>
     _$JsonRpcRequestImpl(
       jsonrpc: json['jsonrpc'] as String,
       method: json['method'] as String,
-      params: json['params'] as Map<String, dynamic>?,
       id: RequestId.fromJson(json['id']),
+      params: json['params'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$$JsonRpcRequestImplToJson(
@@ -19,8 +19,8 @@ Map<String, dynamic> _$$JsonRpcRequestImplToJson(
 ) => <String, dynamic>{
   'jsonrpc': instance.jsonrpc,
   'method': instance.method,
-  'params': instance.params,
   'id': instance.id,
+  'params': instance.params,
 };
 
 _$JsonRpcResponseImpl _$$JsonRpcResponseImplFromJson(
@@ -183,4 +183,22 @@ Map<String, dynamic> _$$StateChangeEventImplToJson(
   'timestampUs': instance.timestampUs,
   'message': instance.message,
   'details': instance.details,
+};
+
+_$DiscoveryCandidateImpl _$$DiscoveryCandidateImplFromJson(
+  Map<String, dynamic> json,
+) => _$DiscoveryCandidateImpl(
+  deviceId: json['deviceId'] as String,
+  vendorId: (json['vendorId'] as num).toInt(),
+  productId: (json['productId'] as num).toInt(),
+  name: json['name'] as String,
+);
+
+Map<String, dynamic> _$$DiscoveryCandidateImplToJson(
+  _$DiscoveryCandidateImpl instance,
+) => <String, dynamic>{
+  'deviceId': instance.deviceId,
+  'vendorId': instance.vendorId,
+  'productId': instance.productId,
+  'name': instance.name,
 };

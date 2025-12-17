@@ -34,10 +34,6 @@ mixin _$DeviceState {
   @JsonKey(name: 'remap_enabled')
   bool get remapEnabled => throw _privateConstructorUsedError;
 
-  /// Assigned profile ID (if any)
-  @JsonKey(name: 'profile_id')
-  String? get profileId => throw _privateConstructorUsedError;
-
   /// Connection timestamp (ISO 8601)
   @JsonKey(name: 'connected_at')
   String get connectedAt => throw _privateConstructorUsedError;
@@ -45,6 +41,10 @@ mixin _$DeviceState {
   /// Last update timestamp (ISO 8601)
   @JsonKey(name: 'updated_at')
   String get updatedAt => throw _privateConstructorUsedError;
+
+  /// Assigned profile ID (if any)
+  @JsonKey(name: 'profile_id')
+  String? get profileId => throw _privateConstructorUsedError;
 
   /// Serializes this DeviceState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -67,9 +67,9 @@ abstract class $DeviceStateCopyWith<$Res> {
     DeviceIdentity identity,
     @JsonKey(name: 'device_enabled') bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') bool remapEnabled,
-    @JsonKey(name: 'profile_id') String? profileId,
     @JsonKey(name: 'connected_at') String connectedAt,
     @JsonKey(name: 'updated_at') String updatedAt,
+    @JsonKey(name: 'profile_id') String? profileId,
   });
 
   $DeviceIdentityCopyWith<$Res> get identity;
@@ -93,9 +93,9 @@ class _$DeviceStateCopyWithImpl<$Res, $Val extends DeviceState>
     Object? identity = null,
     Object? deviceEnabled = null,
     Object? remapEnabled = null,
-    Object? profileId = freezed,
     Object? connectedAt = null,
     Object? updatedAt = null,
+    Object? profileId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -111,10 +111,6 @@ class _$DeviceStateCopyWithImpl<$Res, $Val extends DeviceState>
                 ? _value.remapEnabled
                 : remapEnabled // ignore: cast_nullable_to_non_nullable
                       as bool,
-            profileId: freezed == profileId
-                ? _value.profileId
-                : profileId // ignore: cast_nullable_to_non_nullable
-                      as String?,
             connectedAt: null == connectedAt
                 ? _value.connectedAt
                 : connectedAt // ignore: cast_nullable_to_non_nullable
@@ -123,6 +119,10 @@ class _$DeviceStateCopyWithImpl<$Res, $Val extends DeviceState>
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            profileId: freezed == profileId
+                ? _value.profileId
+                : profileId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -152,9 +152,9 @@ abstract class _$$DeviceStateImplCopyWith<$Res>
     DeviceIdentity identity,
     @JsonKey(name: 'device_enabled') bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') bool remapEnabled,
-    @JsonKey(name: 'profile_id') String? profileId,
     @JsonKey(name: 'connected_at') String connectedAt,
     @JsonKey(name: 'updated_at') String updatedAt,
+    @JsonKey(name: 'profile_id') String? profileId,
   });
 
   @override
@@ -178,9 +178,9 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
     Object? identity = null,
     Object? deviceEnabled = null,
     Object? remapEnabled = null,
-    Object? profileId = freezed,
     Object? connectedAt = null,
     Object? updatedAt = null,
+    Object? profileId = freezed,
   }) {
     return _then(
       _$DeviceStateImpl(
@@ -196,10 +196,6 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
             ? _value.remapEnabled
             : remapEnabled // ignore: cast_nullable_to_non_nullable
                   as bool,
-        profileId: freezed == profileId
-            ? _value.profileId
-            : profileId // ignore: cast_nullable_to_non_nullable
-                  as String?,
         connectedAt: null == connectedAt
             ? _value.connectedAt
             : connectedAt // ignore: cast_nullable_to_non_nullable
@@ -208,6 +204,10 @@ class __$$DeviceStateImplCopyWithImpl<$Res>
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        profileId: freezed == profileId
+            ? _value.profileId
+            : profileId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -220,9 +220,9 @@ class _$DeviceStateImpl extends _DeviceState {
     required this.identity,
     @JsonKey(name: 'device_enabled') required this.deviceEnabled,
     @JsonKey(name: 'remap_enabled') required this.remapEnabled,
-    @JsonKey(name: 'profile_id') this.profileId,
     @JsonKey(name: 'connected_at') required this.connectedAt,
     @JsonKey(name: 'updated_at') required this.updatedAt,
+    @JsonKey(name: 'profile_id') this.profileId,
   }) : super._();
 
   factory _$DeviceStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -244,11 +244,6 @@ class _$DeviceStateImpl extends _DeviceState {
   @JsonKey(name: 'remap_enabled')
   final bool remapEnabled;
 
-  /// Assigned profile ID (if any)
-  @override
-  @JsonKey(name: 'profile_id')
-  final String? profileId;
-
   /// Connection timestamp (ISO 8601)
   @override
   @JsonKey(name: 'connected_at')
@@ -259,9 +254,14 @@ class _$DeviceStateImpl extends _DeviceState {
   @JsonKey(name: 'updated_at')
   final String updatedAt;
 
+  /// Assigned profile ID (if any)
+  @override
+  @JsonKey(name: 'profile_id')
+  final String? profileId;
+
   @override
   String toString() {
-    return 'DeviceState(identity: $identity, deviceEnabled: $deviceEnabled, remapEnabled: $remapEnabled, profileId: $profileId, connectedAt: $connectedAt, updatedAt: $updatedAt)';
+    return 'DeviceState(identity: $identity, deviceEnabled: $deviceEnabled, remapEnabled: $remapEnabled, connectedAt: $connectedAt, updatedAt: $updatedAt, profileId: $profileId)';
   }
 
   @override
@@ -275,12 +275,12 @@ class _$DeviceStateImpl extends _DeviceState {
                 other.deviceEnabled == deviceEnabled) &&
             (identical(other.remapEnabled, remapEnabled) ||
                 other.remapEnabled == remapEnabled) &&
-            (identical(other.profileId, profileId) ||
-                other.profileId == profileId) &&
             (identical(other.connectedAt, connectedAt) ||
                 other.connectedAt == connectedAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.profileId, profileId) ||
+                other.profileId == profileId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -290,9 +290,9 @@ class _$DeviceStateImpl extends _DeviceState {
     identity,
     deviceEnabled,
     remapEnabled,
-    profileId,
     connectedAt,
     updatedAt,
+    profileId,
   );
 
   /// Create a copy of DeviceState
@@ -314,9 +314,9 @@ abstract class _DeviceState extends DeviceState {
     required final DeviceIdentity identity,
     @JsonKey(name: 'device_enabled') required final bool deviceEnabled,
     @JsonKey(name: 'remap_enabled') required final bool remapEnabled,
-    @JsonKey(name: 'profile_id') final String? profileId,
     @JsonKey(name: 'connected_at') required final String connectedAt,
     @JsonKey(name: 'updated_at') required final String updatedAt,
+    @JsonKey(name: 'profile_id') final String? profileId,
   }) = _$DeviceStateImpl;
   const _DeviceState._() : super._();
 
@@ -339,11 +339,6 @@ abstract class _DeviceState extends DeviceState {
   @JsonKey(name: 'remap_enabled')
   bool get remapEnabled;
 
-  /// Assigned profile ID (if any)
-  @override
-  @JsonKey(name: 'profile_id')
-  String? get profileId;
-
   /// Connection timestamp (ISO 8601)
   @override
   @JsonKey(name: 'connected_at')
@@ -353,6 +348,11 @@ abstract class _DeviceState extends DeviceState {
   @override
   @JsonKey(name: 'updated_at')
   String get updatedAt;
+
+  /// Assigned profile ID (if any)
+  @override
+  @JsonKey(name: 'profile_id')
+  String? get profileId;
 
   /// Create a copy of DeviceState
   /// with the given fields replaced by the non-null parameter values.

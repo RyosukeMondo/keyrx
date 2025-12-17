@@ -146,6 +146,8 @@ class DaemonMethods {
   static const engineStatus = 'engine.status';
   static const eventsSubscribe = 'events.subscribe';
   static const eventsUnsubscribe = 'events.unsubscribe';
+  static const discoveryStart = 'discovery.start';
+  static const discoveryStop = 'discovery.stop';
 }
 
 // Notification method names
@@ -153,6 +155,7 @@ class DaemonNotifications {
   static const eventInput = 'event.input';
   static const eventOutput = 'event.output';
   static const eventStateChange = 'event.state_change';
+  static const discovery = 'discovery.event';
 }
 
 /// Device info in responses.
@@ -237,6 +240,8 @@ class DaemonEvent with _$DaemonEvent {
   const factory DaemonEvent.output(OutputEvent event) = _DaemonOutputEvent;
   const factory DaemonEvent.stateChange(StateChangeEvent event) =
       _DaemonStateChangeEvent;
+  const factory DaemonEvent.discovery(DiscoveryCandidate candidate) =
+      _DaemonDiscoveryEvent;
 
   factory DaemonEvent.fromNotification(JsonRpcNotification notification) {
     final params = notification.params;
@@ -248,12 +253,28 @@ class DaemonEvent with _$DaemonEvent {
         return DaemonEvent.output(OutputEvent.fromJson(params));
       case DaemonNotifications.eventStateChange:
         return DaemonEvent.stateChange(StateChangeEvent.fromJson(params));
+      case DaemonNotifications.discovery:
+        return DaemonEvent.discovery(DiscoveryCandidate.fromJson(params));
       default:
         throw ArgumentError(
           'Unknown notification method: ${notification.method}',
         );
     }
   }
+}
+
+/// Discovery candidate event.
+@freezed
+class DiscoveryCandidate with _$DiscoveryCandidate {
+  const factory DiscoveryCandidate({
+    required String deviceId,
+    required int vendorId,
+    required int productId,
+    required String name,
+  }) = _DiscoveryCandidate;
+
+  factory DiscoveryCandidate.fromJson(Map<String, dynamic> json) =>
+      _$DiscoveryCandidateFromJson(json);
 }
 
 /// Error codes.

@@ -6,7 +6,7 @@ part of 'drag_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dragControllerHash() => r'f394d122e3d89e0bd09ae6879d36d3a3f8585ce3';
+String _$dragControllerHash() => r'03cf53c7f21b1bcc0cae5a7409ef9206a88f4ef8';
 
 /// Controller for managing drag state across the flow canvas.
 /// Tracks which node is being dragged and its current position.

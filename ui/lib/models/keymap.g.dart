@@ -30,8 +30,8 @@ Map<String, dynamic> _$$KeymapLayerImplToJson(_$KeymapLayerImpl instance) =>
 
 _$KeymapImpl _$$KeymapImplFromJson(Map<String, dynamic> json) => _$KeymapImpl(
   id: json['id'] as String,
-  name: json['name'] as String? ?? 'Untitled Keymap',
   virtualLayoutId: json['virtual_layout_id'] as String,
+  name: json['name'] as String? ?? 'Untitled Keymap',
   layers:
       (json['layers'] as List<dynamic>?)
           ?.map((e) => KeymapLayer.fromJson(e as Map<String, dynamic>))
@@ -47,8 +47,8 @@ _$KeymapImpl _$$KeymapImplFromJson(Map<String, dynamic> json) => _$KeymapImpl(
 Map<String, dynamic> _$$KeymapImplToJson(_$KeymapImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'name': instance.name,
       'virtual_layout_id': instance.virtualLayoutId,
+      'name': instance.name,
       'layers': instance.layers,
       'combos': instance.combos,
     };

@@ -23,8 +23,8 @@ JsonRpcRequest _$JsonRpcRequestFromJson(Map<String, dynamic> json) {
 mixin _$JsonRpcRequest {
   String get jsonrpc => throw _privateConstructorUsedError;
   String get method => throw _privateConstructorUsedError;
-  Map<String, dynamic>? get params => throw _privateConstructorUsedError;
   RequestId get id => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get params => throw _privateConstructorUsedError;
 
   /// Serializes this JsonRpcRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -46,8 +46,8 @@ abstract class $JsonRpcRequestCopyWith<$Res> {
   $Res call({
     String jsonrpc,
     String method,
-    Map<String, dynamic>? params,
     RequestId id,
+    Map<String, dynamic>? params,
   });
 }
 
@@ -68,8 +68,8 @@ class _$JsonRpcRequestCopyWithImpl<$Res, $Val extends JsonRpcRequest>
   $Res call({
     Object? jsonrpc = null,
     Object? method = null,
-    Object? params = freezed,
     Object? id = null,
+    Object? params = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -81,14 +81,14 @@ class _$JsonRpcRequestCopyWithImpl<$Res, $Val extends JsonRpcRequest>
                 ? _value.method
                 : method // ignore: cast_nullable_to_non_nullable
                       as String,
-            params: freezed == params
-                ? _value.params
-                : params // ignore: cast_nullable_to_non_nullable
-                      as Map<String, dynamic>?,
             id: null == id
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as RequestId,
+            params: freezed == params
+                ? _value.params
+                : params // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>?,
           )
           as $Val,
     );
@@ -107,8 +107,8 @@ abstract class _$$JsonRpcRequestImplCopyWith<$Res>
   $Res call({
     String jsonrpc,
     String method,
-    Map<String, dynamic>? params,
     RequestId id,
+    Map<String, dynamic>? params,
   });
 }
 
@@ -128,8 +128,8 @@ class __$$JsonRpcRequestImplCopyWithImpl<$Res>
   $Res call({
     Object? jsonrpc = null,
     Object? method = null,
-    Object? params = freezed,
     Object? id = null,
+    Object? params = freezed,
   }) {
     return _then(
       _$JsonRpcRequestImpl(
@@ -141,14 +141,14 @@ class __$$JsonRpcRequestImplCopyWithImpl<$Res>
             ? _value.method
             : method // ignore: cast_nullable_to_non_nullable
                   as String,
-        params: freezed == params
-            ? _value._params
-            : params // ignore: cast_nullable_to_non_nullable
-                  as Map<String, dynamic>?,
         id: null == id
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as RequestId,
+        params: freezed == params
+            ? _value._params
+            : params // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>?,
       ),
     );
   }
@@ -160,8 +160,8 @@ class _$JsonRpcRequestImpl implements _JsonRpcRequest {
   const _$JsonRpcRequestImpl({
     required this.jsonrpc,
     required this.method,
-    final Map<String, dynamic>? params,
     required this.id,
+    final Map<String, dynamic>? params,
   }) : _params = params;
 
   factory _$JsonRpcRequestImpl.fromJson(Map<String, dynamic> json) =>
@@ -171,6 +171,8 @@ class _$JsonRpcRequestImpl implements _JsonRpcRequest {
   final String jsonrpc;
   @override
   final String method;
+  @override
+  final RequestId id;
   final Map<String, dynamic>? _params;
   @override
   Map<String, dynamic>? get params {
@@ -182,11 +184,8 @@ class _$JsonRpcRequestImpl implements _JsonRpcRequest {
   }
 
   @override
-  final RequestId id;
-
-  @override
   String toString() {
-    return 'JsonRpcRequest(jsonrpc: $jsonrpc, method: $method, params: $params, id: $id)';
+    return 'JsonRpcRequest(jsonrpc: $jsonrpc, method: $method, id: $id, params: $params)';
   }
 
   @override
@@ -196,8 +195,8 @@ class _$JsonRpcRequestImpl implements _JsonRpcRequest {
             other is _$JsonRpcRequestImpl &&
             (identical(other.jsonrpc, jsonrpc) || other.jsonrpc == jsonrpc) &&
             (identical(other.method, method) || other.method == method) &&
-            const DeepCollectionEquality().equals(other._params, _params) &&
-            (identical(other.id, id) || other.id == id));
+            (identical(other.id, id) || other.id == id) &&
+            const DeepCollectionEquality().equals(other._params, _params));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -206,8 +205,8 @@ class _$JsonRpcRequestImpl implements _JsonRpcRequest {
     runtimeType,
     jsonrpc,
     method,
-    const DeepCollectionEquality().hash(_params),
     id,
+    const DeepCollectionEquality().hash(_params),
   );
 
   /// Create a copy of JsonRpcRequest
@@ -231,8 +230,8 @@ abstract class _JsonRpcRequest implements JsonRpcRequest {
   const factory _JsonRpcRequest({
     required final String jsonrpc,
     required final String method,
-    final Map<String, dynamic>? params,
     required final RequestId id,
+    final Map<String, dynamic>? params,
   }) = _$JsonRpcRequestImpl;
 
   factory _JsonRpcRequest.fromJson(Map<String, dynamic> json) =
@@ -243,9 +242,9 @@ abstract class _JsonRpcRequest implements JsonRpcRequest {
   @override
   String get method;
   @override
-  Map<String, dynamic>? get params;
-  @override
   RequestId get id;
+  @override
+  Map<String, dynamic>? get params;
 
   /// Create a copy of JsonRpcRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -2894,24 +2893,26 @@ abstract class _StateChangeEvent implements StateChangeEvent {
 
 /// @nodoc
 mixin _$DaemonEvent {
-  Object get event => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(InputEvent event) input,
     required TResult Function(OutputEvent event) output,
     required TResult Function(StateChangeEvent event) stateChange,
+    required TResult Function(DiscoveryCandidate candidate) discovery,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(InputEvent event)? input,
     TResult? Function(OutputEvent event)? output,
     TResult? Function(StateChangeEvent event)? stateChange,
+    TResult? Function(DiscoveryCandidate candidate)? discovery,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(InputEvent event)? input,
     TResult Function(OutputEvent event)? output,
     TResult Function(StateChangeEvent event)? stateChange,
+    TResult Function(DiscoveryCandidate candidate)? discovery,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -2919,18 +2920,21 @@ mixin _$DaemonEvent {
     required TResult Function(_DaemonInputEvent value) input,
     required TResult Function(_DaemonOutputEvent value) output,
     required TResult Function(_DaemonStateChangeEvent value) stateChange,
+    required TResult Function(_DaemonDiscoveryEvent value) discovery,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_DaemonInputEvent value)? input,
     TResult? Function(_DaemonOutputEvent value)? output,
     TResult? Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult? Function(_DaemonDiscoveryEvent value)? discovery,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_DaemonInputEvent value)? input,
     TResult Function(_DaemonOutputEvent value)? output,
     TResult Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult Function(_DaemonDiscoveryEvent value)? discovery,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
 }
@@ -3045,6 +3049,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     required TResult Function(InputEvent event) input,
     required TResult Function(OutputEvent event) output,
     required TResult Function(StateChangeEvent event) stateChange,
+    required TResult Function(DiscoveryCandidate candidate) discovery,
   }) {
     return input(event);
   }
@@ -3055,6 +3060,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     TResult? Function(InputEvent event)? input,
     TResult? Function(OutputEvent event)? output,
     TResult? Function(StateChangeEvent event)? stateChange,
+    TResult? Function(DiscoveryCandidate candidate)? discovery,
   }) {
     return input?.call(event);
   }
@@ -3065,6 +3071,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     TResult Function(InputEvent event)? input,
     TResult Function(OutputEvent event)? output,
     TResult Function(StateChangeEvent event)? stateChange,
+    TResult Function(DiscoveryCandidate candidate)? discovery,
     required TResult orElse(),
   }) {
     if (input != null) {
@@ -3079,6 +3086,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     required TResult Function(_DaemonInputEvent value) input,
     required TResult Function(_DaemonOutputEvent value) output,
     required TResult Function(_DaemonStateChangeEvent value) stateChange,
+    required TResult Function(_DaemonDiscoveryEvent value) discovery,
   }) {
     return input(this);
   }
@@ -3089,6 +3097,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     TResult? Function(_DaemonInputEvent value)? input,
     TResult? Function(_DaemonOutputEvent value)? output,
     TResult? Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult? Function(_DaemonDiscoveryEvent value)? discovery,
   }) {
     return input?.call(this);
   }
@@ -3099,6 +3108,7 @@ class _$DaemonInputEventImpl implements _DaemonInputEvent {
     TResult Function(_DaemonInputEvent value)? input,
     TResult Function(_DaemonOutputEvent value)? output,
     TResult Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult Function(_DaemonDiscoveryEvent value)? discovery,
     required TResult orElse(),
   }) {
     if (input != null) {
@@ -3112,7 +3122,6 @@ abstract class _DaemonInputEvent implements DaemonEvent {
   const factory _DaemonInputEvent(final InputEvent event) =
       _$DaemonInputEventImpl;
 
-  @override
   InputEvent get event;
 
   /// Create a copy of DaemonEvent
@@ -3210,6 +3219,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     required TResult Function(InputEvent event) input,
     required TResult Function(OutputEvent event) output,
     required TResult Function(StateChangeEvent event) stateChange,
+    required TResult Function(DiscoveryCandidate candidate) discovery,
   }) {
     return output(event);
   }
@@ -3220,6 +3230,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     TResult? Function(InputEvent event)? input,
     TResult? Function(OutputEvent event)? output,
     TResult? Function(StateChangeEvent event)? stateChange,
+    TResult? Function(DiscoveryCandidate candidate)? discovery,
   }) {
     return output?.call(event);
   }
@@ -3230,6 +3241,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     TResult Function(InputEvent event)? input,
     TResult Function(OutputEvent event)? output,
     TResult Function(StateChangeEvent event)? stateChange,
+    TResult Function(DiscoveryCandidate candidate)? discovery,
     required TResult orElse(),
   }) {
     if (output != null) {
@@ -3244,6 +3256,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     required TResult Function(_DaemonInputEvent value) input,
     required TResult Function(_DaemonOutputEvent value) output,
     required TResult Function(_DaemonStateChangeEvent value) stateChange,
+    required TResult Function(_DaemonDiscoveryEvent value) discovery,
   }) {
     return output(this);
   }
@@ -3254,6 +3267,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     TResult? Function(_DaemonInputEvent value)? input,
     TResult? Function(_DaemonOutputEvent value)? output,
     TResult? Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult? Function(_DaemonDiscoveryEvent value)? discovery,
   }) {
     return output?.call(this);
   }
@@ -3264,6 +3278,7 @@ class _$DaemonOutputEventImpl implements _DaemonOutputEvent {
     TResult Function(_DaemonInputEvent value)? input,
     TResult Function(_DaemonOutputEvent value)? output,
     TResult Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult Function(_DaemonDiscoveryEvent value)? discovery,
     required TResult orElse(),
   }) {
     if (output != null) {
@@ -3277,7 +3292,6 @@ abstract class _DaemonOutputEvent implements DaemonEvent {
   const factory _DaemonOutputEvent(final OutputEvent event) =
       _$DaemonOutputEventImpl;
 
-  @override
   OutputEvent get event;
 
   /// Create a copy of DaemonEvent
@@ -3376,6 +3390,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     required TResult Function(InputEvent event) input,
     required TResult Function(OutputEvent event) output,
     required TResult Function(StateChangeEvent event) stateChange,
+    required TResult Function(DiscoveryCandidate candidate) discovery,
   }) {
     return stateChange(event);
   }
@@ -3386,6 +3401,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     TResult? Function(InputEvent event)? input,
     TResult? Function(OutputEvent event)? output,
     TResult? Function(StateChangeEvent event)? stateChange,
+    TResult? Function(DiscoveryCandidate candidate)? discovery,
   }) {
     return stateChange?.call(event);
   }
@@ -3396,6 +3412,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     TResult Function(InputEvent event)? input,
     TResult Function(OutputEvent event)? output,
     TResult Function(StateChangeEvent event)? stateChange,
+    TResult Function(DiscoveryCandidate candidate)? discovery,
     required TResult orElse(),
   }) {
     if (stateChange != null) {
@@ -3410,6 +3427,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     required TResult Function(_DaemonInputEvent value) input,
     required TResult Function(_DaemonOutputEvent value) output,
     required TResult Function(_DaemonStateChangeEvent value) stateChange,
+    required TResult Function(_DaemonDiscoveryEvent value) discovery,
   }) {
     return stateChange(this);
   }
@@ -3420,6 +3438,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     TResult? Function(_DaemonInputEvent value)? input,
     TResult? Function(_DaemonOutputEvent value)? output,
     TResult? Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult? Function(_DaemonDiscoveryEvent value)? discovery,
   }) {
     return stateChange?.call(this);
   }
@@ -3430,6 +3449,7 @@ class _$DaemonStateChangeEventImpl implements _DaemonStateChangeEvent {
     TResult Function(_DaemonInputEvent value)? input,
     TResult Function(_DaemonOutputEvent value)? output,
     TResult Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult Function(_DaemonDiscoveryEvent value)? discovery,
     required TResult orElse(),
   }) {
     if (stateChange != null) {
@@ -3443,7 +3463,6 @@ abstract class _DaemonStateChangeEvent implements DaemonEvent {
   const factory _DaemonStateChangeEvent(final StateChangeEvent event) =
       _$DaemonStateChangeEventImpl;
 
-  @override
   StateChangeEvent get event;
 
   /// Create a copy of DaemonEvent
@@ -3451,4 +3470,396 @@ abstract class _DaemonStateChangeEvent implements DaemonEvent {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DaemonStateChangeEventImplCopyWith<_$DaemonStateChangeEventImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$DaemonDiscoveryEventImplCopyWith<$Res> {
+  factory _$$DaemonDiscoveryEventImplCopyWith(
+    _$DaemonDiscoveryEventImpl value,
+    $Res Function(_$DaemonDiscoveryEventImpl) then,
+  ) = __$$DaemonDiscoveryEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({DiscoveryCandidate candidate});
+
+  $DiscoveryCandidateCopyWith<$Res> get candidate;
+}
+
+/// @nodoc
+class __$$DaemonDiscoveryEventImplCopyWithImpl<$Res>
+    extends _$DaemonEventCopyWithImpl<$Res, _$DaemonDiscoveryEventImpl>
+    implements _$$DaemonDiscoveryEventImplCopyWith<$Res> {
+  __$$DaemonDiscoveryEventImplCopyWithImpl(
+    _$DaemonDiscoveryEventImpl _value,
+    $Res Function(_$DaemonDiscoveryEventImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of DaemonEvent
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? candidate = null}) {
+    return _then(
+      _$DaemonDiscoveryEventImpl(
+        null == candidate
+            ? _value.candidate
+            : candidate // ignore: cast_nullable_to_non_nullable
+                  as DiscoveryCandidate,
+      ),
+    );
+  }
+
+  /// Create a copy of DaemonEvent
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $DiscoveryCandidateCopyWith<$Res> get candidate {
+    return $DiscoveryCandidateCopyWith<$Res>(_value.candidate, (value) {
+      return _then(_value.copyWith(candidate: value));
+    });
+  }
+}
+
+/// @nodoc
+
+class _$DaemonDiscoveryEventImpl implements _DaemonDiscoveryEvent {
+  const _$DaemonDiscoveryEventImpl(this.candidate);
+
+  @override
+  final DiscoveryCandidate candidate;
+
+  @override
+  String toString() {
+    return 'DaemonEvent.discovery(candidate: $candidate)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DaemonDiscoveryEventImpl &&
+            (identical(other.candidate, candidate) ||
+                other.candidate == candidate));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, candidate);
+
+  /// Create a copy of DaemonEvent
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DaemonDiscoveryEventImplCopyWith<_$DaemonDiscoveryEventImpl>
+  get copyWith =>
+      __$$DaemonDiscoveryEventImplCopyWithImpl<_$DaemonDiscoveryEventImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(InputEvent event) input,
+    required TResult Function(OutputEvent event) output,
+    required TResult Function(StateChangeEvent event) stateChange,
+    required TResult Function(DiscoveryCandidate candidate) discovery,
+  }) {
+    return discovery(candidate);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(InputEvent event)? input,
+    TResult? Function(OutputEvent event)? output,
+    TResult? Function(StateChangeEvent event)? stateChange,
+    TResult? Function(DiscoveryCandidate candidate)? discovery,
+  }) {
+    return discovery?.call(candidate);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(InputEvent event)? input,
+    TResult Function(OutputEvent event)? output,
+    TResult Function(StateChangeEvent event)? stateChange,
+    TResult Function(DiscoveryCandidate candidate)? discovery,
+    required TResult orElse(),
+  }) {
+    if (discovery != null) {
+      return discovery(candidate);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_DaemonInputEvent value) input,
+    required TResult Function(_DaemonOutputEvent value) output,
+    required TResult Function(_DaemonStateChangeEvent value) stateChange,
+    required TResult Function(_DaemonDiscoveryEvent value) discovery,
+  }) {
+    return discovery(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_DaemonInputEvent value)? input,
+    TResult? Function(_DaemonOutputEvent value)? output,
+    TResult? Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult? Function(_DaemonDiscoveryEvent value)? discovery,
+  }) {
+    return discovery?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_DaemonInputEvent value)? input,
+    TResult Function(_DaemonOutputEvent value)? output,
+    TResult Function(_DaemonStateChangeEvent value)? stateChange,
+    TResult Function(_DaemonDiscoveryEvent value)? discovery,
+    required TResult orElse(),
+  }) {
+    if (discovery != null) {
+      return discovery(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _DaemonDiscoveryEvent implements DaemonEvent {
+  const factory _DaemonDiscoveryEvent(final DiscoveryCandidate candidate) =
+      _$DaemonDiscoveryEventImpl;
+
+  DiscoveryCandidate get candidate;
+
+  /// Create a copy of DaemonEvent
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$DaemonDiscoveryEventImplCopyWith<_$DaemonDiscoveryEventImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
+DiscoveryCandidate _$DiscoveryCandidateFromJson(Map<String, dynamic> json) {
+  return _DiscoveryCandidate.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DiscoveryCandidate {
+  String get deviceId => throw _privateConstructorUsedError;
+  int get vendorId => throw _privateConstructorUsedError;
+  int get productId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+
+  /// Serializes this DiscoveryCandidate to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of DiscoveryCandidate
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $DiscoveryCandidateCopyWith<DiscoveryCandidate> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DiscoveryCandidateCopyWith<$Res> {
+  factory $DiscoveryCandidateCopyWith(
+    DiscoveryCandidate value,
+    $Res Function(DiscoveryCandidate) then,
+  ) = _$DiscoveryCandidateCopyWithImpl<$Res, DiscoveryCandidate>;
+  @useResult
+  $Res call({String deviceId, int vendorId, int productId, String name});
+}
+
+/// @nodoc
+class _$DiscoveryCandidateCopyWithImpl<$Res, $Val extends DiscoveryCandidate>
+    implements $DiscoveryCandidateCopyWith<$Res> {
+  _$DiscoveryCandidateCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of DiscoveryCandidate
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? deviceId = null,
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? name = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            deviceId: null == deviceId
+                ? _value.deviceId
+                : deviceId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            vendorId: null == vendorId
+                ? _value.vendorId
+                : vendorId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            productId: null == productId
+                ? _value.productId
+                : productId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$DiscoveryCandidateImplCopyWith<$Res>
+    implements $DiscoveryCandidateCopyWith<$Res> {
+  factory _$$DiscoveryCandidateImplCopyWith(
+    _$DiscoveryCandidateImpl value,
+    $Res Function(_$DiscoveryCandidateImpl) then,
+  ) = __$$DiscoveryCandidateImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String deviceId, int vendorId, int productId, String name});
+}
+
+/// @nodoc
+class __$$DiscoveryCandidateImplCopyWithImpl<$Res>
+    extends _$DiscoveryCandidateCopyWithImpl<$Res, _$DiscoveryCandidateImpl>
+    implements _$$DiscoveryCandidateImplCopyWith<$Res> {
+  __$$DiscoveryCandidateImplCopyWithImpl(
+    _$DiscoveryCandidateImpl _value,
+    $Res Function(_$DiscoveryCandidateImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of DiscoveryCandidate
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? deviceId = null,
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? name = null,
+  }) {
+    return _then(
+      _$DiscoveryCandidateImpl(
+        deviceId: null == deviceId
+            ? _value.deviceId
+            : deviceId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        vendorId: null == vendorId
+            ? _value.vendorId
+            : vendorId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        productId: null == productId
+            ? _value.productId
+            : productId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$DiscoveryCandidateImpl implements _DiscoveryCandidate {
+  const _$DiscoveryCandidateImpl({
+    required this.deviceId,
+    required this.vendorId,
+    required this.productId,
+    required this.name,
+  });
+
+  factory _$DiscoveryCandidateImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DiscoveryCandidateImplFromJson(json);
+
+  @override
+  final String deviceId;
+  @override
+  final int vendorId;
+  @override
+  final int productId;
+  @override
+  final String name;
+
+  @override
+  String toString() {
+    return 'DiscoveryCandidate(deviceId: $deviceId, vendorId: $vendorId, productId: $productId, name: $name)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DiscoveryCandidateImpl &&
+            (identical(other.deviceId, deviceId) ||
+                other.deviceId == deviceId) &&
+            (identical(other.vendorId, vendorId) ||
+                other.vendorId == vendorId) &&
+            (identical(other.productId, productId) ||
+                other.productId == productId) &&
+            (identical(other.name, name) || other.name == name));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, deviceId, vendorId, productId, name);
+
+  /// Create a copy of DiscoveryCandidate
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DiscoveryCandidateImplCopyWith<_$DiscoveryCandidateImpl> get copyWith =>
+      __$$DiscoveryCandidateImplCopyWithImpl<_$DiscoveryCandidateImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DiscoveryCandidateImplToJson(this);
+  }
+}
+
+abstract class _DiscoveryCandidate implements DiscoveryCandidate {
+  const factory _DiscoveryCandidate({
+    required final String deviceId,
+    required final int vendorId,
+    required final int productId,
+    required final String name,
+  }) = _$DiscoveryCandidateImpl;
+
+  factory _DiscoveryCandidate.fromJson(Map<String, dynamic> json) =
+      _$DiscoveryCandidateImpl.fromJson;
+
+  @override
+  String get deviceId;
+  @override
+  int get vendorId;
+  @override
+  int get productId;
+  @override
+  String get name;
+
+  /// Create a copy of DiscoveryCandidate
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$DiscoveryCandidateImplCopyWith<_$DiscoveryCandidateImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }

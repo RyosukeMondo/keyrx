@@ -1141,11 +1141,6 @@ mixin _$Profile {
   @JsonKey(name: 'layout_type')
   LayoutType get layoutType => throw _privateConstructorUsedError;
 
-  /// Key mappings: physical position key → action
-  /// Only contains entries for remapped keys (sparse map)
-  /// Serialized as {"row,col": action} in JSON
-  Map<String, KeyAction> get mappings => throw _privateConstructorUsedError;
-
   /// Creation timestamp (ISO 8601)
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
@@ -1153,6 +1148,11 @@ mixin _$Profile {
   /// Last modification timestamp (ISO 8601)
   @JsonKey(name: 'updated_at')
   String get updatedAt => throw _privateConstructorUsedError;
+
+  /// Key mappings: physical position key → action
+  /// Only contains entries for remapped keys (sparse map)
+  /// Serialized as {"row,col": action} in JSON
+  Map<String, KeyAction> get mappings => throw _privateConstructorUsedError;
 
   /// Serializes this Profile to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1172,9 +1172,9 @@ abstract class $ProfileCopyWith<$Res> {
     String id,
     String name,
     @JsonKey(name: 'layout_type') LayoutType layoutType,
-    Map<String, KeyAction> mappings,
     @JsonKey(name: 'created_at') String createdAt,
     @JsonKey(name: 'updated_at') String updatedAt,
+    Map<String, KeyAction> mappings,
   });
 }
 
@@ -1196,9 +1196,9 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
     Object? id = null,
     Object? name = null,
     Object? layoutType = null,
-    Object? mappings = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? mappings = null,
   }) {
     return _then(
       _value.copyWith(
@@ -1214,10 +1214,6 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.layoutType
                 : layoutType // ignore: cast_nullable_to_non_nullable
                       as LayoutType,
-            mappings: null == mappings
-                ? _value.mappings
-                : mappings // ignore: cast_nullable_to_non_nullable
-                      as Map<String, KeyAction>,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1226,6 +1222,10 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.updatedAt
                 : updatedAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            mappings: null == mappings
+                ? _value.mappings
+                : mappings // ignore: cast_nullable_to_non_nullable
+                      as Map<String, KeyAction>,
           )
           as $Val,
     );
@@ -1244,9 +1244,9 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
     String id,
     String name,
     @JsonKey(name: 'layout_type') LayoutType layoutType,
-    Map<String, KeyAction> mappings,
     @JsonKey(name: 'created_at') String createdAt,
     @JsonKey(name: 'updated_at') String updatedAt,
+    Map<String, KeyAction> mappings,
   });
 }
 
@@ -1267,9 +1267,9 @@ class __$$ProfileImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? layoutType = null,
-    Object? mappings = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? mappings = null,
   }) {
     return _then(
       _$ProfileImpl(
@@ -1285,10 +1285,6 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.layoutType
             : layoutType // ignore: cast_nullable_to_non_nullable
                   as LayoutType,
-        mappings: null == mappings
-            ? _value._mappings
-            : mappings // ignore: cast_nullable_to_non_nullable
-                  as Map<String, KeyAction>,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1297,6 +1293,10 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.updatedAt
             : updatedAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        mappings: null == mappings
+            ? _value._mappings
+            : mappings // ignore: cast_nullable_to_non_nullable
+                  as Map<String, KeyAction>,
       ),
     );
   }
@@ -1309,9 +1309,9 @@ class _$ProfileImpl extends _Profile {
     required this.id,
     required this.name,
     @JsonKey(name: 'layout_type') required this.layoutType,
-    final Map<String, KeyAction> mappings = const {},
     @JsonKey(name: 'created_at') required this.createdAt,
     @JsonKey(name: 'updated_at') required this.updatedAt,
+    final Map<String, KeyAction> mappings = const {},
   }) : _mappings = mappings,
        super._();
 
@@ -1331,6 +1331,16 @@ class _$ProfileImpl extends _Profile {
   @JsonKey(name: 'layout_type')
   final LayoutType layoutType;
 
+  /// Creation timestamp (ISO 8601)
+  @override
+  @JsonKey(name: 'created_at')
+  final String createdAt;
+
+  /// Last modification timestamp (ISO 8601)
+  @override
+  @JsonKey(name: 'updated_at')
+  final String updatedAt;
+
   /// Key mappings: physical position key → action
   /// Only contains entries for remapped keys (sparse map)
   /// Serialized as {"row,col": action} in JSON
@@ -1347,19 +1357,9 @@ class _$ProfileImpl extends _Profile {
     return EqualUnmodifiableMapView(_mappings);
   }
 
-  /// Creation timestamp (ISO 8601)
-  @override
-  @JsonKey(name: 'created_at')
-  final String createdAt;
-
-  /// Last modification timestamp (ISO 8601)
-  @override
-  @JsonKey(name: 'updated_at')
-  final String updatedAt;
-
   @override
   String toString() {
-    return 'Profile(id: $id, name: $name, layoutType: $layoutType, mappings: $mappings, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Profile(id: $id, name: $name, layoutType: $layoutType, createdAt: $createdAt, updatedAt: $updatedAt, mappings: $mappings)';
   }
 
   @override
@@ -1371,11 +1371,11 @@ class _$ProfileImpl extends _Profile {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.layoutType, layoutType) ||
                 other.layoutType == layoutType) &&
-            const DeepCollectionEquality().equals(other._mappings, _mappings) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality().equals(other._mappings, _mappings));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1385,9 +1385,9 @@ class _$ProfileImpl extends _Profile {
     id,
     name,
     layoutType,
-    const DeepCollectionEquality().hash(_mappings),
     createdAt,
     updatedAt,
+    const DeepCollectionEquality().hash(_mappings),
   );
 
   /// Create a copy of Profile
@@ -1409,9 +1409,9 @@ abstract class _Profile extends Profile {
     required final String id,
     required final String name,
     @JsonKey(name: 'layout_type') required final LayoutType layoutType,
-    final Map<String, KeyAction> mappings,
     @JsonKey(name: 'created_at') required final String createdAt,
     @JsonKey(name: 'updated_at') required final String updatedAt,
+    final Map<String, KeyAction> mappings,
   }) = _$ProfileImpl;
   const _Profile._() : super._();
 
@@ -1430,12 +1430,6 @@ abstract class _Profile extends Profile {
   @JsonKey(name: 'layout_type')
   LayoutType get layoutType;
 
-  /// Key mappings: physical position key → action
-  /// Only contains entries for remapped keys (sparse map)
-  /// Serialized as {"row,col": action} in JSON
-  @override
-  Map<String, KeyAction> get mappings;
-
   /// Creation timestamp (ISO 8601)
   @override
   @JsonKey(name: 'created_at')
@@ -1445,6 +1439,12 @@ abstract class _Profile extends Profile {
   @override
   @JsonKey(name: 'updated_at')
   String get updatedAt;
+
+  /// Key mappings: physical position key → action
+  /// Only contains entries for remapped keys (sparse map)
+  /// Serialized as {"row,col": action} in JSON
+  @override
+  Map<String, KeyAction> get mappings;
 
   /// Create a copy of Profile
   /// with the given fields replaced by the non-null parameter values.

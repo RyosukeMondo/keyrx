@@ -26,11 +26,11 @@ _$HardwareProfileImpl _$$HardwareProfileImplFromJson(
   Map<String, dynamic> json,
 ) => _$HardwareProfileImpl(
   id: json['id'] as String,
+  virtualLayoutId: json['virtual_layout_id'] as String,
   vendorId: (json['vendor_id'] as num?)?.toInt() ?? 0,
   productId: (json['product_id'] as num?)?.toInt() ?? 0,
   serialNumber: json['serial_number'] as String?,
   name: json['name'] as String?,
-  virtualLayoutId: json['virtual_layout_id'] as String,
   wiring:
       (json['wiring'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(int.parse(k), e as String),
@@ -42,10 +42,10 @@ Map<String, dynamic> _$$HardwareProfileImplToJson(
   _$HardwareProfileImpl instance,
 ) => <String, dynamic>{
   'id': instance.id,
+  'virtual_layout_id': instance.virtualLayoutId,
   'vendor_id': instance.vendorId,
   'product_id': instance.productId,
   'serial_number': instance.serialNumber,
   'name': instance.name,
-  'virtual_layout_id': instance.virtualLayoutId,
   'wiring': instance.wiring.map((k, e) => MapEntry(k.toString(), e)),
 };

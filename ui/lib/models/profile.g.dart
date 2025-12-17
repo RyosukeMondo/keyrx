@@ -65,14 +65,14 @@ _$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       layoutType: $enumDecode(_$LayoutTypeEnumMap, json['layout_type']),
+      createdAt: json['created_at'] as String,
+      updatedAt: json['updated_at'] as String,
       mappings:
           (json['mappings'] as Map<String, dynamic>?)?.map(
             (k, e) =>
                 MapEntry(k, KeyAction.fromJson(e as Map<String, dynamic>)),
           ) ??
           const {},
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
     );
 
 Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
@@ -80,9 +80,9 @@ Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'layout_type': _$LayoutTypeEnumMap[instance.layoutType]!,
-      'mappings': instance.mappings,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
+      'mappings': instance.mappings,
     };
 
 const _$LayoutTypeEnumMap = {

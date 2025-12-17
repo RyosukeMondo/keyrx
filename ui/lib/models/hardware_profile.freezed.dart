@@ -237,6 +237,8 @@ HardwareProfile _$HardwareProfileFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$HardwareProfile {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'virtual_layout_id')
+  String get virtualLayoutId => throw _privateConstructorUsedError;
   @JsonKey(name: 'vendor_id')
   int get vendorId => throw _privateConstructorUsedError;
   @JsonKey(name: 'product_id')
@@ -244,8 +246,6 @@ mixin _$HardwareProfile {
   @JsonKey(name: 'serial_number')
   String? get serialNumber => throw _privateConstructorUsedError;
   String? get name => throw _privateConstructorUsedError;
-  @JsonKey(name: 'virtual_layout_id')
-  String get virtualLayoutId => throw _privateConstructorUsedError;
   Map<int, String> get wiring => throw _privateConstructorUsedError;
 
   /// Serializes this HardwareProfile to a JSON map.
@@ -267,11 +267,11 @@ abstract class $HardwareProfileCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
+    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     @JsonKey(name: 'vendor_id') int vendorId,
     @JsonKey(name: 'product_id') int productId,
     @JsonKey(name: 'serial_number') String? serialNumber,
     String? name,
-    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     Map<int, String> wiring,
   });
 }
@@ -292,11 +292,11 @@ class _$HardwareProfileCopyWithImpl<$Res, $Val extends HardwareProfile>
   @override
   $Res call({
     Object? id = null,
+    Object? virtualLayoutId = null,
     Object? vendorId = null,
     Object? productId = null,
     Object? serialNumber = freezed,
     Object? name = freezed,
-    Object? virtualLayoutId = null,
     Object? wiring = null,
   }) {
     return _then(
@@ -304,6 +304,10 @@ class _$HardwareProfileCopyWithImpl<$Res, $Val extends HardwareProfile>
             id: null == id
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            virtualLayoutId: null == virtualLayoutId
+                ? _value.virtualLayoutId
+                : virtualLayoutId // ignore: cast_nullable_to_non_nullable
                       as String,
             vendorId: null == vendorId
                 ? _value.vendorId
@@ -321,10 +325,6 @@ class _$HardwareProfileCopyWithImpl<$Res, $Val extends HardwareProfile>
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
                       as String?,
-            virtualLayoutId: null == virtualLayoutId
-                ? _value.virtualLayoutId
-                : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                      as String,
             wiring: null == wiring
                 ? _value.wiring
                 : wiring // ignore: cast_nullable_to_non_nullable
@@ -346,11 +346,11 @@ abstract class _$$HardwareProfileImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
+    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     @JsonKey(name: 'vendor_id') int vendorId,
     @JsonKey(name: 'product_id') int productId,
     @JsonKey(name: 'serial_number') String? serialNumber,
     String? name,
-    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
     Map<int, String> wiring,
   });
 }
@@ -370,11 +370,11 @@ class __$$HardwareProfileImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? virtualLayoutId = null,
     Object? vendorId = null,
     Object? productId = null,
     Object? serialNumber = freezed,
     Object? name = freezed,
-    Object? virtualLayoutId = null,
     Object? wiring = null,
   }) {
     return _then(
@@ -382,6 +382,10 @@ class __$$HardwareProfileImplCopyWithImpl<$Res>
         id: null == id
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        virtualLayoutId: null == virtualLayoutId
+            ? _value.virtualLayoutId
+            : virtualLayoutId // ignore: cast_nullable_to_non_nullable
                   as String,
         vendorId: null == vendorId
             ? _value.vendorId
@@ -399,10 +403,6 @@ class __$$HardwareProfileImplCopyWithImpl<$Res>
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
                   as String?,
-        virtualLayoutId: null == virtualLayoutId
-            ? _value.virtualLayoutId
-            : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-                  as String,
         wiring: null == wiring
             ? _value._wiring
             : wiring // ignore: cast_nullable_to_non_nullable
@@ -417,11 +417,11 @@ class __$$HardwareProfileImplCopyWithImpl<$Res>
 class _$HardwareProfileImpl extends _HardwareProfile {
   const _$HardwareProfileImpl({
     required this.id,
+    @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
     @JsonKey(name: 'vendor_id') this.vendorId = 0,
     @JsonKey(name: 'product_id') this.productId = 0,
     @JsonKey(name: 'serial_number') this.serialNumber,
     this.name,
-    @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
     final Map<int, String> wiring = const <int, VirtualKeyId>{},
   }) : _wiring = wiring,
        super._();
@@ -431,6 +431,9 @@ class _$HardwareProfileImpl extends _HardwareProfile {
 
   @override
   final String id;
+  @override
+  @JsonKey(name: 'virtual_layout_id')
+  final String virtualLayoutId;
   @override
   @JsonKey(name: 'vendor_id')
   final int vendorId;
@@ -442,9 +445,6 @@ class _$HardwareProfileImpl extends _HardwareProfile {
   final String? serialNumber;
   @override
   final String? name;
-  @override
-  @JsonKey(name: 'virtual_layout_id')
-  final String virtualLayoutId;
   final Map<int, String> _wiring;
   @override
   @JsonKey()
@@ -456,7 +456,7 @@ class _$HardwareProfileImpl extends _HardwareProfile {
 
   @override
   String toString() {
-    return 'HardwareProfile(id: $id, vendorId: $vendorId, productId: $productId, serialNumber: $serialNumber, name: $name, virtualLayoutId: $virtualLayoutId, wiring: $wiring)';
+    return 'HardwareProfile(id: $id, virtualLayoutId: $virtualLayoutId, vendorId: $vendorId, productId: $productId, serialNumber: $serialNumber, name: $name, wiring: $wiring)';
   }
 
   @override
@@ -465,6 +465,8 @@ class _$HardwareProfileImpl extends _HardwareProfile {
         (other.runtimeType == runtimeType &&
             other is _$HardwareProfileImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.virtualLayoutId, virtualLayoutId) ||
+                other.virtualLayoutId == virtualLayoutId) &&
             (identical(other.vendorId, vendorId) ||
                 other.vendorId == vendorId) &&
             (identical(other.productId, productId) ||
@@ -472,8 +474,6 @@ class _$HardwareProfileImpl extends _HardwareProfile {
             (identical(other.serialNumber, serialNumber) ||
                 other.serialNumber == serialNumber) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.virtualLayoutId, virtualLayoutId) ||
-                other.virtualLayoutId == virtualLayoutId) &&
             const DeepCollectionEquality().equals(other._wiring, _wiring));
   }
 
@@ -482,11 +482,11 @@ class _$HardwareProfileImpl extends _HardwareProfile {
   int get hashCode => Object.hash(
     runtimeType,
     id,
+    virtualLayoutId,
     vendorId,
     productId,
     serialNumber,
     name,
-    virtualLayoutId,
     const DeepCollectionEquality().hash(_wiring),
   );
 
@@ -510,11 +510,11 @@ class _$HardwareProfileImpl extends _HardwareProfile {
 abstract class _HardwareProfile extends HardwareProfile {
   const factory _HardwareProfile({
     required final String id,
+    @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
     @JsonKey(name: 'vendor_id') final int vendorId,
     @JsonKey(name: 'product_id') final int productId,
     @JsonKey(name: 'serial_number') final String? serialNumber,
     final String? name,
-    @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
     final Map<int, String> wiring,
   }) = _$HardwareProfileImpl;
   const _HardwareProfile._() : super._();
@@ -524,6 +524,9 @@ abstract class _HardwareProfile extends HardwareProfile {
 
   @override
   String get id;
+  @override
+  @JsonKey(name: 'virtual_layout_id')
+  String get virtualLayoutId;
   @override
   @JsonKey(name: 'vendor_id')
   int get vendorId;
@@ -535,9 +538,6 @@ abstract class _HardwareProfile extends HardwareProfile {
   String? get serialNumber;
   @override
   String? get name;
-  @override
-  @JsonKey(name: 'virtual_layout_id')
-  String get virtualLayoutId;
   @override
   Map<int, String> get wiring;
 

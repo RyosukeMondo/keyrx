@@ -6,7 +6,7 @@ part of 'analytics_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sharedPreferencesHash() => r'd22b545aefe95500327f9dce52c645d746349271';
+String _$sharedPreferencesHash() => r'969a9a58addd687a4c1432a3858b65fccd47c4a4';
 
 /// Provider for SharedPreferences instance.
 ///
@@ -106,7 +106,7 @@ final featureFlagServiceNotifierProvider =
     );
 
 typedef _$FeatureFlagServiceNotifier = AsyncNotifier<FeatureFlagService>;
-String _$analyticsTrackerHash() => r'b345e4e36714aa72a11df15cc99d60a1f33b1c15';
+String _$analyticsTrackerHash() => r'61e2e5497253e37a65316850ca0a4b4ea62740c5';
 
 /// Provider for tracking analytics (only if enabled).
 ///

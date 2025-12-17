@@ -29,6 +29,9 @@ mixin _$FacadeState {
   /// Current device discovery status.
   DiscoveryStatus get discovery => throw _privateConstructorUsedError;
 
+  /// Timestamp of this state snapshot.
+  DateTime get timestamp => throw _privateConstructorUsedError;
+
   /// Path to the currently loaded script, if any.
   String? get scriptPath => throw _privateConstructorUsedError;
 
@@ -46,9 +49,6 @@ mixin _$FacadeState {
 
   /// Last error message, if any operation failed.
   String? get lastError => throw _privateConstructorUsedError;
-
-  /// Timestamp of this state snapshot.
-  DateTime get timestamp => throw _privateConstructorUsedError;
 
   /// Create a copy of FacadeState
   /// with the given fields replaced by the non-null parameter values.
@@ -69,13 +69,13 @@ abstract class $FacadeStateCopyWith<$Res> {
     DeviceStatus device,
     ValidationStatus validation,
     DiscoveryStatus discovery,
+    DateTime timestamp,
     String? scriptPath,
     String? selectedDevicePath,
     int? validationErrorCount,
     int? validationWarningCount,
     int? discoveredDeviceCount,
     String? lastError,
-    DateTime timestamp,
   });
 }
 
@@ -98,13 +98,13 @@ class _$FacadeStateCopyWithImpl<$Res, $Val extends FacadeState>
     Object? device = null,
     Object? validation = null,
     Object? discovery = null,
+    Object? timestamp = null,
     Object? scriptPath = freezed,
     Object? selectedDevicePath = freezed,
     Object? validationErrorCount = freezed,
     Object? validationWarningCount = freezed,
     Object? discoveredDeviceCount = freezed,
     Object? lastError = freezed,
-    Object? timestamp = null,
   }) {
     return _then(
       _value.copyWith(
@@ -124,6 +124,10 @@ class _$FacadeStateCopyWithImpl<$Res, $Val extends FacadeState>
                 ? _value.discovery
                 : discovery // ignore: cast_nullable_to_non_nullable
                       as DiscoveryStatus,
+            timestamp: null == timestamp
+                ? _value.timestamp
+                : timestamp // ignore: cast_nullable_to_non_nullable
+                      as DateTime,
             scriptPath: freezed == scriptPath
                 ? _value.scriptPath
                 : scriptPath // ignore: cast_nullable_to_non_nullable
@@ -148,10 +152,6 @@ class _$FacadeStateCopyWithImpl<$Res, $Val extends FacadeState>
                 ? _value.lastError
                 : lastError // ignore: cast_nullable_to_non_nullable
                       as String?,
-            timestamp: null == timestamp
-                ? _value.timestamp
-                : timestamp // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
           )
           as $Val,
     );
@@ -172,13 +172,13 @@ abstract class _$$FacadeStateImplCopyWith<$Res>
     DeviceStatus device,
     ValidationStatus validation,
     DiscoveryStatus discovery,
+    DateTime timestamp,
     String? scriptPath,
     String? selectedDevicePath,
     int? validationErrorCount,
     int? validationWarningCount,
     int? discoveredDeviceCount,
     String? lastError,
-    DateTime timestamp,
   });
 }
 
@@ -200,13 +200,13 @@ class __$$FacadeStateImplCopyWithImpl<$Res>
     Object? device = null,
     Object? validation = null,
     Object? discovery = null,
+    Object? timestamp = null,
     Object? scriptPath = freezed,
     Object? selectedDevicePath = freezed,
     Object? validationErrorCount = freezed,
     Object? validationWarningCount = freezed,
     Object? discoveredDeviceCount = freezed,
     Object? lastError = freezed,
-    Object? timestamp = null,
   }) {
     return _then(
       _$FacadeStateImpl(
@@ -226,6 +226,10 @@ class __$$FacadeStateImplCopyWithImpl<$Res>
             ? _value.discovery
             : discovery // ignore: cast_nullable_to_non_nullable
                   as DiscoveryStatus,
+        timestamp: null == timestamp
+            ? _value.timestamp
+            : timestamp // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
         scriptPath: freezed == scriptPath
             ? _value.scriptPath
             : scriptPath // ignore: cast_nullable_to_non_nullable
@@ -250,10 +254,6 @@ class __$$FacadeStateImplCopyWithImpl<$Res>
             ? _value.lastError
             : lastError // ignore: cast_nullable_to_non_nullable
                   as String?,
-        timestamp: null == timestamp
-            ? _value.timestamp
-            : timestamp // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
       ),
     );
   }
@@ -267,13 +267,13 @@ class _$FacadeStateImpl extends _FacadeState {
     required this.device,
     required this.validation,
     required this.discovery,
+    required this.timestamp,
     this.scriptPath,
     this.selectedDevicePath,
     this.validationErrorCount,
     this.validationWarningCount,
     this.discoveredDeviceCount,
     this.lastError,
-    required this.timestamp,
   }) : super._();
 
   /// Current engine status.
@@ -291,6 +291,10 @@ class _$FacadeStateImpl extends _FacadeState {
   /// Current device discovery status.
   @override
   final DiscoveryStatus discovery;
+
+  /// Timestamp of this state snapshot.
+  @override
+  final DateTime timestamp;
 
   /// Path to the currently loaded script, if any.
   @override
@@ -316,13 +320,9 @@ class _$FacadeStateImpl extends _FacadeState {
   @override
   final String? lastError;
 
-  /// Timestamp of this state snapshot.
-  @override
-  final DateTime timestamp;
-
   @override
   String toString() {
-    return 'FacadeState(engine: $engine, device: $device, validation: $validation, discovery: $discovery, scriptPath: $scriptPath, selectedDevicePath: $selectedDevicePath, validationErrorCount: $validationErrorCount, validationWarningCount: $validationWarningCount, discoveredDeviceCount: $discoveredDeviceCount, lastError: $lastError, timestamp: $timestamp)';
+    return 'FacadeState(engine: $engine, device: $device, validation: $validation, discovery: $discovery, timestamp: $timestamp, scriptPath: $scriptPath, selectedDevicePath: $selectedDevicePath, validationErrorCount: $validationErrorCount, validationWarningCount: $validationWarningCount, discoveredDeviceCount: $discoveredDeviceCount, lastError: $lastError)';
   }
 
   @override
@@ -336,6 +336,8 @@ class _$FacadeStateImpl extends _FacadeState {
                 other.validation == validation) &&
             (identical(other.discovery, discovery) ||
                 other.discovery == discovery) &&
+            (identical(other.timestamp, timestamp) ||
+                other.timestamp == timestamp) &&
             (identical(other.scriptPath, scriptPath) ||
                 other.scriptPath == scriptPath) &&
             (identical(other.selectedDevicePath, selectedDevicePath) ||
@@ -347,9 +349,7 @@ class _$FacadeStateImpl extends _FacadeState {
             (identical(other.discoveredDeviceCount, discoveredDeviceCount) ||
                 other.discoveredDeviceCount == discoveredDeviceCount) &&
             (identical(other.lastError, lastError) ||
-                other.lastError == lastError) &&
-            (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
+                other.lastError == lastError));
   }
 
   @override
@@ -359,13 +359,13 @@ class _$FacadeStateImpl extends _FacadeState {
     device,
     validation,
     discovery,
+    timestamp,
     scriptPath,
     selectedDevicePath,
     validationErrorCount,
     validationWarningCount,
     discoveredDeviceCount,
     lastError,
-    timestamp,
   );
 
   /// Create a copy of FacadeState
@@ -383,13 +383,13 @@ abstract class _FacadeState extends FacadeState {
     required final DeviceStatus device,
     required final ValidationStatus validation,
     required final DiscoveryStatus discovery,
+    required final DateTime timestamp,
     final String? scriptPath,
     final String? selectedDevicePath,
     final int? validationErrorCount,
     final int? validationWarningCount,
     final int? discoveredDeviceCount,
     final String? lastError,
-    required final DateTime timestamp,
   }) = _$FacadeStateImpl;
   const _FacadeState._() : super._();
 
@@ -408,6 +408,10 @@ abstract class _FacadeState extends FacadeState {
   /// Current device discovery status.
   @override
   DiscoveryStatus get discovery;
+
+  /// Timestamp of this state snapshot.
+  @override
+  DateTime get timestamp;
 
   /// Path to the currently loaded script, if any.
   @override
@@ -432,10 +436,6 @@ abstract class _FacadeState extends FacadeState {
   /// Last error message, if any operation failed.
   @override
   String? get lastError;
-
-  /// Timestamp of this state snapshot.
-  @override
-  DateTime get timestamp;
 
   /// Create a copy of FacadeState
   /// with the given fields replaced by the non-null parameter values.
