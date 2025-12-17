@@ -175,7 +175,7 @@ async fn handle_request(request: JsonRpcRequest, manager: &EngineManager) -> Out
             )),
         },
 
-        METHOD_ENGINE_RELOAD => match parse_params::<EngineReloadParams>(request.params) {
+        METHOD_CONFIG_RELOAD => match parse_params::<ConfigReloadParams>(request.params) {
             Ok(params) => {
                 let config_path = params.config_path.map(PathBuf::from);
                 let script_path = params.script_path.map(PathBuf::from);

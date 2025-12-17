@@ -169,7 +169,7 @@ pub enum OutgoingMessage {
 // Method names
 pub const METHOD_ENGINE_START: &str = "engine.start";
 pub const METHOD_ENGINE_STOP: &str = "engine.stop";
-pub const METHOD_ENGINE_RELOAD: &str = "engine.reload";
+pub const METHOD_CONFIG_RELOAD: &str = "config.reload";
 pub const METHOD_ENGINE_STATUS: &str = "engine.status";
 pub const METHOD_EVENTS_SUBSCRIBE: &str = "events.subscribe";
 pub const METHOD_EVENTS_UNSUBSCRIBE: &str = "events.unsubscribe";
@@ -194,9 +194,9 @@ fn default_true() -> bool {
     true
 }
 
-/// Parameters for engine.reload
+/// Parameters for config.reload
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineReloadParams {
+pub struct ConfigReloadParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
