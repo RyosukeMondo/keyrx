@@ -158,9 +158,7 @@ impl EngineManager {
         config_path: Option<PathBuf>,
         script_path: Option<PathBuf>,
     ) -> Result<()> {
-        let mut state = self.state.lock().await;
-
-        if state.state != EngineState::Running {
+        if self.state.lock().await.state != EngineState::Running {
             return Err(anyhow!("Engine is not running"));
         }
 
@@ -172,23 +170,16 @@ impl EngineManager {
             "Reloading configuration"
         );
 
+        // Determine new paths without holding the lock for long
+        let (current_config, current_script) = {
+            let state = self.state.lock().await;
+            (state.config_path.clone(), state.script_path.clone())
+        };
+        let new_config_path = config_path.or(current_config);
+        let new_script_path = script_path.or(current_script);
+
         // --- Start of atomic update ---
-
-        // 1. Clone the current state to be able to restore it on failure
-        let old_config_path = state.config_path.clone();
-        let old_script_path = state.script_path.clone();
-
-        let mut new_config_path = state.config_path.clone();
-        let mut new_script_path = state.script_path.clone();
-
-        if let Some(path) = config_path {
-            new_config_path = Some(path);
-        }
-        if let Some(path) = script_path {
-            new_script_path = Some(path);
-        }
-
-        // 2. Simulate validation/compilation
+        // 1. Validate the new configuration (simulated)
         if let Some(ref path) = new_script_path {
             if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
                 if file_name.contains("fail") {
@@ -198,7 +189,6 @@ impl EngineManager {
                         path = %path.display(),
                         "Simulated script compilation failure"
                     );
-                    // No need to rollback here as we haven't modified the state yet
                     return Err(anyhow!(
                         "Simulated script compilation failed for {}",
                         path.display()
@@ -207,20 +197,29 @@ impl EngineManager {
             }
         }
 
-        // --- All checks passed, commit the new state ---
-        state.config_path = new_config_path.clone();
-        state.script_path = new_script_path.clone();
+        // --- All checks passed, lock and commit the new state ---
+        let mut state = self.state.lock().await;
 
-        // 5. If everything succeeded, send notifications
+        let old_config_path = state.config_path.clone();
+        let old_script_path = state.script_path.clone();
+
+        state.config_path = new_config_path;
+        state.script_path = new_script_path;
+
+        // 3. If everything succeeded, send notifications
         if state.config_path != old_config_path {
-            if let Some(path) = new_config_path {
-                let _ = self.event_tx.send(EngineEvent::ConfigReloaded(path));
+            if let Some(path) = &state.config_path {
+                let _ = self
+                    .event_tx
+                    .send(EngineEvent::ConfigReloaded(path.clone()));
             }
         }
 
         if state.script_path != old_script_path {
-            if let Some(path) = new_script_path {
-                let _ = self.event_tx.send(EngineEvent::ScriptReloaded(path));
+            if let Some(path) = &state.script_path {
+                let _ = self
+                    .event_tx
+                    .send(EngineEvent::ScriptReloaded(path.clone()));
             }
         }
 
