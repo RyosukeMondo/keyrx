@@ -1,11 +1,13 @@
 //! Generates Dart IPC client code from FFI contracts.
 
 use crate::templates::{
-    context, render, to_pascal_case, IPC_CLIENT_CLASS_TEMPLATE, IPC_CLIENT_FILE_HEADER,
+    context, render, to_camel_case, to_pascal_case, IPC_CLIENT_CLASS_TEMPLATE,
+    IPC_CLIENT_FILE_HEADER, IPC_METHOD_TEMPLATE,
 };
+use crate::type_mapper::map_to_dart_native_type;
 use anyhow::Result;
 use chrono;
-use keyrx_core::ffi::contract::FfiContract;
+use keyrx_core::ffi::contract::{FfiContract, FunctionContract};
 
 pub struct IpcClientGenerator {
     // Generation state, if any
@@ -35,7 +37,7 @@ impl IpcClientGenerator {
 pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     let class_name = format!("{}Client", to_pascal_case(&contract.domain));
     let domain = contract.domain.clone();
-    let methods = String::new(); // Placeholder
+    let methods = generate_methods(contract)?;
     let events = String::new(); // Placeholder
 
     let mut ctx = context();
@@ -45,4 +47,66 @@ pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     ctx.insert("events".to_string(), events);
 
     Ok(render(IPC_CLIENT_CLASS_TEMPLATE, &ctx))
+}
+
+fn generate_methods(contract: &FfiContract) -> Result<String> {
+    let mut methods = Vec::new();
+
+    for func in &contract.functions {
+        let method_name = to_camel_case(&func.name);
+        let return_type = map_to_dart_native_type(func.returns.type_name())?;
+
+        let param_signature = func
+            .parameters
+            .iter()
+            .map(|p| {
+                let dart_type = map_to_dart_native_type(&p.param_type)?;
+                Ok(format!("{} {}", dart_type, p.name))
+            })
+            .collect::<Result<Vec<_>>>()?
+            .join(", ");
+
+        let param_map = func
+            .parameters
+            .iter()
+            .map(|p| format!("        '{}': {},", p.name, p.name))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let result_deserialization = if return_type == "void" {
+            "    return;".to_string()
+        } else if return_type.starts_with("List<") {
+            format!(
+                "    return (result as List).map((e) => {}.fromJson(e)).toList();",
+                &return_type[5..return_type.len() - 1]
+            )
+        } else if return_type == "String"
+            || return_type == "int"
+            || return_type == "double"
+            || return_type == "bool"
+        {
+            format!("    return result as {};", return_type)
+        } else {
+            format!("    return {}.fromJson(result);", return_type)
+        };
+
+        let mut ctx = context();
+        ctx.insert("doc_comment".to_string(), func.description.clone());
+        ctx.insert("return_type".to_string(), return_type);
+        ctx.insert("method_name".to_string(), method_name);
+        ctx.insert("param_signature".to_string(), param_signature);
+        ctx.insert(
+            "method_full_name".to_string(),
+            format!("{}.{}", contract.domain, func.name),
+        );
+        ctx.insert("param_map".to_string(), param_map);
+        ctx.insert(
+            "result_deserialization".to_string(),
+            result_deserialization,
+        );
+
+        methods.push(render(IPC_METHOD_TEMPLATE, &ctx));
+    }
+
+    Ok(methods.join("\n"))
 }
