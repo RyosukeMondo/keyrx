@@ -348,6 +348,16 @@ class {{class_name}} {
 // =============================================================================
 
 /// Template for an IPC client method
+pub const IPC_EVENT_TEMPLATE: &str = r#"
+  /// {{doc_comment}}
+  Stream<{{event_type}}> get on{{event_name}} {
+    return daemonService.notificationStream
+        .where((event) => event.method == '{{event_full_name}}')
+        .map((event) => {{event_type}}.fromJson(event.params));
+  }
+"#;
+
+/// Template for an IPC client method
 pub const IPC_METHOD_TEMPLATE: &str = r#"
   /// {{doc_comment}}
   Future<{{return_type}}> {{method_name}}({{param_signature}}) async {

@@ -2,12 +2,12 @@
 
 use crate::templates::{
     context, render, to_camel_case, to_pascal_case, IPC_CLIENT_CLASS_TEMPLATE,
-    IPC_CLIENT_FILE_HEADER, IPC_METHOD_TEMPLATE,
+    IPC_CLIENT_FILE_HEADER, IPC_EVENT_TEMPLATE, IPC_METHOD_TEMPLATE,
 };
 use crate::type_mapper::map_to_dart_native_type;
 use anyhow::Result;
 use chrono;
-use keyrx_core::ffi::contract::{FfiContract, FunctionContract};
+use keyrx_core::ffi::contract::{EventContract, FfiContract, FunctionContract};
 
 pub struct IpcClientGenerator {
     // Generation state, if any
@@ -38,7 +38,7 @@ pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     let class_name = format!("{}Client", to_pascal_case(&contract.domain));
     let domain = contract.domain.clone();
     let methods = generate_methods(contract)?;
-    let events = String::new(); // Placeholder
+    let events = generate_events(contract)?;
 
     let mut ctx = context();
     ctx.insert("class_name".to_string(), class_name);
@@ -47,6 +47,28 @@ pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     ctx.insert("events".to_string(), events);
 
     Ok(render(IPC_CLIENT_CLASS_TEMPLATE, &ctx))
+}
+
+fn generate_events(contract: &FfiContract) -> Result<String> {
+    let mut events = Vec::new();
+
+    for event in &contract.events {
+        let event_name = to_pascal_case(&event.name);
+        let event_type = map_to_dart_native_type(event.payload.type_name())?;
+
+        let mut ctx = context();
+        ctx.insert("doc_comment".to_string(), event.description.clone());
+        ctx.insert("event_name".to_string(), event_name);
+        ctx.insert("event_type".to_string(), event_type);
+        ctx.insert(
+            "event_full_name".to_string(),
+            format!("{}.{}", contract.domain, event.name),
+        );
+
+        events.push(render(IPC_EVENT_TEMPLATE, &ctx));
+    }
+
+    Ok(events.join("\n"))
 }
 
 fn generate_methods(contract: &FfiContract) -> Result<String> {
