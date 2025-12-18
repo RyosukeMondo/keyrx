@@ -13,6 +13,7 @@ use generate_dart_bindings::{
     formatter::{format_file, is_dart_available, FormatResult},
     header::{generate_bindings_header, generate_models_header},
     incremental::{IncrementalGenerator, IncrementalStats, RegenerationStatus},
+    ipc_client_gen,
     loader::{load_all_contracts, load_contracts_for_domain},
     models_gen::{generate_all_models, generate_models_block},
     writer::{write_if_changed, WriteResult},
@@ -26,6 +27,7 @@ use std::time::Instant;
 pub struct PipelineResult {
     pub bindings_generated: usize,
     pub models_generated: usize,
+    pub ipc_clients_generated: usize,
     pub files_written: usize,
     pub files_skipped: usize,
     pub needs_regeneration: bool,
@@ -82,28 +84,38 @@ impl<'a> GenerationPipeline<'a> {
         }
 
         // Step 4: Generate code for each contract
-        let (bindings_code, models_code) = self.generate_code(&contracts)?;
+        let (bindings_code, models_code, ipc_client_code) = self.generate_code(&contracts)?;
 
         // Step 5: Write files (unless in check mode)
         let output_dir = self.cli.output_dir();
         let bindings_path = output_dir.join("ffi/generated_bindings.dart");
         let models_path = output_dir.join("models/generated_models.dart");
+        let ipc_client_path = output_dir.join("services/generated/ipc_client.dart");
 
         if self.cli.check {
             // Check mode: verify files match without writing
             result.needs_regeneration = self
                 .check_needs_regeneration(&bindings_path, &bindings_code)?
-                || self.check_needs_regeneration(&models_path, &models_code)?;
+                || self.check_needs_regeneration(&models_path, &models_code)?
+                || self.check_needs_regeneration(&ipc_client_path, &ipc_client_code)?;
             result.bindings_generated = 1;
             result.models_generated = 1;
+            result.ipc_clients_generated = 1;
         } else {
             // Write mode: write files and format
-            let (written, skipped) =
-                self.write_and_format(&bindings_path, &bindings_code, &models_path, &models_code)?;
+            let (written, skipped) = self.write_and_format(
+                &bindings_path,
+                &bindings_code,
+                &models_path,
+                &models_code,
+                &ipc_client_path,
+                &ipc_client_code,
+            )?;
             result.files_written = written;
             result.files_skipped = skipped;
             result.bindings_generated = 1;
             result.models_generated = 1;
+            result.ipc_clients_generated = 1;
 
             // Update cache
             incremental.update_cache(
@@ -140,7 +152,7 @@ impl<'a> GenerationPipeline<'a> {
     }
 
     /// Generate bindings and models code from contracts
-    fn generate_code(&self, contracts: &[FfiContract]) -> Result<(String, String)> {
+    fn generate_code(&self, contracts: &[FfiContract]) -> Result<(String, String, String)> {
         let mut bindings_parts = Vec::new();
         let mut models_parts = Vec::new();
 
@@ -165,7 +177,15 @@ impl<'a> GenerationPipeline<'a> {
             }
         }
 
-        Ok((bindings_parts.join("\n\n"), models_parts.join("\n\n")))
+        // Generate IPC client
+        let ipc_client_generator = ipc_client_gen::IpcClientGenerator::new();
+        let ipc_client_code = ipc_client_generator.generate(contracts)?;
+
+        Ok((
+            bindings_parts.join("\n\n"),
+            models_parts.join("\n\n"),
+            ipc_client_code,
+        ))
     }
 
     /// Generate FFI bindings for a single contract
@@ -279,49 +299,41 @@ impl<'a> GenerationPipeline<'a> {
         bindings_code: &str,
         models_path: &PathBuf,
         models_code: &str,
+        ipc_client_path: &PathBuf,
+        ipc_client_code: &str,
     ) -> Result<(usize, usize)> {
         let mut written = 0;
         let mut skipped = 0;
 
-        // Write bindings file
-        match write_if_changed(bindings_path, bindings_code)
-            .with_context(|| format!("Failed to write bindings: {}", bindings_path.display()))?
-        {
-            WriteResult::Written => {
-                written += 1;
-                if self.cli.verbose {
-                    eprintln!("Wrote: {}", bindings_path.display());
-                }
-            }
-            WriteResult::Skipped => {
-                skipped += 1;
-                if self.cli.verbose {
-                    eprintln!("Skipped (unchanged): {}", bindings_path.display());
-                }
-            }
-        }
+        // A list of files to write
+        let files_to_write = vec![
+            (bindings_path, bindings_code),
+            (models_path, models_code),
+            (ipc_client_path, ipc_client_code),
+        ];
 
-        // Write models file
-        match write_if_changed(models_path, models_code)
-            .with_context(|| format!("Failed to write models: {}", models_path.display()))?
-        {
-            WriteResult::Written => {
-                written += 1;
-                if self.cli.verbose {
-                    eprintln!("Wrote: {}", models_path.display());
+        for (path, code) in files_to_write {
+            match write_if_changed(path, code)
+                .with_context(|| format!("Failed to write file: {}", path.display()))?
+            {
+                WriteResult::Written => {
+                    written += 1;
+                    if self.cli.verbose {
+                        eprintln!("Wrote: {}", path.display());
+                    }
                 }
-            }
-            WriteResult::Skipped => {
-                skipped += 1;
-                if self.cli.verbose {
-                    eprintln!("Skipped (unchanged): {}", models_path.display());
+                WriteResult::Skipped => {
+                    skipped += 1;
+                    if self.cli.verbose {
+                        eprintln!("Skipped (unchanged): {}", path.display());
+                    }
                 }
             }
         }
 
         // Format files if dart is available
         if is_dart_available() {
-            self.format_generated_files(bindings_path, models_path);
+            self.format_generated_files(vec![bindings_path, models_path, ipc_client_path]);
         } else if self.cli.verbose {
             eprintln!("Warning: dart not found, skipping formatting");
         }
@@ -330,8 +342,8 @@ impl<'a> GenerationPipeline<'a> {
     }
 
     /// Format generated files with dart format
-    fn format_generated_files(&self, bindings_path: &PathBuf, models_path: &PathBuf) {
-        for path in [bindings_path, models_path] {
+    fn format_generated_files(&self, paths: Vec<&PathBuf>) {
+        for path in paths {
             if path.exists() {
                 match format_file(path) {
                     FormatResult::Formatted => {
