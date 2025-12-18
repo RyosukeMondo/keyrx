@@ -10,6 +10,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../models/daemon_protocol.dart';
 
@@ -66,10 +67,16 @@ class DaemonService {
 
   final Map<int, Completer<dynamic>> _pendingRequests = {};
   final List<_QueuedRequest> _requestQueue = [];
-  final StreamController<DaemonEvent> _eventController =
-      StreamController<DaemonEvent>.broadcast();
+  final StreamController<JsonRpcNotification> _notificationController =
+      StreamController<JsonRpcNotification>.broadcast();
   final StreamController<DaemonConnectionState> _stateController =
       StreamController<DaemonConnectionState>.broadcast();
+
+  // SSOT: Local cache of engine status
+  final BehaviorSubject<EngineStatus> _statusSubject =
+      BehaviorSubject<EngineStatus>.seeded(
+        const EngineStatus(status: 'disconnected'),
+      );
 
   StreamSubscription<Uint8List>? _socketSubscription;
   String _receiveBuffer = '';
@@ -77,8 +84,18 @@ class DaemonService {
   /// Stream of daemon events (input, output, state changes).
   Stream<DaemonEvent> get events => _eventController.stream;
 
+  /// Stream of raw JSON-RPC notifications.
+  Stream<JsonRpcNotification> get notificationStream =>
+      _notificationController.stream;
+
   /// Stream of connection state changes.
   Stream<DaemonConnectionState> get connectionState => _stateController.stream;
+
+  /// Stream of engine status updates (SSOT).
+  Stream<EngineStatus> get statusStream => _statusSubject.stream;
+
+  /// Current engine status.
+  EngineStatus get currentStatus => _statusSubject.value;
 
   /// Current connection state.
   DaemonConnectionState get state => _state;
@@ -143,10 +160,100 @@ class DaemonService {
       _updateState(DaemonConnectionState.connected);
       _reconnectAttempts = 0;
       unawaited(_sendQueuedRequests());
+
+      // SSOT: Initial status fetch
+      unawaited(
+        getStatus().catchError((e) {
+          _log.warning('Failed to fetch initial status: $e');
+          return const EngineStatus(status: 'error');
+        }),
+      );
     } on SocketException catch (e) {
-      _log.warning('Failed to connect to daemon', e);
+      _log.warning('Failed to connect to daemon: $e');
+
+      // Attempt to launch daemon if this is the first attempt
+      if (_reconnectAttempts == 0) {
+        await _launchDaemon();
+        // Try connecting one more time immediately
+        try {
+          _socket = await Socket.connect(
+            InternetAddress(_socketPath, type: InternetAddressType.unix),
+            0,
+            timeout: const Duration(seconds: 5),
+          );
+          _log.info('Successfully connected to daemon after launch.');
+
+          _socketSubscription = _socket!.listen(
+            _handleData,
+            onError: _handleError,
+            onDone: _handleDisconnect,
+            cancelOnError: true,
+          );
+
+          _updateState(DaemonConnectionState.connected);
+          unawaited(_sendQueuedRequests());
+          return;
+        } catch (_) {
+          // Ignore second failure, fall through to cleanup
+        }
+      }
+
       _clearSocket();
       _handleDisconnect();
+    }
+  }
+
+  /// Launch the daemon process.
+  Future<void> _launchDaemon() async {
+    _log.info('Attempting to launch daemon...');
+    try {
+      // Try finding the executable in PATH or fallback to development path
+      String executable = 'keyrx';
+      if (!await _isInPath(executable)) {
+        // Fallback for development: assume we are in ui/ and target is in ../target/debug/
+        // Or we are in project root and target is in ./target/debug/
+        final devPathUi = '../../target/debug/keyrx';
+        final devPathOneUp = '../target/debug/keyrx';
+        final devPathRoot = './target/debug/keyrx';
+
+        if (await File(devPathRoot).exists()) {
+          executable = devPathRoot;
+        } else if (await File(devPathOneUp).exists()) {
+          executable = devPathOneUp;
+        } else if (await File(devPathUi).exists()) {
+          executable = devPathUi;
+        }
+      }
+
+      final process = await Process.start(executable, [
+        'daemon',
+      ], mode: ProcessStartMode.detached);
+      _log.info('Daemon process launched (PID: ${process.pid}).');
+
+      // Wait for socket to appear
+      int retries = 50; // 5 seconds
+      while (retries > 0) {
+        if (File(_socketPath).existsSync()) {
+          // Give it a tiny bit more time to be ready to accept connections
+          await Future.delayed(const Duration(milliseconds: 100));
+          return;
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries--;
+      }
+      _log.warning('Timed out waiting for daemon socket to appear.');
+    } catch (e) {
+      _log.severe('Failed to launch daemon: $e');
+    }
+  }
+
+  Future<bool> _isInPath(String executable) async {
+    // Simple check if command exists in PATH (works on Linux/macOS)
+    try {
+      final result = await Process.run('which', [executable]);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -183,11 +290,10 @@ class DaemonService {
   }
 
   /// Send a JSON-RPC request and wait for response.
-  Future<T> sendRequest<T>(
-    String method, {
-    required T Function(dynamic) parseResult,
+  Future<dynamic> sendRequest(
+    String method, [
     Map<String, dynamic>? params,
-  }) async {
+  ]) async {
     final id = ++_requestId;
     final request = JsonRpcRequest(
       jsonrpc: '2.0',
@@ -210,8 +316,7 @@ class DaemonService {
       _sendRequest(queuedRequest);
     }
 
-    final result = await completer.future;
-    return parseResult(result);
+    return completer.future;
   }
 
   void _sendRequest(_QueuedRequest queuedRequest) {
@@ -223,7 +328,7 @@ class DaemonService {
 
     try {
       final requestJson = jsonEncode(request.toJson());
-      _log.finer('→ $requestJson');
+      _log.info('→ [ID:${request.id}] $requestJson'); // Log with ID
       _socket!.write('$requestJson\n');
       _socket!.flush();
 
@@ -233,6 +338,9 @@ class DaemonService {
         onTimeout: () {
           if (_pendingRequests.containsKey(id)) {
             _pendingRequests.remove(id);
+            _log.warning(
+              'Timed out waiting for response to ID: $id',
+            ); // Log timeout
             if (!completer.isCompleted) {
               completer.completeError(
                 const DaemonException('Request timed out'),
@@ -279,14 +387,13 @@ class DaemonService {
     String? scriptPath,
     bool useAllDevices = true,
   }) async {
-    final result = await sendRequest<Map<String, dynamic>>(
+    final result = await sendRequest(
       DaemonMethods.engineStart,
-      params: {
+      {
         if (configPath != null) 'config_path': configPath,
         if (scriptPath != null) 'script_path': scriptPath,
         'use_all_devices': useAllDevices,
       },
-      parseResult: (result) => result as Map<String, dynamic>,
     );
 
     final deviceList = result['devices'] as List<dynamic>? ?? [];
@@ -297,47 +404,45 @@ class DaemonService {
 
   /// Stop the engine.
   Future<void> stopEngine() async {
-    await sendRequest<void>(DaemonMethods.engineStop, parseResult: (_) {});
+    await sendRequest(DaemonMethods.engineStop);
   }
 
   /// Reload config and/or script.
   Future<void> reloadConfig({String? configPath, String? scriptPath}) async {
-    await sendRequest<void>(
+    await sendRequest(
       DaemonMethods.engineReload,
-      params: {
+      {
         if (configPath != null) 'config_path': configPath,
         if (scriptPath != null) 'script_path': scriptPath,
       },
-      parseResult: (_) {},
     );
   }
 
   /// Get current engine status.
   Future<EngineStatus> getStatus() async {
-    final result = await sendRequest<Map<String, dynamic>>(
+    final result = await sendRequest(
       DaemonMethods.engineStatus,
-      parseResult: (result) => result as Map<String, dynamic>,
     );
 
-    return EngineStatus.fromJson(result);
+    final status = EngineStatus.fromJson(result as Map<String, dynamic>);
+    _statusSubject.add(status); // Update SSOT
+    return status;
   }
 
   /// Subscribe to events.
   Future<void> subscribeEvents({
     List<String> eventTypes = const ['input', 'output', 'state_change'],
   }) async {
-    await sendRequest<void>(
+    await sendRequest(
       DaemonMethods.eventsSubscribe,
-      params: {'event_types': eventTypes},
-      parseResult: (_) {},
+      {'event_types': eventTypes},
     );
   }
 
   /// Unsubscribe from events.
   Future<void> unsubscribeEvents() async {
-    await sendRequest<void>(
+    await sendRequest(
       DaemonMethods.eventsUnsubscribe,
-      parseResult: (_) {},
     );
   }
 
@@ -354,7 +459,7 @@ class DaemonService {
 
       if (line.isEmpty) continue;
 
-      _log.finer('← $line');
+      _log.info('← $line'); // Log incoming line
 
       try {
         final json = jsonDecode(line) as Map<String, dynamic>;
@@ -374,10 +479,13 @@ class DaemonService {
   /// Handle successful response.
   void _handleResponse(JsonRpcResponse response) {
     final id = response.id;
+    _log.info('Received response for ID: $id'); // Log received ID
     if (id.isNumber) {
       final completer = _pendingRequests.remove(id.asNumber);
       if (completer != null && !completer.isCompleted) {
         completer.complete(response.result);
+      } else {
+        _log.warning('No pending request found for ID: ${id.asNumber}');
       }
     }
   }
@@ -385,6 +493,7 @@ class DaemonService {
   /// Handle error response.
   void _handleErrorResponse(JsonRpcError errorResponse) {
     final id = errorResponse.id;
+    _log.warning('Received error response for ID: $id'); // Log error ID
     if (id.isNumber) {
       final completer = _pendingRequests.remove(id.asNumber);
       if (completer != null && !completer.isCompleted) {
@@ -401,11 +510,46 @@ class DaemonService {
 
   /// Handle notification (event).
   void _handleNotification(JsonRpcNotification notification) {
+    _notificationController.add(notification);
+
     try {
       final event = DaemonEvent.fromNotification(notification);
+
+      // SSOT: Update internal state on state change events
+      event.mapOrNull(
+        stateChange: (e) {
+          _updateStatusFromEvent(e.event);
+        },
+      );
+
       _eventController.add(event);
     } on Object catch (e) {
       _log.warning('Failed to parse notification: ${notification.method}', e);
+    }
+  }
+
+  void _updateStatusFromEvent(StateChangeEvent event) {
+    final eventType = event.type;
+    var current = _statusSubject.value;
+
+    if (eventType == 'engine_started') {
+      // Refresh full status to populate device list
+      unawaited(getStatus());
+    } else if (eventType == 'engine_stopped') {
+      // Refresh full status to clear/update state
+      unawaited(getStatus());
+    } else if (eventType == 'config_reloaded') {
+      if (event.details != null && event.details!.containsKey('config_path')) {
+        _statusSubject.add(
+          current.copyWith(configPath: event.details!['config_path'] as String),
+        );
+      }
+    } else if (eventType == 'script_reloaded') {
+      if (event.details != null && event.details!.containsKey('script_path')) {
+        _statusSubject.add(
+          current.copyWith(scriptPath: event.details!['script_path'] as String),
+        );
+      }
     }
   }
 
@@ -475,6 +619,8 @@ class DaemonService {
   Future<void> dispose() async {
     await disconnect();
     await _eventController.close();
+    await _notificationController.close();
     await _stateController.close();
+    await _statusSubject.close();
   }
 }
