@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart'; // For @visibleForTesting
 
@@ -23,7 +24,6 @@ import 'bridge_validation.dart';
 import 'debug_tools.dart';
 import 'device_registry_ffi.dart';
 import 'event_types.dart';
-import 'generated/bindings_generated.dart';
 import 'generated_bindings.dart';
 import 'profile_registry_ffi.dart';
 
@@ -184,7 +184,7 @@ class KeyrxBridge
     final version = FfiDebugTools.traceSync<int>(
       operation: 'core.protocol_version',
       includeTimeline: false,
-      call: () => _bindings!.protocolVersion(),
+      call: () => _bindings!.base.protocolVersion(),
     );
     if (version != expectedProtocolVersion) {
       _loadFailure ??= Exception(
@@ -237,7 +237,7 @@ class KeyrxBridge
 
     // Best-effort shutdown of the revolutionary runtime when available.
     if (_bindings != null) {
-      _bindings!.revolutionaryRuntimeShutdown();
+      _bindings!.base.revolutionaryRuntimeShutdown();
     }
   }
 
@@ -257,7 +257,7 @@ class KeyrxBridge
       FfiDebugTools.traceSync<void>(
         operation: 'core.revolutionary_shutdown',
         includeTimeline: false,
-        call: () => _bindings!.revolutionaryRuntimeShutdown(),
+        call: () => _bindings!.base.revolutionaryRuntimeShutdown(),
       );
     }
   }
@@ -342,9 +342,9 @@ class KeyrxBridge
       operation: 'events.register',
       includeTimeline: false,
       context: {'event_type': eventType.name},
-      call: () => _bindings!.registerEventCallback(
+      call: () => _bindings!.base.registerEventCallback(
         eventType.code,
-        nativeCallable.nativeFunction,
+        nativeCallable.nativeFunction.cast<Void>(),
       ),
     );
 
@@ -373,7 +373,8 @@ class KeyrxBridge
       operation: 'events.unregister',
       includeTimeline: false,
       context: {'event_type': eventType.name},
-      call: () => _bindings!.registerEventCallback(eventType.code, nullptr),
+      call: () =>
+          _bindings!.base.registerEventCallback(eventType.code, nullptr),
     );
 
     FfiDebugTools.logBoundary(
@@ -406,6 +407,7 @@ class KeyrxBridge
       context: {'has_controller': _stateController != null},
     );
 
+    // Using manually added onState binding
     _bindings!.onState(_stateCallable!.nativeFunction);
   }
 
@@ -438,7 +440,7 @@ class KeyrxBridge
     final code = FfiDebugTools.traceSync<int>(
       operation: 'core.revolutionary_init',
       includeTimeline: false,
-      call: () => _bindings!.revolutionaryRuntimeInit(),
+      call: () => _bindings!.base.revolutionaryRuntimeInit(),
     );
     // We ignore the return code here because it returns -1 if already initialized.
     // Since we call this blindly in initialize() as a recovery measure,

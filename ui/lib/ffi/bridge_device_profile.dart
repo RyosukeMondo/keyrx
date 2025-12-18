@@ -4,9 +4,7 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 
 import 'bindings.dart';
@@ -191,30 +189,15 @@ mixin BridgeDeviceProfileMixin {
   ///
   /// Returns the complete device profile including keymap and layout.
   DeviceProfileResult getDeviceProfile(int vendorId, int productId) {
-    final getFn = bindings?.getDeviceProfile;
-    if (getFn == null) {
+    if (bindings == null) {
       return DeviceProfileResult.error('getDeviceProfile not available');
     }
 
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = getFn(vendorId, productId, errorPtr);
-      if (ptr == nullptr) {
-        return DeviceProfileResult.error('getDeviceProfile returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.getDeviceProfile(vendorId, productId);
       return DeviceProfileResult.parse(raw);
     } catch (e) {
       return DeviceProfileResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -222,20 +205,12 @@ mixin BridgeDeviceProfileMixin {
   ///
   /// Returns true if a profile has been created for this device.
   bool hasDeviceProfile(int vendorId, int productId) {
-    final hasFn = bindings?.hasDeviceProfile;
-    if (hasFn == null) {
+    if (bindings == null) {
       return false;
     }
 
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = hasFn(vendorId, productId, errorPtr);
-      if (ptr == nullptr) {
-        return false;
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.hasDeviceProfile(vendorId, productId);
       final trimmed = raw.trim();
 
       // Parse "ok:true" or "ok:false" response
@@ -247,13 +222,6 @@ mixin BridgeDeviceProfileMixin {
       return false;
     } catch (e) {
       return false;
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -263,17 +231,10 @@ mixin BridgeDeviceProfileMixin {
   ///
   /// Returns true if successful.
   bool saveDeviceProfile(String profileJson) {
-    final saveFn = bindings?.saveDeviceProfile;
-    if (saveFn == null) return false;
+    if (bindings == null) return false;
 
-    final jsonPtr = profileJson.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = saveFn(jsonPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) return false;
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.saveDeviceProfile(profileJson);
       final trimmed = raw.trim();
 
       // Parse "ok:" response (or empty ok for void result)
@@ -285,14 +246,6 @@ mixin BridgeDeviceProfileMixin {
     } catch (e) {
       debugPrint('saveDeviceProfile exception: $e');
       return false;
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(jsonPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 }

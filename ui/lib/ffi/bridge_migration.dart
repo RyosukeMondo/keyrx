@@ -4,9 +4,7 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 
 import '../pages/migration_prompt_page.dart';
@@ -23,24 +21,13 @@ mixin BridgeMigrationMixin {
   ///
   /// [oldProfilesDir] - Path to directory containing old V1 profiles.
   Future<bool> checkMigrationNeeded(String oldProfilesDir) async {
-    final checkFn = bindings?.migrationCheckNeeded;
-    if (checkFn == null) {
+    if (bindings == null) {
       debugPrint('migrationCheckNeeded not available');
       return false;
     }
 
-    final oldDirPtr = oldProfilesDir.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-
     try {
-      ptr = checkFn(oldDirPtr.cast<Char>(), errorPtr);
-
-      if (ptr == nullptr) {
-        return false;
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.migration.checkNeeded(oldProfilesDir);
       final trimmed = raw.trim();
 
       if (trimmed.toLowerCase().startsWith('ok:')) {
@@ -55,14 +42,6 @@ mixin BridgeMigrationMixin {
     } catch (e) {
       debugPrint('Migration check exception: $e');
       return false;
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(oldDirPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -76,29 +55,16 @@ mixin BridgeMigrationMixin {
     String newProfilesDir, {
     bool createBackup = true,
   }) async {
-    final runFn = bindings?.migrationRun;
-    if (runFn == null) {
+    if (bindings == null) {
       throw Exception('migrationRun FFI function not available');
     }
 
-    final oldDirPtr = oldProfilesDir.toNativeUtf8();
-    final newDirPtr = newProfilesDir.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-
     try {
-      ptr = runFn(
-        oldDirPtr.cast<Char>(),
-        newDirPtr.cast<Char>(),
+      final raw = bindings!.migration.run(
+        oldProfilesDir,
+        newProfilesDir,
         createBackup ? 1 : 0,
-        errorPtr,
       );
-
-      if (ptr == nullptr) {
-        throw Exception('Migration returned null pointer');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
       final trimmed = raw.trim();
 
       if (trimmed.toLowerCase().startsWith('error:')) {
@@ -111,17 +77,7 @@ mixin BridgeMigrationMixin {
         throw Exception('Unexpected response format: $trimmed');
       }
     } catch (e) {
-      // Re-throw to be handled by the UI
       rethrow;
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(oldDirPtr);
-      calloc.free(newDirPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 }

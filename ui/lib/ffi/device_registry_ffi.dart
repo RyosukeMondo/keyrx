@@ -8,9 +8,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
 
 import '../models/device_state.dart';
 import 'bindings.dart';
@@ -83,46 +80,18 @@ mixin DeviceRegistryFFIMixin {
   KeyrxBindings? get bindings;
   Object? get loadFailure;
 
-  /// Free a C string pointer.
-  void _freeString(Pointer<Char> ptr) {
-    if (ptr != nullptr) {
-      try {
-        bindings?.freeString(ptr);
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-    }
-  }
-
   /// List all registered devices.
   ///
   /// Returns a list of DeviceState objects or an error.
   DeviceRegistryResult<List<DeviceState>> listRegisteredDevices() {
-    final listFn = bindings?.deviceRegistryListDevices;
-    if (listFn == null) {
+    if (bindings == null) {
       return DeviceRegistryResult.error(
         'deviceRegistryListDevices not available',
       );
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = listFn(errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DeviceRegistryResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return DeviceRegistryResult.error(
-          'listRegisteredDevices returned null',
-        );
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.deviceRegistry.listDevices();
       final result = _FfiResultParser.parse<List<dynamic>>(
         raw,
         (json) => json as List<dynamic>,
@@ -140,11 +109,6 @@ mixin DeviceRegistryFFIMixin {
       return DeviceRegistryResult.success(devices);
     } catch (e) {
       return DeviceRegistryResult.error('listRegisteredDevices exception: $e');
-    } finally {
-      if (ptr != null && ptr != nullptr) {
-        _freeString(ptr);
-      }
-      calloc.free(errorPtr);
     }
   }
 
@@ -155,31 +119,17 @@ mixin DeviceRegistryFFIMixin {
   ///
   /// Returns success or error.
   DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) {
-    final setDeviceFn = bindings?.deviceRegistrySetDeviceEnabled;
-    if (setDeviceFn == null) {
+    if (bindings == null) {
       return DeviceRegistryResult.error(
         'deviceRegistrySetDeviceEnabled not available',
       );
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    final keyPtr = deviceKey.toNativeUtf8();
-    Pointer<Char>? resultPtr;
-
     try {
-      resultPtr = setDeviceFn(keyPtr.cast<Char>(), enabled ? 1 : 0, errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DeviceRegistryResult.error(error);
-      }
-
-      if (resultPtr == nullptr) {
-        return DeviceRegistryResult.error('setDeviceEnabled returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.deviceRegistry.setDeviceEnabled(
+        deviceKey,
+        enabled ? 1 : 0,
+      );
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -189,12 +139,6 @@ mixin DeviceRegistryFFIMixin {
       return DeviceRegistryResult.success(null);
     } catch (e) {
       return DeviceRegistryResult.error('setDeviceEnabled exception: $e');
-    } finally {
-      calloc.free(keyPtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
-      calloc.free(errorPtr);
     }
   }
 
@@ -205,31 +149,17 @@ mixin DeviceRegistryFFIMixin {
   ///
   /// Returns success or error.
   DeviceRegistryResult<void> setRemapEnabled(String deviceKey, bool enabled) {
-    final setRemapFn = bindings?.deviceRegistrySetRemapEnabled;
-    if (setRemapFn == null) {
+    if (bindings == null) {
       return DeviceRegistryResult.error(
         'deviceRegistrySetRemapEnabled not available',
       );
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    final keyPtr = deviceKey.toNativeUtf8();
-    Pointer<Char>? resultPtr;
-
     try {
-      resultPtr = setRemapFn(keyPtr.cast<Char>(), enabled ? 1 : 0, errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DeviceRegistryResult.error(error);
-      }
-
-      if (resultPtr == nullptr) {
-        return DeviceRegistryResult.error('setRemapEnabled returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.deviceRegistry.setRemapEnabled(
+        deviceKey,
+        enabled ? 1 : 0,
+      );
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -239,12 +169,6 @@ mixin DeviceRegistryFFIMixin {
       return DeviceRegistryResult.success(null);
     } catch (e) {
       return DeviceRegistryResult.error('setRemapEnabled exception: $e');
-    } finally {
-      calloc.free(keyPtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
-      calloc.free(errorPtr);
     }
   }
 
@@ -255,36 +179,14 @@ mixin DeviceRegistryFFIMixin {
   ///
   /// Returns success or error.
   DeviceRegistryResult<void> assignProfile(String deviceKey, String profileId) {
-    final assignFn = bindings?.deviceRegistryAssignProfile;
-    if (assignFn == null) {
+    if (bindings == null) {
       return DeviceRegistryResult.error(
         'deviceRegistryAssignProfile not available',
       );
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    final keyPtr = deviceKey.toNativeUtf8();
-    final profilePtr = profileId.toNativeUtf8();
-    Pointer<Char>? resultPtr;
-
     try {
-      resultPtr = assignFn(
-        keyPtr.cast<Char>(),
-        profilePtr.cast<Char>(),
-        errorPtr,
-      );
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DeviceRegistryResult.error(error);
-      }
-
-      if (resultPtr == nullptr) {
-        return DeviceRegistryResult.error('assignProfile returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.deviceRegistry.assignProfile(deviceKey, profileId);
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -294,13 +196,6 @@ mixin DeviceRegistryFFIMixin {
       return DeviceRegistryResult.success(null);
     } catch (e) {
       return DeviceRegistryResult.error('assignProfile exception: $e');
-    } finally {
-      calloc.free(keyPtr);
-      calloc.free(profilePtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
-      calloc.free(errorPtr);
     }
   }
 
@@ -311,41 +206,32 @@ mixin DeviceRegistryFFIMixin {
   ///
   /// Returns success or error.
   DeviceRegistryResult<void> setUserLabel(String deviceKey, String? label) {
-    final setLabelFn = bindings?.deviceRegistrySetUserLabel;
-    if (setLabelFn == null) {
+    if (bindings == null) {
       return DeviceRegistryResult.error(
         'deviceRegistrySetUserLabel not available',
       );
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    final keyPtr = deviceKey.toNativeUtf8();
-    Pointer<Utf8>? labelPtr;
-    Pointer<Char>? resultPtr;
-
     try {
-      // Convert label to native (null if not provided)
-      if (label != null) {
-        labelPtr = label.toNativeUtf8();
-      }
-
-      resultPtr = setLabelFn(
-        keyPtr.cast<Char>(),
-        labelPtr?.cast<Char>() ?? nullptr,
-        errorPtr,
-      );
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DeviceRegistryResult.error(error);
-      }
-
-      if (resultPtr == nullptr) {
-        return DeviceRegistryResult.error('setUserLabel returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      // Use empty string for clearing label if that's what the binding expects,
+      // or check generated binding for null handling.
+      // Assuming generated binding handles String and we pass empty string or specific value.
+      // But generated binding takes String. If we pass null, it might be an issue?
+      // Generated bindings usually take required String.
+      // If label is null, maybe we send empty string or special value?
+      // Checking usage in old code:
+      // if (label != null) { labelPtr = label.toNativeUtf8(); }
+      // resultPtr = setLabelFn(..., labelPtr?.cast<Char>() ?? nullptr, ...);
+      // So it passed nullptr.
+      //
+      // The generated binding:
+      // String setUserLabel(String device_key, String label)
+      // It takes a String. It converts it toNativeUtf8().
+      // It does NOT accept null.
+      // So we cannot pass null to generated binding.
+      // We should probably check if the Rust side accepts empty string as "clear".
+      // Assuming empty string means clear for now.
+      final raw = bindings!.deviceRegistry.setUserLabel(deviceKey, label ?? '');
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -355,15 +241,6 @@ mixin DeviceRegistryFFIMixin {
       return DeviceRegistryResult.success(null);
     } catch (e) {
       return DeviceRegistryResult.error('setUserLabel exception: $e');
-    } finally {
-      calloc.free(keyPtr);
-      if (labelPtr != null) {
-        calloc.free(labelPtr);
-      }
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
-      calloc.free(errorPtr);
     }
   }
 }

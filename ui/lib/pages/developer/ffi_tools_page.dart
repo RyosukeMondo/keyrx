@@ -8,9 +8,7 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -501,27 +499,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
 
         // --- Device Registry Domain ---
         case 'device_registry.list_devices':
-          final errorPtr = calloc<Pointer<Utf8>>();
-          // Use the raw binding
-          final ptr = bindings.deviceRegistryListDevices(errorPtr);
-
-          if (errorPtr.value.address != 0) {
-            final error = errorPtr.value.toDartString();
-            bindings.freeString(errorPtr.value.cast<Char>());
-            calloc.free(errorPtr);
-            resultStr = 'Error: $error';
-            break;
-          }
-          calloc.free(errorPtr);
-
-          final str = ptr.cast<Utf8>().toDartString();
-          // We do NOT free the string here if the contract says it returns a static/managed buffer
-          // OR if it returns a new string we must free.
-          // Looking at logs, it usually returns "ok:..." or "error:...".
-          // Rust implementation `ffi_json` uses `CString::into_raw`.
-          // So we MUST free it.
-          bindings.freeString(ptr);
-
+          final str = bindings.deviceRegistry.listDevices();
           resultStr = str;
           break;
 
@@ -530,29 +508,10 @@ class _FfiToolsPageState extends State<FfiToolsPage>
           final enabled =
               _paramControllers['enabled']!.text.toLowerCase() == 'true';
 
-          final errorPtr = calloc<Pointer<Utf8>>();
-          final keyPtr = key.toNativeUtf8();
-          final retPtr = bindings.deviceRegistrySetRemapEnabled(
-            keyPtr.cast<Char>(),
+          final str = bindings.deviceRegistry.setRemapEnabled(
+            key,
             enabled ? 1 : 0,
-            errorPtr,
           );
-
-          if (errorPtr.value.address != 0) {
-            final error = errorPtr.value.toDartString();
-            bindings.freeString(errorPtr.value.cast<Char>());
-            calloc.free(errorPtr);
-            calloc.free(keyPtr);
-            resultStr = 'Error: $error';
-            break;
-          }
-          calloc.free(errorPtr);
-
-          calloc.free(keyPtr);
-
-          final str = retPtr.cast<Utf8>().toDartString();
-          bindings.freeString(retPtr);
-
           resultStr = str;
           break;
 

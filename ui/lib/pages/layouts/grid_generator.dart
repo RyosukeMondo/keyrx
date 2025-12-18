@@ -32,13 +32,13 @@ class _GridGeneratorState extends State<GridGenerator> {
 
     final keys = <VirtualKeyDef>[];
 
-    const keySize = 50;
-    const gap = 10;
+    const keySize = 50.0;
+    const gap = 10.0;
     const step = keySize + gap;
 
     // Start at 50, 50 to match the visible area ("+ Key" default)
-    const startX = 50;
-    const startY = 50;
+    const startX = 50.0;
+    const startY = 50.0;
 
     for (var r = 0; r < _hoverRows; r++) {
       for (var c = 0; c < _hoverCols; c++) {

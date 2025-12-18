@@ -13,6 +13,14 @@ macro_rules! define_keycodes {
         }
         impl KeyCode {
             #[inline]
+            pub fn to_u16(&self) -> u16 {
+                #[cfg(target_os = "linux")]
+                return keycode_to_evdev(*self);
+                #[cfg(not(target_os = "linux"))]
+                return keycode_to_vk(*self);
+            }
+
+            #[inline]
             pub fn from_name(name: &str) -> Option<Self> {
                 Self::from_str(name).ok()
             }

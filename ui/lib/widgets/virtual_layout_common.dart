@@ -29,7 +29,7 @@ class VirtualKeyVisual extends StatelessWidget {
 
     Color? backgroundColor;
     Color borderColor;
-    var borderWidth = 1;
+    var borderWidth = 1.0;
     var fontWeight = FontWeight.normal;
     Color? textColor;
 

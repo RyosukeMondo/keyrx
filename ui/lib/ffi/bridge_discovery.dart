@@ -4,9 +4,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
 
@@ -149,14 +146,12 @@ mixin BridgeDiscoveryMixin {
   /// - -3: Device path does not exist
   /// - -4: Lock error
   int selectDevice(String path) {
-    final selectFn = bindings?.selectDevice;
-    if (selectFn == null) return -1;
+    if (bindings == null) return -1;
 
-    final pathPtr = path.toNativeUtf8();
     try {
-      return selectFn(pathPtr.cast<Char>());
-    } finally {
-      calloc.free(pathPtr);
+      return bindings!.compat.selectDevice(path);
+    } catch (_) {
+      return -1;
     }
   }
 

@@ -32,6 +32,11 @@ typedef KeyrxEngineStartLoop = int Function();
 typedef KeyrxEngineStopLoopNative = Int32 Function();
 typedef KeyrxEngineStopLoop = int Function();
 
+typedef KeyrxOnStateNative =
+    Void Function(Pointer<NativeFunction<EventCallbackNative>>);
+typedef KeyrxOnState =
+    void Function(Pointer<NativeFunction<EventCallbackNative>>);
+
 typedef KeyrxRegisterEventCallbackNative =
     Int32 Function(Int32, Pointer<NativeFunction<EventCallbackNative>>);
 typedef KeyrxRegisterEventCallback =
@@ -118,6 +123,7 @@ class KeyrxBindings {
 
   late final KeyrxEngineStartLoop? startLoop;
   late final KeyrxEngineStopLoop? stopLoop;
+  late final KeyrxOnState onState;
   late final KeyrxFreeString freeString;
 
   // FFI Tracing functions
@@ -153,6 +159,7 @@ class KeyrxBindings {
 
     startLoop = _tryLookupStartLoop();
     stopLoop = _tryLookupStopLoop();
+    onState = _lookupOnState();
     freeString = _lib
         .lookup<NativeFunction<KeyrxFreeStringNative>>('keyrx_free_string')
         .asFunction<KeyrxFreeString>();
@@ -216,6 +223,17 @@ class KeyrxBindings {
           );
     } on ArgumentError {
       return null;
+    }
+  }
+
+  KeyrxOnState _lookupOnState() {
+    try {
+      return _lib.lookupFunction<KeyrxOnStateNative, KeyrxOnState>(
+        'keyrx_on_state',
+      );
+    } catch (_) {
+      // Return a no-op if missing
+      return (Pointer<NativeFunction<EventCallbackNative>> callback) {};
     }
   }
 

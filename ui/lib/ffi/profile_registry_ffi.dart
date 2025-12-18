@@ -9,9 +9,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
 
 import '../models/layout_type.dart';
 import '../models/profile.dart';
@@ -85,37 +82,18 @@ mixin ProfileRegistryFFIMixin {
   KeyrxBindings? get bindings;
   Object? get loadFailure;
 
-  /// Free a C string pointer.
-  void _freeString(Pointer<Char> ptr) {
-    if (ptr != nullptr) {
-      try {
-        bindings?.freeString(ptr);
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-    }
-  }
-
   /// List all profile IDs.
   ///
   /// Returns a list of profile ID strings or an error.
   ProfileRegistryResult<List<String>> listProfiles() {
-    final listFn = bindings?.profileRegistryListProfiles;
-    if (listFn == null) {
+    if (bindings == null) {
       return ProfileRegistryResult.error(
         'profileRegistryListProfiles not available',
       );
     }
 
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = listFn(errorPtr);
-      if (ptr == nullptr) {
-        return ProfileRegistryResult.error('listProfiles returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.profileRegistry.listProfiles();
       final result = _FfiResultParser.parse<List<dynamic>>(
         raw,
         (json) => json as List<dynamic>,
@@ -131,11 +109,6 @@ mixin ProfileRegistryFFIMixin {
       return ProfileRegistryResult.success(profileIds);
     } catch (e) {
       return ProfileRegistryResult.error('listProfiles exception: $e');
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        _freeString(ptr);
-      }
     }
   }
 
@@ -145,24 +118,14 @@ mixin ProfileRegistryFFIMixin {
   ///
   /// Returns a Profile object or an error.
   ProfileRegistryResult<Profile> getProfile(String profileId) {
-    final getFn = bindings?.profileRegistryGetProfile;
-    if (getFn == null) {
+    if (bindings == null) {
       return ProfileRegistryResult.error(
         'profileRegistryGetProfile not available',
       );
     }
 
-    final idPtr = profileId.toNativeUtf8();
-    Pointer<Char>? resultPtr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-
     try {
-      resultPtr = getFn(idPtr.cast<Char>(), errorPtr);
-      if (resultPtr == nullptr) {
-        return ProfileRegistryResult.error('getProfile returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.profileRegistry.getProfile(profileId);
       final result = _FfiResultParser.parse<Map<String, dynamic>>(
         raw,
         (json) => json as Map<String, dynamic>,
@@ -177,12 +140,6 @@ mixin ProfileRegistryFFIMixin {
       return ProfileRegistryResult.success(profile);
     } catch (e) {
       return ProfileRegistryResult.error('getProfile exception: $e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(idPtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
     }
   }
 
@@ -192,28 +149,16 @@ mixin ProfileRegistryFFIMixin {
   ///
   /// Returns success or error.
   ProfileRegistryResult<void> saveProfile(Profile profile) {
-    final saveFn = bindings?.profileRegistrySaveProfile;
-    if (saveFn == null) {
+    if (bindings == null) {
       return ProfileRegistryResult.error(
         'profileRegistrySaveProfile not available',
       );
     }
 
-    Pointer<Utf8>? jsonPtr;
-    Pointer<Char>? resultPtr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-
     try {
       // Convert profile to JSON
       final profileJson = json.encode(profile.toJson());
-      jsonPtr = profileJson.toNativeUtf8();
-
-      resultPtr = saveFn(jsonPtr.cast<Char>(), errorPtr);
-      if (resultPtr == nullptr) {
-        return ProfileRegistryResult.error('saveProfile returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.profileRegistry.saveProfile(profileJson);
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -223,14 +168,6 @@ mixin ProfileRegistryFFIMixin {
       return ProfileRegistryResult.success(null);
     } catch (e) {
       return ProfileRegistryResult.error('saveProfile exception: $e');
-    } finally {
-      calloc.free(errorPtr);
-      if (jsonPtr != null) {
-        calloc.free(jsonPtr);
-      }
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
     }
   }
 
@@ -240,24 +177,14 @@ mixin ProfileRegistryFFIMixin {
   ///
   /// Returns success or error.
   ProfileRegistryResult<void> deleteProfile(String profileId) {
-    final deleteFn = bindings?.profileRegistryDeleteProfile;
-    if (deleteFn == null) {
+    if (bindings == null) {
       return ProfileRegistryResult.error(
         'profileRegistryDeleteProfile not available',
       );
     }
 
-    final idPtr = profileId.toNativeUtf8();
-    Pointer<Char>? resultPtr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-
     try {
-      resultPtr = deleteFn(idPtr.cast<Char>(), errorPtr);
-      if (resultPtr == nullptr) {
-        return ProfileRegistryResult.error('deleteProfile returned null');
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final raw = bindings!.profileRegistry.deleteProfile(profileId);
       final result = _FfiResultParser.parse<void>(raw, null);
 
       if (result.hasError) {
@@ -267,12 +194,6 @@ mixin ProfileRegistryFFIMixin {
       return ProfileRegistryResult.success(null);
     } catch (e) {
       return ProfileRegistryResult.error('deleteProfile exception: $e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(idPtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
     }
   }
 
@@ -284,35 +205,17 @@ mixin ProfileRegistryFFIMixin {
   ProfileRegistryResult<List<Profile>> findCompatibleProfiles(
     LayoutType layoutType,
   ) {
-    final findFn = bindings?.profileRegistryFindCompatibleProfiles;
-    if (findFn == null) {
+    if (bindings == null) {
       return ProfileRegistryResult.error(
         'profileRegistryFindCompatibleProfiles not available',
       );
     }
 
-    // Convert LayoutType to string
-    // Convert LayoutType to string
-    final layoutTypeStr = layoutType.toJsonString();
-    final typePtr = layoutTypeStr.toNativeUtf8();
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? resultPtr;
-
     try {
-      resultPtr = findFn(typePtr.cast<Char>(), errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return ProfileRegistryResult.error(error);
-      }
-      if (resultPtr == nullptr) {
-        return ProfileRegistryResult.error(
-          'findCompatibleProfiles returned null',
-        );
-      }
-
-      final raw = resultPtr.cast<Utf8>().toDartString();
+      final layoutTypeStr = layoutType.toJsonString();
+      final raw = bindings!.profileRegistry.findCompatibleProfiles(
+        layoutTypeStr,
+      );
       final result = _FfiResultParser.parse<List<dynamic>>(
         raw,
         (json) => json as List<dynamic>,
@@ -332,12 +235,6 @@ mixin ProfileRegistryFFIMixin {
       return ProfileRegistryResult.error(
         'findCompatibleProfiles exception: $e',
       );
-    } finally {
-      calloc.free(typePtr);
-      if (resultPtr != null && resultPtr != nullptr) {
-        _freeString(resultPtr);
-      }
-      calloc.free(errorPtr);
     }
   }
 }

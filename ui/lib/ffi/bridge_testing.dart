@@ -5,9 +5,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
 import 'bridge_testing_types.dart';
@@ -22,39 +19,15 @@ mixin BridgeTestingMixin {
   ///
   /// Returns list of discovered test functions.
   TestDiscoveryResult discoverTests(String path) {
-    final discoverFn = bindings?.discoverTests;
-    if (discoverFn == null) {
+    if (bindings == null) {
       return TestDiscoveryResult.error('discoverTests not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = discoverFn(pathPtr.cast<Char>(), errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return TestDiscoveryResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return TestDiscoveryResult.error('discoverTests returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.discoverTests(path);
       return TestDiscoveryResult.parse(raw);
     } catch (e) {
       return TestDiscoveryResult.error('$e');
-    } finally {
-      calloc.free(pathPtr);
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -63,43 +36,15 @@ mixin BridgeTestingMixin {
   /// [path] - Path to the script file.
   /// [filter] - Optional pattern to filter test names (null for all tests).
   TestRunResult runTests(String path, {String? filter}) {
-    final runFn = bindings?.runTests;
-    if (runFn == null) {
+    if (bindings == null) {
       return TestRunResult.error('runTests not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    final filterPtr = filter?.toNativeUtf8() ?? nullptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = runFn(pathPtr.cast<Char>(), filterPtr.cast<Char>(), errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return TestRunResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return TestRunResult.error('runTests returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.runTests(path, filter ?? '');
       return TestRunResult.parse(raw);
     } catch (e) {
       return TestRunResult.error('$e');
-    } finally {
-      calloc.free(pathPtr);
-      calloc.free(errorPtr);
-      if (filterPtr != nullptr) {
-        calloc.free(filterPtr);
-      }
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -114,125 +59,48 @@ mixin BridgeTestingMixin {
     String? scriptPath,
     bool comboMode = false,
   }) {
-    final simFn = bindings?.simulate;
-    if (simFn == null) {
+    if (bindings == null) {
       return SimulationResult.error('simulate not available');
     }
 
     final keysJson = json.encode(keys.map((k) => k.toJson()).toList());
-    final keysPtr = keysJson.toNativeUtf8();
-    final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = simFn(
-        keysPtr.cast<Char>(),
-        scriptPtr.cast<Char>(),
+      final raw = bindings!.compat.simulate(
+        keysJson,
+        scriptPath ?? '',
         comboMode,
-        errorPtr,
       );
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return SimulationResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return SimulationResult.error('simulate returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
       return SimulationResult.parse(raw);
     } catch (e) {
       return SimulationResult.error('$e');
-    } finally {
-      calloc.free(keysPtr);
-      calloc.free(errorPtr);
-      if (scriptPtr != nullptr) {
-        calloc.free(scriptPtr);
-      }
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// Run benchmark with specified iterations.
   BenchmarkResult runBenchmark(int iterations, {String? scriptPath}) {
-    final benchFn = bindings?.runBenchmark;
-    if (benchFn == null) {
+    if (bindings == null) {
       return BenchmarkResult.error('runBenchmark not available');
     }
 
-    final scriptPtr = scriptPath?.toNativeUtf8() ?? nullptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = benchFn(iterations, scriptPtr.cast<Char>(), errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return BenchmarkResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return BenchmarkResult.error('runBenchmark returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.runBenchmark(iterations, scriptPath ?? '');
       return BenchmarkResult.parse(raw);
     } catch (e) {
       return BenchmarkResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      if (scriptPtr != nullptr) {
-        calloc.free(scriptPtr);
-      }
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// Run system diagnostics.
   DoctorResult runDoctor() {
-    final doctorFn = bindings?.runDoctor;
-    if (doctorFn == null) {
+    if (bindings == null) {
       return DoctorResult.error('runDoctor not available');
     }
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = doctorFn(errorPtr);
-
-      if (errorPtr.value.address != 0) {
-        final error = errorPtr.value.toDartString();
-        bindings?.freeString(errorPtr.value.cast<Char>());
-        return DoctorResult.error(error);
-      }
-
-      if (ptr == nullptr) {
-        return DoctorResult.error('runDoctor returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.runDoctor();
       return DoctorResult.parse(raw);
     } catch (e) {
       return DoctorResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 }

@@ -8,8 +8,6 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:ffi/ffi.dart';
-
 import 'bindings.dart';
 import 'debug_tools.dart';
 
@@ -43,7 +41,7 @@ mixin BridgeCoreMixin {
         return false;
       }
 
-      final result = bindings!.init();
+      final result = bindings!.base.init();
       initialized = result == 0;
       return initialized;
     },
@@ -60,12 +58,7 @@ mixin BridgeCoreMixin {
       context: {'path': path},
       includeTimeline: false,
       call: () {
-        final pathPtr = path.toNativeUtf8().cast<Char>();
-        try {
-          bindings!.setConfigRoot(pathPtr);
-        } finally {
-          malloc.free(pathPtr);
-        }
+        bindings!.base.setConfigRoot(path);
       },
     );
   }
@@ -80,8 +73,7 @@ mixin BridgeCoreMixin {
       operation: 'core.version',
       includeTimeline: false,
       call: () {
-        final ptr = bindings!.version();
-        return ptr.cast<Utf8>().toDartString();
+        return bindings!.base.version();
       },
     );
   }

@@ -117,8 +117,8 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     // Let's just spawn at x=0, y=0 (Unit coordinates).
 
     // Default position: 50, 50 (Pixels)
-    var finalX = 50;
-    var finalY = 50;
+    var finalX = 50.0;
+    var finalY = 50.0;
 
     if (position != null) {
       finalX = position.dx;
@@ -339,7 +339,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
 
   Widget _buildKeyCanvas() {
     // Pixel-based coordinates with 5px snapping
-    const canvasSize = 4000;
+    const canvasSize = 4000.0;
 
     return SizedBox(
       width: canvasSize,

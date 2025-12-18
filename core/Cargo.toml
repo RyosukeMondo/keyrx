@@ -54,6 +54,7 @@ ffi_export = { path = "macros/ffi_export" }
 reqwest.workspace = true
 reqwest-middleware.workspace = true
 http = "1"
+num-traits = "0.2"
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }
@@ -141,7 +142,7 @@ windows = { workspace = true, optional = true, features = [
 
 [target.'cfg(target_os = "linux")'.dependencies]
 evdev = { workspace = true, optional = true }
-nix = { workspace = true, optional = true }
+nix = { workspace = true, optional = true, features = ["poll"] }
 signal-hook = { workspace = true, optional = true }
 
 # Inherit workspace lints and override critical ones to be stricter

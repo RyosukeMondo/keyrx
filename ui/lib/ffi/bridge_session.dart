@@ -4,10 +4,6 @@
 /// for the KeyRx bridge.
 library;
 
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
-
 import 'bindings.dart';
 import 'bridge_session_types.dart';
 
@@ -20,154 +16,71 @@ mixin BridgeSessionMixin {
 
   /// Start recording key events to a file.
   RecordingStartResult startRecording(String path) {
-    final startFn = bindings?.startRecording;
-    if (startFn == null) {
+    if (bindings == null) {
       return RecordingStartResult.error('startRecording not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = startFn(pathPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return RecordingStartResult.error('startRecording returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.startRecording(path);
       return RecordingStartResult.parse(raw);
     } catch (e) {
       return RecordingStartResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(pathPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// Stop recording and save the session.
   RecordingStopResult stopRecording() {
-    final stopFn = bindings?.stopRecording;
-    if (stopFn == null) {
+    if (bindings == null) {
       return RecordingStopResult.error('stopRecording not available');
     }
 
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = stopFn(errorPtr);
-      if (ptr == nullptr) {
-        return RecordingStopResult.error('stopRecording returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.stopRecording();
       return RecordingStopResult.parse(raw);
     } catch (e) {
       return RecordingStopResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// List session files in a directory.
   SessionListResult listSessions(String dirPath) {
-    final listFn = bindings?.listSessions;
-    if (listFn == null) {
+    if (bindings == null) {
       return SessionListResult.error('listSessions not available');
     }
 
-    final dirPtr = dirPath.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = listFn(dirPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return SessionListResult.error('listSessions returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.listSessions(dirPath);
       return SessionListResult.parse(raw);
     } catch (e) {
       return SessionListResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(dirPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// Analyze a session file.
   SessionAnalysisResult analyzeSession(String path) {
-    final analyzeFn = bindings?.analyzeSession;
-    if (analyzeFn == null) {
+    if (bindings == null) {
       return SessionAnalysisResult.error('analyzeSession not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = analyzeFn(pathPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return SessionAnalysisResult.error('analyzeSession returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.analyzeSession(path);
       return SessionAnalysisResult.parse(raw);
     } catch (e) {
       return SessionAnalysisResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(pathPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
   /// Replay a session file with optional verification.
   ReplayResult replaySession(String path, {bool verify = false}) {
-    final replayFn = bindings?.replaySession;
-    if (replayFn == null) {
+    if (bindings == null) {
       return ReplayResult.error('replaySession not available');
     }
 
-    final pathPtr = path.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = replayFn(pathPtr.cast<Char>(), verify, errorPtr);
-      if (ptr == nullptr) {
-        return ReplayResult.error('replaySession returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.replaySession(path, verify);
       return ReplayResult.parse(raw);
     } catch (e) {
       return ReplayResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(pathPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 }

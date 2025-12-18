@@ -32,6 +32,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
   bool _showInput = true;
   bool _showOutput = true;
   bool _showStateChange = true;
+  bool _showDiscovery = true;
 
   StreamSubscription<DaemonEvent>? _eventSubscription;
   StreamSubscription<DaemonConnectionState>? _stateSubscription;
@@ -165,6 +166,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
             input: (_) => _showInput,
             output: (_) => _showOutput,
             stateChange: (_) => _showStateChange,
+            discovery: (_) => _showDiscovery,
           ),
         )
         .toList();
@@ -212,6 +214,8 @@ class _MonitorViewState extends ConsumerState<MonitorView>
     output: (event) => _buildOutputEventTile(event, eventDisplay.timestamp),
     stateChange: (event) =>
         _buildStateChangeEventTile(event, eventDisplay.timestamp),
+    discovery: (event) =>
+        _buildDiscoveryEventTile(event, eventDisplay.timestamp),
   );
 
   Widget _buildInputEventTile(InputEvent event, DateTime timestamp) {
@@ -345,6 +349,33 @@ class _MonitorViewState extends ConsumerState<MonitorView>
     ),
   );
 
+  Widget _buildDiscoveryEventTile(
+    DiscoveryCandidate event,
+    DateTime timestamp,
+  ) => ListTile(
+    dense: true,
+    visualDensity: VisualDensity.compact,
+    leading: CircleAvatar(
+      radius: 12,
+      backgroundColor: Colors.teal.withValues(alpha: 0.2),
+      child: const Icon(Icons.usb, color: Colors.teal, size: 14),
+    ),
+    title: Text(
+      event.name,
+      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+    ),
+    subtitle: Text(
+      'New device detected • ${_timeFormat.format(timestamp)}',
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+    ),
+    trailing: Text(
+      event.deviceId,
+      style: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', fontSize: 11),
+    ),
+  );
+
   void _showFilterDialog() {
     showDialog<void>(
       context: context,
@@ -379,6 +410,15 @@ class _MonitorViewState extends ConsumerState<MonitorView>
                 onChanged: (value) {
                   setDialogState(() => _showStateChange = value ?? true);
                   setState(() => _showStateChange = value ?? true);
+                },
+              ),
+              CheckboxListTile(
+                title: const Text('Discovery Events'),
+                subtitle: const Text('Device connection events'),
+                value: _showDiscovery,
+                onChanged: (value) {
+                  setDialogState(() => _showDiscovery = value ?? true);
+                  setState(() => _showDiscovery = value ?? true);
                 },
               ),
             ],

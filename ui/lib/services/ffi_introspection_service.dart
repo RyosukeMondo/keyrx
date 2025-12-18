@@ -2,8 +2,6 @@
 //
 // Service for fetching and caching FFI metadata from Rust.
 
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 import '../ffi/bindings.dart';
 import '../ffi/introspection_models.dart';
 
@@ -22,13 +20,8 @@ class FfiIntrospectionService {
       return _cachedData!;
     }
 
-    final resultPtr = _bindings.introspectionMetadata();
-    if (resultPtr == nullptr) {
-      throw Exception('Failed to fetch introspection metadata');
-    }
-
     try {
-      final resultStr = resultPtr.cast<Utf8>().toDartString();
+      final resultStr = _bindings.base.introspectionMetadata();
       final result = FfiResult.fromJson(resultStr, IntrospectionData.fromJson);
 
       if (!result.success || result.data == null) {
@@ -40,8 +33,8 @@ class FfiIntrospectionService {
       _cachedData = result.data!;
       _lastFetch = DateTime.now();
       return _cachedData!;
-    } finally {
-      _bindings.freeString(resultPtr.cast());
+    } catch (e) {
+      throw Exception('Failed to fetch introspection metadata: $e');
     }
   }
 

@@ -4,9 +4,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:ffi/ffi.dart';
 
 import '../models/validation.dart';
 import 'bindings.dart';
@@ -28,32 +25,15 @@ mixin BridgeValidationMixin {
       return _validateWithOptions(script, options);
     }
 
-    final validateFn = bindings?.validateScript;
-    if (validateFn == null) {
+    if (bindings == null) {
       return ValidationResult.error('validateScript not available');
     }
 
-    final scriptPtr = script.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = validateFn(scriptPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return ValidationResult.error('validateScript returned null');
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.validateScript(script);
       return _parseValidationResult(raw);
     } catch (e) {
       return ValidationResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(scriptPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -61,42 +41,19 @@ mixin BridgeValidationMixin {
     String script,
     ValidationOptions options,
   ) {
-    final validateFn = bindings?.validateScriptWithOptions;
-    if (validateFn == null) {
-      // Fall back to basic validation if options variant not available
-      return validateScript(script);
+    if (bindings == null) {
+      return ValidationResult.error('validateScriptWithOptions not available');
     }
 
-    final scriptPtr = script.toNativeUtf8();
     final optionsJson = json.encode(options.toJson());
-    final optionsPtr = optionsJson.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = validateFn(
-        scriptPtr.cast<Char>(),
-        optionsPtr.cast<Char>(),
-        errorPtr,
+      final raw = bindings!.compat.validateScriptWithOptions(
+        script,
+        optionsJson,
       );
-      if (ptr == nullptr) {
-        return ValidationResult.error(
-          'validateScriptWithOptions returned null',
-        );
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
       return _parseValidationResult(raw);
     } catch (e) {
       return ValidationResult.error('$e');
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(scriptPtr);
-      calloc.free(optionsPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -105,32 +62,13 @@ mixin BridgeValidationMixin {
   /// [partial] is the partial key name typed by the user.
   /// Returns a list of similar valid key names.
   List<String> suggestKeys(String partial) {
-    final suggestFn = bindings?.suggestKeys;
-    if (suggestFn == null) {
-      return const [];
-    }
+    if (bindings == null) return const [];
 
-    final partialPtr = partial.toNativeUtf8();
-    Pointer<Char>? ptr;
-    final errorPtr = calloc<Pointer<Utf8>>();
     try {
-      ptr = suggestFn(partialPtr.cast<Char>(), errorPtr);
-      if (ptr == nullptr) {
-        return const [];
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.suggestKeys(partial);
       return _parseSuggestions(raw);
     } catch (_) {
       return const [];
-    } finally {
-      calloc.free(errorPtr);
-      calloc.free(partialPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 
@@ -138,30 +76,13 @@ mixin BridgeValidationMixin {
   ///
   /// Returns a list of all recognized key names.
   List<String> allKeyNames() {
-    final allNamesFn = bindings?.allKeyNames;
-    if (allNamesFn == null) {
-      return const [];
-    }
+    if (bindings == null) return const [];
 
-    final errorPtr = calloc<Pointer<Utf8>>();
-    Pointer<Char>? ptr;
     try {
-      ptr = allNamesFn(errorPtr);
-      if (ptr == nullptr) {
-        return const [];
-      }
-
-      final raw = ptr.cast<Utf8>().toDartString();
+      final raw = bindings!.compat.allKeyNames();
       return _parseSuggestions(raw);
     } catch (_) {
       return const [];
-    } finally {
-      calloc.free(errorPtr);
-      if (ptr != null && ptr != nullptr) {
-        try {
-          bindings?.freeString(ptr);
-        } catch (_) {}
-      }
     }
   }
 

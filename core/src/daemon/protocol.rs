@@ -177,86 +177,10 @@ pub const METHOD_EVENTS_UNSUBSCRIBE: &str = "events.unsubscribe";
 // Notification method names
 pub const NOTIFY_EVENT_INPUT: &str = "event.input";
 pub const NOTIFY_EVENT_OUTPUT: &str = "event.output";
+pub const NOTIFY_EVENT_DECISION: &str = "event.decision";
 pub const NOTIFY_EVENT_STATE_CHANGE: &str = "event.state_change";
 
-/// Parameters for engine.start
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineStartParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub script_path: Option<String>,
-    #[serde(default = "default_true")]
-    pub use_all_devices: bool,
-}
-
-fn default_true() -> bool {
-    true
-}
-
-/// Parameters for config.reload
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfigReloadParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub script_path: Option<String>,
-}
-
-/// Parameters for events.subscribe
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventsSubscribeParams {
-    #[serde(default = "default_event_types")]
-    pub event_types: Vec<String>,
-}
-
-fn default_event_types() -> Vec<String> {
-    vec![
-        "input".to_string(),
-        "output".to_string(),
-        "state_change".to_string(),
-    ]
-}
-
-/// Device info in status response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DeviceInfo {
-    pub path: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vendor_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub product_id: Option<String>,
-}
-
-/// Engine status response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineStatus {
-    pub status: String, // "running", "stopped", "error"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub script_path: Option<String>,
-    #[serde(default)]
-    pub devices: Vec<DeviceInfo>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uptime_seconds: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events_processed: Option<u64>,
-}
-
-/// Input event notification parameters
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InputEventParams {
-    pub timestamp_us: u64,
-    pub device_path: String,
-    pub device_name: String,
-    pub event_type: String, // "key_press", "key_release"
-    pub key_code: u16,
-    pub key_name: String,
-    #[serde(default)]
-    pub modifiers: Vec<String>,
-}
+// ...
 
 /// Output event notification parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,6 +189,16 @@ pub struct OutputEventParams {
     pub action_type: String, // "key_press", "key_release", "tap"
     pub key_code: u16,
     pub key_name: String,
+}
+
+/// Decision event notification parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DecisionEventParams {
+    pub timestamp_us: u64,
+    pub key_code: u16,
+    pub key_name: String,
+    pub decision_type: String, // "PassThrough", "Remap", etc.
+    pub outputs: Vec<String>, // Summarized outputs
 }
 
 /// State change notification parameters
@@ -276,3 +210,44 @@ pub struct StateChangeParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceInfo {
+    pub path: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vendor_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub product_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EngineStatus {
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_path: Option<String>,
+    pub devices: Vec<DeviceInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uptime_seconds: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub events_processed: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EngineStartParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfigReloadParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_path: Option<String>,
+}
+
