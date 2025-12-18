@@ -67,6 +67,8 @@ class DaemonService {
 
   final Map<int, Completer<dynamic>> _pendingRequests = {};
   final List<_QueuedRequest> _requestQueue = [];
+  final StreamController<DaemonEvent> _eventController =
+      StreamController<DaemonEvent>.broadcast();
   final StreamController<JsonRpcNotification> _notificationController =
       StreamController<JsonRpcNotification>.broadcast();
   final StreamController<DaemonConnectionState> _stateController =
@@ -387,14 +389,11 @@ class DaemonService {
     String? scriptPath,
     bool useAllDevices = true,
   }) async {
-    final result = await sendRequest(
-      DaemonMethods.engineStart,
-      {
-        if (configPath != null) 'config_path': configPath,
-        if (scriptPath != null) 'script_path': scriptPath,
-        'use_all_devices': useAllDevices,
-      },
-    );
+    final result = await sendRequest(DaemonMethods.engineStart, {
+      if (configPath != null) 'config_path': configPath,
+      if (scriptPath != null) 'script_path': scriptPath,
+      'use_all_devices': useAllDevices,
+    });
 
     final deviceList = result['devices'] as List<dynamic>? ?? [];
     return deviceList
@@ -409,20 +408,15 @@ class DaemonService {
 
   /// Reload config and/or script.
   Future<void> reloadConfig({String? configPath, String? scriptPath}) async {
-    await sendRequest(
-      DaemonMethods.engineReload,
-      {
-        if (configPath != null) 'config_path': configPath,
-        if (scriptPath != null) 'script_path': scriptPath,
-      },
-    );
+    await sendRequest(DaemonMethods.engineReload, {
+      if (configPath != null) 'config_path': configPath,
+      if (scriptPath != null) 'script_path': scriptPath,
+    });
   }
 
   /// Get current engine status.
   Future<EngineStatus> getStatus() async {
-    final result = await sendRequest(
-      DaemonMethods.engineStatus,
-    );
+    final result = await sendRequest(DaemonMethods.engineStatus);
 
     final status = EngineStatus.fromJson(result as Map<String, dynamic>);
     _statusSubject.add(status); // Update SSOT
@@ -433,17 +427,14 @@ class DaemonService {
   Future<void> subscribeEvents({
     List<String> eventTypes = const ['input', 'output', 'state_change'],
   }) async {
-    await sendRequest(
-      DaemonMethods.eventsSubscribe,
-      {'event_types': eventTypes},
-    );
+    await sendRequest(DaemonMethods.eventsSubscribe, {
+      'event_types': eventTypes,
+    });
   }
 
   /// Unsubscribe from events.
   Future<void> unsubscribeEvents() async {
-    await sendRequest(
-      DaemonMethods.eventsUnsubscribe,
-    );
+    await sendRequest(DaemonMethods.eventsUnsubscribe);
   }
 
   /// Handle incoming data from socket.
