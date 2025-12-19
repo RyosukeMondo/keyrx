@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:core_logic/core_logic.dart' as core;
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
-import 'package:keyrx_ui/services/hardware_service.dart';
-import 'package:core_logic/services/keymap_service.dart';
-import 'package:keyrx_ui/services/layout_service.dart';
+import 'package:keyrx_ui/services/hardware_service_ui.dart';
+import 'package:keyrx_ui/services/layout_service_ui.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:provider/provider.dart';
@@ -20,13 +21,16 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     engineService: engine,
     mappingRepository: MappingRepository(),
     deviceService: FakeDeviceService(),
+    deviceProfileService: FakeDeviceProfileService(),
+    deviceRegistryService: FakeDeviceRegistryService(),
+    profileRegistryService: FakeProfileRegistryService(),
     scriptFileService: FakeScriptFileService(),
     testService: FakeTestService(),
     bridge: bridge,
     apiDocsService: FakeApiDocsService(),
     storagePathResolver: const StoragePathResolver(),
-    layoutService: LayoutService(bridge: bridge),
-    hardwareService: HardwareService(bridge: bridge),
+    layoutService: LayoutServiceUI(core.LayoutService(bridge: bridge)),
+    hardwareService: HardwareServiceUI(core.HardwareService(bridge: bridge)),
     keymapService: KeymapService(bridge: FakeBridge()),
     runtimeService: FakeRuntimeService(),
     daemonManager: MockDaemonManager(),

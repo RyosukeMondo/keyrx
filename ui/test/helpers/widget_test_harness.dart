@@ -11,11 +11,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:core_logic/core_logic.dart' as core;
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
-import 'package:keyrx_ui/services/hardware_service.dart';
-import 'package:core_logic/services/keymap_service.dart';
-import 'package:keyrx_ui/services/layout_service.dart';
+import 'package:keyrx_ui/services/hardware_service_ui.dart';
+import 'package:keyrx_ui/services/layout_service_ui.dart';
 import 'package:keyrx_ui/services/profile_autosave_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
@@ -160,8 +161,8 @@ class WidgetTestHarness {
         storagePathResolver: storageResolver,
         delayFn: (_) async {},
       ),
-      layoutService: LayoutService(bridge: bridge),
-      hardwareService: HardwareService(bridge: bridge),
+      layoutService: LayoutServiceUI(core.LayoutService(bridge: bridge)),
+      hardwareService: HardwareServiceUI(core.HardwareService(bridge: bridge)),
       keymapService: KeymapService(bridge: bridge),
       runtimeService: FakeRuntimeService(),
       daemonManager: MockDaemonManager(),
