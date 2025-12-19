@@ -1,6 +1,6 @@
 # Tasks: Extend CLI Commands
 
-- [-] 1. Update CommandProcessor constructor and main
+- [x] 1. Update CommandProcessor constructor and main
   - File: apps/cli_tool/lib/command_processor.dart, apps/cli_tool/bin/keyrx_cli.dart
   - Add RuntimeService, HardwareService, LayoutService, KeymapService parameters to CommandProcessor
   - Update main.dart to create and pass all services
