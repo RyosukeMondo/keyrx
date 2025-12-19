@@ -5,7 +5,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import 'bindings.dart';
 
@@ -241,10 +241,10 @@ mixin BridgeDeviceProfileMixin {
       if (trimmed.toLowerCase().startsWith('ok:')) {
         return true;
       }
-      debugPrint('saveDeviceProfile failed. Rust returned: $trimmed');
+      print('saveDeviceProfile failed. Rust returned: $trimmed');
       return false;
     } catch (e) {
-      debugPrint('saveDeviceProfile exception: $e');
+      print('saveDeviceProfile exception: $e');
       return false;
     }
   }

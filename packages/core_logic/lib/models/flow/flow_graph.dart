@@ -10,7 +10,7 @@ part 'flow_graph.freezed.dart';
 part 'flow_graph.g.dart';
 
 @freezed
-class FlowPosition with _$FlowPosition {
+abstract class FlowPosition with _$FlowPosition {
   const factory FlowPosition({required double x, required double y}) =
       _FlowPosition;
 
@@ -19,7 +19,7 @@ class FlowPosition with _$FlowPosition {
 }
 
 @freezed
-class FlowEdge with _$FlowEdge {
+abstract class FlowEdge with _$FlowEdge {
   const factory FlowEdge({
     required String from,
     required String to,
@@ -34,7 +34,7 @@ class FlowEdge with _$FlowEdge {
 }
 
 @Freezed(unionKey: 'type')
-class FlowNode with _$FlowNode {
+abstract class FlowNode with _$FlowNode {
   const factory FlowNode.device({
     required String id,
     required DeviceInstanceId deviceId,
@@ -61,7 +61,7 @@ class FlowNode with _$FlowNode {
 enum EdgeStatus { valid, invalid, warning }
 
 @freezed
-class FlowGraph with _$FlowGraph {
+abstract class FlowGraph with _$FlowGraph {
   const factory FlowGraph({
     @Default(<FlowNode>[]) List<FlowNode> nodes,
     @Default(<FlowEdge>[]) List<FlowEdge> edges,

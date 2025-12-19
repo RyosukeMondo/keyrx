@@ -5,9 +5,9 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
-import '../pages/migration_prompt_page.dart';
+import '../models/migration_report.dart';
 import 'bindings.dart';
 
 /// Mixin providing migration FFI methods.
@@ -22,7 +22,7 @@ mixin BridgeMigrationMixin {
   /// [oldProfilesDir] - Path to directory containing old V1 profiles.
   Future<bool> checkMigrationNeeded(String oldProfilesDir) async {
     if (bindings == null) {
-      debugPrint('migrationCheckNeeded not available');
+      print('migrationCheckNeeded not available');
       return false;
     }
 
@@ -34,13 +34,13 @@ mixin BridgeMigrationMixin {
         final payload = trimmed.substring(trimmed.indexOf(':') + 1).trim();
         return payload.toLowerCase() == 'true';
       } else if (trimmed.toLowerCase().startsWith('error:')) {
-        debugPrint('Migration check error: $trimmed');
+        print('Migration check error: $trimmed');
         return false;
       }
 
       return false;
     } catch (e) {
-      debugPrint('Migration check exception: $e');
+      print('Migration check exception: $e');
       return false;
     }
   }

@@ -11,7 +11,7 @@ part 'runtime_config.g.dart';
 
 /// Runtime assignment for a device slot.
 @freezed
-class ProfileSlot with _$ProfileSlot {
+abstract class ProfileSlot with _$ProfileSlot {
   const factory ProfileSlot({
     required String id,
     @JsonKey(name: 'hardware_profile_id')
@@ -29,7 +29,7 @@ class ProfileSlot with _$ProfileSlot {
 
 /// Runtime slots associated to a single device instance.
 @freezed
-class DeviceSlots with _$DeviceSlots {
+abstract class DeviceSlots with _$DeviceSlots {
   const factory DeviceSlots({
     required DeviceInstanceId device,
     @Default(<ProfileSlot>[]) List<ProfileSlot> slots,
@@ -43,7 +43,7 @@ class DeviceSlots with _$DeviceSlots {
 
 /// Live runtime configuration for all connected devices.
 @freezed
-class RuntimeConfig with _$RuntimeConfig {
+abstract class RuntimeConfig with _$RuntimeConfig {
   const factory RuntimeConfig({
     @Default(<DeviceSlots>[]) List<DeviceSlots> devices,
   }) = _RuntimeConfig;

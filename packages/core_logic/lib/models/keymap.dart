@@ -11,7 +11,7 @@ part 'keymap.g.dart';
 
 /// A combo definition (multiple keys pressed together).
 @freezed
-class Combo with _$Combo {
+abstract class Combo with _$Combo {
   const factory Combo({
     required List<VirtualKeyId> keys,
     required String output,
@@ -22,7 +22,7 @@ class Combo with _$Combo {
 
 /// A single logical layer of a keymap (virtual key -> action).
 @freezed
-class KeymapLayer with _$KeymapLayer {
+abstract class KeymapLayer with _$KeymapLayer {
   const factory KeymapLayer({
     required String name,
     @Default(<VirtualKeyId, ActionBinding>{})
@@ -37,7 +37,7 @@ class KeymapLayer with _$KeymapLayer {
 
 /// Logical mapping definition attached to a virtual layout.
 @freezed
-class Keymap with _$Keymap {
+abstract class Keymap with _$Keymap {
   const factory Keymap({
     required KeymapId id,
     @JsonKey(name: 'virtual_layout_id')

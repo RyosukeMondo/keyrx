@@ -49,7 +49,7 @@ class RequestId {
 
 /// JSON-RPC 2.0 request.
 @freezed
-class JsonRpcRequest with _$JsonRpcRequest {
+abstract class JsonRpcRequest with _$JsonRpcRequest {
   const factory JsonRpcRequest({
     required String jsonrpc,
     required String method,
@@ -63,7 +63,7 @@ class JsonRpcRequest with _$JsonRpcRequest {
 
 /// JSON-RPC 2.0 response (success).
 @freezed
-class JsonRpcResponse with _$JsonRpcResponse {
+abstract class JsonRpcResponse with _$JsonRpcResponse {
   const factory JsonRpcResponse({
     required String jsonrpc,
     required dynamic result,
@@ -76,7 +76,7 @@ class JsonRpcResponse with _$JsonRpcResponse {
 
 /// JSON-RPC 2.0 error object.
 @freezed
-class ErrorObject with _$ErrorObject {
+abstract class ErrorObject with _$ErrorObject {
   const factory ErrorObject({
     required int code,
     required String message,
@@ -89,7 +89,7 @@ class ErrorObject with _$ErrorObject {
 
 /// JSON-RPC 2.0 error response.
 @freezed
-class JsonRpcError with _$JsonRpcError {
+abstract class JsonRpcError with _$JsonRpcError {
   const factory JsonRpcError({
     required String jsonrpc,
     required ErrorObject error,
@@ -102,7 +102,7 @@ class JsonRpcError with _$JsonRpcError {
 
 /// JSON-RPC 2.0 notification (no ID).
 @freezed
-class JsonRpcNotification with _$JsonRpcNotification {
+abstract class JsonRpcNotification with _$JsonRpcNotification {
   const factory JsonRpcNotification({
     required String jsonrpc,
     required String method,
@@ -115,7 +115,7 @@ class JsonRpcNotification with _$JsonRpcNotification {
 
 /// Incoming message (response, error, or notification).
 @freezed
-class IncomingMessage with _$IncomingMessage {
+abstract class IncomingMessage with _$IncomingMessage {
   const factory IncomingMessage.response(JsonRpcResponse response) =
       _IncomingResponse;
   const factory IncomingMessage.error(JsonRpcError error) = _IncomingError;
@@ -161,7 +161,7 @@ class DaemonNotifications {
 
 /// Device info in responses.
 @freezed
-class DaemonDeviceInfo with _$DaemonDeviceInfo {
+abstract class DaemonDeviceInfo with _$DaemonDeviceInfo {
   const factory DaemonDeviceInfo({
     required String path,
     required String name,
@@ -175,7 +175,7 @@ class DaemonDeviceInfo with _$DaemonDeviceInfo {
 
 /// Engine status response.
 @freezed
-class EngineStatus with _$EngineStatus {
+abstract class EngineStatus with _$EngineStatus {
   const factory EngineStatus({
     required String status, // "running", "stopped", "error"
     @JsonKey(name: 'config_path') String? configPath,
@@ -191,7 +191,7 @@ class EngineStatus with _$EngineStatus {
 
 /// Input event notification.
 @freezed
-class InputEvent with _$InputEvent {
+abstract class InputEvent with _$InputEvent {
   const factory InputEvent({
     @JsonKey(name: 'timestamp_us') required int timestampUs,
     @JsonKey(name: 'device_path') required String devicePath,
@@ -209,7 +209,7 @@ class InputEvent with _$InputEvent {
 
 /// Output event notification.
 @freezed
-class OutputEvent with _$OutputEvent {
+abstract class OutputEvent with _$OutputEvent {
   const factory OutputEvent({
     @JsonKey(name: 'timestamp_us') required int timestampUs,
     @JsonKey(name: 'action_type')
@@ -224,7 +224,7 @@ class OutputEvent with _$OutputEvent {
 
 /// Decision event notification.
 @freezed
-class DecisionEvent with _$DecisionEvent {
+abstract class DecisionEvent with _$DecisionEvent {
   const factory DecisionEvent({
     @JsonKey(name: 'timestamp_us') required int timestampUs,
     @JsonKey(name: 'key_code') required int keyCode,
@@ -239,7 +239,7 @@ class DecisionEvent with _$DecisionEvent {
 
 /// State change notification.
 @freezed
-class StateChangeEvent with _$StateChangeEvent {
+abstract class StateChangeEvent with _$StateChangeEvent {
   const factory StateChangeEvent({
     required String type, // "config_reloaded", "script_reloaded", etc.
     @JsonKey(name: 'timestamp_us') required int timestampUs,
@@ -253,7 +253,7 @@ class StateChangeEvent with _$StateChangeEvent {
 
 /// Unified daemon event.
 @freezed
-class DaemonEvent with _$DaemonEvent {
+abstract class DaemonEvent with _$DaemonEvent {
   const factory DaemonEvent.input(InputEvent event) = _DaemonInputEvent;
   const factory DaemonEvent.output(OutputEvent event) = _DaemonOutputEvent;
   const factory DaemonEvent.decision(DecisionEvent event) =
@@ -287,7 +287,7 @@ class DaemonEvent with _$DaemonEvent {
 
 /// Discovery candidate event.
 @freezed
-class DiscoveryCandidate with _$DiscoveryCandidate {
+abstract class DiscoveryCandidate with _$DiscoveryCandidate {
   const factory DiscoveryCandidate({
     required String deviceId,
     required int vendorId,

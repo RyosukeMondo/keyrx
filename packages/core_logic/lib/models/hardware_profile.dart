@@ -10,7 +10,7 @@ part 'hardware_profile.g.dart';
 
 /// Identifier for a concrete device instance.
 @freezed
-class DeviceInstanceId with _$DeviceInstanceId {
+abstract class DeviceInstanceId with _$DeviceInstanceId {
   const factory DeviceInstanceId({
     @JsonKey(name: 'vendor_id') required int vendorId,
     @JsonKey(name: 'product_id') required int productId,
@@ -25,7 +25,7 @@ class DeviceInstanceId with _$DeviceInstanceId {
 
 /// Wiring definition from physical scancodes to virtual keys.
 @freezed
-class HardwareProfile with _$HardwareProfile {
+abstract class HardwareProfile with _$HardwareProfile {
   const factory HardwareProfile({
     required HardwareProfileId id,
     @JsonKey(name: 'virtual_layout_id')

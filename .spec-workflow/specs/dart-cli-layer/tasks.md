@@ -17,7 +17,7 @@
   - _Requirements: 4_
   - _Prompt: Role: Refactoring Specialist | Task: Move data models from `ui/lib/models` to `packages/core_logic/lib/models`. Update imports to be self-contained within the package. | Restrictions: Ensure no Flutter dependencies remain in the models. | Success: Models compile in the new package._
 
-- [ ] 3. Move FFI Bridge to core_logic
+- [x] 3. Move FFI Bridge to core_logic
   - File: packages/core_logic/lib/ffi/
   - Move FFI binding code from `ui/lib/ffi/` to `packages/core_logic/lib/ffi/`.
   - Update paths to load the dynamic library (might need logic to find it relative to script vs app).

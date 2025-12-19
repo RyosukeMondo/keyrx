@@ -15,7 +15,7 @@ part 'profile.g.dart';
 /// Used to identify keys by their physical location (row, column)
 /// rather than their scancode, enabling layout-aware remapping.
 @freezed
-class PhysicalPosition with _$PhysicalPosition {
+abstract class PhysicalPosition with _$PhysicalPosition {
   const factory PhysicalPosition({
     /// Row index (0-based)
     required int row,
@@ -92,7 +92,7 @@ sealed class KeyAction with _$KeyAction {
 /// They are layout-aware and can be assigned to multiple devices with the
 /// same layout type.
 @freezed
-class Profile with _$Profile {
+abstract class Profile with _$Profile {
   const factory Profile({
     /// Unique identifier (UUID v4)
     required String id,

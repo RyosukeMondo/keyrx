@@ -9,7 +9,7 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'; // For @visibleForTesting
+import 'package:meta/meta.dart'; // For @visibleForTesting
 
 import 'bindings.dart';
 import 'bridge_config.dart';

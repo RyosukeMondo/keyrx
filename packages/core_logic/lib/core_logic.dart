@@ -1,8 +1,6 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
+/// Core logic for KeyRx, shared between Flutter UI and CLI.
 library;
 
-export 'src/core_logic_base.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'ffi/bridge.dart';
+export 'models/models.dart';
+export 'utils/logger.dart';

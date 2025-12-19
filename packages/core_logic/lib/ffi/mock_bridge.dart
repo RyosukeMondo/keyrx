@@ -11,13 +11,12 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import '../models/device_identity.dart';
 import '../models/device_state.dart';
 import '../models/layout_type.dart';
 import '../models/profile.dart';
-import '../pages/migration_prompt_page.dart';
 import 'bindings.dart';
 import 'bridge.dart';
 import 'bridge_config.dart';

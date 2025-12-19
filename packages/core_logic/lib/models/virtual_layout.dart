@@ -11,7 +11,7 @@ part 'virtual_layout.g.dart';
 
 /// Visual position for editor rendering.
 @freezed
-class KeyPosition with _$KeyPosition {
+abstract class KeyPosition with _$KeyPosition {
   const factory KeyPosition({required double x, required double y}) =
       _KeyPosition;
 
@@ -23,7 +23,7 @@ class KeyPosition with _$KeyPosition {
 
 /// Visual size for editor rendering.
 @freezed
-class KeySize with _$KeySize {
+abstract class KeySize with _$KeySize {
   const factory KeySize({required double width, required double height}) =
       _KeySize;
 
@@ -35,7 +35,7 @@ class KeySize with _$KeySize {
 
 /// Definition of a single virtual key within a layout.
 @freezed
-class VirtualKeyDef with _$VirtualKeyDef {
+abstract class VirtualKeyDef with _$VirtualKeyDef {
   const factory VirtualKeyDef({
     required VirtualKeyId id,
     required String label,
@@ -53,7 +53,7 @@ class VirtualKeyDef with _$VirtualKeyDef {
 
 /// Layout-agnostic representation of keys used by wiring and mapping.
 @freezed
-class VirtualLayout with _$VirtualLayout {
+abstract class VirtualLayout with _$VirtualLayout {
   const factory VirtualLayout({
     required VirtualLayoutId id,
     required String name,

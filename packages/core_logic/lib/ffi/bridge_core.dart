@@ -11,6 +11,8 @@ import 'dart:io';
 import 'bindings.dart';
 import 'debug_tools.dart';
 
+import 'library_loader.dart';
+
 /// Mixin providing core FFI initialization and lifecycle management.
 mixin BridgeCoreMixin {
   KeyrxBindings? get bindings;
@@ -20,15 +22,7 @@ mixin BridgeCoreMixin {
 
   /// Load the native library based on platform.
   static DynamicLibrary loadLibrary() {
-    if (Platform.isLinux) {
-      return DynamicLibrary.open('libkeyrx_core.so');
-    } else if (Platform.isWindows) {
-      return DynamicLibrary.open('keyrx_core.dll');
-    } else {
-      throw UnsupportedError(
-        'Platform not supported: ${Platform.operatingSystem}',
-      );
-    }
+    return LibraryLoader.load();
   }
 
   /// Initialize the KeyRx engine.

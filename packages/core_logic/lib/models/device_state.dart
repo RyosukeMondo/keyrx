@@ -15,7 +15,7 @@ part 'device_state.g.dart';
 /// Tracks the device's identity, remap status, assigned profile,
 /// and connection timestamps.
 @freezed
-class DeviceState with _$DeviceState {
+abstract class DeviceState with _$DeviceState {
   const factory DeviceState({
     /// Device identity
     required DeviceIdentity identity,

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:logging/logging.dart';
 
 typedef LogSink = void Function(String line);
+
+const bool _kReleaseMode = bool.fromEnvironment('dart.vm.product');
 
 /// Configures the global logging pipeline to emit structured JSON lines.
 class LoggingConfigurator {
@@ -40,7 +42,7 @@ class LoggingConfigurator {
       return parsed;
     }
 
-    return kReleaseMode ? Level.INFO : Level.FINE;
+    return _kReleaseMode ? Level.INFO : Level.FINE;
   }
 
   static Level? _parseLevel(String? value) {

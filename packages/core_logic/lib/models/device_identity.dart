@@ -14,7 +14,7 @@ part 'device_identity.g.dart';
 /// Unlike simple VID:PID identification, DeviceIdentity includes
 /// serial number to distinguish between multiple identical devices.
 @freezed
-class DeviceIdentity with _$DeviceIdentity {
+abstract class DeviceIdentity with _$DeviceIdentity {
   const factory DeviceIdentity({
     /// USB Vendor ID (e.g., 0x046D for Logitech)
     @JsonKey(name: 'vendor_id') required int vendorId,
