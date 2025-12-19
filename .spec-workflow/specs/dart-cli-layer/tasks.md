@@ -26,7 +26,7 @@
   - _Requirements: 1_
   - _Prompt: Role: Systems Programmer (Dart/Rust) | Task: Migrate FFI bridge code to `packages/core_logic/lib/ffi`. Implement robust library loading logic that works for both Flutter (AOT/JIT) and Dart CLI (JIT/exe). | Restrictions: Handle different platform paths for the dylib. | Success: FFI initializes correctly in a standalone Dart script._
 
-- [ ] 4. Refactor UI to use core_logic
+- [x] 4. Refactor UI to use core_logic
   - File: ui/pubspec.yaml, ui/lib/**/*
   - Add `core_logic` as a path dependency in `ui`.
   - Update UI imports to use `package:core_logic/...`.
