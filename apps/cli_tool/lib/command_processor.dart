@@ -98,6 +98,88 @@ class CommandProcessor {
             response['error'] = 'Invalid payload for setLabel';
           }
           break;
+        case 'listRuntime':
+          final result = await runtimeService.getConfig();
+          if (result.isSuccess) {
+            response['result'] = result.data?.toJson();
+          } else {
+            response['error'] = result.errorMessage;
+          }
+          break;
+        case 'addSlot':
+          if (payload is Map<String, dynamic>) {
+            final deviceJson = payload['device'] as Map<String, dynamic>?;
+            final slotJson = payload['slot'] as Map<String, dynamic>?;
+
+            if (deviceJson == null || slotJson == null) {
+              response['error'] = 'Invalid payload for addSlot: requires device and slot fields';
+            } else {
+              try {
+                final device = DeviceInstanceId.fromJson(deviceJson);
+                final slot = ProfileSlot.fromJson(slotJson);
+                final result = await runtimeService.addSlot(device, slot);
+                if (result.isSuccess) {
+                  response['result'] = result.data?.toJson();
+                } else {
+                  response['error'] = result.errorMessage;
+                }
+              } catch (e) {
+                response['error'] = 'Failed to parse addSlot payload: $e';
+              }
+            }
+          } else {
+            response['error'] = 'Invalid payload for addSlot';
+          }
+          break;
+        case 'removeSlot':
+          if (payload is Map<String, dynamic>) {
+            final deviceJson = payload['device'] as Map<String, dynamic>?;
+            final slotId = payload['slot_id'] as String?;
+
+            if (deviceJson == null || slotId == null) {
+              response['error'] = 'Invalid payload for removeSlot: requires device and slot_id fields';
+            } else {
+              try {
+                final device = DeviceInstanceId.fromJson(deviceJson);
+                final result = await runtimeService.removeSlot(device, slotId);
+                if (result.isSuccess) {
+                  response['result'] = result.data?.toJson();
+                } else {
+                  response['error'] = result.errorMessage;
+                }
+              } catch (e) {
+                response['error'] = 'Failed to parse removeSlot payload: $e';
+              }
+            }
+          } else {
+            response['error'] = 'Invalid payload for removeSlot';
+          }
+          break;
+        case 'activateSlot':
+          if (payload is Map<String, dynamic>) {
+            final deviceJson = payload['device'] as Map<String, dynamic>?;
+            final slotId = payload['slot_id'] as String?;
+            final active = payload['active'] as bool?;
+
+            if (deviceJson == null || slotId == null || active == null) {
+              response['error'] = 'Invalid payload for activateSlot: requires device, slot_id, and active fields';
+            } else {
+              try {
+                final device = DeviceInstanceId.fromJson(deviceJson);
+                final result = await runtimeService.setSlotActive(device, slotId, active);
+                if (result.isSuccess) {
+                  response['result'] = result.data?.toJson();
+                } else {
+                  response['error'] = result.errorMessage;
+                }
+              } catch (e) {
+                response['error'] = 'Failed to parse activateSlot payload: $e';
+              }
+            }
+          } else {
+            response['error'] = 'Invalid payload for activateSlot';
+          }
+          break;
         case 'echo':
           response['result'] = payload;
           break;

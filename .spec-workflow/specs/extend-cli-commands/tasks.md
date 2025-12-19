@@ -10,7 +10,7 @@
   - _Requirements: REQ-1, REQ-2, REQ-3, REQ-4_
   - _Prompt: Role: Dependency injection specialist | Task: Add service parameters to CommandProcessor constructor and wire them in main, following existing DeviceRegistryService pattern | Restrictions: Do NOT break existing commands, maintain JSON protocol, preserve backward compatibility | Success: CommandProcessor accepts all services, main.dart creates and passes services, existing commands still work, code compiles_
 
-- [ ] 2. Add runtime slot management commands
+- [x] 2. Add runtime slot management commands
   - File: apps/cli_tool/lib/command_processor.dart
   - Implement listRuntime command using runtimeService.getConfig()
   - Implement addSlot command using runtimeService.addSlot()
