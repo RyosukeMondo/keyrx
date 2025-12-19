@@ -1,0 +1,16 @@
+{
+  "created": "2025-12-18T16:54:09.386279810Z",
+  "events": [
+    {
+      "key": "Pause",
+      "pressed": true,
+      "timestamp_us": 80188
+    },
+    {
+      "key": "Pause",
+      "pressed": false,
+      "timestamp_us": 102780
+    }
+  ],
+  "error": "Panic: not yet implemented"
+}

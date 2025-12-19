@@ -3,6 +3,7 @@
 //! This module provides functionality for scanning and enumerating keyboard
 //! devices available on the system via the evdev interface.
 
+use crate::config::UINPUT_DEVICE_NAME; // Import constant
 use crate::drivers::DeviceInfo;
 use crate::errors::KeyrxError;
 use crate::keyrx_err;
@@ -14,6 +15,7 @@ use super::device_info::try_get_keyboard_info;
 ///
 /// Scans `/dev/input/event*` devices and returns information about those
 /// that have keyboard capability (EV_KEY with standard keyboard keys).
+/// It explicitly excludes the KeyRx virtual keyboard to prevent feedback loops.
 ///
 /// # Returns
 ///
@@ -58,6 +60,7 @@ pub fn list_keyboards() -> Result<Vec<DeviceInfo>, KeyrxError> {
     let mut keyboards: Vec<DeviceInfo> = entries
         .flatten()
         .filter_map(|entry| try_get_keyboard_info(&entry.path()))
+        .filter(|device| device.name != UINPUT_DEVICE_NAME) // Filter out virtual keyboard
         .collect();
 
     keyboards.sort_by(|a, b| a.path.cmp(&b.path));

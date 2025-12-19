@@ -198,7 +198,7 @@ pub struct DecisionEventParams {
     pub key_code: u16,
     pub key_name: String,
     pub decision_type: String, // "PassThrough", "Remap", etc.
-    pub outputs: Vec<String>, // Summarized outputs
+    pub outputs: Vec<String>,  // Summarized outputs
 }
 
 /// State change notification parameters
@@ -250,4 +250,3 @@ pub struct ConfigReloadParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub script_path: Option<String>,
 }
-

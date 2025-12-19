@@ -353,7 +353,7 @@ pub const IPC_EVENT_TEMPLATE: &str = r#"
   Stream<{{event_type}}> get on{{event_name}} {
     return daemonService.notificationStream
         .where((event) => event.method == '{{event_full_name}}')
-        .map((event) => {{event_type}}.fromJson(event.params));
+        .map((event) => {{event_mapper}});
   }
 "#;
 
@@ -378,6 +378,7 @@ pub const IPC_CLIENT_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 // Source contracts: core/src/ffi/contracts/*.ffi-contract.json
 
 import '../../services/daemon_service.dart';
+import '../../models/models.dart';
 
 /// Abstract base class for generated IPC clients.
 abstract class IpcClient {

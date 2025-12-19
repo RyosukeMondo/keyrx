@@ -1,17 +1,22 @@
 /// Service for managing Hardware Profiles via config FFI.
 library;
 
-import 'package:core_logic/ffi/bridge.dart';
-import 'package:core_logic/ffi/generated_bindings.dart';
-import 'package:core_logic/models/hardware_profile.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 
+import '../ffi/bridge.dart';
+import '../ffi/generated_bindings.dart';
+import '../models/hardware_profile.dart';
 import 'config_result.dart';
 
-class HardwareService with ChangeNotifier {
+class HardwareService {
   HardwareService({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
+  final StreamController<void> _changesController =
+      StreamController.broadcast();
+
+  /// Stream of changes to hardware profiles.
+  Stream<void> get changes => _changesController.stream;
 
   /// List all hardware profiles.
   Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async =>
@@ -42,7 +47,7 @@ class HardwareService with ChangeNotifier {
     });
 
     if (!result.hasError) {
-      notifyListeners();
+      _changesController.add(null);
     }
     return result;
   }
@@ -61,7 +66,7 @@ class HardwareService with ChangeNotifier {
     });
 
     if (!result.hasError) {
-      notifyListeners();
+      _changesController.add(null);
     }
     return result;
   }
@@ -85,5 +90,10 @@ class HardwareService with ChangeNotifier {
     }
 
     return action(bindings);
+  }
+
+  /// Dispose resources.
+  void dispose() {
+    _changesController.close();
   }
 }

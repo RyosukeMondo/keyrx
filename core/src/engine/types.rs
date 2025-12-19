@@ -4,6 +4,20 @@ use serde::{Deserialize, Serialize};
 
 // Re-export KeyCode from the single source of truth (keycodes.rs)
 pub use crate::drivers::keycodes::KeyCode;
+use crate::engine::DecisionType; // Import DecisionType
+
+/// Result of processing an event.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessingResult {
+    /// The output actions generated.
+    pub outputs: Vec<OutputAction>,
+    /// The type of decision made.
+    pub decision_type: DecisionType,
+    /// Active layer IDs at the time of decision.
+    pub active_layers: Vec<u32>,
+    /// Processing latency in microseconds.
+    pub latency_us: u64,
+}
 
 /// Action to take when a key is pressed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]

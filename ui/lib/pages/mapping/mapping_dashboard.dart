@@ -4,12 +4,12 @@ library;
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/virtual_layout.dart';
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/hardware_service.dart';
-import '../../services/keymap_service.dart';
-import '../../services/layout_service.dart';
+import '../../services/hardware_service_ui.dart';
+import '../../services/layout_service_ui.dart';
 import '../../services/service_registry.dart';
 import 'mapping_editor.dart';
 
@@ -26,16 +26,16 @@ class _MappingDashboardState extends State<MappingDashboard> {
   List<VirtualLayout> _layouts = [];
   bool _isLoading = true;
   String? _errorMessage;
-  HardwareService? _cachedHardwareService;
+  HardwareServiceUI? _cachedHardwareService;
 
-  HardwareService get _hardwareService {
+  HardwareServiceUI get _hardwareService {
     try {
       return Provider.of<ServiceRegistry>(
         context,
         listen: false,
       ).hardwareService;
     } on ProviderNotFoundException {
-      return Provider.of<HardwareService>(context, listen: false);
+      return Provider.of<HardwareServiceUI>(context, listen: false);
     }
   }
 
@@ -47,11 +47,11 @@ class _MappingDashboardState extends State<MappingDashboard> {
     }
   }
 
-  LayoutService get _layoutService {
+  LayoutServiceUI get _layoutService {
     try {
       return Provider.of<ServiceRegistry>(context, listen: false).layoutService;
     } on ProviderNotFoundException {
-      return Provider.of<LayoutService>(context, listen: false);
+      return Provider.of<LayoutServiceUI>(context, listen: false);
     }
   }
 

@@ -6,7 +6,7 @@ import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/repositories/keyflow_repository.dart';
-import 'package:keyrx_ui/services/config_result.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/utils/core_ui_extensions.dart';

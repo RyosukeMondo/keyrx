@@ -8,12 +8,12 @@ import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/runtime_config.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../repositories/keyflow_repository.dart';
 import '../services/auto_save_service.dart';
-import '../services/config_result.dart';
 import 'providers_setup.dart';
 import 'save_state_provider.dart';
 
@@ -37,7 +37,7 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 
     _subscription = repository.watchRuntimeConfig().listen(
       (config) => state = AsyncValue.data(config),
-      onError: (error, stackTrace) =>
+      onError: (Object error, StackTrace stackTrace) =>
           state = AsyncValue.error(error, stackTrace),
     );
     ref.onDispose(() => _subscription?.cancel());

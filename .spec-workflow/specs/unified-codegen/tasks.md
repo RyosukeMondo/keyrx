@@ -62,3 +62,17 @@
   - Run `dart analyze`
   - _Requirements: Non-Functional (Clean Output)_
   - _Prompt: Role: QA Engineer / Tooling Specialist | Task: Verify the full generation pipeline by running the tool, checking for file existence, and running `dart analyze` on the output following Non-Functional requirements | Restrictions: Must pass without any analyzer errors or warnings | Success: Generator runs without error, Dart code is valid and type-safe_
+
+## 5. Refinement & Fixes
+
+- [x] 8. Filter incompatible FFI methods
+  - File: `core/tools/generate_dart_bindings/src/ipc_client_gen.rs`
+  - Update `generate_methods` to skip generation of functions that use `Pointer` or `Function` types (callbacks/raw memory) which are invalid over JSON-RPC.
+  - _Requirements: Non-Functional (Correctness)_
+  - _Prompt: Role: Rust Developer | Task: Modify `ipc_client_gen.rs` to check function parameters and return types. If `Pointer` or `Function` types are detected, skip generating that method and print a warning during generation. | Restrictions: Ensure the generated Dart file compiles without `dart:ffi`. | Success: `ipc_client.dart` no longer contains methods like `registerEventCallback` or `metricsSnapshot`._
+
+- [x] 9. Verify compilation of generated code
+  - File: `ui/lib/services/generated/ipc_client.dart`
+  - Run `dart analyze` on the generated file to ensure all issues are resolved.
+  - _Requirements: Non-Functional (Quality Gate)_
+  - _Prompt: Role: QA/Test Engineer | Task: Run the generator and then execute `dart analyze` to confirm the fix. | Success: No analysis errors in `ipc_client.dart`._

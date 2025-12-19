@@ -5,7 +5,11 @@
 ```
 keyrx/
 ├── core/                  # Rust backend and FFI exports
-├── ui/                    # Flutter app
+├── packages/              # Pure Dart packages
+│   └── core_logic/        # FFI bindings and shared business logic (Flutter-independent)
+├── apps/                  # Dart applications
+│   └── cli_tool/          # Headless Dart CLI harness for testing/automation
+├── ui/                    # Flutter app (depends on core_logic)
 │   ├── lib/               # Dart source (see detailed map below)
 │   ├── test/              # Unit/widget/golden/perf tests
 │   └── pubspec.yaml
@@ -60,16 +64,73 @@ Representative files:
 - Providers: `xxxProvider` for Riverpod providers; group exports in `state/providers.dart`.
 - Constants: prefer `lowerCamelCase` for runtime constants, `UPPER_SNAKE_CASE` for compile-time/environment switches.
 
+## Shared Services Architecture (SSOT Pattern)
+
+**Goal**: Business logic services must be shared between CLI and UI to ensure Single Source of Truth (SSOT).
+
+**Pattern** (following DeviceRegistryService model):
+
+```
+packages/core_logic/lib/services/
+  ├── device_registry_service.dart  ✅ Shared (CLI + UI)
+  ├── runtime_service.dart          🔄 Move here (no Flutter deps)
+  ├── keymap_service.dart            🔄 Move here (no Flutter deps)
+  ├── hardware_service.dart          🔄 Move here (refactor ChangeNotifier → Stream)
+  └── layout_service.dart            🔄 Move here (refactor ChangeNotifier → Stream)
+
+ui/lib/services/
+  ├── device_registry_service.dart  ✅ Thin wrapper (UI migration logic)
+  ├── hardware_service_ui.dart      🆕 UI wrapper (ChangeNotifier adapter)
+  ├── layout_service_ui.dart        🆕 UI wrapper (ChangeNotifier adapter)
+  ├── daemon_service.dart           ✅ UI-specific (keep)
+  └── generated/ipc_client.dart     ✅ Generated (keep)
+```
+
+**Rules**:
+1. **Core services** (config, runtime, hardware, layout, keymap) MUST be in `core_logic`
+2. **No Flutter dependencies** in core_logic services (use `StreamController` instead of `ChangeNotifier`)
+3. **UI wrappers** only for:
+   - Migration logic (e.g., SharedPreferences → JSON)
+   - Adapting core streams to ChangeNotifier for Riverpod compatibility
+4. **CLI tools** import directly from `core_logic` (no UI dependencies)
+
+**Example - Device Registry (Proven Pattern)**:
+
+```dart
+// packages/core_logic/lib/services/device_registry_service.dart
+class DeviceRegistryServiceImpl implements DeviceRegistryService {
+  final KeyrxBridge _bridge;
+  final DeviceConfigRepository _repository;
+  final StreamController<List<DeviceState>> _devicesController;
+
+  Stream<List<DeviceState>> get devicesStream => _devicesController.stream;
+  // ... no Flutter deps, pure Dart
+}
+
+// ui/lib/services/device_registry_service.dart (thin wrapper)
+class DeviceRegistryServiceImpl implements DeviceRegistryService {
+  final core.DeviceRegistryService _core;
+
+  Stream<List<DeviceState>> get devicesStream => _core.devicesStream;
+  Future<void> addVirtualDevice(...) => _core.addVirtualDevice(...);
+
+  // UI-specific: migration from SharedPreferences
+  static Future<void> migrateFromSharedPreferences(...) { ... }
+}
+```
+
 ## Module Boundaries and Dependencies
 
 - Pages depend on widgets + state providers; they should not talk directly to FFI—use services/facades.
 - Widgets are presentation-only; pull data via injected callbacks/providers rather than services directly when possible.
-- Services coordinate business logic and bridge calls; they consume repositories and FFI bridges.
+- **Services (core_logic)** coordinate business logic and bridge calls; they consume repositories and FFI bridges. Must be Flutter-independent.
+- **Services (UI wrappers)** provide UI-specific adaptations (migration, ChangeNotifier) over core services.
 - Repositories encapsulate storage/access paths (files, registries) and stay framework-agnostic.
 - Models are pure data and may be shared across layers; Freezed/JSON codecs live here.
 - State holds Riverpod providers and app-level state; keep side-effects inside services, not providers.
 - Utils (logging/timeline) are leaf dependencies; nothing should import UI from utils.
 - Generated code under `ffi/generated` and `*.g.dart`/`*.freezed.dart` must not be edited manually.
+- **CLI tools** MUST use services from `core_logic` only; NO UI dependencies allowed.
 
 ## Import Organization (Dart)
 

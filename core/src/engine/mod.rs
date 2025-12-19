@@ -67,4 +67,4 @@ pub use state::snapshot::{PressedKey, StateSnapshot};
 pub use state::EngineState;
 pub use tracing::{EngineTracer, SpanGuard, TracingError, TracingResult};
 pub use transitions::{StateTransition, TransitionCategory};
-pub use types::{InputEvent, KeyCode, OutputAction, RemapAction};
+pub use types::{InputEvent, KeyCode, OutputAction, ProcessingResult, RemapAction};

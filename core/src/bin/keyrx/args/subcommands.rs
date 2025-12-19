@@ -114,6 +114,21 @@ pub enum Commands {
         output: PathBuf,
     },
 
+    /// Run the background daemon service
+    Daemon {
+        /// Socket path override
+        #[arg(long)]
+        socket: Option<PathBuf>,
+
+        /// Config path override
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Script path override
+        #[arg(long)]
+        script: Option<PathBuf>,
+    },
+
     /// Run the engine in headless mode
     Run {
         /// Path to the script file

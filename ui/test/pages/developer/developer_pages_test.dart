@@ -10,7 +10,7 @@ import 'package:keyrx_ui/services/benchmark_service.dart';
 import 'package:keyrx_ui/services/doctor_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service.dart';
-import 'package:keyrx_ui/services/keymap_service.dart';
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
@@ -45,6 +45,7 @@ Widget _buildTestRunner(MockTestService mockService) {
     layoutService: LayoutService(bridge: FakeBridge()),
     hardwareService: HardwareService(bridge: FakeBridge()),
     keymapService: KeymapService(bridge: FakeBridge()),
+    daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
 

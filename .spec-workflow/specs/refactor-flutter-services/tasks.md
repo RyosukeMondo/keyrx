@@ -1,0 +1,96 @@
+# Tasks: Refactor Flutter Services
+
+- [ ] 1. Refactor HardwareService to use Streams
+  - File: ui/lib/services/hardware_service.dart
+  - Remove ChangeNotifier, add StreamController<void>
+  - Replace notifyListeners() with stream events
+  - Add dispose() method to close stream
+  - Verify no Flutter dependencies remain
+  - Purpose: Make HardwareService Flutter-independent for core_logic
+  - _Leverage: packages/core_logic/lib/services/device_registry_service.dart (stream pattern)_
+  - _Requirements: REQ-1, REQ-3_
+  - _Prompt: Role: Dart refactoring specialist | Task: Refactor HardwareService from ChangeNotifier to StreamController pattern, removing Flutter dependencies while preserving all business logic and method signatures | Restrictions: Do NOT change business logic, do NOT change method signatures, do NOT move file yet (Task 3), remove all Flutter imports | Success: No 'with ChangeNotifier', StreamController<void> added, Stream<void> get changes exposed, all notifyListeners() replaced with _changesController.add(null), dispose() method closes stream, zero Flutter dependencies verified_
+
+- [ ] 2. Refactor LayoutService to use Streams
+  - File: ui/lib/services/layout_service.dart
+  - Remove ChangeNotifier, add StreamController<void>
+  - Replace notifyListeners() with stream events
+  - Add dispose() method to close stream
+  - Verify no Flutter dependencies remain
+  - Purpose: Make LayoutService Flutter-independent for core_logic
+  - _Leverage: ui/lib/services/hardware_service.dart (from Task 1), packages/core_logic/lib/services/device_registry_service.dart_
+  - _Requirements: REQ-2, REQ-3_
+  - _Prompt: Role: Dart refactoring specialist | Task: Refactor LayoutService from ChangeNotifier to StreamController pattern following same approach as HardwareService in Task 1 | Restrictions: Do NOT change business logic, do NOT change method signatures, do NOT move file yet (Task 4), remove all Flutter imports | Success: No 'with ChangeNotifier', StreamController<void> added, Stream<void> get changes exposed, all notifyListeners() replaced, dispose() closes stream, zero Flutter dependencies_
+
+- [ ] 3. Move HardwareService to core_logic
+  - File: packages/core_logic/lib/services/hardware_service.dart
+  - Copy refactored service from UI to core_logic
+  - Update imports to use relative paths
+  - Add export to core_logic.dart
+  - Verify no Flutter dependencies
+  - Purpose: Make HardwareService available to CLI
+  - _Leverage: packages/core_logic/lib/services/runtime_service.dart (move pattern from move-config-services-to-core spec)_
+  - _Requirements: REQ-1_
+  - _Prompt: Role: Package organizer | Task: Move refactored HardwareService to core_logic and update imports to relative paths | Restrictions: Do NOT modify logic, do NOT delete original yet (Task 8), verify NO Flutter dependencies exist using grep | Success: File at packages/core_logic/lib/services/hardware_service.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
+
+- [ ] 4. Move LayoutService to core_logic
+  - File: packages/core_logic/lib/services/layout_service.dart
+  - Copy refactored service from UI to core_logic
+  - Update imports to use relative paths
+  - Add export to core_logic.dart
+  - Verify no Flutter dependencies
+  - Purpose: Make LayoutService available to CLI
+  - _Leverage: packages/core_logic/lib/services/hardware_service.dart (Task 3 pattern)_
+  - _Requirements: REQ-2_
+  - _Prompt: Role: Package organizer | Task: Move refactored LayoutService to core_logic following same pattern as HardwareService in Task 3 | Restrictions: Do NOT modify logic, do NOT delete original yet (Task 8), verify NO Flutter dependencies | Success: File at packages/core_logic/lib/services/layout_service.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed_
+
+- [ ] 5. Create HardwareServiceUI wrapper
+  - File: ui/lib/services/hardware_service_ui.dart
+  - Create new file extending ChangeNotifier
+  - Accept core HardwareService in constructor
+  - Subscribe to core service stream in constructor
+  - Forward all methods to core service
+  - Call notifyListeners() on stream events
+  - Dispose subscription in dispose()
+  - Purpose: Provide ChangeNotifier interface for Riverpod compatibility
+  - _Leverage: ui/lib/services/device_registry_service.dart (wrapper pattern)_
+  - _Requirements: REQ-4_
+  - _Prompt: Role: UI adapter developer | Task: Create HardwareServiceUI wrapper that bridges core service streams to ChangeNotifier for Riverpod compatibility | Restrictions: Must extend ChangeNotifier, must forward all method calls to core service, must subscribe to core stream, must dispose subscription properly | Success: File created at ui/lib/services/hardware_service_ui.dart, extends ChangeNotifier, subscribes to core.HardwareService.changes, calls notifyListeners() on events, forwards all methods, proper disposal_
+
+- [ ] 6. Create LayoutServiceUI wrapper
+  - File: ui/lib/services/layout_service_ui.dart
+  - Create new file extending ChangeNotifier
+  - Accept core LayoutService in constructor
+  - Subscribe to core service stream
+  - Forward all methods to core service
+  - Call notifyListeners() on stream events
+  - Dispose subscription properly
+  - Purpose: Provide ChangeNotifier interface for Riverpod compatibility
+  - _Leverage: ui/lib/services/hardware_service_ui.dart (Task 5 pattern)_
+  - _Requirements: REQ-4_
+  - _Prompt: Role: UI adapter developer | Task: Create LayoutServiceUI wrapper following same pattern as HardwareServiceUI in Task 5 | Restrictions: Must extend ChangeNotifier, must forward all calls, must subscribe to stream, must dispose properly | Success: File at ui/lib/services/layout_service_ui.dart, extends ChangeNotifier, subscribes to core stream, forwards methods, proper disposal_
+
+- [ ] 7. Update ServiceRegistry to use wrappers
+  - File: ui/lib/services/service_registry.dart
+  - Import core services from core_logic
+  - Import UI wrapper services
+  - Create core services in factory
+  - Create UI wrappers wrapping core services
+  - Pass UI wrappers to consumers
+  - Update disposal chain
+  - Purpose: Wire core services and UI wrappers in dependency injection
+  - _Leverage: ui/lib/services/service_registry.dart (existing DeviceRegistry pattern)_
+  - _Requirements: REQ-5_
+  - _Prompt: Role: Dependency injection specialist | Task: Update ServiceRegistry to create core services and UI wrappers, following DeviceRegistry pattern already in place | Restrictions: Keep ServiceRegistry interface unchanged, ensure proper disposal chain, maintain constructor compatibility | Success: Imports core services and UI wrappers, creates core services first, creates wrappers passing core services, passes wrappers to consumers, disposal works correctly, all tests pass_
+
+- [ ] 8. Delete old service files and verify
+  - File: ui/lib/services/hardware_service.dart (delete), ui/lib/services/layout_service.dart (delete)
+  - Verify no imports remain to old files
+  - Delete old service files
+  - Run flutter test to verify
+  - Run code metrics check
+  - Check for memory leaks
+  - Purpose: Clean up old files and ensure quality
+  - _Leverage: grep for import verification_
+  - _Requirements: REQ-5, NFR-4_
+  - _Prompt: Role: QA and cleanup specialist | Task: Delete old service files after verifying no references remain and run full test suite | Restrictions: Only delete after all other tasks complete, verify no imports remain using grep, run full test suite | Success: Old files deleted, no broken imports, all UI tests pass, code metrics pass, no memory leaks detected, streams properly disposed_

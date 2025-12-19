@@ -1,0 +1,45 @@
+{
+  "articles": [
+    {
+      "title": "AIネイティブソフトウェア構築：925セッション、2,399コミットで学んだこと",
+      "slug": "ai-native-software-925-sessions",
+      "spec": "ai-development",
+      "published": false,
+      "file": "/home/rmondo/repos/keyrx/articles/ai-native-software-925-sessions.md",
+      "generated_at": "2025-12-17T21:42:00"
+    },
+    {
+      "title": "仕様駆動の力：1セッション vs 48セッション",
+      "slug": "specification-advantage-1-vs-48-sessions",
+      "spec": "methodology",
+      "published": false,
+      "file": "/home/rmondo/repos/keyrx/articles/specification-advantage-1-vs-48-sessions.md",
+      "generated_at": "2025-12-17T21:43:00"
+    },
+    {
+      "title": "ペアプログラマーの真実：89%の手動入力の逆説",
+      "slug": "pair-programmer-paradox-89-percent",
+      "spec": "ai-collaboration",
+      "published": false,
+      "file": "/home/rmondo/repos/keyrx/articles/pair-programmer-paradox-89-percent.md",
+      "generated_at": "2025-12-17T21:44:00"
+    },
+    {
+      "title": "失敗と反復の価値：成功率0.78の向こう側",
+      "slug": "iteration-failure-0.78-success-ratio",
+      "spec": "development-process",
+      "published": false,
+      "file": "/home/rmondo/repos/keyrx/articles/iteration-failure-0.78-success-ratio.md",
+      "generated_at": "2025-12-17T21:45:00"
+    },
+    {
+      "title": "大規模コード生成の実践：66個のFFI統合を自動化する",
+      "slug": "code-generation-at-scale-66-ffi-integrations",
+      "spec": "infrastructure",
+      "published": false,
+      "file": "/home/rmondo/repos/keyrx/articles/code-generation-at-scale-66-ffi-integrations.md",
+      "generated_at": "2025-12-17T21:46:00"
+    }
+  ],
+  "generated_at": "2025-12-17T21:46:00"
+}

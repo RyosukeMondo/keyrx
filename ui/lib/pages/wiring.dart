@@ -16,8 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/device_registry_service.dart';
-import '../services/hardware_service.dart';
-import '../services/layout_service.dart';
+import '../services/hardware_service_ui.dart';
+import '../services/layout_service_ui.dart';
 import '../services/service_registry.dart';
 import '../widgets/virtual_layout_renderer.dart';
 import '../widgets/visual_keyboard.dart';
@@ -50,24 +50,24 @@ class _WiringPageState extends State<WiringPage> {
   bool _isSaving = false;
   String? _errorMessage;
   StreamSubscription<List<DeviceState>>? _deviceSubscription;
-  LayoutService? _cachedLayoutService;
+  LayoutServiceUI? _cachedLayoutService;
 
-  HardwareService get _hardwareService {
+  HardwareServiceUI get _hardwareService {
     try {
       return Provider.of<ServiceRegistry>(
         context,
         listen: false,
       ).hardwareService;
     } on ProviderNotFoundException {
-      return Provider.of<HardwareService>(context, listen: false);
+      return Provider.of<HardwareServiceUI>(context, listen: false);
     }
   }
 
-  LayoutService get _layoutService {
+  LayoutServiceUI get _layoutService {
     try {
       return Provider.of<ServiceRegistry>(context, listen: false).layoutService;
     } on ProviderNotFoundException {
-      return Provider.of<LayoutService>(context, listen: false);
+      return Provider.of<LayoutServiceUI>(context, listen: false);
     }
   }
 

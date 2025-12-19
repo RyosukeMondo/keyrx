@@ -8,14 +8,7 @@
     {
       "name": "start_loop",
       "description": "Start the event processing loop",
-      "parameters": [
-        {
-          "name": "profile_id",
-          "type": "string",
-          "description": "Profile to load before starting the loop",
-          "required": true
-        }
-      ],
+      "parameters": [],
       "returns": {
         "type": "object",
         "description": "Engine start result",

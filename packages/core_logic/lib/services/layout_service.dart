@@ -1,17 +1,21 @@
 /// Service for managing Virtual Layouts via config FFI.
 library;
 
-import 'package:core_logic/ffi/bridge.dart';
-import 'package:core_logic/ffi/generated_bindings.dart';
-import 'package:core_logic/models/virtual_layout.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 
+import '../ffi/bridge.dart';
+import '../ffi/generated_bindings.dart';
+import '../models/virtual_layout.dart';
 import 'config_result.dart';
 
-class LayoutService with ChangeNotifier {
+class LayoutService {
   LayoutService({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
+  final StreamController<void> _changesController = StreamController.broadcast();
+
+  /// Stream of changes to virtual layouts.
+  Stream<void> get changes => _changesController.stream;
 
   /// List all virtual layouts stored in the config directory.
   Future<ConfigOperationResult<List<VirtualLayout>>> listLayouts() async =>
@@ -38,7 +42,7 @@ class LayoutService with ChangeNotifier {
     });
 
     if (!result.hasError) {
-      notifyListeners();
+      _changesController.add(null);
     }
     return result;
   }
@@ -55,7 +59,7 @@ class LayoutService with ChangeNotifier {
     });
 
     if (!result.hasError) {
-      notifyListeners();
+      _changesController.add(null);
     }
     return result;
   }
@@ -79,5 +83,10 @@ class LayoutService with ChangeNotifier {
     }
 
     return action(bindings);
+  }
+
+  /// Dispose resources.
+  void dispose() {
+    _changesController.close();
   }
 }

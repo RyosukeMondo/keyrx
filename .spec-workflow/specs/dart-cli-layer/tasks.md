@@ -34,7 +34,7 @@
   - _Requirements: Non-Functional (Package Separation)_
   - _Prompt: Role: Flutter Developer | Task: Update `ui/pubspec.yaml` to depend on `packages/core_logic`. mass-replace imports in `ui/lib` to point to the new package. | Restrictions: Verify the app still compiles. | Success: `flutter build linux` succeeds._
 
-- [ ] 5. Create CLI Tool Structure
+- [x] 5. Create CLI Tool Structure
   - File: apps/cli_tool/pubspec.yaml, apps/cli_tool/bin/keyrx_cli.dart
   - Create `apps/cli_tool` package.
   - specificy dependency on `core_logic`.
@@ -43,14 +43,14 @@
   - _Requirements: 2_
   - _Prompt: Role: Tooling Engineer | Task: Scaffold the `apps/cli_tool` package and a main entry point that parses arguments. Depend on `core_logic`. | Restrictions: Keep it lightweight. | Success: `dart run bin/keyrx_cli.dart --help` runs._
 
-- [ ] 6. Implement JSON Command Processor
+- [x] 6. Implement JSON Command Processor
   - File: apps/cli_tool/lib/command_processor.dart
   - Implement logic to decode JSON, map to `core_logic` calls, and encode responses.
   - Purpose: The "Brain" of the harness.
   - _Requirements: 2, 4_
   - _Prompt: Role: Backend Developer | Task: Implement the JSON command processing loop. Map at least one command (e.g., 'status' or 'echo') to prove the concept. | Restrictions: Handle JSON errors gracefully. | Success: Inputting `{"command": "echo", "payload": "test"}` returns valid JSON._
 
-- [ ] 7. Create End-to-End Test Script
+- [x] 7. Create End-to-End Test Script
   - File: scripts/e2e_test_headless.sh
   - Create a shell script that compiles the CLI and runs a sequence of JSON tests.
   - Purpose: Verify the "Headless Harness" strategy.

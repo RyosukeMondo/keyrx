@@ -5,10 +5,10 @@ import 'dart:async';
 
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/runtime_config.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:core_logic/utils/logger.dart';
 
 import '../repositories/keyflow_repository.dart';
-import '../services/config_result.dart';
 import '../services/keyflow_analytics.dart';
 
 /// Mutation operation types for auto-save.

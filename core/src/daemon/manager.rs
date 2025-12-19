@@ -3,7 +3,7 @@
 use crate::daemon::protocol::{DeviceInfo, EngineStatus};
 #[cfg(all(target_os = "linux", feature = "linux-driver"))]
 use crate::drivers::MultiDeviceInput;
-use crate::engine::{AdvancedEngine, TimingConfig};
+use crate::engine::{AdvancedEngine, DecisionType, OutputAction, TimingConfig};
 use crate::registry::{DeviceRegistry, ProfileRegistry, ProfileRegistryStorage};
 use crate::scripting::RhaiRuntime;
 use crate::traits::{InputSource, ScriptRuntime};
@@ -63,6 +63,13 @@ pub enum EngineEvent {
         key_code: u16,
         key_name: String,
         is_press: bool,
+    },
+    DecisionEvent {
+        timestamp_us: u64,
+        key_code: u16,
+        key_name: String,
+        decision_type: DecisionType,
+        outputs: Vec<OutputAction>,
     },
 }
 
@@ -148,6 +155,7 @@ impl EngineManager {
         // --- Spawn Engine Task ---
         let engine_task = {
             let state_clone = self.state.clone();
+            let event_tx = self.event_tx.clone(); // Clone event_tx
             let stop_token = stop_token.clone();
 
             tokio::spawn(async move {
@@ -168,11 +176,42 @@ impl EngineManager {
                                     if !events.is_empty() {
                                         let mut state = state_clone.lock().await;
                                         state.events_processed += events.len() as u64;
+                                        drop(state); // Drop lock early
 
                                         // Process events individually as AdvancedEngine doesn't have batch processing
                                         for event in events {
-                                            let output_actions = engine.process_event(event);
-                                            for action in output_actions {
+                                            // 1. Emit Input Event
+                                            let _ = event_tx.send(EngineEvent::InputEvent {
+                                                timestamp_us: event.timestamp_us,
+                                                device_path: event.device_id.clone().unwrap_or_default(),
+                                                device_name: "Unknown".to_string(), // TODO: Lookup name
+                                                key_code: event.key.to_u16(),
+                                                key_name: format!("{:?}", event.key),
+                                                is_press: event.pressed,
+                                            });
+
+                                            // 2. Process with Trace
+                                            let result = engine.process_event_verbose(event.clone());
+
+                                            // 3. Emit Decision Event
+                                            let _ = event_tx.send(EngineEvent::DecisionEvent {
+                                                timestamp_us: result.latency_us, // Use latency as timestamp? No, use event ts or now
+                                                key_code: event.key.to_u16(),
+                                                key_name: format!("{:?}", event.key),
+                                                decision_type: result.decision_type,
+                                                outputs: result.outputs.clone(),
+                                            });
+
+                                            // 4. Emit Output Events & Send to Driver
+                                            for action in result.outputs {
+                                                if let OutputAction::KeyDown(k) | OutputAction::KeyUp(k) | OutputAction::KeyTap(k) = action {
+                                                     let _ = event_tx.send(EngineEvent::OutputEvent {
+                                                        timestamp_us: current_timestamp_us(),
+                                                        key_code: k.to_u16(),
+                                                        key_name: format!("{:?}", k),
+                                                        is_press: matches!(action, OutputAction::KeyDown(_)),
+                                                    });
+                                                }
                                                 input.send_output(action).await?;
                                             }
                                         }
@@ -211,20 +250,28 @@ impl EngineManager {
 
     /// Stop the engine.
     pub async fn stop(&self) -> Result<()> {
-        let mut state = self.state.lock().await;
+        // 1. Acquire lock to get handles and update state
+        let (stop_token, engine_task) = {
+            let mut state = self.state.lock().await;
 
-        if state.state != EngineState::Running {
-            return Err(anyhow!("Engine is not running"));
-        }
+            if state.state != EngineState::Running {
+                return Err(anyhow!("Engine is not running"));
+            }
 
-        info!(service = "keyrx", event = "engine_stop", "Stopping engine");
+            info!(service = "keyrx", event = "engine_stop", "Stopping engine");
 
-        // --- Signal and Wait for Task Completion ---
-        if let Some(token) = state.stop_token.take() {
+            // Take the handles out of the state so we can use them outside the lock
+            (state.stop_token.take(), state.engine_task.take())
+        }; // Lock dropped here
+
+        // 2. Signal cancellation (if token exists)
+        if let Some(token) = stop_token {
             token.cancel();
         }
 
-        if let Some(handle) = state.engine_task.take() {
+        // 3. Wait for task to finish (without holding the lock)
+        let mut task_result = Ok(());
+        if let Some(handle) = engine_task {
             match handle.await {
                 Ok(Ok(_)) => {
                     info!(
@@ -234,22 +281,38 @@ impl EngineManager {
                     );
                 }
                 Ok(Err(e)) => {
-                    error!(service = "keyrx", event = "engine_task_error", error = %e, "Engine task finished with an error");
-                    state.state = EngineState::Error(e.to_string());
+                    error!(
+                        service = "keyrx",
+                        event = "engine_task_error",
+                        error = %e,
+                        "Engine task finished with an error"
+                    );
+                    task_result = Err(anyhow!(e));
                 }
                 Err(e) => {
-                    error!(service = "keyrx", event = "engine_task_panic", error = %e, "Engine task panicked");
-                    state.state = EngineState::Error(format!("Engine task panicked: {}", e));
+                    error!(
+                        service = "keyrx",
+                        event = "engine_task_panic",
+                        error = %e,
+                        "Engine task panicked"
+                    );
+                    task_result = Err(anyhow!("Engine task panicked: {}", e));
                 }
             }
         }
 
-        // --- Update State ---
-        if !matches!(state.state, EngineState::Error(_)) {
+        // 4. Re-acquire lock to update final state
+        let mut state = self.state.lock().await;
+
+        if let Err(e) = task_result {
+            state.state = EngineState::Error(e.to_string());
+        } else {
             state.state = EngineState::Stopped;
         }
+
         state.devices.clear();
         state.started_at = None;
+        // Ensure these are cleared even if they weren't taken (should be impossible if logic is correct)
         state.stop_token = None;
         state.engine_task = None;
 
@@ -418,6 +481,13 @@ impl EngineManager {
         let mut state = self.state.lock().await;
         state.events_processed += 1;
     }
+}
+
+fn current_timestamp_us() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_micros() as u64
 }
 
 impl Default for EngineManager {

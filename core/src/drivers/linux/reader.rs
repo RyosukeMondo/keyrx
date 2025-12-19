@@ -1,8 +1,3 @@
-//! Evdev reader for keyboard event capture.
-//!
-//! This module provides `EvdevReader` for reading keyboard events from
-//! evdev devices on Linux.
-
 use super::keymap::evdev_to_keycode;
 use super::safety::device::SafeDevice;
 use crate::config::{
@@ -16,6 +11,8 @@ use crate::errors::KeyrxError;
 use crate::identity;
 use crate::safety::panic_guard::PanicGuard;
 use crossbeam_channel::Sender;
+use nix::poll::{poll, PollFd, PollFlags};
+use std::os::fd::{AsRawFd, BorrowedFd}; // Added BorrowedFd
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -317,22 +314,45 @@ impl EvdevReader {
     ///
     /// Continuously reads events from the evdev device and processes them.
     /// Exits when `running` is set to false or the channel is closed.
+    #[allow(unsafe_code)]
     fn run_loop(&mut self) {
         while self.running.load(Ordering::Relaxed) {
-            match self.fetch_key_events() {
-                Ok(events) => {
-                    if !self.process_events(&events) {
-                        return;
+            let poll_result = {
+                // Immutable borrow for polling
+                let _raw_fd = self.device.device().as_raw_fd();
+                let _raw_fd = self.device.device().as_raw_fd();
+                let borrowed_fd = unsafe { BorrowedFd::borrow_raw(_raw_fd) };
+                let mut pollfds = [PollFd::new(&borrowed_fd, PollFlags::POLLIN)];
+                poll(&mut pollfds, 100)
+            }; // Immutable borrow ends here
+
+            match poll_result {
+                Ok(0) => {
+                    // Timeout, no events, just check running flag again
+                    continue;
+                }
+                Ok(_) => {
+                    // Device is readable, fetch events (mutable borrow is now fine)
+                    match self.fetch_key_events() {
+                        Ok(events) => {
+                            if !self.process_events(&events) {
+                                return;
+                            }
+                        }
+                        Err(Some(e)) => {
+                            if !self.handle_read_error(&e) {
+                                return;
+                            }
+                        }
+                        Err(None) => {
+                            // Shutdown requested during fetch, will exit on next loop iter
+                            return;
+                        }
                     }
                 }
-                Err(Some(e)) => {
-                    if !self.handle_read_error(&e) {
-                        return;
-                    }
-                }
-                Err(None) => {
-                    // Shutdown requested during fetch
-                    return;
+                Err(e) => {
+                    error!("Poll error on evdev device: {}", e);
+                    return; // Exit on poll error
                 }
             }
         }

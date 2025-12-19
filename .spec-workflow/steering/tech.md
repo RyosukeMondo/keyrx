@@ -54,6 +54,11 @@ Pending specs only; revolutionary-mapping is already shipped. Sequence balances 
 │           UI Layer (Flutter)            │
 │  Visual Editor │ Debugger │ REPL        │
 └────────────────┬────────────────────────┘
+                 │ (depends on core_logic)
+┌────────────────┴────────────────────────┐
+│        Headless Dart Layer              │
+│  CLI Tool │ Auto-Tests │ Logic Package  │
+└────────────────┬────────────────────────┘
                  │ FFI (C-ABI)
 ┌────────────────┴────────────────────────┐
 │           Core Layer (Rust)             │
@@ -65,6 +70,24 @@ Pending specs only; revolutionary-mapping is already shipped. Sequence balances 
 │  Windows Hook │ Linux uinput/evdev      │
 └─────────────────────────────────────────┘
 ```
+
+**Headless Dart Harness Strategy**:
+To solve the "UI coupling" problem where business logic testing requires slow/flaky Flutter integration tests, we adopt a **Headless Dart Harness** strategy with **Shared Services** as the foundation:
+
+1.  **Physical Separation**: Business logic and FFI bindings are extracted into a pure Dart package (`core_logic`) capable of running on the bare Dart VM (no Flutter engine).
+2.  **Shared Services (SSOT)**: All configuration services (Runtime, Hardware, Layout, Keymap, DeviceRegistry) live in `core_logic` and are shared between CLI and UI:
+    - **Core Service**: Pure Dart, no Flutter deps, uses `StreamController` for reactivity
+    - **UI Wrapper (optional)**: Thin adapter for UI-specific features (migration, ChangeNotifier)
+3.  **CLI Entrypoint**: A lightweight Dart CLI tool (`apps/cli_tool`) acts as a headless harness, importing shared services from `core_logic`:
+    ```dart
+    // apps/cli_tool - Uses shared services
+    import 'package:core_logic/services/device_registry_service.dart';
+    import 'package:core_logic/services/runtime_service.dart';
+    import 'package:core_logic/services/hardware_service.dart';
+    ```
+4.  **JSON Contract**: Tests interact with the CLI via standard input/output (JSON), enabling fast, robust E2E testing using simple shell scripts or test runners, bypassing the UI layer completely.
+5.  **100% Logic Coverage**: The goal is to verify 100% of the Rust<->Dart integration and state logic without ever launching a simulator or rendering a pixel.
+6.  **Proven Pattern**: The DeviceRegistryService refactor (2025-12) established this architecture; all future services follow the same pattern.
 
 **Key Patterns**:
 - **Event Sourcing**: Input treated as immutable event stream

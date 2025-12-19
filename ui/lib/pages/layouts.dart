@@ -6,7 +6,7 @@ import 'package:core_logic/models/virtual_layout_type.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/layout_service.dart';
+import '../services/layout_service_ui.dart';
 import '../services/service_registry.dart';
 import 'layouts/layout_selector.dart';
 import 'layouts/layout_visual_editor.dart';
@@ -34,11 +34,11 @@ class _LayoutsPageState extends State<LayoutsPage> {
   bool _isLoading = true;
   bool _isSaving = false;
 
-  LayoutService get _layoutService {
+  LayoutServiceUI get _layoutService {
     try {
       return Provider.of<ServiceRegistry>(context, listen: false).layoutService;
     } on ProviderNotFoundException {
-      return Provider.of<LayoutService>(context, listen: false);
+      return Provider.of<LayoutServiceUI>(context, listen: false);
     }
   }
 

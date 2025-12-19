@@ -1,6 +1,6 @@
 //! Error types for state transitions.
 
-use super::{StateKind, StateTransition};
+use super::StateKind;
 use thiserror::Error;
 
 /// Error type for state transition validation.

@@ -6,6 +6,7 @@
 use crate::drivers::common::error::DriverError;
 use evdev::Device;
 use std::io;
+use std::os::fd::AsRawFd; // Add this line
 use std::path::{Path, PathBuf};
 use tracing::{debug, warn};
 
@@ -211,6 +212,12 @@ impl SafeDevice {
     /// Check if the device is currently grabbed.
     pub fn is_grabbed(&self) -> bool {
         self.is_grabbed
+    }
+
+    /// Expose the raw file descriptor of the underlying evdev device.
+    /// Used for polling.
+    pub fn as_raw_fd(&self) -> std::os::fd::RawFd {
+        self.device.as_raw_fd()
     }
 
     /// Fetch events from the device with non-blocking I/O.

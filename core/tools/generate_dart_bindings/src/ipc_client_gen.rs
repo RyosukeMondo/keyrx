@@ -56,10 +56,17 @@ fn generate_events(contract: &FfiContract) -> Result<String> {
         let event_name = to_pascal_case(&event.name);
         let event_type = map_to_dart_native_type(event.payload.type_name())?;
 
+        let event_mapper = if event_type.starts_with("Map<") {
+            "event.params".to_string()
+        } else {
+            format!("{}.fromJson(event.params as Map<String, dynamic>)", event_type)
+        };
+
         let mut ctx = context();
         ctx.insert("doc_comment".to_string(), event.description.clone());
         ctx.insert("event_name".to_string(), event_name);
         ctx.insert("event_type".to_string(), event_type);
+        ctx.insert("event_mapper".to_string(), event_mapper);
         ctx.insert(
             "event_full_name".to_string(),
             format!("{}.{}", contract.domain, event.name),
@@ -77,6 +84,32 @@ fn generate_methods(contract: &FfiContract) -> Result<String> {
     for func in &contract.functions {
         let method_name = to_camel_case(&func.name);
         let return_type = map_to_dart_native_type(func.returns.type_name())?;
+
+        // Check for incompatible types (Pointers/Functions) that can't be serialized over IPC
+        if return_type.contains("Pointer") || return_type.contains("Function") {
+            eprintln!(
+                "Warning: Skipping IPC generation for {}.{} due to incompatible return type: {}",
+                contract.domain, func.name, return_type
+            );
+            continue;
+        }
+
+        let mut incompatible_param = None;
+        for p in &func.parameters {
+            let dart_type = map_to_dart_native_type(&p.param_type)?;
+            if dart_type.contains("Pointer") || dart_type.contains("Function") {
+                incompatible_param = Some((p.name.clone(), dart_type));
+                break;
+            }
+        }
+
+        if let Some((name, type_)) = incompatible_param {
+            eprintln!(
+                "Warning: Skipping IPC generation for {}.{} due to incompatible parameter '{}' of type '{}'",
+                contract.domain, func.name, name, type_
+            );
+            continue;
+        }
 
         let param_signature = func
             .parameters
@@ -106,6 +139,7 @@ fn generate_methods(contract: &FfiContract) -> Result<String> {
             || return_type == "int"
             || return_type == "double"
             || return_type == "bool"
+            || return_type.starts_with("Map<")
         {
             format!("    return result as {};", return_type)
         } else {

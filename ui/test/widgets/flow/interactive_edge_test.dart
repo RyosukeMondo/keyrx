@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/services/config_result.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/selection_state.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';

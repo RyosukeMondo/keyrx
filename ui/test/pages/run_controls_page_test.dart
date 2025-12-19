@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:keyrx_ui/pages/run_controls_page.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
-import 'package:keyrx_ui/services/hardware_service.dart';
-import 'package:keyrx_ui/services/keymap_service.dart';
-import 'package:keyrx_ui/services/layout_service.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:keyrx_ui/state/app_state.dart';
@@ -39,9 +37,10 @@ void main() {
         runtimeService: FakeRuntimeService(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: const StoragePathResolver(),
-        layoutService: LayoutService(bridge: FakeBridge()),
-        hardwareService: HardwareService(bridge: FakeBridge()),
+        layoutService: FakeLayoutService(),
+        hardwareService: FakeHardwareService(),
         keymapService: KeymapService(bridge: FakeBridge()),
+        daemonManager: MockDaemonManager(),
       );
       facade = KeyrxFacade.real(registry);
     });

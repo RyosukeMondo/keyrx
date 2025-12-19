@@ -1,0 +1,64 @@
+# Tasks: Extend CLI Commands
+
+- [ ] 1. Update CommandProcessor constructor and main
+  - File: apps/cli_tool/lib/command_processor.dart, apps/cli_tool/bin/keyrx_cli.dart
+  - Add RuntimeService, HardwareService, LayoutService, KeymapService parameters to CommandProcessor
+  - Update main.dart to create and pass all services
+  - Import services from core_logic package
+  - Purpose: Enable CommandProcessor to use all config services
+  - _Leverage: apps/cli_tool/lib/command_processor.dart (existing DeviceRegistryService pattern), packages/core_logic/lib/services/device_registry_service.dart_
+  - _Requirements: REQ-1, REQ-2, REQ-3, REQ-4_
+  - _Prompt: Role: Dependency injection specialist | Task: Add service parameters to CommandProcessor constructor and wire them in main, following existing DeviceRegistryService pattern | Restrictions: Do NOT break existing commands, maintain JSON protocol, preserve backward compatibility | Success: CommandProcessor accepts all services, main.dart creates and passes services, existing commands still work, code compiles_
+
+- [ ] 2. Add runtime slot management commands
+  - File: apps/cli_tool/lib/command_processor.dart
+  - Implement listRuntime command using runtimeService.getConfig()
+  - Implement addSlot command using runtimeService.addSlot()
+  - Implement removeSlot command using runtimeService.removeSlot()
+  - Implement activateSlot command using runtimeService.setSlotActive()
+  - Parse JSON payloads for DeviceInstanceId and ProfileSlot
+  - Return results as JSON
+  - Purpose: Enable CLI runtime slot configuration
+  - _Leverage: apps/cli_tool/lib/command_processor.dart (existing command handlers like listDevices)_
+  - _Requirements: REQ-1_
+  - _Prompt: Role: CLI developer | Task: Implement 4 runtime commands (listRuntime, addSlot, removeSlot, activateSlot) following existing command handler patterns | Restrictions: Maintain JSON protocol, handle errors gracefully, validate payloads before use | Success: All 4 commands work, return proper JSON responses, handle errors with error field, payload validation prevents crashes_
+
+- [ ] 3. Add hardware profile management commands
+  - File: apps/cli_tool/lib/command_processor.dart
+  - Implement listHardware command using hardwareService.listProfiles()
+  - Implement saveHardware command using hardwareService.saveProfile()
+  - Implement deleteHardware command using hardwareService.deleteProfile()
+  - Parse HardwareProfile from JSON payload
+  - Return results as JSON
+  - Purpose: Enable CLI hardware profile configuration
+  - _Leverage: apps/cli_tool/lib/command_processor.dart (runtime commands from Task 2)_
+  - _Requirements: REQ-2_
+  - _Prompt: Role: CLI developer | Task: Implement 3 hardware commands (listHardware, saveHardware, deleteHardware) following runtime command patterns from Task 2 | Restrictions: Maintain JSON protocol, handle ConfigOperationResult errors, validate HardwareProfile structure | Success: All 3 commands work, return JSON responses, handle errors properly, profile validation prevents invalid data_
+
+- [ ] 4. Add layout and keymap management commands
+  - File: apps/cli_tool/lib/command_processor.dart
+  - Implement listLayouts command using layoutService.listLayouts()
+  - Implement saveLayout command using layoutService.saveLayout()
+  - Implement deleteLayout command using layoutService.deleteLayout()
+  - Implement listKeymaps command using keymapService.listKeymaps()
+  - Implement saveKeymap command using keymapService.saveKeymap()
+  - Implement deleteKeymap command using keymapService.deleteKeymap()
+  - Parse VirtualLayout and Keymap from JSON payloads
+  - Return results as JSON
+  - Purpose: Enable CLI layout and keymap configuration
+  - _Leverage: apps/cli_tool/lib/command_processor.dart (hardware commands from Task 3)_
+  - _Requirements: REQ-3, REQ-4_
+  - _Prompt: Role: CLI developer | Task: Implement 6 layout and keymap commands following same pattern as hardware commands from Task 3 | Restrictions: Maintain JSON protocol, handle all error cases, validate complex data structures | Success: All 6 commands work, return JSON responses, handle errors gracefully, data validation robust_
+
+- [ ] 5. Create test suite for all new commands
+  - File: apps/cli_tool/test/command_processor_test.dart (new or modify existing)
+  - Create shell script tests for all 12 new commands
+  - Test success cases with valid payloads
+  - Test error cases with invalid payloads
+  - Test error cases with service failures
+  - Verify JSON response format
+  - Verify backward compatibility
+  - Purpose: Ensure all commands work correctly and reliably
+  - _Leverage: existing CLI test patterns, echo and pipe for shell tests_
+  - _Requirements: REQ-1, REQ-2, REQ-3, REQ-4, REQ-5_
+  - _Prompt: Role: QA engineer | Task: Create comprehensive test suite covering all 12 new commands with success and error cases | Restrictions: Cover all command variations, test JSON protocol compliance, verify error handling, ensure backward compatibility with existing commands | Success: All commands tested, success cases pass, error cases handled gracefully, JSON format validated, no regressions in existing commands, test suite runs reliably_

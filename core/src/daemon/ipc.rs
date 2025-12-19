@@ -2,6 +2,7 @@
 
 use crate::daemon::manager::{EngineEvent, EngineManager};
 use crate::daemon::protocol::*;
+use crate::engine::OutputAction; // Added
 use anyhow::Result;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -322,6 +323,35 @@ fn event_to_notification(event: EngineEvent) -> Option<JsonRpcNotification> {
                 "key_name": key_name,
             }),
         )),
+        EngineEvent::DecisionEvent {
+            timestamp_us,
+            key_code,
+            key_name,
+            decision_type,
+            outputs,
+        } => {
+            let output_summaries: Vec<String> = outputs
+                .iter()
+                .map(|action| match action {
+                    OutputAction::KeyDown(k) => format!("KeyDown({:?})", k),
+                    OutputAction::KeyUp(k) => format!("KeyUp({:?})", k),
+                    OutputAction::KeyTap(k) => format!("KeyTap({:?})", k),
+                    OutputAction::Block => "Block".to_string(),
+                    OutputAction::PassThrough => "PassThrough".to_string(),
+                })
+                .collect();
+
+            Some(JsonRpcNotification::new(
+                NOTIFY_EVENT_DECISION.to_string(),
+                json!({
+                    "timestamp_us": timestamp_us,
+                    "key_code": key_code,
+                    "key_name": key_name,
+                    "decision_type": format!("{:?}", decision_type),
+                    "outputs": output_summaries,
+                }),
+            ))
+        }
     }
 }
 

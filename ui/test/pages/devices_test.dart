@@ -5,12 +5,12 @@ import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/keymap_service.dart';
+import 'package:core_logic/services/runtime_service.dart';
 import 'package:keyrx_ui/pages/devices.dart';
-import 'package:keyrx_ui/services/config_result.dart';
 import 'package:keyrx_ui/services/device_registry_service.dart';
-import 'package:keyrx_ui/services/hardware_service.dart';
-import 'package:keyrx_ui/services/keymap_service.dart';
-import 'package:keyrx_ui/services/runtime_service.dart';
+import 'package:keyrx_ui/services/hardware_service_ui.dart';
 
 class FakeRuntimeService implements RuntimeService {
   FakeRuntimeService(this.config);
@@ -51,7 +51,7 @@ class FakeRuntimeService implements RuntimeService {
   ) async => ConfigOperationResult.success(config);
 }
 
-class FakeHardwareService with ChangeNotifier implements HardwareService {
+class FakeHardwareService with ChangeNotifier implements HardwareServiceUI {
   FakeHardwareService(this.profiles);
 
   final List<HardwareProfile> profiles;

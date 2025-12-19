@@ -12,14 +12,25 @@
 
 use keyrx_core::cli::{
     commands::{
-        BenchCommand, CheckCommand, DiscoverCommand, DocFormat, DocsCommand, ExitCodesCommand,
-        RunCommand, SimulateCommand, StateCommand,
+        BenchCommand, CheckCommand, DaemonCommand, DiscoverCommand, DocFormat, DocsCommand,
+        ExitCodesCommand, RunCommand, SimulateCommand, StateCommand,
     },
     Command, CommandContext, CommandResult, HasExitCode,
 };
 use keyrx_core::config::{merge_cli_overrides, Config};
 use std::path::PathBuf;
 use std::str::FromStr;
+
+/// Execute the `daemon` command
+pub async fn execute_daemon(
+    socket: Option<PathBuf>,
+    config: Option<PathBuf>,
+    script: Option<PathBuf>,
+    ctx: &CommandContext,
+) -> CommandResult<()> {
+    let mut cmd = DaemonCommand::new(socket, None, config, script);
+    Command::execute(&mut cmd, ctx)
+}
 
 /// Execute the `check` command
 pub fn execute_check(script: PathBuf, ctx: &CommandContext) -> CommandResult<()> {

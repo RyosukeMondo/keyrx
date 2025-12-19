@@ -106,7 +106,7 @@ void main() {
       final service = DaemonService(socketPath: '/tmp/test.sock');
 
       await expectLater(
-        service.sendRequest<void>('test.method', parseResult: (_) {}),
+        service.sendRequest('test.method'),
         throwsA(
           isA<DaemonException>().having(
             (e) => e.message,
@@ -444,10 +444,7 @@ void main() {
         final service = DaemonService(socketPath: '/tmp/test.sock');
 
         // Try to start a request while not connected
-        final requestFuture = service.sendRequest<void>(
-          'test.method',
-          parseResult: (_) {},
-        );
+        final requestFuture = service.sendRequest('test.method');
 
         // Should immediately fail
         await expectLater(requestFuture, throwsA(isA<DaemonException>()));

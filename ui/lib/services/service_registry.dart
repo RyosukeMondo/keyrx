@@ -1,5 +1,12 @@
-import 'package:core_logic/core_logic.dart' as core;
+import 'dart:async';
+
 import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/repositories/device_config_repository.dart';
+import 'package:core_logic/services/device_registry_service.dart' as core_impl;
+import 'package:core_logic/services/hardware_service.dart' as core;
+import 'package:core_logic/services/keymap_service.dart';
+import 'package:core_logic/services/layout_service.dart' as core;
+import 'package:core_logic/services/runtime_service.dart';
 import '../repositories/mapping_repository.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
@@ -12,12 +19,10 @@ import 'engine_service.dart';
 import 'engine_service_impl.dart';
 import 'error_translator.dart';
 import 'error_translator_impl.dart';
-import 'hardware_service.dart';
-import 'keymap_service.dart';
-import 'layout_service.dart';
+import 'hardware_service_ui.dart';
+import 'layout_service_ui.dart';
 import 'profile_autosave_service.dart';
 import 'profile_registry_service.dart';
-import 'runtime_service.dart';
 import 'script_file_service.dart';
 import 'storage_path_resolver.dart';
 import 'test_service.dart';
@@ -59,8 +64,8 @@ class ServiceRegistry {
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
     ProfileAutosaveService? profileAutosaveService,
-    LayoutService? layoutService,
-    HardwareService? hardwareService,
+    LayoutServiceUI? layoutService,
+    HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
     DaemonManager? daemonManager,
@@ -98,15 +103,19 @@ class ServiceRegistry {
         DeviceProfileServiceImpl(bridge: effectiveBridge);
 
     // Shared DeviceRegistry from core_logic
-    final deviceConfigRepository = core.DeviceConfigRepository();
-    final sharedDeviceRegistry = core.DeviceRegistryServiceImpl(
+    final deviceConfigRepository = DeviceConfigRepository();
+    final sharedDeviceRegistry = core_impl.DeviceRegistryServiceImpl(
       bridge: effectiveBridge,
       repository: deviceConfigRepository,
     );
 
     // Migrate from legacy SharedPreferences if needed
-    DeviceRegistryServiceImpl.migrateFromSharedPreferences(
-      sharedDeviceRegistry,
+    // Note: Fire-and-forget migration to avoid blocking UI startup.
+    // Migration failures are handled gracefully (best-effort).
+    unawaited(
+      DeviceRegistryServiceImpl.migrateFromSharedPreferences(
+        sharedDeviceRegistry,
+      ),
     );
 
     final deviceRegistry =
@@ -118,9 +127,15 @@ class ServiceRegistry {
         ProfileRegistryServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
-    final layouts = layoutService ?? LayoutService(bridge: effectiveBridge);
-    final hardware =
-        hardwareService ?? HardwareService(bridge: effectiveBridge);
+
+    // Create core services
+    final coreLayout = core.LayoutService(bridge: effectiveBridge);
+    final coreHardware = core.HardwareService(bridge: effectiveBridge);
+
+    // Create UI wrappers
+    final layouts = layoutService ?? LayoutServiceUI(coreLayout);
+    final hardware = hardwareService ?? HardwareServiceUI(coreHardware);
+
     final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
     final runtime =
         runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
@@ -179,8 +194,8 @@ class ServiceRegistry {
     required KeyrxBridge bridge,
     required ApiDocsService apiDocsService,
     required StoragePathResolver storagePathResolver,
-    required LayoutService layoutService,
-    required HardwareService hardwareService,
+    required LayoutServiceUI layoutService,
+    required HardwareServiceUI hardwareService,
     required KeymapService keymapService,
     required RuntimeService runtimeService,
     required DaemonManager daemonManager,
@@ -228,8 +243,8 @@ class ServiceRegistry {
   final ApiDocsService apiDocsService;
   final StoragePathResolver storagePathResolver;
   final ProfileAutosaveService profileAutosaveService;
-  final LayoutService layoutService;
-  final HardwareService hardwareService;
+  final LayoutServiceUI layoutService;
+  final HardwareServiceUI hardwareService;
   final KeymapService keymapService;
   final RuntimeService runtimeService;
   final DaemonManager daemonManager;
@@ -249,8 +264,8 @@ class ServiceRegistry {
     ApiDocsService? apiDocsService,
     StoragePathResolver? storagePathResolver,
     ProfileAutosaveService? profileAutosaveService,
-    LayoutService? layoutService,
-    HardwareService? hardwareService,
+    LayoutServiceUI? layoutService,
+    HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
     DaemonManager? daemonManager,
@@ -286,6 +301,8 @@ class ServiceRegistry {
     await profileRegistryService.dispose();
     await testService.dispose();
     await profileAutosaveService.dispose();
+    layoutService.dispose();
+    hardwareService.dispose();
     await bridge.dispose();
   }
 }

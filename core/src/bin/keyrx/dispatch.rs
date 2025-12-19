@@ -170,6 +170,11 @@ pub async fn run_command(
             };
             commands_test::execute_ci_check(options, ctx)
         }
+        Commands::Daemon {
+            socket,
+            config,
+            script,
+        } => commands_core::execute_daemon(socket, config, script, ctx).await,
     }
 }
 
@@ -370,5 +375,6 @@ pub fn get_command_name(command: &Commands) -> &'static str {
         Commands::Regression { .. } => "regression",
         Commands::CiCheck { .. } => "ci-check",
         Commands::Migrate { .. } => "migrate",
+        Commands::Daemon { .. } => "daemon",
     }
 }

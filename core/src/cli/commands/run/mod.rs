@@ -267,7 +267,8 @@ impl RunCommand {
             }
 
             let process_start = Instant::now();
-            let outputs = engine.process_event_traced(event.clone(), tracer);
+            let result = engine.process_event_traced(event.clone(), tracer);
+            let outputs = result.outputs;
 
             let mut ctx = RecordingContext::new(recorder, seq);
             ctx.record_event(&event, &outputs, engine, process_start);

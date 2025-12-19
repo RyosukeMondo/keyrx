@@ -7,7 +7,7 @@ import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/repositories/keyflow_repository.dart';
 import 'package:keyrx_ui/services/auto_save_service.dart';
-import 'package:keyrx_ui/services/config_result.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:core_logic/utils/logger.dart';
 
 // Fake implementations for testing

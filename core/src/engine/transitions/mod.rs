@@ -6,8 +6,8 @@
 //! - Transition logging for debugging and replay
 //! - State graph for enforcing valid transitions
 
-pub mod graph;
 pub mod error;
+pub mod graph;
 pub mod invariant;
 pub mod invariants;
 pub mod log;
@@ -15,8 +15,8 @@ pub mod state_kind;
 pub mod transition;
 pub mod validator;
 
-pub use graph::{InvalidTransition, StateGraph};
 pub use error::TransitionError;
+pub use graph::{InvalidTransition, StateGraph};
 pub use invariant::{Invariant, InvariantViolation};
 pub use invariants::{
     KeyTimestampsMonotonic, LayerStackNotEmpty, NoOrphanedModifiers, PendingQueueBounds,

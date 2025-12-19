@@ -1,0 +1,68 @@
+# Requirements Document
+
+## Introduction
+
+The goal of this specification is to unify the consistency mechanisms for FFI (Foreign Function Interface) and IPC (Inter-Process Communication) in KeyRx. Currently, FFI enjoys strict type safety and contract enforcement via the `generate-dart-bindings` tool, while IPC relies on manually maintained `protocol.rs` and `daemon_protocol.dart` files, leading to bugs and protocol drift (e.g., missing events, mismatched fields).
+
+This feature will extend the existing `generate-dart-bindings` tool to generate a type-safe Dart IPC client (`DaemonClient`) directly from the same `*.ffi-contract.json` files used for FFI, establishing a Single Source of Truth (SSOT) for both communication layers.
+
+## Alignment with Product Vision
+
+This aligns with the goal of "Robust Architecture" and "Developer Experience" by eliminating a class of bugs caused by manual synchronization of protocols. It ensures that any feature added to the core engine (represented by a contract change) is immediately available and type-safe in both the Embedded (FFI) and Daemon (IPC) modes of the application.
+
+## Requirements
+
+### Requirement 1: Unified Contract Definition
+
+**User Story:** As a developer, I want to define a feature's interface once in a `.ffi-contract.json` file so that I don't have to manually keep `protocol.rs` and `daemon_protocol.dart` in sync.
+
+#### Acceptance Criteria
+
+1. The `generate-dart-bindings` tool SHALL accept `*.ffi-contract.json` files as input for IPC generation.
+2. The tool SHALL interpret "functions" in the contract as JSON-RPC methods.
+3. The tool SHALL interpret "events" in the contract as JSON-RPC notifications.
+4. The tool SHALL support a flag (e.g., `--mode=ipc` or implicit generation) to trigger IPC client generation.
+
+### Requirement 2: Shared Data Models
+
+**User Story:** As a developer, I want the generated IPC client to use the same Dart model classes as the FFI layer so that I can reuse UI logic and state management code regardless of the underlying backend.
+
+#### Acceptance Criteria
+
+1. The IPC generator SHALL import and use the existing `generated_models.dart` classes.
+2. The generated models SHALL support JSON serialization (already implemented via `fromJson`/`toJson`).
+3. No duplicate model classes SHALL be generated for IPC; the existing ones must be reused.
+
+### Requirement 3: Typed IPC Client Generation
+
+**User Story:** As a developer, I want a generated `DaemonClient` Dart class with typed methods so that I can interact with the daemon without passing raw strings or loose Maps.
+
+#### Acceptance Criteria
+
+1. The tool SHALL generate a `DaemonClient` class (or domain-specific client mixins).
+2. For a contract function `start_loop(config: Config)`, the client SHALL generate a method `Future<void> startLoop(Config config)`.
+3. The generated method SHALL serialize arguments to a JSON-RPC request and send it via the underlying connection.
+4. The generated method SHALL deserialize the JSON-RPC response into the correct return type (using the shared models).
+
+### Requirement 4: Typed Event Subscriptions
+
+**User Story:** As a developer, I want to subscribe to daemon events using typed streams so that I don't have to parse raw JSON notifications manually.
+
+#### Acceptance Criteria
+
+1. The generated client SHALL expose typed Streams for each event defined in the contract.
+2. For an event `input_event(event: InputEvent)`, the client SHALL expose `Stream<InputEvent> get onInputEvent`.
+3. The client SHALL automatically handle the JSON-RPC subscription/unsubscription logic if required by the protocol.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+- **Extensibility**: The new IPC generator logic (`ipc_client_gen.rs`) should be a separate module within the `generate-dart-bindings` crate, following the pattern of `bindings_gen.rs` and `models_gen.rs`.
+- **Clean Output**: Generated Dart code must pass `dart analyze` without errors or warnings.
+- **Backwards Compatibility**: The changes MUST NOT break existing FFI binding generation.
+
+### Reliability
+- The generated code must handle JSON serialization errors gracefully (e.g., throwing a typed exception rather than crashing).
+
+### Usability
+- The generated client should be easy to instantiate and inject into the Flutter application's service layer.

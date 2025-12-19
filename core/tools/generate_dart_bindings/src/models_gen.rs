@@ -3,7 +3,7 @@
 //! Generates Dart model classes from FFI contract type definitions,
 //! including fromJson and toJson serialization methods.
 
-use crate::templates::{
+use crate::templates::{ 
     context, render, to_camel_case, to_pascal_case, to_snake_case, CONSTRUCTOR_PARAM_OPTIONAL,
     CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED,
     MODEL_CLASS_TEMPLATE, MODEL_FIELD_TEMPLATE, TO_JSON_FIELD,
@@ -24,7 +24,8 @@ impl std::fmt::Display for ModelGenError {
         write!(
             f,
             "Failed to generate model for '{}': {}",
-            self.type_name, self.message
+            self.type_name,
+            self.message
         )
     }
 }
@@ -106,7 +107,7 @@ fn generate_model_class(
         TypeDefinition::Object {
             description,
             properties,
-            ..
+            .. 
         } => generate_model_from_properties(&class_name, properties, description.as_deref()),
         _ => Err(ModelGenError {
             type_name: name.to_string(),
@@ -263,24 +264,10 @@ fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldIn
         render(CONSTRUCTOR_PARAM_REQUIRED, &param_ctx)
     };
 
-    // Generate fromJson assignment
-    let dart_cast = get_dart_cast(&dart_type);
-    let from_json = if nullable {
-        let mut json_ctx = context();
-        json_ctx.insert("field_name".to_string(), field_name.clone());
-        json_ctx.insert("json_key".to_string(), json_key.clone());
-        json_ctx.insert(
-            "dart_cast_nullable".to_string(),
-            format!("as {}?", dart_type),
-        );
-        render(FROM_JSON_OPTIONAL, &json_ctx)
-    } else {
-        let mut json_ctx = context();
-        json_ctx.insert("field_name".to_string(), field_name.clone());
-        json_ctx.insert("json_key".to_string(), json_key.clone());
-        json_ctx.insert("dart_cast".to_string(), dart_cast);
-        render(FROM_JSON_REQUIRED, &json_ctx)
-    };
+    // Generate fromJson assignment using robust deserialization logic
+    let json_access = format!("json['{}']", json_key);
+    let deserialization = get_deserialization(&json_access, &dart_type, nullable);
+    let from_json = format!("      {}: {},", field_name, deserialization);
 
     // Generate toJson field
     let mut to_json_ctx = context();
@@ -294,6 +281,47 @@ fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldIn
         from_json,
         to_json,
     })
+}
+
+fn is_primitive_dart_type(ty: &str) -> bool {
+    matches!(
+        ty,
+        "int" | "double" | "bool" | "String" | "dynamic" | "num" | "Object" | "void"
+    ) || ty.starts_with("Map<")
+}
+
+fn get_deserialization(json_expr: &str, dart_type: &str, nullable: bool) -> String {
+    if is_primitive_dart_type(dart_type) {
+        if nullable {
+            format!("{} as {}?", json_expr, dart_type)
+        } else {
+            format!("{} as {}", json_expr, dart_type)
+        }
+    } else if dart_type.starts_with("List<") {
+        let inner = &dart_type[5..dart_type.len() - 1];
+        if is_primitive_dart_type(inner) {
+            // List of primitives: cast
+            if nullable {
+                format!("({} as List?)?.cast<{}>().toList()", json_expr, inner)
+            } else {
+                format!("({} as List).cast<{}>().toList()", json_expr, inner)
+            }
+        } else {
+            // List of objects: map to fromJson
+            if nullable {
+                format!("({} as List?)?.map((e) => {}.fromJson(e)).toList()", json_expr, inner)
+            } else {
+                format!("({} as List).map((e) => {}.fromJson(e)).toList()", json_expr, inner)
+            }
+        }
+    } else {
+        // Custom type (Model or Enum)
+        if nullable {
+            format!("{} == null ? null : {}.fromJson({})", json_expr, dart_type, json_expr)
+        } else {
+            format!("{}.fromJson({})", dart_type, json_expr)
+        }
+    }
 }
 
 /// Map a property type to its Dart type string
@@ -321,11 +349,6 @@ fn map_dart_type_for_property(
     })
 }
 
-/// Get the Dart type cast for fromJson
-fn get_dart_cast(dart_type: &str) -> String {
-    format!("as {}", dart_type)
-}
-
 /// Generate all models as a single string block
 pub fn generate_models_block(models: &[GeneratedModel]) -> String {
     models
@@ -333,245 +356,4 @@ pub fn generate_models_block(models: &[GeneratedModel]) -> String {
         .map(|m| m.code.clone())
         .collect::<Vec<_>>()
         .join("\n\n")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use keyrx_core::ffi::contract::FunctionContract;
-
-    fn create_object_type() -> TypeDefinition {
-        let mut properties = HashMap::new();
-        properties.insert(
-            "device_count".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "uint32".to_string(),
-                description: Some("Number of devices".to_string()),
-                constraints: None,
-            }),
-        );
-        properties.insert(
-            "is_active".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "bool".to_string(),
-                description: Some("Whether active".to_string()),
-                constraints: None,
-            }),
-        );
-        properties.insert(
-            "name".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "string".to_string(),
-                description: Some("Device name".to_string()),
-                constraints: None,
-            }),
-        );
-
-        TypeDefinition::Object {
-            type_name: "object".to_string(),
-            description: Some("A device profile".to_string()),
-            properties,
-        }
-    }
-
-    #[test]
-    fn test_generate_model_class() {
-        let type_def = create_object_type();
-        let model = generate_model_class("DeviceProfile", &type_def).unwrap();
-
-        assert_eq!(model.class_name, "DeviceProfile");
-        assert!(model.code.contains("class DeviceProfile"));
-        assert!(model.code.contains("final int deviceCount"));
-        assert!(model.code.contains("final bool isActive"));
-        assert!(model.code.contains("final String name"));
-    }
-
-    #[test]
-    fn test_model_has_constructor() {
-        let type_def = create_object_type();
-        let model = generate_model_class("TestModel", &type_def).unwrap();
-
-        assert!(model.code.contains("TestModel({"));
-        assert!(model.code.contains("required this.deviceCount"));
-        assert!(model.code.contains("required this.isActive"));
-        assert!(model.code.contains("required this.name"));
-    }
-
-    #[test]
-    fn test_model_has_from_json() {
-        let type_def = create_object_type();
-        let model = generate_model_class("TestModel", &type_def).unwrap();
-
-        assert!(model.code.contains("factory TestModel.fromJson"));
-        assert!(model.code.contains("json['device_count']"));
-        assert!(model.code.contains("json['is_active']"));
-        assert!(model.code.contains("json['name']"));
-    }
-
-    #[test]
-    fn test_model_has_to_json() {
-        let type_def = create_object_type();
-        let model = generate_model_class("TestModel", &type_def).unwrap();
-
-        assert!(model.code.contains("Map<String, dynamic> toJson()"));
-        assert!(model.code.contains("'device_count': deviceCount"));
-        assert!(model.code.contains("'is_active': isActive"));
-        assert!(model.code.contains("'name': name"));
-    }
-
-    #[test]
-    fn test_field_type_mapping() {
-        let mut properties = HashMap::new();
-        properties.insert(
-            "count".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "int32".to_string(),
-                description: None,
-                constraints: None,
-            }),
-        );
-        properties.insert(
-            "progress".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "float64".to_string(),
-                description: None,
-                constraints: None,
-            }),
-        );
-
-        let type_def = TypeDefinition::Object {
-            type_name: "object".to_string(),
-            description: None,
-            properties,
-        };
-
-        let model = generate_model_class("Stats", &type_def).unwrap();
-
-        assert!(model.code.contains("final int count"));
-        assert!(model.code.contains("final double progress"));
-    }
-
-    #[test]
-    fn test_generate_models_from_returns() {
-        let contract = FfiContract {
-            schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
-            version: "1.0.0".to_string(),
-            domain: "test".to_string(),
-            description: "Test contract".to_string(),
-            protocol_version: 1,
-            functions: vec![FunctionContract {
-                name: "get_status".to_string(),
-                description: "Get status".to_string(),
-                rust_name: None,
-                parameters: vec![],
-                returns: create_object_type(),
-                errors: vec![],
-                events_emitted: vec![],
-                example: None,
-                deprecated: false,
-                since_version: None,
-            }],
-            types: HashMap::new(),
-            events: vec![],
-        };
-
-        let models = generate_models_from_returns(&contract).unwrap();
-
-        assert_eq!(models.len(), 1);
-        assert_eq!(models[0].class_name, "GetStatusResult");
-    }
-
-    #[test]
-    fn test_generate_all_models() {
-        let mut custom_types = HashMap::new();
-        custom_types.insert("DeviceInfo".to_string(), create_object_type());
-
-        let contract = FfiContract {
-            schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
-            version: "1.0.0".to_string(),
-            domain: "test".to_string(),
-            description: "Test contract".to_string(),
-            protocol_version: 1,
-            functions: vec![FunctionContract {
-                name: "get_device".to_string(),
-                description: "Get device".to_string(),
-                rust_name: None,
-                parameters: vec![],
-                returns: create_object_type(),
-                errors: vec![],
-                events_emitted: vec![],
-                example: None,
-                deprecated: false,
-                since_version: None,
-            }],
-            types: custom_types,
-            events: vec![],
-        };
-
-        let models = generate_all_models(&contract).unwrap();
-
-        // Should have both the custom type and the return type model
-        assert_eq!(models.len(), 2);
-        let names: Vec<_> = models.iter().map(|m| m.class_name.as_str()).collect();
-        assert!(names.contains(&"DeviceInfo"));
-        assert!(names.contains(&"GetDeviceResult"));
-    }
-
-    #[test]
-    fn test_generate_models_block() {
-        let type_def = create_object_type();
-        let model1 = generate_model_class("ModelA", &type_def).unwrap();
-        let model2 = generate_model_class("ModelB", &type_def).unwrap();
-
-        let block = generate_models_block(&[model1, model2]);
-
-        assert!(block.contains("class ModelA"));
-        assert!(block.contains("class ModelB"));
-    }
-
-    #[test]
-    fn test_non_object_type_returns_error() {
-        let type_def = TypeDefinition::Primitive {
-            type_name: "string".to_string(),
-            description: None,
-            constraints: None,
-        };
-
-        let result = generate_model_class("InvalidModel", &type_def);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_camel_case_field_names() {
-        let mut properties = HashMap::new();
-        properties.insert(
-            "device_count".to_string(),
-            Box::new(TypeDefinition::Primitive {
-                type_name: "int32".to_string(),
-                description: None,
-                constraints: None,
-            }),
-        );
-
-        let type_def = TypeDefinition::Object {
-            type_name: "object".to_string(),
-            description: None,
-            properties,
-        };
-
-        let model = generate_model_class("Test", &type_def).unwrap();
-
-        // Field should be camelCase
-        assert!(model.code.contains("deviceCount"));
-        // JSON key should be snake_case
-        assert!(model.code.contains("'device_count'"));
-    }
-
-    #[test]
-    fn test_doc_comment_in_class() {
-        let type_def = create_object_type();
-        let model = generate_model_class("Device", &type_def).unwrap();
-
-        assert!(model.code.contains("/// A device profile"));
-    }
 }

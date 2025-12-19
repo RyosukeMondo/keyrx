@@ -5,11 +5,11 @@ import 'package:core_logic/models/action_binding.dart';
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/virtual_layout.dart';
+import 'package:core_logic/services/keymap_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/keymap_converter.dart';
-import '../../services/keymap_service.dart';
 import '../../services/rhai_generator.dart';
 import '../../services/script_file_service.dart';
 import '../../services/service_registry.dart';

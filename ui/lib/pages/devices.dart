@@ -8,13 +8,13 @@ import 'package:core_logic/models/device_state.dart';
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/runtime_config.dart';
+import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/keymap_service.dart';
+import 'package:core_logic/services/runtime_service.dart';
 import 'package:flutter/material.dart';
 
-import '../services/config_result.dart';
 import '../services/device_registry_service.dart';
-import '../services/hardware_service.dart';
-import '../services/keymap_service.dart';
-import '../services/runtime_service.dart';
+import '../services/hardware_service_ui.dart';
 
 class DevicesPage extends StatefulWidget {
   const DevicesPage({
@@ -26,7 +26,7 @@ class DevicesPage extends StatefulWidget {
   });
 
   final RuntimeService runtimeService;
-  final HardwareService hardwareService;
+  final HardwareServiceUI hardwareService;
   final KeymapService keymapService;
   final DeviceRegistryService deviceRegistryService;
 

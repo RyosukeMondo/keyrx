@@ -7,6 +7,13 @@ import '../models/device_config.dart';
 ///
 /// This repository handles loading and saving [DeviceConfig] to a JSON file,
 /// following platform-specific standards for configuration storage.
+///
+/// ## Concurrent Access
+/// This repository uses atomic write patterns (write to temp file, then rename)
+/// to prevent file corruption. However, it does NOT implement file locking.
+/// If multiple processes (e.g., UI + CLI) write simultaneously, the last write
+/// wins. This is acceptable for the expected usage pattern where concurrent
+/// writes are rare. Reads are always safe due to atomic writes.
 class DeviceConfigRepository {
   /// Create a new [DeviceConfigRepository].
   ///
