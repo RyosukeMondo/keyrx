@@ -8,7 +8,7 @@
   - Purpose: Foundation for configuration services
   - _Requirements: REQ-1, REQ-2, REQ-4_
 
-- [ ] 2. Move runtime_service.dart to core_logic
+- [-] 2. Move runtime_service.dart to core_logic
   - File: packages/core_logic/lib/services/runtime_service.dart
   - Copy from UI
   - Update imports to relative paths
