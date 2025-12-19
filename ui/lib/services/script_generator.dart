@@ -1,7 +1,7 @@
 /// Utility for building Rhai scripts from mappings and combos.
 library;
 
-import '../models/key_mapping.dart';
+import 'package:core_logic/models/key_mapping.dart';
 
 /// Utility for building Rhai scripts from mappings and combos.
 class ScriptGenerator {

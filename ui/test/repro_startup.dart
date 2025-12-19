@@ -1,7 +1,8 @@
 // ignore_for_file: avoid_print
 import 'dart:io';
+
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:logging/logging.dart';
 
 void main() {

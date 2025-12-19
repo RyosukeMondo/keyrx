@@ -6,9 +6,8 @@ library;
 
 import 'dart:convert';
 
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../ffi/bridge.dart';
 
 /// Result of a device profile lookup operation.
 class DeviceProfileLookupResult {

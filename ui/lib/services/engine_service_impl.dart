@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
-import '../ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart';
 import 'engine_service.dart';
 
 /// Real EngineService that wraps the KeyrxBridge.

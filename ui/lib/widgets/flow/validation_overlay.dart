@@ -1,8 +1,9 @@
 /// Validation overlay widget for displaying errors on nodes and edges.
 library;
 
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/flow_graph.dart';
+
 import '../../services/flow_validator.dart';
 
 /// Badge widget displaying validation error count on a node.

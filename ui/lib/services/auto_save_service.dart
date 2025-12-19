@@ -3,12 +3,13 @@ library;
 
 import 'dart:async';
 
-import '../models/hardware_profile.dart';
-import '../models/runtime_config.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
+import 'package:core_logic/utils/logger.dart';
+
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
 import '../services/keyflow_analytics.dart';
-import '../utils/logger.dart';
 
 /// Mutation operation types for auto-save.
 sealed class SaveOperation {

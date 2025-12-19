@@ -1,8 +1,8 @@
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/hardware_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_device_node.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_keymap_node.dart';
 import 'package:keyrx_ui/widgets/flow/enhanced_layout_node.dart';

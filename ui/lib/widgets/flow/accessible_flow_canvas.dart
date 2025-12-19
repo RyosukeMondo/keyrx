@@ -1,9 +1,10 @@
 /// Accessible flow canvas wrapper with screen reader support.
 library;
 
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/flow/flow_graph.dart';
+
 import '../../state/keyflow_providers.dart';
 import '../../state/selection_state.dart';
 

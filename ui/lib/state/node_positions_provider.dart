@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/flow/node_position.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/storage_keys.dart';
-import '../models/flow/flow_graph.dart';
-import '../models/flow/node_position.dart';
 import 'keyflow_providers.dart';
 
 part 'node_positions_provider.g.dart';

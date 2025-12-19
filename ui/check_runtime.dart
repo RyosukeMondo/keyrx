@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/models/runtime_config.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/models/runtime_config.dart';
 
 void main() async {
   stderr.writeln('Checking runtime configuration...\n');

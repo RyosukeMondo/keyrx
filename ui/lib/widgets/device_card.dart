@@ -4,9 +4,10 @@
 // ProfileSelector, RemapToggle, and action buttons for managing
 // device configuration.
 
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
 import 'package:flutter/material.dart';
-import '../models/device_identity.dart';
-import '../models/device_state.dart';
+
 import '../services/device_registry_service.dart';
 import '../services/profile_registry_service.dart';
 import 'profile_selector.dart';

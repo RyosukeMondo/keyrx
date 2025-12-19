@@ -3,15 +3,15 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/models/flow/edge_style.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../animations/edge_animations.dart';
-import '../../models/flow/edge_style.dart';
-import '../../models/flow/flow_graph.dart';
-import '../../models/hardware_profile.dart';
-import '../../models/runtime_config.dart';
 import '../../state/selection_state.dart';
 import '../../state/slot_actions.dart';
 import 'animated_edges_painter.dart';

@@ -6,11 +6,11 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../models/daemon_protocol.dart';
 import '../services/daemon_service.dart';
 import '../state/daemon_providers.dart';
 
@@ -57,6 +57,13 @@ class _MonitorViewState extends ConsumerState<MonitorView>
 
   Future<void> _initialize() async {
     final daemonService = ref.read(daemonServiceProvider);
+
+    // Initialize with current state to avoid race condition with broadcast stream
+    if (mounted) {
+      setState(() {
+        _connectionState = daemonService.state;
+      });
+    }
 
     // Listen to connection state
     _stateSubscription = daemonService.connectionState.listen((state) {
@@ -165,6 +172,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
           (e) => e.event.when(
             input: (_) => _showInput,
             output: (_) => _showOutput,
+            decision: (_) => _showOutput,
             stateChange: (_) => _showStateChange,
             discovery: (_) => _showDiscovery,
           ),
@@ -212,6 +220,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
   Widget _buildEventTile(_EventDisplay eventDisplay) => eventDisplay.event.when(
     input: (event) => _buildInputEventTile(event, eventDisplay.timestamp),
     output: (event) => _buildOutputEventTile(event, eventDisplay.timestamp),
+    decision: (event) => _buildDecisionEventTile(event, eventDisplay.timestamp),
     stateChange: (event) =>
         _buildStateChangeEventTile(event, eventDisplay.timestamp),
     discovery: (event) =>
@@ -375,6 +384,38 @@ class _MonitorViewState extends ConsumerState<MonitorView>
       ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', fontSize: 11),
     ),
   );
+
+  Widget _buildDecisionEventTile(DecisionEvent event, DateTime timestamp) =>
+      ListTile(
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        leading: CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.indigo.withValues(alpha: 0.2),
+          child: const Icon(Icons.psychology, color: Colors.indigo, size: 14),
+        ),
+        title: Row(
+          children: [
+            Text(
+              event.decisionType,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              event.keyName,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          'Decision • ${_timeFormat.format(timestamp)}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+        ),
+        trailing: Text(
+          '${event.outputs.length} outputs',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+        ),
+      );
 
   void _showFilterDialog() {
     showDialog<void>(

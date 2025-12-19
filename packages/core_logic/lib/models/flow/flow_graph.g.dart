@@ -6,34 +6,36 @@ part of 'flow_graph.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_FlowPosition _$FlowPositionFromJson(Map<String, dynamic> json) =>
-    _FlowPosition(
+_$FlowPositionImpl _$$FlowPositionImplFromJson(Map<String, dynamic> json) =>
+    _$FlowPositionImpl(
       x: (json['x'] as num).toDouble(),
       y: (json['y'] as num).toDouble(),
     );
 
-Map<String, dynamic> _$FlowPositionToJson(_FlowPosition instance) =>
+Map<String, dynamic> _$$FlowPositionImplToJson(_$FlowPositionImpl instance) =>
     <String, dynamic>{'x': instance.x, 'y': instance.y};
 
-_FlowEdge _$FlowEdgeFromJson(Map<String, dynamic> json) => _FlowEdge(
-  from: json['from'] as String,
-  to: json['to'] as String,
-  slotId: json['slotId'] as String,
-  priority: (json['priority'] as num).toInt(),
-  active: json['active'] as bool? ?? false,
-  status:
-      $enumDecodeNullable(_$EdgeStatusEnumMap, json['status']) ??
-      EdgeStatus.valid,
-);
+_$FlowEdgeImpl _$$FlowEdgeImplFromJson(Map<String, dynamic> json) =>
+    _$FlowEdgeImpl(
+      from: json['from'] as String,
+      to: json['to'] as String,
+      slotId: json['slotId'] as String,
+      priority: (json['priority'] as num).toInt(),
+      active: json['active'] as bool? ?? false,
+      status:
+          $enumDecodeNullable(_$EdgeStatusEnumMap, json['status']) ??
+          EdgeStatus.valid,
+    );
 
-Map<String, dynamic> _$FlowEdgeToJson(_FlowEdge instance) => <String, dynamic>{
-  'from': instance.from,
-  'to': instance.to,
-  'slotId': instance.slotId,
-  'priority': instance.priority,
-  'active': instance.active,
-  'status': _$EdgeStatusEnumMap[instance.status]!,
-};
+Map<String, dynamic> _$$FlowEdgeImplToJson(_$FlowEdgeImpl instance) =>
+    <String, dynamic>{
+      'from': instance.from,
+      'to': instance.to,
+      'slotId': instance.slotId,
+      'priority': instance.priority,
+      'active': instance.active,
+      'status': _$EdgeStatusEnumMap[instance.status]!,
+    };
 
 const _$EdgeStatusEnumMap = {
   EdgeStatus.valid: 'valid',
@@ -41,8 +43,8 @@ const _$EdgeStatusEnumMap = {
   EdgeStatus.warning: 'warning',
 };
 
-DeviceFlowNode _$DeviceFlowNodeFromJson(Map<String, dynamic> json) =>
-    DeviceFlowNode(
+_$DeviceFlowNodeImpl _$$DeviceFlowNodeImplFromJson(Map<String, dynamic> json) =>
+    _$DeviceFlowNodeImpl(
       id: json['id'] as String,
       deviceId: DeviceInstanceId.fromJson(
         json['deviceId'] as Map<String, dynamic>,
@@ -52,66 +54,70 @@ DeviceFlowNode _$DeviceFlowNodeFromJson(Map<String, dynamic> json) =>
       $type: json['type'] as String?,
     );
 
-Map<String, dynamic> _$DeviceFlowNodeToJson(DeviceFlowNode instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'deviceId': instance.deviceId,
-      'isConnected': instance.isConnected,
-      'label': instance.label,
-      'type': instance.$type,
-    };
+Map<String, dynamic> _$$DeviceFlowNodeImplToJson(
+  _$DeviceFlowNodeImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'deviceId': instance.deviceId,
+  'isConnected': instance.isConnected,
+  'label': instance.label,
+  'type': instance.$type,
+};
 
-HardwareProfileFlowNode _$HardwareProfileFlowNodeFromJson(
+_$HardwareProfileFlowNodeImpl _$$HardwareProfileFlowNodeImplFromJson(
   Map<String, dynamic> json,
-) => HardwareProfileFlowNode(
+) => _$HardwareProfileFlowNodeImpl(
   id: json['id'] as String,
   label: json['label'] as String?,
   $type: json['type'] as String?,
 );
 
-Map<String, dynamic> _$HardwareProfileFlowNodeToJson(
-  HardwareProfileFlowNode instance,
+Map<String, dynamic> _$$HardwareProfileFlowNodeImplToJson(
+  _$HardwareProfileFlowNodeImpl instance,
 ) => <String, dynamic>{
   'id': instance.id,
   'label': instance.label,
   'type': instance.$type,
 };
 
-KeymapFlowNode _$KeymapFlowNodeFromJson(Map<String, dynamic> json) =>
-    KeymapFlowNode(
+_$KeymapFlowNodeImpl _$$KeymapFlowNodeImplFromJson(Map<String, dynamic> json) =>
+    _$KeymapFlowNodeImpl(
       id: json['id'] as String,
       label: json['label'] as String?,
       layers: (json['layers'] as num?)?.toInt(),
       $type: json['type'] as String?,
     );
 
-Map<String, dynamic> _$KeymapFlowNodeToJson(KeymapFlowNode instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'label': instance.label,
-      'layers': instance.layers,
-      'type': instance.$type,
-    };
+Map<String, dynamic> _$$KeymapFlowNodeImplToJson(
+  _$KeymapFlowNodeImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'layers': instance.layers,
+  'type': instance.$type,
+};
 
-_FlowGraph _$FlowGraphFromJson(Map<String, dynamic> json) => _FlowGraph(
-  nodes:
-      (json['nodes'] as List<dynamic>?)
-          ?.map((e) => FlowNode.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <FlowNode>[],
-  edges:
-      (json['edges'] as List<dynamic>?)
-          ?.map((e) => FlowEdge.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <FlowEdge>[],
-  positions:
-      (json['positions'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, FlowPosition.fromJson(e as Map<String, dynamic>)),
-      ) ??
-      const <String, FlowPosition>{},
-);
+_$FlowGraphImpl _$$FlowGraphImplFromJson(Map<String, dynamic> json) =>
+    _$FlowGraphImpl(
+      nodes:
+          (json['nodes'] as List<dynamic>?)
+              ?.map((e) => FlowNode.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FlowNode>[],
+      edges:
+          (json['edges'] as List<dynamic>?)
+              ?.map((e) => FlowEdge.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FlowEdge>[],
+      positions:
+          (json['positions'] as Map<String, dynamic>?)?.map(
+            (k, e) =>
+                MapEntry(k, FlowPosition.fromJson(e as Map<String, dynamic>)),
+          ) ??
+          const <String, FlowPosition>{},
+    );
 
-Map<String, dynamic> _$FlowGraphToJson(_FlowGraph instance) =>
+Map<String, dynamic> _$$FlowGraphImplToJson(_$FlowGraphImpl instance) =>
     <String, dynamic>{
       'nodes': instance.nodes,
       'edges': instance.edges,

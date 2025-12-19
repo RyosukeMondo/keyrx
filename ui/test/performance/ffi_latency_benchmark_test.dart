@@ -1,6 +1,5 @@
+import 'package:core_logic/ffi/debug_tools.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:keyrx_ui/ffi/debug_tools.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

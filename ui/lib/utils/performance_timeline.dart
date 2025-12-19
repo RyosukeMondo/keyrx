@@ -1,8 +1,7 @@
 import 'dart:developer';
 
+import 'package:core_logic/utils/logger.dart';
 import 'package:flutter/widgets.dart';
-
-import 'logger.dart';
 
 /// Lightweight helper for emitting Timeline spans + structured logs.
 class PerformanceTimelineTracer {

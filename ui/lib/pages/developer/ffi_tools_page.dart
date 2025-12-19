@@ -9,10 +9,10 @@ library;
 
 import 'dart:convert';
 
+import 'package:core_logic/ffi/introspection_models.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../ffi/introspection_models.dart';
 import '../../services/ffi_introspection_service.dart';
 import '../../services/service_registry.dart';
 

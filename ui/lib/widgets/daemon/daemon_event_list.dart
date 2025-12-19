@@ -1,9 +1,10 @@
 // ignore_for_file: prefer_expression_function_bodies
 
+import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../models/daemon_protocol.dart';
+
 import '../../state/daemon_providers.dart';
 
 /// Displays a scrolling list of daemon events.

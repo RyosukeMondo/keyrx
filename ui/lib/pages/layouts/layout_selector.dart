@@ -1,6 +1,7 @@
+import 'package:core_logic/models/virtual_layout.dart';
+import 'package:core_logic/models/virtual_layout_type.dart';
 import 'package:flutter/material.dart';
-import '../../models/virtual_layout.dart';
-import '../../models/virtual_layout_type.dart';
+
 import 'grid_generator.dart';
 
 class LayoutSelector extends StatelessWidget {

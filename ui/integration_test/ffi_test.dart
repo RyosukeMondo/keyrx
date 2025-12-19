@@ -7,8 +7,8 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/models/device_state.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/models/device_state.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

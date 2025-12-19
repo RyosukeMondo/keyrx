@@ -1,11 +1,11 @@
 /// Tests for DraggableNode widget covering drag gestures, position updates, and constraints.
 library;
 
+import 'package:core_logic/models/flow/node_position.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/node_position.dart';
 import 'package:keyrx_ui/state/drag_controller.dart';
 import 'package:keyrx_ui/state/node_positions_provider.dart';
 import 'package:keyrx_ui/widgets/flow/draggable_node.dart';

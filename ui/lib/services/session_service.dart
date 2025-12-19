@@ -5,7 +5,7 @@ library;
 
 import 'dart:async';
 
-import '../ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart';
 
 /// Session info from listing.
 class SessionRecord {

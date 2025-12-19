@@ -3,13 +3,13 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/keymap.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/material.dart';
 
-import '../models/device_identity.dart';
-import '../models/device_state.dart';
-import '../models/hardware_profile.dart';
-import '../models/keymap.dart';
-import '../models/runtime_config.dart';
 import '../services/config_result.dart';
 import '../services/device_registry_service.dart';
 import '../services/hardware_service.dart';

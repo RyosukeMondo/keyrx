@@ -6,54 +6,56 @@ part of 'action_binding.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-ActionBindingStandardKey _$ActionBindingStandardKeyFromJson(
+_$ActionBindingStandardKeyImpl _$$ActionBindingStandardKeyImplFromJson(
   Map<String, dynamic> json,
-) => ActionBindingStandardKey(
+) => _$ActionBindingStandardKeyImpl(
   value: json['value'] as String? ?? '',
   $type: json['type'] as String?,
 );
 
-Map<String, dynamic> _$ActionBindingStandardKeyToJson(
-  ActionBindingStandardKey instance,
+Map<String, dynamic> _$$ActionBindingStandardKeyImplToJson(
+  _$ActionBindingStandardKeyImpl instance,
 ) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
 
-ActionBindingMacro _$ActionBindingMacroFromJson(Map<String, dynamic> json) =>
-    ActionBindingMacro(
-      value: json['value'] as String? ?? '',
-      $type: json['type'] as String?,
-    );
-
-Map<String, dynamic> _$ActionBindingMacroToJson(ActionBindingMacro instance) =>
-    <String, dynamic>{'value': instance.value, 'type': instance.$type};
-
-ActionBindingLayerToggle _$ActionBindingLayerToggleFromJson(
+_$ActionBindingMacroImpl _$$ActionBindingMacroImplFromJson(
   Map<String, dynamic> json,
-) => ActionBindingLayerToggle(
+) => _$ActionBindingMacroImpl(
   value: json['value'] as String? ?? '',
   $type: json['type'] as String?,
 );
 
-Map<String, dynamic> _$ActionBindingLayerToggleToJson(
-  ActionBindingLayerToggle instance,
+Map<String, dynamic> _$$ActionBindingMacroImplToJson(
+  _$ActionBindingMacroImpl instance,
 ) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
 
-ActionBindingTapHold _$ActionBindingTapHoldFromJson(
+_$ActionBindingLayerToggleImpl _$$ActionBindingLayerToggleImplFromJson(
   Map<String, dynamic> json,
-) => ActionBindingTapHold(
+) => _$ActionBindingLayerToggleImpl(
+  value: json['value'] as String? ?? '',
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$$ActionBindingLayerToggleImplToJson(
+  _$ActionBindingLayerToggleImpl instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+_$ActionBindingTapHoldImpl _$$ActionBindingTapHoldImplFromJson(
+  Map<String, dynamic> json,
+) => _$ActionBindingTapHoldImpl(
   value:
       (json['value'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
   $type: json['type'] as String?,
 );
 
-Map<String, dynamic> _$ActionBindingTapHoldToJson(
-  ActionBindingTapHold instance,
+Map<String, dynamic> _$$ActionBindingTapHoldImplToJson(
+  _$ActionBindingTapHoldImpl instance,
 ) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
 
-ActionBindingTransparent _$ActionBindingTransparentFromJson(
+_$ActionBindingTransparentImpl _$$ActionBindingTransparentImplFromJson(
   Map<String, dynamic> json,
-) => ActionBindingTransparent($type: json['type'] as String?);
+) => _$ActionBindingTransparentImpl($type: json['type'] as String?);
 
-Map<String, dynamic> _$ActionBindingTransparentToJson(
-  ActionBindingTransparent instance,
+Map<String, dynamic> _$$ActionBindingTransparentImplToJson(
+  _$ActionBindingTransparentImpl instance,
 ) => <String, dynamic>{'type': instance.$type};

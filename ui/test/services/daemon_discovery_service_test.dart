@@ -2,8 +2,8 @@
 
 import 'dart:async';
 
+import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/daemon_protocol.dart';
 import 'package:keyrx_ui/services/daemon_discovery_service.dart';
 import 'package:keyrx_ui/services/daemon_service.dart';
 import 'package:mockito/annotations.dart';

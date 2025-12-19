@@ -8,11 +8,11 @@
 /// Detailed edge cases are covered in unit tests.
 library;
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/device_registry_ffi.dart';
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/ffi/bridge.dart';
-import 'package:keyrx_ui/ffi/device_registry_ffi.dart';
-import 'package:keyrx_ui/models/device_identity.dart';
-import 'package:keyrx_ui/models/device_state.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade_impl.dart';

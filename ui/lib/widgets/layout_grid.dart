@@ -4,11 +4,11 @@
 // mappings displayed on keys. Supports interactive key selection for
 // mapping configuration.
 
+import 'package:core_logic/models/keyboard_layout.dart';
+import 'package:core_logic/models/layout_type.dart';
+import 'package:core_logic/models/profile.dart';
 import 'package:flutter/material.dart';
 
-import '../models/keyboard_layout.dart';
-import '../models/layout_type.dart';
-import '../models/profile.dart';
 import 'preview/preview.dart';
 import 'visual_keyboard.dart';
 

@@ -4,12 +4,12 @@
 /// device slots, with automatic state synchronization.
 library;
 
+import 'package:core_logic/models/config_ids.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/config_ids.dart';
-import '../models/hardware_profile.dart';
-import '../models/runtime_config.dart';
 import '../repositories/keyflow_repository.dart';
 import '../services/config_result.dart';
 import '../services/daemon_service.dart';

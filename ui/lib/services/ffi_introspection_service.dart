@@ -2,8 +2,8 @@
 //
 // Service for fetching and caching FFI metadata from Rust.
 
-import '../ffi/bindings.dart';
-import '../ffi/introspection_models.dart';
+import 'package:core_logic/ffi/bindings.dart';
+import 'package:core_logic/ffi/introspection_models.dart';
 
 class FfiIntrospectionService {
   FfiIntrospectionService(this._bindings);

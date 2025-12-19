@@ -3,13 +3,14 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/keymap.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/device_state.dart';
-import '../models/flow/flow_graph.dart';
-import '../models/hardware_profile.dart';
-import '../models/keymap.dart';
-import '../models/runtime_config.dart';
+
 import '../repositories/keyflow_repository.dart';
 import '../services/auto_save_service.dart';
 import '../services/config_result.dart';

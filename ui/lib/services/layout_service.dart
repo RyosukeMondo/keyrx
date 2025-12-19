@@ -1,11 +1,11 @@
 /// Service for managing Virtual Layouts via config FFI.
 library;
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/foundation.dart';
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
-import '../models/virtual_layout.dart';
 import 'config_result.dart';
 
 class LayoutService with ChangeNotifier {

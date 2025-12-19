@@ -1,5 +1,5 @@
+import 'package:core_logic/models/flow/flow_data.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/flow_data.dart';
 
 class KeymapNodeWidget extends StatelessWidget {
   const KeymapNodeWidget({required this.data, super.key});

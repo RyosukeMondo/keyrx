@@ -1,7 +1,7 @@
 /// Flow graph validation service with clear error messages.
 library;
 
-import '../models/flow/flow_graph.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
 
 /// Validation error for a specific node or edge in the flow graph.
 class ValidationError {

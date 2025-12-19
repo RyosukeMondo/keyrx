@@ -1,8 +1,8 @@
+import 'package:core_logic/models/flow/edge_style.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 
 import '../../helpers/golden_test_harness.dart';

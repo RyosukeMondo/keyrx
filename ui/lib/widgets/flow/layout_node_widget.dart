@@ -1,5 +1,5 @@
+import 'package:core_logic/models/flow/flow_data.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/flow_data.dart';
 
 class LayoutNodeWidget extends StatelessWidget {
   const LayoutNodeWidget({required this.data, super.key});

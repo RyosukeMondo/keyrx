@@ -6,30 +6,29 @@ part of 'keymap.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_Combo _$ComboFromJson(Map<String, dynamic> json) => _Combo(
+_$ComboImpl _$$ComboImplFromJson(Map<String, dynamic> json) => _$ComboImpl(
   keys: (json['keys'] as List<dynamic>).map((e) => e as String).toList(),
   output: json['output'] as String,
 );
 
-Map<String, dynamic> _$ComboToJson(_Combo instance) => <String, dynamic>{
-  'keys': instance.keys,
-  'output': instance.output,
-};
+Map<String, dynamic> _$$ComboImplToJson(_$ComboImpl instance) =>
+    <String, dynamic>{'keys': instance.keys, 'output': instance.output};
 
-_KeymapLayer _$KeymapLayerFromJson(Map<String, dynamic> json) => _KeymapLayer(
-  name: json['name'] as String,
-  bindings:
-      (json['bindings'] as Map<String, dynamic>?)?.map(
-        (k, e) =>
-            MapEntry(k, ActionBinding.fromJson(e as Map<String, dynamic>)),
-      ) ??
-      const <VirtualKeyId, ActionBinding>{},
-);
+_$KeymapLayerImpl _$$KeymapLayerImplFromJson(Map<String, dynamic> json) =>
+    _$KeymapLayerImpl(
+      name: json['name'] as String,
+      bindings:
+          (json['bindings'] as Map<String, dynamic>?)?.map(
+            (k, e) =>
+                MapEntry(k, ActionBinding.fromJson(e as Map<String, dynamic>)),
+          ) ??
+          const <VirtualKeyId, ActionBinding>{},
+    );
 
-Map<String, dynamic> _$KeymapLayerToJson(_KeymapLayer instance) =>
+Map<String, dynamic> _$$KeymapLayerImplToJson(_$KeymapLayerImpl instance) =>
     <String, dynamic>{'name': instance.name, 'bindings': instance.bindings};
 
-_Keymap _$KeymapFromJson(Map<String, dynamic> json) => _Keymap(
+_$KeymapImpl _$$KeymapImplFromJson(Map<String, dynamic> json) => _$KeymapImpl(
   id: json['id'] as String,
   virtualLayoutId: json['virtual_layout_id'] as String,
   name: json['name'] as String? ?? 'Untitled Keymap',
@@ -45,10 +44,11 @@ _Keymap _$KeymapFromJson(Map<String, dynamic> json) => _Keymap(
       const <Combo>[],
 );
 
-Map<String, dynamic> _$KeymapToJson(_Keymap instance) => <String, dynamic>{
-  'id': instance.id,
-  'virtual_layout_id': instance.virtualLayoutId,
-  'name': instance.name,
-  'layers': instance.layers,
-  'combos': instance.combos,
-};
+Map<String, dynamic> _$$KeymapImplToJson(_$KeymapImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'virtual_layout_id': instance.virtualLayoutId,
+      'name': instance.name,
+      'layers': instance.layers,
+      'combos': instance.combos,
+    };

@@ -1,6 +1,6 @@
+import 'package:core_logic/models/action_binding.dart';
+import 'package:core_logic/models/keymap.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/action_binding.dart';
-import 'package:keyrx_ui/models/keymap.dart';
 import 'package:keyrx_ui/services/keymap_converter.dart';
 
 void main() {

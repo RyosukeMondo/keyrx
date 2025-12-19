@@ -8,9 +8,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:ffi/ffi.dart';
-
-import '../ffi/bridge.dart';
 
 /// Log entry from the engine.
 class LogEntry {

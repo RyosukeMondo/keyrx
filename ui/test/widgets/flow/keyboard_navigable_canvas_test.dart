@@ -1,9 +1,9 @@
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/hardware_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
 import 'package:keyrx_ui/state/keyflow_providers.dart';
 import 'package:keyrx_ui/state/selection_state.dart';
 import 'package:keyrx_ui/widgets/flow/keyboard_navigable_canvas.dart';

@@ -3,7 +3,7 @@
 /// Keeps FFI concerns out of widgets by routing through this service.
 library;
 
-import '../ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart';
 
 /// Snapshot of current engine state for UI/debugger consumption.
 class EngineSnapshot {

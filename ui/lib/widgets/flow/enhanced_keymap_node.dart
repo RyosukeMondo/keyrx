@@ -1,5 +1,6 @@
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/flow_graph.dart';
+
 import 'accessible_flow_canvas.dart';
 
 /// Enhanced keymap node widget with Material Design 3 styling

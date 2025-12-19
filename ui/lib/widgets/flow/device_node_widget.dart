@@ -1,5 +1,5 @@
+import 'package:core_logic/models/flow/flow_data.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/flow_data.dart';
 
 class DeviceNodeWidget extends StatelessWidget {
   const DeviceNodeWidget({required this.data, super.key});

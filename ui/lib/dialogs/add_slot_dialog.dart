@@ -1,12 +1,12 @@
 /// Dialog for adding a new slot to a device.
 library;
 
+import 'package:core_logic/models/config_ids.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/keymap.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/config_ids.dart';
-import '../models/hardware_profile.dart';
-import '../models/keymap.dart';
 import '../state/keyflow_providers.dart';
 import '../state/slot_actions.dart';
 

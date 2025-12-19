@@ -4,10 +4,10 @@
 /// proper styling, state visualization, and interaction handling.
 library;
 
+import 'package:core_logic/models/keyboard_layout.dart';
 import 'package:flutter/material.dart';
 
 import '../config/config.dart';
-import '../models/keyboard_layout.dart';
 
 /// Individual key widget within the visual keyboard.
 ///

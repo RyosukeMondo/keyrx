@@ -1,8 +1,9 @@
 import 'dart:async';
 
+import 'package:core_logic/models/flow/edge_style.dart';
 import 'package:flutter/material.dart';
+
 import '../../animations/edge_animations.dart';
-import '../../models/flow/edge_style.dart';
 import 'animated_edges_painter.dart';
 import 'edges_painter.dart';
 

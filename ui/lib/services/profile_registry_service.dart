@@ -6,9 +6,9 @@ library;
 
 import 'dart:typed_data';
 
-import '../ffi/bridge.dart';
-import '../models/layout_type.dart';
-import '../models/profile.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/models/layout_type.dart';
+import 'package:core_logic/models/profile.dart';
 
 /// Result of a profile registry operation.
 class ProfileRegistryOperationResult {

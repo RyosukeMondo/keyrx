@@ -5,12 +5,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
-import '../models/hardware_profile.dart';
-import '../models/runtime_config.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
+import 'package:core_logic/utils/logger.dart';
+
 import '../services/config_result.dart';
-import '../utils/logger.dart';
 
 /// Lightweight runtime API contract to simplify testing.
 abstract class RuntimeApi {

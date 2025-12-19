@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import '../ffi/debug_tools.dart';
+import 'package:core_logic/ffi/debug_tools.dart';
 import '../services/error_translator.dart';
 
 /// Structured entry describing an error code, user-facing message, and action.

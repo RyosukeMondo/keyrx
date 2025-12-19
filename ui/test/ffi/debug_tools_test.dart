@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:core_logic/ffi/debug_tools.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/ffi/debug_tools.dart';
-import 'package:keyrx_ui/utils/logger.dart';
+import 'package:core_logic/utils/logger.dart';
 import 'package:logging/logging.dart';
 
 void main() {

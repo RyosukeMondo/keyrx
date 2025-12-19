@@ -1,7 +1,7 @@
 /// Converts Keymap models to VisualConfig for Rhai script generation.
 library;
 
-import '../models/keymap.dart';
+import 'package:core_logic/models/keymap.dart';
 import '../widgets/mapping_overlay.dart'; // Implements RemapConfig
 import 'rhai_generator.dart';
 

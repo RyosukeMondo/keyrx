@@ -1,5 +1,5 @@
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';

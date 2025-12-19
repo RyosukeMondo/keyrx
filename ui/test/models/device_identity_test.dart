@@ -1,5 +1,5 @@
+import 'package:core_logic/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/models.dart';
 
 void main() {
   group('DeviceIdentity', () {

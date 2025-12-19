@@ -6,9 +6,8 @@ library;
 
 import 'dart:io';
 
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:path/path.dart' as p;
-
-import '../ffi/bridge.dart';
 
 /// Resolves and prepares storage paths for profiles.
 class StoragePathResolver {

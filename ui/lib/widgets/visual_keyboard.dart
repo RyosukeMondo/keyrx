@@ -4,10 +4,10 @@
 /// tap handling, drag-and-drop mapping, and visual feedback.
 library;
 
+import 'package:core_logic/models/keyboard_layout.dart';
 import 'package:flutter/material.dart';
 
 import '../config/config.dart';
-import '../models/keyboard_layout.dart';
 import 'mapping_overlay.dart';
 import 'visual_keyboard_keys.dart';
 

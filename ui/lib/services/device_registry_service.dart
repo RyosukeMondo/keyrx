@@ -8,11 +8,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../ffi/bridge.dart';
-import '../models/device_identity.dart';
-import '../models/device_state.dart';
 
 /// Result of a device registry operation.
 class DeviceRegistryOperationResult {

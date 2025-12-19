@@ -5,9 +5,9 @@
 
 import 'dart:async';
 
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/ffi/bridge.dart';
 import 'package:keyrx_ui/pages/console.dart';
 import 'package:keyrx_ui/repositories/mapping_repository.dart';
 import 'package:keyrx_ui/services/engine_service.dart';

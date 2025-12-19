@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/daemon_manager.dart';
 import '../services/daemon_service.dart';
 import '../state/daemon_providers.dart';
 import 'monitor_view.dart';
@@ -18,6 +19,14 @@ class RunControlsPage extends ConsumerStatefulWidget {
 }
 
 class _RunControlsPageState extends ConsumerState<RunControlsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(daemonManagerProvider).initialize();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final connectionState = ref.watch(daemonConnectionStateProvider);

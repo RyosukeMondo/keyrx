@@ -7,14 +7,14 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/key_codes_windows.dart';
+import 'package:core_logic/models/keyboard_layout.dart';
+import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/device_state.dart';
-import '../models/hardware_profile.dart';
-import '../models/key_codes_windows.dart';
-import '../models/keyboard_layout.dart';
-import '../models/virtual_layout.dart';
 import '../services/device_registry_service.dart';
 import '../services/hardware_service.dart';
 import '../services/layout_service.dart';

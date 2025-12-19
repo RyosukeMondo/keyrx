@@ -4,9 +4,9 @@
 /// Both EditorPage and VisualEditorPage can share this repository.
 library;
 
+import 'package:core_logic/models/key_mapping.dart';
 import 'package:flutter/foundation.dart';
 
-import '../models/key_mapping.dart';
 import '../services/script_generator.dart';
 import '../widgets/visual_keyboard.dart';
 

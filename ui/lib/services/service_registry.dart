@@ -1,4 +1,4 @@
-import '../ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';

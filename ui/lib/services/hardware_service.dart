@@ -1,11 +1,11 @@
 /// Service for managing Hardware Profiles via config FFI.
 library;
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/hardware_profile.dart';
 import 'package:flutter/foundation.dart';
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
-import '../models/hardware_profile.dart';
 import 'config_result.dart';
 
 class HardwareService with ChangeNotifier {

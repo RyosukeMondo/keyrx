@@ -3,13 +3,13 @@
 /// Provides add, delete, and reorder capabilities directly on the device node.
 library;
 
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../dialogs/add_slot_dialog.dart';
 import '../../dialogs/delete_slot_dialog.dart';
-import '../../models/hardware_profile.dart';
-import '../../models/runtime_config.dart';
 import '../../state/slot_actions.dart';
 import 'slot_priority_adjuster.dart';
 

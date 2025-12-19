@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/services/keyflow_analytics.dart';
-import 'package:keyrx_ui/utils/logger.dart';
+import 'package:core_logic/utils/logger.dart';
 
 void main() {
   group('KeyFlowAnalytics', () {

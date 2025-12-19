@@ -1,5 +1,5 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,1142 +9,884 @@ part of 'virtual_layout.dart';
 // FreezedGenerator
 // **************************************************************************
 
-// dart format off
 T _$identity<T>(T value) => value;
+
+final _privateConstructorUsedError = UnsupportedError(
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
+
+KeyPosition _$KeyPositionFromJson(Map<String, dynamic> json) {
+  return _KeyPosition.fromJson(json);
+}
 
 /// @nodoc
 mixin _$KeyPosition {
-
- double get x; double get y;
-/// Create a copy of KeyPosition
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$KeyPositionCopyWith<KeyPosition> get copyWith => _$KeyPositionCopyWithImpl<KeyPosition>(this as KeyPosition, _$identity);
+  double get x => throw _privateConstructorUsedError;
+  double get y => throw _privateConstructorUsedError;
 
   /// Serializes this KeyPosition to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is KeyPosition&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,x,y);
-
-@override
-String toString() {
-  return 'KeyPosition(x: $x, y: $y)';
-}
-
-
+  /// Create a copy of KeyPosition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $KeyPositionCopyWith<KeyPosition> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $KeyPositionCopyWith<$Res>  {
-  factory $KeyPositionCopyWith(KeyPosition value, $Res Function(KeyPosition) _then) = _$KeyPositionCopyWithImpl;
-@useResult
-$Res call({
- double x, double y
-});
-
-
-
-
+abstract class $KeyPositionCopyWith<$Res> {
+  factory $KeyPositionCopyWith(
+    KeyPosition value,
+    $Res Function(KeyPosition) then,
+  ) = _$KeyPositionCopyWithImpl<$Res, KeyPosition>;
+  @useResult
+  $Res call({double x, double y});
 }
+
 /// @nodoc
-class _$KeyPositionCopyWithImpl<$Res>
+class _$KeyPositionCopyWithImpl<$Res, $Val extends KeyPosition>
     implements $KeyPositionCopyWith<$Res> {
-  _$KeyPositionCopyWithImpl(this._self, this._then);
+  _$KeyPositionCopyWithImpl(this._value, this._then);
 
-  final KeyPosition _self;
-  final $Res Function(KeyPosition) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of KeyPosition
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? x = null,Object? y = null,}) {
-  return _then(_self.copyWith(
-x: null == x ? _self.x : x // ignore: cast_nullable_to_non_nullable
-as double,y: null == y ? _self.y : y // ignore: cast_nullable_to_non_nullable
-as double,
-  ));
+  /// Create a copy of KeyPosition
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? x = null, Object? y = null}) {
+    return _then(
+      _value.copyWith(
+            x: null == x
+                ? _value.x
+                : x // ignore: cast_nullable_to_non_nullable
+                      as double,
+            y: null == y
+                ? _value.y
+                : y // ignore: cast_nullable_to_non_nullable
+                      as double,
+          )
+          as $Val,
+    );
+  }
 }
 
+/// @nodoc
+abstract class _$$KeyPositionImplCopyWith<$Res>
+    implements $KeyPositionCopyWith<$Res> {
+  factory _$$KeyPositionImplCopyWith(
+    _$KeyPositionImpl value,
+    $Res Function(_$KeyPositionImpl) then,
+  ) = __$$KeyPositionImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({double x, double y});
 }
 
+/// @nodoc
+class __$$KeyPositionImplCopyWithImpl<$Res>
+    extends _$KeyPositionCopyWithImpl<$Res, _$KeyPositionImpl>
+    implements _$$KeyPositionImplCopyWith<$Res> {
+  __$$KeyPositionImplCopyWithImpl(
+    _$KeyPositionImpl _value,
+    $Res Function(_$KeyPositionImpl) _then,
+  ) : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [KeyPosition].
-extension KeyPositionPatterns on KeyPosition {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _KeyPosition value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _KeyPosition() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _KeyPosition value)  $default,){
-final _that = this;
-switch (_that) {
-case _KeyPosition():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _KeyPosition value)?  $default,){
-final _that = this;
-switch (_that) {
-case _KeyPosition() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double x,  double y)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _KeyPosition() when $default != null:
-return $default(_that.x,_that.y);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double x,  double y)  $default,) {final _that = this;
-switch (_that) {
-case _KeyPosition():
-return $default(_that.x,_that.y);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double x,  double y)?  $default,) {final _that = this;
-switch (_that) {
-case _KeyPosition() when $default != null:
-return $default(_that.x,_that.y);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of KeyPosition
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? x = null, Object? y = null}) {
+    return _then(
+      _$KeyPositionImpl(
+        x: null == x
+            ? _value.x
+            : x // ignore: cast_nullable_to_non_nullable
+                  as double,
+        y: null == y
+            ? _value.y
+            : y // ignore: cast_nullable_to_non_nullable
+                  as double,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$KeyPositionImpl extends _KeyPosition {
+  const _$KeyPositionImpl({required this.x, required this.y}) : super._();
 
-class _KeyPosition extends KeyPosition {
-  const _KeyPosition({required this.x, required this.y}): super._();
-  factory _KeyPosition.fromJson(Map<String, dynamic> json) => _$KeyPositionFromJson(json);
+  factory _$KeyPositionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$KeyPositionImplFromJson(json);
 
-@override final  double x;
-@override final  double y;
+  @override
+  final double x;
+  @override
+  final double y;
 
-/// Create a copy of KeyPosition
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$KeyPositionCopyWith<_KeyPosition> get copyWith => __$KeyPositionCopyWithImpl<_KeyPosition>(this, _$identity);
+  @override
+  String toString() {
+    return 'KeyPosition(x: $x, y: $y)';
+  }
 
-@override
-Map<String, dynamic> toJson() {
-  return _$KeyPositionToJson(this, );
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$KeyPositionImpl &&
+            (identical(other.x, x) || other.x == x) &&
+            (identical(other.y, y) || other.y == y));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, x, y);
+
+  /// Create a copy of KeyPosition
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$KeyPositionImplCopyWith<_$KeyPositionImpl> get copyWith =>
+      __$$KeyPositionImplCopyWithImpl<_$KeyPositionImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$KeyPositionImplToJson(this);
+  }
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KeyPosition&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y));
+abstract class _KeyPosition extends KeyPosition {
+  const factory _KeyPosition({
+    required final double x,
+    required final double y,
+  }) = _$KeyPositionImpl;
+  const _KeyPosition._() : super._();
+
+  factory _KeyPosition.fromJson(Map<String, dynamic> json) =
+      _$KeyPositionImpl.fromJson;
+
+  @override
+  double get x;
+  @override
+  double get y;
+
+  /// Create a copy of KeyPosition
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$KeyPositionImplCopyWith<_$KeyPositionImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,x,y);
-
-@override
-String toString() {
-  return 'KeyPosition(x: $x, y: $y)';
+KeySize _$KeySizeFromJson(Map<String, dynamic> json) {
+  return _KeySize.fromJson(json);
 }
-
-
-}
-
-/// @nodoc
-abstract mixin class _$KeyPositionCopyWith<$Res> implements $KeyPositionCopyWith<$Res> {
-  factory _$KeyPositionCopyWith(_KeyPosition value, $Res Function(_KeyPosition) _then) = __$KeyPositionCopyWithImpl;
-@override @useResult
-$Res call({
- double x, double y
-});
-
-
-
-
-}
-/// @nodoc
-class __$KeyPositionCopyWithImpl<$Res>
-    implements _$KeyPositionCopyWith<$Res> {
-  __$KeyPositionCopyWithImpl(this._self, this._then);
-
-  final _KeyPosition _self;
-  final $Res Function(_KeyPosition) _then;
-
-/// Create a copy of KeyPosition
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? x = null,Object? y = null,}) {
-  return _then(_KeyPosition(
-x: null == x ? _self.x : x // ignore: cast_nullable_to_non_nullable
-as double,y: null == y ? _self.y : y // ignore: cast_nullable_to_non_nullable
-as double,
-  ));
-}
-
-
-}
-
 
 /// @nodoc
 mixin _$KeySize {
-
- double get width; double get height;
-/// Create a copy of KeySize
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$KeySizeCopyWith<KeySize> get copyWith => _$KeySizeCopyWithImpl<KeySize>(this as KeySize, _$identity);
+  double get width => throw _privateConstructorUsedError;
+  double get height => throw _privateConstructorUsedError;
 
   /// Serializes this KeySize to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is KeySize&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,width,height);
-
-@override
-String toString() {
-  return 'KeySize(width: $width, height: $height)';
-}
-
-
+  /// Create a copy of KeySize
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $KeySizeCopyWith<KeySize> get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $KeySizeCopyWith<$Res>  {
-  factory $KeySizeCopyWith(KeySize value, $Res Function(KeySize) _then) = _$KeySizeCopyWithImpl;
-@useResult
-$Res call({
- double width, double height
-});
-
-
-
-
+abstract class $KeySizeCopyWith<$Res> {
+  factory $KeySizeCopyWith(KeySize value, $Res Function(KeySize) then) =
+      _$KeySizeCopyWithImpl<$Res, KeySize>;
+  @useResult
+  $Res call({double width, double height});
 }
+
 /// @nodoc
-class _$KeySizeCopyWithImpl<$Res>
+class _$KeySizeCopyWithImpl<$Res, $Val extends KeySize>
     implements $KeySizeCopyWith<$Res> {
-  _$KeySizeCopyWithImpl(this._self, this._then);
+  _$KeySizeCopyWithImpl(this._value, this._then);
 
-  final KeySize _self;
-  final $Res Function(KeySize) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of KeySize
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? width = null,Object? height = null,}) {
-  return _then(_self.copyWith(
-width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
-as double,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
-as double,
-  ));
+  /// Create a copy of KeySize
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? width = null, Object? height = null}) {
+    return _then(
+      _value.copyWith(
+            width: null == width
+                ? _value.width
+                : width // ignore: cast_nullable_to_non_nullable
+                      as double,
+            height: null == height
+                ? _value.height
+                : height // ignore: cast_nullable_to_non_nullable
+                      as double,
+          )
+          as $Val,
+    );
+  }
 }
 
+/// @nodoc
+abstract class _$$KeySizeImplCopyWith<$Res> implements $KeySizeCopyWith<$Res> {
+  factory _$$KeySizeImplCopyWith(
+    _$KeySizeImpl value,
+    $Res Function(_$KeySizeImpl) then,
+  ) = __$$KeySizeImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({double width, double height});
 }
 
+/// @nodoc
+class __$$KeySizeImplCopyWithImpl<$Res>
+    extends _$KeySizeCopyWithImpl<$Res, _$KeySizeImpl>
+    implements _$$KeySizeImplCopyWith<$Res> {
+  __$$KeySizeImplCopyWithImpl(
+    _$KeySizeImpl _value,
+    $Res Function(_$KeySizeImpl) _then,
+  ) : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [KeySize].
-extension KeySizePatterns on KeySize {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _KeySize value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _KeySize() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _KeySize value)  $default,){
-final _that = this;
-switch (_that) {
-case _KeySize():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _KeySize value)?  $default,){
-final _that = this;
-switch (_that) {
-case _KeySize() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double width,  double height)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _KeySize() when $default != null:
-return $default(_that.width,_that.height);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double width,  double height)  $default,) {final _that = this;
-switch (_that) {
-case _KeySize():
-return $default(_that.width,_that.height);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double width,  double height)?  $default,) {final _that = this;
-switch (_that) {
-case _KeySize() when $default != null:
-return $default(_that.width,_that.height);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of KeySize
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? width = null, Object? height = null}) {
+    return _then(
+      _$KeySizeImpl(
+        width: null == width
+            ? _value.width
+            : width // ignore: cast_nullable_to_non_nullable
+                  as double,
+        height: null == height
+            ? _value.height
+            : height // ignore: cast_nullable_to_non_nullable
+                  as double,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$KeySizeImpl extends _KeySize {
+  const _$KeySizeImpl({required this.width, required this.height}) : super._();
 
-class _KeySize extends KeySize {
-  const _KeySize({required this.width, required this.height}): super._();
-  factory _KeySize.fromJson(Map<String, dynamic> json) => _$KeySizeFromJson(json);
+  factory _$KeySizeImpl.fromJson(Map<String, dynamic> json) =>
+      _$$KeySizeImplFromJson(json);
 
-@override final  double width;
-@override final  double height;
+  @override
+  final double width;
+  @override
+  final double height;
 
-/// Create a copy of KeySize
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$KeySizeCopyWith<_KeySize> get copyWith => __$KeySizeCopyWithImpl<_KeySize>(this, _$identity);
+  @override
+  String toString() {
+    return 'KeySize(width: $width, height: $height)';
+  }
 
-@override
-Map<String, dynamic> toJson() {
-  return _$KeySizeToJson(this, );
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$KeySizeImpl &&
+            (identical(other.width, width) || other.width == width) &&
+            (identical(other.height, height) || other.height == height));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, width, height);
+
+  /// Create a copy of KeySize
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$KeySizeImplCopyWith<_$KeySizeImpl> get copyWith =>
+      __$$KeySizeImplCopyWithImpl<_$KeySizeImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$KeySizeImplToJson(this);
+  }
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KeySize&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height));
+abstract class _KeySize extends KeySize {
+  const factory _KeySize({
+    required final double width,
+    required final double height,
+  }) = _$KeySizeImpl;
+  const _KeySize._() : super._();
+
+  factory _KeySize.fromJson(Map<String, dynamic> json) = _$KeySizeImpl.fromJson;
+
+  @override
+  double get width;
+  @override
+  double get height;
+
+  /// Create a copy of KeySize
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$KeySizeImplCopyWith<_$KeySizeImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,width,height);
-
-@override
-String toString() {
-  return 'KeySize(width: $width, height: $height)';
+VirtualKeyDef _$VirtualKeyDefFromJson(Map<String, dynamic> json) {
+  return _VirtualKeyDef.fromJson(json);
 }
-
-
-}
-
-/// @nodoc
-abstract mixin class _$KeySizeCopyWith<$Res> implements $KeySizeCopyWith<$Res> {
-  factory _$KeySizeCopyWith(_KeySize value, $Res Function(_KeySize) _then) = __$KeySizeCopyWithImpl;
-@override @useResult
-$Res call({
- double width, double height
-});
-
-
-
-
-}
-/// @nodoc
-class __$KeySizeCopyWithImpl<$Res>
-    implements _$KeySizeCopyWith<$Res> {
-  __$KeySizeCopyWithImpl(this._self, this._then);
-
-  final _KeySize _self;
-  final $Res Function(_KeySize) _then;
-
-/// Create a copy of KeySize
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? width = null,Object? height = null,}) {
-  return _then(_KeySize(
-width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
-as double,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
-as double,
-  ));
-}
-
-
-}
-
 
 /// @nodoc
 mixin _$VirtualKeyDef {
-
- VirtualKeyId get id; String get label; KeyPosition? get position; KeySize? get size; int? get row; int? get column;
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$VirtualKeyDefCopyWith<VirtualKeyDef> get copyWith => _$VirtualKeyDefCopyWithImpl<VirtualKeyDef>(this as VirtualKeyDef, _$identity);
+  String get id => throw _privateConstructorUsedError;
+  String get label => throw _privateConstructorUsedError;
+  KeyPosition? get position => throw _privateConstructorUsedError;
+  KeySize? get size => throw _privateConstructorUsedError;
+  int? get row => throw _privateConstructorUsedError;
+  int? get column => throw _privateConstructorUsedError;
 
   /// Serializes this VirtualKeyDef to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VirtualKeyDef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.position, position) || other.position == position)&&(identical(other.size, size) || other.size == size)&&(identical(other.row, row) || other.row == row)&&(identical(other.column, column) || other.column == column));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,label,position,size,row,column);
-
-@override
-String toString() {
-  return 'VirtualKeyDef(id: $id, label: $label, position: $position, size: $size, row: $row, column: $column)';
-}
-
-
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $VirtualKeyDefCopyWith<VirtualKeyDef> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $VirtualKeyDefCopyWith<$Res>  {
-  factory $VirtualKeyDefCopyWith(VirtualKeyDef value, $Res Function(VirtualKeyDef) _then) = _$VirtualKeyDefCopyWithImpl;
-@useResult
-$Res call({
- VirtualKeyId id, String label, KeyPosition? position, KeySize? size, int? row, int? column
-});
+abstract class $VirtualKeyDefCopyWith<$Res> {
+  factory $VirtualKeyDefCopyWith(
+    VirtualKeyDef value,
+    $Res Function(VirtualKeyDef) then,
+  ) = _$VirtualKeyDefCopyWithImpl<$Res, VirtualKeyDef>;
+  @useResult
+  $Res call({
+    String id,
+    String label,
+    KeyPosition? position,
+    KeySize? size,
+    int? row,
+    int? column,
+  });
 
-
-$KeyPositionCopyWith<$Res>? get position;$KeySizeCopyWith<$Res>? get size;
-
+  $KeyPositionCopyWith<$Res>? get position;
+  $KeySizeCopyWith<$Res>? get size;
 }
+
 /// @nodoc
-class _$VirtualKeyDefCopyWithImpl<$Res>
+class _$VirtualKeyDefCopyWithImpl<$Res, $Val extends VirtualKeyDef>
     implements $VirtualKeyDefCopyWith<$Res> {
-  _$VirtualKeyDefCopyWithImpl(this._self, this._then);
+  _$VirtualKeyDefCopyWithImpl(this._value, this._then);
 
-  final VirtualKeyDef _self;
-  final $Res Function(VirtualKeyDef) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? position = freezed,Object? size = freezed,Object? row = freezed,Object? column = freezed,}) {
-  return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as VirtualKeyId,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as KeyPosition?,size: freezed == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
-as KeySize?,row: freezed == row ? _self.row : row // ignore: cast_nullable_to_non_nullable
-as int?,column: freezed == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$KeyPositionCopyWith<$Res>? get position {
-    if (_self.position == null) {
-    return null;
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? label = null,
+    Object? position = freezed,
+    Object? size = freezed,
+    Object? row = freezed,
+    Object? column = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            position: freezed == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as KeyPosition?,
+            size: freezed == size
+                ? _value.size
+                : size // ignore: cast_nullable_to_non_nullable
+                      as KeySize?,
+            row: freezed == row
+                ? _value.row
+                : row // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            column: freezed == column
+                ? _value.column
+                : column // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
   }
 
-  return $KeyPositionCopyWith<$Res>(_self.position!, (value) {
-    return _then(_self.copyWith(position: value));
-  });
-}/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$KeySizeCopyWith<$Res>? get size {
-    if (_self.size == null) {
-    return null;
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $KeyPositionCopyWith<$Res>? get position {
+    if (_value.position == null) {
+      return null;
+    }
+
+    return $KeyPositionCopyWith<$Res>(_value.position!, (value) {
+      return _then(_value.copyWith(position: value) as $Val);
+    });
   }
 
-  return $KeySizeCopyWith<$Res>(_self.size!, (value) {
-    return _then(_self.copyWith(size: value));
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $KeySizeCopyWith<$Res>? get size {
+    if (_value.size == null) {
+      return null;
+    }
+
+    return $KeySizeCopyWith<$Res>(_value.size!, (value) {
+      return _then(_value.copyWith(size: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$VirtualKeyDefImplCopyWith<$Res>
+    implements $VirtualKeyDefCopyWith<$Res> {
+  factory _$$VirtualKeyDefImplCopyWith(
+    _$VirtualKeyDefImpl value,
+    $Res Function(_$VirtualKeyDefImpl) then,
+  ) = __$$VirtualKeyDefImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String label,
+    KeyPosition? position,
+    KeySize? size,
+    int? row,
+    int? column,
   });
-}
-}
 
-
-/// Adds pattern-matching-related methods to [VirtualKeyDef].
-extension VirtualKeyDefPatterns on VirtualKeyDef {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _VirtualKeyDef value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _VirtualKeyDef() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _VirtualKeyDef value)  $default,){
-final _that = this;
-switch (_that) {
-case _VirtualKeyDef():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _VirtualKeyDef value)?  $default,){
-final _that = this;
-switch (_that) {
-case _VirtualKeyDef() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( VirtualKeyId id,  String label,  KeyPosition? position,  KeySize? size,  int? row,  int? column)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _VirtualKeyDef() when $default != null:
-return $default(_that.id,_that.label,_that.position,_that.size,_that.row,_that.column);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( VirtualKeyId id,  String label,  KeyPosition? position,  KeySize? size,  int? row,  int? column)  $default,) {final _that = this;
-switch (_that) {
-case _VirtualKeyDef():
-return $default(_that.id,_that.label,_that.position,_that.size,_that.row,_that.column);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( VirtualKeyId id,  String label,  KeyPosition? position,  KeySize? size,  int? row,  int? column)?  $default,) {final _that = this;
-switch (_that) {
-case _VirtualKeyDef() when $default != null:
-return $default(_that.id,_that.label,_that.position,_that.size,_that.row,_that.column);case _:
-  return null;
-
-}
+  @override
+  $KeyPositionCopyWith<$Res>? get position;
+  @override
+  $KeySizeCopyWith<$Res>? get size;
 }
 
+/// @nodoc
+class __$$VirtualKeyDefImplCopyWithImpl<$Res>
+    extends _$VirtualKeyDefCopyWithImpl<$Res, _$VirtualKeyDefImpl>
+    implements _$$VirtualKeyDefImplCopyWith<$Res> {
+  __$$VirtualKeyDefImplCopyWithImpl(
+    _$VirtualKeyDefImpl _value,
+    $Res Function(_$VirtualKeyDefImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? label = null,
+    Object? position = freezed,
+    Object? size = freezed,
+    Object? row = freezed,
+    Object? column = freezed,
+  }) {
+    return _then(
+      _$VirtualKeyDefImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        position: freezed == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as KeyPosition?,
+        size: freezed == size
+            ? _value.size
+            : size // ignore: cast_nullable_to_non_nullable
+                  as KeySize?,
+        row: freezed == row
+            ? _value.row
+            : row // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        column: freezed == column
+            ? _value.column
+            : column // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$VirtualKeyDefImpl extends _VirtualKeyDef {
+  const _$VirtualKeyDefImpl({
+    required this.id,
+    required this.label,
+    this.position,
+    this.size,
+    this.row,
+    this.column,
+  }) : super._();
 
-class _VirtualKeyDef extends VirtualKeyDef {
-  const _VirtualKeyDef({required this.id, required this.label, this.position, this.size, this.row, this.column}): super._();
-  factory _VirtualKeyDef.fromJson(Map<String, dynamic> json) => _$VirtualKeyDefFromJson(json);
+  factory _$VirtualKeyDefImpl.fromJson(Map<String, dynamic> json) =>
+      _$$VirtualKeyDefImplFromJson(json);
 
-@override final  VirtualKeyId id;
-@override final  String label;
-@override final  KeyPosition? position;
-@override final  KeySize? size;
-@override final  int? row;
-@override final  int? column;
+  @override
+  final String id;
+  @override
+  final String label;
+  @override
+  final KeyPosition? position;
+  @override
+  final KeySize? size;
+  @override
+  final int? row;
+  @override
+  final int? column;
 
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$VirtualKeyDefCopyWith<_VirtualKeyDef> get copyWith => __$VirtualKeyDefCopyWithImpl<_VirtualKeyDef>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$VirtualKeyDefToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VirtualKeyDef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.position, position) || other.position == position)&&(identical(other.size, size) || other.size == size)&&(identical(other.row, row) || other.row == row)&&(identical(other.column, column) || other.column == column));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,label,position,size,row,column);
-
-@override
-String toString() {
-  return 'VirtualKeyDef(id: $id, label: $label, position: $position, size: $size, row: $row, column: $column)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$VirtualKeyDefCopyWith<$Res> implements $VirtualKeyDefCopyWith<$Res> {
-  factory _$VirtualKeyDefCopyWith(_VirtualKeyDef value, $Res Function(_VirtualKeyDef) _then) = __$VirtualKeyDefCopyWithImpl;
-@override @useResult
-$Res call({
- VirtualKeyId id, String label, KeyPosition? position, KeySize? size, int? row, int? column
-});
-
-
-@override $KeyPositionCopyWith<$Res>? get position;@override $KeySizeCopyWith<$Res>? get size;
-
-}
-/// @nodoc
-class __$VirtualKeyDefCopyWithImpl<$Res>
-    implements _$VirtualKeyDefCopyWith<$Res> {
-  __$VirtualKeyDefCopyWithImpl(this._self, this._then);
-
-  final _VirtualKeyDef _self;
-  final $Res Function(_VirtualKeyDef) _then;
-
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? position = freezed,Object? size = freezed,Object? row = freezed,Object? column = freezed,}) {
-  return _then(_VirtualKeyDef(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as VirtualKeyId,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as KeyPosition?,size: freezed == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
-as KeySize?,row: freezed == row ? _self.row : row // ignore: cast_nullable_to_non_nullable
-as int?,column: freezed == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$KeyPositionCopyWith<$Res>? get position {
-    if (_self.position == null) {
-    return null;
+  @override
+  String toString() {
+    return 'VirtualKeyDef(id: $id, label: $label, position: $position, size: $size, row: $row, column: $column)';
   }
 
-  return $KeyPositionCopyWith<$Res>(_self.position!, (value) {
-    return _then(_self.copyWith(position: value));
-  });
-}/// Create a copy of VirtualKeyDef
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$KeySizeCopyWith<$Res>? get size {
-    if (_self.size == null) {
-    return null;
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$VirtualKeyDefImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.position, position) ||
+                other.position == position) &&
+            (identical(other.size, size) || other.size == size) &&
+            (identical(other.row, row) || other.row == row) &&
+            (identical(other.column, column) || other.column == column));
   }
 
-  return $KeySizeCopyWith<$Res>(_self.size!, (value) {
-    return _then(_self.copyWith(size: value));
-  });
-}
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, id, label, position, size, row, column);
+
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$VirtualKeyDefImplCopyWith<_$VirtualKeyDefImpl> get copyWith =>
+      __$$VirtualKeyDefImplCopyWithImpl<_$VirtualKeyDefImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$VirtualKeyDefImplToJson(this);
+  }
 }
 
+abstract class _VirtualKeyDef extends VirtualKeyDef {
+  const factory _VirtualKeyDef({
+    required final String id,
+    required final String label,
+    final KeyPosition? position,
+    final KeySize? size,
+    final int? row,
+    final int? column,
+  }) = _$VirtualKeyDefImpl;
+  const _VirtualKeyDef._() : super._();
+
+  factory _VirtualKeyDef.fromJson(Map<String, dynamic> json) =
+      _$VirtualKeyDefImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get label;
+  @override
+  KeyPosition? get position;
+  @override
+  KeySize? get size;
+  @override
+  int? get row;
+  @override
+  int? get column;
+
+  /// Create a copy of VirtualKeyDef
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$VirtualKeyDefImplCopyWith<_$VirtualKeyDefImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+VirtualLayout _$VirtualLayoutFromJson(Map<String, dynamic> json) {
+  return _VirtualLayout.fromJson(json);
+}
 
 /// @nodoc
 mixin _$VirtualLayout {
-
- VirtualLayoutId get id; String get name;@JsonKey(name: 'layout_type') VirtualLayoutType get layoutType; List<VirtualKeyDef> get keys;
-/// Create a copy of VirtualLayout
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$VirtualLayoutCopyWith<VirtualLayout> get copyWith => _$VirtualLayoutCopyWithImpl<VirtualLayout>(this as VirtualLayout, _$identity);
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  @JsonKey(name: 'layout_type')
+  VirtualLayoutType get layoutType => throw _privateConstructorUsedError;
+  List<VirtualKeyDef> get keys => throw _privateConstructorUsedError;
 
   /// Serializes this VirtualLayout to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VirtualLayout&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.layoutType, layoutType) || other.layoutType == layoutType)&&const DeepCollectionEquality().equals(other.keys, keys));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,name,layoutType,const DeepCollectionEquality().hash(keys));
-
-@override
-String toString() {
-  return 'VirtualLayout(id: $id, name: $name, layoutType: $layoutType, keys: $keys)';
-}
-
-
+  /// Create a copy of VirtualLayout
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $VirtualLayoutCopyWith<VirtualLayout> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $VirtualLayoutCopyWith<$Res>  {
-  factory $VirtualLayoutCopyWith(VirtualLayout value, $Res Function(VirtualLayout) _then) = _$VirtualLayoutCopyWithImpl;
-@useResult
-$Res call({
- VirtualLayoutId id, String name,@JsonKey(name: 'layout_type') VirtualLayoutType layoutType, List<VirtualKeyDef> keys
-});
-
-
-
-
+abstract class $VirtualLayoutCopyWith<$Res> {
+  factory $VirtualLayoutCopyWith(
+    VirtualLayout value,
+    $Res Function(VirtualLayout) then,
+  ) = _$VirtualLayoutCopyWithImpl<$Res, VirtualLayout>;
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    @JsonKey(name: 'layout_type') VirtualLayoutType layoutType,
+    List<VirtualKeyDef> keys,
+  });
 }
+
 /// @nodoc
-class _$VirtualLayoutCopyWithImpl<$Res>
+class _$VirtualLayoutCopyWithImpl<$Res, $Val extends VirtualLayout>
     implements $VirtualLayoutCopyWith<$Res> {
-  _$VirtualLayoutCopyWithImpl(this._self, this._then);
+  _$VirtualLayoutCopyWithImpl(this._value, this._then);
 
-  final VirtualLayout _self;
-  final $Res Function(VirtualLayout) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of VirtualLayout
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? layoutType = null,Object? keys = null,}) {
-  return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutId,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,layoutType: null == layoutType ? _self.layoutType : layoutType // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutType,keys: null == keys ? _self.keys : keys // ignore: cast_nullable_to_non_nullable
-as List<VirtualKeyDef>,
-  ));
+  /// Create a copy of VirtualLayout
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? layoutType = null,
+    Object? keys = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            layoutType: null == layoutType
+                ? _value.layoutType
+                : layoutType // ignore: cast_nullable_to_non_nullable
+                      as VirtualLayoutType,
+            keys: null == keys
+                ? _value.keys
+                : keys // ignore: cast_nullable_to_non_nullable
+                      as List<VirtualKeyDef>,
+          )
+          as $Val,
+    );
+  }
 }
 
+/// @nodoc
+abstract class _$$VirtualLayoutImplCopyWith<$Res>
+    implements $VirtualLayoutCopyWith<$Res> {
+  factory _$$VirtualLayoutImplCopyWith(
+    _$VirtualLayoutImpl value,
+    $Res Function(_$VirtualLayoutImpl) then,
+  ) = __$$VirtualLayoutImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    @JsonKey(name: 'layout_type') VirtualLayoutType layoutType,
+    List<VirtualKeyDef> keys,
+  });
 }
 
+/// @nodoc
+class __$$VirtualLayoutImplCopyWithImpl<$Res>
+    extends _$VirtualLayoutCopyWithImpl<$Res, _$VirtualLayoutImpl>
+    implements _$$VirtualLayoutImplCopyWith<$Res> {
+  __$$VirtualLayoutImplCopyWithImpl(
+    _$VirtualLayoutImpl _value,
+    $Res Function(_$VirtualLayoutImpl) _then,
+  ) : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [VirtualLayout].
-extension VirtualLayoutPatterns on VirtualLayout {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _VirtualLayout value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _VirtualLayout() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _VirtualLayout value)  $default,){
-final _that = this;
-switch (_that) {
-case _VirtualLayout():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _VirtualLayout value)?  $default,){
-final _that = this;
-switch (_that) {
-case _VirtualLayout() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( VirtualLayoutId id,  String name, @JsonKey(name: 'layout_type')  VirtualLayoutType layoutType,  List<VirtualKeyDef> keys)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _VirtualLayout() when $default != null:
-return $default(_that.id,_that.name,_that.layoutType,_that.keys);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( VirtualLayoutId id,  String name, @JsonKey(name: 'layout_type')  VirtualLayoutType layoutType,  List<VirtualKeyDef> keys)  $default,) {final _that = this;
-switch (_that) {
-case _VirtualLayout():
-return $default(_that.id,_that.name,_that.layoutType,_that.keys);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( VirtualLayoutId id,  String name, @JsonKey(name: 'layout_type')  VirtualLayoutType layoutType,  List<VirtualKeyDef> keys)?  $default,) {final _that = this;
-switch (_that) {
-case _VirtualLayout() when $default != null:
-return $default(_that.id,_that.name,_that.layoutType,_that.keys);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of VirtualLayout
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? layoutType = null,
+    Object? keys = null,
+  }) {
+    return _then(
+      _$VirtualLayoutImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        layoutType: null == layoutType
+            ? _value.layoutType
+            : layoutType // ignore: cast_nullable_to_non_nullable
+                  as VirtualLayoutType,
+        keys: null == keys
+            ? _value._keys
+            : keys // ignore: cast_nullable_to_non_nullable
+                  as List<VirtualKeyDef>,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$VirtualLayoutImpl extends _VirtualLayout {
+  const _$VirtualLayoutImpl({
+    required this.id,
+    required this.name,
+    @JsonKey(name: 'layout_type') required this.layoutType,
+    final List<VirtualKeyDef> keys = const <VirtualKeyDef>[],
+  }) : _keys = keys,
+       super._();
 
-class _VirtualLayout extends VirtualLayout {
-  const _VirtualLayout({required this.id, required this.name, @JsonKey(name: 'layout_type') required this.layoutType, final  List<VirtualKeyDef> keys = const <VirtualKeyDef>[]}): _keys = keys,super._();
-  factory _VirtualLayout.fromJson(Map<String, dynamic> json) => _$VirtualLayoutFromJson(json);
+  factory _$VirtualLayoutImpl.fromJson(Map<String, dynamic> json) =>
+      _$$VirtualLayoutImplFromJson(json);
 
-@override final  VirtualLayoutId id;
-@override final  String name;
-@override@JsonKey(name: 'layout_type') final  VirtualLayoutType layoutType;
- final  List<VirtualKeyDef> _keys;
-@override@JsonKey() List<VirtualKeyDef> get keys {
-  if (_keys is EqualUnmodifiableListView) return _keys;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_keys);
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  @JsonKey(name: 'layout_type')
+  final VirtualLayoutType layoutType;
+  final List<VirtualKeyDef> _keys;
+  @override
+  @JsonKey()
+  List<VirtualKeyDef> get keys {
+    if (_keys is EqualUnmodifiableListView) return _keys;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_keys);
+  }
+
+  @override
+  String toString() {
+    return 'VirtualLayout(id: $id, name: $name, layoutType: $layoutType, keys: $keys)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$VirtualLayoutImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.layoutType, layoutType) ||
+                other.layoutType == layoutType) &&
+            const DeepCollectionEquality().equals(other._keys, _keys));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    layoutType,
+    const DeepCollectionEquality().hash(_keys),
+  );
+
+  /// Create a copy of VirtualLayout
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$VirtualLayoutImplCopyWith<_$VirtualLayoutImpl> get copyWith =>
+      __$$VirtualLayoutImplCopyWithImpl<_$VirtualLayoutImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$VirtualLayoutImplToJson(this);
+  }
 }
 
+abstract class _VirtualLayout extends VirtualLayout {
+  const factory _VirtualLayout({
+    required final String id,
+    required final String name,
+    @JsonKey(name: 'layout_type') required final VirtualLayoutType layoutType,
+    final List<VirtualKeyDef> keys,
+  }) = _$VirtualLayoutImpl;
+  const _VirtualLayout._() : super._();
 
-/// Create a copy of VirtualLayout
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$VirtualLayoutCopyWith<_VirtualLayout> get copyWith => __$VirtualLayoutCopyWithImpl<_VirtualLayout>(this, _$identity);
+  factory _VirtualLayout.fromJson(Map<String, dynamic> json) =
+      _$VirtualLayoutImpl.fromJson;
 
-@override
-Map<String, dynamic> toJson() {
-  return _$VirtualLayoutToJson(this, );
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  @JsonKey(name: 'layout_type')
+  VirtualLayoutType get layoutType;
+  @override
+  List<VirtualKeyDef> get keys;
+
+  /// Create a copy of VirtualLayout
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$VirtualLayoutImplCopyWith<_$VirtualLayoutImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VirtualLayout&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.layoutType, layoutType) || other.layoutType == layoutType)&&const DeepCollectionEquality().equals(other._keys, _keys));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,name,layoutType,const DeepCollectionEquality().hash(_keys));
-
-@override
-String toString() {
-  return 'VirtualLayout(id: $id, name: $name, layoutType: $layoutType, keys: $keys)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$VirtualLayoutCopyWith<$Res> implements $VirtualLayoutCopyWith<$Res> {
-  factory _$VirtualLayoutCopyWith(_VirtualLayout value, $Res Function(_VirtualLayout) _then) = __$VirtualLayoutCopyWithImpl;
-@override @useResult
-$Res call({
- VirtualLayoutId id, String name,@JsonKey(name: 'layout_type') VirtualLayoutType layoutType, List<VirtualKeyDef> keys
-});
-
-
-
-
-}
-/// @nodoc
-class __$VirtualLayoutCopyWithImpl<$Res>
-    implements _$VirtualLayoutCopyWith<$Res> {
-  __$VirtualLayoutCopyWithImpl(this._self, this._then);
-
-  final _VirtualLayout _self;
-  final $Res Function(_VirtualLayout) _then;
-
-/// Create a copy of VirtualLayout
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? layoutType = null,Object? keys = null,}) {
-  return _then(_VirtualLayout(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutId,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,layoutType: null == layoutType ? _self.layoutType : layoutType // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutType,keys: null == keys ? _self._keys : keys // ignore: cast_nullable_to_non_nullable
-as List<VirtualKeyDef>,
-  ));
-}
-
-
-}
-
-// dart format on

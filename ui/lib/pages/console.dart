@@ -6,11 +6,11 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/models/log_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../models/log_entry.dart';
 import '../services/console_parser.dart';
 import '../services/facade/keyrx_facade.dart';
 

@@ -7,10 +7,10 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:core_logic/ffi/bridge.dart' hide ScriptValidationResult;
+import 'package:core_logic/models/log_entry.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../../ffi/bridge.dart' hide ScriptValidationResult;
-import '../../models/log_entry.dart';
 import '../service_registry.dart';
 import '../test_service.dart';
 import 'facade_state.dart';

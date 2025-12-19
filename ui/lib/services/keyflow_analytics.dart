@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 
-import '../utils/logger.dart';
+import 'package:core_logic/utils/logger.dart';
 
 /// Event types for KeyFlow analytics.
 enum KeyFlowEventType {

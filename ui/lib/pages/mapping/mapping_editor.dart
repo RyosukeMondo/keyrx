@@ -1,13 +1,13 @@
 /// Visual editor for keymaps.
 library;
 
+import 'package:core_logic/models/action_binding.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/keymap.dart';
+import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/action_binding.dart';
-import '../../models/hardware_profile.dart';
-import '../../models/keymap.dart';
-import '../../models/virtual_layout.dart';
 import '../../services/keymap_converter.dart';
 import '../../services/keymap_service.dart';
 import '../../services/rhai_generator.dart';

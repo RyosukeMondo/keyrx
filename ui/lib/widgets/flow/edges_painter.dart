@@ -1,7 +1,9 @@
+import 'package:core_logic/models/flow/edge_style.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../models/flow/edge_style.dart';
-import '../../models/flow/flow_graph.dart';
+
+import '../../utils/core_ui_extensions.dart';
 
 class PaintableEdge {
   const PaintableEdge({
@@ -49,7 +51,7 @@ class EdgesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final badgeTextStyle = TextStyle(
-      color: style.palette.priorityText,
+      color: style.palette.priorityTextColor,
       fontSize: 11,
       fontWeight: FontWeight.w700,
     );
@@ -101,7 +103,7 @@ class EdgesPainter extends CustomPainter {
     final badgePoint = edge.sample(0.55, normalOffset: 16);
 
     final fillPaint = Paint()
-      ..color = style.palette.priorityBackground.withOpacity(0.9)
+      ..color = style.palette.priorityBackgroundColor.withOpacity(0.9)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
     canvas.drawCircle(badgePoint, style.priorityBadgeRadius, fillPaint);

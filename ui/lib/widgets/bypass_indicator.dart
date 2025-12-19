@@ -5,9 +5,8 @@
 
 import 'dart:async';
 
+import 'package:core_logic/ffi/bridge.dart';
 import 'package:flutter/material.dart';
-
-import '../ffi/bridge.dart';
 
 /// Widget that displays bypass mode status and provides re-enable control.
 ///

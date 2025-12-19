@@ -3,7 +3,7 @@
 /// Extracts validation logic from UI components for testability.
 library;
 
-import '../models/key_mapping.dart';
+import 'package:core_logic/models/key_mapping.dart';
 import 'key_mappings_util.dart';
 
 /// Result of a mapping validation operation.

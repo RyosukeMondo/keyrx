@@ -5,10 +5,10 @@
 /// continue to work via the adapter in [createProviders].
 library;
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/mock_bridge.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../ffi/bridge.dart';
-import '../ffi/mock_bridge.dart';
 import '../services/api_docs_service.dart';
 import '../services/facade/facade_state.dart';
 import '../services/facade/keyrx_facade.dart';

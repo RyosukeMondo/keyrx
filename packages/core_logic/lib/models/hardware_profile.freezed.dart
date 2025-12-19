@@ -1,5 +1,5 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,562 +9,542 @@ part of 'hardware_profile.dart';
 // FreezedGenerator
 // **************************************************************************
 
-// dart format off
 T _$identity<T>(T value) => value;
+
+final _privateConstructorUsedError = UnsupportedError(
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
+
+DeviceInstanceId _$DeviceInstanceIdFromJson(Map<String, dynamic> json) {
+  return _DeviceInstanceId.fromJson(json);
+}
 
 /// @nodoc
 mixin _$DeviceInstanceId {
-
-@JsonKey(name: 'vendor_id') int get vendorId;@JsonKey(name: 'product_id') int get productId; String? get serial;
-/// Create a copy of DeviceInstanceId
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$DeviceInstanceIdCopyWith<DeviceInstanceId> get copyWith => _$DeviceInstanceIdCopyWithImpl<DeviceInstanceId>(this as DeviceInstanceId, _$identity);
+  @JsonKey(name: 'vendor_id')
+  int get vendorId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'product_id')
+  int get productId => throw _privateConstructorUsedError;
+  String? get serial => throw _privateConstructorUsedError;
 
   /// Serializes this DeviceInstanceId to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeviceInstanceId&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.serial, serial) || other.serial == serial));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,vendorId,productId,serial);
-
-@override
-String toString() {
-  return 'DeviceInstanceId(vendorId: $vendorId, productId: $productId, serial: $serial)';
-}
-
-
+  /// Create a copy of DeviceInstanceId
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $DeviceInstanceIdCopyWith<DeviceInstanceId> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $DeviceInstanceIdCopyWith<$Res>  {
-  factory $DeviceInstanceIdCopyWith(DeviceInstanceId value, $Res Function(DeviceInstanceId) _then) = _$DeviceInstanceIdCopyWithImpl;
-@useResult
-$Res call({
-@JsonKey(name: 'vendor_id') int vendorId,@JsonKey(name: 'product_id') int productId, String? serial
-});
-
-
-
-
+abstract class $DeviceInstanceIdCopyWith<$Res> {
+  factory $DeviceInstanceIdCopyWith(
+    DeviceInstanceId value,
+    $Res Function(DeviceInstanceId) then,
+  ) = _$DeviceInstanceIdCopyWithImpl<$Res, DeviceInstanceId>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'vendor_id') int vendorId,
+    @JsonKey(name: 'product_id') int productId,
+    String? serial,
+  });
 }
+
 /// @nodoc
-class _$DeviceInstanceIdCopyWithImpl<$Res>
+class _$DeviceInstanceIdCopyWithImpl<$Res, $Val extends DeviceInstanceId>
     implements $DeviceInstanceIdCopyWith<$Res> {
-  _$DeviceInstanceIdCopyWithImpl(this._self, this._then);
+  _$DeviceInstanceIdCopyWithImpl(this._value, this._then);
 
-  final DeviceInstanceId _self;
-  final $Res Function(DeviceInstanceId) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of DeviceInstanceId
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? vendorId = null,Object? productId = null,Object? serial = freezed,}) {
-  return _then(_self.copyWith(
-vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
-as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
-as int,serial: freezed == serial ? _self.serial : serial // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
+  /// Create a copy of DeviceInstanceId
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? serial = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            vendorId: null == vendorId
+                ? _value.vendorId
+                : vendorId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            productId: null == productId
+                ? _value.productId
+                : productId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            serial: freezed == serial
+                ? _value.serial
+                : serial // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
 }
 
+/// @nodoc
+abstract class _$$DeviceInstanceIdImplCopyWith<$Res>
+    implements $DeviceInstanceIdCopyWith<$Res> {
+  factory _$$DeviceInstanceIdImplCopyWith(
+    _$DeviceInstanceIdImpl value,
+    $Res Function(_$DeviceInstanceIdImpl) then,
+  ) = __$$DeviceInstanceIdImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'vendor_id') int vendorId,
+    @JsonKey(name: 'product_id') int productId,
+    String? serial,
+  });
 }
 
+/// @nodoc
+class __$$DeviceInstanceIdImplCopyWithImpl<$Res>
+    extends _$DeviceInstanceIdCopyWithImpl<$Res, _$DeviceInstanceIdImpl>
+    implements _$$DeviceInstanceIdImplCopyWith<$Res> {
+  __$$DeviceInstanceIdImplCopyWithImpl(
+    _$DeviceInstanceIdImpl _value,
+    $Res Function(_$DeviceInstanceIdImpl) _then,
+  ) : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [DeviceInstanceId].
-extension DeviceInstanceIdPatterns on DeviceInstanceId {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DeviceInstanceId value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _DeviceInstanceId() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DeviceInstanceId value)  $default,){
-final _that = this;
-switch (_that) {
-case _DeviceInstanceId():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DeviceInstanceId value)?  $default,){
-final _that = this;
-switch (_that) {
-case _DeviceInstanceId() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId,  String? serial)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _DeviceInstanceId() when $default != null:
-return $default(_that.vendorId,_that.productId,_that.serial);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId,  String? serial)  $default,) {final _that = this;
-switch (_that) {
-case _DeviceInstanceId():
-return $default(_that.vendorId,_that.productId,_that.serial);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId,  String? serial)?  $default,) {final _that = this;
-switch (_that) {
-case _DeviceInstanceId() when $default != null:
-return $default(_that.vendorId,_that.productId,_that.serial);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of DeviceInstanceId
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? serial = freezed,
+  }) {
+    return _then(
+      _$DeviceInstanceIdImpl(
+        vendorId: null == vendorId
+            ? _value.vendorId
+            : vendorId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        productId: null == productId
+            ? _value.productId
+            : productId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        serial: freezed == serial
+            ? _value.serial
+            : serial // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$DeviceInstanceIdImpl extends _DeviceInstanceId {
+  const _$DeviceInstanceIdImpl({
+    @JsonKey(name: 'vendor_id') required this.vendorId,
+    @JsonKey(name: 'product_id') required this.productId,
+    this.serial,
+  }) : super._();
 
-class _DeviceInstanceId extends DeviceInstanceId {
-  const _DeviceInstanceId({@JsonKey(name: 'vendor_id') required this.vendorId, @JsonKey(name: 'product_id') required this.productId, this.serial}): super._();
-  factory _DeviceInstanceId.fromJson(Map<String, dynamic> json) => _$DeviceInstanceIdFromJson(json);
+  factory _$DeviceInstanceIdImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DeviceInstanceIdImplFromJson(json);
 
-@override@JsonKey(name: 'vendor_id') final  int vendorId;
-@override@JsonKey(name: 'product_id') final  int productId;
-@override final  String? serial;
+  @override
+  @JsonKey(name: 'vendor_id')
+  final int vendorId;
+  @override
+  @JsonKey(name: 'product_id')
+  final int productId;
+  @override
+  final String? serial;
 
-/// Create a copy of DeviceInstanceId
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$DeviceInstanceIdCopyWith<_DeviceInstanceId> get copyWith => __$DeviceInstanceIdCopyWithImpl<_DeviceInstanceId>(this, _$identity);
+  @override
+  String toString() {
+    return 'DeviceInstanceId(vendorId: $vendorId, productId: $productId, serial: $serial)';
+  }
 
-@override
-Map<String, dynamic> toJson() {
-  return _$DeviceInstanceIdToJson(this, );
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DeviceInstanceIdImpl &&
+            (identical(other.vendorId, vendorId) ||
+                other.vendorId == vendorId) &&
+            (identical(other.productId, productId) ||
+                other.productId == productId) &&
+            (identical(other.serial, serial) || other.serial == serial));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, vendorId, productId, serial);
+
+  /// Create a copy of DeviceInstanceId
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DeviceInstanceIdImplCopyWith<_$DeviceInstanceIdImpl> get copyWith =>
+      __$$DeviceInstanceIdImplCopyWithImpl<_$DeviceInstanceIdImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DeviceInstanceIdImplToJson(this);
+  }
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeviceInstanceId&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.serial, serial) || other.serial == serial));
+abstract class _DeviceInstanceId extends DeviceInstanceId {
+  const factory _DeviceInstanceId({
+    @JsonKey(name: 'vendor_id') required final int vendorId,
+    @JsonKey(name: 'product_id') required final int productId,
+    final String? serial,
+  }) = _$DeviceInstanceIdImpl;
+  const _DeviceInstanceId._() : super._();
+
+  factory _DeviceInstanceId.fromJson(Map<String, dynamic> json) =
+      _$DeviceInstanceIdImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'vendor_id')
+  int get vendorId;
+  @override
+  @JsonKey(name: 'product_id')
+  int get productId;
+  @override
+  String? get serial;
+
+  /// Create a copy of DeviceInstanceId
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$DeviceInstanceIdImplCopyWith<_$DeviceInstanceIdImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,vendorId,productId,serial);
-
-@override
-String toString() {
-  return 'DeviceInstanceId(vendorId: $vendorId, productId: $productId, serial: $serial)';
+HardwareProfile _$HardwareProfileFromJson(Map<String, dynamic> json) {
+  return _HardwareProfile.fromJson(json);
 }
-
-
-}
-
-/// @nodoc
-abstract mixin class _$DeviceInstanceIdCopyWith<$Res> implements $DeviceInstanceIdCopyWith<$Res> {
-  factory _$DeviceInstanceIdCopyWith(_DeviceInstanceId value, $Res Function(_DeviceInstanceId) _then) = __$DeviceInstanceIdCopyWithImpl;
-@override @useResult
-$Res call({
-@JsonKey(name: 'vendor_id') int vendorId,@JsonKey(name: 'product_id') int productId, String? serial
-});
-
-
-
-
-}
-/// @nodoc
-class __$DeviceInstanceIdCopyWithImpl<$Res>
-    implements _$DeviceInstanceIdCopyWith<$Res> {
-  __$DeviceInstanceIdCopyWithImpl(this._self, this._then);
-
-  final _DeviceInstanceId _self;
-  final $Res Function(_DeviceInstanceId) _then;
-
-/// Create a copy of DeviceInstanceId
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? vendorId = null,Object? productId = null,Object? serial = freezed,}) {
-  return _then(_DeviceInstanceId(
-vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
-as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
-as int,serial: freezed == serial ? _self.serial : serial // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-
-}
-
 
 /// @nodoc
 mixin _$HardwareProfile {
-
- HardwareProfileId get id;@JsonKey(name: 'virtual_layout_id') VirtualLayoutId get virtualLayoutId;@JsonKey(name: 'vendor_id') int get vendorId;@JsonKey(name: 'product_id') int get productId;@JsonKey(name: 'serial_number') String? get serialNumber; String? get name; Map<int, VirtualKeyId> get wiring;
-/// Create a copy of HardwareProfile
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$HardwareProfileCopyWith<HardwareProfile> get copyWith => _$HardwareProfileCopyWithImpl<HardwareProfile>(this as HardwareProfile, _$identity);
+  String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'virtual_layout_id')
+  String get virtualLayoutId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'vendor_id')
+  int get vendorId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'product_id')
+  int get productId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'serial_number')
+  String? get serialNumber => throw _privateConstructorUsedError;
+  String? get name => throw _privateConstructorUsedError;
+  Map<int, String> get wiring => throw _privateConstructorUsedError;
 
   /// Serializes this HardwareProfile to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HardwareProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.virtualLayoutId, virtualLayoutId) || other.virtualLayoutId == virtualLayoutId)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.serialNumber, serialNumber) || other.serialNumber == serialNumber)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.wiring, wiring));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,virtualLayoutId,vendorId,productId,serialNumber,name,const DeepCollectionEquality().hash(wiring));
-
-@override
-String toString() {
-  return 'HardwareProfile(id: $id, virtualLayoutId: $virtualLayoutId, vendorId: $vendorId, productId: $productId, serialNumber: $serialNumber, name: $name, wiring: $wiring)';
-}
-
-
+  /// Create a copy of HardwareProfile
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $HardwareProfileCopyWith<HardwareProfile> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $HardwareProfileCopyWith<$Res>  {
-  factory $HardwareProfileCopyWith(HardwareProfile value, $Res Function(HardwareProfile) _then) = _$HardwareProfileCopyWithImpl;
-@useResult
-$Res call({
- HardwareProfileId id,@JsonKey(name: 'virtual_layout_id') VirtualLayoutId virtualLayoutId,@JsonKey(name: 'vendor_id') int vendorId,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'serial_number') String? serialNumber, String? name, Map<int, VirtualKeyId> wiring
-});
-
-
-
-
+abstract class $HardwareProfileCopyWith<$Res> {
+  factory $HardwareProfileCopyWith(
+    HardwareProfile value,
+    $Res Function(HardwareProfile) then,
+  ) = _$HardwareProfileCopyWithImpl<$Res, HardwareProfile>;
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
+    @JsonKey(name: 'vendor_id') int vendorId,
+    @JsonKey(name: 'product_id') int productId,
+    @JsonKey(name: 'serial_number') String? serialNumber,
+    String? name,
+    Map<int, String> wiring,
+  });
 }
+
 /// @nodoc
-class _$HardwareProfileCopyWithImpl<$Res>
+class _$HardwareProfileCopyWithImpl<$Res, $Val extends HardwareProfile>
     implements $HardwareProfileCopyWith<$Res> {
-  _$HardwareProfileCopyWithImpl(this._self, this._then);
+  _$HardwareProfileCopyWithImpl(this._value, this._then);
 
-  final HardwareProfile _self;
-  final $Res Function(HardwareProfile) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of HardwareProfile
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? virtualLayoutId = null,Object? vendorId = null,Object? productId = null,Object? serialNumber = freezed,Object? name = freezed,Object? wiring = null,}) {
-  return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as HardwareProfileId,virtualLayoutId: null == virtualLayoutId ? _self.virtualLayoutId : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutId,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
-as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
-as int,serialNumber: freezed == serialNumber ? _self.serialNumber : serialNumber // ignore: cast_nullable_to_non_nullable
-as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,wiring: null == wiring ? _self.wiring : wiring // ignore: cast_nullable_to_non_nullable
-as Map<int, VirtualKeyId>,
-  ));
+  /// Create a copy of HardwareProfile
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? virtualLayoutId = null,
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? serialNumber = freezed,
+    Object? name = freezed,
+    Object? wiring = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            virtualLayoutId: null == virtualLayoutId
+                ? _value.virtualLayoutId
+                : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            vendorId: null == vendorId
+                ? _value.vendorId
+                : vendorId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            productId: null == productId
+                ? _value.productId
+                : productId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            serialNumber: freezed == serialNumber
+                ? _value.serialNumber
+                : serialNumber // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            name: freezed == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            wiring: null == wiring
+                ? _value.wiring
+                : wiring // ignore: cast_nullable_to_non_nullable
+                      as Map<int, String>,
+          )
+          as $Val,
+    );
+  }
 }
 
+/// @nodoc
+abstract class _$$HardwareProfileImplCopyWith<$Res>
+    implements $HardwareProfileCopyWith<$Res> {
+  factory _$$HardwareProfileImplCopyWith(
+    _$HardwareProfileImpl value,
+    $Res Function(_$HardwareProfileImpl) then,
+  ) = __$$HardwareProfileImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'virtual_layout_id') String virtualLayoutId,
+    @JsonKey(name: 'vendor_id') int vendorId,
+    @JsonKey(name: 'product_id') int productId,
+    @JsonKey(name: 'serial_number') String? serialNumber,
+    String? name,
+    Map<int, String> wiring,
+  });
 }
 
+/// @nodoc
+class __$$HardwareProfileImplCopyWithImpl<$Res>
+    extends _$HardwareProfileCopyWithImpl<$Res, _$HardwareProfileImpl>
+    implements _$$HardwareProfileImplCopyWith<$Res> {
+  __$$HardwareProfileImplCopyWithImpl(
+    _$HardwareProfileImpl _value,
+    $Res Function(_$HardwareProfileImpl) _then,
+  ) : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [HardwareProfile].
-extension HardwareProfilePatterns on HardwareProfile {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _HardwareProfile value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _HardwareProfile() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _HardwareProfile value)  $default,){
-final _that = this;
-switch (_that) {
-case _HardwareProfile():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _HardwareProfile value)?  $default,){
-final _that = this;
-switch (_that) {
-case _HardwareProfile() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HardwareProfileId id, @JsonKey(name: 'virtual_layout_id')  VirtualLayoutId virtualLayoutId, @JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'serial_number')  String? serialNumber,  String? name,  Map<int, VirtualKeyId> wiring)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _HardwareProfile() when $default != null:
-return $default(_that.id,_that.virtualLayoutId,_that.vendorId,_that.productId,_that.serialNumber,_that.name,_that.wiring);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HardwareProfileId id, @JsonKey(name: 'virtual_layout_id')  VirtualLayoutId virtualLayoutId, @JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'serial_number')  String? serialNumber,  String? name,  Map<int, VirtualKeyId> wiring)  $default,) {final _that = this;
-switch (_that) {
-case _HardwareProfile():
-return $default(_that.id,_that.virtualLayoutId,_that.vendorId,_that.productId,_that.serialNumber,_that.name,_that.wiring);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HardwareProfileId id, @JsonKey(name: 'virtual_layout_id')  VirtualLayoutId virtualLayoutId, @JsonKey(name: 'vendor_id')  int vendorId, @JsonKey(name: 'product_id')  int productId, @JsonKey(name: 'serial_number')  String? serialNumber,  String? name,  Map<int, VirtualKeyId> wiring)?  $default,) {final _that = this;
-switch (_that) {
-case _HardwareProfile() when $default != null:
-return $default(_that.id,_that.virtualLayoutId,_that.vendorId,_that.productId,_that.serialNumber,_that.name,_that.wiring);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of HardwareProfile
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? virtualLayoutId = null,
+    Object? vendorId = null,
+    Object? productId = null,
+    Object? serialNumber = freezed,
+    Object? name = freezed,
+    Object? wiring = null,
+  }) {
+    return _then(
+      _$HardwareProfileImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        virtualLayoutId: null == virtualLayoutId
+            ? _value.virtualLayoutId
+            : virtualLayoutId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        vendorId: null == vendorId
+            ? _value.vendorId
+            : vendorId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        productId: null == productId
+            ? _value.productId
+            : productId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        serialNumber: freezed == serialNumber
+            ? _value.serialNumber
+            : serialNumber // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        name: freezed == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        wiring: null == wiring
+            ? _value._wiring
+            : wiring // ignore: cast_nullable_to_non_nullable
+                  as Map<int, String>,
+      ),
+    );
+  }
 }
 
 /// @nodoc
 @JsonSerializable()
+class _$HardwareProfileImpl extends _HardwareProfile {
+  const _$HardwareProfileImpl({
+    required this.id,
+    @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId,
+    @JsonKey(name: 'vendor_id') this.vendorId = 0,
+    @JsonKey(name: 'product_id') this.productId = 0,
+    @JsonKey(name: 'serial_number') this.serialNumber,
+    this.name,
+    final Map<int, String> wiring = const <int, VirtualKeyId>{},
+  }) : _wiring = wiring,
+       super._();
 
-class _HardwareProfile extends HardwareProfile {
-  const _HardwareProfile({required this.id, @JsonKey(name: 'virtual_layout_id') required this.virtualLayoutId, @JsonKey(name: 'vendor_id') this.vendorId = 0, @JsonKey(name: 'product_id') this.productId = 0, @JsonKey(name: 'serial_number') this.serialNumber, this.name, final  Map<int, VirtualKeyId> wiring = const <int, VirtualKeyId>{}}): _wiring = wiring,super._();
-  factory _HardwareProfile.fromJson(Map<String, dynamic> json) => _$HardwareProfileFromJson(json);
+  factory _$HardwareProfileImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HardwareProfileImplFromJson(json);
 
-@override final  HardwareProfileId id;
-@override@JsonKey(name: 'virtual_layout_id') final  VirtualLayoutId virtualLayoutId;
-@override@JsonKey(name: 'vendor_id') final  int vendorId;
-@override@JsonKey(name: 'product_id') final  int productId;
-@override@JsonKey(name: 'serial_number') final  String? serialNumber;
-@override final  String? name;
- final  Map<int, VirtualKeyId> _wiring;
-@override@JsonKey() Map<int, VirtualKeyId> get wiring {
-  if (_wiring is EqualUnmodifiableMapView) return _wiring;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_wiring);
+  @override
+  final String id;
+  @override
+  @JsonKey(name: 'virtual_layout_id')
+  final String virtualLayoutId;
+  @override
+  @JsonKey(name: 'vendor_id')
+  final int vendorId;
+  @override
+  @JsonKey(name: 'product_id')
+  final int productId;
+  @override
+  @JsonKey(name: 'serial_number')
+  final String? serialNumber;
+  @override
+  final String? name;
+  final Map<int, String> _wiring;
+  @override
+  @JsonKey()
+  Map<int, String> get wiring {
+    if (_wiring is EqualUnmodifiableMapView) return _wiring;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_wiring);
+  }
+
+  @override
+  String toString() {
+    return 'HardwareProfile(id: $id, virtualLayoutId: $virtualLayoutId, vendorId: $vendorId, productId: $productId, serialNumber: $serialNumber, name: $name, wiring: $wiring)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$HardwareProfileImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.virtualLayoutId, virtualLayoutId) ||
+                other.virtualLayoutId == virtualLayoutId) &&
+            (identical(other.vendorId, vendorId) ||
+                other.vendorId == vendorId) &&
+            (identical(other.productId, productId) ||
+                other.productId == productId) &&
+            (identical(other.serialNumber, serialNumber) ||
+                other.serialNumber == serialNumber) &&
+            (identical(other.name, name) || other.name == name) &&
+            const DeepCollectionEquality().equals(other._wiring, _wiring));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    virtualLayoutId,
+    vendorId,
+    productId,
+    serialNumber,
+    name,
+    const DeepCollectionEquality().hash(_wiring),
+  );
+
+  /// Create a copy of HardwareProfile
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$HardwareProfileImplCopyWith<_$HardwareProfileImpl> get copyWith =>
+      __$$HardwareProfileImplCopyWithImpl<_$HardwareProfileImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$HardwareProfileImplToJson(this);
+  }
 }
 
+abstract class _HardwareProfile extends HardwareProfile {
+  const factory _HardwareProfile({
+    required final String id,
+    @JsonKey(name: 'virtual_layout_id') required final String virtualLayoutId,
+    @JsonKey(name: 'vendor_id') final int vendorId,
+    @JsonKey(name: 'product_id') final int productId,
+    @JsonKey(name: 'serial_number') final String? serialNumber,
+    final String? name,
+    final Map<int, String> wiring,
+  }) = _$HardwareProfileImpl;
+  const _HardwareProfile._() : super._();
 
-/// Create a copy of HardwareProfile
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$HardwareProfileCopyWith<_HardwareProfile> get copyWith => __$HardwareProfileCopyWithImpl<_HardwareProfile>(this, _$identity);
+  factory _HardwareProfile.fromJson(Map<String, dynamic> json) =
+      _$HardwareProfileImpl.fromJson;
 
-@override
-Map<String, dynamic> toJson() {
-  return _$HardwareProfileToJson(this, );
+  @override
+  String get id;
+  @override
+  @JsonKey(name: 'virtual_layout_id')
+  String get virtualLayoutId;
+  @override
+  @JsonKey(name: 'vendor_id')
+  int get vendorId;
+  @override
+  @JsonKey(name: 'product_id')
+  int get productId;
+  @override
+  @JsonKey(name: 'serial_number')
+  String? get serialNumber;
+  @override
+  String? get name;
+  @override
+  Map<int, String> get wiring;
+
+  /// Create a copy of HardwareProfile
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$HardwareProfileImplCopyWith<_$HardwareProfileImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HardwareProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.virtualLayoutId, virtualLayoutId) || other.virtualLayoutId == virtualLayoutId)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.serialNumber, serialNumber) || other.serialNumber == serialNumber)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._wiring, _wiring));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,id,virtualLayoutId,vendorId,productId,serialNumber,name,const DeepCollectionEquality().hash(_wiring));
-
-@override
-String toString() {
-  return 'HardwareProfile(id: $id, virtualLayoutId: $virtualLayoutId, vendorId: $vendorId, productId: $productId, serialNumber: $serialNumber, name: $name, wiring: $wiring)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$HardwareProfileCopyWith<$Res> implements $HardwareProfileCopyWith<$Res> {
-  factory _$HardwareProfileCopyWith(_HardwareProfile value, $Res Function(_HardwareProfile) _then) = __$HardwareProfileCopyWithImpl;
-@override @useResult
-$Res call({
- HardwareProfileId id,@JsonKey(name: 'virtual_layout_id') VirtualLayoutId virtualLayoutId,@JsonKey(name: 'vendor_id') int vendorId,@JsonKey(name: 'product_id') int productId,@JsonKey(name: 'serial_number') String? serialNumber, String? name, Map<int, VirtualKeyId> wiring
-});
-
-
-
-
-}
-/// @nodoc
-class __$HardwareProfileCopyWithImpl<$Res>
-    implements _$HardwareProfileCopyWith<$Res> {
-  __$HardwareProfileCopyWithImpl(this._self, this._then);
-
-  final _HardwareProfile _self;
-  final $Res Function(_HardwareProfile) _then;
-
-/// Create a copy of HardwareProfile
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? virtualLayoutId = null,Object? vendorId = null,Object? productId = null,Object? serialNumber = freezed,Object? name = freezed,Object? wiring = null,}) {
-  return _then(_HardwareProfile(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as HardwareProfileId,virtualLayoutId: null == virtualLayoutId ? _self.virtualLayoutId : virtualLayoutId // ignore: cast_nullable_to_non_nullable
-as VirtualLayoutId,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
-as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
-as int,serialNumber: freezed == serialNumber ? _self.serialNumber : serialNumber // ignore: cast_nullable_to_non_nullable
-as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,wiring: null == wiring ? _self._wiring : wiring // ignore: cast_nullable_to_non_nullable
-as Map<int, VirtualKeyId>,
-  ));
-}
-
-
-}
-
-// dart format on

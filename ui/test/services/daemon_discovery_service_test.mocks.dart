@@ -3,12 +3,11 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i2;
+import 'dart:async' as _i4;
 
-import 'package:keyrx_ui/models/daemon_protocol.dart' as _i3;
-import 'package:keyrx_ui/services/daemon_service.dart' as _i4;
+import 'package:core_logic/models/daemon_protocol.dart' as _i2;
+import 'package:keyrx_ui/services/daemon_service.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -24,47 +23,69 @@ import 'package:mockito/src/dummies.dart' as _i5;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeFuture_0<T1> extends _i1.SmartFake implements _i2.Future<T1> {
-  _FakeFuture_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeEngineStatus_1 extends _i1.SmartFake implements _i3.EngineStatus {
-  _FakeEngineStatus_1(Object parent, Invocation parentInvocation)
+class _FakeEngineStatus_0 extends _i1.SmartFake implements _i2.EngineStatus {
+  _FakeEngineStatus_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
 /// A class which mocks [DaemonService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDaemonService extends _i1.Mock implements _i4.DaemonService {
+class MockDaemonService extends _i1.Mock implements _i3.DaemonService {
   MockDaemonService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i2.Stream<_i3.DaemonEvent> get events =>
+  _i4.Stream<_i2.DaemonEvent> get events =>
       (super.noSuchMethod(
             Invocation.getter(#events),
-            returnValue: _i2.Stream<_i3.DaemonEvent>.empty(),
+            returnValue: _i4.Stream<_i2.DaemonEvent>.empty(),
           )
-          as _i2.Stream<_i3.DaemonEvent>);
+          as _i4.Stream<_i2.DaemonEvent>);
 
   @override
-  _i2.Stream<_i4.DaemonConnectionState> get connectionState =>
+  _i4.Stream<_i2.JsonRpcNotification> get notificationStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#notificationStream),
+            returnValue: _i4.Stream<_i2.JsonRpcNotification>.empty(),
+          )
+          as _i4.Stream<_i2.JsonRpcNotification>);
+
+  @override
+  _i4.Stream<_i3.DaemonConnectionState> get connectionState =>
       (super.noSuchMethod(
             Invocation.getter(#connectionState),
-            returnValue: _i2.Stream<_i4.DaemonConnectionState>.empty(),
+            returnValue: _i4.Stream<_i3.DaemonConnectionState>.empty(),
           )
-          as _i2.Stream<_i4.DaemonConnectionState>);
+          as _i4.Stream<_i3.DaemonConnectionState>);
 
   @override
-  _i4.DaemonConnectionState get state =>
+  _i4.Stream<_i2.EngineStatus> get statusStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#statusStream),
+            returnValue: _i4.Stream<_i2.EngineStatus>.empty(),
+          )
+          as _i4.Stream<_i2.EngineStatus>);
+
+  @override
+  _i2.EngineStatus get currentStatus =>
+      (super.noSuchMethod(
+            Invocation.getter(#currentStatus),
+            returnValue: _FakeEngineStatus_0(
+              this,
+              Invocation.getter(#currentStatus),
+            ),
+          )
+          as _i2.EngineStatus);
+
+  @override
+  _i3.DaemonConnectionState get state =>
       (super.noSuchMethod(
             Invocation.getter(#state),
-            returnValue: _i4.DaemonConnectionState.disconnected,
+            returnValue: _i3.DaemonConnectionState.disconnected,
           )
-          as _i4.DaemonConnectionState);
+          as _i3.DaemonConnectionState);
 
   @override
   bool get isConnected =>
@@ -72,60 +93,45 @@ class MockDaemonService extends _i1.Mock implements _i4.DaemonService {
           as bool);
 
   @override
-  _i2.Future<void> connect() =>
+  _i4.Future<void> connect() =>
       (super.noSuchMethod(
             Invocation.method(#connect, []),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<void> disconnect() =>
+  _i4.Future<void> disconnect() =>
       (super.noSuchMethod(
             Invocation.method(#disconnect, []),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<T> sendRequest<T>(
-    String? method, {
-    required T Function(dynamic)? parseResult,
+  _i4.Future<dynamic> sendRequest(
+    String? method, [
     Map<String, dynamic>? params,
-  }) =>
+  ]) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #sendRequest,
-              [method],
-              {#parseResult: parseResult, #params: params},
-            ),
-            returnValue:
-                _i5.ifNotNull(
-                  _i5.dummyValueOrNull<T>(
-                    this,
-                    Invocation.method(
-                      #sendRequest,
-                      [method],
-                      {#parseResult: parseResult, #params: params},
-                    ),
-                  ),
-                  (T v) => _i2.Future<T>.value(v),
-                ) ??
-                _FakeFuture_0<T>(
-                  this,
-                  Invocation.method(
-                    #sendRequest,
-                    [method],
-                    {#parseResult: parseResult, #params: params},
-                  ),
-                ),
+            Invocation.method(#sendRequest, [method, params]),
+            returnValue: _i4.Future<dynamic>.value(),
           )
-          as _i2.Future<T>);
+          as _i4.Future<dynamic>);
 
   @override
-  _i2.Future<List<_i3.DaemonDeviceInfo>> startEngine({
+  _i4.Future<void> sendRequestRaw(Map<String, dynamic>? request) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendRequestRaw, [request]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<List<_i2.DaemonDeviceInfo>> startEngine({
     String? configPath,
     String? scriptPath,
     bool? useAllDevices = true,
@@ -136,69 +142,69 @@ class MockDaemonService extends _i1.Mock implements _i4.DaemonService {
               #scriptPath: scriptPath,
               #useAllDevices: useAllDevices,
             }),
-            returnValue: _i2.Future<List<_i3.DaemonDeviceInfo>>.value(
-              <_i3.DaemonDeviceInfo>[],
+            returnValue: _i4.Future<List<_i2.DaemonDeviceInfo>>.value(
+              <_i2.DaemonDeviceInfo>[],
             ),
           )
-          as _i2.Future<List<_i3.DaemonDeviceInfo>>);
+          as _i4.Future<List<_i2.DaemonDeviceInfo>>);
 
   @override
-  _i2.Future<void> stopEngine() =>
+  _i4.Future<void> stopEngine() =>
       (super.noSuchMethod(
             Invocation.method(#stopEngine, []),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<void> reloadConfig({String? configPath, String? scriptPath}) =>
+  _i4.Future<void> reloadConfig({String? configPath, String? scriptPath}) =>
       (super.noSuchMethod(
             Invocation.method(#reloadConfig, [], {
               #configPath: configPath,
               #scriptPath: scriptPath,
             }),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<_i3.EngineStatus> getStatus() =>
+  _i4.Future<_i2.EngineStatus> getStatus() =>
       (super.noSuchMethod(
             Invocation.method(#getStatus, []),
-            returnValue: _i2.Future<_i3.EngineStatus>.value(
-              _FakeEngineStatus_1(this, Invocation.method(#getStatus, [])),
+            returnValue: _i4.Future<_i2.EngineStatus>.value(
+              _FakeEngineStatus_0(this, Invocation.method(#getStatus, [])),
             ),
           )
-          as _i2.Future<_i3.EngineStatus>);
+          as _i4.Future<_i2.EngineStatus>);
 
   @override
-  _i2.Future<void> subscribeEvents({
+  _i4.Future<void> subscribeEvents({
     List<String>? eventTypes = const ['input', 'output', 'state_change'],
   }) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeEvents, [], {#eventTypes: eventTypes}),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<void> unsubscribeEvents() =>
+  _i4.Future<void> unsubscribeEvents() =>
       (super.noSuchMethod(
             Invocation.method(#unsubscribeEvents, []),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i2.Future<void> dispose() =>
+  _i4.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
-            returnValue: _i2.Future<void>.value(),
-            returnValueForMissingStub: _i2.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i2.Future<void>);
+          as _i4.Future<void>);
 }

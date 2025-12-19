@@ -7,9 +7,10 @@
 /// - Optimized rebuilds
 library;
 
+import 'package:core_logic/models/flow/edge_style.dart';
 import 'package:flutter/material.dart';
 
-import '../../models/flow/edge_style.dart';
+import '../../utils/core_ui_extensions.dart';
 import '../../utils/rendering_optimizer.dart';
 import '../flow/edges_painter.dart';
 
@@ -229,7 +230,7 @@ class RenderEdgeLayer extends RenderBox {
 
     // Draw badge background
     final fillPaint = Paint()
-      ..color = _style.palette.priorityBackground.withOpacity(0.9)
+      ..color = _style.palette.priorityBackgroundColor.withOpacity(0.9)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
     canvas.drawCircle(badgePoint, _style.priorityBadgeRadius, fillPaint);
@@ -250,7 +251,7 @@ class RenderEdgeLayer extends RenderBox {
       text: TextSpan(
         text: label,
         style: TextStyle(
-          color: _style.palette.priorityText,
+          color: _style.palette.priorityTextColor,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),

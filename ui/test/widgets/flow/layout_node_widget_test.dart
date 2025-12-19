@@ -1,6 +1,6 @@
+import 'package:core_logic/models/flow/flow_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/flow_data.dart';
 import 'package:keyrx_ui/widgets/flow/layout_node_widget.dart';
 
 void main() {

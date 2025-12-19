@@ -8,11 +8,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
-
-import '../models/daemon_protocol.dart';
 
 /// Exception thrown when daemon communication fails.
 class DaemonException implements Exception {
@@ -210,13 +209,13 @@ class DaemonService {
     _log.info('Attempting to launch daemon...');
     try {
       // Try finding the executable in PATH or fallback to development path
-      String executable = 'keyrx';
+      var executable = 'keyrx';
       if (!await _isInPath(executable)) {
         // Fallback for development: assume we are in ui/ and target is in ../target/debug/
         // Or we are in project root and target is in ./target/debug/
-        final devPathUi = '../../target/debug/keyrx';
-        final devPathOneUp = '../target/debug/keyrx';
-        final devPathRoot = './target/debug/keyrx';
+        const devPathUi = '../../target/debug/keyrx';
+        const devPathOneUp = '../target/debug/keyrx';
+        const devPathRoot = './target/debug/keyrx';
 
         if (await File(devPathRoot).exists()) {
           executable = devPathRoot;
@@ -233,7 +232,7 @@ class DaemonService {
       _log.info('Daemon process launched (PID: ${process.pid}).');
 
       // Wait for socket to appear
-      int retries = 50; // 5 seconds
+      var retries = 50; // 5 seconds
       while (retries > 0) {
         if (File(_socketPath).existsSync()) {
           // Give it a tiny bit more time to be ready to accept connections
@@ -521,7 +520,7 @@ class DaemonService {
 
   void _updateStatusFromEvent(StateChangeEvent event) {
     final eventType = event.type;
-    var current = _statusSubject.value;
+    final current = _statusSubject.value;
 
     if (eventType == 'engine_started') {
       // Refresh full status to populate device list

@@ -1,9 +1,8 @@
 /// Feature flags configuration for controlling feature rollout.
 library;
 
+import 'package:core_logic/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../utils/logger.dart';
 
 /// Feature flag identifiers.
 enum FeatureFlag {

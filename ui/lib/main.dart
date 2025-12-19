@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:core_logic/models/migration_report.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,6 @@ import 'pages/flow_editor_page.dart';
 import 'pages/layouts.dart';
 import 'pages/mapping_page.dart';
 import 'pages/metrics_dashboard.dart';
-import 'pages/migration_prompt_page.dart';
 import 'pages/run_controls_page.dart';
 import 'pages/trade_off_page.dart';
 import 'pages/wiring.dart';

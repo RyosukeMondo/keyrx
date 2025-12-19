@@ -6,96 +6,103 @@ part of 'daemon_protocol.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_JsonRpcRequest _$JsonRpcRequestFromJson(Map<String, dynamic> json) =>
-    _JsonRpcRequest(
+_$JsonRpcRequestImpl _$$JsonRpcRequestImplFromJson(Map<String, dynamic> json) =>
+    _$JsonRpcRequestImpl(
       jsonrpc: json['jsonrpc'] as String,
       method: json['method'] as String,
       id: RequestId.fromJson(json['id']),
       params: json['params'] as Map<String, dynamic>?,
     );
 
-Map<String, dynamic> _$JsonRpcRequestToJson(_JsonRpcRequest instance) =>
-    <String, dynamic>{
-      'jsonrpc': instance.jsonrpc,
-      'method': instance.method,
-      'id': instance.id,
-      'params': instance.params,
-    };
+Map<String, dynamic> _$$JsonRpcRequestImplToJson(
+  _$JsonRpcRequestImpl instance,
+) => <String, dynamic>{
+  'jsonrpc': instance.jsonrpc,
+  'method': instance.method,
+  'id': instance.id,
+  'params': instance.params,
+};
 
-_JsonRpcResponse _$JsonRpcResponseFromJson(Map<String, dynamic> json) =>
-    _JsonRpcResponse(
-      jsonrpc: json['jsonrpc'] as String,
-      result: json['result'],
-      id: RequestId.fromJson(json['id']),
-    );
-
-Map<String, dynamic> _$JsonRpcResponseToJson(_JsonRpcResponse instance) =>
-    <String, dynamic>{
-      'jsonrpc': instance.jsonrpc,
-      'result': instance.result,
-      'id': instance.id,
-    };
-
-_ErrorObject _$ErrorObjectFromJson(Map<String, dynamic> json) => _ErrorObject(
-  code: (json['code'] as num).toInt(),
-  message: json['message'] as String,
-  data: json['data'],
+_$JsonRpcResponseImpl _$$JsonRpcResponseImplFromJson(
+  Map<String, dynamic> json,
+) => _$JsonRpcResponseImpl(
+  jsonrpc: json['jsonrpc'] as String,
+  result: json['result'],
+  id: RequestId.fromJson(json['id']),
 );
 
-Map<String, dynamic> _$ErrorObjectToJson(_ErrorObject instance) =>
+Map<String, dynamic> _$$JsonRpcResponseImplToJson(
+  _$JsonRpcResponseImpl instance,
+) => <String, dynamic>{
+  'jsonrpc': instance.jsonrpc,
+  'result': instance.result,
+  'id': instance.id,
+};
+
+_$ErrorObjectImpl _$$ErrorObjectImplFromJson(Map<String, dynamic> json) =>
+    _$ErrorObjectImpl(
+      code: (json['code'] as num).toInt(),
+      message: json['message'] as String,
+      data: json['data'],
+    );
+
+Map<String, dynamic> _$$ErrorObjectImplToJson(_$ErrorObjectImpl instance) =>
     <String, dynamic>{
       'code': instance.code,
       'message': instance.message,
       'data': instance.data,
     };
 
-_JsonRpcError _$JsonRpcErrorFromJson(Map<String, dynamic> json) =>
-    _JsonRpcError(
+_$JsonRpcErrorImpl _$$JsonRpcErrorImplFromJson(Map<String, dynamic> json) =>
+    _$JsonRpcErrorImpl(
       jsonrpc: json['jsonrpc'] as String,
       error: ErrorObject.fromJson(json['error'] as Map<String, dynamic>),
       id: RequestId.fromJson(json['id']),
     );
 
-Map<String, dynamic> _$JsonRpcErrorToJson(_JsonRpcError instance) =>
+Map<String, dynamic> _$$JsonRpcErrorImplToJson(_$JsonRpcErrorImpl instance) =>
     <String, dynamic>{
       'jsonrpc': instance.jsonrpc,
       'error': instance.error,
       'id': instance.id,
     };
 
-_JsonRpcNotification _$JsonRpcNotificationFromJson(Map<String, dynamic> json) =>
-    _JsonRpcNotification(
-      jsonrpc: json['jsonrpc'] as String,
-      method: json['method'] as String,
-      params: json['params'] as Map<String, dynamic>,
-    );
+_$JsonRpcNotificationImpl _$$JsonRpcNotificationImplFromJson(
+  Map<String, dynamic> json,
+) => _$JsonRpcNotificationImpl(
+  jsonrpc: json['jsonrpc'] as String,
+  method: json['method'] as String,
+  params: json['params'] as Map<String, dynamic>,
+);
 
-Map<String, dynamic> _$JsonRpcNotificationToJson(
-  _JsonRpcNotification instance,
+Map<String, dynamic> _$$JsonRpcNotificationImplToJson(
+  _$JsonRpcNotificationImpl instance,
 ) => <String, dynamic>{
   'jsonrpc': instance.jsonrpc,
   'method': instance.method,
   'params': instance.params,
 };
 
-_DaemonDeviceInfo _$DaemonDeviceInfoFromJson(Map<String, dynamic> json) =>
-    _DaemonDeviceInfo(
-      path: json['path'] as String,
-      name: json['name'] as String,
-      vendorId: json['vendor_id'] as String?,
-      productId: json['product_id'] as String?,
-    );
+_$DaemonDeviceInfoImpl _$$DaemonDeviceInfoImplFromJson(
+  Map<String, dynamic> json,
+) => _$DaemonDeviceInfoImpl(
+  path: json['path'] as String,
+  name: json['name'] as String,
+  vendorId: json['vendor_id'] as String?,
+  productId: json['product_id'] as String?,
+);
 
-Map<String, dynamic> _$DaemonDeviceInfoToJson(_DaemonDeviceInfo instance) =>
-    <String, dynamic>{
-      'path': instance.path,
-      'name': instance.name,
-      'vendor_id': instance.vendorId,
-      'product_id': instance.productId,
-    };
+Map<String, dynamic> _$$DaemonDeviceInfoImplToJson(
+  _$DaemonDeviceInfoImpl instance,
+) => <String, dynamic>{
+  'path': instance.path,
+  'name': instance.name,
+  'vendor_id': instance.vendorId,
+  'product_id': instance.productId,
+};
 
-_EngineStatus _$EngineStatusFromJson(Map<String, dynamic> json) =>
-    _EngineStatus(
+_$EngineStatusImpl _$$EngineStatusImplFromJson(Map<String, dynamic> json) =>
+    _$EngineStatusImpl(
       status: json['status'] as String,
       configPath: json['config_path'] as String?,
       scriptPath: json['script_path'] as String?,
@@ -108,7 +115,7 @@ _EngineStatus _$EngineStatusFromJson(Map<String, dynamic> json) =>
       eventsProcessed: (json['events_processed'] as num?)?.toInt(),
     );
 
-Map<String, dynamic> _$EngineStatusToJson(_EngineStatus instance) =>
+Map<String, dynamic> _$$EngineStatusImplToJson(_$EngineStatusImpl instance) =>
     <String, dynamic>{
       'status': instance.status,
       'config_path': instance.configPath,
@@ -118,19 +125,22 @@ Map<String, dynamic> _$EngineStatusToJson(_EngineStatus instance) =>
       'events_processed': instance.eventsProcessed,
     };
 
-_InputEvent _$InputEventFromJson(Map<String, dynamic> json) => _InputEvent(
-  timestampUs: (json['timestamp_us'] as num).toInt(),
-  devicePath: json['device_path'] as String,
-  deviceName: json['device_name'] as String,
-  eventType: json['event_type'] as String,
-  keyCode: (json['key_code'] as num).toInt(),
-  keyName: json['key_name'] as String,
-  modifiers:
-      (json['modifiers'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const [],
-);
+_$InputEventImpl _$$InputEventImplFromJson(Map<String, dynamic> json) =>
+    _$InputEventImpl(
+      timestampUs: (json['timestamp_us'] as num).toInt(),
+      devicePath: json['device_path'] as String,
+      deviceName: json['device_name'] as String,
+      eventType: json['event_type'] as String,
+      keyCode: (json['key_code'] as num).toInt(),
+      keyName: json['key_name'] as String,
+      modifiers:
+          (json['modifiers'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+    );
 
-Map<String, dynamic> _$InputEventToJson(_InputEvent instance) =>
+Map<String, dynamic> _$$InputEventImplToJson(_$InputEventImpl instance) =>
     <String, dynamic>{
       'timestamp_us': instance.timestampUs,
       'device_path': instance.devicePath,
@@ -141,14 +151,15 @@ Map<String, dynamic> _$InputEventToJson(_InputEvent instance) =>
       'modifiers': instance.modifiers,
     };
 
-_OutputEvent _$OutputEventFromJson(Map<String, dynamic> json) => _OutputEvent(
-  timestampUs: (json['timestamp_us'] as num).toInt(),
-  actionType: json['action_type'] as String,
-  keyCode: (json['key_code'] as num).toInt(),
-  keyName: json['key_name'] as String,
-);
+_$OutputEventImpl _$$OutputEventImplFromJson(Map<String, dynamic> json) =>
+    _$OutputEventImpl(
+      timestampUs: (json['timestamp_us'] as num).toInt(),
+      actionType: json['action_type'] as String,
+      keyCode: (json['key_code'] as num).toInt(),
+      keyName: json['key_name'] as String,
+    );
 
-Map<String, dynamic> _$OutputEventToJson(_OutputEvent instance) =>
+Map<String, dynamic> _$$OutputEventImplToJson(_$OutputEventImpl instance) =>
     <String, dynamic>{
       'timestamp_us': instance.timestampUs,
       'action_type': instance.actionType,
@@ -156,8 +167,8 @@ Map<String, dynamic> _$OutputEventToJson(_OutputEvent instance) =>
       'key_name': instance.keyName,
     };
 
-_DecisionEvent _$DecisionEventFromJson(Map<String, dynamic> json) =>
-    _DecisionEvent(
+_$DecisionEventImpl _$$DecisionEventImplFromJson(Map<String, dynamic> json) =>
+    _$DecisionEventImpl(
       timestampUs: (json['timestamp_us'] as num).toInt(),
       keyCode: (json['key_code'] as num).toInt(),
       keyName: json['key_name'] as String,
@@ -169,7 +180,7 @@ _DecisionEvent _$DecisionEventFromJson(Map<String, dynamic> json) =>
           const [],
     );
 
-Map<String, dynamic> _$DecisionEventToJson(_DecisionEvent instance) =>
+Map<String, dynamic> _$$DecisionEventImplToJson(_$DecisionEventImpl instance) =>
     <String, dynamic>{
       'timestamp_us': instance.timestampUs,
       'key_code': instance.keyCode,
@@ -178,34 +189,38 @@ Map<String, dynamic> _$DecisionEventToJson(_DecisionEvent instance) =>
       'outputs': instance.outputs,
     };
 
-_StateChangeEvent _$StateChangeEventFromJson(Map<String, dynamic> json) =>
-    _StateChangeEvent(
-      type: json['type'] as String,
-      timestampUs: (json['timestamp_us'] as num).toInt(),
-      message: json['message'] as String,
-      details: json['details'] as Map<String, dynamic>?,
-    );
+_$StateChangeEventImpl _$$StateChangeEventImplFromJson(
+  Map<String, dynamic> json,
+) => _$StateChangeEventImpl(
+  type: json['type'] as String,
+  timestampUs: (json['timestamp_us'] as num).toInt(),
+  message: json['message'] as String,
+  details: json['details'] as Map<String, dynamic>?,
+);
 
-Map<String, dynamic> _$StateChangeEventToJson(_StateChangeEvent instance) =>
-    <String, dynamic>{
-      'type': instance.type,
-      'timestamp_us': instance.timestampUs,
-      'message': instance.message,
-      'details': instance.details,
-    };
+Map<String, dynamic> _$$StateChangeEventImplToJson(
+  _$StateChangeEventImpl instance,
+) => <String, dynamic>{
+  'type': instance.type,
+  'timestamp_us': instance.timestampUs,
+  'message': instance.message,
+  'details': instance.details,
+};
 
-_DiscoveryCandidate _$DiscoveryCandidateFromJson(Map<String, dynamic> json) =>
-    _DiscoveryCandidate(
-      deviceId: json['deviceId'] as String,
-      vendorId: (json['vendorId'] as num).toInt(),
-      productId: (json['productId'] as num).toInt(),
-      name: json['name'] as String,
-    );
+_$DiscoveryCandidateImpl _$$DiscoveryCandidateImplFromJson(
+  Map<String, dynamic> json,
+) => _$DiscoveryCandidateImpl(
+  deviceId: json['deviceId'] as String,
+  vendorId: (json['vendorId'] as num).toInt(),
+  productId: (json['productId'] as num).toInt(),
+  name: json['name'] as String,
+);
 
-Map<String, dynamic> _$DiscoveryCandidateToJson(_DiscoveryCandidate instance) =>
-    <String, dynamic>{
-      'deviceId': instance.deviceId,
-      'vendorId': instance.vendorId,
-      'productId': instance.productId,
-      'name': instance.name,
-    };
+Map<String, dynamic> _$$DiscoveryCandidateImplToJson(
+  _$DiscoveryCandidateImpl instance,
+) => <String, dynamic>{
+  'deviceId': instance.deviceId,
+  'vendorId': instance.vendorId,
+  'productId': instance.productId,
+  'name': instance.name,
+};

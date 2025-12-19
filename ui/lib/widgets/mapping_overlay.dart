@@ -4,9 +4,8 @@
 /// and target keys on the visual keyboard.
 library;
 
+import 'package:core_logic/models/keyboard_layout.dart';
 import 'package:flutter/material.dart';
-
-import '../models/keyboard_layout.dart';
 
 /// Configuration for a single key mapping.
 @immutable

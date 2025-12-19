@@ -6,14 +6,14 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/ffi/bridge_device_profile.dart';
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/models/key_codes_windows.dart';
+import 'package:core_logic/models/keyboard_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../ffi/bridge_device_profile.dart';
-import '../models/device_identity.dart';
-import '../models/device_state.dart';
-import '../models/key_codes_windows.dart';
-import '../models/keyboard_layout.dart';
 import '../services/device_profile_service.dart';
 import '../services/device_registry_service.dart';
 import '../services/service_registry.dart';

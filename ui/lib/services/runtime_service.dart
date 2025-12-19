@@ -3,10 +3,10 @@ library;
 
 import 'dart:convert';
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
-import '../models/hardware_profile.dart';
-import '../models/runtime_config.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'config_result.dart';
 
 /// Abstraction for runtime configuration operations.

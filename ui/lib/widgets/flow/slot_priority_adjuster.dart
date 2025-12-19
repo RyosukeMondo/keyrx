@@ -1,11 +1,11 @@
 /// Widget for adjusting slot priority through drag-and-drop reordering.
 library;
 
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/hardware_profile.dart';
-import '../../models/runtime_config.dart';
 import '../../state/slot_actions.dart';
 
 /// Widget that allows reordering slots by dragging priority badges.

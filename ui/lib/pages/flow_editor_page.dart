@@ -1,22 +1,23 @@
 import 'dart:math' as math;
 
+import 'package:core_logic/models/device_identity.dart';
+import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/models/flow/edge_style.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/flow/node_position.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../dialogs/keyboard_shortcuts_help_dialog.dart';
 import '../dialogs/keyflow_onboarding_dialog.dart';
 import '../dialogs/node_details_dialog.dart';
-import '../models/device_identity.dart';
-import '../models/device_state.dart';
-import '../models/flow/edge_style.dart';
-import '../models/flow/flow_graph.dart';
-import '../models/flow/node_position.dart';
 import '../services/flow_validator.dart';
 import '../state/analytics_providers.dart';
 import '../state/device_stream_provider.dart';
 import '../state/drag_controller.dart';
 import '../state/keyflow_providers.dart';
 import '../state/node_positions_provider.dart';
+import '../utils/core_ui_extensions.dart';
 import '../utils/rendering_optimizer.dart';
 import '../widgets/flow/draggable_node.dart';
 import '../widgets/flow/edges_painter.dart';

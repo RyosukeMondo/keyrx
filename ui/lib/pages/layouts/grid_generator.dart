@@ -1,5 +1,5 @@
+import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/material.dart';
-import '../../models/virtual_layout.dart';
 
 class GridGenerator extends StatefulWidget {
   const GridGenerator({required this.onGenerate, super.key});

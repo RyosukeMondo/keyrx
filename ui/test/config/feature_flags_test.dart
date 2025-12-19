@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/config/feature_flags.dart';
-import 'package:keyrx_ui/utils/logger.dart';
+import 'package:core_logic/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

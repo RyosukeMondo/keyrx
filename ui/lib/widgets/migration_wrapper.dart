@@ -4,6 +4,7 @@
 /// if migration is needed and hasn't been completed yet.
 library;
 
+import 'package:core_logic/models/migration_report.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

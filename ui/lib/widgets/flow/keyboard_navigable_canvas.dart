@@ -1,13 +1,15 @@
 /// Keyboard navigation wrapper for flow canvas.
 library;
 
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/flow/flow_graph.dart';
+
 import '../../services/keyboard_shortcuts.dart';
 import '../../state/keyflow_providers.dart';
 import '../../state/node_positions_provider.dart';
 import '../../state/selection_state.dart';
+import '../../utils/core_ui_extensions.dart';
 
 /// Controller for managing keyboard-based zoom operations.
 class ZoomController {

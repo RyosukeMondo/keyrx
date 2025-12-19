@@ -1,5 +1,6 @@
+import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/material.dart';
-import '../../models/virtual_layout.dart';
+
 import '../../widgets/virtual_layout_common.dart';
 
 class LayoutVisualEditor extends StatefulWidget {

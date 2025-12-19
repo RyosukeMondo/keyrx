@@ -3,11 +3,11 @@ library;
 
 import 'dart:async';
 
+import 'package:core_logic/utils/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/device_stream_provider.dart';
 import '../state/keyflow_providers.dart';
-import '../utils/logger.dart';
 
 /// Service to handle device state changes and update the flow graph.
 ///

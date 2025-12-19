@@ -1,9 +1,8 @@
 import 'dart:async';
 
+import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:flutter/foundation.dart';
-import 'package:meta/meta.dart';
 
-import '../models/daemon_protocol.dart';
 import 'daemon_service.dart';
 
 /// Service for device discovery.

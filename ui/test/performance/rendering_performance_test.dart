@@ -4,10 +4,10 @@
 /// to ensure 60fps target is met.
 library;
 
+import 'package:core_logic/models/flow/edge_style.dart';
+import 'package:core_logic/models/flow/flow_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/edge_style.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
 import 'package:keyrx_ui/utils/rendering_optimizer.dart';
 import 'package:keyrx_ui/widgets/flow/edges_painter.dart';
 import 'package:keyrx_ui/widgets/flow/optimized_flow_canvas.dart';

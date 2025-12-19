@@ -5,12 +5,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/utils/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../ffi/bridge.dart';
 import '../services/device_event_handler.dart';
-import '../utils/logger.dart';
 import 'providers_setup.dart';
 
 part 'device_stream_provider.g.dart';

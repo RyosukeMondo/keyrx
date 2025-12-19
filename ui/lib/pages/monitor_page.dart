@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/event_types.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../ffi/bridge.dart';
-import '../ffi/event_types.dart';
 import '../services/facade/facade_state.dart';
 import '../services/facade/keyrx_facade.dart';
 import '../state/app_state.dart';

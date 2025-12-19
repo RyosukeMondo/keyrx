@@ -1,7 +1,7 @@
+import 'package:core_logic/models/flow/flow_graph.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/runtime_config.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/flow/flow_graph.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
-import 'package:keyrx_ui/models/runtime_config.dart';
 
 void main() {
   const device = DeviceInstanceId(

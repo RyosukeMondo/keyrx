@@ -1,7 +1,7 @@
+import 'package:core_logic/models/layout_type.dart';
+import 'package:core_logic/models/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/layout_type.dart';
-import 'package:keyrx_ui/models/profile.dart';
 import 'package:keyrx_ui/services/profile_registry_service.dart';
 import 'package:keyrx_ui/widgets/profile_selector.dart';
 

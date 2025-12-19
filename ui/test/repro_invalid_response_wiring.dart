@@ -1,5 +1,5 @@
+import 'package:core_logic/models/hardware_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/models/hardware_profile.dart';
 
 void main() {
   test(

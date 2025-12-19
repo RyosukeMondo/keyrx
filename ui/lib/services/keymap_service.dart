@@ -1,9 +1,9 @@
 /// Service for managing Keymaps via config FFI.
 library;
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
-import '../models/keymap.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/keymap.dart';
 import 'config_result.dart';
 
 class KeymapService {

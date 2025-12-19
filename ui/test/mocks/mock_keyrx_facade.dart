@@ -4,7 +4,7 @@
 /// widget testing. Default behaviors can be overridden using mocktail's when() API.
 library;
 
-import 'package:keyrx_ui/ffi/bridge_discovery.dart';
+import 'package:core_logic/ffi/bridge_discovery.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/result.dart';
