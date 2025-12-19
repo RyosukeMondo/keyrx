@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:args/args.dart';
-import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/library_loader.dart';
 import 'package:keyrx_cli/command_processor.dart';
 
@@ -56,7 +56,11 @@ Future<void> main(List<String> arguments) async {
       bridge.setConfigRoot(results['config-root']);
     }
 
-    final processor = CommandProcessor(bridge);
+    final repository = DeviceConfigRepository(configDir: results['config-root']);
+    final deviceService =
+        DeviceRegistryServiceImpl(bridge: bridge, repository: repository);
+
+    final processor = CommandProcessor(bridge, deviceService);
     await processor.process();
     
   } catch (e) {

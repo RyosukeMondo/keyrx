@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/core_logic.dart';
 
 class CommandProcessor {
   final KeyrxBridge bridge;
+  final DeviceRegistryService deviceRegistry;
 
-  CommandProcessor(this.bridge);
+  CommandProcessor(this.bridge, this.deviceRegistry);
 
   Future<void> process() async {
     try {
-      await for (String? line in stdin.transform(utf8.decoder).transform(const LineSplitter())) {
+      await for (String? line in stdin
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
         if (line == null || line.isEmpty) continue;
 
         try {
@@ -24,13 +27,17 @@ class CommandProcessor {
         }
       }
     } finally {
+      await deviceRegistry.dispose();
       await bridge.dispose();
     }
   }
 
-  Future<Map<String, dynamic>> _handleRequest(Map<String, dynamic> request) async {
+  Future<Map<String, dynamic>> _handleRequest(
+    Map<String, dynamic> request,
+  ) async {
     final command = request['command'] as String?;
     final id = request['id'];
+    final payload = request['payload'];
 
     Map<String, dynamic> response = {'id': id};
 
@@ -46,15 +53,42 @@ class CommandProcessor {
           response['result'] = bridge.isInitialized;
           break;
         case 'listDevices':
-          final result = bridge.listRegisteredDevices();
-          if (result.hasError) {
-            response['error'] = result.errorMessage;
+          final devices = await deviceRegistry.getDevices();
+          response['result'] = devices.map((e) => e.toJson()).toList();
+          break;
+        case 'addVirtual':
+          if (payload is Map<String, dynamic>) {
+            final identity = DeviceIdentity.fromJson(payload);
+            await deviceRegistry.addVirtualDevice(identity);
+            response['result'] = 'ok';
           } else {
-            response['result'] = result.data?.map((e) => e.toJson()).toList();
+            response['error'] = 'Invalid payload for addVirtual';
+          }
+          break;
+        case 'removeVirtual':
+          if (payload is String) {
+            await deviceRegistry.removeVirtualDevice(payload);
+            response['result'] = 'ok';
+          } else {
+            response['error'] = 'Invalid payload for removeVirtual (expected key)';
+          }
+          break;
+        case 'setLabel':
+          if (payload is Map<String, dynamic>) {
+            final key = payload['key'] as String;
+            final label = payload['label'] as String?;
+            final result = await deviceRegistry.setUserLabel(key, label);
+            if (result.isSuccess) {
+              response['result'] = 'ok';
+            } else {
+              response['error'] = result.errorMessage;
+            }
+          } else {
+            response['error'] = 'Invalid payload for setLabel';
           }
           break;
         case 'echo':
-          response['result'] = request['payload'];
+          response['result'] = payload;
           break;
         case 'exit':
           response['result'] = 'Goodbye';
