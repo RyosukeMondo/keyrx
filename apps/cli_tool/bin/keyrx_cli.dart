@@ -59,8 +59,19 @@ Future<void> main(List<String> arguments) async {
     final repository = DeviceConfigRepository(configDir: results['config-root']);
     final deviceService =
         DeviceRegistryServiceImpl(bridge: bridge, repository: repository);
+    final runtimeService = RuntimeServiceImpl(bridge: bridge);
+    final hardwareService = HardwareService(bridge: bridge);
+    final layoutService = LayoutService(bridge: bridge);
+    final keymapService = KeymapService(bridge: bridge);
 
-    final processor = CommandProcessor(bridge, deviceService);
+    final processor = CommandProcessor(
+      bridge,
+      deviceService,
+      runtimeService,
+      hardwareService,
+      layoutService,
+      keymapService,
+    );
     await processor.process();
     
   } catch (e) {

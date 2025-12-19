@@ -5,8 +5,19 @@ import 'package:core_logic/core_logic.dart';
 class CommandProcessor {
   final KeyrxBridge bridge;
   final DeviceRegistryService deviceRegistry;
+  final RuntimeService runtimeService;
+  final HardwareService hardwareService;
+  final LayoutService layoutService;
+  final KeymapService keymapService;
 
-  CommandProcessor(this.bridge, this.deviceRegistry);
+  CommandProcessor(
+    this.bridge,
+    this.deviceRegistry,
+    this.runtimeService,
+    this.hardwareService,
+    this.layoutService,
+    this.keymapService,
+  );
 
   Future<void> process() async {
     try {
