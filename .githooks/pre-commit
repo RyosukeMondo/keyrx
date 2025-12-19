@@ -243,7 +243,7 @@ if [[ -d "$UI_DIR" ]]; then
     # Step 9: Flutter analyze with fatal infos
     echo "[$STEP/$TOTAL_CHECKS] Running flutter analyze (fatal infos)..."
     pushd "$UI_DIR" >/dev/null
-    STAGED_DART_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only -- '*.dart' | grep '^ui/' || true)
+    STAGED_DART_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=d -- '*.dart' | grep '^ui/' || true)
     if [[ -z "$STAGED_DART_FILES" ]]; then
         echo "    ✓ No staged Dart files to analyze (skipping)"
     else

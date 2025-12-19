@@ -154,6 +154,7 @@ class DaemonMethods {
 class DaemonNotifications {
   static const eventInput = 'event.input';
   static const eventOutput = 'event.output';
+  static const eventDecision = 'event.decision';
   static const eventStateChange = 'event.state_change';
   static const discovery = 'discovery.event';
 }
@@ -164,8 +165,8 @@ class DaemonDeviceInfo with _$DaemonDeviceInfo {
   const factory DaemonDeviceInfo({
     required String path,
     required String name,
-    String? vendorId,
-    String? productId,
+    @JsonKey(name: 'vendor_id') String? vendorId,
+    @JsonKey(name: 'product_id') String? productId,
   }) = _DaemonDeviceInfo;
 
   factory DaemonDeviceInfo.fromJson(Map<String, dynamic> json) =>
@@ -177,11 +178,11 @@ class DaemonDeviceInfo with _$DaemonDeviceInfo {
 class EngineStatus with _$EngineStatus {
   const factory EngineStatus({
     required String status, // "running", "stopped", "error"
-    String? configPath,
-    String? scriptPath,
+    @JsonKey(name: 'config_path') String? configPath,
+    @JsonKey(name: 'script_path') String? scriptPath,
     @Default([]) List<DaemonDeviceInfo> devices,
-    int? uptimeSeconds,
-    int? eventsProcessed,
+    @JsonKey(name: 'uptime_seconds') int? uptimeSeconds,
+    @JsonKey(name: 'events_processed') int? eventsProcessed,
   }) = _EngineStatus;
 
   factory EngineStatus.fromJson(Map<String, dynamic> json) =>
@@ -192,12 +193,13 @@ class EngineStatus with _$EngineStatus {
 @freezed
 class InputEvent with _$InputEvent {
   const factory InputEvent({
-    required int timestampUs,
-    required String devicePath,
-    required String deviceName,
+    @JsonKey(name: 'timestamp_us') required int timestampUs,
+    @JsonKey(name: 'device_path') required String devicePath,
+    @JsonKey(name: 'device_name') required String deviceName,
+    @JsonKey(name: 'event_type')
     required String eventType, // "key_press", "key_release"
-    required int keyCode,
-    required String keyName,
+    @JsonKey(name: 'key_code') required int keyCode,
+    @JsonKey(name: 'key_name') required String keyName,
     @Default([]) List<String> modifiers,
   }) = _InputEvent;
 
@@ -209,14 +211,30 @@ class InputEvent with _$InputEvent {
 @freezed
 class OutputEvent with _$OutputEvent {
   const factory OutputEvent({
-    required int timestampUs,
+    @JsonKey(name: 'timestamp_us') required int timestampUs,
+    @JsonKey(name: 'action_type')
     required String actionType, // "key_press", "key_release", "tap"
-    required int keyCode,
-    required String keyName,
+    @JsonKey(name: 'key_code') required int keyCode,
+    @JsonKey(name: 'key_name') required String keyName,
   }) = _OutputEvent;
 
   factory OutputEvent.fromJson(Map<String, dynamic> json) =>
       _$OutputEventFromJson(json);
+}
+
+/// Decision event notification.
+@freezed
+class DecisionEvent with _$DecisionEvent {
+  const factory DecisionEvent({
+    @JsonKey(name: 'timestamp_us') required int timestampUs,
+    @JsonKey(name: 'key_code') required int keyCode,
+    @JsonKey(name: 'key_name') required String keyName,
+    @JsonKey(name: 'decision_type') required String decisionType,
+    @Default([]) List<String> outputs,
+  }) = _DecisionEvent;
+
+  factory DecisionEvent.fromJson(Map<String, dynamic> json) =>
+      _$DecisionEventFromJson(json);
 }
 
 /// State change notification.
@@ -224,7 +242,7 @@ class OutputEvent with _$OutputEvent {
 class StateChangeEvent with _$StateChangeEvent {
   const factory StateChangeEvent({
     required String type, // "config_reloaded", "script_reloaded", etc.
-    required int timestampUs,
+    @JsonKey(name: 'timestamp_us') required int timestampUs,
     required String message,
     Map<String, dynamic>? details,
   }) = _StateChangeEvent;
@@ -238,6 +256,8 @@ class StateChangeEvent with _$StateChangeEvent {
 class DaemonEvent with _$DaemonEvent {
   const factory DaemonEvent.input(InputEvent event) = _DaemonInputEvent;
   const factory DaemonEvent.output(OutputEvent event) = _DaemonOutputEvent;
+  const factory DaemonEvent.decision(DecisionEvent event) =
+      _DaemonDecisionEvent;
   const factory DaemonEvent.stateChange(StateChangeEvent event) =
       _DaemonStateChangeEvent;
   const factory DaemonEvent.discovery(DiscoveryCandidate candidate) =
@@ -255,6 +275,8 @@ class DaemonEvent with _$DaemonEvent {
         return DaemonEvent.stateChange(StateChangeEvent.fromJson(params));
       case DaemonNotifications.discovery:
         return DaemonEvent.discovery(DiscoveryCandidate.fromJson(params));
+      case DaemonNotifications.eventDecision:
+        return DaemonEvent.decision(DecisionEvent.fromJson(params));
       default:
         throw ArgumentError(
           'Unknown notification method: ${notification.method}',

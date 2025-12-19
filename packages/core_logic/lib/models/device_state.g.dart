@@ -6,19 +6,16 @@ part of 'device_state.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$DeviceStateImpl _$$DeviceStateImplFromJson(Map<String, dynamic> json) =>
-    _$DeviceStateImpl(
-      identity: DeviceIdentity.fromJson(
-        json['identity'] as Map<String, dynamic>,
-      ),
-      deviceEnabled: json['device_enabled'] as bool,
-      remapEnabled: json['remap_enabled'] as bool,
-      connectedAt: json['connected_at'] as String,
-      updatedAt: json['updated_at'] as String,
-      profileId: json['profile_id'] as String?,
-    );
+_DeviceState _$DeviceStateFromJson(Map<String, dynamic> json) => _DeviceState(
+  identity: DeviceIdentity.fromJson(json['identity'] as Map<String, dynamic>),
+  deviceEnabled: json['device_enabled'] as bool,
+  remapEnabled: json['remap_enabled'] as bool,
+  connectedAt: json['connected_at'] as String,
+  updatedAt: json['updated_at'] as String,
+  profileId: json['profile_id'] as String?,
+);
 
-Map<String, dynamic> _$$DeviceStateImplToJson(_$DeviceStateImpl instance) =>
+Map<String, dynamic> _$DeviceStateToJson(_DeviceState instance) =>
     <String, dynamic>{
       'identity': instance.identity,
       'device_enabled': instance.deviceEnabled,

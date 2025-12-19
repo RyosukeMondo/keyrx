@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 /// Represents a node position on the flow canvas.
 class NodePosition {
   NodePosition({
@@ -22,8 +20,6 @@ class NodePosition {
   final double y;
   final bool isManual;
   final DateTime updatedAt;
-
-  Offset get offset => Offset(x, y);
 
   NodePosition copyWith({
     double? x,

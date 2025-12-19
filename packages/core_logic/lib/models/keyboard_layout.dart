@@ -4,7 +4,7 @@
 /// for the visual keyboard widget.
 library;
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 /// Definition of a single key on the keyboard.
 @immutable

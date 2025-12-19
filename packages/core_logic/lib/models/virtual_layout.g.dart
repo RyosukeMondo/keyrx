@@ -6,26 +6,26 @@ part of 'virtual_layout.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$KeyPositionImpl _$$KeyPositionImplFromJson(Map<String, dynamic> json) =>
-    _$KeyPositionImpl(
-      x: (json['x'] as num).toDouble(),
-      y: (json['y'] as num).toDouble(),
-    );
+_KeyPosition _$KeyPositionFromJson(Map<String, dynamic> json) => _KeyPosition(
+  x: (json['x'] as num).toDouble(),
+  y: (json['y'] as num).toDouble(),
+);
 
-Map<String, dynamic> _$$KeyPositionImplToJson(_$KeyPositionImpl instance) =>
+Map<String, dynamic> _$KeyPositionToJson(_KeyPosition instance) =>
     <String, dynamic>{'x': instance.x, 'y': instance.y};
 
-_$KeySizeImpl _$$KeySizeImplFromJson(Map<String, dynamic> json) =>
-    _$KeySizeImpl(
-      width: (json['width'] as num).toDouble(),
-      height: (json['height'] as num).toDouble(),
-    );
+_KeySize _$KeySizeFromJson(Map<String, dynamic> json) => _KeySize(
+  width: (json['width'] as num).toDouble(),
+  height: (json['height'] as num).toDouble(),
+);
 
-Map<String, dynamic> _$$KeySizeImplToJson(_$KeySizeImpl instance) =>
-    <String, dynamic>{'width': instance.width, 'height': instance.height};
+Map<String, dynamic> _$KeySizeToJson(_KeySize instance) => <String, dynamic>{
+  'width': instance.width,
+  'height': instance.height,
+};
 
-_$VirtualKeyDefImpl _$$VirtualKeyDefImplFromJson(Map<String, dynamic> json) =>
-    _$VirtualKeyDefImpl(
+_VirtualKeyDef _$VirtualKeyDefFromJson(Map<String, dynamic> json) =>
+    _VirtualKeyDef(
       id: json['id'] as String,
       label: json['label'] as String,
       position: json['position'] == null
@@ -38,7 +38,7 @@ _$VirtualKeyDefImpl _$$VirtualKeyDefImplFromJson(Map<String, dynamic> json) =>
       column: (json['column'] as num?)?.toInt(),
     );
 
-Map<String, dynamic> _$$VirtualKeyDefImplToJson(_$VirtualKeyDefImpl instance) =>
+Map<String, dynamic> _$VirtualKeyDefToJson(_VirtualKeyDef instance) =>
     <String, dynamic>{
       'id': instance.id,
       'label': instance.label,
@@ -48,8 +48,8 @@ Map<String, dynamic> _$$VirtualKeyDefImplToJson(_$VirtualKeyDefImpl instance) =>
       'column': instance.column,
     };
 
-_$VirtualLayoutImpl _$$VirtualLayoutImplFromJson(Map<String, dynamic> json) =>
-    _$VirtualLayoutImpl(
+_VirtualLayout _$VirtualLayoutFromJson(Map<String, dynamic> json) =>
+    _VirtualLayout(
       id: json['id'] as String,
       name: json['name'] as String,
       layoutType: $enumDecode(_$VirtualLayoutTypeEnumMap, json['layout_type']),
@@ -60,7 +60,7 @@ _$VirtualLayoutImpl _$$VirtualLayoutImplFromJson(Map<String, dynamic> json) =>
           const <VirtualKeyDef>[],
     );
 
-Map<String, dynamic> _$$VirtualLayoutImplToJson(_$VirtualLayoutImpl instance) =>
+Map<String, dynamic> _$VirtualLayoutToJson(_VirtualLayout instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,

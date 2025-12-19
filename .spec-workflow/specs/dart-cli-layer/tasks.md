@@ -8,7 +8,7 @@
   - _Requirements: 1, Non-Functional (Package Separation)_
   - _Prompt: Role: Dart Developer | Task: Create the 'core_logic' package structure and pubspec.yaml following Requirement 1. Include dependencies for ffi, freezed_annotation, and json_annotation. | Restrictions: Do not include flutter dependencies. | Success: Package created and `dart pub get` succeeds._
 
-- [ ] 2. Move Models to core_logic
+- [x] 2. Move Models to core_logic
   - File: packages/core_logic/lib/models/
   - Move model files from `ui/lib/models/` to `packages/core_logic/lib/models/`.
   - Update imports within the files to be relative or package-absolute.
