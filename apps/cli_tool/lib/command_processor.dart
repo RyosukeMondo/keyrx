@@ -180,6 +180,43 @@ class CommandProcessor {
             response['error'] = 'Invalid payload for activateSlot';
           }
           break;
+        case 'listHardware':
+          final result = await hardwareService.listProfiles();
+          if (result.isSuccess) {
+            response['result'] = result.data?.map((p) => p.toJson()).toList();
+          } else {
+            response['error'] = result.errorMessage;
+          }
+          break;
+        case 'saveHardware':
+          if (payload is Map<String, dynamic>) {
+            try {
+              final profile = HardwareProfile.fromJson(payload);
+              final result = await hardwareService.saveProfile(profile);
+              if (result.isSuccess) {
+                response['result'] = result.data?.toJson();
+              } else {
+                response['error'] = result.errorMessage;
+              }
+            } catch (e) {
+              response['error'] = 'Failed to parse saveHardware payload: $e';
+            }
+          } else {
+            response['error'] = 'Invalid payload for saveHardware';
+          }
+          break;
+        case 'deleteHardware':
+          if (payload is String) {
+            final result = await hardwareService.deleteProfile(payload);
+            if (result.isSuccess) {
+              response['result'] = 'ok';
+            } else {
+              response['error'] = result.errorMessage;
+            }
+          } else {
+            response['error'] = 'Invalid payload for deleteHardware (expected profile id)';
+          }
+          break;
         case 'echo':
           response['result'] = payload;
           break;

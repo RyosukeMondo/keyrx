@@ -23,7 +23,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: CLI developer | Task: Implement 4 runtime commands (listRuntime, addSlot, removeSlot, activateSlot) following existing command handler patterns | Restrictions: Maintain JSON protocol, handle errors gracefully, validate payloads before use | Success: All 4 commands work, return proper JSON responses, handle errors with error field, payload validation prevents crashes_
 
-- [ ] 3. Add hardware profile management commands
+- [x] 3. Add hardware profile management commands
   - File: apps/cli_tool/lib/command_processor.dart
   - Implement listHardware command using hardwareService.listProfiles()
   - Implement saveHardware command using hardwareService.saveProfile()
