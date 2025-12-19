@@ -5,8 +5,6 @@ library;
 
 import 'dart:convert';
 
-import 'package:meta/meta.dart';
-
 import 'bindings.dart';
 
 /// Physical key metadata from device profile.

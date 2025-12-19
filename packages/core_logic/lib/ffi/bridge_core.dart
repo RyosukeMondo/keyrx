@@ -6,7 +6,6 @@ library;
 
 import 'dart:async';
 import 'dart:ffi';
-import 'dart:io';
 
 import 'bindings.dart';
 import 'debug_tools.dart';

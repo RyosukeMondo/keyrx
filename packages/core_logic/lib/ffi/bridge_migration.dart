@@ -5,8 +5,6 @@ library;
 
 import 'dart:convert';
 
-import 'package:meta/meta.dart';
-
 import '../models/migration_report.dart';
 import 'bindings.dart';
 
