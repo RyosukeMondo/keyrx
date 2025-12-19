@@ -7,6 +7,7 @@ library;
 export 'action_binding.dart';
 export 'config_ids.dart';
 // Revolutionary mapping models
+export 'device_config.dart';
 export 'device_identity.dart';
 export 'device_state.dart';
 export 'flow/flow_graph.dart';

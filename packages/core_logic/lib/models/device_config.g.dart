@@ -1,0 +1,19 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'device_config.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$DeviceConfigImpl _$$DeviceConfigImplFromJson(Map<String, dynamic> json) =>
+    _$DeviceConfigImpl(
+      devices:
+          (json['devices'] as List<dynamic>?)
+              ?.map((e) => DeviceIdentity.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$$DeviceConfigImplToJson(_$DeviceConfigImpl instance) =>
+    <String, dynamic>{'devices': instance.devices};
