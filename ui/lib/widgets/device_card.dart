@@ -113,7 +113,7 @@ class _DeviceCardState extends State<DeviceCard> {
 
     final result = await widget.deviceService.toggleRemap(
       _currentState.identity.toKey(),
-      enabled,
+      enabled: enabled,
     );
 
     if (!mounted) return;
@@ -140,7 +140,7 @@ class _DeviceCardState extends State<DeviceCard> {
     _showSnack(enabled ? 'Remap enabled' : 'Remap disabled');
   }
 
-  /// Handle profile selection changes with optimistic UI and rollback on failure.
+  /// Handle profile changes with optimistic UI and rollback on failure.
   Future<void> _handleProfileChange(String? profileId) async {
     if (profileId == null) {
       _showSnack('Select a profile to assign', isError: true);

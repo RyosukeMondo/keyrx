@@ -14,6 +14,7 @@ export 'flow/flow_graph.dart';
 // Generated FFI models
 export 'generated_models.dart';
 export 'hardware_profile.dart';
+export 'migration_report.dart';
 // Layout models
 export 'keyboard_layout.dart';
 export 'keymap.dart';

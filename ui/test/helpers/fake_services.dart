@@ -10,7 +10,6 @@ import 'dart:typed_data';
 import 'package:core_logic/ffi/bindings.dart';
 import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/ffi/bridge_config.dart';
-import 'package:core_logic/ffi/device_registry_ffi.dart';
 import 'package:core_logic/ffi/generated_bindings.dart';
 import 'package:core_logic/ffi/profile_registry_ffi.dart';
 import 'package:core_logic/models/models.dart';
@@ -154,10 +153,8 @@ class FakeBridge implements KeyrxBridge {
   RuntimeBindings? get runtimeBindings => null;
 
   @override
-  DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) {
-    // No-op for fake
-    return DeviceRegistryResult.success(null);
-  }
+  DeviceRegistryResult<void> setDeviceEnabled(String deviceKey, bool enabled) =>
+      DeviceRegistryResult.success(null);
 
   @override
   bool startEngineLoop() => true;
@@ -439,9 +436,9 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+    String deviceKey, {
+    required bool enabled,
+  }) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> assignProfile(
@@ -457,9 +454,9 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<DeviceRegistryOperationResult> toggleDevice(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+    String deviceKey, {
+    required bool enabled,
+  }) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async {

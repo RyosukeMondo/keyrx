@@ -78,6 +78,7 @@ export 'bridge_validation.dart'
         ValidationResult,
         ValidationWarning,
         WarningCategory;
+export 'device_registry_ffi.dart' show DeviceRegistryResult;
 export 'event_types.dart' show EventType;
 
 /// Bridge to the KeyRx Core library.

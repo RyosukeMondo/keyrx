@@ -1,3 +1,4 @@
+import 'package:core_logic/core_logic.dart' as core;
 import 'package:core_logic/ffi/bridge.dart';
 import '../repositories/mapping_repository.dart';
 import '../utils/performance_timeline.dart';
@@ -95,9 +96,23 @@ class ServiceRegistry {
     final deviceProfile =
         deviceProfileService ??
         DeviceProfileServiceImpl(bridge: effectiveBridge);
+
+    // Shared DeviceRegistry from core_logic
+    final deviceConfigRepository = core.DeviceConfigRepository();
+    final sharedDeviceRegistry = core.DeviceRegistryServiceImpl(
+      bridge: effectiveBridge,
+      repository: deviceConfigRepository,
+    );
+
+    // Migrate from legacy SharedPreferences if needed
+    DeviceRegistryServiceImpl.migrateFromSharedPreferences(
+      sharedDeviceRegistry,
+    );
+
     final deviceRegistry =
         deviceRegistryService ??
-        DeviceRegistryServiceImpl(bridge: effectiveBridge);
+        DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
+
     final profileRegistry =
         profileRegistryService ??
         ProfileRegistryServiceImpl(bridge: effectiveBridge);

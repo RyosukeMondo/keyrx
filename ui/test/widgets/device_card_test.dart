@@ -29,9 +29,9 @@ class MockDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async {
+    String deviceKey, {
+    required bool enabled,
+  }) async {
     lastToggledDeviceKey = deviceKey;
     lastToggledValue = enabled;
     if (_shouldFail) {
@@ -70,9 +70,9 @@ class MockDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<DeviceRegistryOperationResult> toggleDevice(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+    String deviceKey, {
+    required bool enabled,
+  }) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => _devices;

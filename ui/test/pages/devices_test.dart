@@ -110,15 +110,15 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
 
   @override
   Future<DeviceRegistryOperationResult> toggleDevice(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+    String deviceKey, {
+    required bool enabled,
+  }) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async => const DeviceRegistryOperationResult.success();
+    String deviceKey, {
+    required bool enabled,
+  }) async => const DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async => devices;
