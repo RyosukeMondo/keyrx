@@ -217,6 +217,80 @@ class CommandProcessor {
             response['error'] = 'Invalid payload for deleteHardware (expected profile id)';
           }
           break;
+        case 'listLayouts':
+          final result = await layoutService.listLayouts();
+          if (result.isSuccess) {
+            response['result'] = result.data?.map((l) => l.toJson()).toList();
+          } else {
+            response['error'] = result.errorMessage;
+          }
+          break;
+        case 'saveLayout':
+          if (payload is Map<String, dynamic>) {
+            try {
+              final layout = VirtualLayout.fromJson(payload);
+              final result = await layoutService.saveLayout(layout);
+              if (result.isSuccess) {
+                response['result'] = result.data?.toJson();
+              } else {
+                response['error'] = result.errorMessage;
+              }
+            } catch (e) {
+              response['error'] = 'Failed to parse saveLayout payload: $e';
+            }
+          } else {
+            response['error'] = 'Invalid payload for saveLayout';
+          }
+          break;
+        case 'deleteLayout':
+          if (payload is String) {
+            final result = await layoutService.deleteLayout(payload);
+            if (result.isSuccess) {
+              response['result'] = 'ok';
+            } else {
+              response['error'] = result.errorMessage;
+            }
+          } else {
+            response['error'] = 'Invalid payload for deleteLayout (expected layout id)';
+          }
+          break;
+        case 'listKeymaps':
+          final result = await keymapService.listKeymaps();
+          if (result.isSuccess) {
+            response['result'] = result.data?.map((k) => k.toJson()).toList();
+          } else {
+            response['error'] = result.errorMessage;
+          }
+          break;
+        case 'saveKeymap':
+          if (payload is Map<String, dynamic>) {
+            try {
+              final keymap = Keymap.fromJson(payload);
+              final result = await keymapService.saveKeymap(keymap);
+              if (result.isSuccess) {
+                response['result'] = result.data?.toJson();
+              } else {
+                response['error'] = result.errorMessage;
+              }
+            } catch (e) {
+              response['error'] = 'Failed to parse saveKeymap payload: $e';
+            }
+          } else {
+            response['error'] = 'Invalid payload for saveKeymap';
+          }
+          break;
+        case 'deleteKeymap':
+          if (payload is String) {
+            final result = await keymapService.deleteKeymap(payload);
+            if (result.isSuccess) {
+              response['result'] = 'ok';
+            } else {
+              response['error'] = result.errorMessage;
+            }
+          } else {
+            response['error'] = 'Invalid payload for deleteKeymap (expected keymap id)';
+          }
+          break;
         case 'echo':
           response['result'] = payload;
           break;

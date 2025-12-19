@@ -35,7 +35,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: CLI developer | Task: Implement 3 hardware commands (listHardware, saveHardware, deleteHardware) following runtime command patterns from Task 2 | Restrictions: Maintain JSON protocol, handle ConfigOperationResult errors, validate HardwareProfile structure | Success: All 3 commands work, return JSON responses, handle errors properly, profile validation prevents invalid data_
 
-- [ ] 4. Add layout and keymap management commands
+- [x] 4. Add layout and keymap management commands
   - File: apps/cli_tool/lib/command_processor.dart
   - Implement listLayouts command using layoutService.listLayouts()
   - Implement saveLayout command using layoutService.saveLayout()
