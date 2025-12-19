@@ -3,4 +3,6 @@ library;
 
 export 'ffi/bridge.dart';
 export 'models/models.dart';
+export 'repositories/device_config_repository.dart';
+export 'services/services.dart';
 export 'utils/logger.dart';

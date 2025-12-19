@@ -26,7 +26,7 @@ class DeviceRegistryResult<T> {
   final String? errorMessage;
 
   bool get hasError => errorMessage != null;
-  bool get isSuccess => data != null && !hasError;
+  bool get isSuccess => !hasError;
 }
 
 /// Parser for C string results from FFI.
