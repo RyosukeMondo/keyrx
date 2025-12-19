@@ -12,8 +12,14 @@ class LibraryLoader {
   static const String _linuxLibName = 'libkeyrx_core.so';
   static const String _windowsLibName = 'keyrx_core.dll';
 
+  /// Explicit override for the library path.
+  static String? overridePath;
+
   /// Load the library.
   static DynamicLibrary load() {
+    if (overridePath != null) {
+      return DynamicLibrary.open(overridePath!);
+    }
     if (Platform.isLinux) {
       return _loadLinux();
     } else if (Platform.isWindows) {

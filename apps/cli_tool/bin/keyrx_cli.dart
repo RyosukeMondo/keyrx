@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:args/args.dart';
 import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/library_loader.dart';
+import 'package:keyrx_cli/command_processor.dart';
 
-void main(List<String> arguments) {
+Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help.')
     ..addFlag('version', negatable: false, help: 'Show version information.')
@@ -22,7 +24,10 @@ void main(List<String> arguments) {
 
     if (results['version']) {
       print('KeyRX CLI v1.0.0');
-      // If bridge can be opened, try to get core version too
+      // Set override if provided
+      if (results['lib-path'] != null) {
+        LibraryLoader.overridePath = results['lib-path'];
+      }
       try {
         final bridge = KeyrxBridge.open();
         if (bridge.loadFailure == null) {
@@ -36,9 +41,23 @@ void main(List<String> arguments) {
       exit(0);
     }
 
-    print('KeyRX CLI started. Use --help for usage.');
-    
-    // Future: Task 6 will implement the command processor here.
+    // Set override if provided
+    if (results['lib-path'] != null) {
+      LibraryLoader.overridePath = results['lib-path'];
+    }
+
+    final bridge = KeyrxBridge.open();
+    if (bridge.loadFailure != null) {
+      stderr.writeln('Failed to load bridge: ${bridge.loadFailure}');
+      exit(1);
+    }
+
+    if (results['config-root'] != null) {
+      bridge.setConfigRoot(results['config-root']);
+    }
+
+    final processor = CommandProcessor(bridge);
+    await processor.process();
     
   } catch (e) {
     stderr.writeln('Error: $e');
