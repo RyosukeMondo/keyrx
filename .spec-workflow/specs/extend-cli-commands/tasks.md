@@ -50,7 +50,7 @@
   - _Requirements: REQ-3, REQ-4_
   - _Prompt: Role: CLI developer | Task: Implement 6 layout and keymap commands following same pattern as hardware commands from Task 3 | Restrictions: Maintain JSON protocol, handle all error cases, validate complex data structures | Success: All 6 commands work, return JSON responses, handle errors gracefully, data validation robust_
 
-- [ ] 5. Create test suite for all new commands
+- [x] 5. Create test suite for all new commands
   - File: apps/cli_tool/test/command_processor_test.dart (new or modify existing)
   - Create shell script tests for all 12 new commands
   - Test success cases with valid payloads

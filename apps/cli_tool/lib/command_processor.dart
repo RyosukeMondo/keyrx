@@ -28,7 +28,7 @@ class CommandProcessor {
 
         try {
           final request = jsonDecode(line) as Map<String, dynamic>;
-          final response = await _handleRequest(request);
+          final response = await handleRequest(request);
           stdout.writeln(jsonEncode(response));
         } catch (e) {
           stderr.writeln('Error processing line: $line\n$e');
@@ -43,7 +43,7 @@ class CommandProcessor {
     }
   }
 
-  Future<Map<String, dynamic>> _handleRequest(
+  Future<Map<String, dynamic>> handleRequest(
     Map<String, dynamic> request,
   ) async {
     final command = request['command'] as String?;
