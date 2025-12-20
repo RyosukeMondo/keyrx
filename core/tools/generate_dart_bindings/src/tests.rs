@@ -23,7 +23,7 @@ use std::collections::HashMap;
 /// Create a minimal test contract with no functions
 fn create_empty_contract() -> FfiContract {
     FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "empty".to_string(),
         description: "Empty contract for testing".to_string(),
@@ -88,7 +88,7 @@ fn create_multi_param_contract() -> FfiContract {
 /// Create a contract with void return type
 fn create_void_return_contract() -> FfiContract {
     FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "void_test".to_string(),
         description: "Contract with void return".to_string(),
@@ -117,7 +117,7 @@ fn create_void_return_contract() -> FfiContract {
 /// Create a contract with array return type
 fn create_array_return_contract() -> FfiContract {
     FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "array_test".to_string(),
         description: "Contract with array return".to_string(),
@@ -224,7 +224,7 @@ fn create_contract_with_types() -> FfiContract {
     );
 
     FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "types_test".to_string(),
         description: "Contract with custom types".to_string(),
@@ -600,7 +600,7 @@ fn test_full_contract_code_generation() {
     );
 
     let contract = FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "device".to_string(),
         description: "Device management".to_string(),

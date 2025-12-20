@@ -409,7 +409,7 @@ class FakeDeviceProfileService implements DeviceProfileService {
 }
 
 /// Fake DeviceRegistryService that returns controlled device lists.
-class FakeDeviceRegistryService implements ui.DeviceRegistryService {
+class FakeDeviceRegistryService implements ui.UIDeviceRegistryAdapter {
   final _controller = StreamController<List<DeviceState>>.broadcast();
   List<DeviceState> _devices = [];
 

@@ -28,7 +28,7 @@ class DevicesPage extends StatefulWidget {
   final RuntimeService runtimeService;
   final HardwareServiceUI hardwareService;
   final KeymapService keymapService;
-  final DeviceRegistryService deviceRegistryService;
+  final UIDeviceRegistryAdapter deviceRegistryService;
 
   @override
   State<DevicesPage> createState() => _DevicesPageState();

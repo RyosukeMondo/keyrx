@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+
 import 'package:path/path.dart' as path;
 
 /// Logic to load the native KeyRx library.
@@ -25,9 +26,7 @@ class LibraryLoader {
     } else if (Platform.isWindows) {
       return _loadWindows();
     } else {
-      throw UnsupportedError(
-        'Platform not supported: ${Platform.operatingSystem}',
-      );
+      throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
     }
   }
 
@@ -43,13 +42,13 @@ class LibraryLoader {
     // This handles running `dart run` from various locations in the repo.
     final scriptDir = path.dirname(Platform.script.toFilePath());
     final searchPaths = [
-       // If running from packages/core_logic/test/
+      // If running from packages/core_logic/test/
       path.join(scriptDir, '../../../target/debug', _linuxLibName),
       path.join(scriptDir, '../../../target/release', _linuxLibName),
       // If running from root/
       path.join(scriptDir, 'target/debug', _linuxLibName),
       path.join(scriptDir, 'target/release', _linuxLibName),
-       // If running from apps/cli_tool/bin/
+      // If running from apps/cli_tool/bin/
       path.join(scriptDir, '../../../target/debug', _linuxLibName),
       path.join(scriptDir, '../../../target/release', _linuxLibName),
     ];
@@ -77,9 +76,10 @@ class LibraryLoader {
   static DynamicLibrary _loadWindows() {
     // Similar logic for Windows could be added here.
     // For now, rely on standard loading or specific dev paths.
-     try {
+    try {
       return DynamicLibrary.open(_windowsLibName);
     } catch (_) {
+      // ignore: todo
       // TODO: Add Windows dev paths if needed
       throw Exception('Could not load $_windowsLibName');
     }

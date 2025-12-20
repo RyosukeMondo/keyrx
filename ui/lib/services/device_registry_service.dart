@@ -1,7 +1,8 @@
-/// Device Registry service wrapper for UI compatibility.
+/// Device Registry adapter for UI layer.
 ///
-/// Wraps the shared [core.DeviceRegistryService] from packages/core_logic
+/// This is a UI-layer adapter that wraps core_logic's DeviceRegistryService
 /// to provide UI-specific features like migration and legacy result types.
+/// It adapts the core service for UI consumption.
 library;
 
 import 'dart:async';
@@ -38,8 +39,11 @@ class DeviceRegistryOperationResult {
   final String? errorMessage;
 }
 
-/// Abstraction for device registry operations (UI-facing).
-abstract class DeviceRegistryService {
+/// UI adapter for device registry operations.
+///
+/// This is a UI-specific adapter that wraps core_logic's DeviceRegistryService.
+/// It exists to avoid SSOT violations and provide UI-specific result types.
+abstract class UIDeviceRegistryAdapter {
   /// Get all registered devices (connected + virtual).
   Future<List<DeviceState>> getDevices();
 
@@ -83,9 +87,9 @@ abstract class DeviceRegistryService {
   Future<void> dispose();
 }
 
-/// Implementation of [DeviceRegistryService] that wraps the core service.
-class DeviceRegistryServiceImpl implements DeviceRegistryService {
-  DeviceRegistryServiceImpl({required core.DeviceRegistryService coreService})
+/// Implementation of [UIDeviceRegistryAdapter] that wraps the core service.
+class UIDeviceRegistryAdapterImpl implements UIDeviceRegistryAdapter {
+  UIDeviceRegistryAdapterImpl({required core.DeviceRegistryService coreService})
     : _core = coreService;
 
   final core.DeviceRegistryService _core;

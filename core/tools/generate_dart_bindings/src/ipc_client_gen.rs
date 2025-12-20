@@ -107,10 +107,13 @@ fn generate_methods(contract: &FfiContract, enum_names: &HashSet<String>) -> Res
 
         // Check for incompatible types (Pointers/Functions) that can't be serialized over IPC
         if return_type.contains("Pointer") || return_type.contains("Function") {
-            eprintln!(
-                "Warning: Skipping IPC generation for {}.{} due to incompatible return type: {}",
-                contract.domain, func.name, return_type
-            );
+            #[allow(clippy::print_stderr)]
+            {
+                eprintln!(
+                    "Warning: Skipping IPC generation for {}.{} due to incompatible return type: {}",
+                    contract.domain, func.name, return_type
+                );
+            }
             continue;
         }
 
@@ -124,10 +127,13 @@ fn generate_methods(contract: &FfiContract, enum_names: &HashSet<String>) -> Res
         }
 
         if let Some((name, type_)) = incompatible_param {
-            eprintln!(
-                "Warning: Skipping IPC generation for {}.{} due to incompatible parameter '{}' of type '{}'",
-                contract.domain, func.name, name, type_
-            );
+            #[allow(clippy::print_stderr)]
+            {
+                eprintln!(
+                    "Warning: Skipping IPC generation for {}.{} due to incompatible parameter '{}' of type '{}'",
+                    contract.domain, func.name, name, type_
+                );
+            }
             continue;
         }
 

@@ -58,7 +58,7 @@ class ServiceRegistry {
     required MappingRepositoryUI mappingRepository,
     required DeviceService deviceService,
     required DeviceProfileService deviceProfileService,
-    required ui.DeviceRegistryService deviceRegistryService,
+    required ui.UIDeviceRegistryAdapter deviceRegistryService,
     required ProfileRegistryService profileRegistryService,
     required ScriptFileService scriptFileService,
     required TestService testService,
@@ -109,7 +109,7 @@ class ServiceRegistry {
     MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
-    ui.DeviceRegistryService? deviceRegistryService,
+    ui.UIDeviceRegistryAdapter? deviceRegistryService,
     ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,
@@ -202,7 +202,7 @@ class ServiceRegistry {
     final hardware = hardwareService ?? HardwareServiceUI(coreHardware);
     final mapping = mappingRepository ?? MappingRepositoryUI(coreMapping);
     final keymaps = keymapService ?? coreKeymap;
-    final deviceRegistryUi = ui.DeviceRegistryServiceImpl(
+    final deviceRegistryUi = ui.UIDeviceRegistryAdapterImpl(
       coreService: coreDeviceRegistry,
     );
 
@@ -256,7 +256,7 @@ class ServiceRegistry {
     MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
-    ui.DeviceRegistryService? deviceRegistryService,
+    ui.UIDeviceRegistryAdapter? deviceRegistryService,
     ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,
@@ -307,14 +307,14 @@ class ServiceRegistry {
     // Note: Fire-and-forget migration to avoid blocking UI startup.
     // Migration failures are handled gracefully (best-effort).
     unawaited(
-      ui.DeviceRegistryServiceImpl.migrateFromSharedPreferences(
+      ui.UIDeviceRegistryAdapterImpl.migrateFromSharedPreferences(
         sharedDeviceRegistry,
       ),
     );
 
     final deviceRegistry =
         deviceRegistryService ??
-        ui.DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
+        ui.UIDeviceRegistryAdapterImpl(coreService: sharedDeviceRegistry);
 
     final profileRegistry =
         profileRegistryService ??
@@ -382,7 +382,7 @@ class ServiceRegistry {
   final MappingRepositoryUI mappingRepository;
   final DeviceService deviceService;
   final DeviceProfileService deviceProfileService;
-  final ui.DeviceRegistryService deviceRegistryService;
+  final ui.UIDeviceRegistryAdapter deviceRegistryService;
   final ProfileRegistryService profileRegistryService;
   final ScriptFileService scriptFileService;
   final TestService testService;
@@ -403,7 +403,7 @@ class ServiceRegistry {
     MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
-    ui.DeviceRegistryService? deviceRegistryService,
+    ui.UIDeviceRegistryAdapter? deviceRegistryService,
     ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,

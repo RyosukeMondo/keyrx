@@ -72,14 +72,14 @@ class _WiringPageState extends State<WiringPage> {
     }
   }
 
-  DeviceRegistryService get _deviceRegistryService {
+  UIDeviceRegistryAdapter get _deviceRegistryService {
     try {
       return Provider.of<ServiceRegistry>(
         context,
         listen: false,
       ).deviceRegistryService;
     } on ProviderNotFoundException {
-      return Provider.of<DeviceRegistryService>(context, listen: false);
+      return Provider.of<UIDeviceRegistryAdapter>(context, listen: false);
     }
   }
 

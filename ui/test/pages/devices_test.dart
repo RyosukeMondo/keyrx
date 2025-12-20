@@ -88,7 +88,7 @@ class FakeKeymapService implements KeymapService {
       ConfigOperationResult.success(keymap);
 }
 
-class FakeDeviceRegistryService implements DeviceRegistryService {
+class FakeDeviceRegistryService implements UIDeviceRegistryAdapter {
   FakeDeviceRegistryService(this.devices);
 
   final List<DeviceState> devices;

@@ -1,6 +1,7 @@
 // ignore_for_file: sort_constructors_first, flutter_style_todos
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../state/daemon_providers.dart';
 import 'daemon_service.dart';
 
@@ -25,6 +26,7 @@ class DaemonManager {
       await _service.stopEngine();
       await _service.disconnect();
     }
+    // ignore: todo
     // TODO: Implement actual process restart if needed, for now just reconnect
     await _service.connect();
     await _service.subscribeEvents();

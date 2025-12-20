@@ -33,7 +33,7 @@ class DeviceCard extends StatefulWidget {
   final DeviceState deviceState;
 
   /// Service for device registry operations
-  final DeviceRegistryService deviceService;
+  final UIDeviceRegistryAdapter deviceService;
 
   /// Service for profile registry operations
   final ProfileRegistryService profileService;

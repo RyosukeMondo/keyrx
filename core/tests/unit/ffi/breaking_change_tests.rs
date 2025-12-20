@@ -53,7 +53,7 @@ mod tests {
         assert!(!changes.is_empty(), "Should detect parameter type change");
         assert!(changes
             .iter()
-            .any(|c| c.contains("parameter") && c.contains("type")));
+            .any(|c| c.contains("Parameter") && c.contains("type")));
     }
 
     /// Test that changing return types is detected as breaking.
@@ -77,7 +77,7 @@ mod tests {
 
         let changes = detect_breaking_changes(&old_contract, &new_contract);
         assert!(!changes.is_empty(), "Should detect return type change");
-        assert!(changes.iter().any(|c| c.contains("return type")));
+        assert!(changes.iter().any(|c| c.contains("Return type")));
     }
 
     /// Test that renaming a function is detected as breaking.
@@ -317,6 +317,33 @@ mod tests {
                                 {
                                     changes.push(format!(
                                         "BREAKING: Added required parameter in {}",
+                                        old_name
+                                    ));
+                                }
+                            }
+                        }
+
+                        // Check for parameter reordering
+                        if old_p.len() == new_p.len() {
+                            let old_names: Vec<_> = old_p
+                                .iter()
+                                .filter_map(|p| p.get("name").and_then(|n| n.as_str()))
+                                .collect();
+                            let new_names: Vec<_> = new_p
+                                .iter()
+                                .filter_map(|p| p.get("name").and_then(|n| n.as_str()))
+                                .collect();
+
+                            if old_names != new_names {
+                                // Check if set of names is same but order diff
+                                let mut old_sorted = old_names.clone();
+                                old_sorted.sort();
+                                let mut new_sorted = new_names.clone();
+                                new_sorted.sort();
+
+                                if old_sorted == new_sorted {
+                                    changes.push(format!(
+                                        "BREAKING: Parameters reordered in {}",
                                         old_name
                                     ));
                                 }

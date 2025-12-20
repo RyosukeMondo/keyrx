@@ -11,7 +11,7 @@ import 'package:keyrx_ui/widgets/profile_selector.dart';
 import 'package:keyrx_ui/widgets/remap_toggle.dart';
 
 /// Mock DeviceRegistryService for testing.
-class MockDeviceRegistryService implements DeviceRegistryService {
+class MockDeviceRegistryService implements UIDeviceRegistryAdapter {
   MockDeviceRegistryService({
     List<DeviceState>? devices,
     bool shouldFail = false,

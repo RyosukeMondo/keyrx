@@ -14,7 +14,7 @@ mod tests {
     #[test]
     fn test_validate_contracts_tool_exists() {
         let output = Command::new("bash")
-            .arg("scripts/validate_ffi_contracts.sh")
+            .arg("../scripts/validate_ffi_contracts.sh")
             .arg("--help")
             .output();
 
@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn test_breaking_change_detector_tool_exists() {
         let output = Command::new("bash")
-            .arg("scripts/detect_ffi_breaking_changes.sh")
+            .arg("../scripts/detect_ffi_breaking_changes.sh")
             .arg("--help")
             .output();
 
@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn test_contract_metrics_generation() {
         let output = Command::new("bash")
-            .arg("scripts/generate_contract_metrics.sh")
+            .arg("../scripts/generate_contract_metrics.sh")
             .output();
 
         match output {
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn test_module_size_analysis() {
         let output = Command::new("bash")
-            .arg("scripts/analyze_module_sizes.sh")
+            .arg("../scripts/analyze_module_sizes.sh")
             .output();
 
         match output {
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_ffi_implementation_logging() {
         let output = Command::new("bash")
-            .arg("scripts/log_ffi_implementation.sh")
+            .arg("../scripts/log_ffi_implementation.sh")
             .arg("--help")
             .output();
 
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn test_ffi_watch_mode_exists() {
         let output = Command::new("bash")
-            .arg("scripts/ffi_watch.sh")
+            .arg("../scripts/ffi_watch.sh")
             .arg("--help")
             .output();
 

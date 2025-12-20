@@ -38,7 +38,7 @@ class _DeviceWiringPageState extends State<DeviceWiringPage> {
   // Mapping State
   String? _selectedPhysicalKeyId;
 
-  DeviceRegistryService get _deviceRegistry => Provider.of<ServiceRegistry>(
+  UIDeviceRegistryAdapter get _deviceRegistry => Provider.of<ServiceRegistry>(
     context,
     listen: false,
   ).deviceRegistryService;

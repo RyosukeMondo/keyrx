@@ -73,7 +73,14 @@ if flutter analyze > ../current_analyze_output_4.txt 2>&1; then
      log_info "Flutter analysis passed."
 else
      log_warn "Flutter analysis found issues. Output saved to current_analyze_output_4.txt"
-     # We don't exit here as we want to see the output, and sometimes analysis has info/warnings that are acceptable temporarily
+     # We check the output for 'no issues found' just in case, or rely on exit code if it's strict
+     if grep -q "No issues found" ../current_analyze_output_4.txt; then
+        log_info "Flutter analysis passed (verified output)."
+     else
+        log_error "Flutter analysis failed."
+        # cat ../current_analyze_output_4.txt # Optional: Print output on failure
+        exit 1
+     fi
 fi
 cd ..
 
@@ -83,6 +90,12 @@ if dart analyze > ../../server_analyze_output.txt 2>&1; then
     log_info "Server analysis passed."
 else
     log_warn "Server analysis found issues. Output saved to server_analyze_output.txt"
+     if grep -q "No issues found" ../../server_analyze_output.txt; then
+        log_info "Server analysis passed (verified output)."
+     else
+        log_error "Server analysis failed."
+        exit 1
+     fi
 fi
 cd ../..
 
