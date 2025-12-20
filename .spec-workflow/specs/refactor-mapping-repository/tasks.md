@@ -1,0 +1,61 @@
+# Tasks: Refactor Mapping Repository
+
+- [ ] 1. Refactor MappingRepository to use StreamController
+  - File: ui/lib/repositories/mapping_repository.dart
+  - Remove ChangeNotifier mixin
+  - Add StreamController<void> for change notifications
+  - Replace all notifyListeners() calls with _changes.add(null)
+  - Add Stream<void> get changes
+  - Add dispose() method to close stream
+  - Verify no Flutter dependencies remain
+  - Purpose: Remove Flutter dependencies from business logic
+  - _Leverage: packages/core_logic/lib/services/hardware_service.dart (StreamController pattern from Spec 2)_
+  - _Requirements: REQ-1_
+  - _Prompt: Role: Dart refactoring specialist | Task: Refactor MappingRepository from ChangeNotifier to StreamController pattern following exact same approach as HardwareService refactoring in Spec 2, remove Flutter imports, preserve all business logic and method signatures | Restrictions: Do NOT change business logic, do NOT change method signatures, do NOT move file yet, remove all Flutter imports, replace notifyListeners with stream events | Success: No 'extends ChangeNotifier' or 'with ChangeNotifier', StreamController<void> added, Stream<void> get changes exposed, all notifyListeners() replaced with _changes.add(null), dispose() method closes stream, zero Flutter dependencies verified with grep_
+
+- [ ] 2. Move MappingRepository to core_logic
+  - File: packages/core_logic/lib/repositories/mapping_repository.dart
+  - Copy refactored repository from UI to core_logic/repositories/
+  - Update imports to use relative paths
+  - Add export to core_logic.dart
+  - Verify no Flutter dependencies
+  - Purpose: Enable CLI access to mapping data
+  - _Leverage: packages/core_logic/lib/services/hardware_service.dart (Task 3 from Spec 2 - move pattern)_
+  - _Requirements: REQ-2_
+  - _Prompt: Role: Package organizer | Task: Move refactored MappingRepository to core_logic/repositories/ following same pattern as HardwareService move in Spec 2 Task 3, update imports to relative paths, add export to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete original yet, verify NO Flutter dependencies using grep | Success: File at packages/core_logic/lib/repositories/mapping_repository.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
+
+- [ ] 3. Create MappingRepositoryUI wrapper
+  - File: ui/lib/repositories/mapping_repository_ui.dart
+  - Create new file extending ChangeNotifier
+  - Accept core.MappingRepository in constructor
+  - Subscribe to core repository changes stream
+  - Forward all public methods to core repository
+  - Call notifyListeners() on stream events
+  - Dispose subscription in dispose()
+  - Purpose: Provide ChangeNotifier interface for Riverpod compatibility
+  - _Leverage: ui/lib/services/hardware_service_ui.dart (Wrapper pattern from Spec 2 Task 5)_
+  - _Requirements: REQ-3_
+  - _Prompt: Role: UI adapter developer | Task: Create MappingRepositoryUI wrapper following exact same pattern as HardwareServiceUI from Spec 2 Task 5, bridge core repository streams to ChangeNotifier for Riverpod compatibility | Restrictions: Must extend ChangeNotifier, must forward ALL public methods to core repository, must subscribe to core changes stream, must dispose subscription properly | Success: File created at ui/lib/repositories/mapping_repository_ui.dart, extends ChangeNotifier, subscribes to core.MappingRepository.changes, calls notifyListeners() on stream events, forwards all public methods, proper disposal verified_
+
+- [ ] 4. Update ServiceRegistry to use wrapper
+  - File: ui/lib/services/service_registry.dart
+  - Import core MappingRepository from core_logic
+  - Import MappingRepositoryUI wrapper
+  - Create core MappingRepository in factory
+  - Create MappingRepositoryUI wrapper passing core repository
+  - Pass UI wrapper to consumers
+  - Update disposal chain
+  - Purpose: Wire core repository and UI wrapper in dependency injection
+  - _Leverage: ui/lib/services/service_registry.dart (DeviceRegistry wrapper pattern from Spec 2 Task 7)_
+  - _Requirements: REQ-4_
+  - _Prompt: Role: Dependency injection specialist | Task: Update ServiceRegistry to create core MappingRepository and UI wrapper following DeviceRegistry wrapper pattern from Spec 2 Task 7, wire them properly in DI | Restrictions: Keep ServiceRegistry interface unchanged, ensure proper disposal chain, create core repository first then wrapper | Success: Imports both core repository and UI wrapper, creates core MappingRepository first, creates wrapper passing core repository, passes wrapper to consumers, disposal works correctly, ServiceRegistry compiles_
+
+- [ ] 5. Delete old repository file and verify
+  - File: ui/lib/repositories/mapping_repository.dart (delete)
+  - Verify no imports remain to old file using grep
+  - Run flutter test to verify UI
+  - Verify zero Flutter dependencies in core_logic
+  - Purpose: Clean up old file and ensure quality
+  - _Leverage: grep for import verification, flutter test for verification_
+  - _Requirements: REQ-5, NFR-1, NFR-3_
+  - _Prompt: Role: QA and cleanup specialist | Task: Delete old MappingRepository file after verifying no references remain using grep, run full UI test suite and verify zero Flutter dependencies in core_logic repositories | Restrictions: Only delete after wrapper created and wired, verify no broken imports with grep, run full test suite before marking complete | Success: Old file deleted, no broken imports verified with grep, UI tests pass, zero Flutter dependencies in core_logic/repositories/ confirmed, Riverpod providers work correctly_
