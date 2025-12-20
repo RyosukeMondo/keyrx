@@ -182,7 +182,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set zoom to 2x
-      transformationController.value = Matrix4.identity()..scale(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
       await tester.pumpAndSettle();
 
       // Verify zoom is 2x
@@ -229,7 +229,7 @@ void main() {
 
     testWidgets('Ctrl+- zooms out by 10%', (tester) async {
       // Start with 2x zoom
-      transformationController.value = Matrix4.identity()..scale(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -459,7 +459,7 @@ void main() {
     });
 
     test('resetZoom sets scale to 1.0', () {
-      transformationController.value = Matrix4.identity()..scale(2.5, 2.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1.0);
       expect(transformationController.value.getMaxScaleOnAxis(), 2.5);
 
       zoomController.resetZoom();
@@ -477,7 +477,7 @@ void main() {
     });
 
     test('zoomOut decreases scale by 10%', () {
-      transformationController.value = Matrix4.identity()..scale(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
       final initialScale = transformationController.value.getMaxScaleOnAxis();
 
       zoomController.zoomOut();
@@ -487,7 +487,7 @@ void main() {
     });
 
     test('zoom is clamped to min 0.5', () {
-      transformationController.value = Matrix4.identity()..scale(0.5, 0.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(0.5, 0.5, 1.0);
 
       zoomController.zoomOut();
 
@@ -496,7 +496,7 @@ void main() {
     });
 
     test('zoom is clamped to max 2.5', () {
-      transformationController.value = Matrix4.identity()..scale(2.5, 2.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1.0);
 
       zoomController.zoomIn();
 
