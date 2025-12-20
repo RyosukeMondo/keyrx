@@ -50,7 +50,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Role: Dependency injection specialist | Task: Update ServiceRegistry to create core MappingRepository and UI wrapper following DeviceRegistry wrapper pattern from Spec 2 Task 7, wire them properly in DI | Restrictions: Keep ServiceRegistry interface unchanged, ensure proper disposal chain, create core repository first then wrapper | Success: Imports both core repository and UI wrapper, creates core MappingRepository first, creates wrapper passing core repository, passes wrapper to consumers, disposal works correctly, ServiceRegistry compiles_
 
-- [-] 5. Delete old repository file and verify
+- [x] 5. Delete old repository file and verify
   - File: ui/lib/repositories/mapping_repository.dart (delete)
   - Verify no imports remain to old file using grep
   - Run flutter test to verify UI
