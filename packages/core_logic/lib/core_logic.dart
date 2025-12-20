@@ -10,3 +10,5 @@ export 'services/config_result.dart';
 export 'services/runtime_service.dart';
 export 'services/keymap_service.dart';
 export 'utils/logger.dart';
+export 'utils/error_translator.dart';
+export 'utils/error_translator_impl.dart';

@@ -1,6 +1,6 @@
 # Tasks: Move Utilities to Core
 
-- [ ] 1. Move ErrorTranslator to core_logic
+- [-] 1. Move ErrorTranslator to core_logic
   - File: packages/core_logic/lib/utils/error_translator.dart
   - File: packages/core_logic/lib/utils/error_translator_impl.dart
   - Copy both interface and implementation from ui/lib/services/ to core_logic/lib/utils/
