@@ -19,7 +19,7 @@ void main() {
 
   group('Cross-platform E2E tests', () {
     late ServiceRegistry registry;
-    final isWeb = kIsWeb;
+    const isWeb = kIsWeb;
 
     setUpAll(() async {
       // Initialize service registry for the platform
@@ -46,8 +46,7 @@ void main() {
       debugPrint('Running on platform: ${isWeb ? "web" : "desktop"}');
     });
 
-    testWidgets('ServiceRegistry initializes for current platform',
-        (tester) async {
+    testWidgets('ServiceRegistry initializes for current platform', (tester) async {
       // Verify registry is created
       expect(registry, isNotNull);
 

@@ -4,12 +4,12 @@
 
 import 'dart:async';
 
+import 'package:core_logic/core_logic.dart' as core;
 import 'package:core_logic/core_logic.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/trade_off_visualizer.dart';
-import 'package:core_logic/core_logic.dart' as core;
 import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
@@ -19,8 +19,7 @@ import 'package:provider/provider.dart';
 import 'helpers/fake_services.dart';
 
 class _FakeEngineService implements EngineService {
-  final StreamController<EngineSnapshot> _stateController =
-      StreamController.broadcast();
+  final StreamController<EngineSnapshot> _stateController = StreamController.broadcast();
 
   @override
   bool get isInitialized => true;
@@ -42,8 +41,7 @@ class _FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async =>
-      const KeyRegistryResult(entries: []);
+  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(entries: []);
 
   void emit(EngineSnapshot snapshot) {
     _stateController.add(snapshot);
@@ -67,8 +65,7 @@ class _FakeEngineService implements EngineService {
 
 class _FakeErrorTranslator implements ErrorTranslator {
   @override
-  UserMessage translate(Object error) =>
-      const UserMessage(title: 'err', body: 'error');
+  UserMessage translate(Object error) => const UserMessage(title: 'err', body: 'error');
 }
 
 Widget _buildTestWidget({_FakeEngineService? engine}) {

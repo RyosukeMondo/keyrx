@@ -76,7 +76,7 @@ void main() {
     });
 
     test('POST /api/hardware/profiles - save profile', () async {
-      final profile = HardwareProfile(
+      final profile = const HardwareProfile(
         id: 'test-hw-profile',
         virtualLayoutId: 'default-layout',
         vendorId: 0x1234,
@@ -116,7 +116,7 @@ void main() {
     });
 
     test('POST /api/keymaps - save keymap', () async {
-      final keymap = Keymap(
+      final keymap = const Keymap(
         id: 'test-keymap',
         virtualLayoutId: 'default-layout',
         name: 'Test Keymap',
@@ -154,7 +154,7 @@ void main() {
     });
 
     test('POST /api/layouts - save layout', () async {
-      final layout = VirtualLayout(
+      final layout = const VirtualLayout(
         id: 'test-layout',
         name: 'Test Layout',
         layoutType: VirtualLayoutType.semantic,
@@ -202,7 +202,7 @@ void main() {
     });
 
     test('POST /api/devices/virtual - add virtual device', () async {
-      final identity = DeviceIdentity(
+      final identity = const DeviceIdentity(
         vendorId: 0x9999,
         productId: 0x8888,
         serialNumber: 'test-virtual-device',
@@ -250,8 +250,7 @@ void main() {
       expect(data, containsPair('profiles', isA<List>()));
     });
 
-    test('GET /api/profiles/compatible/:layoutType - find compatible profiles',
-        () async {
+    test('GET /api/profiles/compatible/:layoutType - find compatible profiles', () async {
       final response = await http.get(
         Uri.parse('$baseUrl/api/profiles/compatible/standard'),
       );
@@ -463,7 +462,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 500));
 
       // Create a hardware profile to trigger change event
-      final profile = HardwareProfile(
+      final profile = const HardwareProfile(
         id: 'test-ws-profile',
         virtualLayoutId: 'default-layout',
         vendorId: 0x8888,
@@ -530,10 +529,8 @@ void main() {
       expect(events2.isNotEmpty, isTrue);
 
       // Events should contain devices_updated
-      final hasDeviceUpdate1 =
-          events1.any((e) => e['type'] == 'devices_updated');
-      final hasDeviceUpdate2 =
-          events2.any((e) => e['type'] == 'devices_updated');
+      final hasDeviceUpdate1 = events1.any((e) => e['type'] == 'devices_updated');
+      final hasDeviceUpdate2 = events2.any((e) => e['type'] == 'devices_updated');
 
       expect(hasDeviceUpdate1, isTrue);
       expect(hasDeviceUpdate2, isTrue);
@@ -614,7 +611,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 500));
 
       // Create profile via REST API
-      final profile = HardwareProfile(
+      final profile = const HardwareProfile(
         id: 'e2e-test-profile',
         virtualLayoutId: 'default-layout',
         vendorId: 0x2222,

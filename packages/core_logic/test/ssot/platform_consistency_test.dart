@@ -15,13 +15,10 @@ import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/virtual_layout.dart';
 import 'package:core_logic/services/config_result.dart';
 import 'package:core_logic/services/hardware_service.dart';
-import 'package:core_logic/services/hardware_service_ffi.dart';
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/services/keymap_service.dart';
-import 'package:core_logic/services/keymap_service_ffi.dart';
 import 'package:core_logic/services/keymap_service_web.dart';
 import 'package:core_logic/services/layout_service.dart';
-import 'package:core_logic/services/layout_service_ffi.dart';
 import 'package:core_logic/services/layout_service_web.dart';
 import 'package:core_logic/web/api_client.dart';
 import 'package:core_logic/web/websocket_client.dart';
@@ -42,9 +39,9 @@ void main() {
     setUp(() {
       mockApiClient = MockWebApiClient();
       // Mock subscribe to return an empty broadcast stream
-      when(() => mockApiClient.subscribe<void>(any(), any())).thenAnswer(
-        (_) => Stream<void>.empty(),
-      );
+      when(
+        () => mockApiClient.subscribe<void>(any(), any()),
+      ).thenAnswer((_) => Stream<void>.empty());
     });
 
     test('HardwareService - FFI and Web implement same interface', () {
@@ -100,19 +97,18 @@ void main() {
       when(() => mockBridge.configBindings).thenReturn(null);
 
       // Mock subscribe to return an empty broadcast stream
-      when(() => mockApiClient.subscribe<void>(any(), any())).thenAnswer(
-        (_) => Stream<void>.empty(),
-      );
+      when(
+        () => mockApiClient.subscribe<void>(any(), any()),
+      ).thenAnswer((_) => Stream<void>.empty());
     });
 
-    test('HardwareService Web - only makes HTTP calls, no business logic',
-        () async {
+    test('HardwareService Web - only makes HTTP calls, no business logic', () async {
       final service = HardwareServiceWeb(client: mockApiClient);
 
       // Mock API response
-      when(() => mockApiClient.get('/api/hardware/profiles')).thenAnswer(
-        (_) async => const ApiResponse(data: []),
-      );
+      when(
+        () => mockApiClient.get('/api/hardware/profiles'),
+      ).thenAnswer((_) async => const ApiResponse(data: []));
 
       // Call service method
       await service.listProfiles();
@@ -121,8 +117,7 @@ void main() {
       verify(() => mockApiClient.get('/api/hardware/profiles')).called(1);
 
       // Also verify WebSocket subscription was set up during initialization
-      verify(() => mockApiClient.subscribe<void>('hardware.changed', any()))
-          .called(1);
+      verify(() => mockApiClient.subscribe<void>('hardware.changed', any())).called(1);
 
       service.dispose();
     });
@@ -140,23 +135,15 @@ void main() {
 
       // Mock API response
       when(
-        () => mockApiClient.post(
-          '/api/hardware/profiles',
-          body: any(named: 'body'),
-        ),
-      ).thenAnswer(
-        (_) async => ApiResponse(data: profile.toJson()),
-      );
+        () => mockApiClient.post('/api/hardware/profiles', body: any(named: 'body')),
+      ).thenAnswer((_) async => ApiResponse(data: profile.toJson()));
 
       // Call service method
       await service.saveProfile(profile);
 
       // Verify POST was called with correct endpoint
       verify(
-        () => mockApiClient.post(
-          '/api/hardware/profiles',
-          body: {'profile': profile.toJson()},
-        ),
+        () => mockApiClient.post('/api/hardware/profiles', body: {'profile': profile.toJson()}),
       ).called(1);
 
       service.dispose();
@@ -166,27 +153,26 @@ void main() {
       final service = HardwareServiceWeb(client: mockApiClient);
 
       // Mock API response
-      when(() => mockApiClient.delete('/api/hardware/profiles/test-id'))
-          .thenAnswer((_) async => const ApiResponse(data: null));
+      when(
+        () => mockApiClient.delete('/api/hardware/profiles/test-id'),
+      ).thenAnswer((_) async => const ApiResponse(data: null));
 
       // Call service method
       await service.deleteProfile('test-id');
 
       // Verify DELETE was called
-      verify(() => mockApiClient.delete('/api/hardware/profiles/test-id'))
-          .called(1);
+      verify(() => mockApiClient.delete('/api/hardware/profiles/test-id')).called(1);
 
       service.dispose();
     });
 
-    test('KeymapService Web - only makes HTTP calls, no business logic',
-        () async {
+    test('KeymapService Web - only makes HTTP calls, no business logic', () async {
       final service = KeymapServiceWeb(client: mockApiClient);
 
       // Mock API response
-      when(() => mockApiClient.get('/api/keymaps')).thenAnswer(
-        (_) async => const ApiResponse(data: []),
-      );
+      when(
+        () => mockApiClient.get('/api/keymaps'),
+      ).thenAnswer((_) async => const ApiResponse(data: []));
 
       // Call service method
       await service.listKeymaps();
@@ -195,14 +181,13 @@ void main() {
       verify(() => mockApiClient.get('/api/keymaps')).called(1);
     });
 
-    test('LayoutService Web - only makes HTTP calls, no business logic',
-        () async {
+    test('LayoutService Web - only makes HTTP calls, no business logic', () async {
       final service = LayoutServiceWeb(client: mockApiClient);
 
       // Mock API response
-      when(() => mockApiClient.get('/api/layouts')).thenAnswer(
-        (_) async => const ApiResponse(data: []),
-      );
+      when(
+        () => mockApiClient.get('/api/layouts'),
+      ).thenAnswer((_) async => const ApiResponse(data: []));
 
       // Call service method
       await service.listLayouts();
@@ -223,22 +208,20 @@ void main() {
       wsStreamController = StreamController<void>.broadcast();
 
       // Mock WebSocket subscription
-      when(() => mockApiClient.subscribe<void>(any(), any())).thenAnswer(
-        (_) => wsStreamController.stream,
-      );
+      when(
+        () => mockApiClient.subscribe<void>(any(), any()),
+      ).thenAnswer((_) => wsStreamController.stream);
     });
 
     tearDown(() {
       wsStreamController.close();
     });
 
-    test('HardwareService Web - subscribes to hardware.changed events',
-        () async {
+    test('HardwareService Web - subscribes to hardware.changed events', () async {
       final service = HardwareServiceWeb(client: mockApiClient);
 
       // Verify subscription was created
-      verify(() => mockApiClient.subscribe<void>('hardware.changed', any()))
-          .called(1);
+      verify(() => mockApiClient.subscribe<void>('hardware.changed', any())).called(1);
 
       final events = <void>[];
       service.changes.listen(events.add);
@@ -257,8 +240,7 @@ void main() {
       final service = LayoutServiceWeb(client: mockApiClient);
 
       // Verify subscription was created
-      verify(() => mockApiClient.subscribe<void>('layout.changed', any()))
-          .called(1);
+      verify(() => mockApiClient.subscribe<void>('layout.changed', any())).called(1);
 
       final events = <void>[];
       service.changes.listen(events.add);
@@ -273,8 +255,7 @@ void main() {
       service.dispose();
     });
 
-    test('Real-time events trigger same stream behavior across platforms',
-        () async {
+    test('Real-time events trigger same stream behavior across platforms', () async {
       // This test verifies that both FFI and Web services expose
       // changes through the same Stream<void> interface
 
@@ -303,9 +284,9 @@ void main() {
     setUp(() {
       mockApiClient = MockWebApiClient();
       // Mock subscribe to return an empty broadcast stream
-      when(() => mockApiClient.subscribe<void>(any(), any())).thenAnswer(
-        (_) => Stream<void>.empty(),
-      );
+      when(
+        () => mockApiClient.subscribe<void>(any(), any()),
+      ).thenAnswer((_) => Stream<void>.empty());
     });
 
     test('HardwareService - FFI and Web have identical method signatures', () {
@@ -324,40 +305,26 @@ void main() {
       // listProfiles method
       expect(
         ffiService.listProfiles,
-        isA<
-            Future<ConfigOperationResult<List<HardwareProfile>>> Function()>(),
+        isA<Future<ConfigOperationResult<List<HardwareProfile>>> Function()>(),
       );
       expect(
         webService.listProfiles,
-        isA<
-            Future<ConfigOperationResult<List<HardwareProfile>>> Function()>(),
+        isA<Future<ConfigOperationResult<List<HardwareProfile>>> Function()>(),
       );
 
       // saveProfile method
       expect(
         ffiService.saveProfile,
-        isA<
-            Future<ConfigOperationResult<HardwareProfile>> Function(
-          HardwareProfile,
-        )>(),
+        isA<Future<ConfigOperationResult<HardwareProfile>> Function(HardwareProfile)>(),
       );
       expect(
         webService.saveProfile,
-        isA<
-            Future<ConfigOperationResult<HardwareProfile>> Function(
-          HardwareProfile,
-        )>(),
+        isA<Future<ConfigOperationResult<HardwareProfile>> Function(HardwareProfile)>(),
       );
 
       // deleteProfile method
-      expect(
-        ffiService.deleteProfile,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
-      expect(
-        webService.deleteProfile,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
+      expect(ffiService.deleteProfile, isA<Future<ConfigOperationResult<void>> Function(String)>());
+      expect(webService.deleteProfile, isA<Future<ConfigOperationResult<void>> Function(String)>());
 
       // dispose method
       expect(ffiService.dispose, isA<void Function()>());
@@ -374,34 +341,16 @@ void main() {
       final webService = KeymapServiceWeb(client: mockApiClient);
 
       // listKeymaps method
-      expect(
-        ffiService.listKeymaps,
-        isA<Future<ConfigOperationResult<List<Keymap>>> Function()>(),
-      );
-      expect(
-        webService.listKeymaps,
-        isA<Future<ConfigOperationResult<List<Keymap>>> Function()>(),
-      );
+      expect(ffiService.listKeymaps, isA<Future<ConfigOperationResult<List<Keymap>>> Function()>());
+      expect(webService.listKeymaps, isA<Future<ConfigOperationResult<List<Keymap>>> Function()>());
 
       // saveKeymap method
-      expect(
-        ffiService.saveKeymap,
-        isA<Future<ConfigOperationResult<Keymap>> Function(Keymap)>(),
-      );
-      expect(
-        webService.saveKeymap,
-        isA<Future<ConfigOperationResult<Keymap>> Function(Keymap)>(),
-      );
+      expect(ffiService.saveKeymap, isA<Future<ConfigOperationResult<Keymap>> Function(Keymap)>());
+      expect(webService.saveKeymap, isA<Future<ConfigOperationResult<Keymap>> Function(Keymap)>());
 
       // deleteKeymap method
-      expect(
-        ffiService.deleteKeymap,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
-      expect(
-        webService.deleteKeymap,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
+      expect(ffiService.deleteKeymap, isA<Future<ConfigOperationResult<void>> Function(String)>());
+      expect(webService.deleteKeymap, isA<Future<ConfigOperationResult<void>> Function(String)>());
     });
 
     test('LayoutService - FFI and Web have identical method signatures', () {
@@ -427,28 +376,16 @@ void main() {
       // saveLayout method
       expect(
         ffiService.saveLayout,
-        isA<
-            Future<ConfigOperationResult<VirtualLayout>> Function(
-          VirtualLayout,
-        )>(),
+        isA<Future<ConfigOperationResult<VirtualLayout>> Function(VirtualLayout)>(),
       );
       expect(
         webService.saveLayout,
-        isA<
-            Future<ConfigOperationResult<VirtualLayout>> Function(
-          VirtualLayout,
-        )>(),
+        isA<Future<ConfigOperationResult<VirtualLayout>> Function(VirtualLayout)>(),
       );
 
       // deleteLayout method
-      expect(
-        ffiService.deleteLayout,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
-      expect(
-        webService.deleteLayout,
-        isA<Future<ConfigOperationResult<void>> Function(String)>(),
-      );
+      expect(ffiService.deleteLayout, isA<Future<ConfigOperationResult<void>> Function(String)>());
+      expect(webService.deleteLayout, isA<Future<ConfigOperationResult<void>> Function(String)>());
 
       // dispose method
       expect(ffiService.dispose, isA<void Function()>());
@@ -466,21 +403,18 @@ void main() {
       mockApiClient = MockWebApiClient();
 
       // Mock subscribe to return an empty broadcast stream
-      when(() => mockApiClient.subscribe<void>(any(), any())).thenAnswer(
-        (_) => Stream<void>.empty(),
-      );
+      when(
+        () => mockApiClient.subscribe<void>(any(), any()),
+      ).thenAnswer((_) => Stream<void>.empty());
     });
 
     test('Web services return ConfigOperationResult on error', () async {
       final service = HardwareServiceWeb(client: mockApiClient);
 
       // Mock API error
-      when(() => mockApiClient.get('/api/hardware/profiles')).thenAnswer(
-        (_) async => const ApiResponse(
-          data: null,
-          error: 'Network error',
-        ),
-      );
+      when(
+        () => mockApiClient.get('/api/hardware/profiles'),
+      ).thenAnswer((_) async => const ApiResponse(data: null, error: 'Network error'));
 
       final result = await service.listProfiles();
 
@@ -496,9 +430,9 @@ void main() {
       final service = KeymapServiceWeb(client: mockApiClient);
 
       // Mock API response with invalid data
-      when(() => mockApiClient.get('/api/keymaps')).thenAnswer(
-        (_) async => const ApiResponse(data: 'invalid'),
-      );
+      when(
+        () => mockApiClient.get('/api/keymaps'),
+      ).thenAnswer((_) async => const ApiResponse(data: 'invalid'));
 
       final result = await service.listKeymaps();
 
@@ -514,9 +448,9 @@ void main() {
       final ffiService = HardwareServiceFFI(bridge: mockBridge);
       final webService = HardwareServiceWeb(client: mockApiClient);
 
-      when(() => mockApiClient.get('/api/hardware/profiles')).thenAnswer(
-        (_) async => const ApiResponse(data: null, error: 'Test error'),
-      );
+      when(
+        () => mockApiClient.get('/api/hardware/profiles'),
+      ).thenAnswer((_) async => const ApiResponse(data: null, error: 'Test error'));
 
       final ffiResult = await ffiService.listProfiles();
       final webResult = await webService.listProfiles();

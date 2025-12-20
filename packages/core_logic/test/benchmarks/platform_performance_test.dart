@@ -10,16 +10,16 @@ import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import '../../lib/ffi/bridge.dart';
-import '../../lib/ffi/generated_bindings.dart';
-import '../../lib/models/config_ids.dart';
-import '../../lib/models/hardware_profile.dart';
-import '../../lib/services/config_result.dart';
-import '../../lib/services/hardware_service.dart';
-import '../../lib/services/hardware_service_ffi.dart';
-import '../../lib/services/hardware_service_web.dart';
-import '../../lib/web/api_client.dart';
-import '../../lib/web/websocket_client.dart';
+import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/models/config_ids.dart';
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/hardware_service.dart';
+import 'package:core_logic/services/hardware_service_ffi.dart';
+import 'package:core_logic/services/hardware_service_web.dart';
+import 'package:core_logic/web/api_client.dart';
+import 'package:core_logic/web/websocket_client.dart';
 
 // Mocks
 class MockKeyrxBridge extends Mock implements KeyrxBridge {}
@@ -46,14 +46,8 @@ class FFIListProfilesBenchmark extends AsyncBenchmarkBase {
     when(() => bridge.loadFailure).thenReturn(null);
     when(() => bridge.configBindings).thenReturn(bindings);
     when(() => bindings.listHardwareProfiles()).thenReturn([
-      const HardwareProfile(
-        id: 'test-1',
-        virtualLayoutId: 'layout-1',
-      ),
-      const HardwareProfile(
-        id: 'test-2',
-        virtualLayoutId: 'layout-2',
-      ),
+      const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'),
+      const HardwareProfile(id: 'test-2', virtualLayoutId: 'layout-2'),
     ]);
 
     service = HardwareServiceFFI(bridge: bridge);
@@ -81,9 +75,7 @@ class WebListProfilesBenchmark extends AsyncBenchmarkBase {
   Future<void> setup() async {
     client = MockWebApiClient();
 
-    when(() => client.subscribe<void>(any(), any())).thenAnswer(
-      (_) => const Stream.empty(),
-    );
+    when(() => client.subscribe<void>(any(), any())).thenAnswer((_) => const Stream.empty());
     when(() => client.get(any())).thenAnswer(
       (_) async => ApiResponse(
         data: [
@@ -173,9 +165,7 @@ class WebSaveProfileBenchmark extends AsyncBenchmarkBase {
       name: 'Test Profile',
     );
 
-    when(() => client.subscribe<void>(any(), any())).thenAnswer(
-      (_) => const Stream.empty(),
-    );
+    when(() => client.subscribe<void>(any(), any())).thenAnswer((_) => const Stream.empty());
     when(() => client.post(any(), body: any(named: 'body'))).thenAnswer(
       (_) async => ApiResponse(
         data: {
@@ -245,12 +235,8 @@ class WebDeleteProfileBenchmark extends AsyncBenchmarkBase {
   Future<void> setup() async {
     client = MockWebApiClient();
 
-    when(() => client.subscribe<void>(any(), any())).thenAnswer(
-      (_) => const Stream.empty(),
-    );
-    when(() => client.delete(any())).thenAnswer(
-      (_) async => const ApiResponse(data: null),
-    );
+    when(() => client.subscribe<void>(any(), any())).thenAnswer((_) => const Stream.empty());
+    when(() => client.delete(any())).thenAnswer((_) async => const ApiResponse(data: null));
 
     service = HardwareServiceWeb(client: client);
   }
@@ -282,12 +268,9 @@ class FFIEventLatencyBenchmark extends AsyncBenchmarkBase {
 
     when(() => bridge.loadFailure).thenReturn(null);
     when(() => bridge.configBindings).thenReturn(bindings);
-    when(() => bindings.saveHardwareProfile(any())).thenReturn(
-      const HardwareProfile(
-        id: 'test-1',
-        virtualLayoutId: 'layout-1',
-      ),
-    );
+    when(
+      () => bindings.saveHardwareProfile(any()),
+    ).thenReturn(const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'));
 
     service = HardwareServiceFFI(bridge: bridge);
     controller = StreamController<void>.broadcast();
@@ -297,12 +280,7 @@ class FFIEventLatencyBenchmark extends AsyncBenchmarkBase {
   Future<void> run() async {
     final completer = Completer<void>();
     service.changes.first.then((_) => completer.complete());
-    await service.saveProfile(
-      const HardwareProfile(
-        id: 'test-1',
-        virtualLayoutId: 'layout-1',
-      ),
-    );
+    await service.saveProfile(const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'));
     await completer.future;
   }
 
@@ -325,24 +303,20 @@ class WebEventLatencyBenchmark extends AsyncBenchmarkBase {
     client = MockWebApiClient();
     eventController = StreamController<void>.broadcast();
 
-    when(() => client.subscribe<void>(any(), any())).thenAnswer(
-      (_) => eventController.stream,
-    );
-    when(() => client.post(any(), body: any(named: 'body'))).thenAnswer(
-      (_) async {
-        // Simulate event being broadcast after save
-        Future.microtask(() => eventController.add(null));
-        return ApiResponse(
-          data: {
-            'id': 'test-1',
-            'virtual_layout_id': 'layout-1',
-            'vendor_id': 0,
-            'product_id': 0,
-            'wiring': <String, dynamic>{},
-          },
-        );
-      },
-    );
+    when(() => client.subscribe<void>(any(), any())).thenAnswer((_) => eventController.stream);
+    when(() => client.post(any(), body: any(named: 'body'))).thenAnswer((_) async {
+      // Simulate event being broadcast after save
+      Future.microtask(() => eventController.add(null));
+      return ApiResponse(
+        data: {
+          'id': 'test-1',
+          'virtual_layout_id': 'layout-1',
+          'vendor_id': 0,
+          'product_id': 0,
+          'wiring': <String, dynamic>{},
+        },
+      );
+    });
 
     service = HardwareServiceWeb(client: client);
   }
@@ -351,12 +325,7 @@ class WebEventLatencyBenchmark extends AsyncBenchmarkBase {
   Future<void> run() async {
     final completer = Completer<void>();
     service.changes.first.then((_) => completer.complete());
-    await service.saveProfile(
-      const HardwareProfile(
-        id: 'test-1',
-        virtualLayoutId: 'layout-1',
-      ),
-    );
+    await service.saveProfile(const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'));
     await completer.future;
   }
 
@@ -416,19 +385,13 @@ class BenchmarkResult {
   double get avgMilliseconds => avgMicroseconds / 1000;
 
   @override
-  String toString() =>
-      '$name: ${avgMilliseconds.toStringAsFixed(3)}ms avg (${iterations}x)';
+  String toString() => '$name: ${avgMilliseconds.toStringAsFixed(3)}ms avg (${iterations}x)';
 }
 
 void main() {
   // Register fallback values for mocktail
   setUpAll(() {
-    registerFallbackValue(
-      const HardwareProfile(
-        id: 'fallback',
-        virtualLayoutId: 'fallback',
-      ),
-    );
+    registerFallbackValue(const HardwareProfile(id: 'fallback', virtualLayoutId: 'fallback'));
   });
 
   group('Platform Performance Benchmarks', () {
@@ -445,9 +408,8 @@ void main() {
 
       // Calculate overhead percentage
       final overhead =
-          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) /
-                  ffiResult.avgMicroseconds) *
-              100;
+          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) / ffiResult.avgMicroseconds) *
+          100;
       print('Web overhead: ${overhead.toStringAsFixed(1)}%');
 
       // Verify web is within 30% of FFI (accounting for mock overhead)
@@ -470,9 +432,8 @@ void main() {
       print(webResult);
 
       final overhead =
-          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) /
-                  ffiResult.avgMicroseconds) *
-              100;
+          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) / ffiResult.avgMicroseconds) *
+          100;
       print('Web overhead: ${overhead.toStringAsFixed(1)}%');
 
       expect(
@@ -494,9 +455,8 @@ void main() {
       print(webResult);
 
       final overhead =
-          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) /
-                  ffiResult.avgMicroseconds) *
-              100;
+          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) / ffiResult.avgMicroseconds) *
+          100;
       print('Web overhead: ${overhead.toStringAsFixed(1)}%');
 
       expect(
@@ -518,9 +478,8 @@ void main() {
       print(webResult);
 
       final overhead =
-          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) /
-                  ffiResult.avgMicroseconds) *
-              100;
+          ((webResult.avgMicroseconds - ffiResult.avgMicroseconds) / ffiResult.avgMicroseconds) *
+          100;
       print('Web overhead: ${overhead.toStringAsFixed(1)}%');
 
       // Event latency should be under 50ms

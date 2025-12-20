@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:core_logic/models/device_config.dart';
 import 'package:core_logic/models/device_identity.dart';
 import 'package:core_logic/repositories/device_config_repository.dart';
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -39,7 +38,7 @@ void main() {
       );
 
       await repository.save(config);
-      
+
       final loaded = await repository.load();
       expect(loaded.devices, hasLength(1));
       expect(loaded.devices.first.vendorId, 0x1234);
@@ -48,13 +47,7 @@ void main() {
 
     test('atomic write pattern works', () async {
       final config = DeviceConfig(
-        devices: [
-          const DeviceIdentity(
-            vendorId: 0x1234,
-            productId: 0x5678,
-            serialNumber: 'SN123',
-          ),
-        ],
+        devices: [const DeviceIdentity(vendorId: 0x1234, productId: 0x5678, serialNumber: 'SN123')],
       );
 
       await repository.save(config);
@@ -75,7 +68,7 @@ void main() {
       final files = dir.listSync();
       expect(files.any((f) => f.path.contains('.bak')), isTrue);
     });
-    
+
     test('default path logic works (smoke test)', () {
       final repo = DeviceConfigRepository();
       expect(repo.filePath, contains('keyrx'));
