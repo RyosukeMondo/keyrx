@@ -121,7 +121,7 @@ class _WiringPageState extends State<WiringPage> {
     var devices = <DeviceState>[];
     try {
       devices = await _deviceRegistryService.getDevices();
-    } on Exception catch (e) {
+    } on Exception {
       debugPrint('Failed to fetch devices: $e');
     }
 

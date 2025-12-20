@@ -30,7 +30,7 @@ class FfiIntrospectionService {
       _cachedData = result.data!;
       _lastFetch = DateTime.now();
       return _cachedData!;
-    } on Exception catch (e) {
+    } on Exception {
       throw Exception('Failed to fetch introspection metadata: $e');
     }
   }

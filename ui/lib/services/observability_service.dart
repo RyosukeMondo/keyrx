@@ -209,7 +209,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
     try {
       final jsonList = jsonDecode(jsonStr) as List<dynamic>;
       return jsonList.map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>)).toList();
-    } on Exception catch (e) {
+    } on Exception {
       // Failed to parse logs
       return const [];
     }
@@ -272,7 +272,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
       final jsonStr = bindings.observability.metricsSnapshotJson();
       final json = jsonDecode(jsonStr) as Map<String, dynamic>;
       return MetricsSnapshot.fromJson(json);
-    } on Exception catch (e) {
+    } on Exception {
       return null;
     }
   }

@@ -28,8 +28,9 @@ Future<void> main() async {
   final verifyScript = File('${projectRoot.path}/scripts/verify_bindings.py');
 
   if (!verifyScript.existsSync()) {
-    stderr.writeln('ERROR: Verification script not found!');
-    stderr.writeln('Expected: ${verifyScript.path}');
+    stderr
+      ..writeln('ERROR: Verification script not found!')
+      ..writeln('Expected: ${verifyScript.path}');
     exit(1);
   }
 
@@ -49,7 +50,7 @@ Future<void> main() async {
 
     // Exit with same code as verification script
     exit(result.exitCode);
-  } catch (e) {
+  } on Object catch (e) {
     stderr.writeln('ERROR: Failed to run verification script: $e');
     exit(1);
   }

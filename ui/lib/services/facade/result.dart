@@ -145,7 +145,7 @@ class FacadeError with _$FacadeError {
   /// ```dart
   /// try {
   ///   // some operation
-  /// } on Exception catch (e) {
+  /// } on Exception {
   ///   return Result.err(FacadeError.from(e, translator));
   /// }
   /// ```

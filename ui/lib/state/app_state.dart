@@ -78,7 +78,7 @@ class AppState extends ChangeNotifier {
 
       notifyListeners();
       return _initialized;
-    } on Exception catch (e) {
+    } on Exception {
       _error = _errorTranslator.translate(e).body;
       notifyListeners();
       return false;
@@ -109,7 +109,7 @@ class AppState extends ChangeNotifier {
 
       notifyListeners();
       return success;
-    } on Exception catch (e) {
+    } on Exception {
       _error = _errorTranslator.translate(e).body;
       notifyListeners();
       return false;

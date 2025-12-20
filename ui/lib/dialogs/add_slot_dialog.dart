@@ -219,7 +219,7 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
       } else {
         Navigator.of(context).pop(true);
       }
-    } on Exception catch (e) {
+    } on Exception {
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Error adding slot: $e';

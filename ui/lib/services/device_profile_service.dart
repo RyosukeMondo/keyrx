@@ -161,7 +161,7 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
       }
       _overrideCache[cacheKey] = overrides;
       return overrides;
-    } on Exception catch (e) {
+    } on Exception {
       return {};
     }
   }
@@ -213,7 +213,7 @@ class DeviceProfileServiceImpl implements DeviceProfileService {
       try {
         final jsonList = json.decode(jsonStr) as List<dynamic>;
         return jsonList.map((e) => DeviceProfile.fromJson(e as Map<String, dynamic>)).toList();
-      } on Exception catch (e) {
+      } on Exception {
         // print('Error parsing profiles: $e');
       }
     }

@@ -86,7 +86,7 @@ class _MonitorViewState extends ConsumerState<MonitorView>
       try {
         await daemonService.connect();
         await daemonService.subscribeEvents();
-      } on Exception catch (e) {
+      } on Exception {
         // Silent failure on init, user can see status
       }
     }

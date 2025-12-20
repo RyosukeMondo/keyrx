@@ -442,7 +442,7 @@ class _MigrationPromptPageState extends State<MigrationPromptPage> {
         _report = report;
         _status = MigrationStatus.completed;
       });
-    } on Exception catch (e) {
+    } on Exception {
       setState(() {
         _errorMessage = e.toString();
         _status = MigrationStatus.failed;

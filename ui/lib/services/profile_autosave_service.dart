@@ -200,7 +200,7 @@ class ProfileAutosaveService {
 
       try {
         result = await _saveOperation(profile);
-      } on Exception catch (e) {
+      } on Exception {
         result = ProfileRegistryOperationResult.error(e.toString());
       }
 
@@ -256,7 +256,7 @@ class ProfileAutosaveService {
   Future<String?> _resolveTargetDirectory(String profileId) async {
     try {
       return await _storagePathResolver.ensureProfilesDirectory();
-    } on Exception catch (e) {
+    } on Exception {
       _emit(
         AutosaveStatus.error(
           profileId: profileId,

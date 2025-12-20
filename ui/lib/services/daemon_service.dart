@@ -227,7 +227,7 @@ class DaemonService {
         retries--;
       }
       _log.warning('Timed out waiting for daemon socket to appear.');
-    } on Exception catch (e) {
+    } on Exception {
       _log.severe('Failed to launch daemon: $e');
     }
   }

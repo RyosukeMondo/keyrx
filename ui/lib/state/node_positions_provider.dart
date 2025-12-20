@@ -115,7 +115,7 @@ class NodePositions extends _$NodePositions {
         (key, value) =>
             MapEntry(key, NodePosition.fromJson(Map<String, dynamic>.from(value as Map))),
       );
-    } catch (_) {
+    } on Object catch (_) {
       await prefs.remove(StorageKeys.keyFlowNodePositions);
       return {};
     }

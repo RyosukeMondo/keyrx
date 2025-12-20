@@ -29,7 +29,7 @@ void main() {
         final profile = HardwareProfile.fromJson(json);
         expect(profile.wiring[19], 'r1c4');
         expect(profile.wiring[32], 'r2c3');
-      } on Exception catch (e) {
+      } on Exception {
         fail('Parsing failed: $e');
       }
     },

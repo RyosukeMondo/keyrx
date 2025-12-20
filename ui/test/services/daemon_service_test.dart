@@ -390,7 +390,7 @@ void main() {
       for (var i = 0; i < 5; i++) {
         try {
           await service.connect();
-        } on Exception catch (e) {
+        } on Exception {
           // Expected to fail
         }
         await service.disconnect();
@@ -465,7 +465,7 @@ void main() {
       // Try to connect (will fail)
       try {
         await service.connect();
-      } on Exception catch (e) {
+      } on Exception {
         // Expected
       }
 
