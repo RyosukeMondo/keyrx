@@ -5,10 +5,10 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:core_logic/ffi/bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
+import 'package:core_logic/models/log_entry.dart' as core;
+import 'package:core_logic/services/metrics_service.dart' as core_metrics;
+import 'package:core_logic/services/observability_service.dart' as core_observability;
 
 /// Log entry from the engine for UI display.
 ///
@@ -33,6 +33,16 @@ class ObservabilityLogEntry {
         ? Map<String, String>.from(json['fields'] as Map)
         : const {},
     span: json['span'] as String?,
+  );
+
+  /// Convert from core LogEntry to UI ObservabilityLogEntry.
+  factory ObservabilityLogEntry.fromCoreLogEntry(core.LogEntry coreEntry) => ObservabilityLogEntry(
+    timestamp: coreEntry.timestamp.millisecondsSinceEpoch,
+    level: _parseLogLevel(coreEntry.level),
+    target: coreEntry.target,
+    message: coreEntry.message,
+    fields: coreEntry.fields.map<String, String>((key, value) => MapEntry(key, value.toString())),
+    span: null,
   );
 
   final int timestamp;
@@ -90,6 +100,18 @@ class MetricsSnapshot {
         memoryUsed: json['memory_used'] as int,
       );
 
+  /// Convert from core MetricsSnapshot to UI MetricsSnapshot.
+  factory MetricsSnapshot.fromCore(core_metrics.MetricsSnapshot coreSnapshot) =>
+      MetricsSnapshot(
+        timestamp: coreSnapshot.timestamp,
+        eventLatencyP50: coreSnapshot.eventLatencyP50,
+        eventLatencyP95: coreSnapshot.eventLatencyP95,
+        eventLatencyP99: coreSnapshot.eventLatencyP99,
+        eventsProcessed: coreSnapshot.eventsProcessed,
+        errorsCount: coreSnapshot.errorsCount,
+        memoryUsed: coreSnapshot.memoryUsed,
+      );
+
   final int timestamp;
   final int eventLatencyP50;
   final int eventLatencyP95;
@@ -144,11 +166,16 @@ abstract class ObservabilityService {
   Future<void> dispose();
 }
 
-/// Real ObservabilityService that wraps the KeyrxBridge.
+/// Real ObservabilityService that wraps core ObservabilityService.
 class ObservabilityServiceImpl implements ObservabilityService {
-  ObservabilityServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
+  ObservabilityServiceImpl({
+    required core_observability.ObservabilityService coreObservabilityService,
+    required core_metrics.MetricsService metricsService,
+  })  : _coreObservabilityService = coreObservabilityService,
+        _metricsService = metricsService;
 
-  final KeyrxBridge _bridge;
+  final core_observability.ObservabilityService _coreObservabilityService;
+  final core_metrics.MetricsService _metricsService;
   final StreamController<List<ObservabilityLogEntry>> _logController =
       StreamController<List<ObservabilityLogEntry>>.broadcast();
   final StreamController<MetricsSnapshot> _metricsController =
@@ -170,13 +197,9 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return true;
     }
 
-    if (_bridge.loadFailure != null) {
-      return false;
-    }
-
-    // Initialize the log bridge
-    final result = _bridge.bindings?.observability.logBridgeInit();
-    if (result != 0) {
+    // Initialize the core observability service
+    final result = await _coreObservabilityService.initialize();
+    if (!result) {
       return false;
     }
 
@@ -191,10 +214,6 @@ class ObservabilityServiceImpl implements ObservabilityService {
   }
 
   Future<void> _pollLogs() async {
-    if (_bridge.loadFailure != null) {
-      return;
-    }
-
     final count = await getLogCount();
     if (count > 0) {
       final logs = await drainLogs();
@@ -206,105 +225,29 @@ class ObservabilityServiceImpl implements ObservabilityService {
 
   @override
   Future<List<ObservabilityLogEntry>> drainLogs() async {
-    if (_bridge.loadFailure != null) {
-      return const [];
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return const [];
-    }
-
-    final jsonStr = bindings.observability.logDrain();
-
-    try {
-      final jsonList = jsonDecode(jsonStr) as List<dynamic>;
-      return jsonList
-          .map((entry) => ObservabilityLogEntry.fromJson(entry as Map<String, dynamic>))
-          .toList();
-    } on Exception {
-      // Failed to parse logs
-      return const [];
-    }
+    final coreLogs = await _coreObservabilityService.drainLogs();
+    return coreLogs.map(ObservabilityLogEntry.fromCoreLogEntry).toList();
   }
 
   @override
-  Future<int> getLogCount() async {
-    if (_bridge.loadFailure != null) {
-      return 0;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return 0;
-    }
-
-    return bindings.observability.logCount();
-  }
+  Future<int> getLogCount() async => _coreObservabilityService.getLogCount();
 
   @override
-  Future<void> clearLogs() async {
-    if (_bridge.loadFailure != null) {
-      return;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return;
-    }
-
-    bindings.observability.logClear();
-  }
+  Future<void> clearLogs() async => _coreObservabilityService.clearLogs();
 
   @override
-  Future<void> setLogEnabled({required bool enabled}) async {
-    if (_bridge.loadFailure != null) {
-      return;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return;
-    }
-
-    bindings.observability.logSetEnabled(enabled ? 1 : 0);
-  }
+  Future<void> setLogEnabled({required bool enabled}) async =>
+      _coreObservabilityService.setLogEnabled(enabled: enabled);
 
   @override
   Future<MetricsSnapshot?> getMetrics() async {
-    if (_bridge.loadFailure != null) {
-      return null;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return null;
-    }
-
-    try {
-      final jsonStr = bindings.observability.metricsSnapshotJson();
-      final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-      return MetricsSnapshot.fromJson(json);
-    } on Exception {
-      return null;
-    }
+    final coreSnapshot = await _metricsService.getSnapshot();
+    return coreSnapshot != null ? MetricsSnapshot.fromCore(coreSnapshot) : null;
   }
 
   @override
   Future<void> startMetricsUpdates() async {
-    if (_bridge.loadFailure != null) {
-      return;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return;
-    }
-
-    final result = bindings.observability.metricsStartUpdates();
-    if (result != 0) {
-      return;
-    }
+    await _metricsService.startUpdates();
 
     // Start polling for metrics periodically
     _metricsPollingTimer = Timer.periodic(
@@ -322,16 +265,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
 
   @override
   Future<void> stopMetricsUpdates() async {
-    if (_bridge.loadFailure != null) {
-      return;
-    }
-
-    final bindings = _bridge.bindings;
-    if (bindings == null) {
-      return;
-    }
-
-    bindings.observability.metricsStopUpdates();
+    await _metricsService.stopUpdates();
 
     _metricsPollingTimer?.cancel();
     _metricsPollingTimer = null;

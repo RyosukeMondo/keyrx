@@ -74,7 +74,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Repository Pattern Expert | Task: Refactor keyflow_repository to use core KeyflowService instead of direct FFI access. Create service if missing. Maintain repository pattern. | Restrictions: Preserve repository interface, no FFI in repositories, follow existing repository patterns | Success: Repository uses KeyflowService, 2 FFI calls eliminated, functionality preserved, 2 fewer violations | Instructions: Mark in-progress `[-]`, refactor repository, log service creation and integration, mark complete `[x]`._
 
-- [-] 8. Migrate metrics_service FFI usage (2 violations)
+- [x] 8. Migrate metrics_service FFI usage (2 violations)
   - Files: ui/lib/services/metrics_service.dart
   - Replace 2 direct FFI bridge calls with core MetricsService
   - Create MetricsService in core_logic if missing
@@ -84,7 +84,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Service Layer Architect | Task: Refactor UI metrics_service to delegate to core MetricsService instead of direct FFI access. Create core service if missing. | Restrictions: Preserve UI service API, no business logic in UI service, only delegation | Success: UI service delegates to core, 2 FFI calls removed, metrics work correctly, 2 fewer violations | Instructions: Mark in-progress `[-]`, create delegation layer, log service architecture, mark complete `[x]`._
 
-- [ ] 9. Migrate observability_service FFI usage
+- [x] 9. Migrate observability_service FFI usage
   - Files: ui/lib/services/observability_service.dart
   - Replace direct FFI bridge call with core ObservabilityService
   - Create core service if missing
