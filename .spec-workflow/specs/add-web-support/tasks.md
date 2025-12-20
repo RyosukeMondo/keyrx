@@ -68,7 +68,7 @@
   - _Requirements: REQ-6_
   - _Prompt: Role: QA test engineer | Task: Create tests verifying FFI/Web interface consistency, transport isolation, real-time event parity across platforms | Restrictions: Use mocks for transport, test interfaces not implementations, verify zero business logic in transport | Success: Tests pass for both platforms, detect interface drift, verify transport isolation, real-time parity confirmed_
 
-- [ ] 7. Create backend API server
+- [x] 7. Create backend API server
   - File: apps/keyrx_server/bin/server.dart
   - File: apps/keyrx_server/lib/api/routes.dart
   - Create shelf-based HTTP server
