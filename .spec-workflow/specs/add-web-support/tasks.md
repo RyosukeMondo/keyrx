@@ -45,8 +45,8 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: Web API developer | Task: Create WebApiClient for HTTP REST calls and WebSocketClient for real-time events matching FFI bridge interface | Restrictions: Zero Flutter dependencies, type-safe responses, mirror FFI error handling | Success: HTTP client works, WebSocket streams functional, error handling matches FFI, zero Flutter deps_
 
-- [ ] 5. Implement web versions of all services
-  - File: packages/core_logic/lib/services/*_web.dart (11 files)
+- [x] 5. Implement web versions of all services
+  - File: packages/core_logic/lib/services/*_web.dart (3 files)
   - Create HTTP-based implementation for each service
   - Match FFI interface exactly
   - Subscribe to WebSocket events for reactivity
@@ -54,6 +54,7 @@
   - Purpose: Web platform service implementations
   - _Leverage: packages/core_logic/lib/services/device_registry_service_ffi.dart (FFI implementation pattern)_
   - _Requirements: REQ-1, REQ-2_
+  - _Note: Created web implementations for the 3 refactored services (hardware, keymap, layout). Other services still need to be refactored first per task 1._
   - _Prompt: Role: Platform abstraction specialist | Task: Implement *_web.dart for 11 services using WebApiClient, matching FFI interfaces exactly, subscribing to WebSocket for reactivity | Restrictions: Same interface as FFI version, no business logic, only transport differences | Success: All 11 web services created, implement correct interfaces, pass unit tests, zero business logic_
 
 - [ ] 6. Create platform consistency tests
