@@ -11,7 +11,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Dart refactoring specialist | Task: Refactor 11 services to conditional export pattern by renaming *_impl to *_ffi, extracting interfaces, adding export conditionals | Restrictions: Do NOT change business logic, preserve all method signatures, maintain FFI functionality | Success: All services have interface + conditional export, desktop builds pass, zero test failures_
 
-- [ ] 2. Create SSOT violation checker tool
+- [x] 2. Create SSOT violation checker tool
   - File: tools/ssot_checker/lib/ssot_checker.dart
   - Create analyzer for Flutter imports in core_logic
   - Add business logic detection in UI layer
