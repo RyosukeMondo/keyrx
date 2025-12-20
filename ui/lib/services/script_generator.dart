@@ -18,7 +18,9 @@ class ScriptGenerator {
     for (final mapping in mappings) {
       switch (mapping.type) {
         case KeyActionType.remap:
-          buffer.writeln('    remap("${mapping.from}", "${mapping.to ?? mapping.from}");');
+          buffer.writeln(
+            '    remap("${mapping.from}", "${mapping.to ?? mapping.from}");',
+          );
           break;
         case KeyActionType.block:
           buffer.writeln('    block("${mapping.from}");');

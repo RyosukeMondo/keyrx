@@ -30,7 +30,8 @@ class _WebStubDaemonService implements DaemonService {
   Stream<DaemonEvent> get events => _eventController.stream;
 
   @override
-  Stream<JsonRpcNotification> get notificationStream => _notificationController.stream;
+  Stream<JsonRpcNotification> get notificationStream =>
+      _notificationController.stream;
 
   @override
   Stream<DaemonConnectionState> get connectionState => _stateController.stream;
@@ -96,7 +97,10 @@ class _WebStubDaemonService implements DaemonService {
   }
 
   @override
-  Future<dynamic> sendRequest(String method, [Map<String, dynamic>? params]) async {
+  Future<dynamic> sendRequest(
+    String method, [
+    Map<String, dynamic>? params,
+  ]) async {
     // No-op on web - API calls go through WebApiClient
     return null;
   }
@@ -138,7 +142,9 @@ final daemonServiceProvider = Provider<DaemonService>((ref) {
   }
 
   // On desktop, create real daemon service
-  debugPrint('[DEBUG] daemonServiceProvider: creating real DaemonService for desktop');
+  debugPrint(
+    '[DEBUG] daemonServiceProvider: creating real DaemonService for desktop',
+  );
   final service = DaemonService();
 
   // Dispose the service when the provider is disposed
@@ -149,7 +155,9 @@ final daemonServiceProvider = Provider<DaemonService>((ref) {
 });
 
 /// Provider for daemon connection state.
-final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((ref) {
+final daemonConnectionStateProvider = StreamProvider<DaemonConnectionState>((
+  ref,
+) {
   final service = ref.watch(daemonServiceProvider);
   return service.connectionState;
 });

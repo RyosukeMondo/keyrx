@@ -45,7 +45,11 @@ void main() {
   );
 
   debugPrint('[DEBUG] main: Running app (kIsWeb=$kIsWeb)');
-  runApp(ProviderScope(child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame)));
+  runApp(
+    ProviderScope(
+      child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame),
+    ),
+  );
 }
 
 /// Main application widget.
@@ -89,11 +93,20 @@ class KeyrxApp extends ConsumerWidget {
               children: [
                 const Icon(Icons.error, color: Colors.red, size: 64),
                 const SizedBox(height: 16),
-                const Text('Failed to initialize app', style: TextStyle(fontSize: 20)),
+                const Text(
+                  'Failed to initialize app',
+                  style: TextStyle(fontSize: 20),
+                ),
                 const SizedBox(height: 8),
-                Text('Error: $e', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(
+                  'Error: $e',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
                 const SizedBox(height: 16),
-                const Text('Check browser console for details', style: TextStyle(fontSize: 12)),
+                const Text(
+                  'Check browser console for details',
+                  style: TextStyle(fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -125,7 +138,10 @@ class _KeyrxMaterialApp extends StatelessWidget {
       title: 'KeyRx',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
       ),
       home: home,
     );
@@ -330,7 +346,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : Icons.developer_mode_outlined,
                       ),
                       tooltip: 'Developer Tools',
-                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                      onPressed: () =>
+                          _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                   const SizedBox(height: 16),
                 ],
@@ -398,7 +415,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       children: [
         Icon(Icons.construction, size: 64, color: Colors.grey[600]),
         const SizedBox(height: 16),
-        Text('$title - Coming Soon', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          '$title - Coming Soon',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: 8),
         Text(
           'This developer tool is under construction.',
@@ -445,19 +465,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    state.engine == EngineStatus.error ? Icons.error : Icons.check_circle,
+                    state.engine == EngineStatus.error
+                        ? Icons.error
+                        : Icons.check_circle,
                     size: 14,
                     color: color,
                   ),
                   const SizedBox(width: 8),
-                  Text(statusText, style: TextStyle(fontSize: 12, color: color)),
+                  Text(
+                    statusText,
+                    style: TextStyle(fontSize: 12, color: color),
+                  ),
                 ],
               );
             },
           ),
           const Spacer(),
           if (appState.loadedScript != null)
-            Text('Script: ${appState.loadedScript}', style: const TextStyle(fontSize: 12)),
+            Text(
+              'Script: ${appState.loadedScript}',
+              style: const TextStyle(fontSize: 12),
+            ),
           const SizedBox(width: 16),
           InkWell(
             onTap: appState.toggleDeveloperMode,
@@ -465,7 +493,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  appState.isDeveloperMode ? Icons.developer_mode : Icons.developer_mode_outlined,
+                  appState.isDeveloperMode
+                      ? Icons.developer_mode
+                      : Icons.developer_mode_outlined,
                   size: 14,
                   color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
                 ),
@@ -474,14 +504,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                   'Dev',
                   style: TextStyle(
                     fontSize: 12,
-                    color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
+                    color: appState.isDeveloperMode
+                        ? Colors.amber
+                        : Colors.grey,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Text('v${appState.version}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            'v${appState.version}',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );

@@ -41,7 +41,9 @@ class _EnhancedDeviceNodeWithSlotManagementState
     extends ConsumerState<EnhancedDeviceNodeWithSlotManagement> {
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isConnected ? const Color(0xFF1E1E1E) : const Color(0xFF1A1A1A);
+    final bgColor = widget.isConnected
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFF1A1A1A);
 
     return Container(
       width: 280,
@@ -50,7 +52,9 @@ class _EnhancedDeviceNodeWithSlotManagementState
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: widget.isConnected ? const Color(0xFF333333) : const Color(0xFF444444),
+          color: widget.isConnected
+              ? const Color(0xFF333333)
+              : const Color(0xFF444444),
         ),
         boxShadow: [
           BoxShadow(
@@ -98,7 +102,10 @@ class _EnhancedDeviceNodeWithSlotManagementState
         alignment: Alignment.center,
         child: Text(
           '⌨️',
-          style: TextStyle(fontSize: 18, color: widget.isConnected ? null : Colors.grey),
+          style: TextStyle(
+            fontSize: 18,
+            color: widget.isConnected ? null : Colors.grey,
+          ),
         ),
       ),
       const SizedBox(width: 10),
@@ -129,7 +136,11 @@ class _EnhancedDeviceNodeWithSlotManagementState
     children: [
       const Text(
         'SLOTS (PRIORITY ORDER)',
-        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
       ),
       Text(
         '${widget.slots.length} slot${widget.slots.length != 1 ? 's' : ''}',
@@ -154,18 +165,25 @@ class _EnhancedDeviceNodeWithSlotManagementState
   Widget _buildFooter() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      const Text('VIRTUAL DEVICE', style: TextStyle(fontSize: 10, color: Colors.grey)),
+      const Text(
+        'VIRTUAL DEVICE',
+        style: TextStyle(fontSize: 10, color: Colors.grey),
+      ),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: widget.isConnected ? const Color(0x332ECC71) : const Color(0x337F8C8D),
+          color: widget.isConnected
+              ? const Color(0x332ECC71)
+              : const Color(0x337F8C8D),
         ),
         child: Text(
           widget.isConnected ? '● Connected' : '○ Offline',
           style: TextStyle(
             fontSize: 9,
-            color: widget.isConnected ? const Color(0xFF2ECC71) : const Color(0xFFBDC3C7),
+            color: widget.isConnected
+                ? const Color(0xFF2ECC71)
+                : const Color(0xFFBDC3C7),
           ),
         ),
       ),
@@ -175,7 +193,10 @@ class _EnhancedDeviceNodeWithSlotManagementState
   Future<void> _handleAddSlot() async {
     final existingSlots = widget.slots
         .map(
-          (s) => ProfileSlotSelection(hardwareProfileId: s.hardwareProfileId, keymapId: s.keymapId),
+          (s) => ProfileSlotSelection(
+            hardwareProfileId: s.hardwareProfileId,
+            keymapId: s.keymapId,
+          ),
         )
         .toList();
 

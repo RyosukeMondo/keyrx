@@ -72,7 +72,8 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 
     _subscription = repository.watchRuntimeConfig().listen(
       (config) => state = AsyncValue.data(config),
-      onError: (Object error, StackTrace stackTrace) => state = AsyncValue.error(error, stackTrace),
+      onError: (Object error, StackTrace stackTrace) =>
+          state = AsyncValue.error(error, stackTrace),
     );
     ref.onDispose(() => _subscription?.cancel());
 
@@ -102,7 +103,8 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 }
 
 @riverpod
-Future<RuntimeConfig> runtimeConfig(Ref ref) => ref.watch(runtimeConfigNotifierProvider.future);
+Future<RuntimeConfig> runtimeConfig(Ref ref) =>
+    ref.watch(runtimeConfigNotifierProvider.future);
 
 @riverpod
 Future<FlowGraph> flowGraph(Ref ref) async {
@@ -127,8 +129,16 @@ class KeyFlowActions {
       _repo.getRuntimeConfig(forceRefresh: true);
 
   /// Add a slot with auto-save and optimistic updates.
-  void addSlot(DeviceInstanceId device, ProfileSlot slot, {int? priorityOverride}) {
-    final operation = AddSlotOperation(device, slot, priorityOverride: priorityOverride);
+  void addSlot(
+    DeviceInstanceId device,
+    ProfileSlot slot, {
+    int? priorityOverride,
+  }) {
+    final operation = AddSlotOperation(
+      device,
+      slot,
+      priorityOverride: priorityOverride,
+    );
     _scheduleAutoSave(operation);
   }
 

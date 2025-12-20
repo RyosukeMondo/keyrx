@@ -22,7 +22,9 @@ void main() async {
     ..writeln(configJson)
     ..writeln('\n');
 
-  final config = RuntimeConfig.fromJson(jsonDecode(configJson) as Map<String, dynamic>);
+  final config = RuntimeConfig.fromJson(
+    jsonDecode(configJson) as Map<String, dynamic>,
+  );
 
   stderr
     ..writeln('Parsed Runtime Config:')

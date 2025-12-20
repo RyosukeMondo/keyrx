@@ -48,7 +48,7 @@ void main() {
       final resolved = await resolver.ensureProfilesDirectory();
 
       expect(resolved, p.join(tempHome.path, '.keyrx'));
-      expect(await Directory(resolved).exists(), isTrue);
+      expect(Directory(resolved).existsSync(), isTrue);
     });
   });
 }

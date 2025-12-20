@@ -70,7 +70,11 @@ class EdgePathCacheKey {
 
   @override
   int get hashCode =>
-      startX.hashCode ^ startY.hashCode ^ endX.hashCode ^ endY.hashCode ^ active.hashCode;
+      startX.hashCode ^
+      startY.hashCode ^
+      endX.hashCode ^
+      endY.hashCode ^
+      active.hashCode;
 }
 
 /// Mixin for widgets that need selective repainting based on viewport changes.

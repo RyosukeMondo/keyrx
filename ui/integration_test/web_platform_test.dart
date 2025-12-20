@@ -8,7 +8,8 @@ import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/virtual_layout.dart';
 import 'package:core_logic/services/config_result.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, ChangeNotifier, debugPrint;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, ChangeNotifier, debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:keyrx_ui/main.dart' as app;
@@ -46,7 +47,9 @@ void main() {
       debugPrint('Running on platform: ${isWeb ? "web" : "desktop"}');
     });
 
-    testWidgets('ServiceRegistry initializes for current platform', (tester) async {
+    testWidgets('ServiceRegistry initializes for current platform', (
+      tester,
+    ) async {
       // Verify registry is created
       expect(registry, isNotNull);
 
@@ -67,7 +70,9 @@ void main() {
         expect(result, isA<ConfigOperationResult<List<VirtualLayout>>>());
 
         if (!result.hasError) {
-          debugPrint('Layout service returned ${result.data?.length ?? 0} layouts');
+          debugPrint(
+            'Layout service returned ${result.data?.length ?? 0} layouts',
+          );
         } else {
           debugPrint('Layout service returned error: ${result.errorMessage}');
         }
@@ -75,7 +80,9 @@ void main() {
         // On web, if backend is not running, this might fail
         // We still want to verify the service exists and can be called
         if (isWeb) {
-          debugPrint('Layout service call failed (backend may not be running): $e');
+          debugPrint(
+            'Layout service call failed (backend may not be running): $e',
+          );
           // This is acceptable in E2E test without running backend
         } else {
           rethrow;
@@ -92,14 +99,18 @@ void main() {
         expect(result, isA<ConfigOperationResult<List<HardwareProfile>>>());
 
         if (!result.hasError) {
-          debugPrint('Hardware service returned ${result.data?.length ?? 0} profiles');
+          debugPrint(
+            'Hardware service returned ${result.data?.length ?? 0} profiles',
+          );
         } else {
           debugPrint('Hardware service returned error: ${result.errorMessage}');
         }
       } on Exception catch (e) {
         // On web, if backend is not running, this might fail
         if (isWeb) {
-          debugPrint('Hardware service call failed (backend may not be running): $e');
+          debugPrint(
+            'Hardware service call failed (backend may not be running): $e',
+          );
           // This is acceptable in E2E test without running backend
         } else {
           rethrow;
@@ -116,14 +127,18 @@ void main() {
         expect(result, isA<ConfigOperationResult<List<Keymap>>>());
 
         if (!result.hasError) {
-          debugPrint('Keymap service returned ${result.data?.length ?? 0} keymaps');
+          debugPrint(
+            'Keymap service returned ${result.data?.length ?? 0} keymaps',
+          );
         } else {
           debugPrint('Keymap service returned error: ${result.errorMessage}');
         }
       } on Exception catch (e) {
         // On web, if backend is not running, this might fail
         if (isWeb) {
-          debugPrint('Keymap service call failed (backend may not be running): $e');
+          debugPrint(
+            'Keymap service call failed (backend may not be running): $e',
+          );
           // This is acceptable in E2E test without running backend
         } else {
           rethrow;
@@ -155,7 +170,9 @@ void main() {
 
           debugPrint('Successfully connected to backend');
         } on Exception catch (e) {
-          debugPrint('Backend connection attempt completed (may fail if backend not running): $e');
+          debugPrint(
+            'Backend connection attempt completed (may fail if backend not running): $e',
+          );
           // Test passes even if backend is not running - we just verify the attempt works
         }
       });
@@ -163,7 +180,9 @@ void main() {
 
     // Real-time updates tests
     group('Real-time updates', () {
-      testWidgets('Layout service provides ChangeNotifier reactivity', (tester) async {
+      testWidgets('Layout service provides ChangeNotifier reactivity', (
+        tester,
+      ) async {
         // Verify the UI service extends ChangeNotifier
         var notified = false;
         registry.layoutService.addListener(() {
@@ -180,10 +199,14 @@ void main() {
           debugPrint('Layout service call failed: $e');
         }
 
-        debugPrint('Layout service reactivity test completed (notified: $notified)');
+        debugPrint(
+          'Layout service reactivity test completed (notified: $notified)',
+        );
       });
 
-      testWidgets('Hardware service provides ChangeNotifier reactivity', (tester) async {
+      testWidgets('Hardware service provides ChangeNotifier reactivity', (
+        tester,
+      ) async {
         // Verify the UI service extends ChangeNotifier
         var notified = false;
         registry.hardwareService.addListener(() {
@@ -200,10 +223,14 @@ void main() {
           debugPrint('Hardware service call failed: $e');
         }
 
-        debugPrint('Hardware service reactivity test completed (notified: $notified)');
+        debugPrint(
+          'Hardware service reactivity test completed (notified: $notified)',
+        );
       });
 
-      testWidgets('Services support real-time change notifications', (tester) async {
+      testWidgets('Services support real-time change notifications', (
+        tester,
+      ) async {
         // Verify both services are ChangeNotifier instances
         expect(registry.layoutService, isA<ChangeNotifier>());
         expect(registry.hardwareService, isA<ChangeNotifier>());
@@ -214,7 +241,9 @@ void main() {
 
     // Feature parity tests
     group('Feature parity', () {
-      testWidgets('Web and desktop have same service interfaces', (tester) async {
+      testWidgets('Web and desktop have same service interfaces', (
+        tester,
+      ) async {
         // Verify all services implement the same interface
         expect(registry.layoutService.listLayouts, isA<Function>());
         expect(registry.hardwareService.listProfiles, isA<Function>());

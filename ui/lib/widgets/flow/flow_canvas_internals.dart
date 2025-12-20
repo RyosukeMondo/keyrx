@@ -85,7 +85,10 @@ class _AnimatedNodeWrapperState extends State<AnimatedNodeWrapper>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
 
     _fadeAnimation = Tween<double>(
       begin: widget.isNew ? 0 : 1,

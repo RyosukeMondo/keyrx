@@ -26,7 +26,9 @@ class LogEntry {
     level: _parseLogLevel(json['level'] as String),
     target: json['target'] as String,
     message: json['message'] as String,
-    fields: json['fields'] != null ? Map<String, String>.from(json['fields'] as Map) : const {},
+    fields: json['fields'] != null
+        ? Map<String, String>.from(json['fields'] as Map)
+        : const {},
     span: json['span'] as String?,
   );
 
@@ -37,7 +39,8 @@ class LogEntry {
   final Map<String, String> fields;
   final String? span;
 
-  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime =>
+      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
   static LogLevel _parseLogLevel(String level) => switch (level.toUpperCase()) {
     'TRACE' => LogLevel.trace,
@@ -73,15 +76,16 @@ class MetricsSnapshot {
     required this.memoryUsed,
   });
 
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) => MetricsSnapshot(
-    timestamp: json['timestamp'] as int,
-    eventLatencyP50: json['event_latency_p50'] as int,
-    eventLatencyP95: json['event_latency_p95'] as int,
-    eventLatencyP99: json['event_latency_p99'] as int,
-    eventsProcessed: json['events_processed'] as int,
-    errorsCount: json['errors_count'] as int,
-    memoryUsed: json['memory_used'] as int,
-  );
+  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
+      MetricsSnapshot(
+        timestamp: json['timestamp'] as int,
+        eventLatencyP50: json['event_latency_p50'] as int,
+        eventLatencyP95: json['event_latency_p95'] as int,
+        eventLatencyP99: json['event_latency_p99'] as int,
+        eventsProcessed: json['events_processed'] as int,
+        errorsCount: json['errors_count'] as int,
+        memoryUsed: json['memory_used'] as int,
+      );
 
   final int timestamp;
   final int eventLatencyP50;
@@ -91,7 +95,8 @@ class MetricsSnapshot {
   final int errorsCount;
   final int memoryUsed;
 
-  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime =>
+      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 }
 
 /// Abstraction for observability operations.
@@ -173,7 +178,10 @@ class ObservabilityServiceImpl implements ObservabilityService {
     }
 
     // Start polling for logs periodically
-    _logPollingTimer = Timer.periodic(const Duration(milliseconds: 100), (_) => _pollLogs());
+    _logPollingTimer = Timer.periodic(
+      const Duration(milliseconds: 100),
+      (_) => _pollLogs(),
+    );
 
     _initialized = true;
     return true;
@@ -208,7 +216,9 @@ class ObservabilityServiceImpl implements ObservabilityService {
 
     try {
       final jsonList = jsonDecode(jsonStr) as List<dynamic>;
-      return jsonList.map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>)).toList();
+      return jsonList
+          .map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>))
+          .toList();
     } on Exception {
       // Failed to parse logs
       return const [];
@@ -294,7 +304,10 @@ class ObservabilityServiceImpl implements ObservabilityService {
     }
 
     // Start polling for metrics periodically
-    _metricsPollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => _pollMetrics());
+    _metricsPollingTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _pollMetrics(),
+    );
   }
 
   Future<void> _pollMetrics() async {

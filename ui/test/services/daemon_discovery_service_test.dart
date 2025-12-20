@@ -20,7 +20,9 @@ void main() {
   setUp(() {
     mockDaemonService = MockDaemonService();
     daemonEventController = StreamController<DaemonEvent>.broadcast();
-    when(mockDaemonService.events).thenAnswer((_) => daemonEventController.stream);
+    when(
+      mockDaemonService.events,
+    ).thenAnswer((_) => daemonEventController.stream);
     discoveryService = DaemonDiscoveryService(mockDaemonService);
   });
 
@@ -30,24 +32,34 @@ void main() {
   });
 
   test('startDiscovery calls the correct daemon method', () async {
-    when(mockDaemonService.sendRequest(DaemonMethods.discoveryStart)).thenAnswer((_) async => null);
+    when(
+      mockDaemonService.sendRequest(DaemonMethods.discoveryStart),
+    ).thenAnswer((_) async => null);
 
     await discoveryService.startDiscovery();
 
-    verify(mockDaemonService.sendRequest(DaemonMethods.discoveryStart)).called(1);
+    verify(
+      mockDaemonService.sendRequest(DaemonMethods.discoveryStart),
+    ).called(1);
     expect(discoveryService.isDiscovering, isTrue);
   });
 
   test('stopDiscovery calls the correct daemon method', () async {
     // Start discovery first
-    when(mockDaemonService.sendRequest(DaemonMethods.discoveryStart)).thenAnswer((_) async => null);
+    when(
+      mockDaemonService.sendRequest(DaemonMethods.discoveryStart),
+    ).thenAnswer((_) async => null);
     await discoveryService.startDiscovery();
 
     // Then stop it
-    when(mockDaemonService.sendRequest(DaemonMethods.discoveryStop)).thenAnswer((_) async => null);
+    when(
+      mockDaemonService.sendRequest(DaemonMethods.discoveryStop),
+    ).thenAnswer((_) async => null);
     await discoveryService.stopDiscovery();
 
-    verify(mockDaemonService.sendRequest(DaemonMethods.discoveryStop)).called(1);
+    verify(
+      mockDaemonService.sendRequest(DaemonMethods.discoveryStop),
+    ).called(1);
     expect(discoveryService.isDiscovering, isFalse);
   });
 

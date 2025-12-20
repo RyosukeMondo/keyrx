@@ -29,7 +29,11 @@ class KeymapConverter {
           tapHold: (b) {
             if (b.value.length == 2) {
               tapHoldConfigs.add(
-                TapHoldConfig(triggerKey: source, tapAction: b.value[0], holdAction: b.value[1]),
+                TapHoldConfig(
+                  triggerKey: source,
+                  tapAction: b.value[0],
+                  holdAction: b.value[1],
+                ),
               );
             }
           },
@@ -91,7 +95,11 @@ class KeymapConverter {
     return remaps;
   }
 
-  LayerConfig _extractLayerConfig(KeymapLayer layer, int index, {bool onlyComplex = false}) {
+  LayerConfig _extractLayerConfig(
+    KeymapLayer layer,
+    int index, {
+    bool onlyComplex = false,
+  }) {
     final layerMappings = <LayerMapping>[];
 
     for (final entry in layer.bindings.entries) {
@@ -100,7 +108,10 @@ class KeymapConverter {
 
       // If we only want complex mappings (for Layer 0), skip simple standard keys
       if (onlyComplex) {
-        final isSimple = binding.maybeMap(standardKey: (_) => true, orElse: () => false);
+        final isSimple = binding.maybeMap(
+          standardKey: (_) => true,
+          orElse: () => false,
+        );
         if (isSimple) continue;
       }
 
@@ -111,10 +122,14 @@ class KeymapConverter {
           }
         },
         macro: (b) {
-          layerMappings.add(LayerMapping(sourceKey: source, action: 'macro:${b.value}'));
+          layerMappings.add(
+            LayerMapping(sourceKey: source, action: 'macro:${b.value}'),
+          );
         },
         layerToggle: (b) {
-          layerMappings.add(LayerMapping(sourceKey: source, action: 'layer_toggle:${b.value}'));
+          layerMappings.add(
+            LayerMapping(sourceKey: source, action: 'layer_toggle:${b.value}'),
+          );
         },
         tapHold: (_) {
           // Tap-Hold handled separately (global config)

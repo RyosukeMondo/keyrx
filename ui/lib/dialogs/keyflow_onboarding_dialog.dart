@@ -42,7 +42,8 @@ class KeyFlowOnboardingDialog extends StatefulWidget {
   );
 
   @override
-  State<KeyFlowOnboardingDialog> createState() => _KeyFlowOnboardingDialogState();
+  State<KeyFlowOnboardingDialog> createState() =>
+      _KeyFlowOnboardingDialogState();
 }
 
 class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
@@ -53,7 +54,8 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
     _OnboardingPage(
       icon: Icons.account_tree_outlined,
       title: 'Welcome to KeyFlow',
-      description: 'KeyFlow visualizes how your keyboard devices connect to profiles and keymaps.',
+      description:
+          'KeyFlow visualizes how your keyboard devices connect to profiles and keymaps.',
       details: [
         'See all your devices and their configurations at a glance',
         'Understand the relationship between devices, profiles, and keymaps',
@@ -74,7 +76,8 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
     _OnboardingPage(
       icon: Icons.link,
       title: 'Slots & Priority',
-      description: 'Slots connect devices to profiles and keymaps with a priority order.',
+      description:
+          'Slots connect devices to profiles and keymaps with a priority order.',
       details: [
         'Active slot (solid line): Currently in use',
         'Fallback slot (dashed line): Backup configuration',
@@ -86,7 +89,8 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
     _OnboardingPage(
       icon: Icons.touch_app,
       title: 'Interact with the Flow',
-      description: 'KeyFlow is fully interactive. Move nodes, manage slots, and more.',
+      description:
+          'KeyFlow is fully interactive. Move nodes, manage slots, and more.',
       details: [
         'Pan & Zoom: Navigate the canvas freely',
         'Drag nodes: Rearrange layout to your preference',
@@ -159,7 +163,9 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
                   Expanded(
                     child: Text(
                       page.title,
-                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -183,7 +189,9 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
                     Text(
                       page.description,
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.8,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -195,9 +203,18 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.check_circle, size: 20, color: theme.colorScheme.primary),
+                            Icon(
+                              Icons.check_circle,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(detail, style: theme.textTheme.bodyMedium)),
+                            Expanded(
+                              child: Text(
+                                detail,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -250,7 +267,10 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
                           onTap: () {
                             setState(() => _dontShowAgain = !_dontShowAgain);
                           },
-                          child: Text("Don't show this again", style: theme.textTheme.bodyMedium),
+                          child: Text(
+                            "Don't show this again",
+                            style: theme.textTheme.bodyMedium,
+                          ),
                         ),
                       ),
                     ],
@@ -263,12 +283,16 @@ class _KeyFlowOnboardingDialogState extends State<KeyFlowOnboardingDialog> {
                     children: [
                       // Previous button
                       if (_currentPage > 0)
-                        TextButton(onPressed: _previousPage, child: const Text('Previous'))
+                        TextButton(
+                          onPressed: _previousPage,
+                          child: const Text('Previous'),
+                        )
                       else
                         const SizedBox.shrink(),
 
                       // Skip button (only on first pages)
-                      if (!isLastPage) TextButton(onPressed: _skip, child: const Text('Skip')),
+                      if (!isLastPage)
+                        TextButton(onPressed: _skip, child: const Text('Skip')),
 
                       // Next / Get Started button
                       FilledButton(

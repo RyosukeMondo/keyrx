@@ -58,10 +58,12 @@ void main() {
     when(() => mockBridge.loadFailure).thenReturn(null);
     setupEngineInitialization();
     when(() => mockBridge.loadScript(any())).thenReturn(true);
+    when(() => mockBridge.validateScript(any())).thenReturn(
+      const ValidationResult(isValid: true, errors: [], warnings: []),
+    );
     when(
-      () => mockBridge.validateScript(any()),
-    ).thenReturn(const ValidationResult(isValid: true, errors: [], warnings: []));
-    when(() => mockBridge.listRegisteredDevices()).thenReturn(const DeviceRegistryResult(data: []));
+      () => mockBridge.listRegisteredDevices(),
+    ).thenReturn(const DeviceRegistryResult(data: []));
     when(() => mockBridge.selectDevice(any())).thenReturn(0);
 
     // Setup stream mocks - return null so services don't try to subscribe
@@ -98,18 +100,21 @@ void main() {
       expect(facade.currentState.engine, EngineStatus.ready);
     });
 
-    test('engine initialization failure propagates through service layer', () async {
-      setupEngineInitialization(shouldSucceed: false);
+    test(
+      'engine initialization failure propagates through service layer',
+      () async {
+        setupEngineInitialization(shouldSucceed: false);
 
-      final result = await facade.startEngine('/path/to/script.rhai');
+        final result = await facade.startEngine('/path/to/script.rhai');
 
-      expect(result.isErr, isTrue);
-      expect(facade.currentState.engine, EngineStatus.error);
+        expect(result.isErr, isTrue);
+        expect(facade.currentState.engine, EngineStatus.error);
 
-      final error = result.errOrNull!;
-      expect(error.code, 'OPERATION_FAILED');
-      expect(error.userMessage, contains('initialize'));
-    });
+        final error = result.errOrNull!;
+        expect(error.code, 'OPERATION_FAILED');
+        expect(error.userMessage, contains('initialize'));
+      },
+    );
 
     test('repeated engine starts use same initialization', () async {
       // First start
@@ -222,7 +227,9 @@ void main() {
 
   group('KeyrxFacade Integration - Error Propagation', () {
     test('bridge errors propagate through service layer to facade', () async {
-      when(() => mockBridge.initialize()).thenThrow(Exception('FFI initialization failed'));
+      when(
+        () => mockBridge.initialize(),
+      ).thenThrow(Exception('FFI initialization failed'));
 
       final result = await facade.startEngine('/path/to/script.rhai');
 
@@ -260,7 +267,10 @@ void main() {
       expect(registry.deviceService, isNotNull);
 
       // Facade should reject further operations
-      expect(() => facade.startEngine('/path/to/script.rhai'), throwsStateError);
+      expect(
+        () => facade.startEngine('/path/to/script.rhai'),
+        throwsStateError,
+      );
     });
 
     test('multiple facades can share same registry', () async {

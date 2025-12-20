@@ -33,7 +33,7 @@ void main() {
     });
 
     test('sets and persists flag value', () async {
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
 
       // Create new service instance to verify persistence
@@ -44,7 +44,7 @@ void main() {
     });
 
     test('resets flag to default', () async {
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
 
       await service.resetFlag(FeatureFlag.keyFlowEnabled);
@@ -52,9 +52,9 @@ void main() {
     });
 
     test('resets all flags to defaults', () async {
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
-      await service.setFlag(FeatureFlag.keyFlowAnalytics, false);
-      await service.setFlag(FeatureFlag.keyFlowOnboarding, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
+      await service.setFlag(FeatureFlag.keyFlowAnalytics, enabled: false);
+      await service.setFlag(FeatureFlag.keyFlowOnboarding, enabled: false);
 
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
       expect(service.isEnabled(FeatureFlag.keyFlowAnalytics), isFalse);
@@ -90,7 +90,7 @@ void main() {
     test('hasOverride checks for runtime override', () async {
       expect(service.hasOverride(FeatureFlag.keyFlowEnabled), isFalse);
 
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(service.hasOverride(FeatureFlag.keyFlowEnabled), isTrue);
 
       await service.resetFlag(FeatureFlag.keyFlowEnabled);
@@ -98,19 +98,19 @@ void main() {
     });
 
     test('handles multiple flag changes', () async {
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
 
-      await service.setFlag(FeatureFlag.keyFlowEnabled, true);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: true);
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isTrue);
 
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(service.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
     });
 
     test('logs flag changes', () async {
       logOutput.clear();
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
 
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -118,7 +118,7 @@ void main() {
     });
 
     test('logs flag resets', () async {
-      await service.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await service.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       logOutput.clear();
 
       await service.resetFlag(FeatureFlag.keyFlowEnabled);
@@ -151,7 +151,7 @@ void main() {
 
     test('setting flag before initialization works', () async {
       final uninitializedService = FeatureFlagService();
-      await uninitializedService.setFlag(FeatureFlag.keyFlowEnabled, false);
+      await uninitializedService.setFlag(FeatureFlag.keyFlowEnabled, enabled: false);
       expect(uninitializedService.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
     });
   });

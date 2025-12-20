@@ -48,14 +48,19 @@ final bridgeProvider = Provider<KeyrxBridge?>((ref) {
 final serviceRegistryProvider = Provider<ServiceRegistry>((ref) {
   debugPrint('[DEBUG] serviceRegistryProvider: initializing');
   final bridge = ref.watch(bridgeProvider);
-  debugPrint('[DEBUG] serviceRegistryProvider: bridge obtained (isNull=${bridge == null})');
+  debugPrint(
+    '[DEBUG] serviceRegistryProvider: bridge obtained (isNull=${bridge == null})',
+  );
 
   // ServiceRegistry.real() automatically detects web platform and creates appropriate services
   const backendUrl = kIsWeb ? 'http://192.168.11.24:18888' : null;
   debugPrint('[DEBUG] serviceRegistryProvider: backendUrl=$backendUrl');
 
   try {
-    final registry = ServiceRegistry.real(bridge: bridge, backendUrl: backendUrl);
+    final registry = ServiceRegistry.real(
+      bridge: bridge,
+      backendUrl: backendUrl,
+    );
     debugPrint('[DEBUG] serviceRegistryProvider: initialized successfully');
     ref.onDispose(registry.dispose);
     return registry;

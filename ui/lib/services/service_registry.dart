@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
-import 'package:core_logic/services/device_registry_service_web.dart' as core_web;
+import 'package:core_logic/services/device_registry_service_web.dart'
+    as core_web;
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/services/keymap_service_web.dart';
 import 'package:core_logic/services/layout_service_web.dart';
@@ -49,6 +50,7 @@ class ServiceRegistry {
     required this.runtimeService,
     required this.daemonManager,
   });
+
   /// Create a registry with explicit (often mocked) implementations.
   factory ServiceRegistry.withOverrides({
     required ErrorTranslator errorTranslator,
@@ -130,7 +132,10 @@ class ServiceRegistry {
       return _createWebRegistry(
         backendUrl:
             backendUrl ??
-            const String.fromEnvironment('BACKEND_URL', defaultValue: 'http://localhost:8080'),
+            const String.fromEnvironment(
+              'BACKEND_URL',
+              defaultValue: 'http://localhost:8080',
+            ),
         errorTranslator: errorTranslator,
         mappingRepository: mappingRepository,
         apiDocsService: apiDocsService,
@@ -188,7 +193,9 @@ class ServiceRegistry {
     final coreLayout = LayoutServiceWeb(client: apiClient);
     final coreHardware = HardwareServiceWeb(client: apiClient);
     final coreKeymap = KeymapServiceWeb(client: apiClient);
-    final coreDeviceRegistry = core_web.DeviceRegistryServiceWeb(client: apiClient);
+    final coreDeviceRegistry = core_web.DeviceRegistryServiceWeb(
+      client: apiClient,
+    );
     final coreRuntime = RuntimeServiceWeb(client: apiClient);
     final coreMapping = core.MappingRepository();
 
@@ -197,7 +204,9 @@ class ServiceRegistry {
     final hardware = hardwareService ?? HardwareServiceUI(coreHardware);
     final mapping = mappingRepository ?? MappingRepositoryUI(coreMapping);
     final keymaps = keymapService ?? coreKeymap;
-    final deviceRegistryUi = ui.DeviceRegistryServiceImpl(coreService: coreDeviceRegistry);
+    final deviceRegistryUi = ui.DeviceRegistryServiceImpl(
+      coreService: coreDeviceRegistry,
+    );
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
 
@@ -234,7 +243,9 @@ class ServiceRegistry {
       daemonManager: stubDaemon,
     );
 
-    bootstrapSpan.finish(context: {'platform': 'web', 'backend_url': backendUrl});
+    bootstrapSpan.finish(
+      context: {'platform': 'web', 'backend_url': backendUrl},
+    );
 
     return registry;
   }
@@ -265,9 +276,12 @@ class ServiceRegistry {
       context: {'source': 'service_registry'},
     );
     final effectiveBridge = bridge ?? KeyrxBridge.open();
-    bridgeSpan.finish(context: {'load_failure': effectiveBridge.loadFailure?.toString()});
+    bridgeSpan.finish(
+      context: {'load_failure': effectiveBridge.loadFailure?.toString()},
+    );
 
-    final resolver = storagePathResolver ?? StoragePathResolver(bridge: effectiveBridge);
+    final resolver =
+        storagePathResolver ?? StoragePathResolver(bridge: effectiveBridge);
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
 
     // Initialize the bridge (and revolutionary runtime)
@@ -280,7 +294,9 @@ class ServiceRegistry {
 
     final engine = EngineServiceImpl(bridge: effectiveBridge);
     final device = deviceService ?? DeviceServiceImpl(bridge: effectiveBridge);
-    final deviceProfile = deviceProfileService ?? DeviceProfileServiceImpl(bridge: effectiveBridge);
+    final deviceProfile =
+        deviceProfileService ??
+        DeviceProfileServiceImpl(bridge: effectiveBridge);
 
     // Shared DeviceRegistry from core_logic
     final deviceConfigRepository = DeviceConfigRepository();
@@ -292,13 +308,19 @@ class ServiceRegistry {
     // Migrate from legacy SharedPreferences if needed
     // Note: Fire-and-forget migration to avoid blocking UI startup.
     // Migration failures are handled gracefully (best-effort).
-    unawaited(ui.DeviceRegistryServiceImpl.migrateFromSharedPreferences(sharedDeviceRegistry));
+    unawaited(
+      ui.DeviceRegistryServiceImpl.migrateFromSharedPreferences(
+        sharedDeviceRegistry,
+      ),
+    );
 
     final deviceRegistry =
-        deviceRegistryService ?? ui.DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
+        deviceRegistryService ??
+        ui.DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
 
     final profileRegistry =
-        profileRegistryService ?? ProfileRegistryServiceImpl(bridge: effectiveBridge);
+        profileRegistryService ??
+        ProfileRegistryServiceImpl(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 
@@ -313,7 +335,8 @@ class ServiceRegistry {
     final mapping = mappingRepository ?? MappingRepositoryUI(coreMapping);
 
     final keymaps = keymapService ?? KeymapServiceFFI(bridge: effectiveBridge);
-    final runtime = runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
+    final runtime =
+        runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
     final daemon = daemonManager ?? DaemonManager(DaemonService());
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
@@ -402,13 +425,15 @@ class ServiceRegistry {
     deviceService: deviceService ?? this.deviceService,
     deviceProfileService: deviceProfileService ?? this.deviceProfileService,
     deviceRegistryService: deviceRegistryService ?? this.deviceRegistryService,
-    profileRegistryService: profileRegistryService ?? this.profileRegistryService,
+    profileRegistryService:
+        profileRegistryService ?? this.profileRegistryService,
     scriptFileService: scriptFileService ?? this.scriptFileService,
     testService: testService ?? this.testService,
     bridge: bridge ?? this.bridge,
     apiDocsService: apiDocsService ?? this.apiDocsService,
     storagePathResolver: storagePathResolver ?? this.storagePathResolver,
-    profileAutosaveService: profileAutosaveService ?? this.profileAutosaveService,
+    profileAutosaveService:
+        profileAutosaveService ?? this.profileAutosaveService,
     layoutService: layoutService ?? this.layoutService,
     hardwareService: hardwareService ?? this.hardwareService,
     keymapService: keymapService ?? this.keymapService,
@@ -474,7 +499,10 @@ class _WebStubEngineService implements EngineService {
 
   @override
   Future<ConsoleEvalResult> eval(String command) async =>
-      const ConsoleEvalResult(success: false, output: 'Console not available on web platform');
+      const ConsoleEvalResult(
+        success: false,
+        output: 'Console not available on web platform',
+      );
 
   @override
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
@@ -509,8 +537,9 @@ class _WebStubDeviceProfileService implements DeviceProfileService {
   Future<void> dispose() async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('DeviceProfileService not available on web platform');
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'DeviceProfileService not available on web platform',
+  );
 }
 
 class _WebStubProfileRegistryService implements ProfileRegistryService {
@@ -518,8 +547,9 @@ class _WebStubProfileRegistryService implements ProfileRegistryService {
   Future<void> dispose() async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('ProfileRegistryService not available on web platform');
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'ProfileRegistryService not available on web platform',
+  );
 }
 
 class _WebStubTestService implements TestService {
@@ -552,8 +582,9 @@ class _WebStubProfileAutosaveService implements ProfileAutosaveService {
   Future<void> dispose() async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('ProfileAutosaveService not available on web platform');
+  dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
+    'ProfileAutosaveService not available on web platform',
+  );
 }
 
 class _WebStubDaemonManager implements DaemonManager {

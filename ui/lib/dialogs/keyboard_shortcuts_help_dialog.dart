@@ -10,8 +10,10 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
   const KeyboardShortcutsHelpDialog({super.key});
 
   /// Show the keyboard shortcuts help dialog.
-  static Future<void> show(BuildContext context) =>
-      showDialog<void>(context: context, builder: (context) => const KeyboardShortcutsHelpDialog());
+  static Future<void> show(BuildContext context) => showDialog<void>(
+    context: context,
+    builder: (context) => const KeyboardShortcutsHelpDialog(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +36,9 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     'Keyboard Shortcuts',
-                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -55,8 +59,11 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: shortcuts.entries
                       .map(
-                        (entry) =>
-                            _buildCategory(theme, category: entry.key, shortcuts: entry.value),
+                        (entry) => _buildCategory(
+                          theme,
+                          category: entry.key,
+                          shortcuts: entry.value,
+                        ),
                       )
                       .toList(),
                 ),
@@ -74,7 +81,9 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Press Ctrl+? to show this dialog anytime',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ),
                 ],
@@ -107,29 +116,41 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
 
         // Shortcuts in this category
         ...shortcuts.map(
-          (shortcut) =>
-              _buildShortcutRow(theme, description: shortcut.description, keys: shortcut.shortcut),
+          (shortcut) => _buildShortcutRow(
+            theme,
+            description: shortcut.description,
+            keys: shortcut.shortcut,
+          ),
         ),
       ],
     ),
   );
 
-  Widget _buildShortcutRow(ThemeData theme, {required String description, required String keys}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            // Description
-            Expanded(flex: 3, child: Text(description, style: theme.textTheme.bodyMedium)),
-
-            // Keyboard shortcut
-            Expanded(
-              flex: 2,
-              child: Align(alignment: Alignment.centerRight, child: _buildKeyBadge(theme, keys)),
-            ),
-          ],
+  Widget _buildShortcutRow(
+    ThemeData theme, {
+    required String description,
+    required String keys,
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      children: [
+        // Description
+        Expanded(
+          flex: 3,
+          child: Text(description, style: theme.textTheme.bodyMedium),
         ),
-      );
+
+        // Keyboard shortcut
+        Expanded(
+          flex: 2,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _buildKeyBadge(theme, keys),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildKeyBadge(ThemeData theme, String keys) {
     // Split combined keys (e.g., "Ctrl+Z" -> ["Ctrl", "Z"])
@@ -144,7 +165,9 @@ class KeyboardShortcutsHelpDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),

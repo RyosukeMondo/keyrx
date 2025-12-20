@@ -81,10 +81,7 @@ class FeatureFlagService {
       }
     }
 
-    _logger.debug(
-      'feature_flags.overrides_loaded',
-      context: {'count': _overrides.length},
-    );
+    _logger.debug('feature_flags.overrides_loaded', context: {'count': _overrides.length});
   }
 
   /// Check if a feature flag is enabled.
@@ -105,27 +102,24 @@ class FeatureFlagService {
   /// Set a feature flag value at runtime.
   ///
   /// The value is persisted to SharedPreferences.
-  Future<void> setFlag(FeatureFlag flag, bool value) async {
+  Future<void> setFlag(FeatureFlag flag, {required bool enabled}) async {
     if (!_initialized) {
       await initialize();
     }
 
     try {
       final key = _getKey(flag);
-      await _preferences?.setBool(key, value);
-      _overrides[flag] = value;
+      await _preferences?.setBool(key, enabled);
+      _overrides[flag] = enabled;
 
-      _logger.info(
-        'feature_flags.flag_set',
-        context: {'flag': flag.name, 'value': value},
-      );
+      _logger.info('feature_flags.flag_set', context: {'flag': flag.name, 'value': enabled});
     } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.set_failed',
         message: 'Failed to set feature flag',
         error: e,
         stackTrace: st,
-        context: {'flag': flag.name, 'value': value},
+        context: {'flag': flag.name, 'value': enabled},
       );
     }
   }

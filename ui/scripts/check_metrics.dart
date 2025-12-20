@@ -15,7 +15,9 @@ const _ignoreFileListPath = 'scripts/metrics_ignore.txt';
 Future<void> main(List<String> args) async {
   final libDir = Directory('lib');
   if (!libDir.existsSync()) {
-    stderr.writeln('Error: lib/ directory not found. Run from the ui/ workspace root.');
+    stderr.writeln(
+      'Error: lib/ directory not found. Run from the ui/ workspace root.',
+    );
     exitCode = 1;
     return;
   }
@@ -32,12 +34,18 @@ Future<void> main(List<String> args) async {
     }
 
     final content = await file.readAsString();
-    final parsed = parseString(path: file.path, throwIfDiagnostics: false, content: content);
+    final parsed = parseString(
+      path: file.path,
+      throwIfDiagnostics: false,
+      content: content,
+    );
     final lineInfo = parsed.lineInfo;
 
     final fileLines = lineInfo.lineCount;
     if (fileLines > _maxFileLines) {
-      violations.add('$relativePath exceeds $_maxFileLines lines (found $fileLines)');
+      violations.add(
+        '$relativePath exceeds $_maxFileLines lines (found $fileLines)',
+      );
     }
 
     final visitor = _FunctionLengthVisitor(
@@ -72,7 +80,9 @@ List<File> _collectDartFiles(Directory libDir, Set<String> ignorePaths) {
           .where((file) => !_isGenerated(file.path))
           .where(
             (file) => !ignorePaths.contains(
-              _normalizePath(p.relative(file.path, from: Directory.current.path)),
+              _normalizePath(
+                p.relative(file.path, from: Directory.current.path),
+              ),
             ),
           )
           .toList()

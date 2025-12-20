@@ -93,35 +93,38 @@ void main() {
       expect(event.keyName, 'ENTER');
     });
 
-    test('DaemonEvent.fromNotification handles state change notification from Rust', () {
-      // Rust sends: method: "event.state_change", params: { ... }
-      final params = {
-        'type': 'script_reloaded',
-        'timestamp_us': 55555,
-        'message': 'Script reloaded',
-        'details': {'script_path': '/tmp/test.rhai'},
-      };
+    test(
+      'DaemonEvent.fromNotification handles state change notification from Rust',
+      () {
+        // Rust sends: method: "event.state_change", params: { ... }
+        final params = {
+          'type': 'script_reloaded',
+          'timestamp_us': 55555,
+          'message': 'Script reloaded',
+          'details': {'script_path': '/tmp/test.rhai'},
+        };
 
-      final notification = JsonRpcNotification(
-        jsonrpc: '2.0',
-        method: 'event.state_change',
-        params: params,
-      );
+        final notification = JsonRpcNotification(
+          jsonrpc: '2.0',
+          method: 'event.state_change',
+          params: params,
+        );
 
-      final event = DaemonEvent.fromNotification(notification);
+        final event = DaemonEvent.fromNotification(notification);
 
-      expect(event, isA<DaemonEvent>());
-      event.map(
-        input: (_) => fail('Should be stateChange'),
-        output: (_) => fail('Should be stateChange'),
-        stateChange: (e) {
-          expect(e.event.type, 'script_reloaded');
-          expect(e.event.timestampUs, 55555);
-          expect(e.event.details?['script_path'], '/tmp/test.rhai');
-        },
-        decision: (_) => fail('Should be stateChange'),
-        discovery: (_) => fail('Should be stateChange'),
-      );
-    });
+        expect(event, isA<DaemonEvent>());
+        event.map(
+          input: (_) => fail('Should be stateChange'),
+          output: (_) => fail('Should be stateChange'),
+          stateChange: (e) {
+            expect(e.event.type, 'script_reloaded');
+            expect(e.event.timestampUs, 55555);
+            expect(e.event.details?['script_path'], '/tmp/test.rhai');
+          },
+          decision: (_) => fail('Should be stateChange'),
+          discovery: (_) => fail('Should be stateChange'),
+        );
+      },
+    );
   });
 }

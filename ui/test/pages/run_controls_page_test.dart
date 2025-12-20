@@ -49,8 +49,10 @@ void main() {
       providers: [
         Provider<KeyrxFacade>.value(value: facade),
         ChangeNotifierProvider(
-          create: (_) =>
-              AppState(engineService: fakeEngineService, errorTranslator: FakeErrorTranslator()),
+          create: (_) => AppState(
+            engineService: fakeEngineService,
+            errorTranslator: FakeErrorTranslator(),
+          ),
         ),
       ],
       child: const MaterialApp(home: RunControlsPage()),

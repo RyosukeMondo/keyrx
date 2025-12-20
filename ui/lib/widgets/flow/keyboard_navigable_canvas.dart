@@ -37,7 +37,8 @@ class ZoomController {
     final newScale = (currentScale * factor).clamp(0.5, 2.5);
     final scaleFactor = newScale / currentScale;
 
-    transformationController.value = current.clone()..scaleByDouble(scaleFactor, scaleFactor, 1, 1);
+    transformationController.value = current.clone()
+      ..scaleByDouble(scaleFactor, scaleFactor, 1, 1);
   }
 }
 
@@ -51,10 +52,14 @@ class FocusTracker {
   final int focusedIndex;
 
   FocusTracker copyWith({List<FlowNode>? nodes, int? focusedIndex}) =>
-      FocusTracker(nodes: nodes ?? this.nodes, focusedIndex: focusedIndex ?? this.focusedIndex);
+      FocusTracker(
+        nodes: nodes ?? this.nodes,
+        focusedIndex: focusedIndex ?? this.focusedIndex,
+      );
 
-  String? get focusedNodeId =>
-      nodes.isEmpty ? null : nodes[focusedIndex.clamp(0, nodes.length - 1)].nodeId;
+  String? get focusedNodeId => nodes.isEmpty
+      ? null
+      : nodes[focusedIndex.clamp(0, nodes.length - 1)].nodeId;
 
   /// Move focus to the next node.
   FocusTracker focusNext() {
@@ -75,7 +80,9 @@ class FocusTracker {
 }
 
 /// Provider for focus tracking state.
-final focusTrackerProvider = StateProvider<FocusTracker>((ref) => const FocusTracker(nodes: []));
+final focusTrackerProvider = StateProvider<FocusTracker>(
+  (ref) => const FocusTracker(nodes: []),
+);
 
 /// Keyboard-navigable canvas wrapper.
 ///
@@ -104,10 +111,12 @@ class KeyboardNavigableCanvas extends ConsumerStatefulWidget {
   final VoidCallback? onHelpRequested;
 
   @override
-  ConsumerState<KeyboardNavigableCanvas> createState() => _KeyboardNavigableCanvasState();
+  ConsumerState<KeyboardNavigableCanvas> createState() =>
+      _KeyboardNavigableCanvasState();
 }
 
-class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanvas> {
+class _KeyboardNavigableCanvasState
+    extends ConsumerState<KeyboardNavigableCanvas> {
   final _focusNode = FocusNode();
   late final ZoomController _zoomController;
 
@@ -116,7 +125,9 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
   @override
   void initState() {
     super.initState();
-    _zoomController = ZoomController(transformationController: widget.transformationController);
+    _zoomController = ZoomController(
+      transformationController: widget.transformationController,
+    );
 
     // Request focus on mount for immediate keyboard control
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,9 +152,8 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
       // Update tracker if nodes have changed
       if (currentTracker.nodes != graph.nodes) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(focusTrackerProvider.notifier).state = currentTracker.copyWith(
-            nodes: graph.nodes,
-          );
+          ref.read(focusTrackerProvider.notifier).state = currentTracker
+              .copyWith(nodes: graph.nodes);
         });
       }
     }
@@ -162,8 +172,12 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
     KeyboardShortcuts.tabToPreviousNode: const _FocusPreviousNodeIntent(),
     KeyboardShortcuts.moveNodeUp: const _MoveNodeIntent(Offset(0, -_moveStep)),
     KeyboardShortcuts.moveNodeDown: const _MoveNodeIntent(Offset(0, _moveStep)),
-    KeyboardShortcuts.moveNodeLeft: const _MoveNodeIntent(Offset(-_moveStep, 0)),
-    KeyboardShortcuts.moveNodeRight: const _MoveNodeIntent(Offset(_moveStep, 0)),
+    KeyboardShortcuts.moveNodeLeft: const _MoveNodeIntent(
+      Offset(-_moveStep, 0),
+    ),
+    KeyboardShortcuts.moveNodeRight: const _MoveNodeIntent(
+      Offset(_moveStep, 0),
+    ),
     KeyboardShortcuts.openNodeDetails: const _OpenNodeDetailsIntent(),
     KeyboardShortcuts.deleteSelectedEdge: const _DeleteSelectedEdgeIntent(),
     KeyboardShortcuts.clearSelection: const _ClearSelectionIntent(),
@@ -174,7 +188,9 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
   };
 
   Map<Type, Action<Intent>> get _actions => {
-    _FocusNextNodeIntent: CallbackAction<_FocusNextNodeIntent>(onInvoke: (_) => _handleFocusNext()),
+    _FocusNextNodeIntent: CallbackAction<_FocusNextNodeIntent>(
+      onInvoke: (_) => _handleFocusNext(),
+    ),
     _FocusPreviousNodeIntent: CallbackAction<_FocusPreviousNodeIntent>(
       onInvoke: (_) => _handleFocusPrevious(),
     ),
@@ -193,20 +209,28 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
     _ResetZoomIntent: CallbackAction<_ResetZoomIntent>(
       onInvoke: (_) => _zoomController.resetZoom(),
     ),
-    _ZoomInIntent: CallbackAction<_ZoomInIntent>(onInvoke: (_) => _zoomController.zoomIn()),
-    _ZoomOutIntent: CallbackAction<_ZoomOutIntent>(onInvoke: (_) => _zoomController.zoomOut()),
+    _ZoomInIntent: CallbackAction<_ZoomInIntent>(
+      onInvoke: (_) => _zoomController.zoomIn(),
+    ),
+    _ZoomOutIntent: CallbackAction<_ZoomOutIntent>(
+      onInvoke: (_) => _zoomController.zoomOut(),
+    ),
     _ShowHelpIntent: CallbackAction<_ShowHelpIntent>(
       onInvoke: (_) => widget.onHelpRequested?.call(),
     ),
   };
 
   void _handleFocusNext() {
-    ref.read(focusTrackerProvider.notifier).update((state) => state.focusNext());
+    ref
+        .read(focusTrackerProvider.notifier)
+        .update((state) => state.focusNext());
     _selectFocusedNode();
   }
 
   void _handleFocusPrevious() {
-    ref.read(focusTrackerProvider.notifier).update((state) => state.focusPrevious());
+    ref
+        .read(focusTrackerProvider.notifier)
+        .update((state) => state.focusPrevious());
     _selectFocusedNode();
   }
 
@@ -223,7 +247,9 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
     final nodeId = tracker.focusedNodeId;
     if (nodeId == null) return;
 
-    ref.read(nodePositionsProvider.notifier).moveNode(nodeId, delta, widget.canvasBounds);
+    ref
+        .read(nodePositionsProvider.notifier)
+        .moveNode(nodeId, delta, widget.canvasBounds);
   }
 
   void _handleOpenNodeDetails() {
@@ -250,7 +276,9 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
 
     if (deviceNode is! DeviceFlowNode) return;
 
-    ref.read(keyFlowActionsProvider).removeSlot(deviceNode.deviceId, selection.slotId);
+    ref
+        .read(keyFlowActionsProvider)
+        .removeSlot(deviceNode.deviceId, selection.slotId);
     ref.read(selectionNotifierProvider.notifier).clearSelection();
   }
 

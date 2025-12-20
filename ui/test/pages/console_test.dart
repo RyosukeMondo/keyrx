@@ -17,7 +17,8 @@ import 'package:provider/provider.dart';
 import '../helpers/fake_services.dart';
 
 class _FakeEngineService implements EngineService {
-  final StreamController<EngineSnapshot> _stateController = StreamController.broadcast();
+  final StreamController<EngineSnapshot> _stateController =
+      StreamController.broadcast();
 
   bool initializeResult = true;
   List<String> evalCommands = [];
@@ -48,7 +49,8 @@ class _FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(entries: []);
+  Future<KeyRegistryResult> fetchKeyRegistry() async =>
+      const KeyRegistryResult(entries: []);
 
   @override
   Future<void> dispose() async {
@@ -92,8 +94,12 @@ void main() {
       errorTranslator: FakeErrorTranslator(),
       mappingRepository: MappingRepositoryUI(core.MappingRepository()),
       storagePathResolver: const StoragePathResolver(),
-      layoutService: LayoutServiceUI(core.LayoutServiceFFI(bridge: FakeBridge())),
-      hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: FakeBridge())),
+      layoutService: LayoutServiceUI(
+        core.LayoutServiceFFI(bridge: FakeBridge()),
+      ),
+      hardwareService: HardwareServiceUI(
+        core.HardwareServiceFFI(bridge: FakeBridge()),
+      ),
       keymapService: KeymapServiceFFI(bridge: FakeBridge()),
       daemonManager: MockDaemonManager(),
     );
@@ -101,11 +107,15 @@ void main() {
 
     return MultiProvider(
       providers: [Provider<KeyrxFacade>.value(value: facade)],
-      child: MaterialApp(home: ConsolePage(parser: parser ?? const ConsoleParser())),
+      child: MaterialApp(
+        home: ConsolePage(parser: parser ?? const ConsoleParser()),
+      ),
     );
   }
 
-  testWidgets('displays initial UI with input field and clear button', (tester) async {
+  testWidgets('displays initial UI with input field and clear button', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestWidget());
 
     expect(find.text('Rhai Console'), findsOneWidget);
@@ -175,8 +185,10 @@ void main() {
   testWidgets('initialize engine button appears on init error', (tester) async {
     fakeEngine
       ..initializeResult = false
-      ..onEval = (_) async =>
-          const ConsoleEvalResult(success: false, output: 'error: Engine not initialized');
+      ..onEval = (_) async => const ConsoleEvalResult(
+        success: false,
+        output: 'error: Engine not initialized',
+      );
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -191,8 +203,10 @@ void main() {
   testWidgets('initialize engine button works', (tester) async {
     fakeEngine
       ..initializeResult = true
-      ..onEval = (_) async =>
-          const ConsoleEvalResult(success: false, output: 'error: Engine not initialized');
+      ..onEval = (_) async => const ConsoleEvalResult(
+        success: false,
+        output: 'error: Engine not initialized',
+      );
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -254,7 +268,9 @@ void main() {
     expect(find.text('OK'), findsWidgets);
   });
 
-  testWidgets('console handles command with special characters', (tester) async {
+  testWidgets('console handles command with special characters', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildTestWidget());
 
     await tester.enterText(find.byType(TextField), 'remap("a", "b")');
@@ -265,7 +281,9 @@ void main() {
     expect(fakeEngine.evalCommands, contains('remap("a", "b")'));
   });
 
-  testWidgets('input field is disabled during command execution', (tester) async {
+  testWidgets('input field is disabled during command execution', (
+    tester,
+  ) async {
     final completer = Completer<ConsoleEvalResult>();
     fakeEngine.onEval = (_) => completer.future;
 

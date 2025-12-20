@@ -61,7 +61,9 @@ class WidgetTestHarness {
       bridgeProvider.overrideWithValue(effectiveBridge),
       serviceRegistryProvider.overrideWithValue(effectiveRegistry),
       keyrxFacadeProvider.overrideWithValue(effectiveFacade),
-      apiDocsServiceProvider.overrideWithValue(effectiveRegistry.apiDocsService),
+      apiDocsServiceProvider.overrideWithValue(
+        effectiveRegistry.apiDocsService,
+      ),
       appStateProvider.overrideWith((ref) => effectiveAppState),
       ...overrides,
     ];
@@ -99,7 +101,9 @@ class WidgetTestHarness {
 
   /// Build the full widget tree with ProviderScope + MultiProvider shell.
   Widget build(Widget child, {bool? withScaffold}) {
-    final body = (withScaffold ?? wrapWithScaffold) ? Scaffold(body: child) : child;
+    final body = (withScaffold ?? wrapWithScaffold)
+        ? Scaffold(body: child)
+        : child;
 
     return ProviderScope(
       overrides: overrides,
@@ -125,8 +129,11 @@ class WidgetTestHarness {
   }
 
   /// Pump a widget intended to behave like a full page.
-  Future<void> pumpPage(WidgetTester tester, Widget widget, {bool settle = true}) =>
-      pumpWidget(tester, widget, settle: settle, withScaffold: true);
+  Future<void> pumpPage(
+    WidgetTester tester,
+    Widget widget, {
+    bool settle = true,
+  }) => pumpWidget(tester, widget, settle: settle, withScaffold: true);
 
   static ServiceRegistry _buildRegistry(FakeBridge bridge) {
     final profileRegistry = FakeProfileRegistryService();
@@ -154,7 +161,9 @@ class WidgetTestHarness {
         delayFn: (_) async {},
       ),
       layoutService: LayoutServiceUI(core.LayoutServiceFFI(bridge: bridge)),
-      hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: bridge)),
+      hardwareService: HardwareServiceUI(
+        core.HardwareServiceFFI(bridge: bridge),
+      ),
       keymapService: KeymapServiceFFI(bridge: bridge),
       runtimeService: FakeRuntimeService(),
       daemonManager: MockDaemonManager(),

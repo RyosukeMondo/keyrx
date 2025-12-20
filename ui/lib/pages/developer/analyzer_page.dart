@@ -132,7 +132,11 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
         return ListTile(
           selected: isSelected,
           leading: const Icon(Icons.description),
-          title: Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            session.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(
             '${session.eventCount} events • ${_formatDuration(session.durationMs)}',
             style: Theme.of(context).textTheme.bodySmall,
@@ -213,13 +217,29 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
 
     return Row(
       children: [
-        Expanded(child: _buildStatCard('Events', '${analysis.eventCount}', Icons.event)),
-        const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('Duration', _formatDuration(analysis.durationMs), Icons.timer),
+          child: _buildStatCard(
+            'Events',
+            '${analysis.eventCount}',
+            Icons.event,
+          ),
         ),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard('Avg Latency', '${analysis.avgLatencyUs}µs', Icons.speed)),
+        Expanded(
+          child: _buildStatCard(
+            'Duration',
+            _formatDuration(analysis.durationMs),
+            Icons.timer,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
+            'Avg Latency',
+            '${analysis.avgLatencyUs}µs',
+            Icons.speed,
+          ),
+        ),
       ],
     );
   }
@@ -259,7 +279,10 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Decision Breakdown', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Decision Breakdown',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
@@ -271,11 +294,15 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
                         sectionsSpace: 2,
                         centerSpaceRadius: 40,
                         sections: sections.map((s) {
-                          final percentage = total > 0 ? (s.value / total * 100) : 0.0;
+                          final percentage = total > 0
+                              ? (s.value / total * 100)
+                              : 0.0;
                           return PieChartSectionData(
                             value: s.value.toDouble(),
                             color: s.color,
-                            title: percentage >= 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+                            title: percentage >= 5
+                                ? '${percentage.toStringAsFixed(0)}%'
+                                : '',
                             titleStyle: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -291,7 +318,9 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: sections.map((s) => _buildLegendItem(s, total)).toList(),
+                    children: sections
+                        .map((s) => _buildLegendItem(s, total))
+                        .toList(),
                   ),
                 ],
               ),
@@ -313,7 +342,10 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(color: section.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: section.color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
@@ -334,14 +366,29 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Latency Statistics', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Latency Statistics',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildLatencyMetric('Min', '${analysis.minLatencyUs}µs', Colors.green),
-                _buildLatencyMetric('Avg', '${analysis.avgLatencyUs}µs', Colors.blue),
-                _buildLatencyMetric('Max', '${analysis.maxLatencyUs}µs', Colors.orange),
+                _buildLatencyMetric(
+                  'Min',
+                  '${analysis.minLatencyUs}µs',
+                  Colors.green,
+                ),
+                _buildLatencyMetric(
+                  'Avg',
+                  '${analysis.avgLatencyUs}µs',
+                  Colors.blue,
+                ),
+                _buildLatencyMetric(
+                  'Max',
+                  '${analysis.maxLatencyUs}µs',
+                  Colors.orange,
+                ),
               ],
             ),
           ],
@@ -354,7 +401,10 @@ class _AnalyzerPageState extends State<AnalyzerPage> {
     children: [
       Text(label, style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 4),
-      Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color)),
+      Text(
+        value,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color),
+      ),
     ],
   );
 

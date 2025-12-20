@@ -40,7 +40,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
 
   EngineService? _engine;
 
-  TypingStatistics get _statistics => TypingStatistics(mean: _typingMean, stdDev: _typingStdDev);
+  TypingStatistics get _statistics =>
+      TypingStatistics(mean: _typingMean, stdDev: _typingStdDev);
 
   @override
   void initState() {
@@ -76,8 +77,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
-            onPressed: () =>
-                showDialog<void>(context: context, builder: (_) => const TradeOffHelpDialog()),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => const TradeOffHelpDialog(),
+            ),
             tooltip: 'Help',
           ),
         ],
@@ -112,7 +115,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             children: [
               Icon(Icons.info_outline, color: theme.colorScheme.primary),
               const SizedBox(width: UiConstants.smallPadding),
-              Text('Understanding Tap-Hold Timing', style: theme.textTheme.titleMedium),
+              Text(
+                'Understanding Tap-Hold Timing',
+                style: theme.textTheme.titleMedium,
+              ),
             ],
           ),
           const SizedBox(height: UiConstants.defaultMargin),
@@ -171,7 +177,9 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(UiConstants.smallPadding),
+                    borderRadius: BorderRadius.circular(
+                      UiConstants.smallPadding,
+                    ),
                   ),
                   child: Text(
                     '${_currentTimeout.toInt()} ms',
@@ -186,7 +194,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             const SizedBox(height: UiConstants.defaultPadding),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                activeTrackColor: currentPreset?.color ?? theme.colorScheme.primary,
+                activeTrackColor:
+                    currentPreset?.color ?? theme.colorScheme.primary,
                 thumbColor: currentPreset?.color ?? theme.colorScheme.primary,
               ),
               child: Slider(
@@ -202,8 +211,14 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Faster (${_minTimeout.toInt()}ms)', style: theme.textTheme.bodySmall),
-                Text('Slower (${_maxTimeout.toInt()}ms)', style: theme.textTheme.bodySmall),
+                Text(
+                  'Faster (${_minTimeout.toInt()}ms)',
+                  style: theme.textTheme.bodySmall,
+                ),
+                Text(
+                  'Slower (${_maxTimeout.toInt()}ms)',
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ),
             const SizedBox(height: UiConstants.defaultPadding),
@@ -272,7 +287,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Typing Model Parameters', style: theme.textTheme.titleMedium),
+              Text(
+                'Typing Model Parameters',
+                style: theme.textTheme.titleMedium,
+              ),
               IconButton(
                 icon: const Icon(Icons.edit, size: 20),
                 onPressed: _showModelEditDialog,
@@ -314,7 +332,8 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             RecommendationBanner(
               recommendedTimeout: _recommendedTimeout!,
               userTypingMean: _userTypingMean!,
-              onApply: () => setState(() => _currentTimeout = _recommendedTimeout!),
+              onApply: () =>
+                  setState(() => _currentTimeout = _recommendedTimeout!),
             ),
           ],
           const SizedBox(height: UiConstants.defaultMargin),
@@ -362,7 +381,10 @@ class _TradeOffVisualizerPageState extends State<TradeOffVisualizerPage> {
             _typingMean = mean;
             _typingStdDev = stdDev;
             _hasUserProfile = true;
-            _recommendedTimeout = (mean + stdDev).clamp(_minTimeout, _maxTimeout);
+            _recommendedTimeout = (mean + stdDev).clamp(
+              _minTimeout,
+              _maxTimeout,
+            );
           });
         },
         onCancel: () {},

@@ -15,7 +15,11 @@ import '../state/slot_actions.dart';
 /// Allows the user to select a hardware profile and keymap to create a new
 /// slot assignment for a specific device.
 class AddSlotDialog extends ConsumerStatefulWidget {
-  const AddSlotDialog({required this.device, required this.existingSlots, super.key});
+  const AddSlotDialog({
+    required this.device,
+    required this.existingSlots,
+    super.key,
+  });
 
   final DeviceInstanceId device;
   final List<ProfileSlotSelection> existingSlots;
@@ -54,7 +58,11 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -81,7 +89,10 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Keymap', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const Text(
+              'Keymap',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
             const SizedBox(height: 8),
             keymapsAsync.when(
               data: _buildKeymapDropdown,
@@ -144,12 +155,18 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         isDense: true,
       ),
-      hint: const Text('Select a hardware profile', style: TextStyle(fontSize: 13)),
+      hint: const Text(
+        'Select a hardware profile',
+        style: TextStyle(fontSize: 13),
+      ),
       items: profiles
           .map(
             (profile) => DropdownMenuItem(
               value: profile.id,
-              child: Text(profile.name ?? profile.id, style: const TextStyle(fontSize: 13)),
+              child: Text(
+                profile.name ?? profile.id,
+                style: const TextStyle(fontSize: 13),
+              ),
             ),
           )
           .toList(),
@@ -164,7 +181,10 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
 
   Widget _buildKeymapDropdown(List<Keymap> keymaps) {
     if (keymaps.isEmpty) {
-      return const Text('No keymaps available', style: TextStyle(color: Colors.grey, fontSize: 12));
+      return const Text(
+        'No keymaps available',
+        style: TextStyle(color: Colors.grey, fontSize: 12),
+      );
     }
 
     return DropdownButtonFormField<KeymapId>(
@@ -244,12 +264,15 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
     }
 
     final duplicate = widget.existingSlots.any(
-      (slot) => slot.hardwareProfileId == _selectedProfileId && slot.keymapId == _selectedKeymapId,
+      (slot) =>
+          slot.hardwareProfileId == _selectedProfileId &&
+          slot.keymapId == _selectedKeymapId,
     );
 
     if (duplicate) {
       setState(() {
-        _errorMessage = 'This profile + keymap combination already exists for this device';
+        _errorMessage =
+            'This profile + keymap combination already exists for this device';
       });
       return false;
     }
@@ -260,7 +283,10 @@ class _AddSlotDialogState extends ConsumerState<AddSlotDialog> {
 
 /// Simple structure to pass existing slot information for validation.
 class ProfileSlotSelection {
-  ProfileSlotSelection({required this.hardwareProfileId, required this.keymapId});
+  ProfileSlotSelection({
+    required this.hardwareProfileId,
+    required this.keymapId,
+  });
 
   final HardwareProfileId hardwareProfileId;
   final KeymapId keymapId;
@@ -273,5 +299,6 @@ Future<bool?> showAddSlotDialog(
   required List<ProfileSlotSelection> existingSlots,
 }) => showDialog<bool>(
   context: context,
-  builder: (context) => AddSlotDialog(device: device, existingSlots: existingSlots),
+  builder: (context) =>
+      AddSlotDialog(device: device, existingSlots: existingSlots),
 );

@@ -31,10 +31,20 @@ class DaemonException implements Exception {
 }
 
 /// Connection state for the daemon.
-enum DaemonConnectionState { disconnected, connecting, connected, reconnecting, error }
+enum DaemonConnectionState {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+  error,
+}
 
 class _QueuedRequest {
-  _QueuedRequest({required this.id, required this.request, required this.completer});
+  _QueuedRequest({
+    required this.id,
+    required this.request,
+    required this.completer,
+  });
   final int id;
   final JsonRpcRequest request;
   final Completer<dynamic> completer;
@@ -56,16 +66,18 @@ class DaemonService {
 
   final Map<int, Completer<dynamic>> _pendingRequests = {};
   final List<_QueuedRequest> _requestQueue = [];
-  final StreamController<DaemonEvent> _eventController = StreamController<DaemonEvent>.broadcast();
+  final StreamController<DaemonEvent> _eventController =
+      StreamController<DaemonEvent>.broadcast();
   final StreamController<JsonRpcNotification> _notificationController =
       StreamController<JsonRpcNotification>.broadcast();
   final StreamController<DaemonConnectionState> _stateController =
       StreamController<DaemonConnectionState>.broadcast();
 
   // SSOT: Local cache of engine status
-  final BehaviorSubject<EngineStatus> _statusSubject = BehaviorSubject<EngineStatus>.seeded(
-    const EngineStatus(status: 'disconnected'),
-  );
+  final BehaviorSubject<EngineStatus> _statusSubject =
+      BehaviorSubject<EngineStatus>.seeded(
+        const EngineStatus(status: 'disconnected'),
+      );
 
   StreamSubscription<Uint8List>? _socketSubscription;
   String _receiveBuffer = '';
@@ -74,7 +86,8 @@ class DaemonService {
   Stream<DaemonEvent> get events => _eventController.stream;
 
   /// Stream of raw JSON-RPC notifications.
-  Stream<JsonRpcNotification> get notificationStream => _notificationController.stream;
+  Stream<JsonRpcNotification> get notificationStream =>
+      _notificationController.stream;
 
   /// Stream of connection state changes.
   Stream<DaemonConnectionState> get connectionState => _stateController.stream;
@@ -111,7 +124,8 @@ class DaemonService {
   Future<void> connect() async {
     _explicitDisconnect = false;
 
-    if (state == DaemonConnectionState.connected || state == DaemonConnectionState.connecting) {
+    if (state == DaemonConnectionState.connected ||
+        state == DaemonConnectionState.connecting) {
       _log.info('Connection attempt ignored, already connected or connecting.');
       return;
     }
@@ -203,16 +217,18 @@ class DaemonService {
         const devPathOneUp = '../target/debug/keyrx';
         const devPathRoot = './target/debug/keyrx';
 
-        if (await File(devPathRoot).exists()) {
+        if (File(devPathRoot).existsSync()) {
           executable = devPathRoot;
-        } else if (await File(devPathOneUp).exists()) {
+        } else if (File(devPathOneUp).existsSync()) {
           executable = devPathOneUp;
-        } else if (await File(devPathUi).exists()) {
+        } else if (File(devPathUi).existsSync()) {
           executable = devPathUi;
         }
       }
 
-      final process = await Process.start(executable, ['daemon'], mode: ProcessStartMode.detached);
+      final process = await Process.start(executable, [
+        'daemon',
+      ], mode: ProcessStartMode.detached);
       _log.info('Daemon process launched (PID: ${process.pid}).');
 
       // Wait for socket to appear
@@ -254,7 +270,9 @@ class DaemonService {
     // Complete all pending requests with an error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
-        completer.completeError(const DaemonException('Disconnected from daemon'));
+        completer.completeError(
+          const DaemonException('Disconnected from daemon'),
+        );
       }
     }
     _pendingRequests.clear();
@@ -262,7 +280,9 @@ class DaemonService {
     // Fail any queued requests
     for (final queuedRequest in _requestQueue) {
       if (!queuedRequest.completer.isCompleted) {
-        queuedRequest.completer.completeError(const DaemonException('Disconnected from daemon'));
+        queuedRequest.completer.completeError(
+          const DaemonException('Disconnected from daemon'),
+        );
       }
     }
     _requestQueue.clear();
@@ -271,7 +291,10 @@ class DaemonService {
   }
 
   /// Send a JSON-RPC request and wait for response.
-  Future<dynamic> sendRequest(String method, [Map<String, dynamic>? params]) async {
+  Future<dynamic> sendRequest(
+    String method, [
+    Map<String, dynamic>? params,
+  ]) async {
     final id = ++_requestId;
     final request = JsonRpcRequest(
       jsonrpc: '2.0',
@@ -281,7 +304,11 @@ class DaemonService {
     );
 
     final completer = Completer<dynamic>();
-    final queuedRequest = _QueuedRequest(id: id, request: request, completer: completer);
+    final queuedRequest = _QueuedRequest(
+      id: id,
+      request: request,
+      completer: completer,
+    );
 
     if (!isConnected) {
       _log.fine('Queueing request: $method');
@@ -312,9 +339,13 @@ class DaemonService {
         onTimeout: () {
           if (_pendingRequests.containsKey(id)) {
             _pendingRequests.remove(id);
-            _log.warning('Timed out waiting for response to ID: $id'); // Log timeout
+            _log.warning(
+              'Timed out waiting for response to ID: $id',
+            ); // Log timeout
             if (!completer.isCompleted) {
-              completer.completeError(const DaemonException('Request timed out'));
+              completer.completeError(
+                const DaemonException('Request timed out'),
+              );
             }
           }
         },
@@ -322,7 +353,9 @@ class DaemonService {
     } on SocketException catch (e) {
       _pendingRequests.remove(id);
       if (!completer.isCompleted) {
-        completer.completeError(DaemonException('Daemon communication error: ${e.message}'));
+        completer.completeError(
+          DaemonException('Daemon communication error: ${e.message}'),
+        );
       }
     }
   }
@@ -362,7 +395,9 @@ class DaemonService {
     });
 
     final deviceList = result['devices'] as List<dynamic>? ?? [];
-    return deviceList.map((d) => DaemonDeviceInfo.fromJson(d as Map<String, dynamic>)).toList();
+    return deviceList
+        .map((d) => DaemonDeviceInfo.fromJson(d as Map<String, dynamic>))
+        .toList();
   }
 
   /// Stop the engine.
@@ -391,7 +426,9 @@ class DaemonService {
   Future<void> subscribeEvents({
     List<String> eventTypes = const ['input', 'output', 'state_change'],
   }) async {
-    await sendRequest(DaemonMethods.eventsSubscribe, {'event_types': eventTypes});
+    await sendRequest(DaemonMethods.eventsSubscribe, {
+      'event_types': eventTypes,
+    });
   }
 
   /// Unsubscribe from events.
@@ -493,11 +530,15 @@ class DaemonService {
       unawaited(getStatus());
     } else if (eventType == 'config_reloaded') {
       if (event.details != null && event.details!.containsKey('config_path')) {
-        _statusSubject.add(current.copyWith(configPath: event.details!['config_path'] as String));
+        _statusSubject.add(
+          current.copyWith(configPath: event.details!['config_path'] as String),
+        );
       }
     } else if (eventType == 'script_reloaded') {
       if (event.details != null && event.details!.containsKey('script_path')) {
-        _statusSubject.add(current.copyWith(scriptPath: event.details!['script_path'] as String));
+        _statusSubject.add(
+          current.copyWith(scriptPath: event.details!['script_path'] as String),
+        );
       }
     }
   }

@@ -31,7 +31,9 @@ void main() {
       );
     });
 
-    testWidgets('service registry should create without errors on web', (tester) async {
+    testWidgets('service registry should create without errors on web', (
+      tester,
+    ) async {
       expect(
         () => ServiceRegistry.real(backendUrl: 'http://test:8888'),
         returnsNormally,
@@ -39,7 +41,9 @@ void main() {
       );
     });
 
-    testWidgets('all providers should initialize without errors', (tester) async {
+    testWidgets('all providers should initialize without errors', (
+      tester,
+    ) async {
       final container = ProviderContainer();
 
       // Test that all providers can be read without errors
@@ -76,7 +80,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('facade state stream should not close immediately', (tester) async {
+    testWidgets('facade state stream should not close immediately', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       final facade = container.read(keyrxFacadeProvider);
 
@@ -99,7 +105,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('engine service stub should provide valid streams', (tester) async {
+    testWidgets('engine service stub should provide valid streams', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       final registry = container.read(serviceRegistryProvider);
 
@@ -125,7 +133,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('app should render material app without errors', (tester) async {
+    testWidgets('app should render material app without errors', (
+      tester,
+    ) async {
       await tester.pumpWidget(const ProviderScope(child: KeyrxApp()));
 
       // Pump multiple frames to let async initialization complete
@@ -134,7 +144,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Should find MaterialApp
-      expect(find.byType(MaterialApp), findsOneWidget, reason: 'App should render MaterialApp');
+      expect(
+        find.byType(MaterialApp),
+        findsOneWidget,
+        reason: 'App should render MaterialApp',
+      );
 
       // Should not have thrown errors
       expect(tester.takeException(), isNull);
@@ -182,16 +196,19 @@ void main() {
   });
 
   group('Web Service Stubs Error Messages', () {
-    test('web stubs should provide helpful error messages when operations fail', () {
-      final registry = ServiceRegistry.real(backendUrl: 'http://test:8888');
+    test(
+      'web stubs should provide helpful error messages when operations fail',
+      () {
+        final registry = ServiceRegistry.real(backendUrl: 'http://test:8888');
 
-      // When stubs fail operations, they should return helpful errors
-      // not throw UnsupportedError exceptions
+        // When stubs fail operations, they should return helpful errors
+        // not throw UnsupportedError exceptions
 
-      // Engine service should return false, not throw
-      expect(registry.engineService.isInitialized, isFalse);
+        // Engine service should return false, not throw
+        expect(registry.engineService.isInitialized, isFalse);
 
-      registry.dispose();
-    });
+        registry.dispose();
+      },
+    );
   });
 }

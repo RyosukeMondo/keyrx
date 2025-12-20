@@ -357,7 +357,7 @@ class ApiDocsServiceImpl implements ApiDocsService {
   @override
   Future<void> loadFromFile(String filePath) async {
     final file = File(filePath);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       throw Exception('API docs file not found: $filePath');
     }
 

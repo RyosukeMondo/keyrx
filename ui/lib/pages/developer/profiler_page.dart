@@ -102,7 +102,7 @@ class _ProfilerPageState extends State<ProfilerPage> {
 
   Future<String> _readFile(String path) async {
     final file = File(path);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       throw FileSystemException('File not found', path);
     }
     return file.readAsString();

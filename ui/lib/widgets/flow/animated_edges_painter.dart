@@ -63,9 +63,17 @@ class AnimatedEdgesPainter extends CustomPainter {
       final strokeWidth = baseStrokeWidth * pulseScale;
 
       // Calculate color with transitions
-      final baseColor = style.colorForStatus(edge.status, active: edge.active, hovered: isHovered);
+      final baseColor = style.colorForStatus(
+        edge.status,
+        active: edge.active,
+        hovered: isHovered,
+      );
 
-      final color = _applyColorTransition(edgeId, baseColor, animState.colorTransition);
+      final color = _applyColorTransition(
+        edgeId,
+        baseColor,
+        animState.colorTransition,
+      );
 
       // Apply anti-aliasing and opacity
       final paint = Paint()
@@ -77,7 +85,9 @@ class AnimatedEdgesPainter extends CustomPainter {
 
       // Draw glow effect for hovered or pulsing edges
       if (isHovered || (edge.active && pulseEnabled)) {
-        final glowOpacity = isHovered ? 0.32 : EdgeAnimations.pulseGlow(animState.pulsePhase);
+        final glowOpacity = isHovered
+            ? 0.32
+            : EdgeAnimations.pulseGlow(animState.pulsePhase);
         final glowPaint = Paint()
           ..color = color.withValues(alpha: glowOpacity * animState.opacity)
           ..strokeWidth = strokeWidth + 3
@@ -117,11 +127,17 @@ class AnimatedEdgesPainter extends CustomPainter {
     return _pathCache.putIfAbsent(cacheKey, () {
       final controls = _computeControls(edge.start, edge.end);
       final path = _buildPath(edge.start, edge.end, controls.$1, controls.$2);
-      return edge.active ? path : _dashPath(path, style.dashLength, style.dashGap);
+      return edge.active
+          ? path
+          : _dashPath(path, style.dashLength, style.dashGap);
     });
   }
 
-  Color _applyColorTransition(String edgeId, Color targetColor, double transitionProgress) {
+  Color _applyColorTransition(
+    String edgeId,
+    Color targetColor,
+    double transitionProgress,
+  ) {
     final prevColor = previousColors[edgeId];
     if (prevColor == null || transitionProgress >= 1.0) {
       return targetColor;
@@ -142,7 +158,9 @@ class AnimatedEdgesPainter extends CustomPainter {
     final badgePoint = _sampleEdge(edge, edgeIndex, 0.55, normalOffset: 16);
 
     final fillPaint = Paint()
-      ..color = style.palette.priorityBackgroundColor.withValues(alpha: 0.9 * opacity)
+      ..color = style.palette.priorityBackgroundColor.withValues(
+        alpha: 0.9 * opacity,
+      )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
     canvas
@@ -160,25 +178,49 @@ class AnimatedEdgesPainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: label,
-        style: textStyle.copyWith(color: textStyle.color?.withValues(alpha: opacity)),
+        style: textStyle.copyWith(
+          color: textStyle.color?.withValues(alpha: opacity),
+        ),
       ),
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     )..layout();
 
-    textPainter.paint(canvas, badgePoint - Offset(textPainter.width / 2, textPainter.height / 2));
+    textPainter.paint(
+      canvas,
+      badgePoint - Offset(textPainter.width / 2, textPainter.height / 2),
+    );
   }
 
-  Offset _sampleEdge(PaintableEdge edge, int edgeIndex, double t, {double normalOffset = 0}) {
+  Offset _sampleEdge(
+    PaintableEdge edge,
+    int edgeIndex,
+    double t, {
+    double normalOffset = 0,
+  }) {
     final controls = _computeControls(edge.start, edge.end);
     final clampedT = t.clamp(0.0, 1.0);
-    final point = _cubicPoint(edge.start, controls.$1, controls.$2, edge.end, clampedT);
+    final point = _cubicPoint(
+      edge.start,
+      controls.$1,
+      controls.$2,
+      edge.end,
+      clampedT,
+    );
 
     if (normalOffset == 0) return point;
 
-    final tangent = _cubicTangent(edge.start, controls.$1, controls.$2, edge.end, clampedT);
+    final tangent = _cubicTangent(
+      edge.start,
+      controls.$1,
+      controls.$2,
+      edge.end,
+      clampedT,
+    );
     final normal = Offset(-tangent.dy, tangent.dx);
-    final normalized = normal == Offset.zero ? Offset.zero : normal / normal.distance;
+    final normalized = normal == Offset.zero
+        ? Offset.zero
+        : normal / normal.distance;
     return point + normalized * normalOffset;
   }
 
@@ -197,7 +239,13 @@ class AnimatedEdgesPainter extends CustomPainter {
 
     for (var i = 0; i <= samples; i++) {
       final t = i / samples;
-      final pos = _cubicPoint(edge.start, controls.$1, controls.$2, edge.end, t);
+      final pos = _cubicPoint(
+        edge.start,
+        controls.$1,
+        controls.$2,
+        edge.end,
+        t,
+      );
       final distance = (pos - hoverPosition!).distance;
       if (distance < minDistance) {
         minDistance = distance;
@@ -228,7 +276,9 @@ class AnimatedEdgesPainter extends CustomPainter {
 
     // Check edge/style changes
     final sameEdges = listEquals(edges, oldDelegate.edges);
-    return !sameEdges || hoverPosition != oldDelegate.hoverPosition || style != oldDelegate.style;
+    return !sameEdges ||
+        hoverPosition != oldDelegate.hoverPosition ||
+        style != oldDelegate.style;
   }
 
   bool _mapEquals<K, V>(Map<K, V> a, Map<K, V> b) {
@@ -241,16 +291,27 @@ class AnimatedEdgesPainter extends CustomPainter {
 }
 
 // Helper functions (duplicated from EdgesPainter to avoid private access)
-Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) => Path()
-  ..moveTo(start.dx, start.dy)
-  ..cubicTo(control1.dx, control1.dy, control2.dx, control2.dy, end.dx, end.dy);
+Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+    Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
 
 Path _dashPath(Path source, double dashLength, double gap) {
   final dashed = Path();
   for (final metric in source.computeMetrics()) {
     var distance = 0.0;
     while (distance < metric.length) {
-      dashed.addPath(metric.extractPath(distance, distance + dashLength), Offset.zero);
+      dashed.addPath(
+        metric.extractPath(distance, distance + dashLength),
+        Offset.zero,
+      );
       distance += dashLength + gap;
     }
   }
@@ -272,5 +333,7 @@ Offset _cubicPoint(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
 
 Offset _cubicTangent(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
   final mt = 1 - t;
-  return (p1 - p0) * (3 * mt * mt) + (p2 - p1) * (6 * mt * t) + (p3 - p2) * (3 * t * t);
+  return (p1 - p0) * (3 * mt * mt) +
+      (p2 - p1) * (6 * mt * t) +
+      (p3 - p2) * (3 * t * t);
 }

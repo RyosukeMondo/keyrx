@@ -22,7 +22,11 @@ class NodePositions extends _$NodePositions {
   }
 
   /// Persist a single node position. Marks as manual by default.
-  Future<void> setPosition(String nodeId, Offset position, {bool manual = true}) async {
+  Future<void> setPosition(
+    String nodeId,
+    Offset position, {
+    bool manual = true,
+  }) async {
     final manualPositions = _manualOnly(state.value ?? await future);
     final next = NodePosition(
       x: position.dx,
@@ -37,7 +41,10 @@ class NodePositions extends _$NodePositions {
   }
 
   /// Persist multiple node positions efficiently, ignoring unchanged entries.
-  Future<void> setPositions(Map<String, Offset> positions, {bool manual = true}) async {
+  Future<void> setPositions(
+    Map<String, Offset> positions, {
+    bool manual = true,
+  }) async {
     final manualPositions = _manualOnly(state.value ?? await future);
 
     var changed = false;
@@ -63,7 +70,8 @@ class NodePositions extends _$NodePositions {
 
   /// Remove a stored manual position so it falls back to auto layout.
   Future<void> removePosition(String nodeId) async {
-    final manualPositions = _manualOnly(state.value ?? await future)..remove(nodeId);
+    final manualPositions = _manualOnly(state.value ?? await future)
+      ..remove(nodeId);
     await _updateState(manualPositions);
   }
 
@@ -94,7 +102,9 @@ class NodePositions extends _$NodePositions {
   }
 
   Map<String, NodePosition> _manualOnly(Map<String, NodePosition> source) =>
-      Map<String, NodePosition>.fromEntries(source.entries.where((entry) => entry.value.isManual));
+      Map<String, NodePosition>.fromEntries(
+        source.entries.where((entry) => entry.value.isManual),
+      );
 
   Future<void> _updateState(Map<String, NodePosition> manualPositions) async {
     final graph = await ref.read(flowGraphProvider.future);
@@ -112,8 +122,10 @@ class NodePositions extends _$NodePositions {
     try {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       return decoded.map(
-        (key, value) =>
-            MapEntry(key, NodePosition.fromJson(Map<String, dynamic>.from(value as Map))),
+        (key, value) => MapEntry(
+          key,
+          NodePosition.fromJson(Map<String, dynamic>.from(value as Map)),
+        ),
       );
     } on Object catch (_) {
       await prefs.remove(StorageKeys.keyFlowNodePositions);
@@ -144,24 +156,33 @@ Map<String, NodePosition> _autoLayout(FlowGraph graph) {
   final devices =
       graph.nodes
           .where(
-            (node) =>
-                node.map(device: (_) => true, hardwareProfile: (_) => false, keymap: (_) => false),
+            (node) => node.map(
+              device: (_) => true,
+              hardwareProfile: (_) => false,
+              keymap: (_) => false,
+            ),
           )
           .toList()
         ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
   final profiles =
       graph.nodes
           .where(
-            (node) =>
-                node.map(device: (_) => false, hardwareProfile: (_) => true, keymap: (_) => false),
+            (node) => node.map(
+              device: (_) => false,
+              hardwareProfile: (_) => true,
+              keymap: (_) => false,
+            ),
           )
           .toList()
         ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
   final keymaps =
       graph.nodes
           .where(
-            (node) =>
-                node.map(device: (_) => false, hardwareProfile: (_) => false, keymap: (_) => true),
+            (node) => node.map(
+              device: (_) => false,
+              hardwareProfile: (_) => false,
+              keymap: (_) => true,
+            ),
           )
           .toList()
         ..sort((a, b) => a.nodeId.compareTo(b.nodeId));

@@ -25,10 +25,18 @@ class AccessibleFlowCanvas extends ConsumerWidget {
     // Build semantic label for the canvas
     final semanticLabel = _buildCanvasSemanticLabel(graphAsync, selection);
 
-    return Semantics(label: semanticLabel, container: true, explicitChildNodes: true, child: child);
+    return Semantics(
+      label: semanticLabel,
+      container: true,
+      explicitChildNodes: true,
+      child: child,
+    );
   }
 
-  String _buildCanvasSemanticLabel(AsyncValue<FlowGraph> graphAsync, Selection selection) {
+  String _buildCanvasSemanticLabel(
+    AsyncValue<FlowGraph> graphAsync,
+    Selection selection,
+  ) {
     if (graphAsync.isLoading) {
       return 'KeyFlow editor loading';
     }
@@ -43,7 +51,9 @@ class AccessibleFlowCanvas extends ConsumerWidget {
     }
 
     final deviceCount = graph.nodes.whereType<DeviceFlowNode>().length;
-    final profileCount = graph.nodes.whereType<HardwareProfileFlowNode>().length;
+    final profileCount = graph.nodes
+        .whereType<HardwareProfileFlowNode>()
+        .length;
     final keymapCount = graph.nodes.whereType<KeymapFlowNode>().length;
     final edgeCount = graph.edges.length;
 
@@ -56,7 +66,9 @@ class AccessibleFlowCanvas extends ConsumerWidget {
     if (selection is NodeSelection) {
       buffer.write('. Node ${selection.nodeId} selected');
     } else if (selection is EdgeSelection) {
-      buffer.write('. Connection from ${selection.from} to ${selection.to} selected');
+      buffer.write(
+        '. Connection from ${selection.from} to ${selection.to} selected',
+      );
     }
 
     return buffer.toString();
@@ -80,7 +92,9 @@ extension FlowNodeSemantics on FlowNode {
       if (isConnected) {
         buffer.write(', connected');
         if (totalSlotCount > 0) {
-          buffer.write(', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}');
+          buffer.write(
+            ', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}',
+          );
           if (activeSlotCount > 0) {
             buffer.write(', $activeSlotCount active');
           }

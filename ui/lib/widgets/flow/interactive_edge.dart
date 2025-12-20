@@ -32,7 +32,8 @@ class InteractiveEdgeCanvas extends ConsumerStatefulWidget {
   final EdgeStyle style;
 
   @override
-  ConsumerState<InteractiveEdgeCanvas> createState() => _InteractiveEdgeCanvasState();
+  ConsumerState<InteractiveEdgeCanvas> createState() =>
+      _InteractiveEdgeCanvasState();
 }
 
 class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
@@ -113,7 +114,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     }
   }
 
-  void _handleEdgeChanges(List<PaintableEdge> oldEdges, List<PaintableEdge> newEdges) {
+  void _handleEdgeChanges(
+    List<PaintableEdge> oldEdges,
+    List<PaintableEdge> newEdges,
+  ) {
     final oldIds = oldEdges.map(_edgeId).toSet();
     final newIds = newEdges.map(_edgeId).toSet();
 
@@ -195,14 +199,21 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       ..forward();
   }
 
-  void _handleColorTransitions(List<PaintableEdge> oldEdges, List<PaintableEdge> newEdges) {
+  void _handleColorTransitions(
+    List<PaintableEdge> oldEdges,
+    List<PaintableEdge> newEdges,
+  ) {
     for (var i = 0; i < newEdges.length && i < oldEdges.length; i++) {
       final oldEdge = oldEdges[i];
       final newEdge = newEdges[i];
       final edgeId = _edgeId(newEdge);
 
-      if (oldEdge.status != newEdge.status || oldEdge.active != newEdge.active) {
-        final oldColor = widget.style.colorForStatus(oldEdge.status, active: oldEdge.active);
+      if (oldEdge.status != newEdge.status ||
+          oldEdge.active != newEdge.active) {
+        final oldColor = widget.style.colorForStatus(
+          oldEdge.status,
+          active: oldEdge.active,
+        );
         _previousColors[edgeId] = oldColor;
         _startColorTransition(edgeId);
       }
@@ -221,7 +232,9 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       setState(() {
         final current = _animationStates[edgeId];
         if (current != null) {
-          _animationStates[edgeId] = current.copyWith(colorTransition: controller.value);
+          _animationStates[edgeId] = current.copyWith(
+            colorTransition: controller.value,
+          );
         }
       });
     });
@@ -315,7 +328,8 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.delete) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.delete) {
       final selection = ref.read(selectionNotifierProvider);
       if (selection is EdgeSelection) {
         _deleteEdge(selection);
@@ -347,7 +361,13 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
 
     for (var i = 0; i <= samples; i++) {
       final t = i / samples;
-      final pos = _cubicPoint(edge.start, controls.$1, controls.$2, edge.end, t);
+      final pos = _cubicPoint(
+        edge.start,
+        controls.$1,
+        controls.$2,
+        edge.end,
+        t,
+      );
       final distance = (pos - point).distance;
       if (distance < minDistance) {
         minDistance = distance;
@@ -370,13 +390,19 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   }
 
   void _showContextMenu(Offset position, FlowEdge edge) {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
 
     showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
         Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Rect.fromLTWH(0, 0, overlay?.size.width ?? 800, overlay?.size.height ?? 600),
+        Rect.fromLTWH(
+          0,
+          0,
+          overlay?.size.width ?? 800,
+          overlay?.size.height ?? 600,
+        ),
       ),
       items: [
         PopupMenuItem<String>(
@@ -402,7 +428,9 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       ],
     ).then((value) {
       if (value == 'delete') {
-        _deleteEdge(EdgeSelection(slotId: edge.slotId, from: edge.from, to: edge.to));
+        _deleteEdge(
+          EdgeSelection(slotId: edge.slotId, from: edge.from, to: edge.to),
+        );
       } else if (value == 'toggle') {
         _toggleEdgeActive(edge);
       }
@@ -412,7 +440,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   Future<void> _deleteEdge(EdgeSelection selection) async {
     // Find the device ID from the edge
     final edge = widget.edges.firstWhere(
-      (e) => e.slotId == selection.slotId && e.from == selection.from && e.to == selection.to,
+      (e) =>
+          e.slotId == selection.slotId &&
+          e.from == selection.from &&
+          e.to == selection.to,
       orElse: () => throw StateError('Edge not found'),
     );
 
@@ -424,7 +455,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     if (!confirmed) return;
 
     final actions = ref.read(slotActionsProvider);
-    final result = await actions.deleteSlot(device: deviceId, slotId: edge.slotId);
+    final result = await actions.deleteSlot(
+      device: deviceId,
+      slotId: edge.slotId,
+    );
 
     if (!mounted) return;
 
@@ -449,7 +483,10 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
     );
 
     final actions = ref.read(slotActionsProvider);
-    final result = await actions.updateSlot(device: deviceId, slot: updatedSlot);
+    final result = await actions.updateSlot(
+      device: deviceId,
+      slot: updatedSlot,
+    );
 
     if (!mounted) return;
 
@@ -505,15 +542,15 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.redAccent));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
   }
 }
 
@@ -564,8 +601,16 @@ class _SelectableAnimatedEdgesPainter extends AnimatedEdgesPainter {
           ..isAntiAlias = true
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
-        final controls = _computeControls(paintableEdge.start, paintableEdge.end);
-        final path = _buildPath(paintableEdge.start, paintableEdge.end, controls.$1, controls.$2);
+        final controls = _computeControls(
+          paintableEdge.start,
+          paintableEdge.end,
+        );
+        final path = _buildPath(
+          paintableEdge.start,
+          paintableEdge.end,
+          controls.$1,
+          controls.$2,
+        );
 
         canvas.drawPath(path, selectionPaint);
         break;
@@ -581,9 +626,17 @@ class _SelectableAnimatedEdgesPainter extends AnimatedEdgesPainter {
     return (Offset(midX, start.dy), Offset(midX, end.dy));
   }
 
-  Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) => Path()
-    ..moveTo(start.dx, start.dy)
-    ..cubicTo(control1.dx, control1.dy, control2.dx, control2.dy, end.dx, end.dy);
+  Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+      Path()
+        ..moveTo(start.dx, start.dy)
+        ..cubicTo(
+          control1.dx,
+          control1.dy,
+          control2.dx,
+          control2.dy,
+          end.dx,
+          end.dy,
+        );
 
   @override
   bool shouldRepaint(covariant _SelectableAnimatedEdgesPainter oldDelegate) =>

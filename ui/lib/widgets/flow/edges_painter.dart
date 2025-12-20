@@ -34,9 +34,14 @@ class PaintableEdge {
 }
 
 class EdgesPainter extends CustomPainter {
-  EdgesPainter({required this.edges, required this.style, required Offset? hoverPosition})
-    : _hoverPosition = hoverPosition,
-      _computedEdges = edges.map((edge) => _ComputedEdge.from(edge, style)).toList();
+  EdgesPainter({
+    required this.edges,
+    required this.style,
+    required Offset? hoverPosition,
+  }) : _hoverPosition = hoverPosition,
+       _computedEdges = edges
+           .map((edge) => _ComputedEdge.from(edge, style))
+           .toList();
 
   final List<PaintableEdge> edges;
   final EdgeStyle style;
@@ -52,7 +57,9 @@ class EdgesPainter extends CustomPainter {
     );
 
     for (final edge in _computedEdges) {
-      final isHovered = _hoverPosition != null && edge.isNear(_hoverPosition, style.hoverHitRadius);
+      final isHovered =
+          _hoverPosition != null &&
+          edge.isNear(_hoverPosition, style.hoverHitRadius);
       final strokeWidth = isHovered
           ? style.hoverWidth
           : edge.edge.active
@@ -86,7 +93,12 @@ class EdgesPainter extends CustomPainter {
     }
   }
 
-  void _drawPriorityBadge(Canvas canvas, _ComputedEdge edge, Color color, TextStyle textStyle) {
+  void _drawPriorityBadge(
+    Canvas canvas,
+    _ComputedEdge edge,
+    Color color,
+    TextStyle textStyle,
+  ) {
     final label = edge.edge.priority.toString();
     final badgePoint = edge.sample(0.55, normalOffset: 16);
 
@@ -111,14 +123,19 @@ class EdgesPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    textPainter.paint(canvas, badgePoint - Offset(textPainter.width / 2, textPainter.height / 2));
+    textPainter.paint(
+      canvas,
+      badgePoint - Offset(textPainter.width / 2, textPainter.height / 2),
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     if (oldDelegate is! EdgesPainter) return true;
     final sameEdges = listEquals(edges, oldDelegate.edges);
-    return !sameEdges || _hoverPosition != oldDelegate._hoverPosition || style != oldDelegate.style;
+    return !sameEdges ||
+        _hoverPosition != oldDelegate._hoverPosition ||
+        style != oldDelegate.style;
   }
 }
 
@@ -134,7 +151,9 @@ class _ComputedEdge {
   factory _ComputedEdge.from(PaintableEdge edge, EdgeStyle style) {
     final controls = _computeControls(edge.start, edge.end);
     final path = _buildPath(edge.start, edge.end, controls.$1, controls.$2);
-    final dashedPath = edge.active ? path : _dashPath(path, style.dashLength, style.dashGap);
+    final dashedPath = edge.active
+        ? path
+        : _dashPath(path, style.dashLength, style.dashGap);
     return _ComputedEdge(
       edge: edge,
       path: path,
@@ -154,12 +173,26 @@ class _ComputedEdge {
 
   Offset sample(double t, {double normalOffset = 0}) {
     final clampedT = t.clamp(0.0, 1.0);
-    final point = _cubicPoint(edge.start, control1, control2, edge.end, clampedT);
+    final point = _cubicPoint(
+      edge.start,
+      control1,
+      control2,
+      edge.end,
+      clampedT,
+    );
     if (normalOffset == 0) return point;
 
-    final tangent = _cubicTangent(edge.start, control1, control2, edge.end, clampedT);
+    final tangent = _cubicTangent(
+      edge.start,
+      control1,
+      control2,
+      edge.end,
+      clampedT,
+    );
     final normal = Offset(-tangent.dy, tangent.dx);
-    final normalized = normal == Offset.zero ? Offset.zero : normal / normal.distance;
+    final normalized = normal == Offset.zero
+        ? Offset.zero
+        : normal / normal.distance;
     return point + normalized * normalOffset;
   }
 
@@ -179,16 +212,27 @@ class _ComputedEdge {
   }
 }
 
-Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) => Path()
-  ..moveTo(start.dx, start.dy)
-  ..cubicTo(control1.dx, control1.dy, control2.dx, control2.dy, end.dx, end.dy);
+Path _buildPath(Offset start, Offset end, Offset control1, Offset control2) =>
+    Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        control1.dx,
+        control1.dy,
+        control2.dx,
+        control2.dy,
+        end.dx,
+        end.dy,
+      );
 
 Path _dashPath(Path source, double dashLength, double gap) {
   final dashed = Path();
   for (final metric in source.computeMetrics()) {
     var distance = 0.0;
     while (distance < metric.length) {
-      dashed.addPath(metric.extractPath(distance, distance + dashLength), Offset.zero);
+      dashed.addPath(
+        metric.extractPath(distance, distance + dashLength),
+        Offset.zero,
+      );
       distance += dashLength + gap;
     }
   }
@@ -210,5 +254,7 @@ Offset _cubicPoint(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
 
 Offset _cubicTangent(Offset p0, Offset p1, Offset p2, Offset p3, double t) {
   final mt = 1 - t;
-  return (p1 - p0) * (3 * mt * mt) + (p2 - p1) * (6 * mt * t) + (p3 - p2) * (3 * t * t);
+  return (p1 - p0) * (3 * mt * mt) +
+      (p2 - p1) * (6 * mt * t) +
+      (p3 - p2) * (3 * t * t);
 }

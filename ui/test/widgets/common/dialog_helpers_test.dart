@@ -83,13 +83,15 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.confirm(
-        testContext,
-        title: 'Custom',
-        message: 'Message',
-        confirmLabel: 'Yes',
-        cancelLabel: 'No',
-      ));
+      unawaited(
+        DialogHelpers.confirm(
+          testContext,
+          title: 'Custom',
+          message: 'Message',
+          confirmLabel: 'Yes',
+          cancelLabel: 'No',
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -113,11 +115,13 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.confirmDelete(
-        testContext,
-        title: 'Delete Item',
-        message: 'This cannot be undone',
-      ));
+      unawaited(
+        DialogHelpers.confirmDelete(
+          testContext,
+          title: 'Delete Item',
+          message: 'This cannot be undone',
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -143,11 +147,13 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.confirmClear(
-        testContext,
-        title: 'Clear Data',
-        message: 'All data will be removed',
-      ));
+      unawaited(
+        DialogHelpers.confirmClear(
+          testContext,
+          title: 'Clear Data',
+          message: 'All data will be removed',
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -235,17 +241,19 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.input(
-        testContext,
-        title: 'Enter Name',
-        labelText: 'Name',
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Name is required';
-          }
-          return null;
-        },
-      ));
+      unawaited(
+        DialogHelpers.input(
+          testContext,
+          title: 'Enter Name',
+          labelText: 'Name',
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Name is required';
+            }
+            return null;
+          },
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -359,11 +367,13 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.info(
-        testContext,
-        title: 'Information',
-        content: const Text('Some information here'),
-      ));
+      unawaited(
+        DialogHelpers.info(
+          testContext,
+          title: 'Information',
+          content: const Text('Some information here'),
+        ),
+      );
 
       await tester.pumpAndSettle();
 
@@ -388,11 +398,13 @@ void main() {
         ),
       );
 
-      unawaited(DialogHelpers.help(
-        testContext,
-        title: 'Help',
-        content: const Text('Help content'),
-      ));
+      unawaited(
+        DialogHelpers.help(
+          testContext,
+          title: 'Help',
+          content: const Text('Help content'),
+        ),
+      );
 
       await tester.pumpAndSettle();
 

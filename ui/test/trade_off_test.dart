@@ -19,7 +19,8 @@ import 'package:provider/provider.dart';
 import 'helpers/fake_services.dart';
 
 class _FakeEngineService implements EngineService {
-  final StreamController<EngineSnapshot> _stateController = StreamController.broadcast();
+  final StreamController<EngineSnapshot> _stateController =
+      StreamController.broadcast();
 
   @override
   bool get isInitialized => true;
@@ -41,7 +42,8 @@ class _FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(entries: []);
+  Future<KeyRegistryResult> fetchKeyRegistry() async =>
+      const KeyRegistryResult(entries: []);
 
   void emit(EngineSnapshot snapshot) {
     _stateController.add(snapshot);
@@ -65,7 +67,8 @@ class _FakeEngineService implements EngineService {
 
 class _FakeErrorTranslator implements ErrorTranslator {
   @override
-  UserMessage translate(Object error) => const UserMessage(title: 'err', body: 'error');
+  UserMessage translate(Object error) =>
+      const UserMessage(title: 'err', body: 'error');
 }
 
 Widget _buildTestWidget({_FakeEngineService? engine}) {
