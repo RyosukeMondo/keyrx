@@ -4,6 +4,7 @@ import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/mock_bridge.dart'
     if (dart.library.html) 'package:core_logic/ffi/mock_bridge_stub.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
+import 'package:core_logic/services/benchmark_service.dart' as core_benchmark;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
 import 'package:core_logic/services/device_registry_service_web.dart'
     as core_web;
@@ -20,6 +21,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../repositories/mapping_repository_ui.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
+import 'benchmark_service.dart' as ui_benchmark;
 import 'daemon_manager.dart';
 import 'daemon_service.dart';
 import 'device_profile_service.dart';
@@ -52,6 +54,7 @@ class ServiceRegistry {
     required this.keymapService,
     required this.runtimeService,
     required this.metricsService,
+    required this.benchmarkService,
     required this.daemonManager,
   });
 
@@ -74,6 +77,7 @@ class ServiceRegistry {
     required KeymapService keymapService,
     required RuntimeService runtimeService,
     required core_metrics.MetricsService metricsService,
+    required ui_benchmark.BenchmarkService benchmarkService,
     required DaemonManager daemonManager,
     ProfileAutosaveService? profileAutosaveService,
   }) {
@@ -103,6 +107,7 @@ class ServiceRegistry {
       keymapService: keymapService,
       runtimeService: runtimeService,
       metricsService: metricsService,
+      benchmarkService: benchmarkService,
       daemonManager: daemonManager,
     );
   }
@@ -127,6 +132,7 @@ class ServiceRegistry {
     KeymapService? keymapService,
     RuntimeService? runtimeService,
     core_metrics.MetricsService? metricsService,
+    ui_benchmark.BenchmarkService? benchmarkService,
     DaemonManager? daemonManager,
   }) {
     final bootstrapSpan = PerformanceTimelineTracer.start(
@@ -150,6 +156,7 @@ class ServiceRegistry {
         hardwareService: hardwareService,
         keymapService: keymapService,
         metricsService: metricsService,
+        benchmarkService: benchmarkService,
         bootstrapSpan: bootstrapSpan,
       );
     } else {
@@ -172,6 +179,7 @@ class ServiceRegistry {
         keymapService: keymapService,
         runtimeService: runtimeService,
         metricsService: metricsService,
+        benchmarkService: benchmarkService,
         daemonManager: daemonManager,
         bootstrapSpan: bootstrapSpan,
       );
@@ -189,6 +197,7 @@ class ServiceRegistry {
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     core_metrics.MetricsService? metricsService,
+    ui_benchmark.BenchmarkService? benchmarkService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
 
@@ -229,6 +238,7 @@ class ServiceRegistry {
     final stubResolver = _WebStubStoragePathResolver();
     final stubAutosave = _WebStubProfileAutosaveService();
     final stubMetrics = metricsService ?? _WebStubMetricsService();
+    final stubBenchmark = benchmarkService ?? _WebStubBenchmarkService();
     final stubDaemon = _WebStubDaemonManager();
 
     final registry = ServiceRegistry(
@@ -250,6 +260,7 @@ class ServiceRegistry {
       keymapService: keymaps,
       runtimeService: coreRuntime,
       metricsService: stubMetrics,
+      benchmarkService: stubBenchmark,
       daemonManager: stubDaemon,
     );
 
@@ -280,6 +291,7 @@ class ServiceRegistry {
     KeymapService? keymapService,
     RuntimeService? runtimeService,
     core_metrics.MetricsService? metricsService,
+    ui_benchmark.BenchmarkService? benchmarkService,
     DaemonManager? daemonManager,
   }) {
     final bridgeSpan = PerformanceTimelineTracer.start(
@@ -364,6 +376,15 @@ class ServiceRegistry {
     final coreMetrics =
         metricsService ??
         core_metrics.MetricsServiceImpl(bridge: effectiveBridge);
+
+    // Create core benchmark service and UI wrapper
+    final coreBenchmark = core_benchmark.BenchmarkServiceImpl(
+      bridge: effectiveBridge,
+    );
+    final benchmark =
+        benchmarkService ??
+        ui_benchmark.BenchmarkServiceImpl(coreService: coreBenchmark);
+
     final daemon = daemonManager ?? DaemonManager(DaemonService());
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
@@ -393,6 +414,7 @@ class ServiceRegistry {
       keymapService: keymaps,
       runtimeService: runtime,
       metricsService: coreMetrics,
+      benchmarkService: benchmark,
       daemonManager: daemon,
     );
 
@@ -425,6 +447,7 @@ class ServiceRegistry {
   final KeymapService keymapService;
   final RuntimeService runtimeService;
   final core_metrics.MetricsService metricsService;
+  final ui_benchmark.BenchmarkService benchmarkService;
   final DaemonManager daemonManager;
 
   /// Convenience for producing a registry with selective overrides.
@@ -447,6 +470,7 @@ class ServiceRegistry {
     KeymapService? keymapService,
     RuntimeService? runtimeService,
     core_metrics.MetricsService? metricsService,
+    ui_benchmark.BenchmarkService? benchmarkService,
     DaemonManager? daemonManager,
   }) => ServiceRegistry(
     errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -469,6 +493,7 @@ class ServiceRegistry {
     keymapService: keymapService ?? this.keymapService,
     runtimeService: runtimeService ?? this.runtimeService,
     metricsService: metricsService ?? this.metricsService,
+    benchmarkService: benchmarkService ?? this.benchmarkService,
     daemonManager: daemonManager ?? this.daemonManager,
   );
 
@@ -629,6 +654,20 @@ class _WebStubMetricsService implements core_metrics.MetricsService {
 
   @override
   Future<core_metrics.MetricsThresholds?> getThresholds() async => null;
+}
+
+class _WebStubBenchmarkService implements ui_benchmark.BenchmarkService {
+  @override
+  Future<ui_benchmark.BenchmarkServiceResult> runBenchmark(
+    int iterations, {
+    String? scriptPath,
+  }) async =>
+      ui_benchmark.BenchmarkServiceResult.error(
+        'Benchmark not available on web platform',
+      );
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _WebStubDaemonManager implements DaemonManager {
