@@ -22,7 +22,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: Package organizer | Task: Move TestService from UI to core_logic following same pattern as ProfileRegistryService in Task 1, update imports to relative paths, add export to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete original yet, verify NO Flutter dependencies using grep | Success: File at packages/core_logic/lib/services/test_service.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed_
 
-- [ ] 3. Move ScriptFileService to core_logic
+- [x] 3. Move ScriptFileService to core_logic
   - File: packages/core_logic/lib/services/script_file_service.dart
   - Copy from ui/lib/services/script_file_service.dart
   - Update imports to use relative paths
