@@ -24,7 +24,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: Package organizer | Task: Move refactored MappingRepository to core_logic/repositories/ following same pattern as HardwareService move in Spec 2 Task 3, update imports to relative paths, add export to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete original yet, verify NO Flutter dependencies using grep | Success: File at packages/core_logic/lib/repositories/mapping_repository.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
 
-- [ ] 3. Create MappingRepositoryUI wrapper
+- [x] 3. Create MappingRepositoryUI wrapper
   - File: ui/lib/repositories/mapping_repository_ui.dart
   - Create new file extending ChangeNotifier
   - Accept core.MappingRepository in constructor
