@@ -10,7 +10,9 @@ Technical architecture, design decisions, and quality standards for KeyRx.
 *   **Logic > Configuration:** We don't just map A to B. We program behaviors. Static YAML is insufficient for power users; Scripting (Rhai) is the answer.
 *   **Visual > Abstract:** Complex state machines (layers, mod-taps) must be visible to be understood. The UI is a window into the engine's brain.
 *   **Performance > Features:** Latency is the enemy. The tool must feel invisible. 1ms overhead is the maximum acceptable limit.
-*   **Target Platforms:** We officially target **Windows** and **Linux**. The architecture ensures consistent behavior across these operating systems while respecting their native input paradigms.
+*   **Target Platforms:** We officially target **Windows**, **Linux**, and **Web**. The architecture ensures consistent behavior across these platforms:
+    - **Desktop (Windows/Linux)**: Native FFI integration with direct Rust core access for minimal latency (<1ms)
+    - **Web**: HTTP REST + WebSocket architecture with backend server wrapping the Rust core (target latency <20ms, within 20% of desktop)
 
 ---
 
@@ -133,15 +135,102 @@ To ensure user scripts don't break after updates:
 ---
 
 ## 7. Architecture Snapshot (Runtime Layers)
+
+### Desktop Architecture (Windows/Linux)
 *   **UI (Flutter):** Visual keymap editor, real-time state visualizer, REPL terminal. Talks to Rust via C-ABI FFI (no HTTP/JSON overhead).
 *   **Bridge (FFI):** Dart FFI <-> C-compatible API for low-latency calls and shared memory ownership.
 *   **Core (Rust):** Tokio event loop + Rhai scripting + layer/state machine. Processes normalized `InputEvent` values (key, pressed, timestamp, device_id, repeat, synthetic, scan_code).
 *   **Drivers (OS):** Windows hook (WH_KEYBOARD_LL) and Linux evdev/uinput. Responsible for discovery, reading, and translating OS-specific codes (`KEY_*`, scan codes, injected flags) into `InputEvent` + `KeyCode`, then writing output back.
 *   **Flow:** Device -> `InputSource` -> Engine -> Rhai hooks -> OutputAction -> Injector. Engine remains device-agnostic; all OS quirks are confined to drivers.
 
+### Web Architecture
+*   **UI (Flutter Web):** Same Flutter codebase compiled to JavaScript/WebAssembly. Uses HTTP + WebSocket instead of FFI.
+*   **Transport Layer:**
+    - `WebApiClient` (HTTP REST) for request/response operations
+    - `WebSocketClient` for real-time event streaming
+*   **Backend Server (Dart + Shelf):** HTTP server wrapping core_logic services. Zero business logic - pure API wrapper.
+    - REST endpoints for all service operations (hardware, keymaps, layouts, devices, runtime, tests, scripts)
+    - WebSocket handler for real-time event broadcasting
+    - CORS middleware for cross-origin web client access
+*   **Core (Dart):** Business logic in `core_logic` package. Shared between desktop FFI and web HTTP services.
+*   **Flow (Web):** UI -> HTTP/WS -> Backend Server -> core_logic services -> Response/Event Stream
+
+### Multi-Platform Service Pattern
+Services use conditional exports for platform-specific implementations:
+```dart
+// Base interface + conditional export
+export 'services/hardware_profile_service_ffi.dart'
+  if (dart.library.html) 'services/hardware_profile_service_web.dart';
+```
+
+*   **FFI Implementation** (`*_ffi.dart`): Direct calls to Rust via FFI bridge
+*   **Web Implementation** (`*_web.dart`): HTTP requests to backend API + WebSocket subscriptions
+*   **Interface Consistency**: Both implementations satisfy the same abstract interface, ensuring SSOT compliance
+*   **Platform Detection**: `kIsWeb` flag in ServiceRegistry instantiates appropriate service implementations
+
 ---
 
-## 8. Scripting Contract (Rhai) & Sandbox
+## 8. SSOT Enforcement (Single Source of Truth)
+
+KeyRx enforces strict architectural boundaries to maintain code quality and prevent logic duplication:
+
+### SSOT Principles
+1. **Business Logic Location**: All business logic resides in `packages/core_logic/lib/services/`
+2. **UI Layer Restriction**: UI code (`ui/lib/`) contains ONLY presentation logic
+3. **Transport Isolation**: FFI and Web implementations contain ONLY transport code, zero business logic
+4. **Interface Consistency**: All platform-specific implementations satisfy the same abstract interface
+
+### SSOT Violation Detection
+
+The `tools/ssot_checker` static analyzer enforces these rules at build time:
+
+**Violations Detected:**
+1. **Flutter imports in core_logic**: Business logic must be platform-agnostic
+2. **Business logic in UI layer**: UI should delegate to services
+3. **Interface inconsistencies**: FFI and Web implementations must match exactly
+4. **Duplicate implementations**: Same logic implemented multiple times
+
+**Pre-commit Integration:**
+```bash
+# Runs automatically before every commit
+./scripts/pre-commit-ssot-check.sh
+
+# Fails commit if violations detected
+# Skip with: git commit --no-verify
+```
+
+**Example Violation:**
+```dart
+// ❌ VIOLATION: Business logic in UI
+// ui/lib/pages/settings_page.dart
+void saveProfile(Profile p) {
+  // Complex validation logic here
+}
+
+// ✅ CORRECT: Delegate to service
+// ui/lib/pages/settings_page.dart
+void saveProfile(Profile p) {
+  serviceRegistry.profileService.saveProfile(p);
+}
+```
+
+### Platform Consistency Testing
+
+`packages/core_logic/test/ssot/platform_consistency_test.dart` verifies:
+- FFI and Web services implement identical interfaces
+- Transport layers contain no business logic
+- Real-time event parity across platforms
+- Method signatures match exactly
+
+**Benefits:**
+- No accidental logic duplication
+- Easy to add new platforms (just implement transport)
+- Business logic changes automatically apply to all platforms
+- Testable architecture with clear boundaries
+
+---
+
+## 9. Scripting Contract (Rhai) & Sandbox
 *   **Core functions:** `remap(from, to)`, `block(key)`, `pass(key)`, `print_debug(msg)`; later calls override earlier ones for the same key.
 *   **Hooks:** `on_init()` runs once to register remaps/blocks/passes; undefined hooks are ignored. Keep init fast and log via `print_debug`.
 *   **Defaults:** Keys pass through unless remapped/blocked; `pass()` clears prior remap/block.
@@ -151,7 +240,7 @@ To ensure user scripts don't break after updates:
 
 ---
 
-## 9. Key Naming & Aliases
+## 10. Key Naming & Aliases
 *   **Canonical source:** `core/src/drivers/keycodes/definitions.rs` defines `KeyCode` variants and aliases; names are case-insensitive.
 *   **Guideline:** Prefer canonical names (e.g., `CapsLock`, `LeftCtrl`, `MediaPlayPause`, `NumpadEnter`) in scripts for clarity; aliases (`caps`, `ctrl`, `playpause`, `kpenter`) are accepted.
 *   **Coverage:** Letters A-Z, numbers 0-9, F1-F12, modifiers, navigation, editing, locks, punctuation, numpad, and media keys. Unknown names raise runtime errors.
@@ -159,7 +248,7 @@ To ensure user scripts don't break after updates:
 
 ---
 
-## 10. Legendary Backlog (Differentiators)
+## 11. Legendary Backlog (Differentiators)
 *   **Config tests:** Rhai-based config tests (`simulate_tap`, `assert_output`) to make remaps verifiable.
 *   **Conflict detection:** Pre-flight graph of remap conflicts with resolution choices (tap-hold vs. swap, etc.).
 *   **Importers:** Karabiner, AutoHotkey, keyd, kanata import commands for frictionless migration.
