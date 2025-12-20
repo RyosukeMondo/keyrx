@@ -1,6 +1,6 @@
 # Tasks: Refactor Mapping Repository
 
-- [ ] 1. Refactor MappingRepository to use StreamController
+- [x] 1. Refactor MappingRepository to use StreamController
   - File: ui/lib/repositories/mapping_repository.dart
   - Remove ChangeNotifier mixin
   - Add StreamController<void> for change notifications

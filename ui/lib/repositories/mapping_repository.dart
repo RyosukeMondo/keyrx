@@ -4,17 +4,23 @@
 /// Both EditorPage and VisualEditorPage can share this repository.
 library;
 
+import 'dart:async';
+
 import 'package:core_logic/models/key_mapping.dart';
-import 'package:flutter/foundation.dart';
 
 import '../services/script_generator.dart';
 import '../widgets/visual_keyboard.dart';
 
 /// Single source of truth for all mapping data.
-class MappingRepository extends ChangeNotifier {
+class MappingRepository {
   final Map<String, KeyMapping> _mappings = {};
   final List<ComboMapping> _combos = [];
   final List<TapHoldMapping> _tapHolds = [];
+  final StreamController<void> _changesController =
+      StreamController.broadcast();
+
+  /// Stream of changes to mappings.
+  Stream<void> get changes => _changesController.stream;
 
   /// All key mappings, keyed by source key.
   Map<String, KeyMapping> get mappings => Map.unmodifiable(_mappings);
@@ -28,13 +34,13 @@ class MappingRepository extends ChangeNotifier {
   /// Add or update a key mapping.
   void setMapping(String key, KeyMapping mapping) {
     _mappings[key] = mapping;
-    notifyListeners();
+    _changesController.add(null);
   }
 
   /// Remove a key mapping.
   void removeMapping(String key) {
     if (_mappings.remove(key) != null) {
-      notifyListeners();
+      _changesController.add(null);
     }
   }
 
@@ -44,28 +50,28 @@ class MappingRepository extends ChangeNotifier {
   /// Add a combo configuration.
   void addCombo(ComboMapping combo) {
     _combos.add(combo);
-    notifyListeners();
+    _changesController.add(null);
   }
 
   /// Remove a combo at index.
   void removeCombo(int index) {
     if (index >= 0 && index < _combos.length) {
       _combos.removeAt(index);
-      notifyListeners();
+      _changesController.add(null);
     }
   }
 
   /// Add a tap-hold configuration.
   void addTapHold(TapHoldMapping tapHold) {
     _tapHolds.add(tapHold);
-    notifyListeners();
+    _changesController.add(null);
   }
 
   /// Remove a tap-hold at index.
   void removeTapHold(int index) {
     if (index >= 0 && index < _tapHolds.length) {
       _tapHolds.removeAt(index);
-      notifyListeners();
+      _changesController.add(null);
     }
   }
 
@@ -77,7 +83,7 @@ class MappingRepository extends ChangeNotifier {
     _combos.clear();
     _tapHolds.clear();
     if (hadData) {
-      notifyListeners();
+      _changesController.add(null);
     }
   }
 
@@ -95,7 +101,7 @@ class MappingRepository extends ChangeNotifier {
         to: remap.targetKeyId,
       );
     }
-    notifyListeners();
+    _changesController.add(null);
   }
 
   /// Export to visual editor remap configs.
@@ -103,6 +109,11 @@ class MappingRepository extends ChangeNotifier {
       .where((m) => m.type == KeyActionType.remap && m.to != null)
       .map((m) => RemapConfig(sourceKeyId: m.from, targetKeyId: m.to!))
       .toList();
+
+  /// Dispose resources.
+  void dispose() {
+    _changesController.close();
+  }
 }
 
 /// Tap-hold mapping configuration.
