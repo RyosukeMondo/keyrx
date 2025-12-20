@@ -454,7 +454,7 @@ class ServiceRegistry {
 
 class _WebStubBridge implements KeyrxBridge {
   @override
-  KeyrxBindings? get bindings => null;
+  Null get bindings => null;
 
   @override
   dynamic get loadFailure => null;

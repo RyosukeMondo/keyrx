@@ -131,10 +131,68 @@ jobs:
         run: flutter test --concurrency=${CONCURRENCY} test/widgets/golden
         working-directory: ./ui
 
+  flutter-e2e-desktop:
+    name: Flutter E2E Tests (Desktop)
+    needs: flutter-metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libgtk-3-dev libx11-dev pkg-config cmake ninja-build libblkid-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
+      - name: Run desktop E2E tests
+        run: flutter test test_driver/web_platform_test.dart
+        working-directory: ./ui
+
+  flutter-e2e-web:
+    name: Flutter E2E Tests (Web)
+    needs: flutter-metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: ./ui
+
+      - name: Install Chrome for web testing
+        run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Run web E2E tests
+        run: flutter test --platform chrome test_driver/web_platform_test.dart
+        working-directory: ./ui
+        env:
+          BACKEND_URL: http://localhost:8080
+
   flutter-quality-gates:
     name: Flutter Quality Gates
     if: ${{ always() }}
-    needs: [flutter-lint, flutter-metrics, flutter-coverage, flutter-golden]
+    needs: [flutter-lint, flutter-metrics, flutter-coverage, flutter-golden, flutter-e2e-desktop, flutter-e2e-web]
     runs-on: ubuntu-latest
     steps:
       - name: Summarize gate results
@@ -144,6 +202,8 @@ jobs:
             [metrics]="${{ needs.flutter-metrics.result }}"
             [coverage]="${{ needs.flutter-coverage.result }}"
             [golden]="${{ needs.flutter-golden.result }}"
+            [e2e-desktop]="${{ needs.flutter-e2e-desktop.result }}"
+            [e2e-web]="${{ needs.flutter-e2e-web.result }}"
           )
 
           failed=0

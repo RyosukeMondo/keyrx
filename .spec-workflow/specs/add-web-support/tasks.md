@@ -131,8 +131,9 @@
   - _Requirements: REQ-3_
   - _Prompt: Role: Integration test engineer | Task: Create integration tests for backend REST endpoints, WebSocket connections, real-time events, error cases | Restrictions: Test against real core_logic, verify responses match spec, test concurrent clients | Success: All endpoints tested, WebSocket events verified, error handling confirmed, concurrent client support tested_
 
-- [ ] 12. Add cross-platform E2E tests
-  - File: ui/test_driver/web_platform_test.dart
+- [x] 12. Add cross-platform E2E tests
+  - File: ui/integration_test/web_platform_test.dart
+  - Note: Tests created successfully. Updated CI configuration for both desktop and web platforms.
   - Test Flutter web build works
   - Test backend connectivity
   - Test real-time updates work
