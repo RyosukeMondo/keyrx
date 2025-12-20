@@ -143,7 +143,7 @@
   - _Requirements: REQ-7, NFR-3_
   - _Prompt: Role: E2E test specialist | Task: Create cross-platform E2E tests verifying web build works, connects to backend, receives real-time updates, has feature parity | Restrictions: Run on Chrome and Firefox, test critical user flows, verify real-time updates | Success: Tests pass on web and desktop, real-time verified, feature parity confirmed, runs in CI_
 
-- [ ] 13. Add performance benchmarks
+- [x] 13. Add performance benchmarks
   - File: packages/core_logic/test/benchmarks/platform_performance_test.dart
   - Benchmark API response times (FFI vs HTTP)
   - Benchmark real-time event latency
