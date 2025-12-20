@@ -1,0 +1,42 @@
+Generating Dart FFI bindings...
+cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --verbose
+   Compiling keyrx_core v0.1.0 (/home/rmondo/repos/keyrx/core)
+   Compiling generate_dart_bindings v0.1.0 (/home/rmondo/repos/keyrx/core/tools/generate_dart_bindings)
+warning: unused imports: `EventContract` and `FunctionContract`
+  --> core/tools/generate_dart_bindings/src/ipc_client_gen.rs:10:33
+   |
+10 | use keyrx_core::ffi::contract::{EventContract, FfiContract, FunctionContract};
+   |                                 ^^^^^^^^^^^^^               ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `FROM_JSON_OPTIONAL` and `FROM_JSON_REQUIRED`
+ --> core/tools/generate_dart_bindings/src/models_gen.rs:8:54
+  |
+8 |     CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED,
+  |                                                      ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `std::string::String: Borrow<&str>` is not satisfied
+   --> core/tools/generate_dart_bindings/src/models_gen.rs:294:39
+    |
+294 |     let is_enum = enum_names.contains(&dart_type_base);
+    |                              -------- ^^^^^^^^^^^^^^^ the trait `Borrow<&str>` is not implemented for `std::string::String`
+    |                              |
+    |                              required by a bound introduced by this call
+    |
+    = help: the trait `Borrow<&_>` is not implemented for `std::string::String`
+            but trait `Borrow<_>` is implemented for it
+    = help: for that trait implementation, expected `str`, found `&str`
+note: required by a bound in `HashSet::<T, S>::contains`
+   --> /home/rmondo/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/set.rs:690:12
+    |
+688 |     pub fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+    |            -------- required by a bound in this associated function
+689 |     where
+690 |         T: Borrow<Q>,
+    |            ^^^^^^^^^ required by this bound in `HashSet::<T, S>::contains`
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `generate_dart_bindings` (lib) generated 2 warnings
+error: could not compile `generate_dart_bindings` (lib) due to 1 previous error; 2 warnings emitted
+error: Recipe `gen-dart-bindings` failed on line 152 with exit code 101

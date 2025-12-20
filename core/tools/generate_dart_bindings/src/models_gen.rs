@@ -3,14 +3,14 @@
 //! Generates Dart model classes from FFI contract type definitions,
 //! including fromJson and toJson serialization methods.
 
-use crate::templates::{ 
+use crate::templates::{
     context, render, to_camel_case, to_pascal_case, to_snake_case, CONSTRUCTOR_PARAM_OPTIONAL,
     CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED,
     MODEL_CLASS_TEMPLATE, MODEL_FIELD_TEMPLATE, TO_JSON_FIELD,
 };
 use crate::type_mapper::{base_type, is_nullable, map_to_dart_native_type, TypeMappingError};
 use keyrx_core::ffi::contract::{FfiContract, TypeDefinition};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Error type for model generation
 #[derive(Debug, Clone)]
@@ -24,8 +24,7 @@ impl std::fmt::Display for ModelGenError {
         write!(
             f,
             "Failed to generate model for '{}': {}",
-            self.type_name,
-            self.message
+            self.type_name, self.message
         )
     }
 }
@@ -53,13 +52,14 @@ pub struct GeneratedModel {
 /// Generate model classes from contract's custom types
 pub fn generate_models_from_types(
     contract: &FfiContract,
+    enum_names: &HashSet<String>,
 ) -> Result<Vec<GeneratedModel>, ModelGenError> {
     contract
         .types
         .iter()
         .filter_map(|(name, type_def)| {
             if type_def.is_object() {
-                Some(generate_model_class(name, type_def))
+                Some(generate_model_class(name, type_def, enum_names))
             } else if type_def.is_enum() {
                 Some(generate_enum_class(name, type_def))
             } else {
@@ -72,6 +72,7 @@ pub fn generate_models_from_types(
 /// Generate model classes from function return types that are objects
 pub fn generate_models_from_returns(
     contract: &FfiContract,
+    enum_names: &HashSet<String>,
 ) -> Result<Vec<GeneratedModel>, ModelGenError> {
     let mut models = Vec::new();
 
@@ -79,7 +80,8 @@ pub fn generate_models_from_returns(
         if let TypeDefinition::Object { properties, .. } = &func.returns {
             if !properties.is_empty() {
                 let class_name = format!("{}Result", to_pascal_case(&func.name));
-                let model = generate_model_from_properties(&class_name, properties, None)?;
+                let model =
+                    generate_model_from_properties(&class_name, properties, None, enum_names)?;
                 models.push(model);
             }
         }
@@ -90,8 +92,16 @@ pub fn generate_models_from_returns(
 
 /// Generate all models for a contract (both custom types and return types)
 pub fn generate_all_models(contract: &FfiContract) -> Result<Vec<GeneratedModel>, ModelGenError> {
-    let mut models = generate_models_from_types(contract)?;
-    let return_models = generate_models_from_returns(contract)?;
+    // Collect enum names to distinguish between Enums and Models during deserialization
+    let enum_names: HashSet<String> = contract
+        .types
+        .iter()
+        .filter(|(_, t)| t.is_enum())
+        .map(|(n, _)| to_pascal_case(n))
+        .collect();
+
+    let mut models = generate_models_from_types(contract, &enum_names)?;
+    let return_models = generate_models_from_returns(contract, &enum_names)?;
     models.extend(return_models);
     Ok(models)
 }
@@ -100,6 +110,7 @@ pub fn generate_all_models(contract: &FfiContract) -> Result<Vec<GeneratedModel>
 fn generate_model_class(
     name: &str,
     type_def: &TypeDefinition,
+    enum_names: &HashSet<String>,
 ) -> Result<GeneratedModel, ModelGenError> {
     let class_name = to_pascal_case(name);
 
@@ -107,8 +118,13 @@ fn generate_model_class(
         TypeDefinition::Object {
             description,
             properties,
-            .. 
-        } => generate_model_from_properties(&class_name, properties, description.as_deref()),
+            ..
+        } => generate_model_from_properties(
+            &class_name,
+            properties,
+            description.as_deref(),
+            enum_names,
+        ),
         _ => Err(ModelGenError {
             type_name: name.to_string(),
             message: "Only object types can be converted to model classes".to_string(),
@@ -126,10 +142,7 @@ fn generate_enum_class(
     match type_def {
         TypeDefinition::Enum { values, .. } => {
             // Convert enum values to camelCase for Dart enum variants
-            let dart_values: Vec<String> = values
-                .iter()
-                .map(|v| to_camel_case(v))
-                .collect();
+            let dart_values: Vec<String> = values.iter().map(|v| to_camel_case(v)).collect();
 
             // Generate enum values (e.g., "inProgress, completed, cancelled")
             let enum_values = dart_values.join(", ");
@@ -139,7 +152,10 @@ fn generate_enum_class(
                 .iter()
                 .zip(dart_values.iter())
                 .map(|(json_val, dart_val)| {
-                    format!("      case '{}': return {}.{};", json_val, enum_name, dart_val)
+                    format!(
+                        "      case '{}': return {}.{};",
+                        json_val, enum_name, dart_val
+                    )
                 })
                 .collect();
             let from_json_cases_str = from_json_cases.join("\n");
@@ -149,7 +165,10 @@ fn generate_enum_class(
                 .iter()
                 .zip(dart_values.iter())
                 .map(|(json_val, dart_val)| {
-                    format!("      case {}.{}: return '{}';", enum_name, dart_val, json_val)
+                    format!(
+                        "      case {}.{}: return '{}';",
+                        enum_name, dart_val, json_val
+                    )
                 })
                 .collect();
             let to_json_cases_str = to_json_cases.join("\n");
@@ -183,6 +202,7 @@ fn generate_model_from_properties(
     class_name: &str,
     properties: &HashMap<String, Box<TypeDefinition>>,
     description: Option<&str>,
+    enum_names: &HashSet<String>,
 ) -> Result<GeneratedModel, ModelGenError> {
     let mut fields = Vec::new();
     let mut constructor_params = Vec::new();
@@ -194,7 +214,7 @@ fn generate_model_from_properties(
     sorted_props.sort_by_key(|(k, _)| *k);
 
     for (prop_name, prop_type) in sorted_props {
-        let field = generate_field(prop_name, prop_type)?;
+        let field = generate_field(prop_name, prop_type, enum_names)?;
         fields.push(field.declaration);
         constructor_params.push(field.constructor_param);
         from_json_body.push(field.from_json);
@@ -232,7 +252,11 @@ struct FieldInfo {
 }
 
 /// Generate field information for a single property
-fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldInfo, ModelGenError> {
+fn generate_field(
+    prop_name: &str,
+    prop_type: &TypeDefinition,
+    enum_names: &HashSet<String>,
+) -> Result<FieldInfo, ModelGenError> {
     let type_name = prop_type.type_name();
     let nullable = is_nullable(type_name);
     let base = base_type(type_name);
@@ -266,7 +290,9 @@ fn generate_field(prop_name: &str, prop_type: &TypeDefinition) -> Result<FieldIn
 
     // Generate fromJson assignment using robust deserialization logic
     let json_access = format!("json['{}']", json_key);
-    let deserialization = get_deserialization(&json_access, &dart_type, nullable);
+    let dart_type_base = base_type(&dart_type);
+    let is_enum = enum_names.contains(dart_type_base);
+    let deserialization = get_deserialization(&json_access, &dart_type, nullable, is_enum);
     let from_json = format!("      {}: {},", field_name, deserialization);
 
     // Generate toJson field
@@ -290,7 +316,7 @@ fn is_primitive_dart_type(ty: &str) -> bool {
     ) || ty.starts_with("Map<")
 }
 
-fn get_deserialization(json_expr: &str, dart_type: &str, nullable: bool) -> String {
+fn get_deserialization(json_expr: &str, dart_type: &str, nullable: bool, is_enum: bool) -> String {
     if is_primitive_dart_type(dart_type) {
         if nullable {
             format!("{} as {}?", json_expr, dart_type)
@@ -309,17 +335,42 @@ fn get_deserialization(json_expr: &str, dart_type: &str, nullable: bool) -> Stri
         } else {
             // List of objects: map to fromJson
             if nullable {
-                format!("({} as List?)?.map((e) => {}.fromJson(e)).toList()", json_expr, inner)
+                format!(
+                    "({} as List?)?.map((e) => {}.fromJson(e as Map<String, dynamic>)).toList()",
+                    json_expr, inner
+                )
             } else {
-                format!("({} as List).map((e) => {}.fromJson(e)).toList()", json_expr, inner)
+                format!(
+                    "({} as List).map((e) => {}.fromJson(e as Map<String, dynamic>)).toList()",
+                    json_expr, inner
+                )
             }
         }
     } else {
         // Custom type (Model or Enum)
-        if nullable {
-            format!("{} == null ? null : {}.fromJson({})", json_expr, dart_type, json_expr)
+        if is_enum {
+            // Enums are strings in JSON, mapped via fromJson(String)
+            if nullable {
+                format!(
+                    "{} == null ? null : {}.fromJson({} as String)",
+                    json_expr, dart_type, json_expr
+                )
+            } else {
+                format!("{}.fromJson({} as String)", dart_type, json_expr)
+            }
         } else {
-            format!("{}.fromJson({})", dart_type, json_expr)
+            // Classes are Objects in JSON, mapped via fromJson(Map<String, dynamic>)
+            if nullable {
+                format!(
+                    "{} == null ? null : {}.fromJson({} as Map<String, dynamic>)",
+                    json_expr, dart_type, json_expr
+                )
+            } else {
+                format!(
+                    "{}.fromJson({} as Map<String, dynamic>)",
+                    dart_type, json_expr
+                )
+            }
         }
     }
 }

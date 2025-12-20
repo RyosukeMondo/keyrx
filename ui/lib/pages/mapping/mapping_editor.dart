@@ -188,7 +188,7 @@ class _MappingEditorState extends State<MappingEditor> {
           backgroundColor: Colors.green,
         ),
       );
-    } on Exception {
+    } on Exception catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
 

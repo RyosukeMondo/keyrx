@@ -65,7 +65,7 @@ class _DevicesPageState extends State<DevicesPage> {
       var devices = const <DeviceState>[];
       try {
         devices = await widget.deviceRegistryService.getDevices();
-      } on Exception {
+      } on Exception catch (e) {
         _error = 'Device discovery failed: $e';
       }
 
@@ -88,7 +88,7 @@ class _DevicesPageState extends State<DevicesPage> {
         _error = errors.isEmpty ? null : errors.join(' • ');
         _isLoading = false;
       });
-    } on Exception {
+    } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -111,7 +111,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
     try {
       result = await action();
-    } on Exception {
+    } on Exception catch (e) {
       result = ConfigOperationResult.error(e.toString());
     } finally {
       if (mounted) {
@@ -766,7 +766,7 @@ class _DevicesPageState extends State<DevicesPage> {
       await widget.deviceRegistryService.addVirtualDevice(identity);
       await _loadAll();
       _showSnack('Virtual device added');
-    } on Exception {
+    } on Exception catch (e) {
       _showSnack('Failed to add virtual device: $e', isError: true);
     } finally {
       if (mounted) {

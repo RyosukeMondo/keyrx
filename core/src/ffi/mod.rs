@@ -13,6 +13,7 @@
 
 pub mod context;
 pub mod contract;
+pub use contract::ContractEntry;
 pub mod domains;
 pub mod engine_instance;
 pub mod error;

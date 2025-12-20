@@ -81,7 +81,7 @@ class _FfiToolsPageState extends State<FfiToolsPage> with SingleTickerProviderSt
         _metadata = data;
         _isLoading = false;
       });
-    } on Exception {
+    } on Exception catch (e) {
       if (!mounted) return;
 
       setState(() {
@@ -486,7 +486,7 @@ class _FfiToolsPageState extends State<FfiToolsPage> with SingleTickerProviderSt
       setState(() {
         _callHistory.insert(0, record);
       });
-    } on Exception {
+    } on Exception catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

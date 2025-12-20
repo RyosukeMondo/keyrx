@@ -8,6 +8,7 @@ use crate::type_mapper::map_to_dart_native_type;
 use anyhow::Result;
 use chrono;
 use keyrx_core::ffi::contract::{EventContract, FfiContract, FunctionContract};
+use std::collections::HashSet;
 
 pub struct IpcClientGenerator {
     // Generation state, if any
@@ -37,8 +38,16 @@ impl IpcClientGenerator {
 pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     let class_name = format!("{}Client", to_pascal_case(&contract.domain));
     let domain = contract.domain.clone();
-    let methods = generate_methods(contract)?;
-    let events = generate_events(contract)?;
+
+    let enum_names: HashSet<String> = contract
+        .types
+        .iter()
+        .filter(|(_, t)| t.is_enum())
+        .map(|(n, _)| to_pascal_case(n))
+        .collect();
+
+    let methods = generate_methods(contract, &enum_names)?;
+    let events = generate_events(contract, &enum_names)?;
 
     let mut ctx = context();
     ctx.insert("class_name".to_string(), class_name);
@@ -49,7 +58,7 @@ pub fn generate_client_class(contract: &FfiContract) -> Result<String> {
     Ok(render(IPC_CLIENT_CLASS_TEMPLATE, &ctx))
 }
 
-fn generate_events(contract: &FfiContract) -> Result<String> {
+fn generate_events(contract: &FfiContract, enum_names: &HashSet<String>) -> Result<String> {
     let mut events = Vec::new();
 
     for event in &contract.events {
@@ -59,7 +68,14 @@ fn generate_events(contract: &FfiContract) -> Result<String> {
         let event_mapper = if event_type.starts_with("Map<") {
             "event.params".to_string()
         } else {
-            format!("{}.fromJson(event.params as Map<String, dynamic>)", event_type)
+            if enum_names.contains(&event_type) {
+                format!("{}.fromJson(event.params as String)", event_type)
+            } else {
+                format!(
+                    "{}.fromJson(event.params as Map<String, dynamic>)",
+                    event_type
+                )
+            }
         };
 
         let mut ctx = context();
@@ -78,7 +94,7 @@ fn generate_events(contract: &FfiContract) -> Result<String> {
     Ok(events.join("\n"))
 }
 
-fn generate_methods(contract: &FfiContract) -> Result<String> {
+fn generate_methods(contract: &FfiContract, enum_names: &HashSet<String>) -> Result<String> {
     let mut methods = Vec::new();
 
     for func in &contract.functions {
@@ -131,10 +147,18 @@ fn generate_methods(contract: &FfiContract) -> Result<String> {
         let result_deserialization = if return_type == "void" {
             "    return;".to_string()
         } else if return_type.starts_with("List<") {
-            format!(
-                "    return (result as List).map((e) => {}.fromJson(e)).toList();",
-                &return_type[5..return_type.len() - 1]
-            )
+            let inner_type = &return_type[5..return_type.len() - 1];
+            if enum_names.contains(inner_type) {
+                format!(
+                    "    return (result as List).map((e) => {}.fromJson(e as String)).toList();",
+                    inner_type
+                )
+            } else {
+                format!(
+                    "    return (result as List).map((e) => {}.fromJson(e as Map<String, dynamic>)).toList();",
+                    inner_type
+                )
+            }
         } else if return_type == "String"
             || return_type == "int"
             || return_type == "double"
@@ -143,7 +167,21 @@ fn generate_methods(contract: &FfiContract) -> Result<String> {
         {
             format!("    return result as {};", return_type)
         } else {
-            format!("    return {}.fromJson(result);", return_type)
+            // Check if it's an enum or class
+            if enum_names.contains(&return_type) {
+                format!("    return {}.fromJson(result as String);", return_type)
+            } else {
+                format!(
+                    "    return {}.fromJson(result as Map<String, dynamic>);",
+                    return_type
+                )
+            }
+        };
+
+        let maybe_result_assignment = if return_type == "void" {
+            "".to_string()
+        } else {
+            "final result = ".to_string()
         };
 
         let mut ctx = context();
@@ -155,11 +193,12 @@ fn generate_methods(contract: &FfiContract) -> Result<String> {
             "method_full_name".to_string(),
             format!("{}.{}", contract.domain, func.name),
         );
-        ctx.insert("param_map".to_string(), param_map);
         ctx.insert(
-            "result_deserialization".to_string(),
-            result_deserialization,
+            "maybe_result_assignment".to_string(),
+            maybe_result_assignment,
         );
+        ctx.insert("param_map".to_string(), param_map);
+        ctx.insert("result_deserialization".to_string(), result_deserialization);
 
         methods.push(render(IPC_METHOD_TEMPLATE, &ctx));
     }

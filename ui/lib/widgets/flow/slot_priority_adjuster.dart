@@ -109,7 +109,7 @@ class _SlotPriorityAdjusterState extends ConsumerState<SlotPriorityAdjuster> {
       } else {
         widget.onReordered?.call();
       }
-    } on Exception {
+    } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error reordering slots: $e'), backgroundColor: Colors.red),

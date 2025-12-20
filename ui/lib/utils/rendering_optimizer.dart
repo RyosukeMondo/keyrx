@@ -70,11 +70,7 @@ class EdgePathCacheKey {
 
   @override
   int get hashCode =>
-      startX.hashCode ^
-      startY.hashCode ^
-      endX.hashCode ^
-      endY.hashCode ^
-      active.hashCode;
+      startX.hashCode ^ startY.hashCode ^ endX.hashCode ^ endY.hashCode ^ active.hashCode;
 }
 
 /// Mixin for widgets that need selective repainting based on viewport changes.
@@ -158,8 +154,9 @@ class FrameTimer {
 
   /// Start timing a frame.
   void start() {
-    _stopwatch.reset();
-    _stopwatch.start();
+    _stopwatch
+      ..reset()
+      ..start();
   }
 
   /// Stop timing and return elapsed duration.

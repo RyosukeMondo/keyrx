@@ -1,0 +1,996 @@
+Analyzing ui...                                                 
+
+   info • Unnecessary duplication of receiver • check_runtime.dart:21:3 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:22:3 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:29:3 • cascade_invocations
+   info • Don't invoke 'print' in production code • check_runtime.dart:32:5 • avoid_print
+   info • Don't invoke 'print' in production code • check_runtime.dart:33:5 • avoid_print
+   info • Don't invoke 'print' in production code • check_runtime.dart:34:5 • avoid_print
+   info • Don't invoke 'print' in production code • check_runtime.dart:35:5 • avoid_print
+   info • Don't invoke 'print' in production code • check_runtime.dart:36:5 • avoid_print
+   info • Don't invoke 'print' in production code • check_runtime.dart:37:5 • avoid_print
+   info • Unnecessary duplication of receiver • check_runtime.dart:41:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:44:9 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:45:9 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:46:9 • cascade_invocations
+   info • Unnecessary duplication of receiver • check_runtime.dart:47:9 • cascade_invocations
+   info • Dependencies not sorted alphabetically • custom_lints/file_size_lint/pubspec.yaml:11:3 • sort_pub_dependencies
+   info • Sort directive sections alphabetically • integration_test/web_platform_test.dart:12:1 • directives_ordering
+   info • Sort directive sections alphabetically • integration_test/web_platform_test.dart:13:1 • directives_ordering
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • integration_test/web_platform_test.dart:34:13 • inference_failure_on_instance_creation
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:49:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:70:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:78:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:95:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:102:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:119:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:126:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • integration_test/web_platform_test.dart:157:11 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:158:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:159:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:166:81 • lines_longer_than_80_chars
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • integration_test/web_platform_test.dart:178:17 • inference_failure_on_instance_creation
+   info • Catch clause should use 'on' to specify the type of exception being caught • integration_test/web_platform_test.dart:179:11 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:183:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:186:81 • lines_longer_than_80_chars
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • integration_test/web_platform_test.dart:198:17 • inference_failure_on_instance_creation
+   info • Catch clause should use 'on' to specify the type of exception being caught • integration_test/web_platform_test.dart:199:11 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:203:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:206:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • integration_test/web_platform_test.dart:217:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/config/feature_flags.dart:62:7 • avoid_catches_without_on_clauses
+   info • 'bool' parameters should be named parameters • lib/config/feature_flags.dart:108:42 • avoid_positional_boolean_parameters
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/config/feature_flags.dart:122:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/config/feature_flags.dart:145:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/config/feature_flags.dart:170:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:18:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:57:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:84:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:147:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:152:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:167:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/dialogs/add_slot_dialog.dart:222:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:247:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:252:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:263:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/add_slot_dialog.dart:276:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/delete_slot_dialog.dart:9:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/delete_slot_dialog.dart:45:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:14:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:37:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:59:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:77:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:111:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:117:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:123:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:128:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyboard_shortcuts_help_dialog.dart:147:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:45:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:56:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:77:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:89:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:162:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:186:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:198:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:200:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:253:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:266:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/dialogs/keyflow_onboarding_dialog.dart:271:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/main.dart:38:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:40:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:47:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:63:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:65:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:67:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:69:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:71:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:73:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:75:7 • avoid_print
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/main.dart:85:7 • avoid_catches_without_on_clauses
+   info • Don't invoke 'print' in production code • lib/main.dart:86:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/main.dart:87:7 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/main.dart:96:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/main.dart:98:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/main.dart:100:81 • lines_longer_than_80_chars
+   info • Use of an async 'dart:io' method • lib/main.dart:155:18 • avoid_slow_async_io
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/main.dart:159:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/main.dart:188:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/calibration_page.dart:215:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/calibration_page.dart:419:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/calibration_page.dart:494:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/calibration_page.dart:531:81 • lines_longer_than_80_chars
+warning • The generic type 'StreamSubscription<dynamic>?' should have explicit type arguments but doesn't • lib/pages/console.dart:36:3 • strict_raw_type
+   info • The line length exceeds the 80-character limit • lib/pages/debugger.dart:5:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/debugger.dart:6:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/debugger_page.dart:87:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/debugger_widgets.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/developer/analyzer_page.dart:141:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/developer/analyzer_page.dart:352:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/analyzer_page.dart:423:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/developer/doctor_page.dart:199:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/ffi_tools_page.dart:85:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/developer/ffi_tools_page.dart:485:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/developer/ffi_tools_page.dart:486:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/ffi_tools_page.dart:547:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/developer/ffi_tools_page.dart:592:81 • lines_longer_than_80_chars
+warning • The type argument(s) of the function 'showDialog' can't be inferred • lib/pages/developer/ffi_tools_page.dart:668:5 • inference_failure_on_function_invocation
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/profiler_page.dart:57:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/profiler_page.dart:88:7 • avoid_catches_without_on_clauses
+   info • Use of an async 'dart:io' method • lib/pages/developer/profiler_page.dart:105:16 • avoid_slow_async_io
+   info • The line length exceeds the 80-character limit • lib/pages/developer/replay_page.dart:129:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/developer/replay_page.dart:402:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:42:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:60:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:85:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:86:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:88:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:122:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:171:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:207:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:238:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:246:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:257:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:294:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:307:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:334:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:346:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:395:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:405:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:410:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:424:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:447:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:461:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:463:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/device_wiring_page.dart:475:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/devices.dart:68:9 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/devices.dart:91:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/devices.dart:114:7 • avoid_catches_without_on_clauses
+   info • Unnecessary duplication of receiver • lib/pages/devices.dart:197:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/devices.dart:350:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/devices.dart:351:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/devices.dart:358:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/devices.dart:554:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/devices.dart:640:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/devices.dart:833:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:44:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:70:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/flow_editor_page.dart:89:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:96:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a 'double' literal • lib/pages/flow_editor_page.dart:151:47 • prefer_int_literals
+   info • Unnecessary use of a 'double' literal • lib/pages/flow_editor_page.dart:151:52 • prefer_int_literals
+   info • Unnecessary use of a 'double' literal • lib/pages/flow_editor_page.dart:152:37 • prefer_int_literals
+   info • Unnecessary use of a 'double' literal • lib/pages/flow_editor_page.dart:152:42 • prefer_int_literals
+   info • Unnecessary duplication of receiver • lib/pages/flow_editor_page.dart:158:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:201:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:205:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:240:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:245:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:249:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/flow_editor_page.dart:265:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/pages/flow_editor_page.dart:266:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:288:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:311:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:415:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:421:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:433:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:435:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:465:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:472:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/flow_editor_page.dart:516:81 • lines_longer_than_80_chars
+warning • The declaration '_formatId' isn't referenced • lib/pages/flow_editor_page.dart:520:10 • unused_element
+   info • The line length exceeds the 80-character limit • lib/pages/layouts/grid_generator.dart:79:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/layouts/layout_visual_editor.dart:43:9 • cascade_invocations
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/layouts/layout_visual_editor.dart:66:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/layouts/layout_visual_editor.dart:77:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/layouts/layout_visual_editor.dart:106:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/layouts/layout_visual_editor.dart:108:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/layouts/layout_visual_editor.dart:373:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/layouts/layout_visual_editor.dart:402:15 • cascade_invocations
+warning • The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred • lib/pages/mapping/mapping_dashboard.dart:113:7 • inference_failure_on_instance_creation
+   info • Missing an 'await' for the 'Future' computed by this expression • lib/pages/mapping/mapping_dashboard.dart:119:5 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • lib/pages/mapping/mapping_dashboard.dart:167:5 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • lib/pages/mapping/mapping_dashboard.dart:203:7 • unawaited_futures
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_dashboard.dart:276:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_dashboard.dart:281:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_dashboard.dart:298:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:40:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:66:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:72:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:101:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/mapping/mapping_editor.dart:113:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:157:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:161:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:164:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/mapping/mapping_editor.dart:191:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:246:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:265:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:333:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:359:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:386:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:389:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:395:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:396:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:403:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:406:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/mapping/mapping_editor.dart:479:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/metrics_dashboard.dart:80:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/metrics_dashboard.dart:133:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/metrics_dashboard.dart:152:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/migration_prompt_page.dart:184:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/migration_prompt_page.dart:445:7 • avoid_catches_without_on_clauses
+   info • Unnecessary duplication of receiver • lib/pages/monitor_page.dart:97:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/pages/monitor_page.dart:102:5 • cascade_invocations
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/monitor_page.dart:138:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/monitor_page.dart:170:9 • avoid_catches_without_on_clauses
+   info • Unnecessary duplication of receiver • lib/pages/monitor_page.dart:220:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/pages/monitor_page.dart:221:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/pages/monitor_page.dart:346:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/monitor_page.dart:483:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/monitor_view.dart:61:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/monitor_view.dart:89:9 • avoid_catches_without_on_clauses
+   info • Unnecessary use of a block function body • lib/pages/trade_off_chart.dart:162:63 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/pages/trade_off_chart.dart:247:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/trade_off_chart.dart:260:81 • lines_longer_than_80_chars
+warning • The type argument(s) of the function 'showDialog' can't be inferred • lib/pages/trade_off_page.dart:80:30 • inference_failure_on_function_invocation
+warning • The type argument(s) of the function 'showDialog' can't be inferred • lib/pages/trade_off_page.dart:356:5 • inference_failure_on_function_invocation
+warning • The type argument(s) of the function 'showDialog' can't be inferred • lib/pages/trade_off_page.dart:372:5 • inference_failure_on_function_invocation
+   info • The line length exceeds the 80-character limit • lib/pages/trade_off_widgets.dart:233:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/visual_editor_widgets.dart:106:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/visual_editor_widgets.dart:227:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/visual_editor_widgets.dart:425:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/wiring.dart:132:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:218:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/pages/wiring.dart:347:5 • cascade_invocations
+   info • Missing an 'await' for the 'Future' computed by this expression • lib/pages/wiring.dart:478:31 • unawaited_futures
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:506:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:507:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:642:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:675:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:737:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:741:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:745:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/pages/wiring.dart:876:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/pages/wiring.dart:928:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:74:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:96:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:121:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:144:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:164:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:171:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:174:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:213:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:215:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/repositories/keyflow_repository.dart:218:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:219:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/repositories/keyflow_repository.dart:243:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:247:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:250:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:257:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:268:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/repositories/keyflow_repository.dart:273:81 • lines_longer_than_80_chars
+   info • Use of an async 'dart:io' method • lib/services/api_docs_service.dart:360:16 • avoid_slow_async_io
+warning • The generic type 'ConfigOperationResult<dynamic>?' should have explicit type arguments but doesn't • lib/services/auto_save_service.dart:127:5 • strict_raw_type
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • lib/services/auto_save_service.dart:164:17 • inference_failure_on_instance_creation
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/auto_save_service.dart:166:9 • avoid_catches_without_on_clauses
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • lib/services/auto_save_service.dart:177:17 • inference_failure_on_instance_creation
+warning • The generic type 'ConfigOperationResult<dynamic>' should have explicit type arguments but doesn't • lib/services/auto_save_service.dart:202:10 • strict_raw_type
+   info • Unnecessary use of a block function body • lib/services/auto_save_service.dart:221:43 • prefer_expression_function_bodies
+warning • The type of e can't be inferred; a type must be explicitly provided • lib/services/daemon_service.dart:167:33 • inference_failure_on_untyped_parameter
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/daemon_service.dart:197:11 • avoid_catches_without_on_clauses
+   info • Use of an async 'dart:io' method • lib/services/daemon_service.dart:220:19 • avoid_slow_async_io
+   info • Use of an async 'dart:io' method • lib/services/daemon_service.dart:222:26 • avoid_slow_async_io
+   info • Use of an async 'dart:io' method • lib/services/daemon_service.dart:224:26 • avoid_slow_async_io
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • lib/services/daemon_service.dart:239:17 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • lib/services/daemon_service.dart:242:15 • inference_failure_on_instance_creation
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/daemon_service.dart:246:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/daemon_service.dart:256:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/device_event_handler.dart:102:9 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:34:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:62:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:76:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:101:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:103:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:115:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:143:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:160:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/device_profile_service.dart:164:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:207:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:215:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/device_profile_service.dart:216:9 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:224:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:228:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:229:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:235:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:258:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/services/device_profile_service.dart:261:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:262:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:271:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:291:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:321:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/device_profile_service.dart:325:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/facade_state.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade.dart:5:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade.dart:230:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:80:81 • lines_longer_than_80_chars
+warning • The type of error can't be inferred; a type must be explicitly provided • lib/services/facade/keyrx_facade_impl.dart:104:21 • inference_failure_on_untyped_parameter
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:153:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:154:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:212:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:245:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:271:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:370:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:399:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:420:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:426:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:443:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:444:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:455:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:488:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:508:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:538:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:544:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:570:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:576:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:587:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:588:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:596:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:618:15 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/facade/keyrx_facade_impl.dart:621:13 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/facade/keyrx_facade_impl.dart:653:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/result.dart:72:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/result.dart:120:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/facade/result.dart:142:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/ffi_introspection_service.dart:27:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/ffi_introspection_service.dart:48:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/ffi_introspection_service.dart:52:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/ffi_introspection_service.dart:72:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/flow_validator.dart:137:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/flow_validator.dart:157:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/flow_validator.dart:187:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:48:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:54:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:60:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:66:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:72:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:88:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:100:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:109:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:118:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:126:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/services/generated/ipc_client.dart:131:26 • avoid_positional_boolean_parameters
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:132:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:132:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:138:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:144:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:150:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:155:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:156:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:165:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:177:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:183:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/services/generated/ipc_client.dart:197:63 • avoid_positional_boolean_parameters
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:197:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:223:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:235:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:241:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/services/generated/ipc_client.dart:246:45 • avoid_positional_boolean_parameters
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:263:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:264:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:269:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:277:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:277:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:283:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:291:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:299:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:299:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:306:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:311:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:317:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:317:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:323:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:336:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:342:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:358:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:364:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:373:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:382:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:391:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:407:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:416:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:422:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:427:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:432:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:437:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:461:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:466:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:479:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:479:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:485:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:485:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:491:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:491:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:511:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:529:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:535:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:541:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:547:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:553:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:561:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:567:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:573:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:579:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:590:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:608:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:614:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:622:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:630:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:638:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:658:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:677:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/services/generated/ipc_client.dart:687:66 • avoid_positional_boolean_parameters
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:687:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:698:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:711:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:730:11 • unused_local_variable
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:736:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:742:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:748:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:754:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:760:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:765:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:766:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'result' isn't used • lib/services/generated/ipc_client.dart:775:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/services/generated/ipc_client.dart:775:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/hardware_service_ui.dart:11:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/hardware_service_ui.dart:12:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/keymap_converter.dart:23:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/services/keymap_converter.dart:29:9 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/keymap_converter.dart:80:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/services/keymap_converter.dart:85:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/keymap_converter.dart:88:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/keymap_converter.dart:112:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/layout_service_ui.dart:11:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/layout_service_ui.dart:12:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/mapping_validator.dart:29:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/metrics_service.dart:102:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/metrics_service.dart:104:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/metrics_service.dart:161:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/metrics_service.dart:217:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/metrics_service.dart:243:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/metrics_service.dart:280:7 • avoid_catches_without_on_clauses
+   info • Unnecessary use of a block function body • lib/services/metrics_service.dart:299:46 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:29:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:40:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:76:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:94:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/services/observability_service.dart:122:30 • avoid_positional_boolean_parameters
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:176:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:211:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/observability_service.dart:212:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/observability_service.dart:275:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/services/observability_service.dart:297:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/profile_autosave_service.dart:203:9 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/services/profile_autosave_service.dart:259:7 • avoid_catches_without_on_clauses
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:144:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:145:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:146:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:147:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:150:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/services/rhai_generator.dart:196:5 • cascade_invocations
+   info • Unnecessary use of a block function body • lib/services/screen_reader_announcer.dart:103:25 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/services/script_generator.dart:35:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/script_generator.dart:44:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/services/script_generator.dart:51:7 • cascade_invocations
+   info • The import of 'package:core_logic/ffi/bridge.dart' is unnecessary because all of the used elements are also provided by the import of 'package:core_logic/core_logic.dart' • lib/services/service_registry.dart:4:8 • unnecessary_import
+   info • The import of 'package:core_logic/services/hardware_service_ffi.dart' is unnecessary because all of the used elements are also provided by the import of 'package:core_logic/core_logic.dart' • lib/services/service_registry.dart:9:8 • unnecessary_import
+   info • The import of 'package:core_logic/services/keymap_service_ffi.dart' is unnecessary because all of the used elements are also provided by the import of 'package:core_logic/core_logic.dart' • lib/services/service_registry.dart:11:8 • unnecessary_import
+   info • The import of 'package:core_logic/services/layout_service_ffi.dart' is unnecessary because all of the used elements are also provided by the import of 'package:core_logic/core_logic.dart' • lib/services/service_registry.dart:13:8 • unnecessary_import
+   info • Sort directive sections alphabetically • lib/services/service_registry.dart:16:1 • directives_ordering
+   info • Sort directive sections alphabetically • lib/services/service_registry.dart:18:1 • directives_ordering
+   info • Invalid location for the unnamed constructor • lib/services/service_registry.dart:90:3 • sort_unnamed_constructors_first
+   info • Static method should be a constructor • lib/services/service_registry.dart:178:26 • prefer_constructors_over_static_methods
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:200:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:209:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:246:81 • lines_longer_than_80_chars
+   info • Static method should be a constructor • lib/services/service_registry.dart:252:26 • prefer_constructors_over_static_methods
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:277:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:279:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:292:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:304:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:307:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:310:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:325:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:414:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:420:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:486:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:522:81 • lines_longer_than_80_chars
+warning • The declaration '_WebStubDeviceRegistryService' isn't referenced • lib/services/service_registry.dart:525:7 • unused_element
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:553:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:564:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:565:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:582:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:596:32 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:603:44 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:616:81 • lines_longer_than_80_chars
+warning • The declaration '_WebStubRuntimeService' isn't referenced • lib/services/service_registry.dart:619:7 • unused_element
+warning • The declaration '_WebStubDaemonService' isn't referenced • lib/services/service_registry.dart:625:7 • unused_element
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:642:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:686:6 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:697:36 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:708:78 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/services/service_registry.dart:708:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/services/service_registry.dart:722:47 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/services/simulation_service.dart:61:81 • lines_longer_than_80_chars
+   info • 'bool' parameters should be named parameters • lib/state/analytics_providers.dart:36:42 • avoid_positional_boolean_parameters
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/state/app_state.dart:81:7 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/state/app_state.dart:112:7 • avoid_catches_without_on_clauses
+   info • 'bool' parameters should be named parameters • lib/state/app_state.dart:120:33 • avoid_positional_boolean_parameters
+   info • The line length exceeds the 80-character limit • lib/state/daemon_providers.dart:33:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/state/daemon_providers.dart:77:6 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/state/daemon_providers.dart:88:36 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/state/daemon_providers.dart:99:78 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/state/daemon_providers.dart:99:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:115:5 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/daemon_providers.dart:115:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:127:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:131:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:134:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:139:3 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/daemon_providers.dart:139:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/daemon_providers.dart:145:3 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/daemon_providers.dart:150:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/state/device_stream_provider.dart:112:7 • avoid_catches_without_on_clauses
+   info • Use 'forEach' and a tear-off rather than a 'for' loop to apply a function to every element • lib/state/device_stream_provider.dart:126:7 • prefer_foreach
+   info • 'KeyFlowRepositoryRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:24:37 • deprecated_member_use_from_same_package
+warning • The value of the field '_service' isn't used • lib/state/keyflow_providers.dart:46:24 • unused_field
+   info • Unnecessary use of a block function body • lib/state/keyflow_providers.dart:52:22 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/state/keyflow_providers.dart:59:68 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/state/keyflow_providers.dart:65:55 • prefer_expression_function_bodies
+   info • 'RuntimeConfigRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:112:37 • deprecated_member_use_from_same_package
+   info • 'FlowGraphRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:116:29 • deprecated_member_use_from_same_package
+   info • 'DeviceStatesRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:123:40 • deprecated_member_use_from_same_package
+   info • 'KeyFlowActionsRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:173:31 • deprecated_member_use_from_same_package
+   info • 'AvailableHardwareProfilesRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:178:3 • deprecated_member_use_from_same_package
+   info • 'AvailableKeymapsRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/keyflow_providers.dart:192:39 • deprecated_member_use_from_same_package
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/state/node_positions_provider.dart:109:7 • avoid_catches_without_on_clauses
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:22:3 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/providers_setup.dart:23:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:25:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:44:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:49:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:51:3 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/providers_setup.dart:51:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/state/providers_setup.dart:53:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:55:3 • avoid_print
+   info • The line length exceeds the 80-character limit • lib/state/providers_setup.dart:58:81 • lines_longer_than_80_chars
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:59:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:63:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:64:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:70:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:73:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:75:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:79:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:80:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:86:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:88:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:93:3 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:96:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:101:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:105:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/state/providers_setup.dart:106:5 • avoid_print
+   info • 'AutoSaveServiceRef' is deprecated and shouldn't be used. Will be removed in 3.0. Use Ref instead • lib/state/save_state_provider.dart:15:33 • deprecated_member_use_from_same_package
+   info • The line length exceeds the 80-character limit • lib/utils/rendering_optimizer.dart:151:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/utils/rendering_optimizer.dart:162:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/common/dialogs/dialog_helpers.dart:130:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/common/dialogs/dialog_helpers.dart:185:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/common/dialogs/multi_action_dialog.dart:66:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/common/dialogs/selection_dialog.dart:85:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/common/styled_icon_button.dart:109:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:61:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:62:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:63:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:64:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:89:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:90:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:114:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:115:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:127:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:128:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:168:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:169:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:170:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/accessible_flow_canvas.dart:172:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:32:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:107:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/animated_edge_canvas.dart:149:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/animated_edge_canvas.dart:178:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:192:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:199:81 • lines_longer_than_80_chars
+   info • The value of the argument is redundant because it matches the default value • lib/widgets/flow/animated_edge_canvas.dart:203:20 • avoid_redundant_argument_values
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:226:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/animated_edge_canvas.dart:231:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edge_canvas.dart:254:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:66:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:68:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:80:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:120:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:124:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:145:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/animated_edges_painter.dart:149:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:162:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:171:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:174:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:178:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:180:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:199:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/widgets/flow/animated_edges_painter.dart:208:38 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:210:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:230:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:243:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:252:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/animated_edges_painter.dart:274:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/device_node_widget.dart:28:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/device_node_widget.dart:145:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/device_node_widget.dart:146:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:37:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:39:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:55:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:89:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/edges_painter.dart:98:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:113:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:120:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:136:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:156:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:159:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:161:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:181:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:190:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/edges_painter.dart:212:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/empty_state.dart:137:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/empty_state.dart:169:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/empty_state.dart:218:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/empty_state.dart:247:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node.dart:180:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node.dart:181:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/widgets/flow/enhanced_device_node.dart:277:56 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:44:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:53:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:101:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:132:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:157:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:162:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/enhanced_device_node_with_slot_management.dart:178:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/widgets/flow/enhanced_keymap_node.dart:210:55 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/widgets/flow/enhanced_layout_node.dart:172:69 • prefer_expression_function_bodies
+   info • Unnecessary use of a block function body • lib/widgets/flow/enhanced_layout_node.dart:207:56 • prefer_expression_function_bodies
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/error_view.dart:1:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/error_view.dart:97:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/error_view.dart:234:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/error_view.dart:254:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:55:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:62:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:68:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:75:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:82:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:179:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:184:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:207:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:212:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:215:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:236:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:306:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/feature_tour.dart:310:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/flow_canvas_internals.dart:88:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/focus_indicator.dart:46:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:35:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:116:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/interactive_edge.dart:156:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/interactive_edge.dart:184:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:198:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:204:81 • lines_longer_than_80_chars
+   info • The value of the argument is redundant because it matches the default value • lib/widgets/flow/interactive_edge.dart:208:20 • avoid_redundant_argument_values
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:228:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/interactive_edge.dart:233:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:255:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:329:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:361:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:384:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:390:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:416:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:426:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:438:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:463:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:521:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:527:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:578:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:579:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:588:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:595:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/interactive_edge.dart:597:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a 'double' literal • lib/widgets/flow/keyboard_navigable_canvas.dart:42:49 • prefer_int_literals
+   info • Unnecessary use of a 'double' literal • lib/widgets/flow/keyboard_navigable_canvas.dart:42:54 • prefer_int_literals
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:49:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:55:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:59:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:78:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:107:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:110:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:119:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:144:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:165:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:166:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:177:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:196:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/keyboard_navigable_canvas.dart:197:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/keyboard_navigable_canvas.dart:205:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/keyboard_navigable_canvas.dart:214:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/keyboard_navigable_canvas.dart:235:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/keyboard_navigable_canvas.dart:263:5 • cascade_invocations
+warning • The member 'state' can only be used within 'package:riverpod/src/async_notifier.dart' or a test • lib/widgets/flow/keyboard_navigable_canvas.dart:317:23 • invalid_use_of_visible_for_testing_member
+warning • The member 'state' can only be used within instance members of subclasses of 'AsyncNotifierBase' • lib/widgets/flow/keyboard_navigable_canvas.dart:317:23 • invalid_use_of_protected_member
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:1:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:3:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:19:81 • lines_longer_than_80_chars
+warning • The value of the local variable 'visibleNodeIds' isn't used • lib/widgets/flow/optimized_flow_canvas.dart:39:11 • unused_local_variable
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:64:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/widgets/flow/optimized_flow_canvas.dart:70:38 • prefer_expression_function_bodies
+   info • Unnecessary duplication of receiver • lib/widgets/flow/optimized_flow_canvas.dart:162:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • lib/widgets/flow/optimized_flow_canvas.dart:163:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:181:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:209:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • lib/widgets/flow/optimized_flow_canvas.dart:225:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:249:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:255:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:259:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:261:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:280:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:294:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:303:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/optimized_flow_canvas.dart:325:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:28:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:38:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:45:81 • lines_longer_than_80_chars
+   info • Invalid assignment to the parameter 'newIndex' • lib/widgets/flow/slot_priority_adjuster.dart:82:7 • parameter_assignments
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:103:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:107:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/widgets/flow/slot_priority_adjuster.dart:112:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:115:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:119:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:153:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:183:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:205:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/slot_priority_adjuster.dart:221:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/validation_overlay.dart:50:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/flow/validation_overlay.dart:292:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/mapping_overlay.dart:90:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/metrics/metrics_dashboard.dart:408:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/metrics/metrics_dashboard.dart:445:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/metrics/metrics_dashboard.dart:536:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • lib/widgets/migration_wrapper.dart:74:7 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • lib/widgets/virtual_layout_common.dart:24:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/virtual_layout_common.dart:26:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/virtual_layout_renderer.dart:22:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • lib/widgets/virtual_layout_renderer.dart:123:81 • lines_longer_than_80_chars
+   info • Unnecessary use of a block function body • lib/widgets/visual_keyboard.dart:219:40 • prefer_expression_function_bodies
+   info • 'bool' parameters should be named parameters • lib/widgets/visual_keyboard_keys.dart:80:23 • avoid_positional_boolean_parameters
+   info • Dependencies not sorted alphabetically • pubspec.yaml:32:3 • sort_pub_dependencies
+   info • Dependencies not sorted alphabetically • pubspec.yaml:81:3 • sort_pub_dependencies
+   info • Unnecessary duplication of receiver • scripts/check_metrics.dart:86:3 • cascade_invocations
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/config/feature_flags_test.dart:121:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/config/feature_flags_test.dart:134:13 • inference_failure_on_instance_creation
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:24:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:55:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:89:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:106:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:120:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:134:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:151:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:165:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:180:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:195:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:209:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:212:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:225:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/console_styling_test.dart:228:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:229:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/console_styling_test.dart:230:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/console_styling_test.dart:250:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:251:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/console_styling_test.dart:252:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/console_styling_test.dart:270:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:46:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:86:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:92:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:136:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:175:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:206:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:211:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:226:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:232:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:246:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:252:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:266:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:272:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:277:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:290:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:308:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:338:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:363:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:370:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:376:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:398:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:404:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:433:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:460:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/debugger_page_test.dart:486:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/dialogs/add_slot_dialog_test.dart:391:7 • cascade_invocations
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/dialogs/add_slot_dialog_test.dart:549:13 • inference_failure_on_instance_creation
+   info • The line length exceeds the 80-character limit • test/dialogs/keyflow_onboarding_dialog_test.dart:37:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness.dart:64:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness.dart:102:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness.dart:128:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness.dart:157:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness_test.dart:10:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/helpers/widget_test_harness_test.dart:16:7 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness_test.dart:19:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/helpers/widget_test_harness_test.dart:31:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/integration/ffi_contract_test.dart:48:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/integration/ffi_contract_test.dart:49:81 • lines_longer_than_80_chars
+warning • The generic type 'Map<dynamic, dynamic>' should have explicit type arguments but doesn't • test/integration/ffi_contract_test.dart:82:13 • strict_raw_type
+   info • The line length exceeds the 80-character limit • test/integration/ffi_contract_test.dart:88:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/integration/ffi_contract_test.dart:89:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/integration/ffi_contract_test.dart:92:81 • lines_longer_than_80_chars
+warning • The generic type 'List<dynamic>' should have explicit type arguments but doesn't • test/integration/ffi_contract_test.dart:97:28 • strict_raw_type
+   info • The line length exceeds the 80-character limit • test/memory/memory_profiling_test.dart:17:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/memory/memory_profiling_test.dart:20:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/memory/memory_profiling_test.dart:35:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:4:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:18:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:26:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:58:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:63:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:64:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:82:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:86:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:91:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:94:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/mocks/mock_keyrx_facade.dart:97:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:20:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:51:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:95:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:96:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:104:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:108:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:179:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:195:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:257:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/console_test.dart:268:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:45:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:84:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:108:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:118:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:139:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:152:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:168:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:200:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:210:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:212:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:246:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/developer/developer_pages_test.dart:261:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/pages/run_controls_page_test.dart:53:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/performance/rendering_performance_test.dart:98:7 • cascade_invocations
+warning • The value of the local variable 'sum' isn't used • test/performance/rendering_performance_test.dart:100:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • test/performance/rendering_performance_test.dart:218:7 • avoid_print
+   info • Don't invoke 'print' in production code • test/performance/rendering_performance_test.dart:275:7 • avoid_print
+   info • Don't invoke 'print' in production code • test/performance/rendering_performance_test.dart:341:7 • avoid_print
+   info • Don't invoke 'print' in production code • test/performance/rendering_performance_test.dart:376:7 • avoid_print
+   info • Catch clause should use 'on' to specify the type of exception being caught • test/platform_compatibility_test.dart:55:11 • avoid_catches_without_on_clauses
+   info • Missing an 'await' for the 'Future' computed by this expression • test/platform_compatibility_test.dart:86:18 • unawaited_futures
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:91:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:96:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:99:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:113:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:120:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/platform_compatibility_test.dart:131:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/profile_autosave_service_test.dart:90:9 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/profile_autosave_service_test.dart:151:9 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/repro_invalid_response_wiring.dart:6:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • test/repro_keymap_save_failure.dart:61:9 • avoid_catches_without_on_clauses
+warning • The type argument(s) of 'List' can't be inferred • test/repro_keymap_save_failure.dart:82:19 • inference_failure_on_collection_literal
+   info • Unnecessary duplication of receiver • test/repro_keymap_save_failure.dart:90:7 • cascade_invocations
+warning • The type argument(s) of 'List' can't be inferred • test/repro_keymap_save_failure.dart:104:19 • inference_failure_on_collection_literal
+warning • The type argument(s) of 'List' can't be inferred • test/repro_keymap_save_failure.dart:105:19 • inference_failure_on_collection_literal
+   info • The line length exceeds the 80-character limit • test/repro_startup.dart:25:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/repro_startup.dart:43:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/services/auto_save_service_test.dart:181:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/services/auto_save_service_test.dart:182:7 • cascade_invocations
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:184:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:198:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:219:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:234:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:257:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:261:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:275:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/auto_save_service_test.dart:290:13 • inference_failure_on_instance_creation
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:23:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:33:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:37:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:43:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:47:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_discovery_service_test.dart:50:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_protocol_serialization_test.dart:1:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/daemon_protocol_serialization_test.dart:96:81 • lines_longer_than_80_chars
+   info • Catch clause should use 'on' to specify the type of exception being caught • test/services/daemon_service_test.dart:393:11 • avoid_catches_without_on_clauses
+   info • Catch clause should use 'on' to specify the type of exception being caught • test/services/daemon_service_test.dart:468:9 • avoid_catches_without_on_clauses
+   info • The line length exceeds the 80-character limit • test/services/facade/keyrx_facade_integration_test.dart:63:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/facade/keyrx_facade_integration_test.dart:64:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/facade/keyrx_facade_integration_test.dart:101:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/services/facade/keyrx_facade_integration_test.dart:225:81 • lines_longer_than_80_chars
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:37:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:56:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:72:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:89:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:106:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:122:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:138:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:150:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:162:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:176:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:194:13 • inference_failure_on_instance_creation
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:214:13 • inference_failure_on_instance_creation
+   info • Unnecessary duplication of receiver • test/services/keyflow_analytics_test.dart:226:7 • cascade_invocations
+warning • The type argument(s) of the constructor 'Future.delayed' can't be inferred • test/services/keyflow_analytics_test.dart:232:13 • inference_failure_on_instance_creation
+   info • Unnecessary duplication of receiver • test/services/keyflow_analytics_test.dart:245:7 • cascade_invocations
+warning • The generic type 'AsyncValue<dynamic>' should have explicit type arguments but doesn't • test/state/daemon_providers_test.dart:54:31 • strict_raw_type
+   info • Unnecessary duplication of receiver • test/state/keyflow_providers_test.dart:235:7 • cascade_invocations
+   info • Use of an async 'dart:io' method • test/storage_path_resolver_test.dart:51:20 • avoid_slow_async_io
+   info • The line length exceeds the 80-character limit • test/trade_off_test.dart:22:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/trade_off_test.dart:44:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/trade_off_test.dart:68:81 • lines_longer_than_80_chars
+   info • Unnecessary duplication of receiver • test/utils/logger_test.dart:16:5 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/utils/logger_test.dart:26:5 • cascade_invocations
+   info • The line length exceeds the 80-character limit • test/visual_keyboard_test.dart:307:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/visual_keyboard_test.dart:458:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:34:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:42:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:79:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:102:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:128:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:137:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/web_app_smoke_test.dart:185:81 • lines_longer_than_80_chars
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:84:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:114:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:144:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:236:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:272:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:295:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:360:21 • unawaited_futures
+   info • Missing an 'await' for the 'Future' computed by this expression • test/widgets/common/dialog_helpers_test.dart:389:21 • unawaited_futures
+   info • The line length exceeds the 80-character limit • test/widgets/flow/draggable_node_test.dart:1:81 • lines_longer_than_80_chars
+   info • The line length exceeds the 80-character limit • test/widgets/flow/interactive_edge_test.dart:1:81 • lines_longer_than_80_chars
+   info • Assignment could be inlined in 'return' statement • test/widgets/flow/interactive_edge_test.dart:87:11 • join_return_with_assignment
+warning • The value of the field '_ref' isn't used • test/widgets/flow/interactive_edge_test.dart:473:13 • unused_field
+   info • Unnecessary duplication of receiver • test/widgets/flow/keyboard_navigable_canvas_test.dart:149:7 • cascade_invocations
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:185:60 • deprecated_member_use
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:232:60 • deprecated_member_use
+   info • Unnecessary duplication of receiver • test/widgets/flow/keyboard_navigable_canvas_test.dart:370:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/widgets/flow/keyboard_navigable_canvas_test.dart:406:7 • cascade_invocations
+   info • Unnecessary duplication of receiver • test/widgets/flow/keyboard_navigable_canvas_test.dart:422:7 • cascade_invocations
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:462:60 • deprecated_member_use
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:480:60 • deprecated_member_use
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:490:60 • deprecated_member_use
+warning • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • test/widgets/flow/keyboard_navigable_canvas_test.dart:499:60 • deprecated_member_use
+warning • The type argument(s) of the function 'showDialog' can't be inferred • test/widgets/settings/threshold_settings_dialog_test.dart:18:19 • inference_failure_on_function_invocation
+   info • Unnecessary duplication of receiver • tool/verify_bindings.dart:32:5 • cascade_invocations
+   info • Catch clause should use 'on' to specify the type of exception being caught • tool/verify_bindings.dart:52:5 • avoid_catches_without_on_clauses
+
+992 issues found. (ran in 3.1s)

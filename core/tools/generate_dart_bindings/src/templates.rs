@@ -361,7 +361,7 @@ pub const IPC_EVENT_TEMPLATE: &str = r#"
 pub const IPC_METHOD_TEMPLATE: &str = r#"
   /// {{doc_comment}}
   Future<{{return_type}}> {{method_name}}({{param_signature}}) async {
-    final result = await daemonService.sendRequest(
+    {{maybe_result_assignment}}await daemonService.sendRequest(
       '{{method_full_name}}',
       {
 {{param_map}}
@@ -377,8 +377,10 @@ pub const IPC_CLIENT_FILE_HEADER: &str = r#"// GENERATED CODE - DO NOT EDIT
 // Generation time: {{timestamp}}
 // Source contracts: core/src/ffi/contracts/*.ffi-contract.json
 
+// ignore_for_file: non_constant_identifier_names, avoid_positional_boolean_parameters, unnecessary_lambdas, directives_ordering, sort_constructors_first, use_super_parameters, unnecessary_cast, prefer_expression_function_bodies
+
+import 'package:core_logic/models/models.dart';
 import '../../services/daemon_service.dart';
-import '../../models/models.dart';
 
 /// Abstract base class for generated IPC clients.
 abstract class IpcClient {

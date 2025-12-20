@@ -215,24 +215,24 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas> with TickerProv
       duration: const Duration(milliseconds: 300),
     );
 
-    controller.addListener(() {
-      setState(() {
-        final current = _animationStates[edgeId];
-        if (current != null) {
-          _animationStates[edgeId] = current.copyWith(colorTransition: controller.value);
+    controller
+      ..addListener(() {
+        setState(() {
+          final current = _animationStates[edgeId];
+          if (current != null) {
+            _animationStates[edgeId] = current.copyWith(colorTransition: controller.value);
+          }
+        });
+      })
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _previousColors.remove(edgeId);
+          });
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
         }
       });
-    });
-
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _previousColors.remove(edgeId);
-        });
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
 
     // Reset transition progress
     setState(() {

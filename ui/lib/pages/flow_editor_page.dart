@@ -82,8 +82,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage> with ViewportAw
   }
 
   void _trackPageViewMetrics() {
-    final graphAsync = ref.read(flowGraphProvider);
-    graphAsync.whenData((graph) {
+    ref.read(flowGraphProvider).whenData((graph) {
       final deviceCount = graph.nodes.whereType<DeviceFlowNode>().length;
       final slotCount = graph.edges.length;
       final nodeCount = graph.nodes.length;

@@ -219,18 +219,18 @@ class RenderEdgeLayer extends RenderBox {
       ..color = _style.palette.priorityBackgroundColor.withValues(alpha: 0.9)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
-    canvas.drawCircle(badgePoint, _style.priorityBadgeRadius, fillPaint);
-
-    // Draw badge border
-    canvas.drawCircle(
-      badgePoint,
-      _style.priorityBadgeRadius,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..isAntiAlias = true,
-    );
+    canvas
+      ..drawCircle(badgePoint, _style.priorityBadgeRadius, fillPaint)
+      // Draw badge border
+      ..drawCircle(
+        badgePoint,
+        _style.priorityBadgeRadius,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..isAntiAlias = true,
+      );
 
     // Draw badge text
     final textPainter = TextPainter(

@@ -132,7 +132,7 @@ class _MonitorPageState extends State<MonitorPage> {
           }
         });
       }
-    } on Exception {
+    } on Exception catch (e) {
       debugPrint('Error parsing monitor event: $e');
     }
   }
@@ -162,7 +162,7 @@ class _MonitorPageState extends State<MonitorPage> {
             saveResult.errOrNull?.userMessage ?? 'Failed to create default monitor script',
           );
         }
-      } on Exception {
+      } on Exception catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error preparing monitor: $e'), backgroundColor: Colors.red),

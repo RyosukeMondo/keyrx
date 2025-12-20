@@ -616,3 +616,11 @@ mod tests {
         assert!(contract.get_function("stop_loop").is_some());
     }
 }
+
+/// Contract entry for inventory collection.
+pub struct ContractEntry {
+    pub domain: &'static str,
+    pub contract: &'static str,
+}
+
+inventory::collect!(ContractEntry);

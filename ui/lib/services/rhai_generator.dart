@@ -131,10 +131,8 @@ class RhaiGenerator {
 
   /// Generate Rhai script from visual configuration.
   String generateScript(VisualConfig config) {
-    final buffer = StringBuffer();
-
-    // Header comment
-    buffer
+    final buffer = StringBuffer()
+      // Header comment
       ..writeln('// KeyRx Configuration')
       ..writeln('// Generated: ${DateTime.now().toIso8601String()}')
       ..writeln('// Edit visually or modify this script directly.')

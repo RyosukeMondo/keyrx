@@ -177,7 +177,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       _updateState(currentState.withEngineStatus(EngineStatus.running, scriptPath: scriptPath));
 
       return const Result.ok(null);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       _updateState(currentState.withEngineStatus(EngineStatus.error, error: error.userMessage));
       return Result.err(error);
@@ -205,7 +205,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       _updateState(currentState.withEngineStatus(EngineStatus.ready));
 
       return const Result.ok(null);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       _updateState(currentState.withEngineStatus(EngineStatus.error, error: error.userMessage));
       return Result.err(error);
@@ -226,7 +226,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
 
       // Return current state's engine status
       return Result.ok(currentState.engine);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }
@@ -317,7 +317,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return Result.ok(facadeResult);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       _updateState(
         currentState.withValidationStatus(ValidationStatus.none, error: error.userMessage),
@@ -343,7 +343,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return Result.ok(content);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }
@@ -366,7 +366,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return const Result.ok(null);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }
@@ -395,7 +395,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return Result.ok(devices);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       _updateState(currentState.withDeviceStatus(DeviceStatus.error, error: error.userMessage));
       return Result.err(error);
@@ -427,7 +427,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       _updateState(currentState.withDeviceStatus(DeviceStatus.connected, devicePath: devicePath));
 
       return const Result.ok(null);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       _updateState(currentState.withDeviceStatus(DeviceStatus.error, error: error.userMessage));
       return Result.err(error);
@@ -456,7 +456,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return Result.ok(result);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }
@@ -481,7 +481,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       }
 
       return Result.ok(result);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }
@@ -501,7 +501,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       // this should delegate to that method.
 
       return const Result.ok(null);
-    } on Exception {
+    } on Exception catch (e) {
       final error = FacadeError.from(e, _services.errorTranslator);
       return Result.err(error);
     }

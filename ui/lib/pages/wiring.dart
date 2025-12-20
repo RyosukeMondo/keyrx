@@ -121,7 +121,7 @@ class _WiringPageState extends State<WiringPage> {
     var devices = <DeviceState>[];
     try {
       devices = await _deviceRegistryService.getDevices();
-    } on Exception {
+    } on Exception catch (e) {
       debugPrint('Failed to fetch devices: $e');
     }
 
@@ -320,8 +320,7 @@ class _WiringPageState extends State<WiringPage> {
     final scanCode = keyIdToWindowsScanCode[_selectedPhysicalKeyId];
     if (scanCode == null) return;
 
-    final updated = Map<int, String>.from(_wiringDraft);
-    updated.remove(scanCode);
+    final updated = Map<int, String>.from(_wiringDraft)..remove(scanCode);
 
     setState(() {
       _wiringDraft = updated;
