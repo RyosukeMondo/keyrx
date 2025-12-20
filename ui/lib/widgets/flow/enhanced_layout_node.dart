@@ -169,81 +169,78 @@ class EnhancedLayoutNode extends StatelessWidget {
     ),
   );
 
-  Widget _buildLayoutPreview(ThemeData theme, _LayoutStatus status) {
-    // Visual representation of keyboard layout
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: status.iconBackgroundColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: status.iconColor.withValues(alpha: 0.2)),
-      ),
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Simplified keyboard layout visualization
-          Expanded(
-            child: Row(
-              children: List.generate(
-                5,
-                (i) => Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: status.iconColor.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(4),
+  // Visual representation of keyboard layout
+  Widget _buildLayoutPreview(ThemeData theme, _LayoutStatus status) =>
+      Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: status.iconBackgroundColor.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: status.iconColor.withValues(alpha: 0.2)),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Simplified keyboard layout visualization
+            Expanded(
+              child: Row(
+                children: List.generate(
+                  5,
+                  (i) => Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: status.iconColor.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
+          ],
+        ),
+      );
+
+  // Connection handles on left and right edges
+  Widget _buildConnectionHandles(_LayoutStatus status) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Input handle (left)
+          Row(
+            children: List.generate(
+              2,
+              (index) => Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: status.iconColor.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: status.iconColor),
+                ),
+              ),
+            ),
+          ),
+          // Output handle (right)
+          Row(
+            children: List.generate(
+              2,
+              (index) => Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(left: 4),
+                decoration: BoxDecoration(
+                  color: status.iconColor.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: status.iconColor),
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildConnectionHandles(_LayoutStatus status) {
-    // Connection handles on left and right edges
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Input handle (left)
-        Row(
-          children: List.generate(
-            2,
-            (index) => Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(
-                color: status.iconColor.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-                border: Border.all(color: status.iconColor),
-              ),
-            ),
-          ),
-        ),
-        // Output handle (right)
-        Row(
-          children: List.generate(
-            2,
-            (index) => Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(left: 4),
-              decoration: BoxDecoration(
-                color: status.iconColor.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-                border: Border.all(color: status.iconColor),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      );
 
   _LayoutStatus _getLayoutStatus() =>
       isValid ? _LayoutStatus.valid : _LayoutStatus.invalid;

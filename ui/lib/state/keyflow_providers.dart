@@ -43,23 +43,18 @@ class _WebRuntimeApiAdapter implements RuntimeApi {
   Object? get loadFailure => null;
 
   @override
-  String getConfig() {
-    // This method is synchronous but RuntimeService is async
-    // KeyFlowRepository will handle async via getRuntimeConfig()
-    return 'ok:{"devices":[],"version":1}';
-  }
+  // This method is synchronous but RuntimeService is async
+  // KeyFlowRepository will handle async via getRuntimeConfig()
+  String getConfig() => 'ok:{"devices":[],"version":1}';
 
   @override
-  String addSlot(String deviceJson, String slotJson, int priority) {
-    // Synchronous wrapper - actual implementation uses async methods
-    return getConfig();
-  }
+  // Synchronous wrapper - actual implementation uses async methods
+  String addSlot(String deviceJson, String slotJson, int priority) =>
+      getConfig();
 
   @override
-  String removeSlot(String deviceJson, String slotId) {
-    // Synchronous wrapper - actual implementation uses async methods
-    return getConfig();
-  }
+  // Synchronous wrapper - actual implementation uses async methods
+  String removeSlot(String deviceJson, String slotId) => getConfig();
 }
 
 @Riverpod(keepAlive: true)

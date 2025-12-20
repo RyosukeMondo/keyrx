@@ -254,10 +254,9 @@ class AnimatedEdgesPainter extends CustomPainter {
     return minDistance;
   }
 
-  String _edgeId(PaintableEdge edge) {
-    // Create a unique ID for the edge based on its properties
-    return '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
-  }
+  // Create a unique ID for the edge based on its properties
+  String _edgeId(PaintableEdge edge) =>
+      '${edge.start.dx}_${edge.start.dy}_${edge.end.dx}_${edge.end.dy}_${edge.priority}';
 
   @override
   bool shouldRepaint(covariant AnimatedEdgesPainter oldDelegate) {

@@ -216,10 +216,8 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
     ({double width, double height}) size,
     KeyboardLayout layout,
   ) => DragTarget<String>(
-    onWillAcceptWithDetails: (details) {
-      // Accept if source is different from target
-      return details.data != key.id;
-    },
+    // Accept if source is different from target
+    onWillAcceptWithDetails: (details) => details.data != key.id,
     onAcceptWithDetails: (details) {
       // Create mapping
       widget.onMappingCreated?.call(details.data, key.id);

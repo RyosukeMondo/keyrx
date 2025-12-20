@@ -207,28 +207,26 @@ class EnhancedKeymapNode extends StatelessWidget {
     );
   }
 
-  Widget _buildConnectionHandle(_KeymapStatus status) {
-    // Input connection handle on the left
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          2,
-          (index) => Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: status.iconColor.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-              border: Border.all(color: status.iconColor),
+  // Input connection handle on the left
+  Widget _buildConnectionHandle(_KeymapStatus status) => Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            2,
+            (index) => Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: status.iconColor.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(color: status.iconColor),
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
 
   _KeymapStatus _getKeymapStatus() {
     if (compilationFailed || !isValid) {

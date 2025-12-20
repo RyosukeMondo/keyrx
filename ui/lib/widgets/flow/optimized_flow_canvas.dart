@@ -39,9 +39,8 @@ class OptimizedCanvasView {
       .toList();
 
   /// Filter edges to only those with both endpoints visible.
-  List<PaintableEdge> get visibleEdges {
-    return edges; // Render all edges for now, optimize later if needed
-  }
+  /// Render all edges for now, optimize later if needed
+  List<PaintableEdge> get visibleEdges => edges;
 }
 
 /// Optimized canvas node representation.
@@ -74,10 +73,8 @@ class OptimizedNodeWrapper extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    // Each node is isolated in its own repaint boundary
-    return RepaintBoundary(child: child);
-  }
+  // Each node is isolated in its own repaint boundary
+  Widget build(BuildContext context) => RepaintBoundary(child: child);
 }
 
 /// Optimized edge layer with custom RenderObject.
