@@ -22,7 +22,6 @@ import '../models/migration_report.dart';
 import 'bindings.dart';
 import 'bridge.dart';
 import 'bridge_config.dart';
-import 'device_registry_ffi.dart';
 import 'generated_bindings.dart';
 import 'profile_registry_ffi.dart';
 
@@ -71,12 +70,8 @@ class MockKeyrxBridge implements KeyrxBridge {
       deviceEnabled: true,
       remapEnabled: false,
       profileId: 'gaming',
-      connectedAt: DateTime.now()
-          .subtract(const Duration(hours: 2))
-          .toIso8601String(),
-      updatedAt: DateTime.now()
-          .subtract(const Duration(hours: 2))
-          .toIso8601String(),
+      connectedAt: DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+      updatedAt: DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
     ),
   ];
 
@@ -141,12 +136,7 @@ class MockKeyrxBridge implements KeyrxBridge {
     entries: [
       KeyRegistryEntry(name: 'A', evdev: 0x1e, vk: 0x41, aliases: ['a']),
       KeyRegistryEntry(name: 'Escape', evdev: 0x01, vk: 0x1b, aliases: ['esc']),
-      KeyRegistryEntry(
-        name: 'CapsLock',
-        evdev: 0x3a,
-        vk: 0x14,
-        aliases: ['caps'],
-      ),
+      KeyRegistryEntry(name: 'CapsLock', evdev: 0x3a, vk: 0x14, aliases: ['caps']),
     ],
   );
 
@@ -171,16 +161,12 @@ class MockKeyrxBridge implements KeyrxBridge {
   @override
   RecordingStartResult startRecording(String path) => RecordingStartResult(
     success: true,
-    outputPath:
-        '$path/mock-session-${DateTime.now().millisecondsSinceEpoch}.json',
+    outputPath: '$path/mock-session-${DateTime.now().millisecondsSinceEpoch}.json',
   );
 
   @override
-  RecordingStopResult stopRecording() => const RecordingStopResult(
-    success: true,
-    durationMs: 10000,
-    eventCount: 42,
-  );
+  RecordingStopResult stopRecording() =>
+      const RecordingStopResult(success: true, durationMs: 10000, eventCount: 42);
 
   @override
   SessionListResult listSessions(String dirPath) => SessionListResult(
@@ -188,9 +174,7 @@ class MockKeyrxBridge implements KeyrxBridge {
       SessionInfo(
         path: '$dirPath/session-001.json',
         name: 'session-001',
-        created: DateTime.now()
-            .subtract(const Duration(days: 1))
-            .toIso8601String(),
+        created: DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
         eventCount: 150,
         durationMs: 300000,
       ),
@@ -220,14 +204,13 @@ class MockKeyrxBridge implements KeyrxBridge {
   );
 
   @override
-  ReplayResult replaySession(String path, {bool verify = false}) =>
-      const ReplayResult(
-        totalEvents: 150,
-        matched: 150,
-        mismatched: 0,
-        success: true,
-        mismatches: [],
-      );
+  ReplayResult replaySession(String path, {bool verify = false}) => const ReplayResult(
+    totalEvents: 150,
+    matched: 150,
+    mismatched: 0,
+    success: true,
+    mismatches: [],
+  );
 
   // ========== BridgeDeviceProfileMixin ==========
 
@@ -253,8 +236,7 @@ class MockKeyrxBridge implements KeyrxBridge {
   }
 
   @override
-  bool hasDeviceProfile(int vendorId, int productId) =>
-      vendorId == 0x1234 && productId == 0x5678;
+  bool hasDeviceProfile(int vendorId, int productId) => vendorId == 0x1234 && productId == 0x5678;
 
   @override
   bool saveDeviceProfile(String profileJson) => true;
@@ -272,49 +254,38 @@ class MockKeyrxBridge implements KeyrxBridge {
   );
 
   @override
-  TestRunResult runTests(String path, {String? filter}) => const TestRunResult(
-    total: 6,
-    passed: 5,
-    failed: 0,
-    durationMs: 120,
-    results: [],
-  );
+  TestRunResult runTests(String path, {String? filter}) =>
+      const TestRunResult(total: 6, passed: 5, failed: 0, durationMs: 120, results: []);
 
   @override
-  SimulationResult simulate(
-    List<KeyInput> keys, {
-    String? scriptPath,
-    bool comboMode = false,
-  }) => SimulationResult(
-    mappings: keys
-        .map(
-          (k) => SimulationMapping(
-            input: k.toString(),
-            output: k.toString(),
-            decision: 'PassThrough',
-          ),
-        )
-        .toList(),
-    activeLayers: const ['0'],
-    pending: const [],
-  );
-
-  @override
-  BenchmarkResult runBenchmark(int iterations, {String? scriptPath}) =>
-      BenchmarkResult(
-        minNs: 100000,
-        maxNs: 500000,
-        meanNs: 150000,
-        p99Ns: 250000,
-        iterations: iterations,
-        hasWarning: false,
+  SimulationResult simulate(List<KeyInput> keys, {String? scriptPath, bool comboMode = false}) =>
+      SimulationResult(
+        mappings: keys
+            .map(
+              (k) => SimulationMapping(
+                input: k.toString(),
+                output: k.toString(),
+                decision: 'PassThrough',
+              ),
+            )
+            .toList(),
+        activeLayers: const ['0'],
+        pending: const [],
       );
 
   @override
+  BenchmarkResult runBenchmark(int iterations, {String? scriptPath}) => BenchmarkResult(
+    minNs: 100000,
+    maxNs: 500000,
+    meanNs: 150000,
+    p99Ns: 250000,
+    iterations: iterations,
+    hasWarning: false,
+  );
+
+  @override
   DoctorResult runDoctor() => const DoctorResult(
-    checks: [
-      DiagnosticCheck(name: 'FFI Bridge', status: 'passed', details: 'Mock OK'),
-    ],
+    checks: [DiagnosticCheck(name: 'FFI Bridge', status: 'passed', details: 'Mock OK')],
     passed: 1,
     failed: 0,
     warned: 0,
@@ -337,27 +308,16 @@ class MockKeyrxBridge implements KeyrxBridge {
   @override
   List<String> suggestKeys(String partial) {
     final all = ['A', 'B', 'C', 'Escape', 'Enter', 'Space', 'CapsLock'];
-    return all
-        .where((k) => k.toLowerCase().startsWith(partial.toLowerCase()))
-        .toList();
+    return all.where((k) => k.toLowerCase().startsWith(partial.toLowerCase())).toList();
   }
 
   @override
-  List<String> allKeyNames() => [
-    'A',
-    'B',
-    'C',
-    'Escape',
-    'Enter',
-    'Space',
-    'CapsLock',
-  ];
+  List<String> allKeyNames() => ['A', 'B', 'C', 'Escape', 'Enter', 'Space', 'CapsLock'];
 
   // ========== BridgeConfigMixin ==========
 
   @override
-  ConfigPathResult getConfigRoot() =>
-      ConfigPathResult.success('/tmp/keyrx-mock-config');
+  ConfigPathResult getConfigRoot() => ConfigPathResult.success('/tmp/keyrx-mock-config');
 
   // ========== BridgeMigrationMixin ==========
 
@@ -444,37 +404,34 @@ class MockKeyrxBridge implements KeyrxBridge {
       ProfileRegistryResult.success(['default', 'gaming', 'productivity']);
 
   @override
-  ProfileRegistryResult<Profile> getProfile(String profileId) =>
-      ProfileRegistryResult.success(
-        Profile(
-          id: profileId,
-          name: profileId.toUpperCase(),
-          layoutType: LayoutType.standard,
-          createdAt: DateTime.now().toIso8601String(),
-          updatedAt: DateTime.now().toIso8601String(),
-        ),
-      );
+  ProfileRegistryResult<Profile> getProfile(String profileId) => ProfileRegistryResult.success(
+    Profile(
+      id: profileId,
+      name: profileId.toUpperCase(),
+      layoutType: LayoutType.standard,
+      createdAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toIso8601String(),
+    ),
+  );
 
   @override
-  ProfileRegistryResult<void> saveProfile(Profile profile) =>
-      ProfileRegistryResult.success(null);
+  ProfileRegistryResult<void> saveProfile(Profile profile) => ProfileRegistryResult.success(null);
 
   @override
   ProfileRegistryResult<void> deleteProfile(String profileId) =>
       ProfileRegistryResult.success(null);
 
   @override
-  ProfileRegistryResult<List<Profile>> findCompatibleProfiles(
-    LayoutType layoutType,
-  ) => ProfileRegistryResult.success([
-    Profile(
-      id: 'default',
-      name: 'Default',
-      layoutType: layoutType,
-      createdAt: DateTime.now().toIso8601String(),
-      updatedAt: DateTime.now().toIso8601String(),
-    ),
-  ]);
+  ProfileRegistryResult<List<Profile>> findCompatibleProfiles(LayoutType layoutType) =>
+      ProfileRegistryResult.success([
+        Profile(
+          id: 'default',
+          name: 'Default',
+          layoutType: layoutType,
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        ),
+      ]);
 
   // ========== KeyrxBridge Methods ==========
 
@@ -496,21 +453,16 @@ class MockKeyrxBridge implements KeyrxBridge {
   }
 
   @override
-  bool registerEventCallback(
-    EventType eventType,
-    void Function(Uint8List) handler,
-  ) {
+  bool registerEventCallback(EventType eventType, void Function(Uint8List) handler) {
     _eventHandlers[eventType] = handler;
     return true;
   }
 
   @override
-  bool unregisterEventCallback(EventType eventType) =>
-      _eventHandlers.remove(eventType) != null;
+  bool unregisterEventCallback(EventType eventType) => _eventHandlers.remove(eventType) != null;
 
   @override
-  bool isEventCallbackRegistered(EventType eventType) =>
-      _eventHandlers.containsKey(eventType);
+  bool isEventCallbackRegistered(EventType eventType) => _eventHandlers.containsKey(eventType);
 
   @override
   void requestFullStateResubscribe() {
@@ -525,20 +477,11 @@ class MockKeyrxBridge implements KeyrxBridge {
     final delta = BridgeStateDelta(
       fromVersion: 0,
       toVersion: 1,
-      changes: [
-        BridgeDeltaChange(
-          BridgeDeltaChangeType.versionChanged,
-          payload: payload,
-        ),
-      ],
+      changes: [BridgeDeltaChange(BridgeDeltaChangeType.versionChanged, payload: payload)],
     );
 
     _stateController.add(
-      BridgeStateUpdate(
-        delta: delta,
-        event: event,
-        latencyUs: ffiLatency.inMicroseconds,
-      ),
+      BridgeStateUpdate(delta: delta, event: event, latencyUs: ffiLatency.inMicroseconds),
     );
   }
 

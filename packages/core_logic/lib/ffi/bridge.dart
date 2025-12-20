@@ -27,13 +27,17 @@ import 'event_types.dart';
 import 'generated_bindings.dart';
 import 'profile_registry_ffi.dart';
 
-// Re-export all types from mixin modules for public API compatibility.
-export 'bridge_device_profile.dart'
-    show DeviceProfile, DeviceProfileResult, PhysicalKey, ProfileSource;
-export 'bridge_discovery.dart'
-    show DeviceListResult, DiscoveryStartResult, KeyboardDevice;
-export 'bridge_engine.dart'
+// Re-export all types from mixin modules and models for public API compatibility.
+export '../models/bridge_models.dart'
     show
+        DeviceProfile,
+        DeviceProfileResult,
+        PhysicalKey,
+        ProfileSource,
+        DeviceListResult,
+        DiscoveryStartResult,
+        KeyboardDevice,
+        DeviceRegistryResult,
         BridgeStateUpdate,
         BridgeStateDelta,
         BridgeDeltaChange,
@@ -78,7 +82,7 @@ export 'bridge_validation.dart'
         ValidationResult,
         ValidationWarning,
         WarningCategory;
-export 'device_registry_ffi.dart' show DeviceRegistryResult;
+// DeviceRegistryResult is now exported from bridge_models.dart above
 export 'event_types.dart' show EventType;
 
 /// Bridge to the KeyRx Core library.

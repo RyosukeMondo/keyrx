@@ -1,7 +1,7 @@
 /// KeyRx UI - Visual interface for the KeyRx input remapping engine.
 library;
 
-import 'dart:io' if (dart.library.html) 'dart:html' as platform;
+import 'dart:io' if (dart.library.html) 'utils/platform_stub.dart' as platform;
 
 import 'package:core_logic/models/migration_report.dart';
 import 'package:flutter/foundation.dart';
@@ -35,12 +35,16 @@ import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
 
 void main() {
+  print('[DEBUG] main: Starting KeyRx app');
   WidgetsFlutterBinding.ensureInitialized();
+  print('[DEBUG] main: Flutter binding initialized');
+
   final startupSpan = PerformanceTimelineTracer.start(
     'app.startup',
     context: {'mode': kReleaseMode ? 'release' : 'debug'},
   );
 
+  print('[DEBUG] main: Running app (kIsWeb=$kIsWeb)');
   runApp(
     ProviderScope(
       child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame),
@@ -56,20 +60,50 @@ class KeyrxApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final registry = ref.watch(serviceRegistryProvider);
-    final facade = ref.watch(keyrxFacadeProvider);
-    final apiDocsService = ref.watch(apiDocsServiceProvider);
-    final appState = ref.watch(appStateProvider);
+    print('[DEBUG] KeyrxApp.build: starting');
+    try {
+      print('[DEBUG] KeyrxApp.build: watching providers...');
+      final registry = ref.watch(serviceRegistryProvider);
+      print('[DEBUG] KeyrxApp.build: registry obtained');
+      final facade = ref.watch(keyrxFacadeProvider);
+      print('[DEBUG] KeyrxApp.build: facade obtained');
+      final apiDocsService = ref.watch(apiDocsServiceProvider);
+      print('[DEBUG] KeyrxApp.build: apiDocsService obtained');
+      final appState = ref.watch(appStateProvider);
+      print('[DEBUG] KeyrxApp.build: appState obtained');
 
-    return provider.MultiProvider(
-      providers: createProviders(
-        registry: registry,
-        facade: facade,
-        apiDocsService: apiDocsService,
-        appState: appState,
-      ),
-      child: _KeyrxMaterialApp(onFirstFrame: onFirstFrame),
-    );
+      print('[DEBUG] KeyrxApp.build: creating MultiProvider');
+      return provider.MultiProvider(
+        providers: createProviders(
+          registry: registry,
+          facade: facade,
+          apiDocsService: apiDocsService,
+          appState: appState,
+        ),
+        child: _KeyrxMaterialApp(onFirstFrame: onFirstFrame),
+      );
+    } catch (e, stackTrace) {
+      print('[ERROR] KeyrxApp.build: failed to build: $e');
+      print('[ERROR] Stack trace: $stackTrace');
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, color: Colors.red, size: 64),
+                const SizedBox(height: 16),
+                const Text('Failed to initialize app', style: TextStyle(fontSize: 20)),
+                const SizedBox(height: 8),
+                Text('Error: $e', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                const SizedBox(height: 16),
+                const Text('Check browser console for details', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -106,17 +140,25 @@ class _KeyrxMaterialApp extends StatelessWidget {
 
   /// Check if migration is needed by checking for old profiles directory.
   Future<bool> _checkMigrationNeeded(BuildContext context) async {
-    if (kIsWeb) return false;
-
-    final registry = context.read<ServiceRegistry>();
-    final oldPath = _resolveOldProfilesPath();
-
-    final dir = platform.Directory(oldPath);
-    if (!await dir.exists()) {
+    if (kIsWeb) {
       return false;
     }
 
-    return registry.bridge.checkMigrationNeeded(oldPath);
+    // Desktop-only migration check
+    final registry = context.read<ServiceRegistry>();
+    final oldPath = _resolveOldProfilesPath();
+
+    // Import io conditionally to avoid web compilation issues
+    // This code path is never reached on web due to kIsWeb check above
+    try {
+      final dir = platform.Directory(oldPath);
+      if (!await dir.exists()) {
+        return false;
+      }
+      return registry.bridge.checkMigrationNeeded(oldPath);
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Run the migration process.
