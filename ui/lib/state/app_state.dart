@@ -4,12 +4,12 @@
 /// engine connection status, loaded scripts, and UI state.
 library;
 
+import 'package:core_logic/core_logic.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/config.dart';
 import '../services/engine_service.dart';
-import '../services/error_translator.dart';
 
 /// Layer configuration info.
 class LayerInfo {

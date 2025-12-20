@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:core_logic/core_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:path/path.dart' as p;
 
 void main() {

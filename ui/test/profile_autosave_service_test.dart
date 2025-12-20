@@ -1,10 +1,7 @@
-import 'package:core_logic/models/layout_type.dart';
-import 'package:core_logic/models/profile.dart';
-import 'package:core_logic/services/profile_registry_service.dart';
+import 'package:core_logic/core_logic.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/services/profile_autosave_service.dart';
-import 'package:keyrx_ui/services/storage_path_resolver.dart';
 
 class _StubProfileRegistryService implements ProfileRegistryService {
   @override

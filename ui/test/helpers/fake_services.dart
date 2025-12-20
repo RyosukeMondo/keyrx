@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/bindings.dart';
 import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/ffi/bridge_config.dart';
@@ -26,11 +27,9 @@ import 'package:keyrx_ui/services/device_profile_service.dart';
 import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
-import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
 import 'package:keyrx_ui/services/layout_service_ui.dart';
 import 'package:keyrx_ui/services/profile_autosave_service.dart';
-import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Fake DeviceService that returns empty lists and success results.

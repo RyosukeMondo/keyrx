@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/repositories/device_config_repository.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
@@ -11,6 +12,7 @@ import 'package:core_logic/services/profile_registry_service.dart';
 import 'package:core_logic/services/runtime_service.dart';
 import 'package:core_logic/services/script_file_service.dart';
 import 'package:core_logic/services/test_service.dart';
+
 import '../repositories/mapping_repository_ui.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
@@ -21,12 +23,9 @@ import 'device_registry_service.dart';
 import 'device_service.dart';
 import 'engine_service.dart';
 import 'engine_service_impl.dart';
-import 'error_translator.dart';
-import 'error_translator_impl.dart';
 import 'hardware_service_ui.dart';
 import 'layout_service_ui.dart';
 import 'profile_autosave_service.dart';
-import 'storage_path_resolver.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
 class ServiceRegistry {

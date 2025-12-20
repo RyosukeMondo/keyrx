@@ -1,7 +1,6 @@
+import 'package:core_logic/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:core_logic/models/models.dart';
-
 import 'package:keyrx_ui/pages/migration_prompt_page.dart';
 import 'package:keyrx_ui/pages/trade_off_chart.dart';
 import 'package:keyrx_ui/pages/typing_simulator.dart';

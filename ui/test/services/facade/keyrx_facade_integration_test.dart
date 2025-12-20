@@ -9,7 +9,6 @@
 library;
 
 import 'package:core_logic/ffi/bridge.dart';
-import 'package:core_logic/ffi/device_registry_ffi.dart';
 import 'package:core_logic/models/device_identity.dart';
 import 'package:core_logic/models/device_state.dart';
 import 'package:flutter_test/flutter_test.dart';

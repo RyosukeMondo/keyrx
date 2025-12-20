@@ -5,8 +5,8 @@
 /// both cases explicitly.
 library;
 
+import 'package:core_logic/core_logic.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../error_translator.dart';
 
 part 'result.freezed.dart';
 

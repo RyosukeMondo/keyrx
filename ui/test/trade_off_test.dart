@@ -4,18 +4,16 @@
 
 import 'dart:async';
 
-import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/core_logic.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/trade_off_visualizer.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
-import 'package:core_logic/services/keymap_service.dart';
+import 'package:core_logic/core_logic.dart' as core;
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
-import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
-import 'package:keyrx_ui/services/storage_path_resolver.dart';
 import 'package:provider/provider.dart';
 
 import 'helpers/fake_services.dart';
@@ -79,7 +77,7 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
   final registry = ServiceRegistry.withOverrides(
     errorTranslator: _FakeErrorTranslator(),
     engineService: fakeEngine,
-    mappingRepository: MappingRepository(),
+    mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     deviceService: FakeDeviceService(),
     scriptFileService: FakeScriptFileService(),
     testService: FakeTestService(),

@@ -12,7 +12,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Package organizer | Task: Move ErrorTranslator interface and ErrorTranslatorImpl from ui/lib/services/ to core_logic/lib/utils/ maintaining both files, update imports to relative paths, add exports to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete originals yet, verify NO Flutter dependencies using grep, maintain interface/implementation separation | Success: Both files at packages/core_logic/lib/utils/, imports use relative paths, both exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
 
-- [-] 2. Move StoragePathResolver to core_logic
+- [x] 2. Move StoragePathResolver to core_logic
   - File: packages/core_logic/lib/utils/storage_path_resolver.dart
   - Copy from ui/lib/services/storage_path_resolver.dart to core_logic/lib/utils/
   - Update imports to use relative paths
@@ -23,7 +23,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Role: Package organizer | Task: Move StoragePathResolver from ui/lib/services/ to core_logic/lib/utils/ following same pattern as ErrorTranslator in Task 1, update imports to relative paths, add export to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete original yet, verify NO Flutter dependencies using grep | Success: File at packages/core_logic/lib/utils/storage_path_resolver.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed_
 
-- [ ] 3. Update UI imports to use core_logic
+- [-] 3. Update UI imports to use core_logic
   - File: ui/lib/services/service_registry.dart (and other UI files)
   - Change imports from relative to package:core_logic/utils/
   - Update ServiceRegistry to import utilities from core_logic
