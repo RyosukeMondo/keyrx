@@ -3,7 +3,7 @@ import 'package:core_logic/core_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/debugger.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
@@ -18,7 +18,7 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
   return ServiceRegistry.withOverrides(
     errorTranslator: FakeErrorTranslator(),
     engineService: engine,
-    mappingRepository: MappingRepository(),
+    mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     deviceService: FakeDeviceService(),
     deviceProfileService: FakeDeviceProfileService(),
     deviceRegistryService: FakeDeviceRegistryService(),
@@ -78,7 +78,8 @@ void main() {
 
     // Layers, modifiers, and held keys are still in chips
     expect(chipLabels, containsAll(['base', 'nav', 'Ctrl']));
-    // Pending tap-hold decisions are now shown in a separate widget with countdown
+    // Pending tap-hold decisions are now shown in a separate widget with
+    // countdown
     expect(find.textContaining('tap_hold A'), findsWidgets);
     expect(find.textContaining('Latency'), findsWidgets);
     expect(find.textContaining('120µs'), findsWidgets);
@@ -119,7 +120,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Combo decisions are now shown with individual key chips (A and B extracted from "combo A+B")
+      // Combo decisions are now shown with individual key chips
+      // (A and B extracted from "combo A+B")
       expect(find.text('A'), findsWidgets);
       expect(find.text('B'), findsWidgets);
       expect(find.text('Timing'), findsOneWidget);

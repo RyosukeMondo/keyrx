@@ -5,7 +5,7 @@ import 'package:core_logic/core_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/console.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/console_parser.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
@@ -92,7 +92,7 @@ void main() {
       profileRegistryService: FakeProfileRegistryService(),
       runtimeService: FakeRuntimeService(),
       errorTranslator: FakeErrorTranslator(),
-      mappingRepository: MappingRepository(),
+      mappingRepository: MappingRepositoryUI(core.MappingRepository()),
       storagePathResolver: const StoragePathResolver(),
       layoutService: LayoutServiceUI(core.LayoutService(bridge: FakeBridge())),
       hardwareService: HardwareServiceUI(
@@ -181,11 +181,12 @@ void main() {
   });
 
   testWidgets('initialize engine button appears on init error', (tester) async {
-    fakeEngine.initializeResult = false;
-    fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-      success: false,
-      output: 'error: Engine not initialized',
-    );
+    fakeEngine
+      ..initializeResult = false
+      ..onEval = (_) async => const ConsoleEvalResult(
+        success: false,
+        output: 'error: Engine not initialized',
+      );
 
     await tester.pumpWidget(buildTestWidget());
 
@@ -198,11 +199,12 @@ void main() {
   });
 
   testWidgets('initialize engine button works', (tester) async {
-    fakeEngine.initializeResult = true;
-    fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-      success: false,
-      output: 'error: Engine not initialized',
-    );
+    fakeEngine
+      ..initializeResult = true
+      ..onEval = (_) async => const ConsoleEvalResult(
+        success: false,
+        output: 'error: Engine not initialized',
+      );
 
     await tester.pumpWidget(buildTestWidget());
 

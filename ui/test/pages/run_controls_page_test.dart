@@ -1,8 +1,9 @@
+import 'package:core_logic/core_logic.dart' as core;
 import 'package:core_logic/core_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/run_controls_page.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
 import 'package:keyrx_ui/state/app_state.dart';
@@ -29,7 +30,7 @@ void main() {
         bridge: FakeBridge(),
         testService: FakeTestService(),
         errorTranslator: FakeErrorTranslator(),
-        mappingRepository: MappingRepository(),
+        mappingRepository: MappingRepositoryUI(core.MappingRepository()),
         deviceProfileService: FakeDeviceProfileService(),
         deviceRegistryService: fakeDeviceRegistryService,
         profileRegistryService: FakeProfileRegistryService(),

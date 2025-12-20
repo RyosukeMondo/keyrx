@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/developer/benchmark_page.dart';
 import 'package:keyrx_ui/pages/developer/doctor_page.dart';
 import 'package:keyrx_ui/pages/developer/test_runner_page.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/benchmark_service.dart';
 import 'package:keyrx_ui/services/doctor_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
@@ -39,7 +39,7 @@ Widget _buildTestRunner(MockTestService mockService) {
     profileRegistryService: FakeProfileRegistryService(),
     runtimeService: FakeRuntimeService(),
     errorTranslator: FakeErrorTranslator(),
-    mappingRepository: MappingRepository(),
+    mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     storagePathResolver: const StoragePathResolver(),
     layoutService: LayoutServiceUI(core.LayoutService(bridge: FakeBridge())),
     hardwareService: HardwareServiceUI(

@@ -13,7 +13,7 @@ import 'package:core_logic/core_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
 import 'package:keyrx_ui/services/layout_service_ui.dart';
@@ -145,7 +145,7 @@ class WidgetTestHarness {
     return ServiceRegistry.withOverrides(
       errorTranslator: FakeErrorTranslator(),
       engineService: FakeEngineService(),
-      mappingRepository: MappingRepository(),
+      mappingRepository: MappingRepositoryUI(core.MappingRepository()),
       deviceService: FakeDeviceService(),
       deviceProfileService: FakeDeviceProfileService(),
       deviceRegistryService: FakeDeviceRegistryService(),

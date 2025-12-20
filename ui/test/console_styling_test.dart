@@ -10,7 +10,7 @@ import 'package:core_logic/core_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/pages/console.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
@@ -34,8 +34,12 @@ class _FakeEngineService implements EngineService {
   String get version => 'test';
 
   @override
-  Future<bool> initialize() async =>
-      onInitialize != null ? await onInitialize!() : true;
+  Future<bool> initialize() async {
+    if (onInitialize != null) {
+      return onInitialize!();
+    }
+    return true;
+  }
 
   @override
   Future<bool> loadScript(String path) async => true;
@@ -81,7 +85,7 @@ Widget _buildTestWidget({required _FakeEngineService engine}) {
     profileRegistryService: FakeProfileRegistryService(),
     runtimeService: FakeRuntimeService(),
     errorTranslator: FakeErrorTranslator(),
-    mappingRepository: MappingRepository(),
+    mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     storagePathResolver: const StoragePathResolver(),
     layoutService: LayoutServiceUI(core.LayoutService(bridge: FakeBridge())),
     hardwareService: HardwareServiceUI(

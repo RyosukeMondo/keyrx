@@ -1,8 +1,9 @@
 /// Tests for provider configuration.
 library;
 
+import 'package:core_logic/core_logic.dart' as core;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:keyrx_ui/repositories/mapping_repository.dart';
+import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
@@ -24,7 +25,7 @@ void main() {
         engineService: FakeEngineService(),
         testService: FakeTestService(),
         errorTranslator: FakeErrorTranslator(),
-        mappingRepository: MappingRepository(),
+        mappingRepository: MappingRepositoryUI(core.MappingRepository()),
         bridge: FakeBridge(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: FakeStoragePathResolver(),
@@ -66,7 +67,7 @@ void main() {
         engineService: FakeEngineService(),
         testService: FakeTestService(),
         errorTranslator: FakeErrorTranslator(),
-        mappingRepository: MappingRepository(),
+        mappingRepository: MappingRepositoryUI(core.MappingRepository()),
         bridge: FakeBridge(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: FakeStoragePathResolver(),
@@ -108,7 +109,7 @@ void main() {
         engineService: FakeEngineService(),
         testService: FakeTestService(),
         errorTranslator: FakeErrorTranslator(),
-        mappingRepository: MappingRepository(),
+        mappingRepository: MappingRepositoryUI(core.MappingRepository()),
         bridge: FakeBridge(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: FakeStoragePathResolver(),
@@ -150,7 +151,7 @@ void main() {
         engineService: FakeEngineService(),
         testService: FakeTestService(),
         errorTranslator: FakeErrorTranslator(),
-        mappingRepository: MappingRepository(),
+        mappingRepository: MappingRepositoryUI(core.MappingRepository()),
         bridge: FakeBridge(),
         apiDocsService: FakeApiDocsService(),
         storagePathResolver: FakeStoragePathResolver(),
