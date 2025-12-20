@@ -13,25 +13,25 @@ import 'package:core_logic/ffi/bridge_config.dart';
 import 'package:core_logic/ffi/generated_bindings.dart';
 import 'package:core_logic/ffi/profile_registry_ffi.dart';
 import 'package:core_logic/models/models.dart';
+import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/keymap_service.dart';
+import 'package:core_logic/services/profile_registry_service.dart';
+import 'package:core_logic/services/runtime_service.dart';
+import 'package:core_logic/services/script_file_service.dart';
+import 'package:core_logic/services/test_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
 import 'package:keyrx_ui/services/daemon_manager.dart';
-import 'package:core_logic/services/config_result.dart';
 import 'package:keyrx_ui/services/device_profile_service.dart';
 import 'package:keyrx_ui/services/device_registry_service.dart';
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/error_translator.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
-import 'package:core_logic/services/keymap_service.dart';
 import 'package:keyrx_ui/services/layout_service_ui.dart';
 import 'package:keyrx_ui/services/profile_autosave_service.dart';
-import 'package:keyrx_ui/services/profile_registry_service.dart';
-import 'package:core_logic/services/runtime_service.dart';
-import 'package:keyrx_ui/services/script_file_service.dart';
 import 'package:keyrx_ui/services/storage_path_resolver.dart';
-import 'package:keyrx_ui/services/test_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 /// Fake DeviceService that returns empty lists and success results.
 class FakeDeviceService implements DeviceService {

@@ -6,10 +6,10 @@
 
 import 'package:core_logic/models/device_identity.dart';
 import 'package:core_logic/models/device_state.dart';
+import 'package:core_logic/services/profile_registry_service.dart';
 import 'package:flutter/material.dart';
 
 import '../services/device_registry_service.dart';
-import '../services/profile_registry_service.dart';
 import 'profile_selector.dart';
 import 'remap_toggle.dart';
 

@@ -5,11 +5,11 @@
 library;
 
 import 'package:core_logic/ffi/bridge_discovery.dart';
+import 'package:core_logic/services/test_service.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/facade/result.dart';
 import 'package:keyrx_ui/services/service_registry.dart';
-import 'package:keyrx_ui/services/test_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 

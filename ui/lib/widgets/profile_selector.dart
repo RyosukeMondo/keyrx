@@ -3,8 +3,8 @@
 // Uses FutureBuilder to asynchronously load profiles from the registry
 // and displays them in a dropdown, showing the current selection.
 
+import 'package:core_logic/services/profile_registry_service.dart';
 import 'package:flutter/material.dart';
-import '../services/profile_registry_service.dart';
 
 /// Widget that provides a dropdown selector for profiles.
 ///

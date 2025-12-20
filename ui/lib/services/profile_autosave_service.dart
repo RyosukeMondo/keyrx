@@ -8,9 +8,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:core_logic/models/profile.dart';
+import 'package:core_logic/services/profile_registry_service.dart';
 
 import '../config/timing_config.dart';
-import 'profile_registry_service.dart';
 import 'storage_path_resolver.dart';
 
 /// Autosave state lifecycle.

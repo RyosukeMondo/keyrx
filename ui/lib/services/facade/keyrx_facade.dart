@@ -26,8 +26,8 @@
 library;
 
 import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/services/test_service.dart';
 import '../service_registry.dart';
-import '../test_service.dart';
 import 'facade_state.dart';
 import 'keyrx_facade_impl.dart';
 import 'result.dart';

@@ -9,10 +9,10 @@ import 'dart:convert';
 
 import 'package:core_logic/ffi/bridge.dart' hide ScriptValidationResult;
 import 'package:core_logic/models/log_entry.dart';
+import 'package:core_logic/services/test_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../service_registry.dart';
-import '../test_service.dart';
 import 'facade_state.dart';
 import 'keyrx_facade.dart';
 import 'result.dart';

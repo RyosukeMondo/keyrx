@@ -4,11 +4,11 @@
 /// error details for failed tests.
 library;
 
+import 'package:core_logic/services/test_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/facade/keyrx_facade.dart';
-import '../../services/test_service.dart';
 
 /// Test Runner page for discovering and executing tests.
 class TestRunnerPage extends StatefulWidget {
