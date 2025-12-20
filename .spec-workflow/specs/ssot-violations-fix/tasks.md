@@ -94,7 +94,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Observability Systems Engineer | Task: Refactor UI observability_service to use core ObservabilityService for FFI log access. Add conversion layer to UI's ObservabilityLogEntry if needed. | Restrictions: Preserve log stream API, maintain log formatting, no direct FFI in UI | Success: Service uses core layer, log streams work, conversion layer clean, 1 fewer violation | Instructions: Mark in-progress `[-]`, implement delegation, log integration patterns, mark complete `[x]`._
 
-- [-] 10. Migrate benchmark_service FFI usage (2 violations)
+- [x] 10. Migrate benchmark_service FFI usage (2 violations)
   - Files: ui/lib/services/benchmark_service.dart
   - Replace 2 direct FFI bridge calls with core BenchmarkService
   - Create core service if missing
@@ -104,7 +104,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Performance Testing Specialist | Task: Refactor benchmark_service to use core BenchmarkService instead of direct FFI access. Create core service if missing. | Restrictions: Preserve benchmark API, maintain timing accuracy, no FFI in UI | Success: Benchmarks use core service, 2 FFI calls eliminated, performance testing works, 2 fewer violations | Instructions: Mark in-progress `[-]`, create service layer, log implementation, mark complete `[x]`._
 
-- [ ] 11. Document FlowValidator as UI-specific
+- [-] 11. Document FlowValidator as UI-specific
   - Files: ui/lib/services/flow_validator.dart
   - Add clear documentation that FlowValidator is UI-specific validation
   - Verify it doesn't duplicate core_logic validation logic

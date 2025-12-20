@@ -1,9 +1,30 @@
-/// Flow graph validation service with clear error messages.
+/// UI-specific flow graph validation service.
+///
+/// This service provides validation for the visual flow graph editor in the UI layer.
+/// It is distinct from core_logic validation and serves a different purpose:
+///
+/// **UI-Specific Responsibilities:**
+/// - Validates the visual flow graph representation for the flow editor
+/// - Provides user-friendly error messages and actionable suggestions
+/// - Offers severity levels (error, warning, info) for UI display
+/// - Supports UI features like node/edge error highlighting
+/// - Validates UI state (connected/disconnected devices, orphaned nodes)
+///
+/// **Not a SSOT Violation:**
+/// - core_logic/models/flow/flow_graph.dart only contains data models, no validation
+/// - core_logic validation is for Rhai script validation, not flow graphs
+/// - This validator is presentation-layer logic for the visual editor
+///
+/// **Related Files:**
+/// - core_logic/models/flow/flow_graph.dart - Data models only
+/// - core_logic/ffi/bridge_validation.dart - Script validation only
 library;
 
 import 'package:core_logic/models/flow/flow_graph.dart';
 
-/// Validation error for a specific node or edge in the flow graph.
+/// UI-specific validation error for flow graph nodes or edges.
+///
+/// Provides user-friendly messages with actionable suggestions for the UI.
 class FlowValidationError {
   const FlowValidationError({
     required this.nodeId,
@@ -56,18 +77,27 @@ enum ValidationSeverity {
   info,
 }
 
-/// Service for validating flow graphs and providing actionable feedback.
+/// UI-specific service for validating flow graphs in the visual editor.
+///
+/// This service validates the flow graph representation for display in the UI's
+/// visual flow editor. It provides user-friendly error messages, severity levels,
+/// and actionable suggestions for UI presentation.
+///
+/// **UI-Specific Validation:**
+/// This is NOT business logic validation. It validates the UI state of the flow
+/// graph for presentation purposes (e.g., whether devices are visually connected,
+/// whether nodes are orphaned in the visual editor).
 class FlowValidator {
   const FlowValidator();
 
-  /// Validates entire flow graph and returns list of errors.
+  /// Validates entire flow graph and returns UI-friendly errors.
   ///
-  /// Checks for:
-  /// - Missing/invalid hardware profiles
-  /// - Missing/invalid keymaps
-  /// - Orphaned slots (disconnected edges)
+  /// Performs UI-specific checks for the visual flow editor:
+  /// - Missing/invalid hardware profiles (for visual highlighting)
+  /// - Missing/invalid keymaps (for visual highlighting)
+  /// - Orphaned slots (disconnected edges in the visual graph)
   /// - Priority conflicts (duplicate priorities on same device)
-  /// - Disconnected devices
+  /// - Disconnected devices (visual connection status)
   List<FlowValidationError> validate(FlowGraph graph) {
     final errors = <FlowValidationError>[];
 
