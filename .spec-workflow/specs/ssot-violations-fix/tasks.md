@@ -124,12 +124,13 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Code Documentation Specialist | Task: Document MappingValidator as UI-specific key mapping validation. Verify no duplication with core validation logic. Add clear documentation. | Restrictions: Keep in UI if genuinely UI-specific, document purpose clearly, verify no core duplication | Success: MappingValidator documented, no core duplication verified, SSOT checker accepts it | Instructions: Mark in-progress `[-]`, document and verify, log reasoning, mark complete `[x]`._
 
-- [ ] 13. Verify business logic migration completion
+- [x] 13. Verify business logic migration completion
   - Files: Full UI codebase
   - Run SSOT checker to verify business logic violations eliminated
   - Check that all FFI imports in UI go through core services
   - Verify no direct bridge usage in UI layer
   - Purpose: Confirm all 32 business logic violations resolved
+  - **FINDINGS**: Migration incomplete - 30 violations remain (20 business logic, 8 duplicates, 2 interface). Previous tasks created wrapper classes instead of proper migration. Tests failing.
   - _Leverage: scripts/pre-commit-ssot-check.sh, grep for FFI imports_
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Code Auditor | Task: Verify all business logic migrations are complete. Run SSOT checker, grep for direct FFI usage in UI, ensure all FFI access goes through core services. | Restrictions: Only verify, do not implement new changes unless critical issues found | Success: SSOT checker shows 0 business logic violations (down from 32), no direct FFI in UI layer, all tests pass | Instructions: Mark in-progress `[-]`, run audits, fix any issues found, log results, mark complete `[x]`._
