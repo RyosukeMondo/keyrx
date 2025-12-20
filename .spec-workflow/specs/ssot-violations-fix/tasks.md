@@ -54,7 +54,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Flutter State Management Expert | Task: Refactor device_stream_provider to use core DeviceService instead of direct FFI bridge access. Use Riverpod dependency injection patterns. | Restrictions: Preserve existing provider API, maintain stream functionality, remove all FFI imports | Success: Provider uses DeviceService, no direct FFI access, functionality preserved, 1 fewer SSOT violation | Instructions: Mark in-progress `[-]`, refactor provider, log changes with integration details, mark complete `[x]`._
 
-- [-] 6. Migrate providers_setup FFI usage (5 violations)
+- [x] 6. Migrate providers_setup FFI usage (5 violations)
   - Files: ui/lib/state/providers_setup.dart
   - Identify all 5 FFI bridge usages in this file
   - Replace with appropriate core service injections
@@ -64,7 +64,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Dependency Injection Specialist | Task: Refactor providers_setup.dart to use core_logic services instead of 5 direct FFI bridge calls. Create any missing core services. Use proper Riverpod dependency injection. | Restrictions: Preserve provider initialization order, maintain all existing provider APIs, no FFI in UI | Success: All 5 FFI usages replaced with service injections, providers work correctly, 5 fewer SSOT violations | Instructions: Mark in-progress `[-]`, refactor providers, log all service integrations, mark complete `[x]`._
 
-- [ ] 7. Migrate keyflow_repository FFI usage (2 violations)
+- [x] 7. Migrate keyflow_repository FFI usage (2 violations)
   - Files: ui/lib/repositories/keyflow_repository.dart
   - Replace 2 direct FFI bridge calls with KeyflowService
   - Create KeyflowService in core_logic if missing

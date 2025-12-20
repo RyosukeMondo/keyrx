@@ -23,42 +23,19 @@ part 'keyflow_providers.g.dart';
 KeyFlowRepository keyFlowRepository(Ref ref) {
   final registry = ref.watch(serviceRegistryProvider);
 
-  // ServiceRegistry.bridge is null on web, non-null on desktop
+  // Use RuntimeService from ServiceRegistry (available on both web and desktop)
+  final runtimeService = registry.runtimeService;
   final bridge = registry.bridge;
 
-  if (bridge == null) {
-    // Web platform: use RuntimeServiceWeb via HTTP API
-    final repository = KeyFlowRepository(runtimeApi: _WebRuntimeApiAdapter());
-    ref.onDispose(repository.dispose);
-    return repository;
-  }
+  // Create repository using RuntimeService (eliminates direct FFI access)
+  final repository = KeyFlowRepository.forService(
+    runtimeService,
+    registerEventCallback: bridge.registerEventCallback,
+    unregisterEventCallback: bridge.unregisterEventCallback,
+  );
 
-  // Desktop platform: use FFI bridge
-  final repository = KeyFlowRepository.forBridge(bridge);
   ref.onDispose(repository.dispose);
   return repository;
-}
-
-/// Adapter to use RuntimeService as RuntimeApi for web platform.
-class _WebRuntimeApiAdapter implements RuntimeApi {
-  _WebRuntimeApiAdapter();
-
-  @override
-  Object? get loadFailure => null;
-
-  @override
-  // This method is synchronous but RuntimeService is async
-  // KeyFlowRepository will handle async via getRuntimeConfig()
-  String getConfig() => 'ok:{"devices":[],"version":1}';
-
-  @override
-  // Synchronous wrapper - actual implementation uses async methods
-  String addSlot(String deviceJson, String slotJson, int priority) =>
-      getConfig();
-
-  @override
-  // Synchronous wrapper - actual implementation uses async methods
-  String removeSlot(String deviceJson, String slotId) => getConfig();
 }
 
 @Riverpod(keepAlive: true)

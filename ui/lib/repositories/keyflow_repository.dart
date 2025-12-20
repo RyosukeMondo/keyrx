@@ -10,6 +10,7 @@ import 'package:core_logic/ffi/bridge.dart'
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/runtime_config.dart';
 import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/runtime_service.dart';
 import 'package:core_logic/utils/logger.dart';
 
 /// Lightweight runtime API contract to simplify testing.
@@ -53,19 +54,26 @@ class _BridgeRuntimeApi implements RuntimeApi {
   }
 }
 
-/// Data layer for runtime configuration via the FFI bridge.
+/// Data layer for runtime configuration.
 ///
 /// Provides TTL caching, mutation helpers, structured logging, and a
-/// broadcast stream for real-time updates.
+/// broadcast stream for real-time updates. Can use either RuntimeService
+/// (preferred) or direct RuntimeApi (legacy).
 class KeyFlowRepository {
   KeyFlowRepository({
-    required RuntimeApi runtimeApi,
+    RuntimeApi? runtimeApi,
+    RuntimeService? runtimeService,
     Duration cacheTtl = const Duration(minutes: 5),
     StructuredLogger? logger,
     DateTime Function()? clock,
     void Function(EventType, void Function(Uint8List))? registerEventCallback,
     void Function(EventType)? unregisterEventCallback,
-  }) : _runtimeApi = runtimeApi,
+  }) : assert(
+         runtimeApi != null || runtimeService != null,
+         'Either runtimeApi or runtimeService must be provided',
+       ),
+       _runtimeApi = runtimeApi,
+       _runtimeService = runtimeService,
        _cacheTtl = cacheTtl,
        _clock = clock ?? DateTime.now,
        _logger = logger ?? getLogger('keyflow_repository'),
@@ -73,10 +81,29 @@ class KeyFlowRepository {
        _unregisterEventCallback = unregisterEventCallback {
     _logger.info(
       'keyflow.repo.init',
-      context: {'cache_ttl_ms': _cacheTtl.inMilliseconds},
+      context: {
+        'cache_ttl_ms': _cacheTtl.inMilliseconds,
+        'using_service': _runtimeService != null,
+      },
     );
     _registerBridgeListeners();
   }
+
+  factory KeyFlowRepository.forService(
+    RuntimeService service, {
+    Duration cacheTtl = const Duration(minutes: 5),
+    StructuredLogger? logger,
+    DateTime Function()? clock,
+    void Function(EventType, void Function(Uint8List))? registerEventCallback,
+    void Function(EventType)? unregisterEventCallback,
+  }) => KeyFlowRepository(
+    runtimeService: service,
+    cacheTtl: cacheTtl,
+    logger: logger,
+    clock: clock,
+    registerEventCallback: registerEventCallback,
+    unregisterEventCallback: unregisterEventCallback,
+  );
 
   factory KeyFlowRepository.forBridge(
     KeyrxBridge bridge, {
@@ -92,7 +119,8 @@ class KeyFlowRepository {
     unregisterEventCallback: bridge.unregisterEventCallback,
   );
 
-  final RuntimeApi _runtimeApi;
+  final RuntimeApi? _runtimeApi;
+  final RuntimeService? _runtimeService;
   final Duration _cacheTtl;
   final DateTime Function() _clock;
   final StructuredLogger _logger;
@@ -151,9 +179,25 @@ class KeyFlowRepository {
         priorityOverride ?? await _computeNextPriority(device, slot.priority);
     final slotWithPriority = slot.copyWith(priority: priority);
 
+    final service = _runtimeService;
+    if (service != null) {
+      final result = await service.addSlot(device, slotWithPriority);
+      if (result.isSuccess && result.data != null) {
+        _cacheConfig(result.data!, reason: 'add_slot');
+      } else {
+        _invalidateCache(reason: 'add_slot_error');
+      }
+      return result;
+    }
+
+    final api = _runtimeApi;
+    if (api == null) {
+      throw StateError('Neither runtimeService nor runtimeApi available');
+    }
+
     return _performMutation(
       operation: 'add_slot',
-      invoke: () => _runtimeApi.addSlot(
+      invoke: () => api.addSlot(
         jsonEncode(device.toJson()),
         jsonEncode(slotWithPriority.toJson()),
         priority,
@@ -165,28 +209,76 @@ class KeyFlowRepository {
   Future<ConfigOperationResult<RuntimeConfig>> updateSlot(
     DeviceInstanceId device,
     ProfileSlot slot,
-  ) => _performMutation(
-    operation: 'update_slot',
-    invoke: () => _runtimeApi.addSlot(
-      jsonEncode(device.toJson()),
-      jsonEncode(slot.toJson()),
-      slot.priority,
-    ),
-  );
+  ) async {
+    final service = _runtimeService;
+    if (service != null) {
+      final result = await service.addSlot(device, slot);
+      if (result.isSuccess && result.data != null) {
+        _cacheConfig(result.data!, reason: 'update_slot');
+      } else {
+        _invalidateCache(reason: 'update_slot_error');
+      }
+      return result;
+    }
+
+    final api = _runtimeApi;
+    if (api == null) {
+      throw StateError('Neither runtimeService nor runtimeApi available');
+    }
+
+    return _performMutation(
+      operation: 'update_slot',
+      invoke: () => api.addSlot(
+        jsonEncode(device.toJson()),
+        jsonEncode(slot.toJson()),
+        slot.priority,
+      ),
+    );
+  }
 
   /// Remove a slot for a device.
   Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
     DeviceInstanceId device,
     String slotId,
-  ) => _performMutation(
-    operation: 'remove_slot',
-    invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
-  );
+  ) async {
+    final service = _runtimeService;
+    if (service != null) {
+      final result = await service.removeSlot(device, slotId);
+      if (result.isSuccess && result.data != null) {
+        _cacheConfig(result.data!, reason: 'remove_slot');
+      } else {
+        _invalidateCache(reason: 'remove_slot_error');
+      }
+      return result;
+    }
+
+    final api = _runtimeApi;
+    if (api == null) {
+      throw StateError('Neither runtimeService nor runtimeApi available');
+    }
+
+    return _performMutation(
+      operation: 'remove_slot',
+      invoke: () => api.removeSlot(jsonEncode(device.toJson()), slotId),
+    );
+  }
 
   Future<ConfigOperationResult<RuntimeConfig>> _fetchAndCache(
     String operation,
   ) async {
-    final result = await _callRuntime(operation, _runtimeApi.getConfig);
+    final ConfigOperationResult<RuntimeConfig> result;
+
+    final service = _runtimeService;
+    if (service != null) {
+      result = await service.getConfig();
+    } else {
+      final api = _runtimeApi;
+      if (api == null) {
+        throw StateError('Neither runtimeService nor runtimeApi available');
+      }
+      result = await _callRuntime(operation, api.getConfig, api);
+    }
+
     if (result.isSuccess && result.data != null) {
       _cacheConfig(result.data!, reason: operation);
     }
@@ -197,7 +289,11 @@ class KeyFlowRepository {
     required String operation,
     required String Function() invoke,
   }) async {
-    final result = await _callRuntime(operation, invoke);
+    final api = _runtimeApi;
+    if (api == null) {
+      throw StateError('RuntimeApi not available for mutation operation');
+    }
+    final result = await _callRuntime(operation, invoke, api);
     if (result.isSuccess && result.data != null) {
       _cacheConfig(result.data!, reason: operation);
     } else {
@@ -209,9 +305,10 @@ class KeyFlowRepository {
   Future<ConfigOperationResult<RuntimeConfig>> _callRuntime(
     String operation,
     String Function() invoke,
+    RuntimeApi api,
   ) async {
-    if (_runtimeApi.loadFailure != null) {
-      final message = 'Engine unavailable: ${_runtimeApi.loadFailure}';
+    if (api.loadFailure != null) {
+      final message = 'Engine unavailable: ${api.loadFailure}';
       _logger.error(
         'keyflow.repo.bridge_unavailable',
         message: message,

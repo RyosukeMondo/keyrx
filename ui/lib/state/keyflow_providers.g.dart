@@ -6,7 +6,7 @@ part of 'keyflow_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$keyFlowRepositoryHash() => r'83686edaf4a88f834d4347abcbf52dae0619413a';
+String _$keyFlowRepositoryHash() => r'c93daef4bad325ecdaceb14eae27a32e3494f665';
 
 /// See also [keyFlowRepository].
 @ProviderFor(keyFlowRepository)
