@@ -12,7 +12,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Refactoring Specialist with expertise in Dart and large codebase refactoring | Task: Rename the LogEntry class in ui/lib/services/observability_service.dart to ObservabilityLogEntry to avoid SSOT violation with core_logic's LogEntry class. Update all references in the UI layer. | Restrictions: Do not modify core_logic files, ensure all references are updated to prevent compilation errors, preserve existing functionality | Success: Class is renamed, all references updated, flutter analyze shows no errors, SSOT checker shows 1 fewer duplicate class violation | Instructions: First mark this task as in-progress in tasks.md by changing `[ ]` to `[-]`. After implementation, log the changes using log-implementation tool with detailed artifacts (classes modified, files changed, line counts). Then mark task as complete `[x]` in tasks.md._
 
-- [-] 2. Rename UI DeviceRegistryService to UIDeviceRegistryAdapter
+- [x] 2. Rename UI DeviceRegistryService to UIDeviceRegistryAdapter
   - Files: ui/lib/services/device_registry_service.dart, files importing it
   - Rename DeviceRegistryService class to UIDeviceRegistryAdapter
   - Rename DeviceRegistryServiceImpl to UIDeviceRegistryAdapterImpl
@@ -22,7 +22,7 @@
   - _Requirements: 1_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Refactoring Specialist with expertise in Dart service layers | Task: Rename DeviceRegistryService to UIDeviceRegistryAdapter and DeviceRegistryServiceImpl to UIDeviceRegistryAdapterImpl in ui/lib/services/device_registry_service.dart. Update all UI layer references while preserving core_logic names. | Restrictions: Do not modify core_logic DeviceRegistryService, maintain existing functionality, update service registry bindings | Success: Both classes renamed, all UI references updated, service registry updated, flutter analyze clean, 2 fewer SSOT violations | Instructions: Mark in-progress `[-]`, implement changes, log with artifacts (classes renamed, integration points updated), mark complete `[x]`._
 
-- [ ] 3. Verify duplicate class renames compilation
+- [x] 3. Verify duplicate class renames compilation
   - Files: Full UI codebase
   - Run flutter analyze to verify no errors
   - Run SSOT checker to confirm 3 violations eliminated
