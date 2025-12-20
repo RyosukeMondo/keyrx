@@ -61,7 +61,7 @@ Core Services,Other Core Services,50
 
 %% Core Services to FFI Bridge
 RuntimeService,FFI Bridge,60
-HardwareService,60,FFI Bridge
+HardwareService,FFI Bridge,60
 LayoutService,FFI Bridge,60
 KeymapService,FFI Bridge,60
 DeviceRegistryService,FFI Bridge,60
@@ -76,22 +76,28 @@ Rust Core Engine,Device Discovery,80
 Rust Core Engine,Event Engine,80
 Rust Core Engine,Daemon/IPC,90
 
-%% Reactive Flow Back (Events/Updates)
-Configuration Manager,FFI Bridge,80
-Device Discovery,FFI Bridge,60
-Event Engine,FFI Bridge,60
-Daemon/IPC,FFI Bridge,40
+%% === REACTIVE FLOW (Separate nodes to avoid cycles) ===
 
-%% FFI to Core Services (Reactive)
-FFI Bridge,Core Services,240
+%% Rust Components emit events (using separate node names)
+Configuration Manager,Events from Rust,80
+Device Discovery,Events from Rust,60
+Event Engine,Events from Rust,60
+Daemon/IPC,Events from Rust,40
 
-%% Core Services to UI Wrappers (Streams)
-Core Services,UI Service Wrappers,150
+%% Events propagate back to Dart
+Events from Rust,Core Services (Reactive),240
 
-%% UI Wrappers notify UI
-UI Service Wrappers,Riverpod Providers,150
-Riverpod Providers,UI Widgets,150
-UI Widgets,Flutter UI,150
+%% Core notifies UI wrappers via streams
+Core Services (Reactive),UI Wrappers (Notify),150
+
+%% UI wrappers trigger Riverpod rebuild
+UI Wrappers (Notify),Riverpod (Rebuild),150
+
+%% Riverpod rebuilds widgets
+Riverpod (Rebuild),UI Widgets (Render),150
+
+%% Final display update
+UI Widgets (Render),User Display,150
 ```
 
 ---
