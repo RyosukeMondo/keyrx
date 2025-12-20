@@ -25,7 +25,7 @@ impl std::error::Error for TestError {}
 ///
 /// This function initializes the test engine.
 #[ffi_export(domain = "test", version = "1.0")]
-pub fn start_test(profile_id: &str) -> Result<TestState, TestError> {
+pub fn start_test(_profile_id: &str) -> Result<TestState, TestError> {
     Ok(TestState { running: true })
 }
 
@@ -66,34 +66,32 @@ pub fn original_name() -> Result<(), TestError> {
 }
 
 #[test]
-fn test_basic_function() {
+fn test_basic_function() -> Result<(), Box<dyn std::error::Error>> {
     // Test that the function still works normally
-    let result = start_test("profile1");
-    assert!(result.is_ok());
-    assert!(result.unwrap().running);
+    let result = start_test("profile1")?;
+    assert!(result.running);
+    Ok(())
 }
 
 #[test]
-fn test_optional_parameter() {
+fn test_optional_parameter() -> Result<(), Box<dyn std::error::Error>> {
     // Test function with optional parameter
-    let result = set_volume("device1", Some(50));
-    assert!(result.is_ok());
-
-    let result = set_volume("device1", None);
-    assert!(result.is_ok());
+    set_volume("device1", Some(50))?;
+    set_volume("device1", None)?;
+    Ok(())
 }
 
 #[test]
-fn test_numeric_function() {
-    let result = add_numbers(5, 3);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 8);
+fn test_numeric_function() -> Result<(), Box<dyn std::error::Error>> {
+    let result = add_numbers(5, 3)?;
+    assert_eq!(result, 8);
+    Ok(())
 }
 
 #[test]
-fn test_boolean_parameter() {
-    let result = set_enabled(true);
-    assert!(result.is_ok());
+fn test_boolean_parameter() -> Result<(), Box<dyn std::error::Error>> {
+    set_enabled(true)?;
+    Ok(())
 }
 
 #[test]

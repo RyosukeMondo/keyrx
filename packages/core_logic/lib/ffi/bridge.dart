@@ -11,6 +11,7 @@ import 'dart:typed_data';
 
 import 'package:meta/meta.dart'; // For @visibleForTesting
 
+import '../models/bridge_models.dart';
 import 'bindings.dart';
 import 'bridge_config.dart';
 import 'bridge_core.dart';
@@ -111,19 +112,15 @@ class KeyrxBridge
         ProfileRegistryFFIMixin,
         BridgeConfigMixin,
         BridgeMigrationMixin {
-  KeyrxBridge._({
-    KeyrxBindings? bindings,
-    Object? loadFailure,
-    DynamicLibrary? lib,
-  }) : _bindings = bindings,
-       _loadFailure = loadFailure,
-       _lib = lib {
+  KeyrxBridge._({KeyrxBindings? bindings, Object? loadFailure, DynamicLibrary? lib})
+    : _bindings = bindings,
+      _loadFailure = loadFailure,
+      _lib = lib {
     if (lib != null) {
       try {
-        _freeEventPayload = lib
-            .lookupFunction<FreeEventPayloadNative, FreeEventPayload>(
-              'keyrx_free_event_payload',
-            );
+        _freeEventPayload = lib.lookupFunction<FreeEventPayloadNative, FreeEventPayload>(
+          'keyrx_free_event_payload',
+        );
       } catch (_) {
         // Function might be missing in older binaries
         _freeEventPayload = null;
@@ -324,10 +321,7 @@ class KeyrxBridge
   /// as bytes.
   ///
   /// Returns true if registration succeeded, false otherwise.
-  bool registerEventCallback(
-    EventType eventType,
-    void Function(Uint8List jsonPayload) handler,
-  ) {
+  bool registerEventCallback(EventType eventType, void Function(Uint8List jsonPayload) handler) {
     if (_bindings == null) return false;
 
     // Store the handler
@@ -338,9 +332,7 @@ class KeyrxBridge
 
     // Create a new NativeCallable.listener which allows the callback to be
     // invoked from any thread (e.g. background Rust threads).
-    final nativeCallable = NativeCallable<EventCallbackNative>.listener(
-      _handleUnifiedEvent,
-    );
+    final nativeCallable = NativeCallable<EventCallbackNative>.listener(_handleUnifiedEvent);
     _nativeCallables[eventType] = nativeCallable;
 
     final result = FfiDebugTools.traceSync<int>(
@@ -378,8 +370,7 @@ class KeyrxBridge
       operation: 'events.unregister',
       includeTimeline: false,
       context: {'event_type': eventType.name},
-      call: () =>
-          _bindings!.base.registerEventCallback(eventType.code, nullptr),
+      call: () => _bindings!.base.registerEventCallback(eventType.code, nullptr),
     );
 
     FfiDebugTools.logBoundary(
@@ -392,8 +383,7 @@ class KeyrxBridge
   }
 
   /// Check if an event callback is registered.
-  bool isEventCallbackRegistered(EventType eventType) =>
-      _eventHandlers.containsKey(eventType);
+  bool isEventCallbackRegistered(EventType eventType) => _eventHandlers.containsKey(eventType);
 
   void _setupStateStream() {
     // onState is a required binding now, but _bindings itself is nullable
@@ -481,10 +471,7 @@ class KeyrxBridge
 
   /// Helper to route events, extracted for testability.
   @visibleForTesting
-  static void routeEvent(
-    Uint8List bytes,
-    Map<EventType, void Function(Uint8List)> handlers,
-  ) {
+  static void routeEvent(Uint8List bytes, Map<EventType, void Function(Uint8List)> handlers) {
     try {
       // Parse the JSON wrapper to extract event type
       final jsonString = utf8.decode(bytes);

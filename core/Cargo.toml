@@ -55,6 +55,8 @@ reqwest.workspace = true
 reqwest-middleware.workspace = true
 http = "1"
 num-traits = "0.2"
+inventory.workspace = true
+
 
 # OpenTelemetry for tracing (optional)
 opentelemetry = { workspace = true, optional = true }

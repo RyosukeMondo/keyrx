@@ -72,49 +72,48 @@ pub fn all_primitives(s: &str, u: u32, i: i32, f: f64, b: bool) -> Result<String
 }
 
 #[test]
-fn test_no_params() {
-    let result = no_params();
-    assert!(result.is_ok());
+fn test_no_params() -> Result<(), Box<dyn std::error::Error>> {
+    no_params()?;
+    Ok(())
 }
 
 #[test]
-fn test_unit_return() {
-    let result = unit_return();
-    assert!(result.is_ok());
+fn test_unit_return() -> Result<(), Box<dyn std::error::Error>> {
+    unit_return()?;
+    Ok(())
 }
 
 #[test]
-fn test_vec_param() {
+fn test_vec_param() -> Result<(), Box<dyn std::error::Error>> {
     let items = vec!["a".to_string(), "b".to_string()];
-    let result = vec_param(items);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 2);
+    let result = vec_param(items)?;
+    assert_eq!(result, 2);
+    Ok(())
 }
 
 #[test]
-fn test_multiple_optional() {
-    let result = multiple_optional("required", Some(10), None);
-    assert!(result.is_ok());
+fn test_multiple_optional() -> Result<(), Box<dyn std::error::Error>> {
+    multiple_optional("required", Some(10), None)?;
+    Ok(())
 }
 
 #[test]
-fn test_complex_type() {
-    let result = complex_type();
-    assert!(result.is_ok());
-    let val = result.unwrap();
+fn test_complex_type() -> Result<(), Box<dyn std::error::Error>> {
+    let val = complex_type()?;
     assert_eq!(val.field1, "test");
     assert_eq!(val.field2, 42);
+    Ok(())
 }
 
 #[test]
-fn test_floating_point() {
-    let result = calculate(5.5);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 11.0);
+fn test_floating_point() -> Result<(), Box<dyn std::error::Error>> {
+    let result = calculate(5.5)?;
+    assert_eq!(result, 11.0);
+    Ok(())
 }
 
 #[test]
-fn test_all_primitives() {
-    let result = all_primitives("test", 42, -10, 3.14, true);
-    assert!(result.is_ok());
+fn test_all_primitives() -> Result<(), Box<dyn std::error::Error>> {
+    all_primitives("test", 42, -10, std::f64::consts::PI, true)?;
+    Ok(())
 }

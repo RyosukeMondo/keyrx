@@ -557,7 +557,7 @@ class ApiRoutes {
     }
   }
 
-  Response _jsonResponse(Map<String, dynamic> data, {int statusCode = 200}) {
+  Response _jsonResponse(Map<String, dynamic> data) {
     return Response.ok(
       jsonEncode(data),
       headers: {'Content-Type': 'application/json'},
