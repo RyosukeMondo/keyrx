@@ -219,9 +219,9 @@
     },
     {
       "name": "shelf_web_socket",
-      "rootUri": "file:///home/rmondo/.pub-cache/hosted/pub.dev/shelf_web_socket-3.0.0",
+      "rootUri": "file:///home/rmondo/.pub-cache/hosted/pub.dev/shelf_web_socket-2.0.1",
       "packageUri": "lib/",
-      "languageVersion": "3.5"
+      "languageVersion": "3.3"
     },
     {
       "name": "source_map_stack_trace",

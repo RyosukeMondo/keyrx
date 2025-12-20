@@ -6,11 +6,10 @@ import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/repositories/device_config_repository.dart';
 import 'package:core_logic/services/services.dart';
 import 'package:core_logic/services/runtime_service.dart';
-import 'package:keyrx_server/api/routes.dart';
-
-import 'package:core_logic/services/hardware_service_ffi.dart';
 import 'package:core_logic/services/keymap_service_ffi.dart';
-import 'package:core_logic/services/layout_service_ffi.dart';
+import 'package:keyrx_server/api/routes.dart';
+import 'package:keyrx_server/api/websocket_handler.dart';
+
 void main(List<String> args) async {
   final parser = ArgParser()
     ..addOption('port', abbr: 'p', defaultsTo: '8080', help: 'Server port')
@@ -60,6 +59,14 @@ void main(List<String> args) async {
   final keymapService = KeymapServiceFFI(bridge: bridge);
   final layoutService = LayoutServiceFFI(bridge: bridge);
 
+  // Create WebSocket handler for real-time events
+  final wsHandler = WebSocketHandler(
+    bridge: bridge,
+    deviceRegistryService: deviceRegistryService,
+    hardwareService: hardwareService,
+    layoutService: layoutService,
+  );
+
   // Create API routes
   final apiRoutes = ApiRoutes(
     hardwareService: hardwareService,
@@ -70,10 +77,11 @@ void main(List<String> args) async {
     runtimeService: runtimeService,
     testService: testService,
     scriptFileService: scriptFileService,
+    wsHandler: wsHandler,
   );
 
   // Create middleware pipeline
-  final handler = Pipeline()
+  final handler = const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(_corsMiddleware())
       .addHandler(apiRoutes.router.call);
@@ -89,6 +97,7 @@ void main(List<String> args) async {
   ProcessSignal.sigint.watch().listen((signal) async {
     // ignore: avoid_print
     print('\nShutting down server...');
+    await wsHandler.dispose();
     await deviceRegistryService.dispose();
     await profileRegistryService.dispose();
     await testService.dispose();

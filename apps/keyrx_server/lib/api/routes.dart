@@ -4,9 +4,8 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:core_logic/services/services.dart';
 import 'package:core_logic/models/models.dart';
 import 'package:core_logic/services/runtime_service.dart';
-import 'package:core_logic/services/config_result.dart';
-import 'package:core_logic/ffi/device_registry_ffi.dart';
 import 'package:core_logic/services/keymap_service.dart';
+import 'websocket_handler.dart';
 
 class ApiRoutes {
   ApiRoutes({
@@ -18,6 +17,7 @@ class ApiRoutes {
     required this.runtimeService,
     required this.testService,
     required this.scriptFileService,
+    required this.wsHandler,
   });
 
   final HardwareService hardwareService;
@@ -28,9 +28,13 @@ class ApiRoutes {
   final RuntimeService runtimeService;
   final TestService testService;
   final ScriptFileService scriptFileService;
+  final WebSocketHandler wsHandler;
 
   Router get router {
     final router = Router();
+
+    // WebSocket endpoint for real-time events
+    router.get('/api/ws', wsHandler.handler);
 
     // Hardware Profile endpoints
     router.get('/api/hardware/profiles', _listHardwareProfiles);

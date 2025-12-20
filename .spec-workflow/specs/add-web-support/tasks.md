@@ -80,7 +80,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Role: Backend API developer | Task: Create REST API server using shelf, implementing endpoints for 11 services using core_logic directly | Restrictions: Zero business logic, use core_logic services, add CORS support, proper error responses | Success: Server starts, all endpoints functional, uses core_logic, returns JSON, CORS enabled_
 
-- [ ] 8. Add WebSocket real-time broadcasting
+- [-] 8. Add WebSocket real-time broadcasting
   - File: apps/keyrx_server/lib/api/websocket_handler.dart
   - Subscribe to core_logic service streams
   - Broadcast events to connected WebSocket clients

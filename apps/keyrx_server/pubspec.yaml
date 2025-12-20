@@ -11,6 +11,8 @@ dependencies:
     path: ../../packages/core_logic
   shelf: ^1.4.2
   shelf_router: ^1.1.4
+  shelf_web_socket: ^2.0.0
+  web_socket_channel: ^3.0.1
   args: ^2.6.0
 
 dev_dependencies:
