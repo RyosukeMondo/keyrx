@@ -154,7 +154,7 @@
   - _Requirements: NFR-5_
   - _Prompt: Role: Performance engineer | Task: Create benchmarks comparing FFI and HTTP response times, real-time latency, verify web within 20% of desktop | Restrictions: Measure actual transport time, exclude network latency in tests, run 1000+ iterations | Success: Benchmarks run in CI, web within 20% of desktop, latency under 50ms, results tracked over time_
 
-- [ ] 14. Update documentation and deploy
+- [x] 14. Update documentation and deploy
   - File: docs/web-deployment.md
   - Document web deployment process
   - Document backend server setup
