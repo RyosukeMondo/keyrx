@@ -1,6 +1,25 @@
-/// Service for validating key mappings and combos.
+/// UI-specific service for validating key mapping user input.
 ///
-/// Extracts validation logic from UI components for testability.
+/// **UI LAYER RESPONSIBILITY - NOT A SSOT VIOLATION**
+///
+/// This validator handles UI-level validation of user input before submitting
+/// to core_logic services. It is legitimately UI-specific because:
+///
+/// 1. **User Input Validation**: Validates form data from UI components
+///    (checking for empty fields, required fields, etc.)
+///
+/// 2. **User-Facing Error Messages**: Provides human-readable error messages
+///    specifically designed for display in UI dialogs and forms.
+///
+/// 3. **UI-Specific Key List**: Uses the runtime-updatable UI key list from
+///    KeyMappings.allowedKeys, which is populated from the native bridge
+///    and may differ from core validation rules.
+///
+/// 4. **No Core Duplication**: Core_logic does NOT contain equivalent
+///    validation logic. Core layer trusts UI to validate input.
+///
+/// This follows proper layering: UI validates user input, core_logic
+/// handles business logic and domain rules.
 library;
 
 import 'package:core_logic/models/key_mapping.dart';
@@ -24,9 +43,21 @@ class MappingValidationResult {
   final String? errorMessage;
 }
 
-/// Validates key mappings and combo configurations.
+/// Validates key mappings and combo configurations from UI forms.
 ///
-/// Pure validation logic with no UI dependencies, making it testable in isolation.
+/// **UI-SPECIFIC INPUT VALIDATION**
+///
+/// This class validates user input from UI forms before submitting to core_logic.
+/// It checks for:
+/// - Required fields are filled
+/// - Keys exist in the UI's allowed key list
+/// - Combos have minimum required keys
+/// - Appropriate error messages for UI display
+///
+/// This is NOT business logic - it's input validation at the UI boundary.
+/// Core_logic does not duplicate this validation.
+///
+/// Pure validation logic with no Flutter dependencies, making it testable in isolation.
 class MappingValidator {
   const MappingValidator();
 

@@ -114,7 +114,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Code Documentation Specialist | Task: Document FlowValidator as UI-specific flow graph validation. Verify no duplication with core_logic validation. Add clear comments explaining its UI-specific purpose. | Restrictions: Do not move to core if genuinely UI-specific, clear documentation required, verify no duplication | Success: FlowValidator clearly documented as UI-specific, no core duplication, SSOT checker accepts it | Instructions: Mark in-progress `[-]`, add documentation, log justification, mark complete `[x]`._
 
-- [ ] 12. Document MappingValidator as UI-specific
+- [-] 12. Document MappingValidator as UI-specific
   - Files: ui/lib/services/mapping_validator.dart
   - Add clear documentation that MappingValidator is UI-specific
   - Verify it doesn't duplicate core_logic validation
