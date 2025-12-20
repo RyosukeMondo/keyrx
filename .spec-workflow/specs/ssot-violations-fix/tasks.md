@@ -151,7 +151,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: API Contract Analyst | Task: Identify the 2 interface inconsistency violations using SSOT checker verbose output. Document which services have mismatched interfaces and what the differences are. | Restrictions: Only investigate and document, do not fix yet, provide detailed report | Success: Clear documentation of 2 interface mismatches, specific signature differences identified, fix approach planned | Instructions: Mark in-progress `[-]`, investigate thoroughly, log findings with details, mark complete `[x]`._
 
-- [-] 15. Fix interface inconsistency 1
+- [x] 15. Fix interface inconsistency 1
   - Files: TBD based on task 14 findings
   - Align method signatures between implementations
   - Create shared interface if needed
