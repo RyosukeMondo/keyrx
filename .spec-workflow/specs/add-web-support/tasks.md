@@ -33,7 +33,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Role: DevOps engineer | Task: Integrate SSOT checker into pre-commit hooks with violation-triggered failures and clear error output | Restrictions: Must not slow down commits significantly, skip on --no-verify flag | Success: Pre-commit fails on violations, shows actionable errors, runs under 3 seconds_
 
-- [ ] 4. Create web transport layer
+- [x] 4. Create web transport layer
   - File: packages/core_logic/lib/web/api_client.dart
   - File: packages/core_logic/lib/web/websocket_client.dart
   - Implement WebApiClient with HTTP methods
