@@ -5,14 +5,16 @@
 Cargo.lock
 
 # Flutter/Dart
-/ui/.dart_tool/
+**/.dart_tool/
+**/build/
+**/.packages
+**/.pub-cache/
+**/.pub/
+*.iml
+.metadata
+coverage/
 /ui/build/
-/ui/.packages
-/ui/.pub-cache/
-/ui/.pub/
-/ui/*.iml
-/ui/.metadata
-/ui/coverage/
+/ui/.dart_tool/
 
 # IDE
 .idea/
@@ -37,12 +39,16 @@ Thumbs.db
 
 # Spec workflow temp files
 .spec-workflow/approvals/
+.spec-workflow/analysis/*.html
+.spec-workflow/analysis/*.json
 
 # BFG Repo-Cleaner reports
 ..bfg-report/
 
 # Application cache
 core/.keyrx_cache/
+**/.keyrx/
+.keyrx/
 
 # Codegen cache
 .cache/
@@ -62,6 +68,10 @@ clippy*.log
 target_*/
 check_log.txt
 
-# python artifacts
+# Python artifacts
 *.pyc
 **/__pycache__
+
+# Development certificates
+**/.dev-certs/
+.dev-certs/
