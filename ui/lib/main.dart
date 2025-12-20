@@ -1,7 +1,7 @@
 /// KeyRx UI - Visual interface for the KeyRx input remapping engine.
 library;
 
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html' as platform;
 
 import 'package:core_logic/models/migration_report.dart';
 import 'package:flutter/foundation.dart';
@@ -79,30 +79,40 @@ class _KeyrxMaterialApp extends StatelessWidget {
   final VoidCallback? onFirstFrame;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'KeyRx',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData.dark(useMaterial3: true).copyWith(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.blue,
-        brightness: Brightness.dark,
+  Widget build(BuildContext context) {
+    // Migration is only needed on desktop platforms
+    final home = kIsWeb
+        ? HomePage(onFirstFrame: onFirstFrame)
+        : Builder(
+            builder: (context) => MigrationWrapper(
+              onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
+              onRunMigration: () => _runMigration(context),
+              child: HomePage(onFirstFrame: onFirstFrame),
+            ),
+          );
+
+    return MaterialApp(
+      title: 'KeyRx',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
       ),
-    ),
-    home: Builder(
-      builder: (context) => MigrationWrapper(
-        onCheckMigrationNeeded: () => _checkMigrationNeeded(context),
-        onRunMigration: () => _runMigration(context),
-        child: HomePage(onFirstFrame: onFirstFrame),
-      ),
-    ),
-  );
+      home: home,
+    );
+  }
 
   /// Check if migration is needed by checking for old profiles directory.
   Future<bool> _checkMigrationNeeded(BuildContext context) async {
+    if (kIsWeb) return false;
+
     final registry = context.read<ServiceRegistry>();
     final oldPath = _resolveOldProfilesPath();
 
-    if (!await Directory(oldPath).exists()) {
+    final dir = platform.Directory(oldPath);
+    if (!await dir.exists()) {
       return false;
     }
 
@@ -119,9 +129,11 @@ class _KeyrxMaterialApp extends StatelessWidget {
   }
 
   String _resolveOldProfilesPath() {
+    if (kIsWeb) return '';
+
     // Legacy path: ~/.config/keyrx/device_profiles
-    final env = Platform.environment;
-    final home = Platform.isWindows
+    final env = platform.Platform.environment;
+    final home = platform.Platform.isWindows
         ? env['USERPROFILE'] ?? env['HOME']
         : env['HOME'] ?? env['USERPROFILE'];
 

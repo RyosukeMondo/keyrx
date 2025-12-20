@@ -1,7 +1,7 @@
 /// Core logic for KeyRx, shared between Flutter UI and CLI.
 library;
 
-export 'ffi/bridge.dart';
+export 'ffi/bridge.dart' if (dart.library.html) 'ffi/bridge_stub.dart';
 export 'models/models.dart';
 export 'repositories/device_config_repository.dart';
 export 'repositories/mapping_repository.dart';

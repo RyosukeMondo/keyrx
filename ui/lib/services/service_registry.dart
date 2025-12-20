@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:core_logic/core_logic.dart';
-import 'package:core_logic/ffi/bindings.dart';
+import 'package:core_logic/ffi/bridge.dart'
+    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
 import 'package:core_logic/services/hardware_service_web.dart';
