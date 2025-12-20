@@ -20,6 +20,7 @@ import 'package:keyrx_ui/services/device_registry_service.dart' as ui;
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
+import 'package:keyrx_ui/services/benchmark_service.dart' as ui_benchmark;
 import 'package:keyrx_ui/services/layout_service_ui.dart';
 import 'package:keyrx_ui/services/profile_autosave_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -601,4 +602,16 @@ class FakeMetricsService extends Fake implements MetricsService {
 
   @override
   Future<MetricsThresholds?> getThresholds() async => null;
+}
+
+class FakeBenchmarkService extends Fake
+    implements ui_benchmark.BenchmarkService {
+  @override
+  Future<ui_benchmark.BenchmarkServiceResult> runBenchmark(
+    int iterations, {
+    String? scriptPath,
+  }) async => ui_benchmark.BenchmarkServiceResult.error('Not available in test');
+
+  @override
+  Future<void> dispose() async {}
 }
