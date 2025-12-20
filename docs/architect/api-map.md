@@ -7,98 +7,169 @@
 
 ## Overview
 
-This diagram visualizes the complete data flow architecture of KeyRx, showing how:
-1. **Rust Core** provides the engine and device management
-2. **FFI Bridge** connects Rust to Dart
-3. **Core Logic Services** (pure Dart) provide SSOT for configuration
-4. **Dart CLI** uses core services directly for headless operation
-5. **Flutter UI** uses core services via ChangeNotifier wrappers for reactive UI
+This visualization shows the complete data flow architecture of KeyRx across 6 abstraction layers:
+1. **System Overview** - Three entry points converging to one engine
+2. **Flutter UI Path** - How UI requests reach Rust
+3. **Dart CLI Path** - How CLI commands reach Rust
+4. **Core Services** - SSOT layer with 6 config services
+5. **Rust Core** - Four major subsystems
+6. **Reactive Flow** - How events propagate back to UI
+
+Each diagram uses **max 4 layers** for clarity.
 
 ---
 
-## Architecture Sankey Diagram
+## Architecture Sankey Diagrams
+
+### Layer 1: System Overview (High-Level)
+
+**Three entry points, one core engine**
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
 sankey-beta
 
-%% User Entry Points
+%% Three user entry points
 User,Rust CLI,100
 User,Dart CLI,150
 User,Flutter UI,200
 
-%% Rust CLI Flow
+%% All paths converge to Rust Core
 Rust CLI,Rust Core Engine,100
+Dart CLI,Rust Core Engine,150
+Flutter UI,Rust Core Engine,200
+```
 
-%% Dart CLI Flow
+**Explanation**: Users interact via 3 interfaces (Rust CLI for system ops, Dart CLI for testing, Flutter UI for primary use). All converge to the Rust Core Engine.
+
+---
+
+### Layer 2: Request Flow - Flutter UI Path
+
+**How UI requests reach Rust (4 layers)**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
+sankey-beta
+
+%% UI layer
+User,Flutter UI,200
+
+%% Presentation layer
+Flutter UI,Riverpod Providers,200
+
+%% Business logic layer
+Riverpod Providers,Core Services,200
+
+%% Native bridge
+Core Services,Rust Core Engine,200
+```
+
+**Path**: `User → Flutter UI → Riverpod (state) → Core Services (SSOT) → Rust Core`
+
+---
+
+### Layer 3: Request Flow - Dart CLI Path
+
+**How CLI commands reach Rust (4 layers)**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
+sankey-beta
+
+%% CLI entry
+User,Dart CLI,150
+
+%% Command processor
 Dart CLI,CommandProcessor,150
+
+%% Shared business logic
 CommandProcessor,Core Services,150
 
-%% Flutter UI Flow
-Flutter UI,UI Widgets,200
-UI Widgets,Riverpod Providers,200
-Riverpod Providers,UI Service Wrappers,200
+%% Native bridge
+Core Services,Rust Core Engine,150
+```
 
-%% UI Wrapper Pattern
-UI Service Wrappers,HardwareServiceUI,50
-UI Service Wrappers,LayoutServiceUI,50
-UI Service Wrappers,DeviceRegistryServiceUI,50
-UI Service Wrappers,Other Services,50
+**Path**: `User → Dart CLI → CommandProcessor (JSON protocol) → Core Services → Rust Core`
 
-%% UI Wrappers to Core Services
-HardwareServiceUI,Core Services,50
-LayoutServiceUI,Core Services,50
-DeviceRegistryServiceUI,Core Services,50
-Other Services,Core Services,50
+---
 
-%% Core Services Breakdown
-Core Services,RuntimeService,60
-Core Services,HardwareService,60
-Core Services,LayoutService,60
-Core Services,KeymapService,60
-Core Services,DeviceRegistryService,60
-Core Services,Other Core Services,50
+### Layer 4: Core Services Breakdown
 
-%% Core Services to FFI Bridge
+**Six configuration services in SSOT layer**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
+sankey-beta
+
+%% From both UI and CLI
+UI & CLI,Core Services Layer,350
+
+%% Service breakdown
+Core Services Layer,RuntimeService,60
+Core Services Layer,HardwareService,60
+Core Services Layer,LayoutService,60
+Core Services Layer,KeymapService,60
+Core Services Layer,DeviceRegistryService,60
+Core Services Layer,Other Services,50
+
+%% All services use FFI
 RuntimeService,FFI Bridge,60
 HardwareService,FFI Bridge,60
 LayoutService,FFI Bridge,60
 KeymapService,FFI Bridge,60
 DeviceRegistryService,FFI Bridge,60
-Other Core Services,FFI Bridge,50
+Other Services,FFI Bridge,50
+```
 
-%% FFI Bridge to Rust
+**Services**: All 6 config services are pure Dart, zero Flutter dependencies, shared by CLI and UI.
+
+---
+
+### Layer 5: Rust Core Components
+
+**Four major Rust subsystems**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
+sankey-beta
+
+%% FFI entry point
 FFI Bridge,Rust Core Engine,350
 
-%% Rust Core Engine Components
+%% Core subsystems
 Rust Core Engine,Configuration Manager,100
 Rust Core Engine,Device Discovery,80
 Rust Core Engine,Event Engine,80
-Rust Core Engine,Daemon/IPC,90
-
-%% === REACTIVE FLOW (Separate nodes to avoid cycles) ===
-
-%% Rust Components emit events (using separate node names)
-Configuration Manager,Events from Rust,80
-Device Discovery,Events from Rust,60
-Event Engine,Events from Rust,60
-Daemon/IPC,Events from Rust,40
-
-%% Events propagate back to Dart
-Events from Rust,Core Services (Reactive),240
-
-%% Core notifies UI wrappers via streams
-Core Services (Reactive),UI Wrappers (Notify),150
-
-%% UI wrappers trigger Riverpod rebuild
-UI Wrappers (Notify),Riverpod (Rebuild),150
-
-%% Riverpod rebuilds widgets
-Riverpod (Rebuild),UI Widgets (Render),150
-
-%% Final display update
-UI Widgets (Render),User Display,150
+Rust Core Engine,Daemon & IPC,90
 ```
+
+**Components**: Config persistence, device detection, event processing, background daemon.
+
+---
+
+### Layer 6: Reactive Flow (Events Back to UI)
+
+**How Rust events propagate to UI (4 layers)**
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'16px'}}}%%
+sankey-beta
+
+%% Rust emits events
+Rust Core Engine,Events,240
+
+%% Events go through FFI
+Events,Core Services,240
+
+%% Core notifies UI wrappers
+Core Services,Riverpod State,240
+
+%% Riverpod rebuilds UI
+Riverpod State,Flutter UI Updated,240
+```
+
+**Path**: `Rust events → FFI callbacks → Core Services (StreamController) → Riverpod (notifyListeners) → UI rebuild`
 
 ---
 
@@ -119,7 +190,6 @@ User → Rust CLI (core/src/bin/keyrx/) → Rust Core Engine
 User → Dart CLI (apps/cli_tool/)
      → CommandProcessor
      → Core Services (packages/core_logic/)
-     → FFI Bridge
      → Rust Core Engine
 ```
 - **Use Case**: Configuration management, testing without UI
@@ -130,16 +200,13 @@ User → Dart CLI (apps/cli_tool/)
 #### Path C: Flutter UI (Primary Interface)
 ```
 User → Flutter UI (ui/)
-     → UI Widgets
      → Riverpod Providers
-     → UI Service Wrappers
      → Core Services
-     → FFI Bridge
      → Rust Core Engine
 ```
 - **Use Case**: Full-featured graphical interface
 - **Volume**: 200 units (primary user interface)
-- **Latency**: Higher (UI rendering + FFI)
+- **Latency**: Medium (UI rendering + FFI)
 - **Reactivity**: Full reactive updates via streams
 
 ---
@@ -238,11 +305,10 @@ Changes in Rust propagate back to UI:
 
 ```
 Rust Core (config change)
-  → FFI Bridge (callback)
+  → Events
   → Core Services (StreamController.add)
-  → UI Wrappers (notifyListeners)
-  → Riverpod Providers (rebuild)
-  → UI Widgets (re-render)
+  → Riverpod State (notifyListeners)
+  → Flutter UI (rebuild)
 ```
 
 **Volume**: 240 units (events/updates from Rust)
@@ -317,9 +383,9 @@ Rust Core (config change)
 | Flow Path | Volume | Latency | Use Case |
 |-----------|--------|---------|----------|
 | Rust CLI → Engine | 100 | Lowest | System ops |
-| Dart CLI → Core → FFI → Engine | 150 | Low | Config mgmt |
-| UI → Wrappers → Core → FFI → Engine | 200 | Medium | User interaction |
-| Engine → FFI → Core → Wrappers → UI | 150 | Medium | Reactive updates |
+| Dart CLI → Core → Engine | 150 | Low | Config mgmt |
+| UI → Core → Engine | 200 | Medium | User interaction |
+| Engine → Core → UI | 240 | Medium | Reactive updates |
 
 ---
 
@@ -375,7 +441,7 @@ keyrx/
 ### Maintainability
 - ✅ **Single codebase** for business logic
 - ✅ **Reusable services** across CLI and UI
-- ✅ **Clear data flows** (visualized in this diagram)
+- ✅ **Clear data flows** (visualized in 6 focused diagrams)
 
 ---
 
@@ -409,4 +475,4 @@ This architecture achieves:
 5. **Reactivity**: Stream-based updates propagate through all layers
 6. **Type Safety**: FFI bindings generated from Rust contracts
 
-The Sankey diagram above visualizes how **450+ units of user interaction flow through 5 architectural layers**, demonstrating a well-structured, maintainable system.
+The 6 layered Sankey diagrams above visualize how **450+ units of user interaction flow through distinct architectural layers**, demonstrating a well-structured, maintainable system with clear separation of concerns at each level.
