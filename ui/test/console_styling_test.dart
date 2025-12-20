@@ -21,8 +21,7 @@ import 'package:provider/provider.dart';
 import 'helpers/fake_services.dart';
 
 class _FakeEngineService implements EngineService {
-  final StreamController<EngineSnapshot> _stateController =
-      StreamController.broadcast();
+  final StreamController<EngineSnapshot> _stateController = StreamController.broadcast();
 
   Future<ConsoleEvalResult> Function(String command)? onEval;
   Future<bool> Function()? onInitialize;
@@ -53,8 +52,7 @@ class _FakeEngineService implements EngineService {
   Stream<EngineSnapshot> get stateStream => _stateController.stream;
 
   @override
-  Future<KeyRegistryResult> fetchKeyRegistry() async =>
-      const KeyRegistryResult(entries: []);
+  Future<KeyRegistryResult> fetchKeyRegistry() async => const KeyRegistryResult(entries: []);
 
   @override
   Future<void> dispose() async {
@@ -87,11 +85,9 @@ Widget _buildTestWidget({required _FakeEngineService engine}) {
     errorTranslator: FakeErrorTranslator(),
     mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     storagePathResolver: const StoragePathResolver(),
-    layoutService: LayoutServiceUI(core.LayoutService(bridge: FakeBridge())),
-    hardwareService: HardwareServiceUI(
-      core.HardwareService(bridge: FakeBridge()),
-    ),
-    keymapService: KeymapService(bridge: FakeBridge()),
+    layoutService: LayoutServiceUI(core.LayoutServiceFFI(bridge: FakeBridge())),
+    hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: FakeBridge())),
+    keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
@@ -106,10 +102,8 @@ void main() {
   group('OK response styling', () {
     testWidgets('ok: prefix displays OK badge', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async => const ConsoleEvalResult(
-          success: true,
-          output: 'ok: command executed',
-        );
+        ..onEval = (_) async =>
+            const ConsoleEvalResult(success: true, output: 'ok: command executed');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -123,8 +117,7 @@ void main() {
 
     testWidgets('ok: response shows check icon', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async =>
-            const ConsoleEvalResult(success: true, output: 'ok: success');
+        ..onEval = (_) async => const ConsoleEvalResult(success: true, output: 'ok: success');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -138,8 +131,7 @@ void main() {
 
     testWidgets('ok: prefix is stripped from display text', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async =>
-            const ConsoleEvalResult(success: true, output: 'ok: result value');
+        ..onEval = (_) async => const ConsoleEvalResult(success: true, output: 'ok: result value');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -156,8 +148,7 @@ void main() {
   group('Error response styling', () {
     testWidgets('error: prefix displays ERROR badge', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async =>
-            const ConsoleEvalResult(success: false, output: 'error: failed');
+        ..onEval = (_) async => const ConsoleEvalResult(success: false, output: 'error: failed');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -171,8 +162,7 @@ void main() {
 
     testWidgets('error: response shows warning icon', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async =>
-            const ConsoleEvalResult(success: false, output: 'error: oops');
+        ..onEval = (_) async => const ConsoleEvalResult(success: false, output: 'error: oops');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -186,10 +176,8 @@ void main() {
 
     testWidgets('error: prefix is stripped from display text', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: something went wrong',
-        );
+        ..onEval = (_) async =>
+            const ConsoleEvalResult(success: false, output: 'error: something went wrong');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -203,10 +191,8 @@ void main() {
 
     testWidgets('isError flag triggers error styling', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'plain error message',
-        );
+        ..onEval = (_) async =>
+            const ConsoleEvalResult(success: false, output: 'plain error message');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -220,14 +206,10 @@ void main() {
   });
 
   group('Quick action button', () {
-    testWidgets('shows Initialize Engine button for not initialized error', (
-      tester,
-    ) async {
+    testWidgets('shows Initialize Engine button for not initialized error', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: engine not initialized',
-        );
+        ..onEval = (_) async =>
+            const ConsoleEvalResult(success: false, output: 'error: engine not initialized');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -240,15 +222,11 @@ void main() {
       expect(find.byIcon(Icons.power_settings_new), findsOneWidget);
     });
 
-    testWidgets('Initialize Engine button calls engine.initialize()', (
-      tester,
-    ) async {
+    testWidgets('Initialize Engine button calls engine.initialize()', (tester) async {
       var initializeCalled = false;
       final fakeEngine = _FakeEngineService();
-      fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-        success: false,
-        output: 'error: not initialized please init',
-      );
+      fakeEngine.onEval = (_) async =>
+          const ConsoleEvalResult(success: false, output: 'error: not initialized please init');
       fakeEngine.onInitialize = () async {
         initializeCalled = true;
         return true;
@@ -269,10 +247,8 @@ void main() {
 
     testWidgets('successful initialization shows ok message', (tester) async {
       final fakeEngine = _FakeEngineService();
-      fakeEngine.onEval = (_) async => const ConsoleEvalResult(
-        success: false,
-        output: 'error: not initialized',
-      );
+      fakeEngine.onEval = (_) async =>
+          const ConsoleEvalResult(success: false, output: 'error: not initialized');
       fakeEngine.onInitialize = () async => true;
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
@@ -290,10 +266,8 @@ void main() {
 
     testWidgets('no quick action button for other errors', (tester) async {
       final fakeEngine = _FakeEngineService()
-        ..onEval = (_) async => const ConsoleEvalResult(
-          success: false,
-          output: 'error: syntax error in script',
-        );
+        ..onEval = (_) async =>
+            const ConsoleEvalResult(success: false, output: 'error: syntax error in script');
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();

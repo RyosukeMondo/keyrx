@@ -6,11 +6,9 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 
 import 'package:core_logic/ffi/bridge.dart'
     if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
-import 'package:ffi/ffi.dart';
 
 /// Log entry from the engine.
 class LogEntry {
@@ -28,9 +26,7 @@ class LogEntry {
     level: _parseLogLevel(json['level'] as String),
     target: json['target'] as String,
     message: json['message'] as String,
-    fields: json['fields'] != null
-        ? Map<String, String>.from(json['fields'] as Map)
-        : const {},
+    fields: json['fields'] != null ? Map<String, String>.from(json['fields'] as Map) : const {},
     span: json['span'] as String?,
   );
 
@@ -41,8 +37,7 @@ class LogEntry {
   final Map<String, String> fields;
   final String? span;
 
-  DateTime get dateTime =>
-      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
   static LogLevel _parseLogLevel(String level) => switch (level.toUpperCase()) {
     'TRACE' => LogLevel.trace,
@@ -78,16 +73,15 @@ class MetricsSnapshot {
     required this.memoryUsed,
   });
 
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
-      MetricsSnapshot(
-        timestamp: json['timestamp'] as int,
-        eventLatencyP50: json['event_latency_p50'] as int,
-        eventLatencyP95: json['event_latency_p95'] as int,
-        eventLatencyP99: json['event_latency_p99'] as int,
-        eventsProcessed: json['events_processed'] as int,
-        errorsCount: json['errors_count'] as int,
-        memoryUsed: json['memory_used'] as int,
-      );
+  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) => MetricsSnapshot(
+    timestamp: json['timestamp'] as int,
+    eventLatencyP50: json['event_latency_p50'] as int,
+    eventLatencyP95: json['event_latency_p95'] as int,
+    eventLatencyP99: json['event_latency_p99'] as int,
+    eventsProcessed: json['events_processed'] as int,
+    errorsCount: json['errors_count'] as int,
+    memoryUsed: json['memory_used'] as int,
+  );
 
   final int timestamp;
   final int eventLatencyP50;
@@ -97,8 +91,7 @@ class MetricsSnapshot {
   final int errorsCount;
   final int memoryUsed;
 
-  DateTime get dateTime =>
-      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 }
 
 /// Abstraction for observability operations.
@@ -174,16 +167,13 @@ class ObservabilityServiceImpl implements ObservabilityService {
     }
 
     // Initialize the log bridge
-    final result = _bridge.bindings?.logBridgeInit();
+    final result = _bridge.bindings?.observability.logBridgeInit();
     if (result != 0) {
       return false;
     }
 
     // Start polling for logs periodically
-    _logPollingTimer = Timer.periodic(
-      const Duration(milliseconds: 100),
-      (_) => _pollLogs(),
-    );
+    _logPollingTimer = Timer.periodic(const Duration(milliseconds: 100), (_) => _pollLogs());
 
     _initialized = true;
     return true;
@@ -214,23 +204,14 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return const [];
     }
 
-    final jsonPtr = bindings.logDrain();
-    if (jsonPtr == nullptr) {
-      return const [];
-    }
+    final jsonStr = bindings.observability.logDrain();
 
     try {
-      final jsonStr = jsonPtr.cast<Utf8>().toDartString();
       final jsonList = jsonDecode(jsonStr) as List<dynamic>;
-      return jsonList
-          .map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
+      return jsonList.map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>)).toList();
+    } on Exception catch (e) {
       // Failed to parse logs
       return const [];
-    } finally {
-      // Free the string (assuming keyrx_free_string exists)
-      // bindings.freeString(jsonPtr);
     }
   }
 
@@ -245,7 +226,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return 0;
     }
 
-    return bindings.logCount();
+    return bindings.observability.logCount();
   }
 
   @override
@@ -259,7 +240,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return;
     }
 
-    bindings.logClear();
+    bindings.observability.logClear();
   }
 
   @override
@@ -273,7 +254,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return;
     }
 
-    bindings.logSetEnabled(enabled ? 1 : 0);
+    bindings.observability.logSetEnabled(enabled ? 1 : 0);
   }
 
   @override
@@ -287,20 +268,12 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return null;
     }
 
-    final jsonPtr = bindings.metricsSnapshotJson();
-    if (jsonPtr == nullptr) {
-      return null;
-    }
-
     try {
-      final jsonStr = jsonPtr.cast<Utf8>().toDartString();
+      final jsonStr = bindings.observability.metricsSnapshotJson();
       final json = jsonDecode(jsonStr) as Map<String, dynamic>;
       return MetricsSnapshot.fromJson(json);
-    } catch (e) {
+    } on Exception catch (e) {
       return null;
-    } finally {
-      // Free the string
-      // bindings.freeString(jsonPtr);
     }
   }
 
@@ -315,16 +288,13 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return;
     }
 
-    final result = bindings.metricsStartUpdates();
+    final result = bindings.observability.metricsStartUpdates();
     if (result != 0) {
       return;
     }
 
     // Start polling for metrics periodically
-    _metricsPollingTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => _pollMetrics(),
-    );
+    _metricsPollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => _pollMetrics());
   }
 
   Future<void> _pollMetrics() async {
@@ -345,7 +315,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
       return;
     }
 
-    bindings.metricsStopUpdates();
+    bindings.observability.metricsStopUpdates();
 
     _metricsPollingTimer?.cancel();
     _metricsPollingTimer = null;

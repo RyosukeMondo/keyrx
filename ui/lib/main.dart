@@ -35,21 +35,17 @@ import 'widgets/developer_drawer.dart';
 import 'widgets/migration_wrapper.dart';
 
 void main() {
-  print('[DEBUG] main: Starting KeyRx app');
+  debugPrint('[DEBUG] main: Starting KeyRx app');
   WidgetsFlutterBinding.ensureInitialized();
-  print('[DEBUG] main: Flutter binding initialized');
+  debugPrint('[DEBUG] main: Flutter binding initialized');
 
   final startupSpan = PerformanceTimelineTracer.start(
     'app.startup',
     context: {'mode': kReleaseMode ? 'release' : 'debug'},
   );
 
-  print('[DEBUG] main: Running app (kIsWeb=$kIsWeb)');
-  runApp(
-    ProviderScope(
-      child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame),
-    ),
-  );
+  debugPrint('[DEBUG] main: Running app (kIsWeb=$kIsWeb)');
+  runApp(ProviderScope(child: KeyrxApp(onFirstFrame: startupSpan.completeOnFirstFrame)));
 }
 
 /// Main application widget.
@@ -60,19 +56,19 @@ class KeyrxApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('[DEBUG] KeyrxApp.build: starting');
+    debugPrint('[DEBUG] KeyrxApp.build: starting');
     try {
-      print('[DEBUG] KeyrxApp.build: watching providers...');
+      debugPrint('[DEBUG] KeyrxApp.build: watching providers...');
       final registry = ref.watch(serviceRegistryProvider);
-      print('[DEBUG] KeyrxApp.build: registry obtained');
+      debugPrint('[DEBUG] KeyrxApp.build: registry obtained');
       final facade = ref.watch(keyrxFacadeProvider);
-      print('[DEBUG] KeyrxApp.build: facade obtained');
+      debugPrint('[DEBUG] KeyrxApp.build: facade obtained');
       final apiDocsService = ref.watch(apiDocsServiceProvider);
-      print('[DEBUG] KeyrxApp.build: apiDocsService obtained');
+      debugPrint('[DEBUG] KeyrxApp.build: apiDocsService obtained');
       final appState = ref.watch(appStateProvider);
-      print('[DEBUG] KeyrxApp.build: appState obtained');
+      debugPrint('[DEBUG] KeyrxApp.build: appState obtained');
 
-      print('[DEBUG] KeyrxApp.build: creating MultiProvider');
+      debugPrint('[DEBUG] KeyrxApp.build: creating MultiProvider');
       return provider.MultiProvider(
         providers: createProviders(
           registry: registry,
@@ -82,9 +78,9 @@ class KeyrxApp extends ConsumerWidget {
         ),
         child: _KeyrxMaterialApp(onFirstFrame: onFirstFrame),
       );
-    } catch (e, stackTrace) {
-      print('[ERROR] KeyrxApp.build: failed to build: $e');
-      print('[ERROR] Stack trace: $stackTrace');
+    } on Object catch (e, stackTrace) {
+      debugPrint('[ERROR] KeyrxApp.build: failed to build: $e');
+      debugPrint('[ERROR] Stack trace: $stackTrace');
       return MaterialApp(
         home: Scaffold(
           body: Center(
@@ -129,10 +125,7 @@ class _KeyrxMaterialApp extends StatelessWidget {
       title: 'KeyRx',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
       ),
       home: home,
     );
@@ -152,11 +145,11 @@ class _KeyrxMaterialApp extends StatelessWidget {
     // This code path is never reached on web due to kIsWeb check above
     try {
       final dir = platform.Directory(oldPath);
-      if (!await dir.exists()) {
+      if (!dir.existsSync()) {
         return false;
       }
       return registry.bridge.checkMigrationNeeded(oldPath);
-    } catch (e) {
+    } on Object catch (_) {
       return false;
     }
   }
@@ -337,8 +330,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : Icons.developer_mode_outlined,
                       ),
                       tooltip: 'Developer Tools',
-                      onPressed: () =>
-                          _scaffoldKey.currentState?.openEndDrawer(),
+                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                   const SizedBox(height: 16),
                 ],
@@ -406,10 +398,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       children: [
         Icon(Icons.construction, size: 64, color: Colors.grey[600]),
         const SizedBox(height: 16),
-        Text(
-          '$title - Coming Soon',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text('$title - Coming Soon', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
         Text(
           'This developer tool is under construction.',
@@ -456,27 +445,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    state.engine == EngineStatus.error
-                        ? Icons.error
-                        : Icons.check_circle,
+                    state.engine == EngineStatus.error ? Icons.error : Icons.check_circle,
                     size: 14,
                     color: color,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    statusText,
-                    style: TextStyle(fontSize: 12, color: color),
-                  ),
+                  Text(statusText, style: TextStyle(fontSize: 12, color: color)),
                 ],
               );
             },
           ),
           const Spacer(),
           if (appState.loadedScript != null)
-            Text(
-              'Script: ${appState.loadedScript}',
-              style: const TextStyle(fontSize: 12),
-            ),
+            Text('Script: ${appState.loadedScript}', style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 16),
           InkWell(
             onTap: appState.toggleDeveloperMode,
@@ -484,9 +465,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  appState.isDeveloperMode
-                      ? Icons.developer_mode
-                      : Icons.developer_mode_outlined,
+                  appState.isDeveloperMode ? Icons.developer_mode : Icons.developer_mode_outlined,
                   size: 14,
                   color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
                 ),
@@ -495,19 +474,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   'Dev',
                   style: TextStyle(
                     fontSize: 12,
-                    color: appState.isDeveloperMode
-                        ? Colors.amber
-                        : Colors.grey,
+                    color: appState.isDeveloperMode ? Colors.amber : Colors.grey,
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'v${appState.version}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text('v${appState.version}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );

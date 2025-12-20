@@ -11,11 +11,9 @@ part 'flow_graph.g.dart';
 
 @freezed
 abstract class FlowPosition with _$FlowPosition {
-  const factory FlowPosition({required double x, required double y}) =
-      _FlowPosition;
+  const factory FlowPosition({required double x, required double y}) = _FlowPosition;
 
-  factory FlowPosition.fromJson(Map<String, dynamic> json) =>
-      _$FlowPositionFromJson(json);
+  factory FlowPosition.fromJson(Map<String, dynamic> json) => _$FlowPositionFromJson(json);
 }
 
 @freezed
@@ -29,8 +27,7 @@ abstract class FlowEdge with _$FlowEdge {
     @Default(EdgeStatus.valid) EdgeStatus status,
   }) = _FlowEdge;
 
-  factory FlowEdge.fromJson(Map<String, dynamic> json) =>
-      _$FlowEdgeFromJson(json);
+  factory FlowEdge.fromJson(Map<String, dynamic> json) => _$FlowEdgeFromJson(json);
 }
 
 @Freezed(unionKey: 'type')
@@ -42,19 +39,13 @@ abstract class FlowNode with _$FlowNode {
     String? label,
   }) = DeviceFlowNode;
 
-  const factory FlowNode.hardwareProfile({
-    required HardwareProfileId id,
-    String? label,
-  }) = HardwareProfileFlowNode;
+  const factory FlowNode.hardwareProfile({required HardwareProfileId id, String? label}) =
+      HardwareProfileFlowNode;
 
-  const factory FlowNode.keymap({
-    required KeymapId id,
-    String? label,
-    int? layers,
-  }) = KeymapFlowNode;
+  const factory FlowNode.keymap({required KeymapId id, String? label, int? layers}) =
+      KeymapFlowNode;
 
-  factory FlowNode.fromJson(Map<String, dynamic> json) =>
-      _$FlowNodeFromJson(json);
+  factory FlowNode.fromJson(Map<String, dynamic> json) => _$FlowNodeFromJson(json);
 }
 
 @JsonEnum()
@@ -70,8 +61,7 @@ abstract class FlowGraph with _$FlowGraph {
 
   const FlowGraph._();
 
-  factory FlowGraph.fromJson(Map<String, dynamic> json) =>
-      _$FlowGraphFromJson(json);
+  factory FlowGraph.fromJson(Map<String, dynamic> json) => _$FlowGraphFromJson(json);
 
   factory FlowGraph.fromRuntimeConfig(RuntimeConfig config) {
     final nodeMap = <String, FlowNode>{};
@@ -89,10 +79,7 @@ abstract class FlowGraph with _$FlowGraph {
         ),
       );
 
-      final devicePriorityCounts = priorityCounts.putIfAbsent(
-        deviceKey,
-        () => {},
-      );
+      final devicePriorityCounts = priorityCounts.putIfAbsent(deviceKey, () => {});
 
       for (final slot in deviceSlots.slots) {
         if (slot.hardwareProfileId.isEmpty || slot.keymapId.isEmpty) {
@@ -105,10 +92,7 @@ abstract class FlowGraph with _$FlowGraph {
 
         nodeMap.putIfAbsent(
           slot.hardwareProfileId,
-          () => FlowNode.hardwareProfile(
-            id: slot.hardwareProfileId,
-            label: slot.hardwareProfileId,
-          ),
+          () => FlowNode.hardwareProfile(id: slot.hardwareProfileId, label: slot.hardwareProfileId),
         );
         nodeMap.putIfAbsent(
           slot.keymapId,
@@ -138,8 +122,7 @@ abstract class FlowGraph with _$FlowGraph {
       }
     }
 
-    final nodes = nodeMap.values.toList()
-      ..sort((a, b) => a.nodeId.compareTo(b.nodeId));
+    final nodes = nodeMap.values.toList()..sort((a, b) => a.nodeId.compareTo(b.nodeId));
     final sortedEdges = List<FlowEdge>.from(edges)..sort(_edgeSorter);
 
     return FlowGraph(nodes: nodes, edges: sortedEdges);
@@ -172,7 +155,7 @@ String _deviceLabel(DeviceInstanceId id) {
 extension FlowNodeId on FlowNode {
   String get nodeId => when(
     device: (id, _, __, ___) => id,
-    hardwareProfile: (id, __) => id,
-    keymap: (id, __, ___) => id,
+    hardwareProfile: (id, _) => id,
+    keymap: (id, _, __) => id,
   );
 }

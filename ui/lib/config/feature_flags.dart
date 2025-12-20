@@ -59,7 +59,7 @@ class FeatureFlagService {
       _initialized = true;
 
       _logger.info('feature_flags.init', context: {'flags': _getAllFlags()});
-    } catch (e, st) {
+    } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.init_failed',
         message: 'Failed to initialize feature flags',
@@ -119,7 +119,7 @@ class FeatureFlagService {
         'feature_flags.flag_set',
         context: {'flag': flag.name, 'value': value},
       );
-    } catch (e, st) {
+    } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.set_failed',
         message: 'Failed to set feature flag',
@@ -142,7 +142,7 @@ class FeatureFlagService {
       _overrides.remove(flag);
 
       _logger.info('feature_flags.flag_reset', context: {'flag': flag.name});
-    } catch (e, st) {
+    } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.reset_failed',
         message: 'Failed to reset feature flag',
@@ -167,7 +167,7 @@ class FeatureFlagService {
       _overrides.clear();
 
       _logger.info('feature_flags.all_reset');
-    } catch (e, st) {
+    } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.reset_all_failed',
         message: 'Failed to reset all feature flags',

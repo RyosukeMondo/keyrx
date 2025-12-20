@@ -39,7 +39,7 @@ void main() {
         storagePathResolver: const StoragePathResolver(),
         layoutService: FakeLayoutService(),
         hardwareService: FakeHardwareService(),
-        keymapService: KeymapService(bridge: FakeBridge()),
+        keymapService: KeymapServiceFFI(bridge: FakeBridge()),
         daemonManager: MockDaemonManager(),
       );
       facade = KeyrxFacade.real(registry);
@@ -49,10 +49,8 @@ void main() {
       providers: [
         Provider<KeyrxFacade>.value(value: facade),
         ChangeNotifierProvider(
-          create: (_) => AppState(
-            engineService: fakeEngineService,
-            errorTranslator: FakeErrorTranslator(),
-          ),
+          create: (_) =>
+              AppState(engineService: fakeEngineService, errorTranslator: FakeErrorTranslator()),
         ),
       ],
       child: const MaterialApp(home: RunControlsPage()),

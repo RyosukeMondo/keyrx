@@ -33,7 +33,7 @@ class _ConsolePageState extends State<ConsolePage> {
   int _historyIndex = -1;
   bool _isBusy = false;
 
-  StreamSubscription? _logSubscription;
+  StreamSubscription<dynamic>? _logSubscription;
 
   @override
   void didChangeDependencies() {
@@ -97,11 +97,7 @@ class _ConsolePageState extends State<ConsolePage> {
             children: [
               const Text(
                 '> ',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontFamily: 'monospace',
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.green, fontFamily: 'monospace', fontSize: 16),
               ),
               Expanded(
                 child: KeyboardListener(
@@ -137,9 +133,7 @@ class _ConsolePageState extends State<ConsolePage> {
     final isError = entry.isError || entryType == ConsoleEntryType.error;
     final style = _getEntryStyle(entryType, isError, entry);
     final showInitButton = parser.needsInitButton(entry.text, isError: isError);
-    final displayText = entry.isInput
-        ? entry.text
-        : parser.stripPrefix(entry.text);
+    final displayText = entry.isInput ? entry.text : parser.stripPrefix(entry.text);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -152,10 +146,7 @@ class _ConsolePageState extends State<ConsolePage> {
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildEntryRow(displayText, style),
-            if (showInitButton) _buildInitButton(),
-          ],
+          children: [_buildEntryRow(displayText, style), if (showInitButton) _buildInitButton()],
         ),
       ),
     );
@@ -171,11 +162,7 @@ class _ConsolePageState extends State<ConsolePage> {
       Expanded(
         child: SelectableText(
           text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontFamily: 'monospace',
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 14),
         ),
       ),
     ],
@@ -196,19 +183,12 @@ class _ConsolePageState extends State<ConsolePage> {
     ),
   );
 
-  _EntryStyle _getEntryStyle(
-    ConsoleEntryType entryType,
-    bool isError,
-    ConsoleEntry entry,
-  ) {
+  _EntryStyle _getEntryStyle(ConsoleEntryType entryType, bool isError, ConsoleEntry entry) {
     final color = switch (entryType) {
       ConsoleEntryType.command => Colors.blueAccent,
       ConsoleEntryType.error => Colors.redAccent,
       _ when isError => Colors.redAccent,
-      _
-          when ((entryType == ConsoleEntryType.output) ||
-              entry.logData != null) =>
-        Colors.grey,
+      _ when ((entryType == ConsoleEntryType.output) || entry.logData != null) => Colors.grey,
       _ => Colors.green,
     };
     final label = switch (entryType) {
@@ -318,24 +298,14 @@ class _ConsolePageState extends State<ConsolePage> {
     ),
     child: Text(
       text,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 11,
-        letterSpacing: 0.5,
-      ),
+      style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
     ),
   );
 }
 
 /// A single console history entry.
 class ConsoleEntry {
-  ConsoleEntry(
-    this.text, {
-    this.isInput = false,
-    this.isError = false,
-    this.logData,
-  });
+  ConsoleEntry(this.text, {this.isInput = false, this.isError = false, this.logData});
   final String text;
   final bool isInput;
   final bool isError;
@@ -345,11 +315,7 @@ class ConsoleEntry {
 
 /// Style configuration for a console entry.
 class _EntryStyle {
-  const _EntryStyle({
-    required this.color,
-    required this.label,
-    required this.icon,
-  });
+  const _EntryStyle({required this.color, required this.label, required this.icon});
 
   final Color color;
   final String label;

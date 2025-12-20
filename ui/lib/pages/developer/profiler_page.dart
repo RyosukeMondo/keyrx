@@ -54,7 +54,7 @@ class _ProfilerPageState extends State<ProfilerPage> {
       setState(() {
         _flamegraphSvg = svg;
       });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _flamegraphSvg = null;
@@ -85,7 +85,7 @@ class _ProfilerPageState extends State<ProfilerPage> {
       setState(() {
         _allocationReport = report;
       });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _allocationReport = null;

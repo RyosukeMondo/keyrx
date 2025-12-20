@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/virtual_layout_common.dart';
 
 class LayoutVisualEditor extends StatefulWidget {
-  const LayoutVisualEditor({
-    required this.keys,
-    required this.onKeysChanged,
-    super.key,
-  });
+  const LayoutVisualEditor({required this.keys, required this.onKeysChanged, super.key});
 
   final List<VirtualKeyDef> keys;
   final ValueChanged<List<VirtualKeyDef>> onKeysChanged;
@@ -39,8 +35,9 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
           _selectedIds.add(id);
         }
       } else {
-        _selectedIds.clear();
-        _selectedIds.add(id);
+        _selectedIds
+          ..clear()
+          ..add(id);
       }
     });
   }
@@ -150,18 +147,14 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
 
   void _deleteSelectedKeys() {
     if (_selectedIds.isEmpty) return;
-    final newKeys = widget.keys
-        .where((k) => !_selectedIds.contains(k.id))
-        .toList();
+    final newKeys = widget.keys.where((k) => !_selectedIds.contains(k.id)).toList();
     widget.onKeysChanged(newKeys);
     _clearSelection();
   }
 
   void _alignKeys(String alignment) {
     if (_selectedIds.length < 2) return;
-    final selectedKeys = widget.keys
-        .where((k) => _selectedIds.contains(k.id))
-        .toList();
+    final selectedKeys = widget.keys.where((k) => _selectedIds.contains(k.id)).toList();
 
     if (selectedKeys.isEmpty) return;
 
@@ -272,8 +265,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
             ),
             const Spacer(),
             IconButton(
-              onPressed: () =>
-                  setState(() => _showProperties = !_showProperties),
+              onPressed: () => setState(() => _showProperties = !_showProperties),
               icon: Icon(
                 _showProperties
                     ? Icons.keyboard_double_arrow_right
@@ -304,9 +296,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                             child: CustomPaint(
                               painter: VirtualLayoutGridPainter(
                                 step: 60,
-                                color: Theme.of(
-                                  context,
-                                ).dividerColor.withValues(alpha: 0.1),
+                                color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                                 subStep: 15, // Sub-grid for visual hints
                               ),
                             ),
@@ -361,10 +351,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
         onPanUpdate: (details) {
           if (_selectionStart == null) return;
           setState(() {
-            _selectionBox = Rect.fromPoints(
-              _selectionStart!,
-              details.localPosition,
-            );
+            _selectionBox = Rect.fromPoints(_selectionStart!, details.localPosition);
           });
           // Logic to select keys inside box
           // final box = _selectionBox!;
@@ -376,12 +363,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
           if (_selectionBox != null) {
             // Finalize selection
             final box = _selectionBox!;
-            final unitBox = Rect.fromLTRB(
-              box.left,
-              box.top,
-              box.right,
-              box.bottom,
-            );
+            final unitBox = Rect.fromLTRB(box.left, box.top, box.right, box.bottom);
 
             final newSelected = widget.keys
                 .where((k) {
@@ -398,8 +380,9 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
 
             // Add to existing if shift? For now replace.
             setState(() {
-              _selectedIds.clear();
-              _selectedIds.addAll(newSelected);
+              _selectedIds
+                ..clear()
+                ..addAll(newSelected);
               _selectionBox = null;
               _selectionStart = null;
             });
@@ -420,9 +403,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                     // Delete key on double tap
                     // print('Double tap key ${key.id} -> deleting');
                     // Need to call a delete function
-                    final newKeys = widget.keys
-                        .where((k) => k.id != key.id)
-                        .toList();
+                    final newKeys = widget.keys.where((k) => k.id != key.id).toList();
                     widget.onKeysChanged(newKeys);
                     if (_selectedIds.contains(key.id)) {
                       setState(() {
@@ -436,15 +417,11 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                     }
                     setState(() {
                       _isDraggingKeys = true;
-                      _dragStartLocalPosition =
-                          details.globalPosition; // Using global to be safe
+                      _dragStartLocalPosition = details.globalPosition; // Using global to be safe
                       _initialKeyPositions = {
                         for (final k in widget.keys)
                           if (_selectedIds.contains(k.id))
-                            k.id: Offset(
-                              k.position?.x ?? 0,
-                              k.position?.y ?? 0,
-                            ),
+                            k.id: Offset(k.position?.x ?? 0, k.position?.y ?? 0),
                       };
                     });
                   },
@@ -453,8 +430,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
                       return;
                     }
 
-                    final totalDelta =
-                        details.globalPosition - _dragStartLocalPosition!;
+                    final totalDelta = details.globalPosition - _dragStartLocalPosition!;
 
                     final newKeys = widget.keys.map((k) {
                       if (_initialKeyPositions.containsKey(k.id)) {
@@ -545,9 +521,7 @@ class _PropertyBar extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            selectedCount > 1
-                ? 'Properties ($selectedCount)'
-                : 'Key Properties',
+            selectedCount > 1 ? 'Properties ($selectedCount)' : 'Key Properties',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
@@ -577,8 +551,7 @@ class _PropertyBar extends StatelessWidget {
                       onUpdate(
                         selectedKey!.copyWith(
                           position:
-                              selectedKey!.position?.copyWith(x: v) ??
-                              KeyPosition(x: v, y: 0),
+                              selectedKey!.position?.copyWith(x: v) ?? KeyPosition(x: v, y: 0),
                         ),
                       );
                     }
@@ -597,8 +570,7 @@ class _PropertyBar extends StatelessWidget {
                       onUpdate(
                         selectedKey!.copyWith(
                           position:
-                              selectedKey!.position?.copyWith(y: v) ??
-                              KeyPosition(x: 0, y: v),
+                              selectedKey!.position?.copyWith(y: v) ?? KeyPosition(x: 0, y: v),
                         ),
                       );
                     }
@@ -621,8 +593,7 @@ class _PropertyBar extends StatelessWidget {
                       onUpdate(
                         selectedKey!.copyWith(
                           size:
-                              selectedKey!.size?.copyWith(width: v) ??
-                              KeySize(width: v, height: 1),
+                              selectedKey!.size?.copyWith(width: v) ?? KeySize(width: v, height: 1),
                         ),
                       );
                     }

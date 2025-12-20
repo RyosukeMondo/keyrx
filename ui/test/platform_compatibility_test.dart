@@ -52,7 +52,7 @@ void main() {
         try {
           registry.storagePathResolver.resolveProfilesPath();
           fail('Should have thrown UnsupportedError');
-        } catch (e) {
+        } on Exception catch (e) {
           expect(e, isA<UnsupportedError>());
           expect(
             e.toString(),

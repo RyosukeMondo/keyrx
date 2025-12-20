@@ -65,7 +65,7 @@ class _DevicesPageState extends State<DevicesPage> {
       var devices = const <DeviceState>[];
       try {
         devices = await widget.deviceRegistryService.getDevices();
-      } catch (e) {
+      } on Exception catch (e) {
         _error = 'Device discovery failed: $e';
       }
 
@@ -88,7 +88,7 @@ class _DevicesPageState extends State<DevicesPage> {
         _error = errors.isEmpty ? null : errors.join(' • ');
         _isLoading = false;
       });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -111,7 +111,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
     try {
       result = await action();
-    } catch (e) {
+    } on Exception catch (e) {
       result = ConfigOperationResult.error(e.toString());
     } finally {
       if (mounted) {
@@ -145,9 +145,7 @@ class _DevicesPageState extends State<DevicesPage> {
     for (final entry in _registryDevices.values) {
       final identity = entry.identity;
       final serialMatches =
-          device.serial == null ||
-          device.serial!.isEmpty ||
-          identity.serialNumber == device.serial;
+          device.serial == null || device.serial!.isEmpty || identity.serialNumber == device.serial;
       if (identity.vendorId == device.vendorId &&
           identity.productId == device.productId &&
           serialMatches) {
@@ -159,8 +157,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
   String _deviceTitle(DeviceSlots device) {
     final registry = _findRegistryDevice(device.device);
-    if (registry?.identity.userLabel != null &&
-        registry!.identity.userLabel!.isNotEmpty) {
+    if (registry?.identity.userLabel != null && registry!.identity.userLabel!.isNotEmpty) {
       return registry.identity.userLabel!;
     }
     final vid = device.device.vendorId.toRadixString(16).padLeft(4, '0');
@@ -193,8 +190,7 @@ class _DevicesPageState extends State<DevicesPage> {
   }
 
   List<ProfileSlot> _orderedSlots(DeviceSlots device) {
-    final slots = [...device.slots];
-    slots.sort((a, b) => b.priority.compareTo(a.priority));
+    final slots = [...device.slots]..sort((a, b) => b.priority.compareTo(a.priority));
     return slots;
   }
 
@@ -271,10 +267,7 @@ class _DevicesPageState extends State<DevicesPage> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(12),
       children: [
-        if (_error != null) ...[
-          _InlineErrorBanner(message: _error!),
-          const SizedBox(height: 12),
-        ],
+        if (_error != null) ...[_InlineErrorBanner(message: _error!), const SizedBox(height: 12)],
         ...devices.map(_buildDeviceCard),
         const SizedBox(height: 12),
       ],
@@ -297,10 +290,7 @@ class _DevicesPageState extends State<DevicesPage> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.keyboard,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                Icon(Icons.keyboard, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -311,31 +301,25 @@ class _DevicesPageState extends State<DevicesPage> {
                           Flexible(
                             child: Text(
                               _deviceTitle(device),
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit, size: 16),
                             tooltip: 'Rename device',
-                            onPressed: disabled
-                                ? null
-                                : () => _showRenameDialog(device),
+                            onPressed: disabled ? null : () => _showRenameDialog(device),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        _deviceSubTitle(device),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      Text(_deviceSubTitle(device), style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: disabled || !hasWiring || !hasKeymaps
-                      ? null
-                      : () => _addSlot(device),
+                  onPressed: disabled || !hasWiring || !hasKeymaps ? null : () => _addSlot(device),
                   icon: const Icon(Icons.add),
                   label: const Text('Add Slot'),
                 ),
@@ -415,10 +399,7 @@ class _DevicesPageState extends State<DevicesPage> {
           children: [
             Row(
               children: [
-                Text(
-                  'Slot ${index + 1}',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text('Slot ${index + 1}', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(width: 8),
                 Chip(
                   label: Text('Priority ${slot.priority}'),
@@ -428,9 +409,7 @@ class _DevicesPageState extends State<DevicesPage> {
                 const Spacer(),
                 IconButton(
                   tooltip: 'Move up',
-                  onPressed: slotBusy || index == 0
-                      ? null
-                      : () => _moveSlot(device, slot, -1),
+                  onPressed: slotBusy || index == 0 ? null : () => _moveSlot(device, slot, -1),
                   icon: const Icon(Icons.arrow_upward),
                 ),
                 IconButton(
@@ -445,11 +424,7 @@ class _DevicesPageState extends State<DevicesPage> {
                   onChanged: slotBusy
                       ? null
                       : (value) => _mutate(
-                          () => widget.runtimeService.setSlotActive(
-                            device.device,
-                            slot.id,
-                            value,
-                          ),
+                          () => widget.runtimeService.setSlotActive(device.device, slot.id, value),
                           slotId: slot.id,
                         ),
                 ),
@@ -467,18 +442,12 @@ class _DevicesPageState extends State<DevicesPage> {
                       border: OutlineInputBorder(),
                     ),
                     items: hardwareOptions
-                        .map(
-                          (h) => DropdownMenuItem(
-                            value: h.id,
-                            child: Text(h.name ?? h.id),
-                          ),
-                        )
+                        .map((h) => DropdownMenuItem(value: h.id, child: Text(h.name ?? h.id)))
                         .toList(),
                     onChanged: slotBusy || hardwareOptions.isEmpty
                         ? null
                         : (value) {
-                            if (value != null &&
-                                value != slot.hardwareProfileId) {
+                            if (value != null && value != slot.hardwareProfileId) {
                               _mutate(
                                 () => widget.runtimeService.addSlot(
                                   device.device,
@@ -500,12 +469,7 @@ class _DevicesPageState extends State<DevicesPage> {
                       border: OutlineInputBorder(),
                     ),
                     items: _keymaps
-                        .map(
-                          (k) => DropdownMenuItem(
-                            value: k.id,
-                            child: Text(k.name),
-                          ),
-                        )
+                        .map((k) => DropdownMenuItem(value: k.id, child: Text(k.name)))
                         .toList(),
                     onChanged: slotBusy || _keymaps.isEmpty
                         ? null
@@ -531,10 +495,7 @@ class _DevicesPageState extends State<DevicesPage> {
                 onPressed: slotBusy
                     ? null
                     : () => _mutate(
-                        () => widget.runtimeService.removeSlot(
-                          device.device,
-                          slot.id,
-                        ),
+                        () => widget.runtimeService.removeSlot(device.device, slot.id),
                         slotId: slot.id,
                       ),
                 icon: const Icon(Icons.delete),
@@ -557,10 +518,7 @@ class _DevicesPageState extends State<DevicesPage> {
       return;
     }
     if (_keymaps.isEmpty) {
-      _showSnack(
-        'Create a keymap in the Mapping tab before creating a slot.',
-        isError: true,
-      );
+      _showSnack('Create a keymap in the Mapping tab before creating a slot.', isError: true);
       return;
     }
 
@@ -582,19 +540,12 @@ class _DevicesPageState extends State<DevicesPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: hardwareOptions
-                    .map(
-                      (h) => DropdownMenuItem(
-                        value: h.id,
-                        child: Text(h.name ?? h.id),
-                      ),
-                    )
+                    .map((h) => DropdownMenuItem(value: h.id, child: Text(h.name ?? h.id)))
                     .toList(),
                 onChanged: (value) {
                   if (value == null) return;
                   setDialogState(() {
-                    selectedHardware = hardwareOptions.firstWhere(
-                      (h) => h.id == value,
-                    );
+                    selectedHardware = hardwareOptions.firstWhere((h) => h.id == value);
                   });
                 },
               ),
@@ -606,9 +557,7 @@ class _DevicesPageState extends State<DevicesPage> {
                   border: OutlineInputBorder(),
                 ),
                 items: _keymaps
-                    .map(
-                      (k) => DropdownMenuItem(value: k.id, child: Text(k.name)),
-                    )
+                    .map((k) => DropdownMenuItem(value: k.id, child: Text(k.name)))
                     .toList(),
                 onChanged: (value) {
                   if (value == null) return;
@@ -647,10 +596,7 @@ class _DevicesPageState extends State<DevicesPage> {
       priority: nextPriority,
     );
 
-    await _mutate(
-      () => widget.runtimeService.addSlot(device.device, newSlot),
-      slotId: slotId,
-    );
+    await _mutate(() => widget.runtimeService.addSlot(device.device, newSlot), slotId: slotId);
   }
 
   int _nextPriority(List<ProfileSlot> slots) {
@@ -659,11 +605,7 @@ class _DevicesPageState extends State<DevicesPage> {
     return highest + 1;
   }
 
-  Future<void> _moveSlot(
-    DeviceSlots device,
-    ProfileSlot slot,
-    int delta,
-  ) async {
+  Future<void> _moveSlot(DeviceSlots device, ProfileSlot slot, int delta) async {
     setState(() {
       _isMutating = true;
       _busySlots.add(slot.id);
@@ -690,10 +632,7 @@ class _DevicesPageState extends State<DevicesPage> {
           priority,
         );
         if (lastResult.hasError) {
-          _showSnack(
-            'Failed to reorder: ${lastResult.errorMessage}',
-            isError: true,
-          );
+          _showSnack('Failed to reorder: ${lastResult.errorMessage}', isError: true);
           await _loadAll();
           return;
         }
@@ -784,10 +723,7 @@ class _DevicesPageState extends State<DevicesPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               // Basic validation
@@ -830,7 +766,7 @@ class _DevicesPageState extends State<DevicesPage> {
       await widget.deviceRegistryService.addVirtualDevice(identity);
       await _loadAll();
       _showSnack('Virtual device added');
-    } catch (e) {
+    } on Exception catch (e) {
       _showSnack('Failed to add virtual device: $e', isError: true);
     } finally {
       if (mounted) {
@@ -858,10 +794,7 @@ class _DevicesPageState extends State<DevicesPage> {
           autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             child: const Text('Save'),
@@ -900,9 +833,7 @@ class _DevicesPageState extends State<DevicesPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError
-            ? Theme.of(context).colorScheme.errorContainer
-            : null,
+        backgroundColor: isError ? Theme.of(context).colorScheme.errorContainer : null,
       ),
     );
   }
@@ -921,17 +852,12 @@ class _InlineErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.onErrorContainer),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
+              style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
             ),
           ),
         ],
@@ -955,10 +881,7 @@ class _InlineInfoBanner extends StatelessWidget {
     padding: const EdgeInsets.all(12),
     child: Row(
       children: [
-        Icon(
-          Icons.info_outline,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Expanded(child: Text(message)),
       ],

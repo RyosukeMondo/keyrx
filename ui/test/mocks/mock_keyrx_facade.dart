@@ -4,7 +4,7 @@
 /// widget testing. Default behaviors can be overridden using mocktail's when() API.
 library;
 
-import 'package:core_logic/ffi/bridge_discovery.dart';
+import 'package:core_logic/models/bridge_models.dart' hide ScriptValidationResult;
 import 'package:core_logic/services/test_service.dart';
 import 'package:keyrx_ui/services/facade/facade_state.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
@@ -55,19 +55,13 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
 
   static void _setupDefaultStubs(MockKeyrxFacade mock) {
     // State stream and current state
-    final stateSubject = BehaviorSubject<FacadeState>.seeded(
-      FacadeState.initial(),
-    );
+    final stateSubject = BehaviorSubject<FacadeState>.seeded(FacadeState.initial());
     when(() => mock.stateStream).thenAnswer((_) => stateSubject.stream);
     when(() => mock.currentState).thenReturn(FacadeState.initial());
 
     // Engine operations
-    when(
-      () => mock.startEngine(any()),
-    ).thenAnswer((_) async => const Result.ok(null));
-    when(
-      () => mock.stopEngine(),
-    ).thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.startEngine(any())).thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.stopEngine()).thenAnswer((_) async => const Result.ok(null));
     when(
       () => mock.getEngineStatus(),
     ).thenAnswer((_) async => const Result.ok(EngineStatus.uninitialized));
@@ -75,40 +69,32 @@ class MockKeyrxFacade extends Mock implements KeyrxFacade {
     // Script operations
     when(() => mock.validateScript(any())).thenAnswer(
       (_) async => const Result.ok(
-        ScriptValidationResult(isValid: true, errors: [], warnings: []),
+        ScriptValidationResult(
+          isValid: true,
+          errors: <ValidationIssue>[],
+          warnings: <ValidationIssue>[],
+        ),
       ),
     );
     when(
       () => mock.loadScriptContent(any()),
     ).thenAnswer((_) async => const Result.ok('// Empty script'));
-    when(
-      () => mock.saveScript(any(), any()),
-    ).thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.saveScript(any(), any())).thenAnswer((_) async => const Result.ok(null));
 
     // Device operations
     when(() => mock.listDevices()).thenAnswer((_) async => const Result.ok([]));
-    when(
-      () => mock.selectDevice(any()),
-    ).thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.selectDevice(any())).thenAnswer((_) async => const Result.ok(null));
 
     // Test operations
-    when(() => mock.discoverTests(any())).thenAnswer(
-      (_) async => const Result.ok(TestDiscoveryServiceResult(tests: [])),
-    );
+    when(
+      () => mock.discoverTests(any()),
+    ).thenAnswer((_) async => const Result.ok(TestDiscoveryServiceResult(tests: [])));
     when(() => mock.runTests(any(), filter: any(named: 'filter'))).thenAnswer(
       (_) async => const Result.ok(
-        TestRunServiceResult(
-          total: 0,
-          passed: 0,
-          failed: 0,
-          durationMs: 0,
-          results: [],
-        ),
+        TestRunServiceResult(total: 0, passed: 0, failed: 0, durationMs: 0, results: []),
       ),
     );
-    when(
-      () => mock.cancelTests(),
-    ).thenAnswer((_) async => const Result.ok(null));
+    when(() => mock.cancelTests()).thenAnswer((_) async => const Result.ok(null));
 
     // Lifecycle
     when(() => mock.dispose()).thenAnswer((_) async {

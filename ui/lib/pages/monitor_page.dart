@@ -91,18 +91,17 @@ class _MonitorPageState extends State<MonitorPage> {
 
   void _registerCallbacks() {
     final facade = context.read<KeyrxFacade>();
-    final bridge = facade.services.bridge;
 
     // Always register to ensure this instance receives events
-    bridge.registerEventCallback(EventType.rawInput, (payload) {
-      if (!mounted) return;
-      _handleEvent(EventType.rawInput, payload);
-    });
-
-    bridge.registerEventCallback(EventType.rawOutput, (payload) {
-      if (!mounted) return;
-      _handleEvent(EventType.rawOutput, payload);
-    });
+    facade.services.bridge
+      ..registerEventCallback(EventType.rawInput, (payload) {
+        if (!mounted) return;
+        _handleEvent(EventType.rawInput, payload);
+      })
+      ..registerEventCallback(EventType.rawOutput, (payload) {
+        if (!mounted) return;
+        _handleEvent(EventType.rawOutput, payload);
+      });
   }
 
   void _handleEvent(EventType type, Uint8List payload) {
@@ -129,13 +128,11 @@ class _MonitorPageState extends State<MonitorPage> {
         // Scroll to bottom after frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
-            _scrollController.jumpTo(
-              _scrollController.position.maxScrollExtent,
-            );
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
           }
         });
       }
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('Error parsing monitor event: $e');
     }
   }
@@ -150,8 +147,7 @@ class _MonitorPageState extends State<MonitorPage> {
     // If no script loaded, use/create a default monitor script
     if (scriptPath == null) {
       try {
-        final profilesPath = facade.services.storagePathResolver
-            .resolveProfilesPath();
+        final profilesPath = facade.services.storagePathResolver.resolveProfilesPath();
         scriptPath = '$profilesPath${Platform.pathSeparator}monitor.rhai';
         isDefaultScript = true;
 
@@ -163,17 +159,13 @@ class _MonitorPageState extends State<MonitorPage> {
 
         if (saveResult.isErr) {
           throw Exception(
-            saveResult.errOrNull?.userMessage ??
-                'Failed to create default monitor script',
+            saveResult.errOrNull?.userMessage ?? 'Failed to create default monitor script',
           );
         }
-      } catch (e) {
+      } on Exception catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error preparing monitor: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Error preparing monitor: $e'), backgroundColor: Colors.red),
           );
         }
         return;
@@ -216,9 +208,9 @@ class _MonitorPageState extends State<MonitorPage> {
     // Unregister callbacks to stop receiving events
     if (mounted) {
       final facade = context.read<KeyrxFacade>();
-      final bridge = facade.services.bridge;
-      bridge.unregisterEventCallback(EventType.rawInput);
-      bridge.unregisterEventCallback(EventType.rawOutput);
+      facade.services.bridge
+        ..unregisterEventCallback(EventType.rawInput)
+        ..unregisterEventCallback(EventType.rawOutput);
     }
     _scrollController.dispose();
     super.dispose();
@@ -278,13 +270,9 @@ class _MonitorPageState extends State<MonitorPage> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: Icon(
-                    _autoScroll
-                        ? Icons.vertical_align_bottom
-                        : Icons.vertical_align_center,
+                    _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
                   ),
-                  tooltip: _autoScroll
-                      ? 'Disable Auto-scroll'
-                      : 'Enable Auto-scroll',
+                  tooltip: _autoScroll ? 'Disable Auto-scroll' : 'Enable Auto-scroll',
                   onPressed: () {
                     setState(() => _autoScroll = !_autoScroll);
                   },
@@ -302,16 +290,10 @@ class _MonitorPageState extends State<MonitorPage> {
             body: TabBarView(
               children: [
                 // Tab 1: Visual Table
-                if (_events.isEmpty)
-                  _buildEmptyState(isRunning)
-                else
-                  _buildTableView(),
+                if (_events.isEmpty) _buildEmptyState(isRunning) else _buildTableView(),
 
                 // Tab 2: Text Log
-                if (_events.isEmpty)
-                  _buildEmptyState(isRunning)
-                else
-                  _buildTextView(),
+                if (_events.isEmpty) _buildEmptyState(isRunning) else _buildTextView(),
               ],
             ),
           ),
@@ -352,11 +334,7 @@ class _MonitorPageState extends State<MonitorPage> {
           children: [
             TextSpan(
               text: '[$timeStr] ',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontFamily: 'monospace',
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontFamily: 'monospace', fontSize: 12),
             ),
             TextSpan(
               text: '[$typeStr] ',
@@ -406,20 +384,14 @@ class _MonitorPageState extends State<MonitorPage> {
   Widget _buildStatusBadge(bool isRunning) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: isRunning
-          ? Colors.green.withValues(alpha: 0.2)
-          : Colors.grey.withValues(alpha: 0.2),
+      color: isRunning ? Colors.green.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: isRunning ? Colors.green : Colors.grey),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.fiber_manual_record,
-          size: 10,
-          color: isRunning ? Colors.green : Colors.grey,
-        ),
+        Icon(Icons.fiber_manual_record, size: 10, color: isRunning ? Colors.green : Colors.grey),
         const SizedBox(width: 4),
         Text(
           isRunning ? 'RUNNING' : 'STOPPED',
@@ -446,10 +418,7 @@ class _MonitorPageState extends State<MonitorPage> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16, color: Colors.grey[500]),
         ),
-        if (isRunning) ...[
-          const SizedBox(height: 24),
-          const CircularProgressIndicator(),
-        ],
+        if (isRunning) ...[const SizedBox(height: 24), const CircularProgressIndicator()],
       ],
     ),
   );
@@ -467,10 +436,7 @@ class _MonitorPageState extends State<MonitorPage> {
         ),
         SizedBox(width: 16),
         Expanded(
-          child: Text(
-            'OS OUTPUT',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          ),
+          child: Text('OS OUTPUT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
         ),
         SizedBox(width: 80), // Time column
       ],
@@ -495,9 +461,7 @@ class _MonitorPageState extends State<MonitorPage> {
         children: [
           // Input Column
           Expanded(
-            child: isInput
-                ? _buildEventContent(event, Colors.blue[300]!)
-                : const SizedBox(),
+            child: isInput ? _buildEventContent(event, Colors.blue[300]!) : const SizedBox(),
           ),
 
           Container(width: 1, height: 24, color: Colors.white10),
@@ -505,9 +469,7 @@ class _MonitorPageState extends State<MonitorPage> {
 
           // Output Column
           Expanded(
-            child: !isInput
-                ? _buildEventContent(event, Colors.orange[300]!)
-                : const SizedBox(),
+            child: !isInput ? _buildEventContent(event, Colors.orange[300]!) : const SizedBox(),
           ),
 
           // Timestamp
@@ -515,11 +477,7 @@ class _MonitorPageState extends State<MonitorPage> {
             width: 80,
             child: Text(
               timeStr,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[600],
-                fontFamily: 'monospace',
-              ),
+              style: TextStyle(fontSize: 10, color: Colors.grey[600], fontFamily: 'monospace'),
               textAlign: TextAlign.right,
             ),
           ),

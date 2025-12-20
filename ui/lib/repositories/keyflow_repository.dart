@@ -35,21 +35,21 @@ class _BridgeRuntimeApi implements RuntimeApi {
   String addSlot(String deviceJson, String slotJson, int priority) {
     final bindings = _bindings;
     if (bindings == null) throw StateError('Runtime bindings unavailable');
-    return bindings.addSlot(deviceJson, slotJson, priority);
+    return bindings.addSlot(deviceJson, slotJson, priority) as String;
   }
 
   @override
   String getConfig() {
     final bindings = _bindings;
     if (bindings == null) throw StateError('Runtime bindings unavailable');
-    return bindings.getConfig();
+    return bindings.getConfig() as String;
   }
 
   @override
   String removeSlot(String deviceJson, String slotId) {
     final bindings = _bindings;
     if (bindings == null) throw StateError('Runtime bindings unavailable');
-    return bindings.removeSlot(deviceJson, slotId);
+    return bindings.removeSlot(deviceJson, slotId) as String;
   }
 }
 
@@ -71,10 +71,7 @@ class KeyFlowRepository {
        _logger = logger ?? getLogger('keyflow_repository'),
        _registerEventCallback = registerEventCallback,
        _unregisterEventCallback = unregisterEventCallback {
-    _logger.info(
-      'keyflow.repo.init',
-      context: {'cache_ttl_ms': _cacheTtl.inMilliseconds},
-    );
+    _logger.info('keyflow.repo.init', context: {'cache_ttl_ms': _cacheTtl.inMilliseconds});
     _registerBridgeListeners();
   }
 
@@ -96,8 +93,7 @@ class KeyFlowRepository {
   final Duration _cacheTtl;
   final DateTime Function() _clock;
   final StructuredLogger _logger;
-  final void Function(EventType, void Function(Uint8List))?
-  _registerEventCallback;
+  final void Function(EventType, void Function(Uint8List))? _registerEventCallback;
   final void Function(EventType)? _unregisterEventCallback;
 
   RuntimeConfig? _cachedConfig;
@@ -122,9 +118,7 @@ class KeyFlowRepository {
   }
 
   /// Get runtime config using a 5 minute TTL cache unless [forceRefresh].
-  Future<ConfigOperationResult<RuntimeConfig>> getRuntimeConfig({
-    bool forceRefresh = false,
-  }) async {
+  Future<ConfigOperationResult<RuntimeConfig>> getRuntimeConfig({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedConfig != null && _isCacheFresh) {
       _logger.debug('keyflow.repo.cache_hit', context: {'age_ms': _cacheAgeMs});
       return ConfigOperationResult.success(_cachedConfig);
@@ -147,8 +141,7 @@ class KeyFlowRepository {
     ProfileSlot slot, {
     int? priorityOverride,
   }) async {
-    final priority =
-        priorityOverride ?? await _computeNextPriority(device, slot.priority);
+    final priority = priorityOverride ?? await _computeNextPriority(device, slot.priority);
     final slotWithPriority = slot.copyWith(priority: priority);
 
     return _performMutation(
@@ -167,25 +160,18 @@ class KeyFlowRepository {
     ProfileSlot slot,
   ) => _performMutation(
     operation: 'update_slot',
-    invoke: () => _runtimeApi.addSlot(
-      jsonEncode(device.toJson()),
-      jsonEncode(slot.toJson()),
-      slot.priority,
-    ),
+    invoke: () =>
+        _runtimeApi.addSlot(jsonEncode(device.toJson()), jsonEncode(slot.toJson()), slot.priority),
   );
 
   /// Remove a slot for a device.
-  Future<ConfigOperationResult<RuntimeConfig>> removeSlot(
-    DeviceInstanceId device,
-    String slotId,
-  ) => _performMutation(
-    operation: 'remove_slot',
-    invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
-  );
+  Future<ConfigOperationResult<RuntimeConfig>> removeSlot(DeviceInstanceId device, String slotId) =>
+      _performMutation(
+        operation: 'remove_slot',
+        invoke: () => _runtimeApi.removeSlot(jsonEncode(device.toJson()), slotId),
+      );
 
-  Future<ConfigOperationResult<RuntimeConfig>> _fetchAndCache(
-    String operation,
-  ) async {
+  Future<ConfigOperationResult<RuntimeConfig>> _fetchAndCache(String operation) async {
     final result = await _callRuntime(operation, _runtimeApi.getConfig);
     if (result.isSuccess && result.data != null) {
       _cacheConfig(result.data!, reason: operation);
@@ -224,24 +210,13 @@ class KeyFlowRepository {
       final raw = invoke();
       final decoded = _decodeRuntimeConfig(raw);
       if (decoded.isSuccess) {
-        _logger.info(
-          'keyflow.repo.$operation.success',
-          context: {'cached': _cachedConfig != null},
-        );
+        _logger.info('keyflow.repo.$operation.success', context: {'cached': _cachedConfig != null});
       } else {
-        _logger.warn(
-          'keyflow.repo.$operation.error',
-          message: decoded.errorMessage,
-        );
+        _logger.warn('keyflow.repo.$operation.error', message: decoded.errorMessage);
       }
       return decoded;
-    } catch (e, st) {
-      _logger.error(
-        'keyflow.repo.$operation.exception',
-        message: '$e',
-        error: e,
-        stackTrace: st,
-      );
+    } on Exception catch (e, st) {
+      _logger.error('keyflow.repo.$operation.exception', message: '$e', error: e, stackTrace: st);
       return ConfigOperationResult.error('$e');
     }
   }
@@ -269,26 +244,17 @@ class KeyFlowRepository {
       // Fall through to the original parse error.
     }
 
-    return ConfigOperationResult.error(
-      parsed.errorMessage ?? 'Failed to parse runtime config',
-    );
+    return ConfigOperationResult.error(parsed.errorMessage ?? 'Failed to parse runtime config');
   }
 
-  Future<int> _computeNextPriority(
-    DeviceInstanceId device,
-    int fallbackPriority,
-  ) async {
+  Future<int> _computeNextPriority(DeviceInstanceId device, int fallbackPriority) async {
     final cached = _cachedConfig;
     if (cached == null) {
       final fetched = await getRuntimeConfig();
       if (fetched.data == null) {
         return fallbackPriority;
       }
-      return _computeNextPriorityForConfig(
-        fetched.data!,
-        device,
-        fallbackPriority,
-      );
+      return _computeNextPriorityForConfig(fetched.data!, device, fallbackPriority);
     }
     return _computeNextPriorityForConfig(cached, device, fallbackPriority);
   }
@@ -299,17 +265,12 @@ class KeyFlowRepository {
     int fallbackPriority,
   ) {
     final slots = config.devices
-        .firstWhere(
-          (d) => d.device == device,
-          orElse: () => DeviceSlots(device: device),
-        )
+        .firstWhere((d) => d.device == device, orElse: () => DeviceSlots(device: device))
         .slots;
     if (slots.isEmpty) {
       return fallbackPriority;
     }
-    final highest = slots
-        .map((s) => s.priority)
-        .fold<int>(-1, (a, b) => a > b ? a : b);
+    final highest = slots.map((s) => s.priority).fold<int>(-1, (a, b) => a > b ? a : b);
     return highest + 1;
   }
 

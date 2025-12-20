@@ -54,10 +54,7 @@ class VisualConfig {
 
   /// Check if config is empty.
   bool get isEmpty =>
-      mappings.isEmpty &&
-      tapHoldConfigs.isEmpty &&
-      layerConfigs.isEmpty &&
-      comboConfigs.isEmpty;
+      mappings.isEmpty && tapHoldConfigs.isEmpty && layerConfigs.isEmpty && comboConfigs.isEmpty;
 }
 
 /// Tap-hold key configuration.
@@ -86,11 +83,7 @@ class TapHoldConfig {
 
 /// Layer configuration.
 class LayerConfig {
-  const LayerConfig({
-    required this.name,
-    this.isTransparent = true,
-    this.mappings = const [],
-  });
+  const LayerConfig({required this.name, this.isTransparent = true, this.mappings = const []});
 
   final String name;
   final bool isTransparent;
@@ -141,13 +134,13 @@ class RhaiGenerator {
     final buffer = StringBuffer();
 
     // Header comment
-    buffer.writeln('// KeyRx Configuration');
-    buffer.writeln('// Generated: ${DateTime.now().toIso8601String()}');
-    buffer.writeln('// Edit visually or modify this script directly.');
-    buffer.writeln();
-
-    // Main init function
-    buffer.writeln('fn on_init() {');
+    buffer
+      ..writeln('// KeyRx Configuration')
+      ..writeln('// Generated: ${DateTime.now().toIso8601String()}')
+      ..writeln('// Edit visually or modify this script directly.')
+      ..writeln()
+      // Main init function
+      ..writeln('fn on_init() {');
 
     // Timing configuration
     if (config.timingConfig != null) {
@@ -192,8 +185,9 @@ class RhaiGenerator {
       buffer.writeln();
     }
 
-    buffer.writeln('    print_debug("Configuration loaded");');
-    buffer.writeln('}');
+    buffer
+      ..writeln('    print_debug("Configuration loaded");')
+      ..writeln('}');
 
     return buffer.toString();
   }
@@ -251,11 +245,9 @@ class RhaiGenerator {
     buffer.writeln('    combo([$keys], "$output");');
   }
 
-  String _escapeKeyName(String key) =>
-      key.replaceAll('"', r'\"').replaceAll(r'\', r'\\');
+  String _escapeKeyName(String key) => key.replaceAll('"', r'\"').replaceAll(r'\', r'\\');
 
-  String _escapeString(String s) =>
-      s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+  String _escapeString(String s) => s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
   /// Parse a Rhai script and extract visual configuration (best-effort).
   ///
@@ -278,15 +270,11 @@ class RhaiGenerator {
     // Parse simple remaps: remap("KeyA", "KeyB")
     final remapRegex = RegExp(r'remap\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)');
     for (final match in remapRegex.allMatches(script)) {
-      mappings.add(
-        RemapConfig(sourceKeyId: match.group(1)!, targetKeyId: match.group(2)!),
-      );
+      mappings.add(RemapConfig(sourceKeyId: match.group(1)!, targetKeyId: match.group(2)!));
     }
 
     // Parse tap_hold: tap_hold("Key", "TapAction", "HoldAction")
-    final tapHoldRegex = RegExp(
-      r'tap_hold\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)',
-    );
+    final tapHoldRegex = RegExp(r'tap_hold\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)');
     for (final match in tapHoldRegex.allMatches(script)) {
       tapHoldConfigs.add(
         TapHoldConfig(
@@ -298,17 +286,11 @@ class RhaiGenerator {
     }
 
     // Parse layer_define: layer_define("name", true/false)
-    final layerDefRegex = RegExp(
-      r'layer_define\s*\(\s*"([^"]+)"\s*,\s*(true|false)\s*\)',
-    );
+    final layerDefRegex = RegExp(r'layer_define\s*\(\s*"([^"]+)"\s*,\s*(true|false)\s*\)');
     for (final match in layerDefRegex.allMatches(script)) {
       final name = match.group(1)!;
       final isTransparent = match.group(2) == 'true';
-      layerDefs[name] = LayerConfig(
-        name: name,
-        isTransparent: isTransparent,
-        mappings: [],
-      );
+      layerDefs[name] = LayerConfig(name: name, isTransparent: isTransparent, mappings: []);
     }
 
     // Parse layer_map: layer_map("layerName", "Key", "Action")
@@ -339,19 +321,14 @@ class RhaiGenerator {
     layerConfigs.addAll(layerDefs.values);
 
     // Parse combo: combo(["K1", "K2"], "Output")
-    final comboRegex = RegExp(
-      r'combo\s*\(\s*\[\s*([^\]]+)\s*\]\s*,\s*"([^"]+)"\s*\)',
-    );
+    final comboRegex = RegExp(r'combo\s*\(\s*\[\s*([^\]]+)\s*\]\s*,\s*"([^"]+)"\s*\)');
     for (final match in comboRegex.allMatches(script)) {
       final keysStr = match.group(1)!;
       final output = match.group(2)!;
 
       // Parse individual keys from the array
       final keyRegex = RegExp('"([^"]+)"');
-      final keys = keyRegex
-          .allMatches(keysStr)
-          .map((m) => m.group(1)!)
-          .toList();
+      final keys = keyRegex.allMatches(keysStr).map((m) => m.group(1)!).toList();
 
       if (keys.isNotEmpty) {
         comboConfigs.add(ComboConfig(keys: keys, output: output));
@@ -401,9 +378,7 @@ class RhaiGenerator {
     }
 
     // Parse set_permissive_hold(bool)
-    final permissiveHoldRegex = RegExp(
-      r'set_permissive_hold\s*\(\s*(true|false)\s*\)',
-    );
+    final permissiveHoldRegex = RegExp(r'set_permissive_hold\s*\(\s*(true|false)\s*\)');
     final permissiveHoldMatch = permissiveHoldRegex.firstMatch(script);
     if (permissiveHoldMatch != null) {
       permissiveHold = permissiveHoldMatch.group(1) == 'true';

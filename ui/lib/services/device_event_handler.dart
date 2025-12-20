@@ -99,7 +99,7 @@ class DeviceEventHandler {
             },
           );
         }
-      } catch (e, st) {
+      } on Exception catch (e, st) {
         _logger.error(
           'device_handler.refresh_error',
           message: 'Failed to refresh runtime config',

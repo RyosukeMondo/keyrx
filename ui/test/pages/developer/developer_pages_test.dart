@@ -41,11 +41,9 @@ Widget _buildTestRunner(MockTestService mockService) {
     errorTranslator: FakeErrorTranslator(),
     mappingRepository: MappingRepositoryUI(core.MappingRepository()),
     storagePathResolver: const StoragePathResolver(),
-    layoutService: LayoutServiceUI(core.LayoutService(bridge: FakeBridge())),
-    hardwareService: HardwareServiceUI(
-      core.HardwareService(bridge: FakeBridge()),
-    ),
-    keymapService: KeymapService(bridge: FakeBridge()),
+    layoutService: LayoutServiceUI(core.LayoutServiceFFI(bridge: FakeBridge())),
+    hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: FakeBridge())),
+    keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
@@ -83,9 +81,7 @@ void main() {
     testWidgets('discovers tests when path provided', (tester) async {
       when(() => mockTestService.discoverTests(any())).thenAnswer(
         (_) async => const TestDiscoveryServiceResult(
-          tests: [
-            TestCase(name: 'test_example', file: 'script.rhai', line: 10),
-          ],
+          tests: [TestCase(name: 'test_example', file: 'script.rhai', line: 10)],
         ),
       );
 
@@ -109,9 +105,7 @@ void main() {
 
     testWidgets('shows configuration card', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
-        ),
+        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
       );
 
       expect(find.text('Configuration'), findsOneWidget);
@@ -121,9 +115,7 @@ void main() {
 
     testWidgets('shows placeholder when no results', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
-        ),
+        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
       );
 
       expect(find.text('Run a benchmark to see results'), findsOneWidget);
@@ -144,9 +136,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
-        ),
+        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
       );
 
       await tester.tap(find.text('Run Benchmark'));
@@ -159,9 +149,7 @@ void main() {
       expect(find.text('Max'), findsOneWidget);
     });
 
-    testWidgets('shows warning banner when latency exceeds threshold', (
-      tester,
-    ) async {
+    testWidgets('shows warning banner when latency exceeds threshold', (tester) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
         (_) async => const BenchmarkServiceResult(
           data: BenchmarkData(
@@ -177,9 +165,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: BenchmarkPage(benchmarkService: mockBenchmarkService),
-        ),
+        MaterialApp(home: BenchmarkPage(benchmarkService: mockBenchmarkService)),
       );
 
       await tester.tap(find.text('Run Benchmark'));
@@ -211,9 +197,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),
-      );
+      await tester.pumpWidget(MaterialApp(home: DoctorPage(doctorService: mockDoctorService)));
 
       await tester.pumpAndSettle();
 
@@ -223,13 +207,9 @@ void main() {
 
     testWidgets('shows loading state while running', (tester) async {
       final completer = Completer<DoctorServiceResult>();
-      when(
-        () => mockDoctorService.runDiagnostics(),
-      ).thenAnswer((_) => completer.future);
+      when(() => mockDoctorService.runDiagnostics()).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(
-        MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),
-      );
+      await tester.pumpWidget(MaterialApp(home: DoctorPage(doctorService: mockDoctorService)));
 
       expect(find.text('Running diagnostics...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -263,9 +243,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),
-      );
+      await tester.pumpWidget(MaterialApp(home: DoctorPage(doctorService: mockDoctorService)));
 
       await tester.pumpAndSettle();
 
@@ -280,9 +258,7 @@ void main() {
         () => mockDoctorService.runDiagnostics(),
       ).thenAnswer((_) async => DoctorServiceResult.error('Connection failed'));
 
-      await tester.pumpWidget(
-        MaterialApp(home: DoctorPage(doctorService: mockDoctorService)),
-      );
+      await tester.pumpWidget(MaterialApp(home: DoctorPage(doctorService: mockDoctorService)));
 
       await tester.pumpAndSettle();
 

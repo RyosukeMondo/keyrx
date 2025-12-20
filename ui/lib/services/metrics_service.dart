@@ -214,7 +214,7 @@ class MetricsServiceImpl implements MetricsService {
       final snapshot = MetricsSnapshot.fromJson(json);
       _cachedSnapshot = snapshot;
       return snapshot;
-    } catch (e) {
+    } on Exception catch (e) {
       return null;
     }
   }

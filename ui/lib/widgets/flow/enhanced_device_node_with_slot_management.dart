@@ -9,8 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../dialogs/add_slot_dialog.dart';
-import '../../dialogs/delete_slot_dialog.dart';
-import '../../state/slot_actions.dart';
 import 'slot_priority_adjuster.dart';
 
 /// Enhanced device node with slot management capabilities.
@@ -43,9 +41,7 @@ class _EnhancedDeviceNodeWithSlotManagementState
     extends ConsumerState<EnhancedDeviceNodeWithSlotManagement> {
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isConnected
-        ? const Color(0xFF1E1E1E)
-        : const Color(0xFF1A1A1A);
+    final bgColor = widget.isConnected ? const Color(0xFF1E1E1E) : const Color(0xFF1A1A1A);
 
     return Container(
       width: 280,
@@ -54,13 +50,11 @@ class _EnhancedDeviceNodeWithSlotManagementState
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: widget.isConnected
-              ? const Color(0xFF333333)
-              : const Color(0xFF444444),
+          color: widget.isConnected ? const Color(0xFF333333) : const Color(0xFF444444),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 6,
             offset: const Offset(0, 4),
           ),
@@ -97,17 +91,14 @@ class _EnhancedDeviceNodeWithSlotManagementState
         height: 32,
         decoration: BoxDecoration(
           color: widget.isConnected
-              ? Colors.white.withOpacity(0.1)
-              : Colors.white.withOpacity(0.05),
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(4),
         ),
         alignment: Alignment.center,
         child: Text(
           '⌨️',
-          style: TextStyle(
-            fontSize: 18,
-            color: widget.isConnected ? null : Colors.grey,
-          ),
+          style: TextStyle(fontSize: 18, color: widget.isConnected ? null : Colors.grey),
         ),
       ),
       const SizedBox(width: 10),
@@ -138,11 +129,7 @@ class _EnhancedDeviceNodeWithSlotManagementState
     children: [
       const Text(
         'SLOTS (PRIORITY ORDER)',
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey),
       ),
       Text(
         '${widget.slots.length} slot${widget.slots.length != 1 ? 's' : ''}',
@@ -167,25 +154,18 @@ class _EnhancedDeviceNodeWithSlotManagementState
   Widget _buildFooter() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      const Text(
-        'VIRTUAL DEVICE',
-        style: TextStyle(fontSize: 10, color: Colors.grey),
-      ),
+      const Text('VIRTUAL DEVICE', style: TextStyle(fontSize: 10, color: Colors.grey)),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: widget.isConnected
-              ? const Color(0x332ECC71)
-              : const Color(0x337F8C8D),
+          color: widget.isConnected ? const Color(0x332ECC71) : const Color(0x337F8C8D),
         ),
         child: Text(
           widget.isConnected ? '● Connected' : '○ Offline',
           style: TextStyle(
             fontSize: 9,
-            color: widget.isConnected
-                ? const Color(0xFF2ECC71)
-                : const Color(0xFFBDC3C7),
+            color: widget.isConnected ? const Color(0xFF2ECC71) : const Color(0xFFBDC3C7),
           ),
         ),
       ),
@@ -195,10 +175,7 @@ class _EnhancedDeviceNodeWithSlotManagementState
   Future<void> _handleAddSlot() async {
     final existingSlots = widget.slots
         .map(
-          (s) => ProfileSlotSelection(
-            hardwareProfileId: s.hardwareProfileId,
-            keymapId: s.keymapId,
-          ),
+          (s) => ProfileSlotSelection(hardwareProfileId: s.hardwareProfileId, keymapId: s.keymapId),
         )
         .toList();
 
@@ -217,53 +194,6 @@ class _EnhancedDeviceNodeWithSlotManagementState
           duration: Duration(seconds: 2),
         ),
       );
-    }
-  }
-
-  Future<void> _handleDeleteSlot(ProfileSlot slot) async {
-    final slotDescription = '${slot.hardwareProfileId} → ${slot.keymapId}';
-    final confirmed = await showDeleteSlotConfirmation(
-      context,
-      slotDescription: slotDescription,
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    try {
-      final slotActions = ref.read(slotActionsProvider);
-      final result = await slotActions.deleteSlot(
-        device: widget.device,
-        slotId: slot.id,
-      );
-
-      if (!mounted) return;
-
-      if (result.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.errorMessage ?? 'Failed to delete slot'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
-        widget.onSlotDeleted?.call();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Slot deleted successfully'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting slot: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 }

@@ -5,6 +5,7 @@
 library;
 
 export 'action_binding.dart';
+export 'bridge_models.dart';
 export 'config_ids.dart';
 // Revolutionary mapping models
 export 'device_config.dart';
@@ -14,11 +15,11 @@ export 'flow/flow_graph.dart';
 // Generated FFI models
 export 'generated_models.dart';
 export 'hardware_profile.dart';
-export 'migration_report.dart';
 // Layout models
 export 'keyboard_layout.dart';
 export 'keymap.dart';
 export 'layout_type.dart';
+export 'migration_report.dart';
 export 'profile.dart';
 export 'runtime_config.dart';
 // Validation models

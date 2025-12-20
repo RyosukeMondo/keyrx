@@ -16,8 +16,6 @@ class MockKeyrxBridge implements KeyrxBridge {
     );
   }
 
-  MockKeyrxBridge._();
-
   @override
   dynamic get bindings => throw UnsupportedError('FFI not available on web');
 
@@ -29,8 +27,6 @@ class MockKeyrxBridge implements KeyrxBridge {
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
-    throw UnsupportedError(
-      'FFI method ${invocation.memberName} not available on web platform.',
-    );
+    throw UnsupportedError('FFI method ${invocation.memberName} not available on web platform.');
   }
 }

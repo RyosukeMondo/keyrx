@@ -7,10 +7,12 @@ library;
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/virtual_layout.dart';
+import 'package:core_logic/models/virtual_layout_type.dart';
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/services/keymap_service_web.dart';
 import 'package:core_logic/services/layout_service_web.dart';
 import 'package:core_logic/web/api_client.dart';
+import 'package:core_logic/web/websocket_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
@@ -35,9 +37,9 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        // Inject mock HTTP client
-        final service = _TestLayoutServiceWeb(apiClient, mockClient);
+        final service = LayoutServiceWeb(client: apiClient);
 
         final result = await service.listLayouts();
 
@@ -70,13 +72,14 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestLayoutServiceWeb(apiClient, mockClient);
+        final service = LayoutServiceWeb(client: apiClient);
 
         final layout = VirtualLayout(
           id: 'layout1',
           name: 'Test',
-          layoutType: LayoutType.matrix,
+          layoutType: VirtualLayoutType.matrix,
           keys: [],
         );
 
@@ -101,12 +104,13 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestLayoutServiceWeb(apiClient, mockClient);
+        final service = LayoutServiceWeb(client: apiClient);
 
         final result = await service.listLayouts();
 
-        expect(result.isError, isTrue);
+        expect(result.hasError, isTrue);
         expect(result.errorMessage, 'Layout not found');
       });
     });
@@ -119,7 +123,7 @@ void main() {
 
           // Backend returns: {"profiles": [...]}
           return http.Response(
-            '{"profiles": [{"id": "profile1", "name": "Test Profile", "layout_type": "matrix", "rows": 3, "columns": 5}]}',
+            '{"profiles": [{"id": "profile1", "virtual_layout_id": "layout1", "name": "Test Profile"}]}',
             200,
             headers: {'content-type': 'application/json'},
           );
@@ -129,8 +133,9 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestHardwareServiceWeb(apiClient, mockClient);
+        final service = HardwareServiceWeb(client: apiClient);
 
         final result = await service.listProfiles();
 
@@ -144,7 +149,7 @@ void main() {
         final mockClient = MockClient((request) async {
           // Backend returns: {"profile": {...}}
           return http.Response(
-            '{"profile": {"id": "profile1", "name": "Saved Profile", "layout_type": "matrix", "rows": 3, "columns": 5}}',
+            '{"profile": {"id": "profile1", "virtual_layout_id": "layout1", "name": "Saved Profile"}}',
             200,
             headers: {'content-type': 'application/json'},
           );
@@ -154,16 +159,11 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestHardwareServiceWeb(apiClient, mockClient);
+        final service = HardwareServiceWeb(client: apiClient);
 
-        final profile = HardwareProfile(
-          id: 'profile1',
-          name: 'Test',
-          layoutType: LayoutType.matrix,
-          rows: 3,
-          columns: 5,
-        );
+        final profile = HardwareProfile(id: 'profile1', virtualLayoutId: 'layout1', name: 'Test');
 
         final result = await service.saveProfile(profile);
 
@@ -190,8 +190,9 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestKeymapServiceWeb(apiClient, mockClient);
+        final service = KeymapServiceWeb(client: apiClient);
 
         final result = await service.listKeymaps();
 
@@ -215,8 +216,9 @@ void main() {
         final apiClient = WebApiClient(
           baseUrl: 'http://test',
           wsClient: wsClient,
+          httpClient: mockClient,
         );
-        final service = _TestKeymapServiceWeb(apiClient, mockClient);
+        final service = KeymapServiceWeb(client: apiClient);
 
         final keymap = Keymap(
           id: 'keymap1',
@@ -235,10 +237,7 @@ void main() {
 
     group('ApiResponse', () {
       test('parses success response with nested data', () {
-        final response = http.Response(
-          '{"layouts": [{"id": "1"}]}',
-          200,
-        );
+        final response = http.Response('{"layouts": [{"id": "1"}]}', 200);
 
         final apiResponse = ApiResponse.fromHttpResponse(response);
 
@@ -248,10 +247,7 @@ void main() {
       });
 
       test('parses error response correctly', () {
-        final response = http.Response(
-          '{"error": "Something went wrong"}',
-          400,
-        );
+        final response = http.Response('{"error": "Something went wrong"}', 400);
 
         final apiResponse = ApiResponse.fromHttpResponse(response);
 
@@ -260,10 +256,7 @@ void main() {
       });
 
       test('handles malformed JSON gracefully', () {
-        final response = http.Response(
-          'not valid json',
-          200,
-        );
+        final response = http.Response('not valid json', 200);
 
         final apiResponse = ApiResponse.fromHttpResponse(response);
 
@@ -274,74 +267,9 @@ void main() {
   });
 }
 
-// Test-specific implementations that allow injecting mock HTTP client
-class _TestLayoutServiceWeb extends LayoutServiceWeb {
-  _TestLayoutServiceWeb(WebApiClient client, this._mockClient)
-      : super(client: client);
+class _MockWebSocketClient extends WebSocketClient {
+  _MockWebSocketClient() : super('ws://test');
 
-  final http.Client _mockClient;
-
-  @override
-  Future<dynamic> get(String path) async {
-    final response = await _mockClient.get(Uri.parse('http://test$path'));
-    return ApiResponse.fromHttpResponse(response);
-  }
-
-  @override
-  Future<dynamic> post(String path, {required Map<String, dynamic> body}) async {
-    final response = await _mockClient.post(
-      Uri.parse('http://test$path'),
-      body: body,
-    );
-    return ApiResponse.fromHttpResponse(response);
-  }
-}
-
-class _TestHardwareServiceWeb extends HardwareServiceWeb {
-  _TestHardwareServiceWeb(WebApiClient client, this._mockClient)
-      : super(client: client);
-
-  final http.Client _mockClient;
-
-  @override
-  Future<dynamic> get(String path) async {
-    final response = await _mockClient.get(Uri.parse('http://test$path'));
-    return ApiResponse.fromHttpResponse(response);
-  }
-
-  @override
-  Future<dynamic> post(String path, {required Map<String, dynamic> body}) async {
-    final response = await _mockClient.post(
-      Uri.parse('http://test$path'),
-      body: body,
-    );
-    return ApiResponse.fromHttpResponse(response);
-  }
-}
-
-class _TestKeymapServiceWeb extends KeymapServiceWeb {
-  _TestKeymapServiceWeb(WebApiClient client, this._mockClient)
-      : super(client: client);
-
-  final http.Client _mockClient;
-
-  @override
-  Future<dynamic> get(String path) async {
-    final response = await _mockClient.get(Uri.parse('http://test$path'));
-    return ApiResponse.fromHttpResponse(response);
-  }
-
-  @override
-  Future<dynamic> post(String path, {required Map<String, dynamic> body}) async {
-    final response = await _mockClient.post(
-      Uri.parse('http://test$path'),
-      body: body,
-    );
-    return ApiResponse.fromHttpResponse(response);
-  }
-}
-
-class _MockWebSocketClient implements WebSocketClient {
   @override
   Stream<T> subscribe<T>(String event, T Function(dynamic p1) parser) {
     return Stream.empty();

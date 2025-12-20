@@ -29,8 +29,7 @@ import '../widgets/flow/error_view.dart';
 import '../widgets/flow/flow_canvas_internals.dart';
 import '../widgets/flow/focus_indicator.dart';
 import '../widgets/flow/keyboard_navigable_canvas.dart';
-import '../widgets/flow/loading_skeleton.dart'
-    hide FlowEmptyState, DisconnectedDevicesState;
+import '../widgets/flow/loading_skeleton.dart' hide FlowEmptyState, DisconnectedDevicesState;
 import '../widgets/flow/optimized_flow_canvas.dart';
 import '../widgets/flow/save_indicator.dart';
 import '../widgets/flow/validation_overlay.dart';
@@ -42,8 +41,7 @@ class FlowEditorPage extends ConsumerStatefulWidget {
   ConsumerState<FlowEditorPage> createState() => _FlowEditorPageState();
 }
 
-class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
-    with ViewportAware {
+class _FlowEditorPageState extends ConsumerState<FlowEditorPage> with ViewportAware {
   static const _canvasWidth = 8000.0;
   static const _canvasHeight = 6000.0;
   static const _edgeStyle = EdgeStyle(palette: defaultEdgePalette);
@@ -67,12 +65,9 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   @override
   void initState() {
     super.initState();
-    _transformationController = TransformationController();
-
-    // Initial zoom will be calculated by _fitNodesToViewport() after first build
-    _transformationController.value = Matrix4.identity();
-
-    _transformationController.addListener(_onTransformChanged);
+    _transformationController = TransformationController()
+      ..value = Matrix4.identity()
+      ..addListener(_onTransformChanged);
 
     // Listen to device events for real-time updates
     ref.read(deviceStreamNotifierProvider);
@@ -95,11 +90,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
       ref
           .read(analyticsTrackerProvider.notifier)
-          .trackPageView(
-            deviceCount: deviceCount,
-            slotCount: slotCount,
-            nodeCount: nodeCount,
-          );
+          .trackPageView(deviceCount: deviceCount, slotCount: slotCount, nodeCount: nodeCount);
     });
   }
 
@@ -154,14 +145,15 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
     // Apply transformation
     _transformationController.value = Matrix4.identity()
-      ..translate(-offsetX, -offsetY)
-      ..scale(scale);
+      ..translateByDouble(-offsetX, -offsetY, 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1);
   }
 
   @override
   void dispose() {
-    _transformationController.removeListener(_onTransformChanged);
-    _transformationController.dispose();
+    _transformationController
+      ..removeListener(_onTransformChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -171,9 +163,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     final positionsAsync = ref.watch(nodePositionsProvider);
     final deviceStatesAsync = ref.watch(deviceStatesProvider);
 
-    if (graphAsync.isLoading ||
-        positionsAsync.isLoading ||
-        deviceStatesAsync.isLoading) {
+    if (graphAsync.isLoading || positionsAsync.isLoading || deviceStatesAsync.isLoading) {
       return const FlowLoadingSkeleton(key: Key('flow-loading-skeleton'));
     }
 
@@ -206,13 +196,11 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
     final canvasWidth = view.nodes.fold<double>(
       _canvasWidth,
-      (width, node) =>
-          math.max(width, node.position.dx + node.size.width + 200),
+      (width, node) => math.max(width, node.position.dx + node.size.width + 200),
     );
     final canvasHeight = view.nodes.fold<double>(
       _canvasHeight,
-      (height, node) =>
-          math.max(height, node.position.dy + node.size.height + 200),
+      (height, node) => math.max(height, node.position.dy + node.size.height + 200),
     );
 
     // Auto-fit zoom to show all nodes on first load only
@@ -247,25 +235,16 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
                     children: [
                       // Grid layer with RepaintBoundary
                       Positioned.fill(
-                        child: RepaintBoundary(
-                          child: CustomPaint(painter: GridPainter()),
-                        ),
+                        child: RepaintBoundary(child: CustomPaint(painter: GridPainter())),
                       ),
                       // Optimized edge layer with custom RenderObject
                       Positioned.fill(
                         child: RepaintBoundary(
-                          child: OptimizedEdgeLayer(
-                            edges: view.edges,
-                            style: _edgeStyle,
-                          ),
+                          child: OptimizedEdgeLayer(edges: view.edges, style: _edgeStyle),
                         ),
                       ),
                       // Virtualized nodes - only render visible ones
-                      ..._buildVirtualizedNodes(
-                        view.nodes,
-                        canvasWidth,
-                        canvasHeight,
-                      ),
+                      ..._buildVirtualizedNodes(view.nodes, canvasWidth, canvasHeight),
                     ],
                   ),
                 ),
@@ -280,9 +259,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   }
 
   void _retryLoad() {
-    ref.invalidate(flowGraphProvider);
-    ref.invalidate(runtimeConfigProvider);
-    ref.invalidate(nodePositionsProvider);
+    ref
+      ..invalidate(flowGraphProvider)
+      ..invalidate(runtimeConfigProvider)
+      ..invalidate(nodePositionsProvider);
   }
 
   void _handleNodeDetailsRequest(String nodeId) {
@@ -304,12 +284,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     // Initialize viewport if needed
     if (_currentViewport == Rect.zero) {
       final screenSize = MediaQuery.of(context).size;
-      _currentViewport = Rect.fromLTWH(
-        0,
-        0,
-        screenSize.width,
-        screenSize.height,
-      );
+      _currentViewport = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }
 
     // Filter visible nodes
@@ -332,8 +307,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
             builder: (context, ref, _) {
               // Watch drag state to update position dynamically
               final dragState = ref.watch(dragControllerProvider);
-              final isDragging =
-                  dragState?.nodeId == node.id && dragState?.isDragging == true;
+              final isDragging = dragState?.nodeId == node.id && dragState?.isDragging == true;
               final currentPosition = isDragging
                   ? (dragState?.currentPosition ?? node.position)
                   : node.position;
@@ -437,19 +411,13 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     return positions;
   }
 
-  Widget _buildNodeWidget(
-    FlowNode node,
-    FlowGraph graph,
-    List<DeviceState> deviceStates,
-  ) {
+  Widget _buildNodeWidget(FlowNode node, FlowGraph graph, List<DeviceState> deviceStates) {
     // Get validation errors for this node
     final validationErrors = _validator.getNodeErrors(graph, node.nodeId);
 
     final nodeWidget = node.map(
       device: (value) {
-        final edges = graph.edges
-            .where((edge) => edge.from == value.id)
-            .toList();
+        final edges = graph.edges.where((edge) => edge.from == value.id).toList();
         final activeSlotCount = edges.where((e) => e.active).length;
         final totalSlotCount = edges.length;
         final hasError = edges.any((e) => e.status == EdgeStatus.invalid);
@@ -463,8 +431,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
 
             // If device instance has no serial or empty serial, match any serial
             final matchesSerial =
-                (value.deviceId.serial == null ||
-                    value.deviceId.serial!.isEmpty) ||
+                (value.deviceId.serial == null || value.deviceId.serial!.isEmpty) ||
                 state.identity.serialNumber == value.deviceId.serial;
 
             return matchesVidPid && matchesSerial;
@@ -494,17 +461,14 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
       hardwareProfile: (value) {
         final hasInvalidEdges = graph.edges.any(
           (edge) =>
-              (edge.from == value.id || edge.to == value.id) &&
-              edge.status == EdgeStatus.invalid,
+              (edge.from == value.id || edge.to == value.id) && edge.status == EdgeStatus.invalid,
         );
 
         return EnhancedLayoutNode(
           node: value,
           layoutType: 'Profile', // Can be enhanced later with actual type
           isValid: !hasInvalidEdges,
-          errorMessage: hasInvalidEdges
-              ? 'This profile has invalid connections'
-              : null,
+          errorMessage: hasInvalidEdges ? 'This profile has invalid connections' : null,
         );
       },
       keymap: (value) {
@@ -547,14 +511,10 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
   void _showValidationErrors(String nodeId, List<ValidationError> errors) {
     showDialog<void>(
       context: context,
-      builder: (context) => ValidationErrorsDialog(
-        title: 'Validation Errors for $nodeId',
-        errors: errors,
-      ),
+      builder: (context) =>
+          ValidationErrorsDialog(title: 'Validation Errors for $nodeId', errors: errors),
     );
   }
-
-  String _formatId(int id) => '0x${id.toRadixString(16).padLeft(4, '0')}';
 
   Offset _edgeHandle(CanvasNode node, {required bool isSource}) {
     final dx = isSource ? node.size.width : 0.0;

@@ -15,20 +15,20 @@ class WebApiClient {
   WebApiClient({
     required String baseUrl,
     required WebSocketClient wsClient,
-  })  : _baseUrl = baseUrl,
-        _wsClient = wsClient;
+    http.Client? httpClient,
+  }) : _baseUrl = baseUrl,
+       _wsClient = wsClient,
+       _httpClient = httpClient ?? http.Client();
 
   final String _baseUrl;
   final WebSocketClient _wsClient;
+  final http.Client _httpClient;
 
   /// Send a GET request to the specified path.
   Future<ApiResponse> get(String path) async {
     try {
       final url = Uri.parse('$_baseUrl$path');
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await _httpClient.get(url, headers: {'Content-Type': 'application/json'});
       return ApiResponse.fromHttpResponse(response);
     } catch (e) {
       return ApiResponse(data: null, error: 'HTTP GET failed: $e');
@@ -36,13 +36,10 @@ class WebApiClient {
   }
 
   /// Send a POST request with a JSON body.
-  Future<ApiResponse> post(
-    String path, {
-    required Map<String, dynamic> body,
-  }) async {
+  Future<ApiResponse> post(String path, {required Map<String, dynamic> body}) async {
     try {
       final url = Uri.parse('$_baseUrl$path');
-      final response = await http.post(
+      final response = await _httpClient.post(
         url,
         body: jsonEncode(body),
         headers: {'Content-Type': 'application/json'},
@@ -54,13 +51,10 @@ class WebApiClient {
   }
 
   /// Send a PUT request with a JSON body.
-  Future<ApiResponse> put(
-    String path, {
-    required Map<String, dynamic> body,
-  }) async {
+  Future<ApiResponse> put(String path, {required Map<String, dynamic> body}) async {
     try {
       final url = Uri.parse('$_baseUrl$path');
-      final response = await http.put(
+      final response = await _httpClient.put(
         url,
         body: jsonEncode(body),
         headers: {'Content-Type': 'application/json'},
@@ -75,10 +69,7 @@ class WebApiClient {
   Future<ApiResponse> delete(String path) async {
     try {
       final url = Uri.parse('$_baseUrl$path');
-      final response = await http.delete(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await _httpClient.delete(url, headers: {'Content-Type': 'application/json'});
       return ApiResponse.fromHttpResponse(response);
     } catch (e) {
       return ApiResponse(data: null, error: 'HTTP DELETE failed: $e');
@@ -96,15 +87,13 @@ class WebApiClient {
   /// Dispose resources.
   void dispose() {
     _wsClient.dispose();
+    _httpClient.close();
   }
 }
 
 /// Response wrapper for HTTP API calls.
 class ApiResponse {
-  const ApiResponse({
-    required this.data,
-    this.error,
-  });
+  const ApiResponse({required this.data, this.error});
 
   /// Create an ApiResponse from an http.Response.
   factory ApiResponse.fromHttpResponse(http.Response response) {
@@ -119,16 +108,10 @@ class ApiResponse {
       }
 
       // Error: HTTP 4xx/5xx
-      return ApiResponse(
-        data: null,
-        error: json['error'] as String? ?? 'Unknown server error',
-      );
+      return ApiResponse(data: null, error: json['error'] as String? ?? 'Unknown server error');
     } catch (e) {
       // JSON parse error
-      return ApiResponse(
-        data: null,
-        error: 'Failed to parse response: $e',
-      );
+      return ApiResponse(data: null, error: 'Failed to parse response: $e');
     }
   }
 

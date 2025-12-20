@@ -109,8 +109,8 @@ class _MappingEditorState extends State<MappingEditor> {
 
     final layers = [..._workingKeymap.layers];
     final layer = layers[_selectedLayerIndex];
-    final updatedBindings = Map<String, ActionBinding>.from(layer.bindings);
-    updatedBindings.remove(_selectedVirtualKeyId!);
+    final updatedBindings = Map<String, ActionBinding>.from(layer.bindings)
+      ..remove(_selectedVirtualKeyId!);
     layers[_selectedLayerIndex] = layer.copyWith(bindings: updatedBindings);
 
     setState(() {
@@ -188,7 +188,7 @@ class _MappingEditorState extends State<MappingEditor> {
           backgroundColor: Colors.green,
         ),
       );
-    } catch (e) {
+    } on Exception catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
 

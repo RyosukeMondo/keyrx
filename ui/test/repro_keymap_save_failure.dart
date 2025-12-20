@@ -58,7 +58,7 @@ void main() {
       try {
         HardwareProfile.fromJson(json);
         fail('Should have thrown TypeError');
-      } catch (e) {
+      } on Exception catch (e) {
         expect(e.toString(), contains('subtype'));
       }
     });

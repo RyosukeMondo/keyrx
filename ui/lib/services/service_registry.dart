@@ -1,21 +1,12 @@
 import 'dart:async';
 
 import 'package:core_logic/core_logic.dart';
-import 'package:core_logic/ffi/bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
-import 'package:core_logic/models/daemon_protocol.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
-import 'package:core_logic/services/hardware_service_ffi.dart'
-    if (dart.library.html) 'package:core_logic/services/hardware_service_ffi_stub.dart';
-import 'package:core_logic/services/keymap_service_ffi.dart'
-    if (dart.library.html) 'package:core_logic/services/keymap_service_ffi_stub.dart';
-import 'package:core_logic/services/layout_service_ffi.dart'
-    if (dart.library.html) 'package:core_logic/services/layout_service_ffi_stub.dart';
-import 'package:core_logic/services/layout_service_web.dart';
+import 'package:core_logic/services/device_registry_service_web.dart' as core_web;
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/services/keymap_service_web.dart';
-import 'package:core_logic/services/device_registry_service_web.dart' as core_web;
+import 'package:core_logic/services/layout_service_web.dart';
 import 'package:core_logic/services/runtime_service_web.dart';
 import 'package:core_logic/services/script_file_service_web.dart';
 import 'package:core_logic/web/api_client.dart';
@@ -38,6 +29,26 @@ import 'profile_autosave_service.dart';
 
 /// Simple service registry to construct and pass dependencies without globals.
 class ServiceRegistry {
+  ServiceRegistry({
+    required this.errorTranslator,
+    required this.engineService,
+    required this.mappingRepository,
+    required this.deviceService,
+    required this.deviceProfileService,
+    required this.deviceRegistryService,
+    required this.profileRegistryService,
+    required this.scriptFileService,
+    required this.testService,
+    required this.bridge,
+    required this.apiDocsService,
+    required this.storagePathResolver,
+    required this.profileAutosaveService,
+    required this.layoutService,
+    required this.hardwareService,
+    required this.keymapService,
+    required this.runtimeService,
+    required this.daemonManager,
+  });
   /// Create a registry with explicit (often mocked) implementations.
   factory ServiceRegistry.withOverrides({
     required ErrorTranslator errorTranslator,
@@ -87,26 +98,6 @@ class ServiceRegistry {
       daemonManager: daemonManager,
     );
   }
-  ServiceRegistry({
-    required this.errorTranslator,
-    required this.engineService,
-    required this.mappingRepository,
-    required this.deviceService,
-    required this.deviceProfileService,
-    required this.deviceRegistryService,
-    required this.profileRegistryService,
-    required this.scriptFileService,
-    required this.testService,
-    required this.bridge,
-    required this.apiDocsService,
-    required this.storagePathResolver,
-    required this.profileAutosaveService,
-    required this.layoutService,
-    required this.hardwareService,
-    required this.keymapService,
-    required this.runtimeService,
-    required this.daemonManager,
-  });
 
   /// Build a registry with real implementations, allowing overrides for tests.
   factory ServiceRegistry.real({
@@ -522,57 +513,6 @@ class _WebStubDeviceProfileService implements DeviceProfileService {
       throw UnsupportedError('DeviceProfileService not available on web platform');
 }
 
-class _WebStubDeviceRegistryService implements ui.DeviceRegistryService {
-  final _devicesController = StreamController<List<DeviceState>>.broadcast();
-
-  @override
-  Stream<List<DeviceState>> get devicesStream => _devicesController.stream;
-
-  @override
-  Future<List<DeviceState>> getDevices() async => [];
-
-  @override
-  Future<void> addVirtualDevice(DeviceIdentity identity) async {}
-
-  @override
-  Future<void> removeVirtualDevice(String key) async {}
-
-  @override
-  Future<ui.DeviceRegistryOperationResult> toggleDevice(
-    String deviceKey, {
-    required bool enabled,
-  }) async => const ui.DeviceRegistryOperationResult.error(
-    'Device management not available on web platform',
-  );
-
-  @override
-  Future<ui.DeviceRegistryOperationResult> toggleRemap(
-    String deviceKey, {
-    required bool enabled,
-  }) async =>
-      const ui.DeviceRegistryOperationResult.error('Device remap not available on web platform');
-
-  @override
-  Future<ui.DeviceRegistryOperationResult> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) async => const ui.DeviceRegistryOperationResult.error(
-    'Profile assignment not available on web platform',
-  );
-
-  @override
-  Future<ui.DeviceRegistryOperationResult> setUserLabel(String deviceKey, String? label) async =>
-      const ui.DeviceRegistryOperationResult.error('Label setting not available on web platform');
-
-  @override
-  Future<List<DeviceState>> refresh() async => [];
-
-  @override
-  Future<void> dispose() async {
-    await _devicesController.close();
-  }
-}
-
 class _WebStubProfileRegistryService implements ProfileRegistryService {
   @override
   Future<void> dispose() async {}
@@ -614,115 +554,6 @@ class _WebStubProfileAutosaveService implements ProfileAutosaveService {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnsupportedError('ProfileAutosaveService not available on web platform');
-}
-
-class _WebStubRuntimeService implements RuntimeService {
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('RuntimeService not available on web platform');
-}
-
-class _WebStubDaemonService implements DaemonService {
-  _WebStubDaemonService() {
-    _eventController = StreamController<DaemonEvent>.broadcast();
-    _notificationController = StreamController<JsonRpcNotification>.broadcast();
-    _stateController = StreamController<DaemonConnectionState>.broadcast();
-    _statusController = StreamController<EngineStatus>.broadcast();
-  }
-
-  late final StreamController<DaemonEvent> _eventController;
-  late final StreamController<JsonRpcNotification> _notificationController;
-  late final StreamController<DaemonConnectionState> _stateController;
-  late final StreamController<EngineStatus> _statusController;
-
-  @override
-  Stream<DaemonEvent> get events => _eventController.stream;
-
-  @override
-  Stream<JsonRpcNotification> get notificationStream => _notificationController.stream;
-
-  @override
-  Stream<DaemonConnectionState> get connectionState => _stateController.stream;
-
-  @override
-  Stream<EngineStatus> get statusStream => _statusController.stream;
-
-  @override
-  EngineStatus get currentStatus => const EngineStatus(status: 'unavailable');
-
-  @override
-  DaemonConnectionState get state => DaemonConnectionState.disconnected;
-
-  @override
-  bool get isConnected => false;
-
-  @override
-  Future<void> connect() async {
-    // No-op on web
-  }
-
-  @override
-  Future<void> disconnect() async {
-    // No-op on web
-  }
-
-  @override
-  Future<void> subscribeEvents({
-    List<String> eventTypes = const ['input', 'output', 'state_change'],
-  }) async {
-    // No-op on web - events come via WebSocket
-  }
-
-  @override
-  Future<void> unsubscribeEvents() async {
-    // No-op on web
-  }
-
-  @override
-  Future<List<DaemonDeviceInfo>> startEngine({
-    String? configPath,
-    String? scriptPath,
-    bool useAllDevices = true,
-  }) async {
-    // No-op on web - engine controlled via backend API
-    return [];
-  }
-
-  @override
-  Future<void> stopEngine() async {
-    // No-op on web
-  }
-
-  @override
-  Future<EngineStatus> getStatus() async {
-    // Return unavailable status on web
-    return const EngineStatus(status: 'unavailable');
-  }
-
-  @override
-  Future<void> reloadConfig({String? configPath, String? scriptPath}) async {
-    // No-op on web
-  }
-
-  @override
-  Future<dynamic> sendRequest(String method, [Map<String, dynamic>? params]) async {
-    // No-op on web - API calls go through WebApiClient
-    return null;
-  }
-
-  @override
-  Future<void> dispose() async {
-    await _eventController.close();
-    await _notificationController.close();
-    await _stateController.close();
-    await _statusController.close();
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {
-    // Gracefully handle any other methods
-    return null;
-  }
 }
 
 class _WebStubDaemonManager implements DaemonManager {

@@ -4,15 +4,15 @@
 /// and feature parity between web and desktop platforms.
 library;
 
+import 'package:core_logic/models/hardware_profile.dart';
+import 'package:core_logic/models/keymap.dart';
+import 'package:core_logic/models/virtual_layout.dart';
+import 'package:core_logic/services/config_result.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, ChangeNotifier, debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:keyrx_ui/main.dart' as app;
 import 'package:keyrx_ui/services/service_registry.dart';
-import 'package:core_logic/models/virtual_layout.dart';
-import 'package:core_logic/models/hardware_profile.dart';
-import 'package:core_logic/models/keymap.dart';
-import 'package:core_logic/services/config_result.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ void main() {
       );
 
       // Give services time to initialize
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     });
 
     tearDownAll(() async {
@@ -71,7 +71,7 @@ void main() {
         } else {
           debugPrint('Layout service returned error: ${result.errorMessage}');
         }
-      } catch (e) {
+      } on Exception catch (e) {
         // On web, if backend is not running, this might fail
         // We still want to verify the service exists and can be called
         if (isWeb) {
@@ -96,7 +96,7 @@ void main() {
         } else {
           debugPrint('Hardware service returned error: ${result.errorMessage}');
         }
-      } catch (e) {
+      } on Exception catch (e) {
         // On web, if backend is not running, this might fail
         if (isWeb) {
           debugPrint('Hardware service call failed (backend may not be running): $e');
@@ -120,7 +120,7 @@ void main() {
         } else {
           debugPrint('Keymap service returned error: ${result.errorMessage}');
         }
-      } catch (e) {
+      } on Exception catch (e) {
         // On web, if backend is not running, this might fail
         if (isWeb) {
           debugPrint('Keymap service call failed (backend may not be running): $e');
@@ -154,7 +154,7 @@ void main() {
           await registry.layoutService.listLayouts();
 
           debugPrint('Successfully connected to backend');
-        } catch (e) {
+        } on Exception catch (e) {
           debugPrint('Backend connection attempt completed (may fail if backend not running): $e');
           // Test passes even if backend is not running - we just verify the attempt works
         }
@@ -175,8 +175,8 @@ void main() {
         try {
           await registry.layoutService.listLayouts();
           // Give time for any change notifications
-          await Future.delayed(const Duration(milliseconds: 100));
-        } catch (e) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        } on Exception catch (e) {
           debugPrint('Layout service call failed: $e');
         }
 
@@ -195,8 +195,8 @@ void main() {
         try {
           await registry.hardwareService.listProfiles();
           // Give time for any change notifications
-          await Future.delayed(const Duration(milliseconds: 100));
-        } catch (e) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        } on Exception catch (e) {
           debugPrint('Hardware service call failed: $e');
         }
 

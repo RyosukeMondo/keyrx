@@ -59,10 +59,7 @@ class AutoSaveService {
        _analytics = analytics {
     _logger.info(
       'auto_save.init',
-      context: {
-        'debounce_ms': _debounceDelay.inMilliseconds,
-        'max_retries': _maxRetries,
-      },
+      context: {'debounce_ms': _debounceDelay.inMilliseconds, 'max_retries': _maxRetries},
     );
   }
 
@@ -118,13 +115,10 @@ class AutoSaveService {
 
     _saving = true;
     _updateState(SaveState.saving());
-    _logger.info(
-      'auto_save.start',
-      context: {'operation': operation.runtimeType.toString()},
-    );
+    _logger.info('auto_save.start', context: {'operation': operation.runtimeType.toString()});
 
     var attempt = 0;
-    ConfigOperationResult? result;
+    ConfigOperationResult<dynamic>? result;
 
     while (attempt < _maxRetries) {
       try {
@@ -161,9 +155,9 @@ class AutoSaveService {
             message: result.errorMessage,
             context: {'attempt': attempt, 'delay_ms': delayMs},
           );
-          await Future.delayed(Duration(milliseconds: delayMs));
+          await Future<void>.delayed(Duration(milliseconds: delayMs));
         }
-      } catch (e, st) {
+      } on Exception catch (e, st) {
         _logger.error(
           'auto_save.exception',
           message: '$e',
@@ -174,18 +168,14 @@ class AutoSaveService {
         attempt++;
         if (attempt < _maxRetries) {
           final delayMs = _calculateBackoffDelay(attempt);
-          await Future.delayed(Duration(milliseconds: delayMs));
+          await Future<void>.delayed(Duration(milliseconds: delayMs));
         }
       }
     }
 
     // All retries failed
     final errorMessage = result?.errorMessage ?? 'Save failed after retries';
-    _logger.error(
-      'auto_save.failed',
-      message: errorMessage,
-      context: {'attempts': _maxRetries},
-    );
+    _logger.error('auto_save.failed', message: errorMessage, context: {'attempts': _maxRetries});
 
     // Track analytics
     _analytics?.trackAutoSave(
@@ -199,23 +189,16 @@ class AutoSaveService {
     _saving = false;
   }
 
-  Future<ConfigOperationResult> _performOperation(
-    SaveOperation operation,
-  ) async => switch (operation) {
-    final AddSlotOperation op => await _repository.addSlot(
-      op.device,
-      op.slot,
-      priorityOverride: op.priorityOverride,
-    ),
-    final UpdateSlotOperation op => await _repository.updateSlot(
-      op.device,
-      op.slot,
-    ),
-    final RemoveSlotOperation op => await _repository.removeSlot(
-      op.device,
-      op.slotId,
-    ),
-  };
+  Future<ConfigOperationResult<dynamic>> _performOperation(SaveOperation operation) async =>
+      switch (operation) {
+        final AddSlotOperation op => await _repository.addSlot(
+          op.device,
+          op.slot,
+          priorityOverride: op.priorityOverride,
+        ),
+        final UpdateSlotOperation op => await _repository.updateSlot(op.device, op.slot),
+        final RemoveSlotOperation op => await _repository.removeSlot(op.device, op.slotId),
+      };
 
   /// Calculate exponential backoff delay in milliseconds.
   int _calculateBackoffDelay(int attempt) {
@@ -273,14 +256,11 @@ class SaveState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SaveState &&
-          status == other.status &&
-          errorMessage == other.errorMessage;
+      other is SaveState && status == other.status && errorMessage == other.errorMessage;
 
   @override
   int get hashCode => Object.hash(status, errorMessage);
 
   @override
-  String toString() =>
-      'SaveState($status${errorMessage != null ? ', $errorMessage' : ''})';
+  String toString() => 'SaveState($status${errorMessage != null ? ', $errorMessage' : ''})';
 }

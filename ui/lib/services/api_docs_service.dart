@@ -405,7 +405,7 @@ class ApiDocsServiceImpl implements ApiDocsService {
       }
 
       _isLoaded = true;
-    } catch (e) {
+    } on Exception catch (e) {
       throw Exception('Failed to parse API docs JSON: $e');
     }
   }

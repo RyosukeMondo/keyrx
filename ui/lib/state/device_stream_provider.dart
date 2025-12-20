@@ -109,7 +109,7 @@ class DeviceStreamNotifier extends _$DeviceStreamNotifier {
       );
 
       _eventController.add(event);
-    } catch (e, st) {
+    } on Exception catch (e, st) {
       _logger.error(
         'device_stream.parse_error',
         message: 'Failed to parse event payload',

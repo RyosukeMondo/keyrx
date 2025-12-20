@@ -43,11 +43,7 @@ class FocusIndicator extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: indicatorColor, width: 3),
         boxShadow: [
-          BoxShadow(
-            color: indicatorColor.withOpacity(0.3),
-            blurRadius: 8,
-            spreadRadius: 1,
-          ),
+          BoxShadow(color: indicatorColor.withValues(alpha: 0.3), blurRadius: 8, spreadRadius: 1),
         ],
       ),
       child: child,

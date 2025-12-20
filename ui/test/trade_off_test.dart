@@ -83,7 +83,7 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
     storagePathResolver: const StoragePathResolver(),
     layoutService: FakeLayoutService(),
     hardwareService: FakeHardwareService(),
-    keymapService: KeymapService(bridge: bridge),
+    keymapService: KeymapServiceFFI(bridge: bridge),
     deviceProfileService: FakeDeviceProfileService(),
     deviceRegistryService: FakeDeviceRegistryService(),
     profileRegistryService: FakeProfileRegistryService(),

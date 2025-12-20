@@ -80,6 +80,21 @@ class _EventListHandlerState extends ConsumerState<_EventListHandler> {
           ).format(DateTime.fromMillisecondsSinceEpoch(e.timestampUs ~/ 1000)),
         ),
       ),
+      decision: (e) => ListTile(
+        leading: const Icon(Icons.psychology),
+        title: Text('${e.keyName} -> ${e.decisionType}'),
+        subtitle: Text('Outputs: ${e.outputs.join(', ')}'),
+        trailing: Text(
+          DateFormat(
+            'HH:mm:ss.SSS',
+          ).format(DateTime.fromMillisecondsSinceEpoch(e.timestampUs ~/ 1000)),
+        ),
+      ),
+      discovery: (e) => ListTile(
+        leading: const Icon(Icons.search),
+        title: Text('Discovered: ${e.name}'),
+        subtitle: Text('ID: ${e.deviceId}'),
+      ),
       stateChange: (e) => ListTile(
         leading: const Icon(Icons.info),
         title: Text(e.message),

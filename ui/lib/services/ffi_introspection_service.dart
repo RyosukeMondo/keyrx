@@ -20,7 +20,7 @@ class FfiIntrospectionService {
     }
 
     try {
-      final resultStr = _bindings.base.introspectionMetadata();
+      final resultStr = _bindings.base.introspectionMetadata() as String;
       final result = FfiResult.fromJson(resultStr, IntrospectionData.fromJson);
 
       if (!result.success || result.data == null) {
@@ -30,7 +30,7 @@ class FfiIntrospectionService {
       _cachedData = result.data!;
       _lastFetch = DateTime.now();
       return _cachedData!;
-    } catch (e) {
+    } on Exception catch (e) {
       throw Exception('Failed to fetch introspection metadata: $e');
     }
   }

@@ -65,8 +65,7 @@ class _FeatureTourState extends State<FeatureTour> {
     ),
     _TourStep(
       title: 'Add Slot Button',
-      description:
-          'Click the + button on device nodes to add new slot connections.',
+      description: 'Click the + button on device nodes to add new slot connections.',
       targetType: _TargetType.addButton,
       position: _TooltipPosition.right,
     ),
@@ -144,7 +143,7 @@ class _FeatureTourState extends State<FeatureTour> {
 
   Widget _buildOverlay() => Positioned.fill(
     child: Container(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       child: GestureDetector(
         onTap: () {}, // Prevent taps from reaching content below
       ),
@@ -164,7 +163,7 @@ class _FeatureTourState extends State<FeatureTour> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -177,24 +176,18 @@ class _FeatureTourState extends State<FeatureTour> {
           // Header
           Row(
             children: [
-              Icon(
-                Icons.lightbulb_outline,
-                color: theme.colorScheme.primary,
-                size: 28,
-              ),
+              Icon(Icons.lightbulb_outline, color: theme.colorScheme.primary, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   step.title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               Text(
                 '${_currentStep + 1}/${_steps.length}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -211,25 +204,15 @@ class _FeatureTourState extends State<FeatureTour> {
             children: [
               // Previous button
               if (!isFirstStep)
-                TextButton(
-                  onPressed: _previousStep,
-                  child: const Text('Previous'),
-                )
+                TextButton(onPressed: _previousStep, child: const Text('Previous'))
               else
                 const SizedBox.shrink(),
 
               // Skip button
-              if (!isLastStep)
-                TextButton(
-                  onPressed: _skipTour,
-                  child: const Text('Skip Tour'),
-                ),
+              if (!isLastStep) TextButton(onPressed: _skipTour, child: const Text('Skip Tour')),
 
               // Next / Done button
-              FilledButton(
-                onPressed: _nextStep,
-                child: Text(isLastStep ? 'Done' : 'Next'),
-              ),
+              FilledButton(onPressed: _nextStep, child: Text(isLastStep ? 'Done' : 'Next')),
             ],
           ),
         ],
@@ -250,9 +233,7 @@ class _FeatureTourState extends State<FeatureTour> {
           : step.position == _TooltipPosition.bottom
           ? 100
           : null,
-      child: step.position == _TooltipPosition.center
-          ? Center(child: tooltip)
-          : tooltip,
+      child: step.position == _TooltipPosition.center ? Center(child: tooltip) : tooltip,
     );
   }
 }
@@ -322,14 +303,11 @@ class _FeatureTourHintState extends State<FeatureTourHint> {
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.tour_outlined,
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
+          Icon(Icons.tour_outlined, color: theme.colorScheme.onPrimaryContainer),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

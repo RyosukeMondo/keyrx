@@ -413,7 +413,7 @@ void main() {
     });
 
     test('handles empty node list gracefully', () {
-      final tracker = FocusTracker(nodes: const []);
+      const tracker = FocusTracker(nodes: []);
 
       expect(tracker.focusedNodeId, isNull);
 

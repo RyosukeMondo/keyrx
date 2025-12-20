@@ -30,10 +30,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
 
   HardwareServiceUI get _hardwareService {
     try {
-      return Provider.of<ServiceRegistry>(
-        context,
-        listen: false,
-      ).hardwareService;
+      return Provider.of<ServiceRegistry>(context, listen: false).hardwareService;
     } on ProviderNotFoundException {
       return Provider.of<HardwareServiceUI>(context, listen: false);
     }
@@ -83,15 +80,11 @@ class _MappingDashboardState extends State<MappingDashboard> {
 
     if (!mounted) return;
 
-    if (profilesResult.hasError ||
-        layoutsResult.hasError ||
-        keymapsResult.hasError) {
+    if (profilesResult.hasError || layoutsResult.hasError || keymapsResult.hasError) {
       setState(() {
         _isLoading = false;
         _errorMessage =
-            profilesResult.errorMessage ??
-            layoutsResult.errorMessage ??
-            keymapsResult.errorMessage;
+            profilesResult.errorMessage ?? layoutsResult.errorMessage ?? keymapsResult.errorMessage;
       });
       return;
     }
@@ -110,22 +103,19 @@ class _MappingDashboardState extends State<MappingDashboard> {
     required VirtualLayout layout,
   }) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) =>
-            MappingEditor(keymap: keymap, profile: profile, layout: layout),
+      MaterialPageRoute<void>(
+        builder: (context) => MappingEditor(keymap: keymap, profile: profile, layout: layout),
       ),
     );
     // Reload after returning from editor
-    _loadData();
+    await _loadData();
   }
 
   Future<void> _createNewKeymap() async {
     if (_profiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No wiring profiles found. Create one first.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No wiring profiles found. Create one first.')));
       return;
     }
 
@@ -137,18 +127,12 @@ class _MappingDashboardState extends State<MappingDashboard> {
 
     if (selectedProfile == null) return;
 
-    final layout = _layouts
-        .where((l) => l.id == selectedProfile.virtualLayoutId)
-        .firstOrNull;
+    final layout = _layouts.where((l) => l.id == selectedProfile.virtualLayoutId).firstOrNull;
 
     if (layout == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Layout ${selectedProfile.virtualLayoutId} not found.',
-            ),
-          ),
+          SnackBar(content: Text('Layout ${selectedProfile.virtualLayoutId} not found.')),
         );
       }
       return;
@@ -163,8 +147,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
       layers: [const KeymapLayer(name: 'Layer 0')],
     );
 
-    if (!mounted) return;
-    _openEditor(keymap: draft, profile: selectedProfile, layout: layout);
+    await _openEditor(keymap: draft, profile: selectedProfile, layout: layout);
   }
 
   Future<void> _deleteKeymap(Keymap keymap) async {
@@ -174,10 +157,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
         title: const Text('Delete Keymap?'),
         content: Text('Are you sure you want to delete "${keymap.name}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -200,7 +180,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
         );
       }
     } else {
-      _loadData();
+      await _loadData();
     }
   }
 
@@ -236,10 +216,7 @@ class _MappingDashboardState extends State<MappingDashboard> {
           children: [
             const Icon(Icons.map, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(
-              'No Keymaps Found',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text('No Keymaps Found', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             const Text('Create a keymap to start mapping your device.'),
             const SizedBox(height: 24),
@@ -301,15 +278,11 @@ class _MappingDashboardState extends State<MappingDashboard> {
                     );
                     return;
                   }
-                  final layout = _layouts
-                      .where((l) => l.id == keymap.virtualLayoutId)
-                      .firstOrNull;
+                  final layout = _layouts.where((l) => l.id == keymap.virtualLayoutId).firstOrNull;
                   if (layout == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Virtual Layout not found.'),
-                      ),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('Virtual Layout not found.')));
                     return;
                   }
                   _openEditor(keymap: keymap, profile: profile, layout: layout);
@@ -329,8 +302,7 @@ class _ProfileSelectionDialog extends StatefulWidget {
   final List<HardwareProfile> profiles;
 
   @override
-  State<_ProfileSelectionDialog> createState() =>
-      _ProfileSelectionDialogState();
+  State<_ProfileSelectionDialog> createState() => _ProfileSelectionDialogState();
 }
 
 class _ProfileSelectionDialogState extends State<_ProfileSelectionDialog> {
@@ -349,10 +321,7 @@ class _ProfileSelectionDialogState extends State<_ProfileSelectionDialog> {
     title: const Text('Select Wiring Profile'),
     content: DropdownButtonFormField<HardwareProfile>(
       initialValue: _selected,
-      decoration: const InputDecoration(
-        labelText: 'Profile',
-        border: OutlineInputBorder(),
-      ),
+      decoration: const InputDecoration(labelText: 'Profile', border: OutlineInputBorder()),
       items: widget.profiles
           .map(
             (p) => DropdownMenuItem(
@@ -371,14 +340,9 @@ class _ProfileSelectionDialogState extends State<_ProfileSelectionDialog> {
       },
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
       FilledButton(
-        onPressed: _selected == null
-            ? null
-            : () => Navigator.pop(context, _selected),
+        onPressed: _selected == null ? null : () => Navigator.pop(context, _selected),
         child: const Text('Create'),
       ),
     ],

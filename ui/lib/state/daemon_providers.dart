@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:core_logic/models/daemon_protocol.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/daemon_service.dart';
@@ -112,7 +112,9 @@ class _WebStubDaemonService implements DaemonService {
   @override
   dynamic noSuchMethod(Invocation invocation) {
     // Gracefully handle any other methods
-    print('[WARN] DaemonService method called on web (not supported): ${invocation.memberName}');
+    debugPrint(
+      '[WARN] DaemonService method called on web (not supported): ${invocation.memberName}',
+    );
     return null;
   }
 }
@@ -124,25 +126,25 @@ class _WebStubDaemonService implements DaemonService {
 ///
 /// On web platform, returns a stub implementation.
 final daemonServiceProvider = Provider<DaemonService>((ref) {
-  print('[DEBUG] daemonServiceProvider: initializing (kIsWeb=$kIsWeb)');
+  debugPrint('[DEBUG] daemonServiceProvider: initializing (kIsWeb=$kIsWeb)');
 
   // On web, create stub implementation
   if (kIsWeb) {
-    print('[DEBUG] daemonServiceProvider: creating stub for web platform');
+    debugPrint('[DEBUG] daemonServiceProvider: creating stub for web platform');
     final stub = _WebStubDaemonService();
     ref.onDispose(stub.dispose);
-    print('[DEBUG] daemonServiceProvider: stub initialized successfully');
+    debugPrint('[DEBUG] daemonServiceProvider: stub initialized successfully');
     return stub;
   }
 
   // On desktop, create real daemon service
-  print('[DEBUG] daemonServiceProvider: creating real DaemonService for desktop');
+  debugPrint('[DEBUG] daemonServiceProvider: creating real DaemonService for desktop');
   final service = DaemonService();
 
   // Dispose the service when the provider is disposed
   ref.onDispose(service.dispose);
 
-  print('[DEBUG] daemonServiceProvider: initialized successfully');
+  debugPrint('[DEBUG] daemonServiceProvider: initialized successfully');
   return service;
 });
 

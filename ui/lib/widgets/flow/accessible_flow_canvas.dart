@@ -25,18 +25,10 @@ class AccessibleFlowCanvas extends ConsumerWidget {
     // Build semantic label for the canvas
     final semanticLabel = _buildCanvasSemanticLabel(graphAsync, selection);
 
-    return Semantics(
-      label: semanticLabel,
-      container: true,
-      explicitChildNodes: true,
-      child: child,
-    );
+    return Semantics(label: semanticLabel, container: true, explicitChildNodes: true, child: child);
   }
 
-  String _buildCanvasSemanticLabel(
-    AsyncValue<FlowGraph> graphAsync,
-    Selection selection,
-  ) {
+  String _buildCanvasSemanticLabel(AsyncValue<FlowGraph> graphAsync, Selection selection) {
     if (graphAsync.isLoading) {
       return 'KeyFlow editor loading';
     }
@@ -51,24 +43,20 @@ class AccessibleFlowCanvas extends ConsumerWidget {
     }
 
     final deviceCount = graph.nodes.whereType<DeviceFlowNode>().length;
-    final profileCount = graph.nodes
-        .whereType<HardwareProfileFlowNode>()
-        .length;
+    final profileCount = graph.nodes.whereType<HardwareProfileFlowNode>().length;
     final keymapCount = graph.nodes.whereType<KeymapFlowNode>().length;
     final edgeCount = graph.edges.length;
 
-    final buffer = StringBuffer('KeyFlow editor with ');
-    buffer.write('$deviceCount device${deviceCount != 1 ? 's' : ''}, ');
-    buffer.write('$profileCount profile${profileCount != 1 ? 's' : ''}, ');
-    buffer.write('$keymapCount keymap${keymapCount != 1 ? 's' : ''}, ');
-    buffer.write('and $edgeCount connection${edgeCount != 1 ? 's' : ''}');
+    final buffer = StringBuffer('KeyFlow editor with ')
+      ..write('$deviceCount device${deviceCount != 1 ? 's' : ''}, ')
+      ..write('$profileCount profile${profileCount != 1 ? 's' : ''}, ')
+      ..write('$keymapCount keymap${keymapCount != 1 ? 's' : ''}, ')
+      ..write('and $edgeCount connection${edgeCount != 1 ? 's' : ''}');
 
     if (selection is NodeSelection) {
       buffer.write('. Node ${selection.nodeId} selected');
     } else if (selection is EdgeSelection) {
-      buffer.write(
-        '. Connection from ${selection.from} to ${selection.to} selected',
-      );
+      buffer.write('. Connection from ${selection.from} to ${selection.to} selected');
     }
 
     return buffer.toString();
@@ -85,16 +73,14 @@ extension FlowNodeSemantics on FlowNode {
     bool hasError = false,
   }) => map(
     device: (node) {
-      final buffer = StringBuffer();
-      buffer.write(node.label ?? 'Unknown device');
-      buffer.write(' keyboard');
+      final buffer = StringBuffer()
+        ..write(node.label ?? 'Unknown device')
+        ..write(' keyboard');
 
       if (isConnected) {
         buffer.write(', connected');
         if (totalSlotCount > 0) {
-          buffer.write(
-            ', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}',
-          );
+          buffer.write(', $totalSlotCount slot${totalSlotCount != 1 ? 's' : ''}');
           if (activeSlotCount > 0) {
             buffer.write(', $activeSlotCount active');
           }
@@ -110,9 +96,9 @@ extension FlowNodeSemantics on FlowNode {
       return buffer.toString();
     },
     hardwareProfile: (node) {
-      final buffer = StringBuffer();
-      buffer.write(node.label ?? 'Unknown profile');
-      buffer.write(' hardware profile');
+      final buffer = StringBuffer()
+        ..write(node.label ?? 'Unknown profile')
+        ..write(' hardware profile');
 
       if (hasError) {
         buffer.write(', invalid');
@@ -123,9 +109,9 @@ extension FlowNodeSemantics on FlowNode {
       return buffer.toString();
     },
     keymap: (node) {
-      final buffer = StringBuffer();
-      buffer.write(node.label ?? 'Unknown keymap');
-      buffer.write(' keymap');
+      final buffer = StringBuffer()
+        ..write(node.label ?? 'Unknown keymap')
+        ..write(' keymap');
 
       final layers = node.layers;
       if (layers != null && layers > 0) {
@@ -164,12 +150,12 @@ extension FlowEdgeSemantics on FlowEdge {
       buffer.write('Inactive slot');
     }
 
-    buffer.write(' connecting ');
-    buffer.write(fromNode.label ?? 'unknown device');
-    buffer.write(' to ');
-    buffer.write(toNode.label ?? 'unknown keymap');
-
-    buffer.write(', priority ${priority + 1}');
+    buffer
+      ..write(' connecting ')
+      ..write(fromNode.label ?? 'unknown device')
+      ..write(' to ')
+      ..write(toNode.label ?? 'unknown keymap')
+      ..write(', priority ${priority + 1}');
 
     switch (status) {
       case EdgeStatus.valid:

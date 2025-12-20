@@ -28,9 +28,9 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     bridge: bridge,
     apiDocsService: FakeApiDocsService(),
     storagePathResolver: const StoragePathResolver(),
-    layoutService: LayoutServiceUI(core.LayoutService(bridge: bridge)),
-    hardwareService: HardwareServiceUI(core.HardwareService(bridge: bridge)),
-    keymapService: KeymapService(bridge: FakeBridge()),
+    layoutService: LayoutServiceUI(core.LayoutServiceFFI(bridge: bridge)),
+    hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: bridge)),
+    keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     runtimeService: FakeRuntimeService(),
     daemonManager: MockDaemonManager(),
   );
@@ -43,9 +43,7 @@ void main() {
 
     await tester.pumpWidget(
       MultiProvider(
-        providers: [
-          Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-        ],
+        providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
         child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
       ),
     );
@@ -85,53 +83,48 @@ void main() {
     expect(find.textContaining('120µs'), findsWidgets);
   });
 
-  testWidgets(
-    'Debugger shows timing and pending decisions with latency timeline',
-    (tester) async {
-      final fakeEngine = FakeEngineService();
-      final registry = _buildRegistry(fakeEngine);
+  testWidgets('Debugger shows timing and pending decisions with latency timeline', (tester) async {
+    final fakeEngine = FakeEngineService();
+    final registry = _buildRegistry(fakeEngine);
 
-      await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
-          child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
+        child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
+      ),
+    );
+
+    fakeEngine.emit(
+      EngineSnapshot(
+        timestamp: DateTime.now(),
+        activeLayers: const ['base'],
+        activeModifiers: const ['Shift'],
+        heldKeys: const ['K'],
+        pendingDecisions: const ['combo A+B'],
+        lastEvent: 'combo triggered',
+        latencyUs: 25000,
+        timing: const EngineTiming(
+          tapTimeoutMs: 150,
+          comboTimeoutMs: 250,
+          holdDelayMs: 40,
+          eagerTap: true,
         ),
-      );
+      ),
+    );
 
-      fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const ['base'],
-          activeModifiers: const ['Shift'],
-          heldKeys: const ['K'],
-          pendingDecisions: const ['combo A+B'],
-          lastEvent: 'combo triggered',
-          latencyUs: 25000,
-          timing: const EngineTiming(
-            tapTimeoutMs: 150,
-            comboTimeoutMs: 250,
-            holdDelayMs: 40,
-            eagerTap: true,
-          ),
-        ),
-      );
+    await tester.pumpAndSettle();
 
-      await tester.pumpAndSettle();
-
-      // Combo decisions are now shown with individual key chips
-      // (A and B extracted from "combo A+B")
-      expect(find.text('A'), findsWidgets);
-      expect(find.text('B'), findsWidgets);
-      expect(find.text('Timing'), findsOneWidget);
-      expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
-      expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
-      expect(find.textContaining('Eager tap: true'), findsOneWidget);
-      expect(find.textContaining('Latency Timeline'), findsOneWidget);
-      expect(find.textContaining('Avg:'), findsOneWidget);
-    },
-  );
+    // Combo decisions are now shown with individual key chips
+    // (A and B extracted from "combo A+B")
+    expect(find.text('A'), findsWidgets);
+    expect(find.text('B'), findsWidgets);
+    expect(find.text('Timing'), findsOneWidget);
+    expect(find.textContaining('Tap timeout: 150ms'), findsOneWidget);
+    expect(find.textContaining('Hold delay: 40ms'), findsOneWidget);
+    expect(find.textContaining('Eager tap: true'), findsOneWidget);
+    expect(find.textContaining('Latency Timeline'), findsOneWidget);
+    expect(find.textContaining('Avg:'), findsOneWidget);
+  });
 
   group('State stream subscription', () {
     testWidgets('subscribes to state stream on init', (tester) async {
@@ -140,9 +133,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -174,20 +165,14 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
       // First snapshot
       fakeEngine.emit(
-        EngineSnapshot(
-          timestamp: DateTime.now(),
-          activeLayers: const ['initial'],
-          latencyUs: 50,
-        ),
+        EngineSnapshot(timestamp: DateTime.now(), activeLayers: const ['initial'], latencyUs: 50),
       );
       await tester.pumpAndSettle();
 
@@ -218,16 +203,12 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
-      fakeEngine.emit(
-        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 5000),
-      );
+      fakeEngine.emit(EngineSnapshot(timestamp: DateTime.now(), latencyUs: 5000));
 
       await tester.pumpAndSettle();
 
@@ -242,17 +223,13 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
       // 15000 µs is between caution (10k) and warning (20k)
-      fakeEngine.emit(
-        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 15000),
-      );
+      fakeEngine.emit(EngineSnapshot(timestamp: DateTime.now(), latencyUs: 15000));
 
       await tester.pumpAndSettle();
 
@@ -266,17 +243,13 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
       // 25000 µs is above warning threshold (20k)
-      fakeEngine.emit(
-        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 25000),
-      );
+      fakeEngine.emit(EngineSnapshot(timestamp: DateTime.now(), latencyUs: 25000));
 
       await tester.pumpAndSettle();
 
@@ -290,24 +263,18 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
 
       // Start with low latency
-      fakeEngine.emit(
-        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 1000),
-      );
+      fakeEngine.emit(EngineSnapshot(timestamp: DateTime.now(), latencyUs: 1000));
       await tester.pumpAndSettle();
       expect(find.text('1000'), findsOneWidget);
 
       // Update to high latency
-      fakeEngine.emit(
-        EngineSnapshot(timestamp: DateTime.now(), latencyUs: 30000),
-      );
+      fakeEngine.emit(EngineSnapshot(timestamp: DateTime.now(), latencyUs: 30000));
       await tester.pumpAndSettle();
 
       expect(find.text('1000'), findsNothing);
@@ -320,9 +287,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -340,9 +305,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -372,9 +335,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -399,26 +360,20 @@ void main() {
       // Wait for some time (100ms out of 200ms)
       await tester.pump(const Duration(milliseconds: 100));
 
-      indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
+      indicator = tester.widget<CircularProgressIndicator>(find.byType(CircularProgressIndicator));
       final laterValue = indicator.value;
 
       // Progress should have decreased
       expect(laterValue, lessThan(initialValue ?? 1.0));
     });
 
-    testWidgets('categorizes taphold and hold keywords correctly', (
-      tester,
-    ) async {
+    testWidgets('categorizes taphold and hold keywords correctly', (tester) async {
       final fakeEngine = FakeEngineService();
       final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -440,17 +395,13 @@ void main() {
   });
 
   group('Combo key highlighting', () {
-    testWidgets('extracts and displays combo keys from plus notation', (
-      tester,
-    ) async {
+    testWidgets('extracts and displays combo keys from plus notation', (tester) async {
       final fakeEngine = FakeEngineService();
       final registry = _buildRegistry(fakeEngine);
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -479,9 +430,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -508,9 +457,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );
@@ -536,9 +483,7 @@ void main() {
 
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry)),
-          ],
+          providers: [Provider<KeyrxFacade>.value(value: KeyrxFacade.real(registry))],
           child: MaterialApp(home: DebuggerPage(engineService: fakeEngine)),
         ),
       );

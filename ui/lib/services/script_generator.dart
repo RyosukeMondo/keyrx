@@ -18,9 +18,7 @@ class ScriptGenerator {
     for (final mapping in mappings) {
       switch (mapping.type) {
         case KeyActionType.remap:
-          buffer.writeln(
-            '    remap("${mapping.from}", "${mapping.to ?? mapping.from}");',
-          );
+          buffer.writeln('    remap("${mapping.from}", "${mapping.to ?? mapping.from}");');
           break;
         case KeyActionType.block:
           buffer.writeln('    block("${mapping.from}");');
@@ -47,8 +45,9 @@ class ScriptGenerator {
     }
 
     if (combos.isNotEmpty) {
-      buffer.writeln();
-      buffer.writeln('    // Combos');
+      buffer
+        ..writeln()
+        ..writeln('    // Combos');
       for (final combo in combos) {
         final keys = combo.keys.map((k) => '"$k"').join(', ');
         buffer.writeln('    combo([$keys], "${combo.output}");');

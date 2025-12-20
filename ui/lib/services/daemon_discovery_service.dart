@@ -32,10 +32,7 @@ class DaemonDiscoveryService {
     }
 
     try {
-      await _daemonService.sendRequest<void>(
-        DaemonMethods.discoveryStart,
-        parseResult: (_) {},
-      );
+      await _daemonService.sendRequest(DaemonMethods.discoveryStart);
       _isDiscovering = true;
     } on DaemonException catch (e) {
       debugPrint('Failed to start discovery: $e');
@@ -50,10 +47,7 @@ class DaemonDiscoveryService {
     }
 
     try {
-      await _daemonService.sendRequest<void>(
-        DaemonMethods.discoveryStop,
-        parseResult: (_) {},
-      );
+      await _daemonService.sendRequest(DaemonMethods.discoveryStop);
       _isDiscovering = false;
     } on DaemonException catch (e) {
       debugPrint('Failed to stop discovery: $e');
@@ -68,6 +62,7 @@ class DaemonDiscoveryService {
       },
       input: (_) {},
       output: (_) {},
+      decision: (_) {},
       stateChange: (_) {},
     );
   }

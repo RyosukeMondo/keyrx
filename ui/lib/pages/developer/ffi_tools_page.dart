@@ -24,8 +24,7 @@ class FfiToolsPage extends StatefulWidget {
   State<FfiToolsPage> createState() => _FfiToolsPageState();
 }
 
-class _FfiToolsPageState extends State<FfiToolsPage>
-    with SingleTickerProviderStateMixin {
+class _FfiToolsPageState extends State<FfiToolsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _searchController = TextEditingController();
 
@@ -82,7 +81,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
         _metadata = data;
         _isLoading = false;
       });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
 
       setState(() {
@@ -129,21 +128,14 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadMetadata,
-                    child: const Text('Retry'),
-                  ),
+                  ElevatedButton(onPressed: _loadMetadata, child: const Text('Retry')),
                 ],
               ),
             ),
           )
         : TabBarView(
             controller: _tabController,
-            children: [
-              _buildFunctionBrowser(),
-              _buildCallHistory(),
-              _buildEventMonitor(),
-            ],
+            children: [_buildFunctionBrowser(), _buildCallHistory(), _buildEventMonitor()],
           ),
   );
 
@@ -204,24 +196,16 @@ class _FfiToolsPageState extends State<FfiToolsPage>
 
       widgets.add(
         ExpansionTile(
-          title: Text(
-            domain.name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: Text(domain.name, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('${matchingFunctions.length} functions'),
           initiallyExpanded: _selectedDomain == domain.name,
           children: matchingFunctions.map((func) {
             final isSelected =
-                _selectedFunction?.name == func.name &&
-                _selectedDomain == domain.name;
+                _selectedFunction?.name == func.name && _selectedDomain == domain.name;
 
             return ListTile(
               title: Text(func.name),
-              subtitle: Text(
-                func.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              subtitle: Text(func.description, maxLines: 2, overflow: TextOverflow.ellipsis),
               selected: isSelected,
               onTap: () {
                 setState(() {
@@ -271,10 +255,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                     children: [
                       Text(
                         func.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -299,10 +280,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
 
             // Parameters section
             if (func.parameters.isNotEmpty) ...[
-              const Text(
-                'Parameters',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              const Text('Parameters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView.builder(
@@ -314,18 +292,13 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                 ),
               ),
             ] else
-              const Expanded(
-                child: Center(child: Text('No parameters required')),
-              ),
+              const Expanded(child: Center(child: Text('No parameters required'))),
 
             const Divider(height: 32),
 
             // Example section
             if (func.example != null) ...[
-              const Text(
-                'Example',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
+              const Text('Example', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -337,19 +310,13 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Input:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    const Text('Input:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(
                       jsonEncode(func.example!.input),
                       style: const TextStyle(fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Output:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    const Text('Output:', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(
                       jsonEncode(func.example!.output),
                       style: const TextStyle(fontFamily: 'monospace'),
@@ -367,9 +334,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
                 onPressed: () => _invokeFunction(func),
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Invoke Function'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16)),
               ),
             ),
           ],
@@ -388,19 +353,10 @@ class _FfiToolsPageState extends State<FfiToolsPage>
         children: [
           Row(
             children: [
-              Text(
-                param.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              Text(param.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(width: 8),
               Chip(
-                label: Text(
-                  param.typeName,
-                  style: const TextStyle(fontSize: 11),
-                ),
+                label: Text(param.typeName, style: const TextStyle(fontSize: 11)),
                 backgroundColor: Colors.blue[100],
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
@@ -417,10 +373,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            param.description,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
+          Text(param.description, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           const SizedBox(height: 8),
           TextField(
             controller: controller,
@@ -443,8 +396,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
       case 'bool':
         return 'true or false';
       default:
-        if (param.typeName.startsWith('uint') ||
-            param.typeName.startsWith('int')) {
+        if (param.typeName.startsWith('uint') || param.typeName.startsWith('int')) {
           return 'Enter number';
         }
         if (param.typeName.startsWith('float')) {
@@ -505,27 +457,19 @@ class _FfiToolsPageState extends State<FfiToolsPage>
 
         case 'device_registry.set_remap_enabled':
           final key = _paramControllers['device_key']!.text;
-          final enabled =
-              _paramControllers['enabled']!.text.toLowerCase() == 'true';
+          final enabled = _paramControllers['enabled']!.text.toLowerCase() == 'true';
 
-          final str = bindings.deviceRegistry.setRemapEnabled(
-            key,
-            enabled ? 1 : 0,
-          );
+          final str = bindings.deviceRegistry.setRemapEnabled(key, enabled ? 1 : 0);
           resultStr = str;
           break;
 
         // --- Discovery Domain (Legacy/Stub) ---
         case 'discovery.start_discovery':
           // ... (If we keep this)
-          throw Exception(
-            'Discovery functions are deprecated. Use Device Registry.',
-          );
+          throw Exception('Discovery functions are deprecated. Use Device Registry.');
 
         default:
-          throw Exception(
-            'Function ${func.name} not implemented in FFI Tools dispatcher',
-          );
+          throw Exception('Function ${func.name} not implemented in FFI Tools dispatcher');
       }
 
       final record = FfiCallRecord(
@@ -533,9 +477,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
         domain: _selectedDomain!,
         function: func.name,
         parameters: Map.fromEntries(
-          func.parameters.map(
-            (p) => MapEntry(p.name, _paramControllers[p.name]!.text),
-          ),
+          func.parameters.map((p) => MapEntry(p.name, _paramControllers[p.name]!.text)),
         ),
         result: resultStr,
         success: true,
@@ -544,11 +486,11 @@ class _FfiToolsPageState extends State<FfiToolsPage>
       setState(() {
         _callHistory.insert(0, record);
       });
-    } catch (e) {
+    } on Exception catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
 
       // Add failed record
       final record = FfiCallRecord(
@@ -588,34 +530,23 @@ class _FfiToolsPageState extends State<FfiToolsPage>
               color: record.success ? Colors.green : Colors.red,
             ),
             title: Text('${record.domain}.${record.function}'),
-            subtitle: Text(
-              'Called at ${record.timestamp.toLocal().toString().substring(11, 19)}',
-            ),
+            subtitle: Text('Called at ${record.timestamp.toLocal().toString().substring(11, 19)}'),
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Parameters:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    const Text('Parameters:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
                       jsonEncode(record.parameters),
                       style: const TextStyle(fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Result:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    const Text('Result:', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(
-                      record.result,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
+                    Text(record.result, style: const TextStyle(fontFamily: 'monospace')),
                   ],
                 ),
               ),
@@ -665,7 +596,7 @@ class _FfiToolsPageState extends State<FfiToolsPage>
   }
 
   void _showEventDetails(FfiEventRecord event) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(event.name),
@@ -674,30 +605,16 @@ class _FfiToolsPageState extends State<FfiToolsPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Payload:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Payload:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text(
-                jsonEncode(event.payload),
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
+              Text(jsonEncode(event.payload), style: const TextStyle(fontFamily: 'monospace')),
               const SizedBox(height: 16),
-              const Text(
-                'Timestamp:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Timestamp:', style: TextStyle(fontWeight: FontWeight.bold)),
               Text(event.timestamp.toLocal().toString()),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
       ),
     );
   }
@@ -723,11 +640,7 @@ class FfiCallRecord {
 
 /// FFI event record for monitoring
 class FfiEventRecord {
-  FfiEventRecord({
-    required this.timestamp,
-    required this.name,
-    required this.payload,
-  });
+  FfiEventRecord({required this.timestamp, required this.name, required this.payload});
   final DateTime timestamp;
   final String name;
   final Map<String, dynamic> payload;

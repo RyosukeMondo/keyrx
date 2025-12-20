@@ -9,7 +9,6 @@ import '../../services/keyboard_shortcuts.dart';
 import '../../state/keyflow_providers.dart';
 import '../../state/node_positions_provider.dart';
 import '../../state/selection_state.dart';
-import '../../utils/core_ui_extensions.dart';
 
 /// Controller for managing keyboard-based zoom operations.
 class ZoomController {
@@ -38,40 +37,38 @@ class ZoomController {
     final newScale = (currentScale * factor).clamp(0.5, 2.5);
     final scaleFactor = newScale / currentScale;
 
-    transformationController.value = current.clone()..scale(scaleFactor);
+    transformationController.value = current.clone()
+      ..scaleByDouble(scaleFactor, scaleFactor, 1, 1);
   }
 }
 
 /// Focus node tracker for keyboard navigation.
+/// Focus node tracker for keyboard navigation.
+@immutable
 class FocusTracker {
-  FocusTracker({required this.nodes, int initialFocusedIndex = 0})
-    : _focusedIndex = nodes.isEmpty
-          ? 0
-          : initialFocusedIndex.clamp(0, nodes.length - 1);
+  const FocusTracker({required this.nodes, this.focusedIndex = 0});
 
   final List<FlowNode> nodes;
-  int _focusedIndex;
+  final int focusedIndex;
 
-  FocusTracker copyWith({List<FlowNode>? nodes}) => FocusTracker(
-    nodes: nodes ?? this.nodes,
-    initialFocusedIndex: _focusedIndex,
-  );
-
-  int get focusedIndex => _focusedIndex;
+  FocusTracker copyWith({List<FlowNode>? nodes, int? focusedIndex}) =>
+      FocusTracker(nodes: nodes ?? this.nodes, focusedIndex: focusedIndex ?? this.focusedIndex);
 
   String? get focusedNodeId =>
-      nodes.isEmpty ? null : nodes[_focusedIndex].nodeId;
+      nodes.isEmpty ? null : nodes[focusedIndex.clamp(0, nodes.length - 1)].nodeId;
 
   /// Move focus to the next node.
-  void focusNext() {
-    if (nodes.isEmpty) return;
-    _focusedIndex = (_focusedIndex + 1) % nodes.length;
+  FocusTracker focusNext() {
+    if (nodes.isEmpty) return this;
+    final nextIndex = (focusedIndex + 1) % nodes.length;
+    return copyWith(focusedIndex: nextIndex);
   }
 
   /// Move focus to the previous node.
-  void focusPrevious() {
-    if (nodes.isEmpty) return;
-    _focusedIndex = (_focusedIndex - 1 + nodes.length) % nodes.length;
+  FocusTracker focusPrevious() {
+    if (nodes.isEmpty) return this;
+    final prevIndex = (focusedIndex - 1 + nodes.length) % nodes.length;
+    return copyWith(focusedIndex: prevIndex);
   }
 
   /// Check if a node is focused.
@@ -79,9 +76,7 @@ class FocusTracker {
 }
 
 /// Provider for focus tracking state.
-final focusTrackerProvider = StateProvider<FocusTracker>(
-  (ref) => FocusTracker(nodes: []),
-);
+final focusTrackerProvider = StateProvider<FocusTracker>((ref) => const FocusTracker(nodes: []));
 
 /// Keyboard-navigable canvas wrapper.
 ///
@@ -110,12 +105,10 @@ class KeyboardNavigableCanvas extends ConsumerStatefulWidget {
   final VoidCallback? onHelpRequested;
 
   @override
-  ConsumerState<KeyboardNavigableCanvas> createState() =>
-      _KeyboardNavigableCanvasState();
+  ConsumerState<KeyboardNavigableCanvas> createState() => _KeyboardNavigableCanvasState();
 }
 
-class _KeyboardNavigableCanvasState
-    extends ConsumerState<KeyboardNavigableCanvas> {
+class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanvas> {
   final _focusNode = FocusNode();
   late final ZoomController _zoomController;
 
@@ -124,9 +117,7 @@ class _KeyboardNavigableCanvasState
   @override
   void initState() {
     super.initState();
-    _zoomController = ZoomController(
-      transformationController: widget.transformationController,
-    );
+    _zoomController = ZoomController(transformationController: widget.transformationController);
 
     // Request focus on mount for immediate keyboard control
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,8 +142,9 @@ class _KeyboardNavigableCanvasState
       // Update tracker if nodes have changed
       if (currentTracker.nodes != graph.nodes) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(focusTrackerProvider.notifier).state = currentTracker
-              .copyWith(nodes: graph.nodes);
+          ref.read(focusTrackerProvider.notifier).state = currentTracker.copyWith(
+            nodes: graph.nodes,
+          );
         });
       }
     }
@@ -171,12 +163,8 @@ class _KeyboardNavigableCanvasState
     KeyboardShortcuts.tabToPreviousNode: const _FocusPreviousNodeIntent(),
     KeyboardShortcuts.moveNodeUp: const _MoveNodeIntent(Offset(0, -_moveStep)),
     KeyboardShortcuts.moveNodeDown: const _MoveNodeIntent(Offset(0, _moveStep)),
-    KeyboardShortcuts.moveNodeLeft: const _MoveNodeIntent(
-      Offset(-_moveStep, 0),
-    ),
-    KeyboardShortcuts.moveNodeRight: const _MoveNodeIntent(
-      Offset(_moveStep, 0),
-    ),
+    KeyboardShortcuts.moveNodeLeft: const _MoveNodeIntent(Offset(-_moveStep, 0)),
+    KeyboardShortcuts.moveNodeRight: const _MoveNodeIntent(Offset(_moveStep, 0)),
     KeyboardShortcuts.openNodeDetails: const _OpenNodeDetailsIntent(),
     KeyboardShortcuts.deleteSelectedEdge: const _DeleteSelectedEdgeIntent(),
     KeyboardShortcuts.clearSelection: const _ClearSelectionIntent(),
@@ -187,9 +175,7 @@ class _KeyboardNavigableCanvasState
   };
 
   Map<Type, Action<Intent>> get _actions => {
-    _FocusNextNodeIntent: CallbackAction<_FocusNextNodeIntent>(
-      onInvoke: (_) => _handleFocusNext(),
-    ),
+    _FocusNextNodeIntent: CallbackAction<_FocusNextNodeIntent>(onInvoke: (_) => _handleFocusNext()),
     _FocusPreviousNodeIntent: CallbackAction<_FocusPreviousNodeIntent>(
       onInvoke: (_) => _handleFocusPrevious(),
     ),
@@ -208,12 +194,8 @@ class _KeyboardNavigableCanvasState
     _ResetZoomIntent: CallbackAction<_ResetZoomIntent>(
       onInvoke: (_) => _zoomController.resetZoom(),
     ),
-    _ZoomInIntent: CallbackAction<_ZoomInIntent>(
-      onInvoke: (_) => _zoomController.zoomIn(),
-    ),
-    _ZoomOutIntent: CallbackAction<_ZoomOutIntent>(
-      onInvoke: (_) => _zoomController.zoomOut(),
-    ),
+    _ZoomInIntent: CallbackAction<_ZoomInIntent>(onInvoke: (_) => _zoomController.zoomIn()),
+    _ZoomOutIntent: CallbackAction<_ZoomOutIntent>(onInvoke: (_) => _zoomController.zoomOut()),
     _ShowHelpIntent: CallbackAction<_ShowHelpIntent>(
       onInvoke: (_) => widget.onHelpRequested?.call(),
     ),
@@ -221,19 +203,13 @@ class _KeyboardNavigableCanvasState
 
   void _handleFocusNext() {
     final tracker = ref.read(focusTrackerProvider.notifier);
-    tracker.update((state) {
-      state.focusNext();
-      return state;
-    });
+    tracker.update((state) => state.focusNext());
     _selectFocusedNode();
   }
 
   void _handleFocusPrevious() {
     final tracker = ref.read(focusTrackerProvider.notifier);
-    tracker.update((state) {
-      state.focusPrevious();
-      return state;
-    });
+    tracker.update((state) => state.focusPrevious());
     _selectFocusedNode();
   }
 
@@ -331,21 +307,3 @@ class _ShowHelpIntent extends Intent {
 }
 
 /// Extension to add moveNode method to NodePositions.
-extension NodePositionsMoveExtension on NodePositions {
-  void moveNode(String nodeId, Offset delta, Size canvasBounds) {
-    final positions = state.valueOrNull ?? {};
-    final current = positions[nodeId];
-
-    if (current == null) return;
-
-    final newOffset = current.offset + delta;
-
-    // Keep node within canvas bounds (with some margin)
-    final constrainedOffset = Offset(
-      newOffset.dx.clamp(0.0, canvasBounds.width - 200),
-      newOffset.dy.clamp(0.0, canvasBounds.height - 200),
-    );
-
-    setPosition(nodeId, constrainedOffset);
-  }
-}

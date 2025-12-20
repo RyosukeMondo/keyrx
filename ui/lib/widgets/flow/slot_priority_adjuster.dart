@@ -25,8 +25,7 @@ class SlotPriorityAdjuster extends ConsumerStatefulWidget {
   final VoidCallback? onReordered;
 
   @override
-  ConsumerState<SlotPriorityAdjuster> createState() =>
-      _SlotPriorityAdjusterState();
+  ConsumerState<SlotPriorityAdjuster> createState() => _SlotPriorityAdjusterState();
 }
 
 class _SlotPriorityAdjusterState extends ConsumerState<SlotPriorityAdjuster> {
@@ -36,16 +35,14 @@ class _SlotPriorityAdjusterState extends ConsumerState<SlotPriorityAdjuster> {
   @override
   void initState() {
     super.initState();
-    _orderedSlots = List.from(widget.slots)
-      ..sort((a, b) => a.priority.compareTo(b.priority));
+    _orderedSlots = List.from(widget.slots)..sort((a, b) => a.priority.compareTo(b.priority));
   }
 
   @override
   void didUpdateWidget(SlotPriorityAdjuster oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.slots != oldWidget.slots) {
-      _orderedSlots = List.from(widget.slots)
-        ..sort((a, b) => a.priority.compareTo(b.priority));
+      _orderedSlots = List.from(widget.slots)..sort((a, b) => a.priority.compareTo(b.priority));
     }
   }
 
@@ -103,31 +100,23 @@ class _SlotPriorityAdjusterState extends ConsumerState<SlotPriorityAdjuster> {
       final hasError = results.any((r) => r.hasError);
       if (hasError && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to reorder slots'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Failed to reorder slots'), backgroundColor: Colors.red),
         );
 
         setState(() {
-          _orderedSlots = List.from(widget.slots)
-            ..sort((a, b) => a.priority.compareTo(b.priority));
+          _orderedSlots = List.from(widget.slots)..sort((a, b) => a.priority.compareTo(b.priority));
         });
       } else {
         widget.onReordered?.call();
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error reordering slots: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error reordering slots: $e'), backgroundColor: Colors.red),
         );
 
         setState(() {
-          _orderedSlots = List.from(widget.slots)
-            ..sort((a, b) => a.priority.compareTo(b.priority));
+          _orderedSlots = List.from(widget.slots)..sort((a, b) => a.priority.compareTo(b.priority));
         });
       }
     } finally {
@@ -161,9 +150,7 @@ class _SlotPriorityItem extends StatelessWidget {
     decoration: BoxDecoration(
       color: slot.active ? const Color(0x221AB394) : const Color(0xFF333333),
       borderRadius: BorderRadius.circular(4),
-      border: Border.all(
-        color: slot.active ? const Color(0x441AB394) : const Color(0xFF444444),
-      ),
+      border: Border.all(color: slot.active ? const Color(0x441AB394) : const Color(0xFF444444)),
     ),
     child: Row(
       children: [
@@ -193,11 +180,7 @@ class _SlotPriorityItem extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             '#$displayPriority',
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
         const SizedBox(width: 8),
@@ -219,9 +202,7 @@ class _SlotPriorityItem extends StatelessWidget {
                 slot.keymapId,
                 style: TextStyle(
                   fontSize: 10,
-                  color: slot.active
-                      ? const Color(0xFF1AB394).withOpacity(0.7)
-                      : Colors.grey,
+                  color: slot.active ? const Color(0xFF1AB394).withValues(alpha: 0.7) : Colors.grey,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -232,16 +213,12 @@ class _SlotPriorityItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF1AB394).withOpacity(0.2),
+              color: const Color(0xFF1AB394).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
               'ACTIVE',
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1AB394),
-              ),
+              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF1AB394)),
             ),
           ),
       ],

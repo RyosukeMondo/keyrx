@@ -9,7 +9,6 @@ import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/runtime_config.dart';
 import 'package:core_logic/services/config_result.dart';
-import 'package:core_logic/services/runtime_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -21,15 +20,12 @@ import 'save_state_provider.dart';
 part 'keyflow_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-KeyFlowRepository keyFlowRepository(KeyFlowRepositoryRef ref) {
+KeyFlowRepository keyFlowRepository(Ref ref) {
   final bridge = ref.watch(bridgeProvider);
 
   // On web (bridge is null), use RuntimeServiceWeb via HTTP API
   if (bridge == null) {
-    final registry = ref.watch(serviceRegistryProvider);
-    final repository = KeyFlowRepository(
-      runtimeApi: _WebRuntimeApiAdapter(registry.runtimeService),
-    );
+    final repository = KeyFlowRepository(runtimeApi: _WebRuntimeApiAdapter());
     ref.onDispose(repository.dispose);
     return repository;
   }
@@ -41,9 +37,7 @@ KeyFlowRepository keyFlowRepository(KeyFlowRepositoryRef ref) {
 
 /// Adapter to use RuntimeService as RuntimeApi for web platform.
 class _WebRuntimeApiAdapter implements RuntimeApi {
-  _WebRuntimeApiAdapter(this._service);
-
-  final RuntimeService _service;
+  _WebRuntimeApiAdapter();
 
   @override
   Object? get loadFailure => null;
@@ -78,8 +72,7 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 
     _subscription = repository.watchRuntimeConfig().listen(
       (config) => state = AsyncValue.data(config),
-      onError: (Object error, StackTrace stackTrace) =>
-          state = AsyncValue.error(error, stackTrace),
+      onError: (Object error, StackTrace stackTrace) => state = AsyncValue.error(error, stackTrace),
     );
     ref.onDispose(() => _subscription?.cancel());
 
@@ -109,18 +102,17 @@ class RuntimeConfigNotifier extends _$RuntimeConfigNotifier {
 }
 
 @riverpod
-Future<RuntimeConfig> runtimeConfig(RuntimeConfigRef ref) =>
-    ref.watch(runtimeConfigNotifierProvider.future);
+Future<RuntimeConfig> runtimeConfig(Ref ref) => ref.watch(runtimeConfigNotifierProvider.future);
 
 @riverpod
-Future<FlowGraph> flowGraph(FlowGraphRef ref) async {
+Future<FlowGraph> flowGraph(Ref ref) async {
   final runtime = await ref.watch(runtimeConfigProvider.future);
   return FlowGraph.fromRuntimeConfig(runtime);
 }
 
 /// Provider for device registry states (device enabled/disabled toggles).
 @riverpod
-Stream<List<DeviceState>> deviceStates(DeviceStatesRef ref) {
+Stream<List<DeviceState>> deviceStates(Ref ref) {
   final registry = ref.watch(serviceRegistryProvider);
   return registry.deviceRegistryService.devicesStream;
 }
@@ -135,16 +127,8 @@ class KeyFlowActions {
       _repo.getRuntimeConfig(forceRefresh: true);
 
   /// Add a slot with auto-save and optimistic updates.
-  void addSlot(
-    DeviceInstanceId device,
-    ProfileSlot slot, {
-    int? priorityOverride,
-  }) {
-    final operation = AddSlotOperation(
-      device,
-      slot,
-      priorityOverride: priorityOverride,
-    );
+  void addSlot(DeviceInstanceId device, ProfileSlot slot, {int? priorityOverride}) {
+    final operation = AddSlotOperation(device, slot, priorityOverride: priorityOverride);
     _scheduleAutoSave(operation);
   }
 
@@ -170,13 +154,11 @@ class KeyFlowActions {
 }
 
 @riverpod
-KeyFlowActions keyFlowActions(KeyFlowActionsRef ref) => KeyFlowActions(ref);
+KeyFlowActions keyFlowActions(Ref ref) => KeyFlowActions(ref);
 
 /// Provider for available hardware profiles.
 @riverpod
-Future<List<HardwareProfile>> availableHardwareProfiles(
-  AvailableHardwareProfilesRef ref,
-) async {
+Future<List<HardwareProfile>> availableHardwareProfiles(Ref ref) async {
   final registry = ref.watch(serviceRegistryProvider);
   final result = await registry.hardwareService.listProfiles();
 
@@ -189,7 +171,7 @@ Future<List<HardwareProfile>> availableHardwareProfiles(
 
 /// Provider for available keymaps.
 @riverpod
-Future<List<Keymap>> availableKeymaps(AvailableKeymapsRef ref) async {
+Future<List<Keymap>> availableKeymaps(Ref ref) async {
   final registry = ref.watch(serviceRegistryProvider);
   final result = await registry.keymapService.listKeymaps();
 

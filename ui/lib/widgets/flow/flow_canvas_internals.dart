@@ -7,6 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
+
 import 'edges_painter.dart';
 
 /// Grid painter for flow canvas background.
@@ -14,7 +15,7 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF333333).withOpacity(0.4)
+      ..color = const Color(0xFF333333).withValues(alpha: 0.4)
       ..strokeWidth = 1;
 
     const gridSize = 20.0;
@@ -84,10 +85,7 @@ class _AnimatedNodeWrapperState extends State<AnimatedNodeWrapper>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
 
     _fadeAnimation = Tween<double>(
       begin: widget.isNew ? 0 : 1,

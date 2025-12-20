@@ -71,7 +71,7 @@ class _MigrationWrapperState extends State<MigrationWrapper> {
         _isCheckingMigration = false;
         _showMigrationPrompt = migrationNeeded;
       });
-    } catch (e) {
+    } on Exception catch (e) {
       // On error, skip migration and proceed to main app
       setState(() {
         _isCheckingMigration = false;

@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../services/auto_save_service.dart';
@@ -12,7 +13,7 @@ part 'save_state_provider.g.dart';
 
 /// Provider for the auto-save service instance.
 @Riverpod(keepAlive: true)
-AutoSaveService autoSaveService(AutoSaveServiceRef ref) {
+AutoSaveService autoSaveService(Ref ref) {
   final repository = ref.watch(keyFlowRepositoryProvider);
   final service = AutoSaveService(repository: repository);
   ref.onDispose(service.dispose);

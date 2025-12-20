@@ -11,10 +11,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       logOutput = [];
-      final logger = getLogger(
-        'test_feature_flags',
-        sink: (line) => logOutput.add(line),
-      );
+      final logger = getLogger('test_feature_flags', sink: (line) => logOutput.add(line));
       service = FeatureFlagService(logger: logger);
       await service.initialize();
     });
@@ -32,10 +29,7 @@ void main() {
 
     test('returns default when not initialized', () {
       final uninitializedService = FeatureFlagService();
-      expect(
-        uninitializedService.isEnabled(FeatureFlag.keyFlowEnabled),
-        isTrue,
-      );
+      expect(uninitializedService.isEnabled(FeatureFlag.keyFlowEnabled), isTrue);
     });
 
     test('sets and persists flag value', () async {
@@ -118,12 +112,9 @@ void main() {
       logOutput.clear();
       await service.setFlag(FeatureFlag.keyFlowEnabled, false);
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(
-        logOutput.any((line) => line.contains('feature_flags.flag_set')),
-        isTrue,
-      );
+      expect(logOutput.any((line) => line.contains('feature_flags.flag_set')), isTrue);
     });
 
     test('logs flag resets', () async {
@@ -131,12 +122,9 @@ void main() {
       logOutput.clear();
 
       await service.resetFlag(FeatureFlag.keyFlowEnabled);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(
-        logOutput.any((line) => line.contains('feature_flags.flag_reset')),
-        isTrue,
-      );
+      expect(logOutput.any((line) => line.contains('feature_flags.flag_reset')), isTrue);
     });
 
     test('handles SharedPreferences errors gracefully', () async {
@@ -164,10 +152,7 @@ void main() {
     test('setting flag before initialization works', () async {
       final uninitializedService = FeatureFlagService();
       await uninitializedService.setFlag(FeatureFlag.keyFlowEnabled, false);
-      expect(
-        uninitializedService.isEnabled(FeatureFlag.keyFlowEnabled),
-        isFalse,
-      );
+      expect(uninitializedService.isEnabled(FeatureFlag.keyFlowEnabled), isFalse);
     });
   });
 }

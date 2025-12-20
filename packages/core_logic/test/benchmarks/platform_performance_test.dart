@@ -7,19 +7,15 @@ library;
 import 'dart:async';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:test/test.dart';
-
 import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/ffi/generated_bindings.dart';
-import 'package:core_logic/models/config_ids.dart';
 import 'package:core_logic/models/hardware_profile.dart';
-import 'package:core_logic/services/config_result.dart';
 import 'package:core_logic/services/hardware_service.dart';
-import 'package:core_logic/services/hardware_service_ffi.dart';
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/web/api_client.dart';
 import 'package:core_logic/web/websocket_client.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:test/test.dart';
 
 // Mocks
 class MockKeyrxBridge extends Mock implements KeyrxBridge {}

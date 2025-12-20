@@ -4,6 +4,7 @@ import 'package:core_logic/models/flow/edge_style.dart';
 import 'package:flutter/material.dart';
 
 import '../../animations/edge_animations.dart';
+import '../../utils/core_ui_extensions.dart';
 import 'animated_edges_painter.dart';
 import 'edges_painter.dart';
 
@@ -28,8 +29,7 @@ class AnimatedEdgeCanvas extends StatefulWidget {
   State<AnimatedEdgeCanvas> createState() => _AnimatedEdgeCanvasState();
 }
 
-class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
-    with TickerProviderStateMixin {
+class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas> with TickerProviderStateMixin {
   late final AnimationController _pulseController;
   final Map<String, EdgeAnimationState> _animationStates = {};
   final Map<String, Color> _previousColors = {};
@@ -104,10 +104,7 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
     });
   }
 
-  void _handleEdgeChanges(
-    List<PaintableEdge> oldEdges,
-    List<PaintableEdge> newEdges,
-  ) {
+  void _handleEdgeChanges(List<PaintableEdge> oldEdges, List<PaintableEdge> newEdges) {
     final oldIds = oldEdges.map(_edgeId).toSet();
     final newIds = newEdges.map(_edgeId).toSet();
 
@@ -149,15 +146,15 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
       });
     });
 
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
-
     _transitionControllers[edgeId] = controller;
-    controller.forward();
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
+        }
+      })
+      ..forward();
   }
 
   void _fadeOutEdge(String edgeId) {
@@ -178,37 +175,29 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
       });
     });
 
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _animationStates.remove(edgeId);
-        });
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
-
     _transitionControllers[edgeId] = controller;
-    controller.forward();
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _animationStates.remove(edgeId);
+          });
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
+        }
+      })
+      ..forward();
   }
 
-  void _handleColorTransitions(
-    List<PaintableEdge> oldEdges,
-    List<PaintableEdge> newEdges,
-  ) {
+  void _handleColorTransitions(List<PaintableEdge> oldEdges, List<PaintableEdge> newEdges) {
     for (var i = 0; i < newEdges.length && i < oldEdges.length; i++) {
       final oldEdge = oldEdges[i];
       final newEdge = newEdges[i];
       final edgeId = _edgeId(newEdge);
 
       // Check if status or active state changed
-      if (oldEdge.status != newEdge.status ||
-          oldEdge.active != newEdge.active) {
-        final oldColor = widget.style.colorForStatus(
-          oldEdge.status,
-          active: oldEdge.active,
-          hovered: false,
-        );
+      if (oldEdge.status != newEdge.status || oldEdge.active != newEdge.active) {
+        final oldColor = widget.style.colorForStatus(oldEdge.status, active: oldEdge.active);
         _previousColors[edgeId] = oldColor;
 
         // Start color transition
@@ -230,9 +219,7 @@ class _AnimatedEdgeCanvasState extends State<AnimatedEdgeCanvas>
       setState(() {
         final current = _animationStates[edgeId];
         if (current != null) {
-          _animationStates[edgeId] = current.copyWith(
-            colorTransition: controller.value,
-          );
+          _animationStates[edgeId] = current.copyWith(colorTransition: controller.value);
         }
       });
     });
