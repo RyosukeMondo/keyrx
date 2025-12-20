@@ -54,7 +54,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Role: CLI developer | Task: Add 3 service parameters to CommandProcessor constructor, implement 8 new commands (5 profile + 3 test) following existing command patterns like listRuntime and listHardware, maintain JSON protocol, handle errors gracefully | Restrictions: Maintain JSON protocol format, validate all payloads, return proper error responses, do NOT break existing commands | Success: All 8 commands work, return JSON responses, handle errors with error field, services properly injected, existing commands still work_
 
-- [ ] 6. Delete old UI service files and verify
+- [-] 6. Delete old UI service files and verify
   - File: ui/lib/services/profile_registry_service.dart (delete)
   - File: ui/lib/services/test_service.dart (delete)
   - File: ui/lib/services/script_file_service.dart (delete)
