@@ -1,6 +1,6 @@
 # Tasks: Move Profile & Test Services to Core
 
-- [ ] 1. Move ProfileRegistryService to core_logic
+- [x] 1. Move ProfileRegistryService to core_logic
   - File: packages/core_logic/lib/services/profile_registry_service.dart
   - Copy from ui/lib/services/profile_registry_service.dart
   - Update imports to use relative paths
