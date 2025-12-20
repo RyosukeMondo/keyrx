@@ -77,47 +77,58 @@ void main() {
 
         // Should not throw when called - should use HTTP API
         // Currently this will fail because ScriptFileService uses file I/O
-        expect(
-          () => service.saveScript('/test/path.rhai', 'content'),
-          returnsNormally,
+        await expectLater(
+          service.saveScript('/test/path.rhai', 'content'),
+          completes,
           reason: 'ScriptFileService should use HTTP API on web',
         );
 
-        registry.dispose();
+        await registry.dispose();
       });
     });
 
     group('Direct Platform API Usage Detection', () {
-      test('mapping_editor should not instantiate StoragePathResolver directly', () {
-        // This test documents the bug:
-        // lib/pages/mapping/mapping_editor.dart:155 does:
-        //   const pathResolver = StoragePathResolver();
-        //
-        // This fails on web because StoragePathResolver uses Platform.environment
-        //
-        // FIX: Get pathResolver from service registry instead:
-        //   final pathResolver = ref.read(serviceRegistryProvider).storagePathResolver;
+      test(
+        'mapping_editor should not instantiate StoragePathResolver directly',
+        () {
+          // This test documents the bug:
+          // lib/pages/mapping/mapping_editor.dart:155 does:
+          //   const pathResolver = StoragePathResolver();
+          //
+          // This fails on web because StoragePathResolver uses Platform.environment
+          //
+          // FIX: Get pathResolver from service registry instead:
+          //   final pathResolver = ref.read(serviceRegistryProvider).storagePathResolver;
 
-        expect(
-          true,
-          isTrue,
-          reason:
-              'This test documents the issue. '
-              'See lib/pages/mapping/mapping_editor.dart:155',
-        );
-      });
+          expect(
+            true,
+            isTrue,
+            reason:
+                'This test documents the issue. '
+                'See lib/pages/mapping/mapping_editor.dart:155',
+          );
+        },
+      );
 
       test('no code should use Platform.environment directly', () {
         // All Platform.environment usage should go through StoragePathResolver
         // or be properly stubbed for web
-        expect(true, isTrue, reason: 'Grep for "Platform.environment" to find violations');
+        expect(
+          true,
+          isTrue,
+          reason: 'Grep for "Platform.environment" to find violations',
+        );
       });
 
       test('no code should use Directory/File directly without web stub', () {
         // All File/Directory usage should be:
         // 1. In services that have web implementations, OR
         // 2. Behind conditional imports with web stubs
-        expect(true, isTrue, reason: 'Grep for "Directory(" and "File(" to find violations');
+        expect(
+          true,
+          isTrue,
+          reason: 'Grep for "Directory(" and "File(" to find violations',
+        );
       });
     });
 
@@ -128,7 +139,10 @@ void main() {
         final registry = ServiceRegistry.real(backendUrl: 'http://test');
 
         expect(registry.storagePathResolver, isNotNull);
-        expect(registry.storagePathResolver.runtimeType.toString(), contains('Stub'));
+        expect(
+          registry.storagePathResolver.runtimeType.toString(),
+          contains('Stub'),
+        );
 
         registry.dispose();
       });
@@ -196,7 +210,11 @@ void main() {
         // 2. Service registry provides web stub that throws helpful error
         // 3. OR: ScriptFileService uses HTTP API on web instead
 
-        expect(true, isTrue, reason: 'See lib/pages/mapping/mapping_editor.dart:155');
+        expect(
+          true,
+          isTrue,
+          reason: 'See lib/pages/mapping/mapping_editor.dart:155',
+        );
       });
 
       test('REGRESSION: devices tab should not throw "not available"', () {
