@@ -10,9 +10,12 @@ import 'dart:convert';
 import 'package:core_logic/ffi/bridge.dart'
     if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 
-/// Log entry from the engine.
-class LogEntry {
-  const LogEntry({
+/// Log entry from the engine for UI display.
+///
+/// This is a UI-specific log entry model used by the observability service
+/// to display logs in the UI. It is separate from core_logic's LogEntry model.
+class ObservabilityLogEntry {
+  const ObservabilityLogEntry({
     required this.timestamp,
     required this.level,
     required this.target,
@@ -21,7 +24,7 @@ class LogEntry {
     this.span,
   });
 
-  factory LogEntry.fromJson(Map<String, dynamic> json) => LogEntry(
+  factory ObservabilityLogEntry.fromJson(Map<String, dynamic> json) => ObservabilityLogEntry(
     timestamp: json['timestamp'] as int,
     level: _parseLogLevel(json['level'] as String),
     target: json['target'] as String,
@@ -104,7 +107,7 @@ abstract class ObservabilityService {
   /// Stream of log entries.
   ///
   /// Emits new log entries as they are captured by the log bridge.
-  Stream<List<LogEntry>> get logStream;
+  Stream<List<ObservabilityLogEntry>> get logStream;
 
   /// Stream of metrics snapshots.
   ///
@@ -115,7 +118,7 @@ abstract class ObservabilityService {
   Future<bool> initialize();
 
   /// Fetch all buffered log entries and clear the buffer.
-  Future<List<LogEntry>> drainLogs();
+  Future<List<ObservabilityLogEntry>> drainLogs();
 
   /// Get the number of buffered log entries.
   Future<int> getLogCount();
@@ -146,8 +149,8 @@ class ObservabilityServiceImpl implements ObservabilityService {
   ObservabilityServiceImpl({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
-  final StreamController<List<LogEntry>> _logController =
-      StreamController<List<LogEntry>>.broadcast();
+  final StreamController<List<ObservabilityLogEntry>> _logController =
+      StreamController<List<ObservabilityLogEntry>>.broadcast();
   final StreamController<MetricsSnapshot> _metricsController =
       StreamController<MetricsSnapshot>.broadcast();
 
@@ -156,7 +159,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
   bool _initialized = false;
 
   @override
-  Stream<List<LogEntry>> get logStream => _logController.stream;
+  Stream<List<ObservabilityLogEntry>> get logStream => _logController.stream;
 
   @override
   Stream<MetricsSnapshot> get metricsStream => _metricsController.stream;
@@ -202,7 +205,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
   }
 
   @override
-  Future<List<LogEntry>> drainLogs() async {
+  Future<List<ObservabilityLogEntry>> drainLogs() async {
     if (_bridge.loadFailure != null) {
       return const [];
     }
@@ -217,7 +220,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
     try {
       final jsonList = jsonDecode(jsonStr) as List<dynamic>;
       return jsonList
-          .map((entry) => LogEntry.fromJson(entry as Map<String, dynamic>))
+          .map((entry) => ObservabilityLogEntry.fromJson(entry as Map<String, dynamic>))
           .toList();
     } on Exception {
       // Failed to parse logs

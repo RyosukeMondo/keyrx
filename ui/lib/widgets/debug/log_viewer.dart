@@ -25,9 +25,9 @@ class LogViewer extends StatefulWidget {
 }
 
 class _LogViewerState extends State<LogViewer> {
-  final List<LogEntry> _allLogs = [];
-  List<LogEntry> _filteredLogs = [];
-  StreamSubscription<List<LogEntry>>? _logSubscription;
+  final List<ObservabilityLogEntry> _allLogs = [];
+  List<ObservabilityLogEntry> _filteredLogs = [];
+  StreamSubscription<List<ObservabilityLogEntry>>? _logSubscription;
 
   // Filter state
   LogLevel _minLevel = LogLevel.trace;
@@ -339,7 +339,7 @@ class _LogEntryTile extends StatefulWidget {
     required this.formatTimestamp,
   });
 
-  final LogEntry log;
+  final ObservabilityLogEntry log;
   final Color levelColor;
   final IconData levelIcon;
   final String Function(DateTime) formatTimestamp;
