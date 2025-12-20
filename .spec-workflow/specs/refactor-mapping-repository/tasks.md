@@ -13,7 +13,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Dart refactoring specialist | Task: Refactor MappingRepository from ChangeNotifier to StreamController pattern following exact same approach as HardwareService refactoring in Spec 2, remove Flutter imports, preserve all business logic and method signatures | Restrictions: Do NOT change business logic, do NOT change method signatures, do NOT move file yet, remove all Flutter imports, replace notifyListeners with stream events | Success: No 'extends ChangeNotifier' or 'with ChangeNotifier', StreamController<void> added, Stream<void> get changes exposed, all notifyListeners() replaced with _changes.add(null), dispose() method closes stream, zero Flutter dependencies verified with grep_
 
-- [ ] 2. Move MappingRepository to core_logic
+- [x] 2. Move MappingRepository to core_logic
   - File: packages/core_logic/lib/repositories/mapping_repository.dart
   - Copy refactored repository from UI to core_logic/repositories/
   - Update imports to use relative paths
