@@ -47,7 +47,7 @@ void main(List<String> args) async {
     bridge: bridge,
     repository: deviceConfigRepo,
   );
-  final profileRegistryService = ProfileRegistryServiceImpl(bridge: bridge);
+  final profileRegistryService = ProfileRegistryServiceFFI(bridge: bridge);
   final runtimeService = RuntimeServiceImpl(bridge: bridge);
   final testService = TestServiceImpl(bridge: bridge);
   const scriptFileService = ScriptFileService();

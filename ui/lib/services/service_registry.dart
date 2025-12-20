@@ -358,7 +358,7 @@ class ServiceRegistry {
 
     final profileRegistry =
         profileRegistryService ??
-        ProfileRegistryServiceImpl(bridge: effectiveBridge);
+        ProfileRegistryServiceFFI(bridge: effectiveBridge);
     final scriptFile = scriptFileService ?? const ScriptFileService();
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 

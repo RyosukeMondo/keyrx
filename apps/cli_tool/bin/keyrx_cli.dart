@@ -63,7 +63,7 @@ Future<void> main(List<String> arguments) async {
     final hardwareService = HardwareServiceFFI(bridge: bridge);
     final layoutService = LayoutServiceFFI(bridge: bridge);
     final keymapService = KeymapServiceFFI(bridge: bridge);
-    final profileRegistry = ProfileRegistryServiceImpl(bridge: bridge);
+    final profileRegistry = ProfileRegistryServiceFFI(bridge: bridge);
     final testService = TestServiceImpl(bridge: bridge);
     final scriptFileService = const ScriptFileService();
 

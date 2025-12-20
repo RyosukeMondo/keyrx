@@ -30,7 +30,7 @@ void main() {
     hardwareService = HardwareServiceFFI(bridge: bridge);
     layoutService = LayoutServiceFFI(bridge: bridge);
     keymapService = KeymapServiceFFI(bridge: bridge);
-    profileRegistry = ProfileRegistryServiceImpl(bridge: bridge);
+    profileRegistry = ProfileRegistryServiceFFI(bridge: bridge);
     testService = TestServiceImpl(bridge: bridge);
     scriptFileService = const ScriptFileService();
 
