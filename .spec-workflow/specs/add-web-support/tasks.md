@@ -120,7 +120,7 @@
   - _Note: Web build infrastructure is in place. Created index.html with backend URL configuration, manifest.json, build script, and FFI stub for web platform. Conditional exports added to core_logic. Additional work needed to make all UI code web-compatible by either creating web stubs for FFI-dependent features or conditionally compiling them._
   - _Prompt: Role: Flutter web specialist | Task: Configure Flutter web build with environment-based backend URL, CORS support, production optimizations | Restrictions: No platform-specific UI code, same main.dart for all platforms, configurable backend | Success: flutter build web succeeds, connects to backend, hot reload works, production build optimized_
 
-- [ ] 11. Add backend integration tests
+- [x] 11. Add backend integration tests
   - File: apps/keyrx_server/test/integration_test.dart
   - Test all REST endpoints
   - Test WebSocket connections
