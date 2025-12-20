@@ -103,6 +103,9 @@ void main() {
       }
       final elapsed = timer.stop();
 
+      // Use sum to prevent optimization
+      expect(sum, greaterThan(0));
+
       expect(elapsed.inMicroseconds, greaterThan(0));
       expect(
         elapsed.inMilliseconds,

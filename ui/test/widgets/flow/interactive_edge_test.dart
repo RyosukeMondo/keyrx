@@ -84,7 +84,7 @@ void main() {
       overrides: [
         selectionNotifierProvider.overrideWith(SelectionNotifier.new),
         keyFlowActionsProvider.overrideWith((ref) {
-          fakeActions = _FakeKeyFlowActions(ref);
+          fakeActions = _FakeKeyFlowActions();
           return fakeActions;
         }),
       ],
@@ -364,7 +364,7 @@ void main() {
         overrides: [
           selectionNotifierProvider.overrideWith(SelectionNotifier.new),
           keyFlowActionsProvider.overrideWith((ref) {
-            actions = _FakeKeyFlowActions(ref);
+            actions = _FakeKeyFlowActions();
             actions!.removeSlotResult = ConfigOperationResult.error(
               'FFI error: connection lost',
             );
@@ -468,9 +468,7 @@ void main() {
 
 /// Fake KeyFlowActions for testing.
 class _FakeKeyFlowActions implements KeyFlowActions {
-  _FakeKeyFlowActions(this._ref);
-
-  final Ref _ref;
+  _FakeKeyFlowActions();
 
   final List<(DeviceInstanceId, String)> removeSlotCalls = [];
   final List<(DeviceInstanceId, ProfileSlot)> updateSlotCalls = [];
