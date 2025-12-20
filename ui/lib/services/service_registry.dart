@@ -6,6 +6,8 @@ import 'package:core_logic/ffi/mock_bridge.dart'
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/benchmark_service.dart' as core_benchmark;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
+import 'package:core_logic/services/device_registry_service_ffi.dart'
+    as core_ffi;
 import 'package:core_logic/services/device_registry_service_web.dart'
     as core_web;
 import 'package:core_logic/services/hardware_service_web.dart';
@@ -336,7 +338,7 @@ class ServiceRegistry {
 
     // Shared DeviceRegistry from core_logic
     final deviceConfigRepository = DeviceConfigRepository();
-    final sharedDeviceRegistry = core_impl.DeviceRegistryServiceImpl(
+    final sharedDeviceRegistry = core_ffi.DeviceRegistryServiceFFI(
       bridge: effectiveBridge,
       repository: deviceConfigRepository,
     );

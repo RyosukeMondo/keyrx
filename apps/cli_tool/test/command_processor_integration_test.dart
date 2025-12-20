@@ -22,7 +22,7 @@ void main() {
 
     // Create real services using the mock bridge - they will handle mocking internally
     final repository = DeviceConfigRepository();
-    deviceRegistry = DeviceRegistryServiceImpl(
+    deviceRegistry = DeviceRegistryServiceFFI(
       bridge: bridge,
       repository: repository,
     );

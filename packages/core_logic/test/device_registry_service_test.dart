@@ -16,7 +16,7 @@ void main() {
     tempDir = Directory.systemTemp.createTempSync('device_registry_service_test');
     repository = DeviceConfigRepository(configDir: tempDir.path);
     bridge = MockKeyrxBridge();
-    service = DeviceRegistryServiceImpl(bridge: bridge, repository: repository);
+    service = DeviceRegistryServiceFFI(bridge: bridge, repository: repository);
   });
 
   tearDown(() async {

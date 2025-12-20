@@ -43,7 +43,7 @@ void main(List<String> args) async {
 
   // Initialize services
   final deviceConfigRepo = DeviceConfigRepository();
-  final deviceRegistryService = DeviceRegistryServiceImpl(
+  final deviceRegistryService = DeviceRegistryServiceFFI(
     bridge: bridge,
     repository: deviceConfigRepo,
   );

@@ -58,7 +58,7 @@ Future<void> main(List<String> arguments) async {
 
     final repository = DeviceConfigRepository(configDir: results['config-root']);
     final deviceService =
-        DeviceRegistryServiceImpl(bridge: bridge, repository: repository);
+        DeviceRegistryServiceFFI(bridge: bridge, repository: repository);
     final runtimeService = RuntimeServiceImpl(bridge: bridge);
     final hardwareService = HardwareServiceFFI(bridge: bridge);
     final layoutService = LayoutServiceFFI(bridge: bridge);
