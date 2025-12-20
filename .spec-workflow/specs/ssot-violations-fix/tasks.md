@@ -161,7 +161,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Interface Design Specialist | Task: Fix the first interface inconsistency identified in task 14. Align method signatures, create shared interface if needed, test both implementations. | Restrictions: Preserve functionality of both implementations, maintain backward compatibility where possible, clear interfaces | Success: Interface signatures match, shared interface created if appropriate, both implementations work, 1 fewer violation | Instructions: Mark in-progress `[-]`, implement fix, log interface changes, mark complete `[x]`._
 
-- [ ] 16. Fix interface inconsistency 2
+- [x] 16. Fix interface inconsistency 2
   - Files: TBD based on task 14 findings
   - Align method signatures between implementations
   - Create shared interface if needed
