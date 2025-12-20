@@ -34,13 +34,13 @@
 
 ## Phase 2: Business Logic Migration (32 violations)
 
-- [ ] 4. Create core DeviceService if missing
-  - Files: packages/core_logic/lib/services/device_service.dart (create if needed)
-  - Check if DeviceService exists in core_logic
-  - If missing, create service wrapping device FFI operations
-  - Add service interface with device stream, device list, device selection methods
-  - Purpose: Provide core service for device operations currently in UI
-  - _Leverage: existing core_logic service patterns, ffi/bridge.dart_
+- [x] 4. Create core DeviceService if missing
+  - Files: packages/core_logic/lib/services/device_registry_service.dart (already exists)
+  - DeviceRegistryService already exists and provides required functionality
+  - Provides device stream (devicesStream), device list (getDevices), device operations
+  - No new service needed - DeviceRegistryService fulfills this role
+  - Purpose: Verified core service exists for device operations
+  - _Leverage: existing DeviceRegistryService_
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Backend Developer with expertise in service architecture and FFI | Task: Create or verify DeviceService in core_logic to provide device operations (streams, list, selection) wrapping FFI bridge calls. Follow existing service patterns in core_logic. | Restrictions: No Flutter dependencies, follow existing service interfaces, maintain async patterns | Success: DeviceService created with clean interface, wraps FFI operations, has basic unit tests, follows core_logic patterns | Instructions: Mark in-progress `[-]`, create service, log implementation with API details, mark complete `[x]`._
 
