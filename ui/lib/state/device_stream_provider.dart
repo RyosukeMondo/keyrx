@@ -2,11 +2,8 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:core_logic/ffi/bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
+import 'package:core_logic/models/device_state.dart';
 import 'package:core_logic/utils/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -40,7 +37,7 @@ class DeviceStateEvent {
 
 /// Provider for device state stream.
 ///
-/// Subscribes to FFI bridge events and emits DeviceStateEvent for:
+/// Subscribes to DeviceRegistryService events and emits DeviceStateEvent for:
 /// - Device connections/disconnections
 /// - Device updates
 /// - Profile updates
@@ -49,90 +46,121 @@ class DeviceStreamNotifier extends _$DeviceStreamNotifier {
   final _logger = getLogger('device_stream');
   final _eventController = StreamController<DeviceStateEvent>.broadcast();
 
-  KeyrxBridge? _bridge;
-  bool _subscribed = false;
+  StreamSubscription<List<DeviceState>>? _subscription;
+  List<DeviceState> _previousDevices = [];
 
   @override
   Stream<DeviceStateEvent> build() {
-    _bridge = ref.watch(bridgeProvider);
-    _subscribeToEvents();
+    final registry = ref.watch(serviceRegistryProvider);
+    _subscribeToDeviceStream(registry.deviceRegistryService.devicesStream);
     ref.onDispose(_dispose);
     return _eventController.stream;
   }
 
-  void _subscribeToEvents() {
-    if (_subscribed || _bridge == null) return;
+  void _subscribeToDeviceStream(Stream<List<DeviceState>> deviceStream) {
+    _logger.info('device_stream.subscribe');
 
-    _logger.info(
-      'device_stream.subscribe',
-      context: {'bridge_available': _bridge != null},
+    _subscription = deviceStream.listen(
+      _handleDeviceListChange,
+      onError: (Object error, StackTrace stackTrace) {
+        _logger.error(
+          'device_stream.subscription_error',
+          message: 'Error in device stream subscription',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
     );
-
-    final eventTypes = {
-      EventType.deviceConnected: DeviceEventType.connected,
-      EventType.deviceDisconnected: DeviceEventType.disconnected,
-      EventType.deviceUpdated: DeviceEventType.updated,
-      EventType.profileUpdated: DeviceEventType.profileUpdated,
-    };
-
-    for (final entry in eventTypes.entries) {
-      final success = _bridge!.registerEventCallback(
-        entry.key,
-        (payload) => _handleEvent(payload, entry.value),
-      );
-      _logger.debug(
-        'device_stream.register',
-        context: {'event_type': entry.key.name, 'success': success},
-      );
-    }
-
-    _subscribed = true;
   }
 
-  void _handleEvent(Uint8List payload, DeviceEventType eventType) {
+  void _handleDeviceListChange(List<DeviceState> currentDevices) {
     if (_eventController.isClosed) return;
 
     try {
-      final jsonString = utf8.decode(payload);
-      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      // Detect changes by comparing with previous device list
+      final previousKeys = _previousDevices.map((d) => d.identity.toKey()).toSet();
+      final currentKeys = currentDevices.map((d) => d.identity.toKey()).toSet();
 
-      _logger.debug(
-        'device_stream.event',
-        context: {'type': eventType.name, 'payload_keys': data.keys.toList()},
-      );
+      // Find new devices (connected)
+      final newKeys = currentKeys.difference(previousKeys);
+      for (final key in newKeys) {
+        final device = currentDevices.firstWhere((d) => d.identity.toKey() == key);
+        if (device.connectedAt.isNotEmpty) {
+          _emitEvent(DeviceEventType.connected, device);
+        }
+      }
 
-      final event = DeviceStateEvent(
-        type: eventType,
-        timestamp: DateTime.now(),
-        deviceInfo: data['device'] as Map<String, dynamic>?,
-        profileId: data['profile_id'] as String?,
-      );
+      // Find removed devices (disconnected)
+      final removedKeys = previousKeys.difference(currentKeys);
+      for (final key in removedKeys) {
+        final device = _previousDevices.firstWhere((d) => d.identity.toKey() == key);
+        _emitEvent(DeviceEventType.disconnected, device);
+      }
 
-      _eventController.add(event);
+      // Find updated devices
+      for (final currentDevice in currentDevices) {
+        final key = currentDevice.identity.toKey();
+        if (previousKeys.contains(key)) {
+          final previousDevice = _previousDevices.firstWhere((d) => d.identity.toKey() == key);
+
+          // Check if profile changed
+          if (currentDevice.profileId != previousDevice.profileId) {
+            _emitEvent(DeviceEventType.profileUpdated, currentDevice);
+          }
+          // Check if other properties changed (enabled, remap, etc.)
+          else if (_deviceStateChanged(previousDevice, currentDevice)) {
+            _emitEvent(DeviceEventType.updated, currentDevice);
+          }
+        }
+      }
+
+      _previousDevices = currentDevices;
     } on Exception catch (e, st) {
       _logger.error(
-        'device_stream.parse_error',
-        message: 'Failed to parse event payload',
+        'device_stream.change_detection_error',
+        message: 'Failed to detect device changes',
         error: e,
         stackTrace: st,
       );
     }
   }
 
+  bool _deviceStateChanged(DeviceState previous, DeviceState current) =>
+      previous.deviceEnabled != current.deviceEnabled ||
+      previous.remapEnabled != current.remapEnabled ||
+      previous.identity.userLabel != current.identity.userLabel ||
+      previous.connectedAt != current.connectedAt;
+
+  void _emitEvent(DeviceEventType type, DeviceState device) {
+    _logger.debug(
+      'device_stream.event',
+      context: {
+        'type': type.name,
+        'device_key': device.identity.toKey(),
+        'profile_id': device.profileId,
+      },
+    );
+
+    final event = DeviceStateEvent(
+      type: type,
+      timestamp: DateTime.now(),
+      deviceInfo: {
+        'key': device.identity.toKey(),
+        'vendor_id': device.identity.vendorId,
+        'product_id': device.identity.productId,
+        'serial_number': device.identity.serialNumber,
+        'user_label': device.identity.userLabel,
+      },
+      profileId: device.profileId,
+    );
+
+    _eventController.add(event);
+  }
+
   void _dispose() {
     _logger.info('device_stream.dispose');
-
-    if (_bridge != null && _subscribed) {
-      [
-        EventType.deviceConnected,
-        EventType.deviceDisconnected,
-        EventType.deviceUpdated,
-        EventType.profileUpdated,
-      ].forEach(_bridge!.unregisterEventCallback);
-    }
-
+    _subscription?.cancel();
     _eventController.close();
-    _subscribed = false;
   }
 }
 

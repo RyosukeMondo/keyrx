@@ -44,7 +44,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Backend Developer with expertise in service architecture and FFI | Task: Create or verify DeviceService in core_logic to provide device operations (streams, list, selection) wrapping FFI bridge calls. Follow existing service patterns in core_logic. | Restrictions: No Flutter dependencies, follow existing service interfaces, maintain async patterns | Success: DeviceService created with clean interface, wraps FFI operations, has basic unit tests, follows core_logic patterns | Instructions: Mark in-progress `[-]`, create service, log implementation with API details, mark complete `[x]`._
 
-- [ ] 5. Migrate device_stream_provider FFI usage
+- [x] 5. Migrate device_stream_provider FFI usage
   - Files: ui/lib/state/device_stream_provider.dart
   - Replace direct FFI bridge usage with DeviceService injection
   - Update provider to depend on DeviceService
