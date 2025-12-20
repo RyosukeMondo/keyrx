@@ -1,6 +1,6 @@
 # Tasks: Move Utilities to Core
 
-- [-] 1. Move ErrorTranslator to core_logic
+- [x] 1. Move ErrorTranslator to core_logic
   - File: packages/core_logic/lib/utils/error_translator.dart
   - File: packages/core_logic/lib/utils/error_translator_impl.dart
   - Copy both interface and implementation from ui/lib/services/ to core_logic/lib/utils/
@@ -12,7 +12,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Package organizer | Task: Move ErrorTranslator interface and ErrorTranslatorImpl from ui/lib/services/ to core_logic/lib/utils/ maintaining both files, update imports to relative paths, add exports to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete originals yet, verify NO Flutter dependencies using grep, maintain interface/implementation separation | Success: Both files at packages/core_logic/lib/utils/, imports use relative paths, both exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
 
-- [ ] 2. Move StoragePathResolver to core_logic
+- [-] 2. Move StoragePathResolver to core_logic
   - File: packages/core_logic/lib/utils/storage_path_resolver.dart
   - Copy from ui/lib/services/storage_path_resolver.dart to core_logic/lib/utils/
   - Update imports to use relative paths

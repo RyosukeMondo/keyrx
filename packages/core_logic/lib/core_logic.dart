@@ -12,3 +12,4 @@ export 'services/keymap_service.dart';
 export 'utils/logger.dart';
 export 'utils/error_translator.dart';
 export 'utils/error_translator_impl.dart';
+export 'utils/storage_path_resolver.dart';
