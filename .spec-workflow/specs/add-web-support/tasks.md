@@ -57,7 +57,7 @@
   - _Note: Created web implementations for the 3 refactored services (hardware, keymap, layout). Other services still need to be refactored first per task 1._
   - _Prompt: Role: Platform abstraction specialist | Task: Implement *_web.dart for 11 services using WebApiClient, matching FFI interfaces exactly, subscribing to WebSocket for reactivity | Restrictions: Same interface as FFI version, no business logic, only transport differences | Success: All 11 web services created, implement correct interfaces, pass unit tests, zero business logic_
 
-- [ ] 6. Create platform consistency tests
+- [x] 6. Create platform consistency tests
   - File: packages/core_logic/test/ssot/platform_consistency_test.dart
   - Test FFI and Web implement same interface
   - Verify transport layer contains no business logic
