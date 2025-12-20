@@ -37,7 +37,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Role: UI adapter developer | Task: Create MappingRepositoryUI wrapper following exact same pattern as HardwareServiceUI from Spec 2 Task 5, bridge core repository streams to ChangeNotifier for Riverpod compatibility | Restrictions: Must extend ChangeNotifier, must forward ALL public methods to core repository, must subscribe to core changes stream, must dispose subscription properly | Success: File created at ui/lib/repositories/mapping_repository_ui.dart, extends ChangeNotifier, subscribes to core.MappingRepository.changes, calls notifyListeners() on stream events, forwards all public methods, proper disposal verified_
 
-- [ ] 4. Update ServiceRegistry to use wrapper
+- [x] 4. Update ServiceRegistry to use wrapper
   - File: ui/lib/services/service_registry.dart
   - Import core MappingRepository from core_logic
   - Import MappingRepositoryUI wrapper

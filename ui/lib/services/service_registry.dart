@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/repositories/device_config_repository.dart';
+import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
 import 'package:core_logic/services/hardware_service.dart' as core;
 import 'package:core_logic/services/keymap_service.dart';
@@ -10,7 +11,7 @@ import 'package:core_logic/services/profile_registry_service.dart';
 import 'package:core_logic/services/runtime_service.dart';
 import 'package:core_logic/services/script_file_service.dart';
 import 'package:core_logic/services/test_service.dart';
-import '../repositories/mapping_repository.dart';
+import '../repositories/mapping_repository_ui.dart';
 import '../utils/performance_timeline.dart';
 import 'api_docs_service.dart';
 import 'daemon_manager.dart';
@@ -54,7 +55,7 @@ class ServiceRegistry {
   factory ServiceRegistry.real({
     KeyrxBridge? bridge,
     ErrorTranslator? errorTranslator,
-    MappingRepository? mappingRepository,
+    MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
     DeviceRegistryService? deviceRegistryService,
@@ -131,10 +132,12 @@ class ServiceRegistry {
     // Create core services
     final coreLayout = core.LayoutService(bridge: effectiveBridge);
     final coreHardware = core.HardwareService(bridge: effectiveBridge);
+    final coreMapping = core.MappingRepository();
 
     // Create UI wrappers
     final layouts = layoutService ?? LayoutServiceUI(coreLayout);
     final hardware = hardwareService ?? HardwareServiceUI(coreHardware);
+    final mapping = mappingRepository ?? MappingRepositoryUI(coreMapping);
 
     final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
     final runtime =
@@ -152,7 +155,7 @@ class ServiceRegistry {
     final registry = ServiceRegistry(
       errorTranslator: translator,
       engineService: engine,
-      mappingRepository: mappingRepository ?? MappingRepository(),
+      mappingRepository: mapping,
       deviceService: device,
       deviceProfileService: deviceProfile,
       deviceRegistryService: deviceRegistry,
@@ -184,7 +187,7 @@ class ServiceRegistry {
   factory ServiceRegistry.withOverrides({
     required ErrorTranslator errorTranslator,
     required EngineService engineService,
-    required MappingRepository mappingRepository,
+    required MappingRepositoryUI mappingRepository,
     required DeviceService deviceService,
     required DeviceProfileService deviceProfileService,
     required DeviceRegistryService deviceRegistryService,
@@ -232,7 +235,7 @@ class ServiceRegistry {
 
   final ErrorTranslator errorTranslator;
   final EngineService engineService;
-  final MappingRepository mappingRepository;
+  final MappingRepositoryUI mappingRepository;
   final DeviceService deviceService;
   final DeviceProfileService deviceProfileService;
   final DeviceRegistryService deviceRegistryService;
@@ -253,7 +256,7 @@ class ServiceRegistry {
   ServiceRegistry copyWith({
     ErrorTranslator? errorTranslator,
     EngineService? engineService,
-    MappingRepository? mappingRepository,
+    MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
     DeviceRegistryService? deviceRegistryService,
@@ -303,6 +306,7 @@ class ServiceRegistry {
     await profileAutosaveService.dispose();
     layoutService.dispose();
     hardwareService.dispose();
+    mappingRepository.dispose();
     await bridge.dispose();
   }
 }
