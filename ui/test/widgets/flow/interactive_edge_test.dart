@@ -83,10 +83,9 @@ void main() {
     }) => ProviderScope(
       overrides: [
         selectionNotifierProvider.overrideWith(SelectionNotifier.new),
-        keyFlowActionsProvider.overrideWith((ref) {
-          fakeActions = _FakeKeyFlowActions();
-          return fakeActions;
-        }),
+        keyFlowActionsProvider.overrideWith(
+          (ref) => fakeActions = _FakeKeyFlowActions(),
+        ),
       ],
       child: MaterialApp(
         home: Scaffold(

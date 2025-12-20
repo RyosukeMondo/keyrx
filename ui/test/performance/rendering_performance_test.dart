@@ -93,9 +93,7 @@ void main() {
     });
 
     test('frame timer accuracy', () {
-      final timer = FrameTimer();
-
-      timer.start();
+      final timer = FrameTimer()..start();
       // Simulate some work
       var sum = 0;
       for (var i = 0; i < 1000; i++) {
@@ -218,7 +216,7 @@ void main() {
         reason: 'Virtualization of 250 nodes should take <5ms',
       );
 
-      print(
+      debugPrint(
         'Virtualized ${allNodes.length} nodes to ${visibleNodes.length} '
         'in ${stopwatch.elapsedMicroseconds}μs',
       );
@@ -275,7 +273,7 @@ void main() {
         reason: 'Cached path access should be 50% faster',
       );
 
-      print(
+      debugPrint(
         'Edge path cache: first=$time1μs, cached=$time2μs, '
         'speedup=${(time1 / time2).toStringAsFixed(2)}x',
       );
@@ -341,7 +339,7 @@ void main() {
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(5));
-      print(
+      debugPrint(
         '✓ 250 nodes virtualized in ${stopwatch.elapsedMicroseconds}μs '
         '(${visible.length} visible)',
       );
@@ -376,7 +374,9 @@ void main() {
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(1));
-      print('✓ 500 edge cache lookups in ${stopwatch.elapsedMicroseconds}μs');
+      debugPrint(
+        '✓ 500 edge cache lookups in ${stopwatch.elapsedMicroseconds}μs',
+      );
     });
   });
 }

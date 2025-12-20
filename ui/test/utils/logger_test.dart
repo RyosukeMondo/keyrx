@@ -11,25 +11,23 @@ void main() {
 
   test('emits structured JSON with context and error fields', () {
     final lines = <String>[];
-    final logger = getLogger('test_service', level: Level.ALL, sink: lines.add);
-
-    logger.info(
-      'device_selected',
-      message: 'Device selection succeeded',
-      context: {
-        'path': '/dev/input/event3',
-        'attempts': 1,
-        'flags': ['usb', 'wired'],
-      },
-    );
-
-    logger.error(
-      'device_selection_error',
-      message: 'Device selection failed',
-      context: {'path': '/dev/input/event3'},
-      error: Exception('bad device'),
-      stackTrace: StackTrace.fromString('stack here'),
-    );
+    getLogger('test_service', level: Level.ALL, sink: lines.add)
+      ..info(
+        'device_selected',
+        message: 'Device selection succeeded',
+        context: {
+          'path': '/dev/input/event3',
+          'attempts': 1,
+          'flags': ['usb', 'wired'],
+        },
+      )
+      ..error(
+        'device_selection_error',
+        message: 'Device selection failed',
+        context: {'path': '/dev/input/event3'},
+        error: Exception('bad device'),
+        stackTrace: StackTrace.fromString('stack here'),
+      );
 
     expect(lines.length, 2);
 
