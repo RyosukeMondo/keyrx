@@ -8,8 +8,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:core_logic/ffi/bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart'
-    hide ScriptValidationResult;
+    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 import 'package:core_logic/models/log_entry.dart';
 import 'package:core_logic/services/test_service.dart';
 import 'package:rxdart/rxdart.dart';
@@ -277,7 +276,7 @@ class KeyrxFacadeImpl implements KeyrxFacade {
   // === Script Operations ===
 
   @override
-  Future<Result<ScriptValidationResult>> validateScript(
+  Future<Result<ScriptCheckResult>> validateScript(
     String scriptPath,
   ) async {
     _checkDisposed();
@@ -309,8 +308,8 @@ class KeyrxFacadeImpl implements KeyrxFacade {
       // Step 2: Validate using the bridge
       final validationResult = _services.bridge.validateScript(content);
 
-      // Step 3: Convert FFI ValidationResult to facade ScriptValidationResult
-      final facadeResult = ScriptValidationResult(
+      // Step 3: Convert FFI ValidationResult to facade ScriptCheckResult
+      final facadeResult = ScriptCheckResult(
         isValid: validationResult.isValid,
         errors: validationResult.errors
             .map(

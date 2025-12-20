@@ -129,7 +129,7 @@ abstract class KeyrxFacade {
   /// Returns:
   /// - `Result.ok(ValidationResult)` with validation details
   /// - `Result.err(error)` if the validation process itself failed
-  Future<Result<ScriptValidationResult>> validateScript(String scriptPath);
+  Future<Result<ScriptCheckResult>> validateScript(String scriptPath);
 
   /// Load script content from a file.
   ///
@@ -235,8 +235,8 @@ abstract class KeyrxFacade {
 /// Result of script validation.
 ///
 /// Contains validation status and any errors or warnings found.
-class ScriptValidationResult {
-  const ScriptValidationResult({
+class ScriptCheckResult {
+  const ScriptCheckResult({
     required this.isValid,
     required this.errors,
     required this.warnings,
