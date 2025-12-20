@@ -94,15 +94,16 @@ class EdgesPainter extends CustomPainter {
       ..color = style.palette.priorityBackgroundColor.withValues(alpha: 0.9)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
-    canvas.drawCircle(badgePoint, style.priorityBadgeRadius, fillPaint);
-    canvas.drawCircle(
-      badgePoint,
-      style.priorityBadgeRadius,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
+    canvas
+      ..drawCircle(badgePoint, style.priorityBadgeRadius, fillPaint)
+      ..drawCircle(
+        badgePoint,
+        style.priorityBadgeRadius,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2,
+      );
 
     final textPainter = TextPainter(
       text: TextSpan(text: label, style: textStyle),

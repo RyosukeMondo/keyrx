@@ -15,7 +15,7 @@ void main() {
             body: Builder(
               builder: (BuildContext context) => ElevatedButton(
                 onPressed: () {
-                  showDialog(
+                  showDialog<void>(
                     context: context,
                     builder: (BuildContext context) => ThresholdSettingsDialog(
                       initialThresholds: MetricsThresholds.defaults(),

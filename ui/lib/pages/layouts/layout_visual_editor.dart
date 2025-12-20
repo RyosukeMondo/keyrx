@@ -60,7 +60,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
     try {
       // Return the first selected key for property editing
       return widget.keys.firstWhere((k) => k.id == _selectedIds.first);
-    } catch (_) {
+    } on StateError catch (_) {
       return null;
     }
   }

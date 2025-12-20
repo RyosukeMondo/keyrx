@@ -546,7 +546,7 @@ class _FakeSlotActions implements SlotActions {
     );
 
     if (addSlotDelay > Duration.zero) {
-      await Future.delayed(addSlotDelay);
+      await Future<void>.delayed(addSlotDelay);
     }
 
     return addSlotResult;

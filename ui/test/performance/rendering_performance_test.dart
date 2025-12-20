@@ -165,7 +165,7 @@ void main() {
       );
 
       // Wait for debounce period
-      return Future.delayed(const Duration(milliseconds: 150), () {
+      return Future<void>.delayed(const Duration(milliseconds: 150), () {
         expect(
           debouncer.shouldRebuild(),
           isTrue,

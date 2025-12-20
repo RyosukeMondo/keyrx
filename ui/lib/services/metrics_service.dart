@@ -23,16 +23,15 @@ class MetricsSnapshot {
     required this.memoryUsed,
   });
 
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
-      MetricsSnapshot(
-        timestamp: json['timestamp'] as int,
-        eventLatencyP50: json['event_latency_p50'] as int,
-        eventLatencyP95: json['event_latency_p95'] as int,
-        eventLatencyP99: json['event_latency_p99'] as int,
-        eventsProcessed: json['events_processed'] as int,
-        errorsCount: json['errors_count'] as int,
-        memoryUsed: json['memory_used'] as int,
-      );
+  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) => MetricsSnapshot(
+    timestamp: json['timestamp'] as int,
+    eventLatencyP50: json['event_latency_p50'] as int,
+    eventLatencyP95: json['event_latency_p95'] as int,
+    eventLatencyP99: json['event_latency_p99'] as int,
+    eventsProcessed: json['events_processed'] as int,
+    errorsCount: json['errors_count'] as int,
+    memoryUsed: json['memory_used'] as int,
+  );
 
   final int timestamp;
   final int eventLatencyP50; // microseconds
@@ -42,8 +41,7 @@ class MetricsSnapshot {
   final int errorsCount;
   final int memoryUsed; // bytes
 
-  DateTime get dateTime =>
-      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
   Map<String, dynamic> toJson() => {
     'timestamp': timestamp,
@@ -90,8 +88,7 @@ class ThresholdViolation {
   final int actualValue;
   final int thresholdValue;
 
-  DateTime get dateTime =>
-      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
+  DateTime get dateTime => DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
 
   String get message => switch (type) {
     ViolationType.latencyWarning =>
@@ -240,17 +237,14 @@ class MetricsServiceImpl implements MetricsService {
       if (status != 0) {
         return;
       }
-    } catch (_) {
+    } on Object catch (_) {
       return;
     }
 
     _isUpdating = true;
 
     // Poll for metrics periodically
-    _pollingTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => _pollMetrics(),
-    );
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (_) => _pollMetrics());
   }
 
   Future<void> _pollMetrics() async {
@@ -277,7 +271,7 @@ class MetricsServiceImpl implements MetricsService {
 
     try {
       bindings.observability.metricsStopUpdates();
-    } catch (_) {}
+    } on Object catch (_) {}
 
     _pollingTimer?.cancel();
     _pollingTimer = null;

@@ -79,7 +79,7 @@ void main() {
             },
           },
         ],
-        'combos': [],
+        'combos': <dynamic>[],
       };
       Keymap.fromJson(json);
     });
@@ -101,8 +101,8 @@ void main() {
         'id': 'test-keymap',
         // 'name': 'Test Keymap', // Missing
         'virtual_layout_id': 'layout-1',
-        'layers': [],
-        'combos': [],
+        'layers': <dynamic>[],
+        'combos': <dynamic>[],
       };
       final keymap = Keymap.fromJson(json);
       expect(keymap.name, 'Untitled Keymap');

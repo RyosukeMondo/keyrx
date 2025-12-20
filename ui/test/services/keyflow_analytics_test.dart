@@ -34,7 +34,7 @@ void main() {
       analytics.trackPageView(deviceCount: 2, slotCount: 5, nodeCount: 10);
 
       // Wait for logging to process
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -53,7 +53,7 @@ void main() {
         autoAssigned: true,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -69,7 +69,7 @@ void main() {
         priority: 0,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -86,7 +86,7 @@ void main() {
         newPriority: 1,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -103,7 +103,7 @@ void main() {
         deltaY: 20,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -119,7 +119,7 @@ void main() {
         operation: 'addSlot',
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -135,7 +135,7 @@ void main() {
         isActive: true,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -147,7 +147,7 @@ void main() {
     test('tracks dialog opened event', () async {
       analytics.trackDialogOpened(dialogType: 'add_slot');
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -159,7 +159,7 @@ void main() {
     test('tracks keyboard shortcut event', () async {
       analytics.trackKeyboardShortcut(shortcut: 'Ctrl+0', action: 'resetZoom');
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -173,7 +173,7 @@ void main() {
     test('tracks canvas manipulation event', () async {
       analytics.trackCanvasManipulation(action: 'zoom', scale: 1.5);
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -191,7 +191,7 @@ void main() {
         retryCount: 0,
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isNotEmpty);
       expect(
@@ -211,7 +211,7 @@ void main() {
       logOutput.clear();
       disabledAnalytics.trackPageView(deviceCount: 1);
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(logOutput, isEmpty);
 
@@ -229,7 +229,7 @@ void main() {
         keymapId: 'keymap1',
       );
 
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(events, hasLength(2));
       expect(events[0].type, KeyFlowEventType.pageView);

@@ -153,15 +153,15 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       });
     });
 
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
-
     _transitionControllers[edgeId] = controller;
-    controller.forward();
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
+        }
+      })
+      ..forward();
   }
 
   void _fadeOutEdge(String edgeId) {
@@ -181,18 +181,18 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       });
     });
 
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _animationStates.remove(edgeId);
-        });
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
-
     _transitionControllers[edgeId] = controller;
-    controller.forward();
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _animationStates.remove(edgeId);
+          });
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
+        }
+      })
+      ..forward();
   }
 
   void _handleColorTransitions(List<PaintableEdge> oldEdges, List<PaintableEdge> newEdges) {
@@ -202,10 +202,7 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       final edgeId = _edgeId(newEdge);
 
       if (oldEdge.status != newEdge.status || oldEdge.active != newEdge.active) {
-        final oldColor = widget.style.colorForStatus(
-          oldEdge.status,
-          active: oldEdge.active,
-        );
+        final oldColor = widget.style.colorForStatus(oldEdge.status, active: oldEdge.active);
         _previousColors[edgeId] = oldColor;
         _startColorTransition(edgeId);
       }
@@ -229,25 +226,18 @@ class _InteractiveEdgeCanvasState extends ConsumerState<InteractiveEdgeCanvas>
       });
     });
 
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          _previousColors.remove(edgeId);
-        });
-        controller.dispose();
-        _transitionControllers.remove(edgeId);
-      }
-    });
-
-    setState(() {
-      final current = _animationStates[edgeId];
-      if (current != null) {
-        _animationStates[edgeId] = current.copyWith(colorTransition: 0);
-      }
-    });
-
     _transitionControllers[edgeId] = controller;
-    controller.forward();
+    controller
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {
+            _previousColors.remove(edgeId);
+          });
+          controller.dispose();
+          _transitionControllers.remove(edgeId);
+        }
+      })
+      ..forward();
   }
 
   String _edgeId(PaintableEdge edge) =>

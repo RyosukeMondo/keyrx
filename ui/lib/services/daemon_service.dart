@@ -180,7 +180,7 @@ class DaemonService {
           _updateState(DaemonConnectionState.connected);
           unawaited(_sendQueuedRequests());
           return;
-        } catch (_) {
+        } on Object catch (_) {
           // Ignore second failure, fall through to cleanup
         }
       }
@@ -237,7 +237,7 @@ class DaemonService {
     try {
       final result = await Process.run('which', [executable]);
       return result.exitCode == 0;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }

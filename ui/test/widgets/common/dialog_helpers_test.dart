@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/widgets/common/dialogs/dialog_helpers.dart';
@@ -81,13 +83,13 @@ void main() {
         ),
       );
 
-      DialogHelpers.confirm(
+      unawaited(DialogHelpers.confirm(
         testContext,
         title: 'Custom',
         message: 'Message',
         confirmLabel: 'Yes',
         cancelLabel: 'No',
-      );
+      ));
 
       await tester.pumpAndSettle();
 
@@ -111,11 +113,11 @@ void main() {
         ),
       );
 
-      DialogHelpers.confirmDelete(
+      unawaited(DialogHelpers.confirmDelete(
         testContext,
         title: 'Delete Item',
         message: 'This cannot be undone',
-      );
+      ));
 
       await tester.pumpAndSettle();
 
@@ -141,11 +143,11 @@ void main() {
         ),
       );
 
-      DialogHelpers.confirmClear(
+      unawaited(DialogHelpers.confirmClear(
         testContext,
         title: 'Clear Data',
         message: 'All data will be removed',
-      );
+      ));
 
       await tester.pumpAndSettle();
 
@@ -233,7 +235,7 @@ void main() {
         ),
       );
 
-      DialogHelpers.input(
+      unawaited(DialogHelpers.input(
         testContext,
         title: 'Enter Name',
         labelText: 'Name',
@@ -243,7 +245,7 @@ void main() {
           }
           return null;
         },
-      );
+      ));
 
       await tester.pumpAndSettle();
 
@@ -269,7 +271,7 @@ void main() {
         ),
       );
 
-      DialogHelpers.inputPath(testContext, title: 'Enter Path');
+      unawaited(DialogHelpers.inputPath(testContext, title: 'Enter Path'));
 
       await tester.pumpAndSettle();
 
@@ -292,7 +294,7 @@ void main() {
         ),
       );
 
-      DialogHelpers.inputPath(testContext, title: 'Enter Path');
+      unawaited(DialogHelpers.inputPath(testContext, title: 'Enter Path'));
 
       await tester.pumpAndSettle();
 
@@ -357,11 +359,11 @@ void main() {
         ),
       );
 
-      DialogHelpers.info(
+      unawaited(DialogHelpers.info(
         testContext,
         title: 'Information',
         content: const Text('Some information here'),
-      );
+      ));
 
       await tester.pumpAndSettle();
 
@@ -386,11 +388,11 @@ void main() {
         ),
       );
 
-      DialogHelpers.help(
+      unawaited(DialogHelpers.help(
         testContext,
         title: 'Help',
         content: const Text('Help content'),
-      );
+      ));
 
       await tester.pumpAndSettle();
 

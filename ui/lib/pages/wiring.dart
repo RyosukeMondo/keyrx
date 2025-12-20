@@ -54,10 +54,7 @@ class _WiringPageState extends State<WiringPage> {
 
   HardwareServiceUI get _hardwareService {
     try {
-      return Provider.of<ServiceRegistry>(
-        context,
-        listen: false,
-      ).hardwareService;
+      return Provider.of<ServiceRegistry>(context, listen: false).hardwareService;
     } on ProviderNotFoundException {
       return Provider.of<HardwareServiceUI>(context, listen: false);
     }
@@ -73,10 +70,7 @@ class _WiringPageState extends State<WiringPage> {
 
   DeviceRegistryService get _deviceRegistryService {
     try {
-      return Provider.of<ServiceRegistry>(
-        context,
-        listen: false,
-      ).deviceRegistryService;
+      return Provider.of<ServiceRegistry>(context, listen: false).deviceRegistryService;
     } on ProviderNotFoundException {
       return Provider.of<DeviceRegistryService>(context, listen: false);
     }
@@ -95,9 +89,7 @@ class _WiringPageState extends State<WiringPage> {
 
   void _subscribeToDevices() {
     _deviceSubscription?.cancel();
-    _deviceSubscription = _deviceRegistryService.devicesStream.listen((
-      devices,
-    ) {
+    _deviceSubscription = _deviceRegistryService.devicesStream.listen((devices) {
       if (mounted) {
         setState(() {
           _knownDevices = devices;
@@ -230,12 +222,8 @@ class _WiringPageState extends State<WiringPage> {
       id: _idController.text.trim(),
       vendorId: vendorId,
       productId: productId,
-      serialNumber: _serialController.text.trim().isEmpty
-          ? null
-          : _serialController.text.trim(),
-      name: _nameController.text.trim().isEmpty
-          ? null
-          : _nameController.text.trim(),
+      serialNumber: _serialController.text.trim().isEmpty ? null : _serialController.text.trim(),
+      name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
       virtualLayoutId: layoutId,
       wiring: filteredWiring,
     );
@@ -254,10 +242,7 @@ class _WiringPageState extends State<WiringPage> {
       setState(() {
         _errorMessage = result.errorMessage;
       });
-      _showSnack(
-        'Failed to save profile: ${result.errorMessage}',
-        isError: true,
-      );
+      _showSnack('Failed to save profile: ${result.errorMessage}', isError: true);
       return;
     }
 
@@ -274,14 +259,9 @@ class _WiringPageState extends State<WiringPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Profile?'),
-        content: Text(
-          'Are you sure you want to delete "${profile.name ?? profile.id}"?',
-        ),
+        content: Text('Are you sure you want to delete "${profile.name ?? profile.id}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -320,10 +300,7 @@ class _WiringPageState extends State<WiringPage> {
 
     final scanCode = keyIdToWindowsScanCode[_selectedPhysicalKeyId];
     if (scanCode == null) {
-      _showSnack(
-        'No scan code found for $_selectedPhysicalKeyId',
-        isError: true,
-      );
+      _showSnack('No scan code found for $_selectedPhysicalKeyId', isError: true);
       return;
     }
 
@@ -367,12 +344,9 @@ class _WiringPageState extends State<WiringPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: isError ? Colors.red : null));
   }
 
   // --- Views ---
@@ -387,10 +361,7 @@ class _WiringPageState extends State<WiringPage> {
             children: [
               const Icon(Icons.cable, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              Text(
-                'No Hardware Profiles',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              Text('No Hardware Profiles', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
               const Text('Create a profile to wire your device.'),
               const SizedBox(height: 24),
@@ -409,10 +380,7 @@ class _WiringPageState extends State<WiringPage> {
       appBar: AppBar(
         title: const Text('Hardware Profiles'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _loadData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _isLoading ? null : _loadData),
           IconButton(
             onPressed: _startNewProfile,
             icon: const Icon(Icons.add),
@@ -454,11 +422,9 @@ class _WiringPageState extends State<WiringPage> {
                                 _knownDevices.any(
                                   (d) =>
                                       d.identity.vendorId == profile.vendorId &&
-                                      d.identity.productId ==
-                                          profile.productId &&
+                                      d.identity.productId == profile.productId &&
                                       (profile.serialNumber == null ||
-                                          d.identity.serialNumber ==
-                                              profile.serialNumber),
+                                          d.identity.serialNumber == profile.serialNumber),
                                 )
                                 ? Colors.green
                                 : Colors.red,
@@ -485,10 +451,7 @@ class _WiringPageState extends State<WiringPage> {
                                 children: [
                                   Icon(Icons.delete, color: Colors.red),
                                   SizedBox(width: 8),
-                                  Text(
-                                    'Delete',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
+                                  Text('Delete', style: TextStyle(color: Colors.red)),
                                 ],
                               ),
                             ),
@@ -497,10 +460,7 @@ class _WiringPageState extends State<WiringPage> {
                       ],
                     ),
                     const Divider(),
-                    Text(
-                      'ID: ${profile.id}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text('ID: ${profile.id}', style: Theme.of(context).textTheme.bodySmall),
                     const SizedBox(height: 4),
                     Text(
                       'VID: ${profile.vendorId.toRadixString(16).padLeft(4, '0')}  '
@@ -513,21 +473,16 @@ class _WiringPageState extends State<WiringPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Serial: ${profile.serialNumber}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
                       ),
                     ],
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
@@ -535,19 +490,13 @@ class _WiringPageState extends State<WiringPage> {
                         children: [
                           Text(
                             'Layout: ${profile.virtualLayoutId}',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color:
-                                      _layouts.any(
-                                        (l) => l.id == profile.virtualLayoutId,
-                                      )
-                                      ? null
-                                      : Theme.of(context).colorScheme.error,
-                                ),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: _layouts.any((l) => l.id == profile.virtualLayoutId)
+                                  ? null
+                                  : Theme.of(context).colorScheme.error,
+                            ),
                           ),
-                          if (!_layouts.any(
-                            (l) => l.id == profile.virtualLayoutId,
-                          )) ...[
+                          if (!_layouts.any((l) => l.id == profile.virtualLayoutId)) ...[
                             const SizedBox(width: 8),
                             Tooltip(
                               message: 'Layout not found',
@@ -584,10 +533,7 @@ class _WiringPageState extends State<WiringPage> {
       ),
       title: Text(_selectedProfile == null ? 'New Profile' : 'Edit Profile'),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.save),
-          onPressed: _isSaving ? null : _saveProfile,
-        ),
+        IconButton(icon: const Icon(Icons.save), onPressed: _isSaving ? null : _saveProfile),
       ],
     ),
     body: LayoutBuilder(
@@ -603,20 +549,13 @@ class _WiringPageState extends State<WiringPage> {
             children: [
               _buildProfilePicker(), // Collapsible form
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: panels,
-                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: panels),
               ),
             ],
           );
         } else {
           return ListView(
-            children: [
-              _buildProfilePicker(),
-              _buildPhysicalPanel(),
-              _buildVirtualPanel(),
-            ],
+            children: [_buildProfilePicker(), _buildPhysicalPanel(), _buildVirtualPanel()],
           );
         }
       },
@@ -629,13 +568,10 @@ class _WiringPageState extends State<WiringPage> {
     elevation: 1,
     margin: const EdgeInsets.all(12),
     child: ExpansionTile(
-      initiallyExpanded:
-          _selectedProfile == null, // Expand only if creating new
+      initiallyExpanded: _selectedProfile == null, // Expand only if creating new
       shape: Border.all(color: Colors.transparent),
       title: Text(
-        _nameController.text.isEmpty
-            ? 'Profile Settings'
-            : _nameController.text,
+        _nameController.text.isEmpty ? 'Profile Settings' : _nameController.text,
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
@@ -678,10 +614,7 @@ class _WiringPageState extends State<WiringPage> {
                       : '';
                   return DropdownMenuItem(
                     value: key,
-                    child: Text(
-                      '$label$serial',
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text('$label$serial', overflow: TextOverflow.ellipsis),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -691,23 +624,18 @@ class _WiringPageState extends State<WiringPage> {
                     orElse: () => _knownDevices.first,
                   );
                   setState(() {
-                    _vendorController.text = device.identity.vendorId
-                        .toString();
-                    _productController.text = device.identity.productId
-                        .toString();
+                    _vendorController.text = device.identity.vendorId.toString();
+                    _productController.text = device.identity.productId.toString();
                     _serialController.text = device.identity.serialNumber;
 
                     // Auto-name if empty or default
-                    if (_nameController.text.isEmpty ||
-                        _nameController.text == 'New Hardware') {
+                    if (_nameController.text.isEmpty || _nameController.text == 'New Hardware') {
                       _nameController.text =
-                          device.identity.userLabel ??
-                          '${device.identity.toKey()} Profile';
+                          device.identity.userLabel ?? '${device.identity.toKey()} Profile';
                     }
                   });
                 },
-                validator: (value) =>
-                    value == null ? 'Please select a device' : null,
+                validator: (value) => value == null ? 'Please select a device' : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -723,10 +651,7 @@ class _WiringPageState extends State<WiringPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Hardware Identity',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
+                    Text('Hardware Identity', style: Theme.of(context).textTheme.labelMedium),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 8,
@@ -764,15 +689,12 @@ class _WiringPageState extends State<WiringPage> {
           ),
           items: [
             ..._layouts.map(
-              (layout) => DropdownMenuItem(
-                value: layout.id,
-                child: Text('${layout.name} • ${layout.id}'),
-              ),
+              (layout) =>
+                  DropdownMenuItem(value: layout.id, child: Text('${layout.name} • ${layout.id}')),
             ),
             // Robustness: If the selected layout ID is missing (deleted/not loaded),
             // add a placeholder item to prevent DropdownButton assertion crash.
-            if (_selectedLayoutId != null &&
-                !_layouts.any((l) => l.id == _selectedLayoutId))
+            if (_selectedLayoutId != null && !_layouts.any((l) => l.id == _selectedLayoutId))
               DropdownMenuItem(
                 value: _selectedLayoutId,
                 child: Text(
@@ -797,10 +719,7 @@ class _WiringPageState extends State<WiringPage> {
           ),
         if (_errorMessage != null) ...[
           const SizedBox(height: 8),
-          Text(
-            _errorMessage!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
+          Text(_errorMessage!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ],
       ],
     ),
@@ -831,9 +750,7 @@ class _WiringPageState extends State<WiringPage> {
               child: VisualKeyboard(
                 layout: KeyboardLayout.full(),
                 onKeyTap: _handlePhysicalKeyTap,
-                selectedKeys: _selectedPhysicalKeyId == null
-                    ? {}
-                    : {_selectedPhysicalKeyId!},
+                selectedKeys: _selectedPhysicalKeyId == null ? {} : {_selectedPhysicalKeyId!},
                 mappedKeys: _mappedPhysicalKeyIds,
                 showMappingOverlay: false,
                 enableDragDrop: false,
@@ -925,7 +842,7 @@ class _WiringPageState extends State<WiringPage> {
             d.identity.serialNumber == serial,
       );
       return match.identity.toKey();
-    } catch (_) {
+    } on StateError catch (_) {
       return null;
     }
   }

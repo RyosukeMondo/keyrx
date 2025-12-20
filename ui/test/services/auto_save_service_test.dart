@@ -181,7 +181,7 @@ void main() {
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(callCount, 1);
     });
@@ -195,7 +195,7 @@ void main() {
 
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(states.length, greaterThanOrEqualTo(2));
       expect(states[0].status, SaveStatus.saving);
@@ -216,7 +216,7 @@ void main() {
 
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 1000));
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
 
       expect(callCount, 3);
       expect(service.currentState.status, SaveStatus.saved);
@@ -231,7 +231,7 @@ void main() {
 
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
 
       final errorStates = states
           .where((s) => s.status == SaveStatus.error)
@@ -254,11 +254,11 @@ void main() {
 
       service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
       expect(service.currentState.status, SaveStatus.error);
 
       await service.retry();
-      await Future.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(service.currentState.status, SaveStatus.saved);
     });
@@ -272,7 +272,7 @@ void main() {
 
       service.scheduleSave(const UpdateSlotOperation(testDevice, testSlot));
 
-      await Future.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(called, true);
       expect(service.currentState.status, SaveStatus.saved);
@@ -287,7 +287,7 @@ void main() {
 
       service.scheduleSave(const RemoveSlotOperation(testDevice, 'slot-1'));
 
-      await Future.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(called, true);
       expect(service.currentState.status, SaveStatus.saved);

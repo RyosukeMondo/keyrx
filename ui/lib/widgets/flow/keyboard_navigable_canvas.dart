@@ -37,8 +37,7 @@ class ZoomController {
     final newScale = (currentScale * factor).clamp(0.5, 2.5);
     final scaleFactor = newScale / currentScale;
 
-    transformationController.value = current.clone()
-      ..scaleByDouble(scaleFactor, scaleFactor, 1, 1);
+    transformationController.value = current.clone()..scaleByDouble(scaleFactor, scaleFactor, 1, 1);
   }
 }
 
@@ -202,14 +201,12 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
   };
 
   void _handleFocusNext() {
-    final tracker = ref.read(focusTrackerProvider.notifier);
-    tracker.update((state) => state.focusNext());
+    ref.read(focusTrackerProvider.notifier).update((state) => state.focusNext());
     _selectFocusedNode();
   }
 
   void _handleFocusPrevious() {
-    final tracker = ref.read(focusTrackerProvider.notifier);
-    tracker.update((state) => state.focusPrevious());
+    ref.read(focusTrackerProvider.notifier).update((state) => state.focusPrevious());
     _selectFocusedNode();
   }
 
@@ -226,8 +223,7 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
     final nodeId = tracker.focusedNodeId;
     if (nodeId == null) return;
 
-    final positionsNotifier = ref.read(nodePositionsProvider.notifier);
-    positionsNotifier.moveNode(nodeId, delta, widget.canvasBounds);
+    ref.read(nodePositionsProvider.notifier).moveNode(nodeId, delta, widget.canvasBounds);
   }
 
   void _handleOpenNodeDetails() {
@@ -254,8 +250,7 @@ class _KeyboardNavigableCanvasState extends ConsumerState<KeyboardNavigableCanva
 
     if (deviceNode is! DeviceFlowNode) return;
 
-    final actions = ref.read(keyFlowActionsProvider);
-    actions.removeSlot(deviceNode.deviceId, selection.slotId);
+    ref.read(keyFlowActionsProvider).removeSlot(deviceNode.deviceId, selection.slotId);
     ref.read(selectionNotifierProvider.notifier).clearSelection();
   }
 

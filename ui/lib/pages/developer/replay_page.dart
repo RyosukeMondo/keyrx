@@ -60,10 +60,7 @@ class _ReplayPageState extends State<ReplayPage> {
       _replayResult = null;
     });
 
-    final result = await widget.sessionService.replay(
-      _selectedSession!.path,
-      verify: _verifyMode,
-    );
+    final result = await widget.sessionService.replay(_selectedSession!.path, verify: _verifyMode);
 
     setState(() {
       _isReplaying = false;
@@ -120,11 +117,7 @@ class _ReplayPageState extends State<ReplayPage> {
         return ListTile(
           selected: isSelected,
           leading: const Icon(Icons.play_circle_outline),
-          title: Text(
-            session.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text(
             '${session.eventCount} events • ${_formatDuration(session.durationMs)}',
             style: Theme.of(context).textTheme.bodySmall,
@@ -190,10 +183,7 @@ class _ReplayPageState extends State<ReplayPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Session Info',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Session Info', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             _buildInfoRow('Name', session.name),
             _buildInfoRow('Events', '${session.eventCount}'),
@@ -222,20 +212,13 @@ class _ReplayPageState extends State<ReplayPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Playback Controls',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Playback Controls', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           SwitchListTile(
             title: const Text('Verify Mode'),
-            subtitle: const Text(
-              'Compare replay output against recorded decisions',
-            ),
+            subtitle: const Text('Compare replay output against recorded decisions'),
             value: _verifyMode,
-            onChanged: _isReplaying
-                ? null
-                : (value) => setState(() => _verifyMode = value),
+            onChanged: _isReplaying ? null : (value) => setState(() => _verifyMode = value),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -246,10 +229,7 @@ class _ReplayPageState extends State<ReplayPage> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.play_arrow),
               label: Text(_isReplaying ? 'Replaying...' : 'Replay Session'),
@@ -272,15 +252,10 @@ class _ReplayPageState extends State<ReplayPage> {
           Expanded(
             child: Text(
               _error!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
+              style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => setState(() => _error = null),
-          ),
+          IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _error = null)),
         ],
       ),
     ),
@@ -313,11 +288,7 @@ class _ReplayPageState extends State<ReplayPage> {
             ),
             const SizedBox(height: 16),
             _buildResultRow('Total Events', '${result.totalEvents}'),
-            _buildResultRow(
-              'Matched',
-              '${result.matched}',
-              color: Colors.green,
-            ),
+            _buildResultRow('Matched', '${result.matched}', color: Colors.green),
             _buildResultRow(
               'Mismatched',
               '${result.mismatched}',
@@ -333,10 +304,7 @@ class _ReplayPageState extends State<ReplayPage> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     '...and ${result.mismatches.length - 10} more',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
                   ),
                 ),
             ],
@@ -363,26 +331,14 @@ class _ReplayPageState extends State<ReplayPage> {
   Widget _buildMismatchTile(SessionReplayMismatch mismatch) => Container(
     margin: const EdgeInsets.only(bottom: 8),
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.red.shade100,
-      borderRadius: BorderRadius.circular(8),
-    ),
+    decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(8)),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Event #${mismatch.seq}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        Text('Event #${mismatch.seq}', style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text(
-          'Expected: ${mismatch.recorded}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        Text(
-          'Actual: ${mismatch.actual}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('Expected: ${mismatch.recorded}', style: Theme.of(context).textTheme.bodySmall),
+        Text('Actual: ${mismatch.actual}', style: Theme.of(context).textTheme.bodySmall),
       ],
     ),
   );
@@ -399,7 +355,7 @@ class _ReplayPageState extends State<ReplayPage> {
     try {
       final date = DateTime.parse(isoDate);
       return '${date.month}/${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
+    } on FormatException catch (_) {
       return isoDate;
     }
   }

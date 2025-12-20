@@ -145,16 +145,17 @@ class AnimatedEdgesPainter extends CustomPainter {
       ..color = style.palette.priorityBackgroundColor.withValues(alpha: 0.9 * opacity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
-    canvas.drawCircle(badgePoint, style.priorityBadgeRadius, fillPaint);
-    canvas.drawCircle(
-      badgePoint,
-      style.priorityBadgeRadius,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..isAntiAlias = true,
-    );
+    canvas
+      ..drawCircle(badgePoint, style.priorityBadgeRadius, fillPaint)
+      ..drawCircle(
+        badgePoint,
+        style.priorityBadgeRadius,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..isAntiAlias = true,
+      );
 
     final textPainter = TextPainter(
       text: TextSpan(

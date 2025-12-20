@@ -158,8 +158,9 @@ class RenderEdgeLayer extends RenderBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     final canvas = context.canvas;
-    canvas.save();
-    canvas.translate(offset.dx, offset.dy);
+    canvas
+      ..save()
+      ..translate(offset.dx, offset.dy);
 
     for (var i = 0; i < _edges.length; i++) {
       final edge = _edges[i];

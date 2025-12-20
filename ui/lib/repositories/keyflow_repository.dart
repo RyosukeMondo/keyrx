@@ -240,7 +240,7 @@ class KeyFlowRepository {
       final map = jsonDecode(payload) as Map<String, dynamic>;
       final config = RuntimeConfig.fromJson(map);
       return ConfigOperationResult.success(config);
-    } catch (_) {
+    } on Object catch (_) {
       // Fall through to the original parse error.
     }
 

@@ -224,13 +224,13 @@ void main() {
 
     testWidgets('Initialize Engine button calls engine.initialize()', (tester) async {
       var initializeCalled = false;
-      final fakeEngine = _FakeEngineService();
-      fakeEngine.onEval = (_) async =>
-          const ConsoleEvalResult(success: false, output: 'error: not initialized please init');
-      fakeEngine.onInitialize = () async {
-        initializeCalled = true;
-        return true;
-      };
+      final fakeEngine = _FakeEngineService()
+        ..onEval = ((_) async =>
+            const ConsoleEvalResult(success: false, output: 'error: not initialized please init'))
+        ..onInitialize = () async {
+          initializeCalled = true;
+          return true;
+        };
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
@@ -246,10 +246,10 @@ void main() {
     });
 
     testWidgets('successful initialization shows ok message', (tester) async {
-      final fakeEngine = _FakeEngineService();
-      fakeEngine.onEval = (_) async =>
-          const ConsoleEvalResult(success: false, output: 'error: not initialized');
-      fakeEngine.onInitialize = () async => true;
+      final fakeEngine = _FakeEngineService()
+        ..onEval = ((_) async =>
+            const ConsoleEvalResult(success: false, output: 'error: not initialized'))
+        ..onInitialize = () async => true;
 
       await tester.pumpWidget(_buildTestWidget(engine: fakeEngine));
       await tester.pumpAndSettle();
