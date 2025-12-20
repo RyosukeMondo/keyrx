@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:core_logic/models/virtual_layout.dart';
 import 'package:flutter/material.dart';
 
@@ -58,11 +59,7 @@ class _LayoutVisualEditorState extends State<LayoutVisualEditor> {
   VirtualKeyDef? get _primarySelectedKey {
     if (_selectedIds.isEmpty) return null;
     // Return the first selected key for property editing
-    try {
-      return widget.keys.firstWhere((k) => k.id == _selectedIds.first);
-    } on StateError {
-      return null;
-    }
+    return widget.keys.firstWhereOrNull((k) => k.id == _selectedIds.first);
   }
 
   // Helper logic ported from React

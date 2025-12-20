@@ -7,6 +7,7 @@ library;
 
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:core_logic/models/device_state.dart';
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/key_codes_windows.dart';
@@ -916,12 +917,11 @@ class _WiringPageState extends State<WiringPage> {
 
     if (vid == null || pid == null) return null;
 
-    final match = _knownDevices.firstWhere(
+    final match = _knownDevices.firstWhereOrNull(
       (d) =>
           d.identity.vendorId == vid &&
           d.identity.productId == pid &&
           d.identity.serialNumber == serial,
-      orElse: () => null,
     );
     return match?.identity.toKey();
   }
