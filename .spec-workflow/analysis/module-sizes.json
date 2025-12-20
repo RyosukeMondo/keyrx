@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-20T00:42:32.612129+00:00",
+  "generated_at": "2025-12-20T00:53:21.717867+00:00",
   "threshold": 500,
   "target_dir": "core/src",
   "allowlist_file": ".spec-workflow/config/module-size-allowlist.json",
@@ -791,20 +791,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/safety/circuit_breaker.rs",
+      "path": "core/src/engine/pipeline.rs",
       "code": 350,
-      "comments": 36,
-      "blanks": 73,
+      "comments": 4,
+      "blanks": 47,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/pipeline.rs",
+      "path": "core/src/safety/circuit_breaker.rs",
       "code": 350,
-      "comments": 4,
-      "blanks": 47,
+      "comments": 36,
+      "blanks": 73,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -1131,20 +1131,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/cli/commands/replay.rs",
+      "path": "core/src/cli/commands/devices.rs",
       "code": 316,
-      "comments": 11,
-      "blanks": 62,
+      "comments": 0,
+      "blanks": 43,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/cli/commands/devices.rs",
+      "path": "core/src/cli/commands/replay.rs",
       "code": 316,
-      "comments": 0,
-      "blanks": 43,
+      "comments": 11,
+      "blanks": 62,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -1281,20 +1281,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/ffi/domains/testing.rs",
+      "path": "core/src/uat/gates_evaluation.rs",
       "code": 292,
-      "comments": 18,
-      "blanks": 47,
+      "comments": 16,
+      "blanks": 62,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/uat/gates_evaluation.rs",
+      "path": "core/src/ffi/domains/testing.rs",
       "code": 292,
-      "comments": 16,
-      "blanks": 62,
+      "comments": 18,
+      "blanks": 47,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -1591,16 +1591,6 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/uat/gates_definitions.rs",
-      "code": 259,
-      "comments": 0,
-      "blanks": 35,
-      "allowlisted": false,
-      "allow_reason": "",
-      "effective_limit": 500,
-      "recommendation": ""
-    },
-    {
       "path": "core/src/errors/error.rs",
       "code": 259,
       "comments": 13,
@@ -1611,10 +1601,10 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/drivers/common/cache.rs",
-      "code": 258,
-      "comments": 18,
-      "blanks": 60,
+      "path": "core/src/uat/gates_definitions.rs",
+      "code": 259,
+      "comments": 0,
+      "blanks": 35,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -1625,6 +1615,16 @@
       "code": 258,
       "comments": 6,
       "blanks": 55,
+      "allowlisted": false,
+      "allow_reason": "",
+      "effective_limit": 500,
+      "recommendation": ""
+    },
+    {
+      "path": "core/src/drivers/common/cache.rs",
+      "code": 258,
+      "comments": 18,
+      "blanks": 60,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -1761,20 +1761,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/drivers/injector.rs",
+      "path": "core/src/metrics/memory.rs",
       "code": 246,
-      "comments": 6,
-      "blanks": 55,
+      "comments": 14,
+      "blanks": 68,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/metrics/memory.rs",
+      "path": "core/src/drivers/injector.rs",
       "code": 246,
-      "comments": 14,
-      "blanks": 68,
+      "comments": 6,
+      "blanks": 55,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -2461,20 +2461,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/hardware/calibrator.rs",
+      "path": "core/src/engine/coalescing/engine.rs",
       "code": 175,
-      "comments": 0,
-      "blanks": 25,
+      "comments": 10,
+      "blanks": 37,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/coalescing/engine.rs",
+      "path": "core/src/hardware/calibrator.rs",
       "code": 175,
-      "comments": 10,
-      "blanks": 37,
+      "comments": 0,
+      "blanks": 25,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -2591,20 +2591,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/hardware/database.rs",
+      "path": "core/src/engine/state/delta.rs",
       "code": 167,
-      "comments": 0,
-      "blanks": 16,
+      "comments": 7,
+      "blanks": 37,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/state/delta.rs",
+      "path": "core/src/hardware/database.rs",
       "code": 167,
-      "comments": 7,
-      "blanks": 37,
+      "comments": 0,
+      "blanks": 16,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -2741,6 +2741,16 @@
       "recommendation": ""
     },
     {
+      "path": "core/src/metrics/local_store.rs",
+      "code": 158,
+      "comments": 1,
+      "blanks": 34,
+      "allowlisted": false,
+      "allow_reason": "",
+      "effective_limit": 500,
+      "recommendation": ""
+    },
+    {
       "path": "core/src/engine/session_state.rs",
       "code": 158,
       "comments": 1,
@@ -2761,10 +2771,10 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/metrics/local_store.rs",
+      "path": "core/src/ffi/runtime.rs",
       "code": 158,
-      "comments": 1,
-      "blanks": 34,
+      "comments": 0,
+      "blanks": 26,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -2775,16 +2785,6 @@
       "code": 158,
       "comments": 21,
       "blanks": 30,
-      "allowlisted": false,
-      "allow_reason": "",
-      "effective_limit": 500,
-      "recommendation": ""
-    },
-    {
-      "path": "core/src/ffi/runtime.rs",
-      "code": 158,
-      "comments": 0,
-      "blanks": 26,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3031,20 +3031,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/bin/keyrx/commands_core.rs",
+      "path": "core/src/engine/state/mutation.rs",
       "code": 134,
-      "comments": 0,
-      "blanks": 11,
+      "comments": 5,
+      "blanks": 28,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/state/mutation.rs",
+      "path": "core/src/bin/keyrx/commands_core.rs",
       "code": 134,
-      "comments": 5,
-      "blanks": 28,
+      "comments": 0,
+      "blanks": 11,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3111,6 +3111,16 @@
       "recommendation": ""
     },
     {
+      "path": "core/src/metrics/sampler.rs",
+      "code": 128,
+      "comments": 17,
+      "blanks": 37,
+      "allowlisted": false,
+      "allow_reason": "",
+      "effective_limit": 500,
+      "recommendation": ""
+    },
+    {
       "path": "core/src/observability/macros.rs",
       "code": 128,
       "comments": 3,
@@ -3125,16 +3135,6 @@
       "code": 128,
       "comments": 16,
       "blanks": 35,
-      "allowlisted": false,
-      "allow_reason": "",
-      "effective_limit": 500,
-      "recommendation": ""
-    },
-    {
-      "path": "core/src/metrics/sampler.rs",
-      "code": 128,
-      "comments": 17,
-      "blanks": 37,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3391,20 +3391,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/observability/otel/layer.rs",
+      "path": "core/src/migration/mod.rs",
       "code": 93,
-      "comments": 2,
-      "blanks": 19,
+      "comments": 0,
+      "blanks": 24,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/migration/mod.rs",
+      "path": "core/src/observability/otel/layer.rs",
       "code": 93,
-      "comments": 0,
-      "blanks": 24,
+      "comments": 2,
+      "blanks": 19,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3421,20 +3421,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/tracing/tracing_types.rs",
+      "path": "core/src/metrics/otlp.rs",
       "code": 91,
-      "comments": 2,
-      "blanks": 19,
+      "comments": 0,
+      "blanks": 18,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/metrics/otlp.rs",
+      "path": "core/src/engine/tracing/tracing_types.rs",
       "code": 91,
-      "comments": 0,
-      "blanks": 18,
+      "comments": 2,
+      "blanks": 19,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3581,6 +3581,16 @@
       "recommendation": ""
     },
     {
+      "path": "core/src/metrics/operation.rs",
+      "code": 65,
+      "comments": 0,
+      "blanks": 9,
+      "allowlisted": false,
+      "allow_reason": "",
+      "effective_limit": 500,
+      "recommendation": ""
+    },
+    {
       "path": "core/src/engine/mod.rs",
       "code": 65,
       "comments": 1,
@@ -3595,16 +3605,6 @@
       "code": 65,
       "comments": 7,
       "blanks": 16,
-      "allowlisted": false,
-      "allow_reason": "",
-      "effective_limit": 500,
-      "recommendation": ""
-    },
-    {
-      "path": "core/src/metrics/operation.rs",
-      "code": 65,
-      "comments": 0,
-      "blanks": 9,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -3921,20 +3921,20 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/drivers/linux/discovery.rs",
+      "path": "core/src/ffi/mod.rs",
       "code": 33,
-      "comments": 0,
-      "blanks": 7,
+      "comments": 1,
+      "blanks": 6,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
       "recommendation": ""
     },
     {
-      "path": "core/src/ffi/mod.rs",
+      "path": "core/src/drivers/linux/discovery.rs",
       "code": 33,
-      "comments": 1,
-      "blanks": 6,
+      "comments": 0,
+      "blanks": 7,
       "allowlisted": false,
       "allow_reason": "",
       "effective_limit": 500,
@@ -4031,9 +4031,9 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/hardware/mod.rs",
+      "path": "core/src/observability/mod.rs",
       "code": 18,
-      "comments": 0,
+      "comments": 1,
       "blanks": 2,
       "allowlisted": false,
       "allow_reason": "",
@@ -4041,9 +4041,9 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/observability/mod.rs",
+      "path": "core/src/hardware/mod.rs",
       "code": 18,
-      "comments": 1,
+      "comments": 0,
       "blanks": 2,
       "allowlisted": false,
       "allow_reason": "",
@@ -4241,7 +4241,7 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/bin/keyrx/args/mod.rs",
+      "path": "core/src/engine/decision/mod.rs",
       "code": 7,
       "comments": 0,
       "blanks": 2,
@@ -4251,7 +4251,7 @@
       "recommendation": ""
     },
     {
-      "path": "core/src/engine/decision/mod.rs",
+      "path": "core/src/bin/keyrx/args/mod.rs",
       "code": 7,
       "comments": 0,
       "blanks": 2,
@@ -4301,6 +4301,16 @@
       "recommendation": ""
     },
     {
+      "path": "core/src/mocks/mod.rs",
+      "code": 6,
+      "comments": 0,
+      "blanks": 2,
+      "allowlisted": false,
+      "allow_reason": "",
+      "effective_limit": 500,
+      "recommendation": ""
+    },
+    {
       "path": "core/src/engine/coalescing/mod.rs",
       "code": 6,
       "comments": 0,
@@ -4312,16 +4322,6 @@
     },
     {
       "path": "core/src/observability/otel/mod.rs",
-      "code": 6,
-      "comments": 0,
-      "blanks": 2,
-      "allowlisted": false,
-      "allow_reason": "",
-      "effective_limit": 500,
-      "recommendation": ""
-    },
-    {
-      "path": "core/src/mocks/mod.rs",
       "code": 6,
       "comments": 0,
       "blanks": 2,
