@@ -20,7 +20,8 @@ class KeymapServiceWeb implements KeymapService {
     }
 
     try {
-      final data = response.data as List<dynamic>;
+      final json = response.data as Map<String, dynamic>;
+      final data = json['keymaps'] as List<dynamic>;
       final keymaps = data
           .map((json) => Keymap.fromJson(json as Map<String, dynamic>))
           .toList();
@@ -34,7 +35,7 @@ class KeymapServiceWeb implements KeymapService {
   Future<ConfigOperationResult<Keymap>> saveKeymap(Keymap keymap) async {
     final response = await _client.post(
       '/api/keymaps',
-      body: {'keymap': keymap.toJson()},
+      body: keymap.toJson(),
     );
 
     if (response.isError) {
@@ -42,7 +43,8 @@ class KeymapServiceWeb implements KeymapService {
     }
 
     try {
-      final saved = Keymap.fromJson(response.data as Map<String, dynamic>);
+      final json = response.data as Map<String, dynamic>;
+      final saved = Keymap.fromJson(json['keymap'] as Map<String, dynamic>);
       return ConfigOperationResult.success(saved);
     } catch (e) {
       return ConfigOperationResult.error('Failed to parse saved keymap: $e');

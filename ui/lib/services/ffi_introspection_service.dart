@@ -2,12 +2,11 @@
 //
 // Service for fetching and caching FFI metadata from Rust.
 
-import 'package:core_logic/ffi/bindings.dart';
 import 'package:core_logic/ffi/introspection_models.dart';
 
 class FfiIntrospectionService {
   FfiIntrospectionService(this._bindings);
-  final KeyrxBindings _bindings;
+  final dynamic _bindings;
   IntrospectionData? _cachedData;
   DateTime? _lastFetch;
 
@@ -25,9 +24,7 @@ class FfiIntrospectionService {
       final result = FfiResult.fromJson(resultStr, IntrospectionData.fromJson);
 
       if (!result.success || result.data == null) {
-        throw Exception(
-          'Failed to fetch introspection metadata: ${result.error}',
-        );
+        throw Exception('Failed to fetch introspection metadata: ${result.error}');
       }
 
       _cachedData = result.data!;
@@ -48,15 +45,11 @@ class FfiIntrospectionService {
   }
 
   /// Get metadata for a specific function
-  Future<FunctionMetadata?> getFunctionMetadata(
-    String domainName,
-    String functionName,
-  ) async {
+  Future<FunctionMetadata?> getFunctionMetadata(String domainName, String functionName) async {
     final domain = await getDomainMetadata(domainName);
     return domain?.functions.firstWhere(
       (f) => f.name == functionName,
-      orElse: () =>
-          throw Exception('Function not found: $domainName.$functionName'),
+      orElse: () => throw Exception('Function not found: $domainName.$functionName'),
     );
   }
 
@@ -76,9 +69,7 @@ class FfiIntrospectionService {
       for (final function in domain.functions) {
         if (function.name.toLowerCase().contains(lowerQuery) ||
             function.description.toLowerCase().contains(lowerQuery)) {
-          results.add(
-            FunctionSearchResult(domain: domain.name, function: function),
-          );
+          results.add(FunctionSearchResult(domain: domain.name, function: function));
         }
       }
     }

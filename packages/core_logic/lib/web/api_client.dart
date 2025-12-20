@@ -113,7 +113,9 @@ class ApiResponse {
 
       // Success: HTTP 2xx
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return ApiResponse(data: json['data']);
+        // Return the entire JSON body for successful responses
+        // Service implementations will extract the specific field they need
+        return ApiResponse(data: json);
       }
 
       // Error: HTTP 4xx/5xx

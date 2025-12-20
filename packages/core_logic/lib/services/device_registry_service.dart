@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import '../ffi/bridge.dart';
-import '../ffi/device_registry_ffi.dart';
-import '../models/device_config.dart';
+import '../ffi/bridge.dart' if (dart.library.html) '../ffi/bridge_stub.dart';
 import '../models/device_identity.dart';
 import '../models/device_state.dart';
 import '../repositories/device_config_repository.dart';
@@ -22,28 +20,16 @@ abstract class DeviceRegistryService {
   Future<void> removeVirtualDevice(String key);
 
   /// Toggle device enabled state.
-  Future<DeviceRegistryResult<void>> toggleDevice(
-    String deviceKey,
-    bool enabled,
-  );
+  Future<DeviceRegistryResult<void>> toggleDevice(String deviceKey, bool enabled);
 
   /// Toggle remap enabled state for a device.
-  Future<DeviceRegistryResult<void>> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  );
+  Future<DeviceRegistryResult<void>> toggleRemap(String deviceKey, bool enabled);
 
   /// Assign a profile to a device.
-  Future<DeviceRegistryResult<void>> assignProfile(
-    String deviceKey,
-    String profileId,
-  );
+  Future<DeviceRegistryResult<void>> assignProfile(String deviceKey, String profileId);
 
   /// Set user label for a device.
-  Future<DeviceRegistryResult<void>> setUserLabel(
-    String deviceKey,
-    String? label,
-  );
+  Future<DeviceRegistryResult<void>> setUserLabel(String deviceKey, String? label);
 
   /// Refresh the device list.
   Future<List<DeviceState>> refresh();
@@ -66,14 +52,8 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     required DeviceConfigRepository repository,
   }) : _bridge = bridge,
        _repository = repository {
-    _bridge.registerEventCallback(
-      EventType.deviceConnected,
-      _handleDeviceEvent,
-    );
-    _bridge.registerEventCallback(
-      EventType.deviceDisconnected,
-      _handleDeviceEvent,
-    );
+    _bridge.registerEventCallback(EventType.deviceConnected, _handleDeviceEvent);
+    _bridge.registerEventCallback(EventType.deviceDisconnected, _handleDeviceEvent);
     _bridge.registerEventCallback(EventType.deviceUpdated, _handleDeviceEvent);
   }
 
@@ -114,29 +94,21 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   @override
   Future<void> removeVirtualDevice(String key) async {
     final config = await _repository.load();
-    final updatedDevices =
-        config.devices.where((d) => d.toKey() != key).toList();
+    final updatedDevices = config.devices.where((d) => d.toKey() != key).toList();
 
     await _repository.save(config.copyWith(devices: updatedDevices));
     await refresh();
   }
 
   @override
-  Future<DeviceRegistryResult<void>> toggleDevice(
-    String deviceKey,
-    bool enabled,
-  ) async {
+  Future<DeviceRegistryResult<void>> toggleDevice(String deviceKey, bool enabled) async {
     if (_bridge.loadFailure != null) {
-      return DeviceRegistryResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
-      );
+      return DeviceRegistryResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.setDeviceEnabled(deviceKey, enabled);
     if (result.hasError) {
-      return DeviceRegistryResult.error(
-        _makeUserFriendly(result.errorMessage!, 'toggle device'),
-      );
+      return DeviceRegistryResult.error(_makeUserFriendly(result.errorMessage!, 'toggle device'));
     }
 
     await refresh();
@@ -144,21 +116,14 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryResult<void>> toggleRemap(
-    String deviceKey,
-    bool enabled,
-  ) async {
+  Future<DeviceRegistryResult<void>> toggleRemap(String deviceKey, bool enabled) async {
     if (_bridge.loadFailure != null) {
-      return DeviceRegistryResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
-      );
+      return DeviceRegistryResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.setRemapEnabled(deviceKey, enabled);
     if (result.hasError) {
-      return DeviceRegistryResult.error(
-        _makeUserFriendly(result.errorMessage!, 'toggle remap'),
-      );
+      return DeviceRegistryResult.error(_makeUserFriendly(result.errorMessage!, 'toggle remap'));
     }
 
     await refresh();
@@ -166,21 +131,14 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryResult<void>> assignProfile(
-    String deviceKey,
-    String profileId,
-  ) async {
+  Future<DeviceRegistryResult<void>> assignProfile(String deviceKey, String profileId) async {
     if (_bridge.loadFailure != null) {
-      return DeviceRegistryResult.error(
-        'Engine unavailable: ${_bridge.loadFailure}',
-      );
+      return DeviceRegistryResult.error('Engine unavailable: ${_bridge.loadFailure}');
     }
 
     final result = _bridge.assignProfile(deviceKey, profileId);
     if (result.hasError) {
-      return DeviceRegistryResult.error(
-        _makeUserFriendly(result.errorMessage!, 'assign profile'),
-      );
+      return DeviceRegistryResult.error(_makeUserFriendly(result.errorMessage!, 'assign profile'));
     }
 
     await refresh();
@@ -188,10 +146,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   }
 
   @override
-  Future<DeviceRegistryResult<void>> setUserLabel(
-    String deviceKey,
-    String? label,
-  ) async {
+  Future<DeviceRegistryResult<void>> setUserLabel(String deviceKey, String? label) async {
     // 1. Update config repository (SSOT for labels and virtual devices)
     final config = await _repository.load();
     final updatedDevices = List<DeviceIdentity>.from(config.devices);
@@ -214,9 +169,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
     if (_bridge.loadFailure == null) {
       final ffiResult = _bridge.setUserLabel(deviceKey, label);
       if (ffiResult.hasError) {
-        return DeviceRegistryResult.error(
-          _makeUserFriendly(ffiResult.errorMessage!, 'set label'),
-        );
+        return DeviceRegistryResult.error(_makeUserFriendly(ffiResult.errorMessage!, 'set label'));
       }
     }
 
@@ -261,8 +214,7 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
 
       var identity = ffiDevice.identity;
       // If we have a local label in config that FFI doesn't have, prefer local
-      if (known != null &&
-          (identity.userLabel == null || identity.userLabel!.isEmpty)) {
+      if (known != null && (identity.userLabel == null || identity.userLabel!.isEmpty)) {
         identity = identity.copyWith(userLabel: known.identity.userLabel);
       }
 
@@ -287,12 +239,11 @@ class DeviceRegistryServiceImpl implements DeviceRegistryService {
   @override
   Future<void> migrateVirtualDevices(List<DeviceIdentity> identities) async {
     if (identities.isEmpty) return;
-    
+
     final config = await _repository.load();
     final existingKeys = config.devices.map((d) => d.toKey()).toSet();
 
-    final toAdd =
-        identities.where((id) => !existingKeys.contains(id.toKey())).toList();
+    final toAdd = identities.where((id) => !existingKeys.contains(id.toKey())).toList();
     if (toAdd.isNotEmpty) {
       final updated = [...config.devices, ...toAdd];
       await _repository.save(config.copyWith(devices: updated));

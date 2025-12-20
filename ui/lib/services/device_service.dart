@@ -3,7 +3,8 @@
 /// Keeps FFI concerns out of widgets by routing through this service.
 library;
 
-import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart'
+    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 import 'package:core_logic/utils/logger.dart';
 
 /// Result of a device selection operation.

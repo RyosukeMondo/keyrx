@@ -12,16 +12,27 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// events to subscribers based on event names.
 class WebSocketClient {
   /// Create a WebSocket client and connect to [url].
-  WebSocketClient(String url)
-      : _channel = WebSocketChannel.connect(Uri.parse(url)) {
-    _channel.stream.listen(
-      _handleMessage,
-      onError: _handleError,
-      onDone: _handleDone,
-    );
+  ///
+  /// If connection fails (e.g., mixed content on HTTPS), client will operate
+  /// in degraded mode without real-time updates.
+  WebSocketClient(String url) {
+    try {
+      print('[DEBUG] WebSocketClient: attempting connection to $url');
+      _channel = WebSocketChannel.connect(Uri.parse(url));
+      _channel!.stream.listen(
+        _handleMessage,
+        onError: _handleError,
+        onDone: _handleDone,
+      );
+      print('[DEBUG] WebSocketClient: connection established');
+    } catch (e) {
+      print('[WARN] WebSocketClient: connection failed: $e');
+      print('[WARN] WebSocketClient: operating in degraded mode (no real-time updates)');
+      _channel = null;
+    }
   }
 
-  final WebSocketChannel _channel;
+  WebSocketChannel? _channel;
   final Map<String, StreamController<dynamic>> _eventStreams = {};
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
@@ -87,7 +98,7 @@ class WebSocketClient {
     }
 
     _disposed = true;
-    _channel.sink.close();
+    _channel?.sink.close();
 
     for (final controller in _eventStreams.values) {
       controller.close();

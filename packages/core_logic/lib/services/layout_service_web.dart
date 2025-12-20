@@ -35,7 +35,8 @@ class LayoutServiceWeb implements LayoutService {
     }
 
     try {
-      final data = response.data as List<dynamic>;
+      final json = response.data as Map<String, dynamic>;
+      final data = json['layouts'] as List<dynamic>;
       final layouts = data
           .map((json) => VirtualLayout.fromJson(json as Map<String, dynamic>))
           .toList();
@@ -51,7 +52,7 @@ class LayoutServiceWeb implements LayoutService {
   ) async {
     final response = await _client.post(
       '/api/layouts',
-      body: {'layout': layout.toJson()},
+      body: layout.toJson(),
     );
 
     if (response.isError) {
@@ -59,9 +60,8 @@ class LayoutServiceWeb implements LayoutService {
     }
 
     try {
-      final saved = VirtualLayout.fromJson(
-        response.data as Map<String, dynamic>,
-      );
+      final json = response.data as Map<String, dynamic>;
+      final saved = VirtualLayout.fromJson(json['layout'] as Map<String, dynamic>);
       return ConfigOperationResult.success(saved);
     } catch (e) {
       return ConfigOperationResult.error('Failed to parse saved layout: $e');

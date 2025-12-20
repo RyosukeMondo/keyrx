@@ -3,8 +3,8 @@ library;
 
 import 'dart:convert';
 
-import '../ffi/bridge.dart';
-import '../ffi/generated_bindings.dart';
+import '../ffi/bridge.dart'
+    if (dart.library.html) '../ffi/bridge_stub.dart';
 import '../models/hardware_profile.dart';
 import '../models/runtime_config.dart';
 import 'config_result.dart';
@@ -124,7 +124,7 @@ class RuntimeServiceImpl implements RuntimeService {
 
   Future<ConfigOperationResult<RuntimeConfig>> _guard(
     String operation,
-    ConfigOperationResult<RuntimeConfig> Function(RuntimeBindings bindings)
+    ConfigOperationResult<RuntimeConfig> Function(dynamic bindings)
     action,
   ) async {
     final loadFailure = _bridge.loadFailure;

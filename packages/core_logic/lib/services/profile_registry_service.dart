@@ -6,7 +6,8 @@ library;
 
 import 'dart:typed_data';
 
-import '../ffi/bridge.dart';
+import '../ffi/bridge.dart'
+    if (dart.library.html) '../ffi/bridge_stub.dart';
 import '../models/layout_type.dart';
 import '../models/profile.dart';
 

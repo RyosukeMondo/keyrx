@@ -9,25 +9,9 @@ library;
 
 import 'dart:convert';
 
+import '../models/bridge_models.dart';
 import '../models/device_state.dart';
 import 'bindings.dart';
-
-/// Result wrapper for device registry operations.
-class DeviceRegistryResult<T> {
-  const DeviceRegistryResult({this.data, this.errorMessage});
-
-  factory DeviceRegistryResult.success(T data) =>
-      DeviceRegistryResult(data: data);
-
-  factory DeviceRegistryResult.error(String message) =>
-      DeviceRegistryResult(errorMessage: message);
-
-  final T? data;
-  final String? errorMessage;
-
-  bool get hasError => errorMessage != null;
-  bool get isSuccess => !hasError;
-}
 
 /// Parser for C string results from FFI.
 class _FfiResultParser {

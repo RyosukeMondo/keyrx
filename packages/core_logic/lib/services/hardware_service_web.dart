@@ -35,7 +35,8 @@ class HardwareServiceWeb implements HardwareService {
     }
 
     try {
-      final data = response.data as List<dynamic>;
+      final json = response.data as Map<String, dynamic>;
+      final data = json['profiles'] as List<dynamic>;
       final profiles = data
           .map((json) => HardwareProfile.fromJson(json as Map<String, dynamic>))
           .toList();
@@ -51,7 +52,7 @@ class HardwareServiceWeb implements HardwareService {
   ) async {
     final response = await _client.post(
       '/api/hardware/profiles',
-      body: {'profile': profile.toJson()},
+      body: profile.toJson(),
     );
 
     if (response.isError) {
@@ -59,8 +60,9 @@ class HardwareServiceWeb implements HardwareService {
     }
 
     try {
+      final json = response.data as Map<String, dynamic>;
       final saved = HardwareProfile.fromJson(
-        response.data as Map<String, dynamic>,
+        json['profile'] as Map<String, dynamic>,
       );
       return ConfigOperationResult.success(saved);
     } catch (e) {

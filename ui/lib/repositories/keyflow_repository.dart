@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:core_logic/ffi/bridge.dart';
-import 'package:core_logic/ffi/generated_bindings.dart';
+import 'package:core_logic/ffi/bridge.dart'
+    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/runtime_config.dart';
 import 'package:core_logic/services/config_result.dart';
@@ -26,7 +26,7 @@ class _BridgeRuntimeApi implements RuntimeApi {
 
   final KeyrxBridge _bridge;
 
-  RuntimeBindings? get _bindings => _bridge.runtimeBindings;
+  dynamic get _bindings => _bridge.runtimeBindings;
 
   @override
   Object? get loadFailure => _bridge.loadFailure;

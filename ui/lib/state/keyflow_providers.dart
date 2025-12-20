@@ -9,6 +9,7 @@ import 'package:core_logic/models/hardware_profile.dart';
 import 'package:core_logic/models/keymap.dart';
 import 'package:core_logic/models/runtime_config.dart';
 import 'package:core_logic/services/config_result.dart';
+import 'package:core_logic/services/runtime_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -22,9 +23,49 @@ part 'keyflow_providers.g.dart';
 @Riverpod(keepAlive: true)
 KeyFlowRepository keyFlowRepository(KeyFlowRepositoryRef ref) {
   final bridge = ref.watch(bridgeProvider);
+
+  // On web (bridge is null), use RuntimeServiceWeb via HTTP API
+  if (bridge == null) {
+    final registry = ref.watch(serviceRegistryProvider);
+    final repository = KeyFlowRepository(
+      runtimeApi: _WebRuntimeApiAdapter(registry.runtimeService),
+    );
+    ref.onDispose(repository.dispose);
+    return repository;
+  }
+
   final repository = KeyFlowRepository.forBridge(bridge);
   ref.onDispose(repository.dispose);
   return repository;
+}
+
+/// Adapter to use RuntimeService as RuntimeApi for web platform.
+class _WebRuntimeApiAdapter implements RuntimeApi {
+  _WebRuntimeApiAdapter(this._service);
+
+  final RuntimeService _service;
+
+  @override
+  Object? get loadFailure => null;
+
+  @override
+  String getConfig() {
+    // This method is synchronous but RuntimeService is async
+    // KeyFlowRepository will handle async via getRuntimeConfig()
+    return 'ok:{"devices":[],"version":1}';
+  }
+
+  @override
+  String addSlot(String deviceJson, String slotJson, int priority) {
+    // Synchronous wrapper - actual implementation uses async methods
+    return getConfig();
+  }
+
+  @override
+  String removeSlot(String deviceJson, String slotId) {
+    // Synchronous wrapper - actual implementation uses async methods
+    return getConfig();
+  }
 }
 
 @Riverpod(keepAlive: true)

@@ -3,7 +3,8 @@
 /// Keeps FFI concerns out of widgets by routing through this service.
 library;
 
-import '../ffi/bridge.dart';
+import '../ffi/bridge.dart'
+    if (dart.library.html) '../ffi/bridge_stub.dart';
 
 /// Result of a test discovery operation.
 class TestDiscoveryServiceResult {

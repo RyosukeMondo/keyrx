@@ -8,7 +8,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:core_logic/ffi/bridge.dart';
+import 'package:core_logic/ffi/bridge.dart'
+    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
 
 /// Performance metrics snapshot from the engine.
 class MetricsSnapshot {

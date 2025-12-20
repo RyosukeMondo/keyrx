@@ -37,9 +37,11 @@ class _MappingEditorState extends State<MappingEditor> {
   bool _isSaving = false;
   bool _isDirty = false;
 
+  ServiceRegistry get _serviceRegistry => Provider.of<ServiceRegistry>(context, listen: false);
+
   KeymapService get _keymapService {
     try {
-      return Provider.of<ServiceRegistry>(context, listen: false).keymapService;
+      return _serviceRegistry.keymapService;
     } on ProviderNotFoundException {
       return Provider.of<KeymapService>(context, listen: false);
     }
@@ -61,15 +63,13 @@ class _MappingEditorState extends State<MappingEditor> {
   }
 
   KeymapLayer? get _currentLayer {
-    if (_selectedLayerIndex < 0 ||
-        _selectedLayerIndex >= _workingKeymap.layers.length) {
+    if (_selectedLayerIndex < 0 || _selectedLayerIndex >= _workingKeymap.layers.length) {
       return null;
     }
     return _workingKeymap.layers[_selectedLayerIndex];
   }
 
-  Map<String, ActionBinding> get _bindingsForLayer =>
-      _currentLayer?.bindings ?? const {};
+  Map<String, ActionBinding> get _bindingsForLayer => _currentLayer?.bindings ?? const {};
 
   String _bindingLabel(ActionBinding? binding) {
     if (binding == null) return 'Unmapped';
@@ -98,9 +98,7 @@ class _MappingEditorState extends State<MappingEditor> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Mapped $_selectedVirtualKeyId to ${_bindingLabel(binding)}',
-        ),
+        content: Text('Mapped $_selectedVirtualKeyId to ${_bindingLabel(binding)}'),
         duration: const Duration(milliseconds: 500),
       ),
     );
@@ -152,23 +150,18 @@ class _MappingEditorState extends State<MappingEditor> {
       final scriptContent = generator.generateScript(config);
 
       // 3. Save Script File
-      const pathResolver = StoragePathResolver();
+      final pathResolver = _serviceRegistry.storagePathResolver;
       final profilesDir = await pathResolver.ensureProfilesDirectory();
       // Use a sanitized name + id for the filename
       final filename =
           '${savedKeymap.name.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_${savedKeymap.id}.rhai';
       final scriptPath = '$profilesDir/$filename';
 
-      const fileService = ScriptFileService();
-      final fileResult = await fileService.saveScript(
-        scriptPath,
-        scriptContent,
-      );
+      final fileService = _serviceRegistry.scriptFileService;
+      final fileResult = await fileService.saveScript(scriptPath, scriptContent);
 
       if (!fileResult.success) {
-        throw Exception(
-          'Failed to write script file: ${fileResult.errorMessage}',
-        );
+        throw Exception('Failed to write script file: ${fileResult.errorMessage}');
       }
 
       if (!mounted) return;
@@ -200,10 +193,7 @@ class _MappingEditorState extends State<MappingEditor> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error generating/loading script: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error generating/loading script: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -253,10 +243,7 @@ class _MappingEditorState extends State<MappingEditor> {
       underline: Container(), // Clean look
       items: List.generate(
         layers.length,
-        (i) => DropdownMenuItem(
-          value: i,
-          child: Text('Layer $i: ${layers[i].name}'),
-        ),
+        (i) => DropdownMenuItem(value: i, child: Text('Layer $i: ${layers[i].name}')),
       ),
       onChanged: (value) {
         if (value == null) return;
@@ -275,11 +262,7 @@ class _MappingEditorState extends State<MappingEditor> {
       child: Stack(
         children: [
           // Using a container to provide background
-          Positioned.fill(
-            child: ColoredBox(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-            ),
-          ),
+          Positioned.fill(child: ColoredBox(color: Theme.of(context).colorScheme.surfaceContainer)),
           VirtualLayoutRenderer(
             layout: widget.layout,
             selectedKeyId: _selectedVirtualKeyId,
@@ -347,9 +330,7 @@ class _MappingEditorState extends State<MappingEditor> {
                         ),
                         const TextSpan(text: ' to: '),
                         TextSpan(
-                          text: _bindingLabel(
-                            _bindingsForLayer[_selectedVirtualKeyId],
-                          ),
+                          text: _bindingLabel(_bindingsForLayer[_selectedVirtualKeyId]),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.secondary,
@@ -375,8 +356,7 @@ class _MappingEditorState extends State<MappingEditor> {
                 Expanded(
                   flex: 3,
                   child: SoftKeyboard(
-                    onKeySelected: (key) =>
-                        _applyBinding(ActionBinding.standardKey(value: key)),
+                    onKeySelected: (key) => _applyBinding(ActionBinding.standardKey(value: key)),
                     keySize: 42,
                   ),
                 ),
@@ -403,43 +383,27 @@ class _MappingEditorState extends State<MappingEditor> {
                           children: [
                             ActionChip(
                               label: const Text('Macro'),
-                              avatar: const Icon(
-                                Icons.play_circle_outline,
-                                size: 16,
-                              ),
+                              avatar: const Icon(Icons.play_circle_outline, size: 16),
                               onPressed: () {
                                 if (_macroController.text.isNotEmpty) {
-                                  _applyBinding(
-                                    ActionBinding.macro(
-                                      value: _macroController.text,
-                                    ),
-                                  );
+                                  _applyBinding(ActionBinding.macro(value: _macroController.text));
                                 }
                               },
                             ),
                             ActionChip(
                               label: const Text('Transparent'),
-                              avatar: const Icon(
-                                Icons.transit_enterexit,
-                                size: 16,
-                              ),
-                              onPressed: () => _applyBinding(
-                                const ActionBinding.transparent(),
-                              ),
+                              avatar: const Icon(Icons.transit_enterexit, size: 16),
+                              onPressed: () => _applyBinding(const ActionBinding.transparent()),
                             ),
                             // Layer Toggle
                             ActionChip(
                               label: const Text('Layer Toggle'),
                               avatar: const Icon(Icons.layers, size: 16),
                               onPressed: () async {
-                                final layerIndex = await _showLayerSelectDialog(
-                                  context,
-                                );
+                                final layerIndex = await _showLayerSelectDialog(context);
                                 if (layerIndex != null) {
                                   _applyBinding(
-                                    ActionBinding.layerToggle(
-                                      value: layerIndex.toString(),
-                                    ),
+                                    ActionBinding.layerToggle(value: layerIndex.toString()),
                                   );
                                 }
                               },
@@ -512,10 +476,7 @@ class _MappingEditorState extends State<MappingEditor> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
