@@ -11,7 +11,7 @@
   - _Requirements: REQ-1_
   - _Prompt: Role: Package organizer | Task: Move ProfileRegistryService from UI to core_logic following same pattern as RuntimeService move in Spec 1, update imports to relative paths, add export to core_logic.dart | Restrictions: Do NOT modify logic, do NOT delete original yet, verify NO Flutter dependencies using grep | Success: File at packages/core_logic/lib/services/profile_registry_service.dart, imports use relative paths, exported from core_logic.dart, zero Flutter dependencies confirmed with grep_
 
-- [ ] 2. Move TestService to core_logic
+- [x] 2. Move TestService to core_logic
   - File: packages/core_logic/lib/services/test_service.dart
   - Copy from ui/lib/services/test_service.dart
   - Update imports to use relative paths
