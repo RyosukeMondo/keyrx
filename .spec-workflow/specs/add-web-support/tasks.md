@@ -1,0 +1,158 @@
+# Tasks: Add Web Support
+
+- [ ] 1. Refactor services to conditional export pattern
+  - File: packages/core_logic/lib/services/*.dart (11 services)
+  - Rename *_impl.dart to *_ffi.dart
+  - Extract abstract interface to base file
+  - Add conditional export statement
+  - Verify desktop builds and tests pass
+  - Purpose: Enable platform-specific implementations
+  - _Leverage: packages/core_logic/lib/services/device_registry_service.dart (existing service pattern)_
+  - _Requirements: REQ-1_
+  - _Prompt: Role: Dart refactoring specialist | Task: Refactor 11 services to conditional export pattern by renaming *_impl to *_ffi, extracting interfaces, adding export conditionals | Restrictions: Do NOT change business logic, preserve all method signatures, maintain FFI functionality | Success: All services have interface + conditional export, desktop builds pass, zero test failures_
+
+- [ ] 2. Create SSOT violation checker tool
+  - File: tools/ssot_checker/lib/ssot_checker.dart
+  - Create analyzer for Flutter imports in core_logic
+  - Add business logic detection in UI layer
+  - Add interface consistency verification
+  - Add duplicate implementation detection
+  - Purpose: Detect SSOT violations at build time
+  - _Leverage: Dart analyzer package, AST traversal patterns_
+  - _Requirements: REQ-5_
+  - _Prompt: Role: Static analysis engineer | Task: Create SSOT checker detecting Flutter imports in core_logic, business logic in UI, interface inconsistencies, duplicate implementations | Restrictions: Use Dart analyzer package, provide file:line locations, actionable error messages | Success: Detects all violation types, reports clear errors, runs in under 5 seconds_
+
+- [ ] 3. Integrate SSOT checker into pre-commit
+  - File: scripts/pre-commit-ssot-check.sh
+  - Add SSOT checker to pre-commit hooks
+  - Configure to fail on violations
+  - Add clear error reporting
+  - Update .git/hooks/pre-commit
+  - Purpose: Prevent SSOT violations from being committed
+  - _Leverage: Existing pre-commit hook infrastructure_
+  - _Requirements: REQ-5_
+  - _Prompt: Role: DevOps engineer | Task: Integrate SSOT checker into pre-commit hooks with violation-triggered failures and clear error output | Restrictions: Must not slow down commits significantly, skip on --no-verify flag | Success: Pre-commit fails on violations, shows actionable errors, runs under 3 seconds_
+
+- [ ] 4. Create web transport layer
+  - File: packages/core_logic/lib/web/api_client.dart
+  - File: packages/core_logic/lib/web/websocket_client.dart
+  - Implement WebApiClient with HTTP methods
+  - Implement WebSocketClient for real-time events
+  - Add ApiResponse model
+  - Add error handling
+  - Purpose: HTTP/WebSocket transport for web platform
+  - _Leverage: http package, web_socket_channel package_
+  - _Requirements: REQ-2_
+  - _Prompt: Role: Web API developer | Task: Create WebApiClient for HTTP REST calls and WebSocketClient for real-time events matching FFI bridge interface | Restrictions: Zero Flutter dependencies, type-safe responses, mirror FFI error handling | Success: HTTP client works, WebSocket streams functional, error handling matches FFI, zero Flutter deps_
+
+- [ ] 5. Implement web versions of all services
+  - File: packages/core_logic/lib/services/*_web.dart (11 files)
+  - Create HTTP-based implementation for each service
+  - Match FFI interface exactly
+  - Subscribe to WebSocket events for reactivity
+  - Add proper error handling
+  - Purpose: Web platform service implementations
+  - _Leverage: packages/core_logic/lib/services/device_registry_service_ffi.dart (FFI implementation pattern)_
+  - _Requirements: REQ-1, REQ-2_
+  - _Prompt: Role: Platform abstraction specialist | Task: Implement *_web.dart for 11 services using WebApiClient, matching FFI interfaces exactly, subscribing to WebSocket for reactivity | Restrictions: Same interface as FFI version, no business logic, only transport differences | Success: All 11 web services created, implement correct interfaces, pass unit tests, zero business logic_
+
+- [ ] 6. Create platform consistency tests
+  - File: packages/core_logic/test/ssot/platform_consistency_test.dart
+  - Test FFI and Web implement same interface
+  - Verify transport layer contains no business logic
+  - Test real-time event parity
+  - Add interface method verification
+  - Purpose: Verify SSOT compliance at test time
+  - _Leverage: Mocktail for mocking, test package_
+  - _Requirements: REQ-6_
+  - _Prompt: Role: QA test engineer | Task: Create tests verifying FFI/Web interface consistency, transport isolation, real-time event parity across platforms | Restrictions: Use mocks for transport, test interfaces not implementations, verify zero business logic in transport | Success: Tests pass for both platforms, detect interface drift, verify transport isolation, real-time parity confirmed_
+
+- [ ] 7. Create backend API server
+  - File: apps/keyrx_server/bin/server.dart
+  - File: apps/keyrx_server/lib/api/routes.dart
+  - Create shelf-based HTTP server
+  - Implement REST endpoints for all services
+  - Use core_logic services directly
+  - Add CORS middleware
+  - Purpose: Backend API wrapping core_logic
+  - _Leverage: shelf, shelf_router packages_
+  - _Requirements: REQ-3_
+  - _Prompt: Role: Backend API developer | Task: Create REST API server using shelf, implementing endpoints for 11 services using core_logic directly | Restrictions: Zero business logic, use core_logic services, add CORS support, proper error responses | Success: Server starts, all endpoints functional, uses core_logic, returns JSON, CORS enabled_
+
+- [ ] 8. Add WebSocket real-time broadcasting
+  - File: apps/keyrx_server/lib/api/websocket_handler.dart
+  - Subscribe to core_logic service streams
+  - Broadcast events to connected WebSocket clients
+  - Handle client connections/disconnections
+  - Add event filtering
+  - Purpose: Real-time updates for web clients
+  - _Leverage: web_socket_channel package_
+  - _Requirements: REQ-3_
+  - _Prompt: Role: Real-time systems developer | Task: Create WebSocket handler subscribing to core_logic streams and broadcasting to web clients | Restrictions: Forward events only, no logic, handle client lifecycle, reconnection support | Success: Clients receive real-time events, broadcasts match FFI callbacks, handles 100+ concurrent clients_
+
+- [ ] 9. Update ServiceRegistry for multi-platform
+  - File: ui/lib/services/service_registry.dart
+  - Add platform detection using kIsWeb
+  - Create WebApiClient for web platform
+  - Create KeyrxBridge for desktop platform
+  - Instantiate platform-appropriate services
+  - Purpose: Platform-transparent service initialization
+  - _Leverage: flutter/foundation.dart for kIsWeb_
+  - _Requirements: REQ-4_
+  - _Prompt: Role: Dependency injection specialist | Task: Update ServiceRegistry to detect platform and create appropriate services using kIsWeb for web or FFI for desktop | Restrictions: Same interface for all platforms, no UI code changes needed, environment-based config | Success: Web creates HTTP services, desktop creates FFI services, UI unchanged, builds for all platforms_
+
+- [ ] 10. Configure Flutter web build
+  - File: ui/web/index.html
+  - File: ui/lib/main.dart
+  - Add web build configuration
+  - Add backend URL environment variable
+  - Configure CORS headers
+  - Add web-specific polyfills if needed
+  - Purpose: Enable Flutter web compilation
+  - _Leverage: Flutter web documentation_
+  - _Requirements: REQ-7_
+  - _Prompt: Role: Flutter web specialist | Task: Configure Flutter web build with environment-based backend URL, CORS support, production optimizations | Restrictions: No platform-specific UI code, same main.dart for all platforms, configurable backend | Success: flutter build web succeeds, connects to backend, hot reload works, production build optimized_
+
+- [ ] 11. Add backend integration tests
+  - File: apps/keyrx_server/test/integration_test.dart
+  - Test all REST endpoints
+  - Test WebSocket connections
+  - Test real-time event delivery
+  - Test error handling
+  - Purpose: Verify backend API correctness
+  - _Leverage: test package, http package_
+  - _Requirements: REQ-3_
+  - _Prompt: Role: Integration test engineer | Task: Create integration tests for backend REST endpoints, WebSocket connections, real-time events, error cases | Restrictions: Test against real core_logic, verify responses match spec, test concurrent clients | Success: All endpoints tested, WebSocket events verified, error handling confirmed, concurrent client support tested_
+
+- [ ] 12. Add cross-platform E2E tests
+  - File: ui/test_driver/web_platform_test.dart
+  - Test Flutter web build works
+  - Test backend connectivity
+  - Test real-time updates work
+  - Test feature parity with desktop
+  - Purpose: Verify end-to-end web functionality
+  - _Leverage: flutter_driver, integration_test packages_
+  - _Requirements: REQ-7, NFR-3_
+  - _Prompt: Role: E2E test specialist | Task: Create cross-platform E2E tests verifying web build works, connects to backend, receives real-time updates, has feature parity | Restrictions: Run on Chrome and Firefox, test critical user flows, verify real-time updates | Success: Tests pass on web and desktop, real-time verified, feature parity confirmed, runs in CI_
+
+- [ ] 13. Add performance benchmarks
+  - File: packages/core_logic/test/benchmarks/platform_performance_test.dart
+  - Benchmark API response times (FFI vs HTTP)
+  - Benchmark real-time event latency
+  - Verify web within 20% of desktop
+  - Add CI performance gates
+  - Purpose: Ensure web performance acceptable
+  - _Leverage: benchmark_harness package_
+  - _Requirements: NFR-5_
+  - _Prompt: Role: Performance engineer | Task: Create benchmarks comparing FFI and HTTP response times, real-time latency, verify web within 20% of desktop | Restrictions: Measure actual transport time, exclude network latency in tests, run 1000+ iterations | Success: Benchmarks run in CI, web within 20% of desktop, latency under 50ms, results tracked over time_
+
+- [ ] 14. Update documentation and deploy
+  - File: docs/web-deployment.md
+  - Document web deployment process
+  - Document backend server setup
+  - Add environment configuration guide
+  - Update architecture diagrams
+  - Purpose: Enable web deployment and maintenance
+  - _Leverage: docs/architect/ existing documentation_
+  - _Requirements: All_
+  - _Prompt: Role: Technical writer | Task: Document web deployment, backend setup, environment config, update architecture diagrams for multi-platform support | Restrictions: Clear step-by-step instructions, include troubleshooting, production-ready configs | Success: Complete deployment guide, backend setup documented, config examples provided, diagrams updated_
