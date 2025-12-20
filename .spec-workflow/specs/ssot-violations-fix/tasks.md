@@ -137,12 +137,16 @@
 
 ## Phase 3: Interface Inconsistency Fixes (2 violations)
 
-- [ ] 14. Identify interface inconsistencies
+- [x] 14. Identify interface inconsistencies
   - Files: Run SSOT checker with verbose output
   - Determine which services have interface mismatches
   - Document the specific signature differences
   - Plan fix approach (shared interface vs signature alignment)
   - Purpose: Understand the 2 interface inconsistency violations
+  - **FINDINGS**:
+    1. `device_registry_service.dart` - Missing conditional export, has web impl but no export pattern
+    2. `profile_registry_service.dart` - Missing conditional export, needs web impl creation
+  - **FIX APPROACH**: Move Impl classes to `_ffi.dart` files, add conditional exports, create web impl for profile_registry
   - _Leverage: scripts/pre-commit-ssot-check.sh --verbose_
   - _Requirements: 3_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: API Contract Analyst | Task: Identify the 2 interface inconsistency violations using SSOT checker verbose output. Document which services have mismatched interfaces and what the differences are. | Restrictions: Only investigate and document, do not fix yet, provide detailed report | Success: Clear documentation of 2 interface mismatches, specific signature differences identified, fix approach planned | Instructions: Mark in-progress `[-]`, investigate thoroughly, log findings with details, mark complete `[x]`._
