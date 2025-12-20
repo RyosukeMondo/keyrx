@@ -91,7 +91,7 @@
   - _Requirements: REQ-3_
   - _Prompt: Role: Real-time systems developer | Task: Create WebSocket handler subscribing to core_logic streams and broadcasting to web clients | Restrictions: Forward events only, no logic, handle client lifecycle, reconnection support | Success: Clients receive real-time events, broadcasts match FFI callbacks, handles 100+ concurrent clients_
 
-- [ ] 9. Update ServiceRegistry for multi-platform
+- [x] 9. Update ServiceRegistry for multi-platform
   - File: ui/lib/services/service_registry.dart
   - Add platform detection using kIsWeb
   - Create WebApiClient for web platform
