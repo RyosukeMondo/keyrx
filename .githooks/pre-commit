@@ -39,7 +39,7 @@ echo "║                   Pre-commit Checks                        ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
-TOTAL_CHECKS=6
+TOTAL_CHECKS=7
 if [[ -d "$UI_DIR" ]]; then
     TOTAL_CHECKS=$((TOTAL_CHECKS + 4))
 fi
@@ -89,7 +89,31 @@ STEP=$((STEP + 1))
 echo "    ✓ Module sizes OK"
 echo ""
 
-# Step 3: Format check
+# Step 3: SSOT violation check
+echo "[$STEP/$TOTAL_CHECKS] Checking SSOT violations..."
+if ! "$REPO_ROOT/scripts/pre-commit-ssot-check.sh"; then
+    echo ""
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║  ❌ FAILED: SSOT Violation Check                           ║"
+    echo "╠════════════════════════════════════════════════════════════╣"
+    echo "║  SSOT (Single Source of Truth) violations detected.        ║"
+    echo "║                                                            ║"
+    echo "║  Review the violations above and fix them before commit.   ║"
+    echo "║                                                            ║"
+    echo "║  To run the checker manually:                              ║"
+    echo "║    ./scripts/pre-commit-ssot-check.sh                      ║"
+    echo "║                                                            ║"
+    echo "║  For details, see:                                         ║"
+    echo "║    tools/ssot_checker/README.md                            ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    exit 1
+fi
+PASSED_CHECKS=$((PASSED_CHECKS + 1))
+STEP=$((STEP + 1))
+echo "    ✓ SSOT check OK"
+echo ""
+
+# Step 4: Format check
 echo "[$STEP/$TOTAL_CHECKS] Checking code formatting..."
 if ! cargo fmt --check 2>/dev/null; then
     echo ""
@@ -111,7 +135,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Formatting OK"
 echo ""
 
-# Step 4: Clippy lint check
+# Step 5: Clippy lint check
 echo "[$STEP/$TOTAL_CHECKS] Running clippy lints..."
 if ! cargo clippy --quiet -- -D warnings 2>&1; then
     echo ""
@@ -133,7 +157,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Clippy OK"
 echo ""
 
-# Step 5: Unit tests (lib only for speed)
+# Step 6: Unit tests (lib only for speed)
 echo "[$STEP/$TOTAL_CHECKS] Running unit tests..."
 # Force single-threaded execution to avoid flaky global state interactions in docs registry
 if ! RUST_TEST_THREADS=1 cargo test --lib --quiet -- --test-threads=1 2>&1; then
@@ -156,7 +180,7 @@ STEP=$((STEP + 1))
 echo "    ✓ Tests OK"
 echo ""
 
-# Step 6: Verify FFI bindings
+# Step 7: Verify FFI bindings
 echo "[$STEP/$TOTAL_CHECKS] Verifying FFI bindings..."
 # Generator is currently incompatible with legacy bindings structure.
 # Skipping verification until migration is complete.
@@ -179,7 +203,7 @@ echo ""
 
 if [[ -d "$UI_DIR" ]]; then
     UI_COVERAGE_THRESHOLD="${UI_COVERAGE_THRESHOLD:-60}"
-    # Step 7: Dart/Flutter toolchain availability
+    # Step 8: Dart/Flutter toolchain availability
     echo "[$STEP/$TOTAL_CHECKS] Checking Dart/Flutter toolchain..."
     if ! command -v dart >/dev/null 2>&1; then
         echo ""
@@ -218,7 +242,7 @@ if [[ -d "$UI_DIR" ]]; then
     PASSED_CHECKS=$((PASSED_CHECKS + 1))
     STEP=$((STEP + 1))
 
-    # Step 8: Dart format check
+    # Step 9: Dart format check
     echo "[$STEP/$TOTAL_CHECKS] Checking Dart formatting..."
     pushd "$UI_DIR" >/dev/null
     if ! dart format --set-exit-if-changed .; then
@@ -240,7 +264,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "    ✓ Dart formatting OK"
     echo ""
 
-    # Step 9: Flutter analyze with fatal infos
+    # Step 10: Flutter analyze with fatal infos
     echo "[$STEP/$TOTAL_CHECKS] Running flutter analyze (fatal infos)..."
     pushd "$UI_DIR" >/dev/null
     STAGED_DART_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=d -- '*.dart' | grep '^ui/' || true)
@@ -271,7 +295,7 @@ if [[ -d "$UI_DIR" ]]; then
     echo "    ✓ Flutter analyze OK"
     echo ""
 
-    # Step 10: Flutter tests with coverage (fast suite)
+    # Step 11: Flutter tests with coverage (fast suite)
     FAST_TEST_FILES="${UI_TEST_FILES:-test/services/keymap_converter_test.dart}"
     FAST_COVERAGE_THRESHOLD="${UI_FAST_COVERAGE_THRESHOLD:-0}"
     echo "[$STEP/$TOTAL_CHECKS] Running flutter test with coverage (fast suite, threshold ${FAST_COVERAGE_THRESHOLD}% )..."
@@ -307,6 +331,7 @@ echo "║                                                            ║"
 echo "║  Checks completed:                                         ║"
 echo "║    • FFI contract validation                               ║"
 echo "║    • Module size check                                     ║"
+echo "║    • SSOT violation check                                  ║"
 echo "║    • cargo fmt --check                                     ║"
 echo "║    • cargo clippy -- -D warnings                           ║"
 echo "║    • cargo test --lib                                      ║"

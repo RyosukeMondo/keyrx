@@ -22,7 +22,7 @@
   - _Requirements: REQ-5_
   - _Prompt: Role: Static analysis engineer | Task: Create SSOT checker detecting Flutter imports in core_logic, business logic in UI, interface inconsistencies, duplicate implementations | Restrictions: Use Dart analyzer package, provide file:line locations, actionable error messages | Success: Detects all violation types, reports clear errors, runs in under 5 seconds_
 
-- [ ] 3. Integrate SSOT checker into pre-commit
+- [-] 3. Integrate SSOT checker into pre-commit
   - File: scripts/pre-commit-ssot-check.sh
   - Add SSOT checker to pre-commit hooks
   - Configure to fail on violations
