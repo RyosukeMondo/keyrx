@@ -22,12 +22,12 @@ class KeyboardDevice {
   });
 
   factory KeyboardDevice.fromJson(Map<String, dynamic> json) => KeyboardDevice(
-        name: json['name'] as String? ?? 'Unknown',
-        vendorId: (json['vendorId'] ?? json['vendor_id'] as num?)?.toInt() ?? 0,
-        productId: (json['productId'] ?? json['product_id'] as num?)?.toInt() ?? 0,
-        path: json['path'] as String? ?? '',
-        hasProfile: (json['hasProfile'] ?? json['has_profile']) as bool? ?? false,
-      );
+    name: json['name'] as String? ?? 'Unknown',
+    vendorId: (json['vendorId'] ?? json['vendor_id'] as num?)?.toInt() ?? 0,
+    productId: (json['productId'] ?? json['product_id'] as num?)?.toInt() ?? 0,
+    path: json['path'] as String? ?? '',
+    hasProfile: (json['hasProfile'] ?? json['has_profile']) as bool? ?? false,
+  );
 
   final String name;
   final int vendorId;
@@ -39,12 +39,12 @@ class KeyboardDevice {
       '${vendorId.toRadixString(16).padLeft(4, '0')}:${productId.toRadixString(16).padLeft(4, '0')}';
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'vendor_id': vendorId,
-        'product_id': productId,
-        'path': path,
-        'has_profile': hasProfile,
-      };
+    'name': name,
+    'vendor_id': vendorId,
+    'product_id': productId,
+    'path': path,
+    'has_profile': hasProfile,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -115,11 +115,7 @@ class DeviceListResult {
 
 /// Result of starting device discovery.
 class DiscoveryStartResult {
-  const DiscoveryStartResult({
-    required this.success,
-    this.totalKeys,
-    this.errorMessage,
-  });
+  const DiscoveryStartResult({required this.success, this.totalKeys, this.errorMessage});
 
   factory DiscoveryStartResult.ok({int? totalKeys}) =>
       DiscoveryStartResult(success: true, totalKeys: totalKeys);
@@ -132,9 +128,7 @@ class DiscoveryStartResult {
   factory DiscoveryStartResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
-      return DiscoveryStartResult.error(
-        trimmed.substring('error:'.length).trim(),
-      );
+      return DiscoveryStartResult.error(trimmed.substring('error:'.length).trim());
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -170,19 +164,14 @@ class DiscoveryStartResult {
 
 /// Physical key metadata from device profile.
 class PhysicalKey {
-  const PhysicalKey({
-    required this.scanCode,
-    required this.row,
-    required this.col,
-    this.alias,
-  });
+  const PhysicalKey({required this.scanCode, required this.row, required this.col, this.alias});
 
   factory PhysicalKey.fromJson(Map<String, dynamic> json) => PhysicalKey(
-        scanCode: (json['scan_code'] as num).toInt(),
-        row: (json['row'] as num).toInt(),
-        col: (json['col'] as num).toInt(),
-        alias: json['alias']?.toString(),
-      );
+    scanCode: (json['scan_code'] as num).toInt(),
+    row: (json['row'] as num).toInt(),
+    col: (json['col'] as num).toInt(),
+    alias: json['alias']?.toString(),
+  );
 
   final int scanCode;
   final int row;
@@ -190,11 +179,11 @@ class PhysicalKey {
   final String? alias;
 
   Map<String, dynamic> toJson() => {
-        'scan_code': scanCode,
-        'row': row,
-        'col': col,
-        if (alias != null) 'alias': alias,
-      };
+    'scan_code': scanCode,
+    'row': row,
+    'col': col,
+    if (alias != null) 'alias': alias,
+  };
 }
 
 /// Profile source enum.
@@ -206,13 +195,12 @@ enum ProfileSource {
   const ProfileSource(this.label);
   final String label;
 
-  factory ProfileSource.fromString(String source) =>
-      switch (source.toLowerCase()) {
-        'discovered' => ProfileSource.discovered,
-        'default' => ProfileSource.defaultSource,
-        'migrated' => ProfileSource.migrated,
-        _ => ProfileSource.defaultSource,
-      };
+  factory ProfileSource.fromString(String source) => switch (source.toLowerCase()) {
+    'discovered' => ProfileSource.discovered,
+    'default' => ProfileSource.defaultSource,
+    'migrated' => ProfileSource.migrated,
+    _ => ProfileSource.defaultSource,
+  };
 }
 
 /// Device profile containing layout and keymap information.
@@ -235,9 +223,7 @@ class DeviceProfile {
     final keymap = <int, PhysicalKey>{};
     for (final entry in keymapJson.entries) {
       final scanCode = int.parse(entry.key);
-      keymap[scanCode] = PhysicalKey.fromJson(
-        entry.value as Map<String, dynamic>,
-      );
+      keymap[scanCode] = PhysicalKey.fromJson(entry.value as Map<String, dynamic>);
     }
 
     final aliasesJson = json['aliases'] as Map<String, dynamic>? ?? {};
@@ -282,19 +268,17 @@ class DeviceProfile {
   int get totalKeys => colsPerRow.fold(0, (sum, cols) => sum + cols);
 
   Map<String, dynamic> toJson() => {
-        'schema_version': schemaVersion,
-        'vendor_id': vendorId,
-        'product_id': productId,
-        if (name != null) 'name': name,
-        'discovered_at': discoveredAt.toIso8601String(),
-        'rows': rows,
-        'cols_per_row': colsPerRow,
-        'keymap': keymap.map(
-          (key, value) => MapEntry(key.toString(), value.toJson()),
-        ),
-        'aliases': aliases,
-        'source': source.label,
-      };
+    'schema_version': schemaVersion,
+    'vendor_id': vendorId,
+    'product_id': productId,
+    if (name != null) 'name': name,
+    'discovered_at': discoveredAt.toIso8601String(),
+    'rows': rows,
+    'cols_per_row': colsPerRow,
+    'keymap': keymap.map((key, value) => MapEntry(key.toString(), value.toJson())),
+    'aliases': aliases,
+    'source': source.label,
+  };
 }
 
 /// Result of getting a device profile.
@@ -304,15 +288,12 @@ class DeviceProfileResult {
   factory DeviceProfileResult.success(DeviceProfile profile) =>
       DeviceProfileResult(profile: profile);
 
-  factory DeviceProfileResult.error(String message) =>
-      DeviceProfileResult(errorMessage: message);
+  factory DeviceProfileResult.error(String message) => DeviceProfileResult(errorMessage: message);
 
   factory DeviceProfileResult.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.toLowerCase().startsWith('error:')) {
-      return DeviceProfileResult.error(
-        trimmed.substring('error:'.length).trim(),
-      );
+      return DeviceProfileResult.error(trimmed.substring('error:'.length).trim());
     }
 
     final payload = trimmed.toLowerCase().startsWith('ok:')
@@ -347,11 +328,9 @@ class DeviceProfileResult {
 class DeviceRegistryResult<T> {
   const DeviceRegistryResult({this.data, this.errorMessage});
 
-  factory DeviceRegistryResult.success(T data) =>
-      DeviceRegistryResult(data: data);
+  factory DeviceRegistryResult.success(T data) => DeviceRegistryResult(data: data);
 
-  factory DeviceRegistryResult.error(String message) =>
-      DeviceRegistryResult(errorMessage: message);
+  factory DeviceRegistryResult.error(String message) => DeviceRegistryResult(errorMessage: message);
 
   final T? data;
   final String? errorMessage;
@@ -394,10 +373,7 @@ class BridgeStateDelta {
     return BridgeStateDelta(
       fromVersion: (json['from_version'] as num?)?.toInt() ?? 0,
       toVersion: (json['to_version'] as num?)?.toInt() ?? 0,
-      changes: rawChanges
-          .map(BridgeDeltaChange.fromJson)
-          .whereType<BridgeDeltaChange>()
-          .toList(),
+      changes: rawChanges.map(BridgeDeltaChange.fromJson).whereType<BridgeDeltaChange>().toList(),
     );
   }
 
@@ -435,13 +411,9 @@ class BridgeDeltaChange {
         case 'AllKeysReleased':
           return const BridgeDeltaChange(BridgeDeltaChangeType.allKeysReleased);
         case 'AllModifiersCleared':
-          return const BridgeDeltaChange(
-            BridgeDeltaChangeType.allModifiersCleared,
-          );
+          return const BridgeDeltaChange(BridgeDeltaChangeType.allModifiersCleared);
         case 'AllPendingCleared':
-          return const BridgeDeltaChange(
-            BridgeDeltaChangeType.allPendingCleared,
-          );
+          return const BridgeDeltaChange(BridgeDeltaChangeType.allPendingCleared);
         default:
           return null;
       }
@@ -454,50 +426,23 @@ class BridgeDeltaChange {
 
       switch (key) {
         case 'KeyPressed':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.keyPressed,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.keyPressed, payload: value);
         case 'KeyReleased':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.keyReleased,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.keyReleased, payload: value);
         case 'LayerActivated':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.layerActivated,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.layerActivated, payload: value);
         case 'LayerDeactivated':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.layerDeactivated,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.layerDeactivated, payload: value);
         case 'LayerStackChanged':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.layerStackChanged,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.layerStackChanged, payload: value);
         case 'ModifierChanged':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.modifierChanged,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.modifierChanged, payload: value);
         case 'PendingAdded':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.pendingAdded,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.pendingAdded, payload: value);
         case 'PendingResolved':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.pendingResolved,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.pendingResolved, payload: value);
         case 'VersionChanged':
-          return BridgeDeltaChange(
-            BridgeDeltaChangeType.versionChanged,
-            payload: value,
-          );
+          return BridgeDeltaChange(BridgeDeltaChangeType.versionChanged, payload: value);
         default:
           return null;
       }
@@ -520,6 +465,68 @@ class BridgeSnapshot {
     this.layouts = const [],
     this.sharedModifiers = const [],
   });
+
+  factory BridgeSnapshot.fromJson(Map<String, dynamic> json) {
+    final pressed =
+        (json['pressed_keys'] as List<dynamic>?)
+            ?.map((e) {
+              if (e is Map<String, dynamic>) {
+                final key = e['key']?.toString() ?? '';
+                return key;
+              }
+              return e.toString();
+            })
+            .where((k) => k.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
+    var standardBits = 0;
+    final standardRaw = json['standard_modifiers'];
+    if (standardRaw is Map<String, dynamic>) {
+      if (standardRaw['bits'] is num) {
+        standardBits = (standardRaw['bits'] as num).toInt();
+      } else if (standardRaw.values.isNotEmpty && standardRaw.values.first is num) {
+        standardBits = (standardRaw.values.first as num).toInt();
+      }
+    }
+
+    var layouts = const <BridgeLayoutSnapshot>[];
+    var sharedModifiers = const <int>[];
+    final compositor = json['layout_compositor'];
+    if (compositor is Map<String, dynamic>) {
+      final rawLayouts = compositor['layouts'] as List<dynamic>? ?? const [];
+      layouts = rawLayouts
+          .map(
+            (entry) => entry is Map<String, dynamic> ? BridgeLayoutSnapshot.fromJson(entry) : null,
+          )
+          .whereType<BridgeLayoutSnapshot>()
+          .toList();
+      sharedModifiers = (compositor['shared_modifiers'] as List<dynamic>? ?? const [])
+          .map((e) => (e as num?)?.toInt())
+          .whereType<int>()
+          .toList();
+    }
+
+    return BridgeSnapshot(
+      version: (json['version'] as num?)?.toInt() ?? 0,
+      pressedKeys: pressed,
+      activeLayers:
+          (json['active_layers'] as List<dynamic>?)
+              ?.map((e) => (e as num?)?.toInt() ?? 0)
+              .toList() ??
+          const <int>[],
+      baseLayer: (json['base_layer'] as num?)?.toInt() ?? 0,
+      standardModifierBits: standardBits,
+      virtualModifiers:
+          (json['virtual_modifiers'] as List<dynamic>?)
+              ?.map((e) => (e as num?)?.toInt() ?? 0)
+              .toList() ??
+          const <int>[],
+      pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
+      layouts: layouts,
+      sharedModifiers: sharedModifiers,
+    );
+  }
 
   final int version;
   final List<String> pressedKeys;
@@ -545,6 +552,25 @@ class BridgeLayoutSnapshot {
     this.modifiers = const [],
   });
 
+  factory BridgeLayoutSnapshot.fromJson(Map<String, dynamic> json) => BridgeLayoutSnapshot(
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    priority: (json['priority'] as num?)?.toInt() ?? 0,
+    enabled: json['enabled'] == true,
+    activeLayers: (json['active_layers'] as List<dynamic>? ?? const [])
+        .map((e) => (e as num?)?.toInt() ?? 0)
+        .toList(),
+    description: json['description']?.toString(),
+    tags: (json['tags'] as List<dynamic>? ?? const [])
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList(),
+    modifiers: (json['modifiers'] as List<dynamic>? ?? const [])
+        .map((e) => (e as num?)?.toInt())
+        .whereType<int>()
+        .toList(),
+  );
+
   final String id;
   final String name;
   final int priority;
@@ -558,30 +584,25 @@ class BridgeLayoutSnapshot {
 /// Timing configuration for tap/hold decisions.
 class BridgeTiming {
   const BridgeTiming({
-    required this.tapTimeoutMs,
-    required this.comboTimeoutMs,
-    required this.holdDelayMs,
-    required this.eagerTap,
-    required this.permissiveHold,
-    required this.retroTap,
+    this.tapTimeoutMs,
+    this.comboTimeoutMs,
+    this.holdDelayMs,
+    this.eagerTap,
+    this.permissiveHold,
+    this.retroTap,
   });
 
-  final int tapTimeoutMs;
-  final int comboTimeoutMs;
-  final int holdDelayMs;
-  final bool eagerTap;
-  final bool permissiveHold;
-  final bool retroTap;
+  final int? tapTimeoutMs;
+  final int? comboTimeoutMs;
+  final int? holdDelayMs;
+  final bool? eagerTap;
+  final bool? permissiveHold;
+  final bool? retroTap;
 }
 
 /// Key registry entry.
 class KeyRegistryEntry {
-  const KeyRegistryEntry({
-    required this.name,
-    required this.aliases,
-    this.evdev,
-    this.vk,
-  });
+  const KeyRegistryEntry({required this.name, this.aliases = const [], this.evdev, this.vk});
 
   final String name;
   final List<String> aliases;
@@ -591,18 +612,52 @@ class KeyRegistryEntry {
 
 /// Result of fetching the key registry.
 class KeyRegistryResult {
-  const KeyRegistryResult({
-    required this.entries,
-    this.error,
-    this.usedFallback = false,
-  });
+  const KeyRegistryResult({required this.entries, this.error, this.usedFallback = false});
 
   factory KeyRegistryResult.fallback(String errorMessage) {
-    return KeyRegistryResult(
-      entries: const [],
-      error: errorMessage,
-      usedFallback: true,
-    );
+    return KeyRegistryResult(entries: const [], error: errorMessage, usedFallback: true);
+  }
+
+  factory KeyRegistryResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return KeyRegistryResult.fallback(trimmed);
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! List) {
+        return KeyRegistryResult.fallback('error: invalid registry payload');
+      }
+
+      final entries = decoded
+          .map((entry) {
+            if (entry is! Map) {
+              return const KeyRegistryEntry(name: '');
+            }
+            final name = entry['name']?.toString() ?? '';
+            final aliases =
+                (entry['aliases'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+                const <String>[];
+            final evdev = (entry['evdev'] as num?)?.toInt();
+            final vk = (entry['vk'] as num?)?.toInt();
+            return KeyRegistryEntry(name: name, aliases: aliases, evdev: evdev, vk: vk);
+          })
+          .where((entry) => entry.name.isNotEmpty)
+          .toList();
+
+      if (entries.isEmpty) {
+        return KeyRegistryResult.fallback('error: empty registry payload');
+      }
+
+      return KeyRegistryResult(entries: entries);
+    } catch (e) {
+      return KeyRegistryResult.fallback('error: $e');
+    }
   }
 
   final List<KeyRegistryEntry> entries;
@@ -610,15 +665,13 @@ class KeyRegistryResult {
   final bool usedFallback;
 
   bool get hasError => error != null;
+
+  List<String> get names => entries.map((e) => e.name).toList();
 }
 
 /// Script validation error.
 class ScriptValidationError {
-  const ScriptValidationError({
-    required this.message,
-    this.line,
-    this.column,
-  });
+  const ScriptValidationError({required this.message, this.line, this.column});
 
   final String message;
   final int? line;
@@ -627,11 +680,45 @@ class ScriptValidationError {
 
 /// Result of script validation.
 class ScriptValidationResult {
-  const ScriptValidationResult({
-    required this.valid,
-    required this.errors,
-    this.errorMessage,
-  });
+  const ScriptValidationResult({required this.valid, required this.errors, this.errorMessage});
+
+  factory ScriptValidationResult.error(String message) =>
+      ScriptValidationResult(valid: false, errors: const [], errorMessage: message);
+
+  factory ScriptValidationResult.parse(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.toLowerCase().startsWith('error:')) {
+      return ScriptValidationResult.error(trimmed.substring('error:'.length).trim());
+    }
+
+    final payload = trimmed.toLowerCase().startsWith('ok:')
+        ? trimmed.substring(trimmed.indexOf(':') + 1)
+        : trimmed;
+
+    try {
+      final decoded = json.decode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return ScriptValidationResult.error('invalid validation payload');
+      }
+
+      final valid = decoded['valid'] as bool? ?? false;
+      final errorsList = decoded['errors'] as List<dynamic>? ?? [];
+      final errors = errorsList.map((e) {
+        if (e is! Map<String, dynamic>) {
+          return const ScriptValidationError(message: 'unknown error');
+        }
+        return ScriptValidationError(
+          line: (e['line'] as num?)?.toInt(),
+          column: (e['column'] as num?)?.toInt(),
+          message: e['message']?.toString() ?? 'unknown error',
+        );
+      }).toList();
+
+      return ScriptValidationResult(valid: valid, errors: errors);
+    } catch (e) {
+      return ScriptValidationResult.error('$e');
+    }
+  }
 
   final bool valid;
   final List<ScriptValidationError> errors;

@@ -17,8 +17,8 @@ import 'package:meta/meta.dart';
 import '../models/device_identity.dart';
 import '../models/device_state.dart';
 import '../models/layout_type.dart';
-import '../models/profile.dart';
 import '../models/migration_report.dart';
+import '../models/profile.dart';
 import 'bindings.dart';
 import 'bridge.dart';
 import 'bridge_config.dart';
@@ -154,7 +154,7 @@ class MockKeyrxBridge implements KeyrxBridge {
       const ScriptValidationResult(valid: true, errors: []);
 
   @override
-  Stream<BridgeStateUpdate> get stateStream => _stateController.stream;
+  Stream<BridgeStateUpdate>? get stateStream => _stateController.stream;
 
   // ========== BridgeSessionMixin ==========
 
