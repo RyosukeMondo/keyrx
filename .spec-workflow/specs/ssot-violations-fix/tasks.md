@@ -104,7 +104,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Performance Testing Specialist | Task: Refactor benchmark_service to use core BenchmarkService instead of direct FFI access. Create core service if missing. | Restrictions: Preserve benchmark API, maintain timing accuracy, no FFI in UI | Success: Benchmarks use core service, 2 FFI calls eliminated, performance testing works, 2 fewer violations | Instructions: Mark in-progress `[-]`, create service layer, log implementation, mark complete `[x]`._
 
-- [-] 11. Document FlowValidator as UI-specific
+- [x] 11. Document FlowValidator as UI-specific
   - Files: ui/lib/services/flow_validator.dart
   - Add clear documentation that FlowValidator is UI-specific validation
   - Verify it doesn't duplicate core_logic validation logic
