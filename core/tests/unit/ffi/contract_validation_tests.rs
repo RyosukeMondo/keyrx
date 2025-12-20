@@ -183,7 +183,7 @@ mod tests {
             && name
                 .chars()
                 .next()
-                .map_or(false, |c| c.is_alphabetic() || c == '_')
+                .is_some_and(|c| c.is_alphabetic() || c == '_')
             && name.chars().all(|c| c.is_alphanumeric() || c == '_')
     }
 

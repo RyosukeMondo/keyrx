@@ -154,8 +154,8 @@ String _deviceLabel(DeviceInstanceId id) {
 
 extension FlowNodeId on FlowNode {
   String get nodeId => when(
-    device: (id, _, __, ___) => id,
-    hardwareProfile: (id, _) => id,
-    keymap: (id, _, __) => id,
+    device: (id, _deviceId, _isConnected, _label) => id,
+    hardwareProfile: (id, _label) => id,
+    keymap: (id, _label, _layers) => id,
   );
 }

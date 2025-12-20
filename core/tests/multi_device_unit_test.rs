@@ -29,6 +29,7 @@
     unsafe_code,
     clippy::collapsible_if,
     clippy::bool_comparison,
+    clippy::useless_vec,
     unexpected_cfgs
 )]
 //! Unit tests for MultiDeviceInput - Focus on timing edge cases and race conditions.

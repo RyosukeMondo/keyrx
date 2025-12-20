@@ -59,19 +59,25 @@ impl CodegenCache {
             .with_context(|| format!("Failed to read cache file: {}", cache_path.display()))?;
 
         let cache: CodegenCache = serde_json::from_str(&content).unwrap_or_else(|e| {
-            eprintln!(
-                "Warning: Failed to parse cache file ({}), starting fresh",
-                e
-            );
+            #[allow(clippy::print_stderr)]
+            {
+                eprintln!(
+                    "Warning: Failed to parse cache file ({}), starting fresh",
+                    e
+                );
+            }
             Self::new()
         });
 
         // Check version compatibility
         if cache.version != CACHE_VERSION {
-            eprintln!(
-                "Warning: Cache version mismatch (expected {}, got {}), starting fresh",
-                CACHE_VERSION, cache.version
-            );
+            #[allow(clippy::print_stderr)]
+            {
+                eprintln!(
+                    "Warning: Cache version mismatch (expected {}, got {}), starting fresh",
+                    CACHE_VERSION, cache.version
+                );
+            }
             return Ok(Self::new());
         }
 
@@ -82,12 +88,13 @@ impl CodegenCache {
     pub fn save(&self, cache_path: &Path) -> Result<()> {
         // Create parent directory if it doesn't exist
         if let Some(parent) = cache_path.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create cache directory: {}", parent.display()))?;
+            fs::create_dir_all(parent).with_context(|| {
+                format!("Failed to create cache directory: {}", parent.display())
+            })?;
         }
 
-        let content = serde_json::to_string_pretty(self)
-            .with_context(|| "Failed to serialize cache")?;
+        let content =
+            serde_json::to_string_pretty(self).with_context(|| "Failed to serialize cache")?;
 
         fs::write(cache_path, content)
             .with_context(|| format!("Failed to write cache file: {}", cache_path.display()))?;

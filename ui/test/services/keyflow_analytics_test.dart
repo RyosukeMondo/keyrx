@@ -222,12 +222,13 @@ void main() {
       final events = <KeyFlowEvent>[];
       final subscription = analytics.eventStream.listen(events.add);
 
-      analytics.trackPageView(deviceCount: 1);
-      analytics.trackSlotAdded(
-        deviceId: 'device1',
-        profileId: 'profile1',
-        keymapId: 'keymap1',
-      );
+      analytics
+        ..trackPageView(deviceCount: 1)
+        ..trackSlotAdded(
+          deviceId: 'device1',
+          profileId: 'profile1',
+          keymapId: 'keymap1',
+        );
 
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -239,10 +240,10 @@ void main() {
     });
 
     test('disposes cleanly', () {
-      analytics.dispose();
-
-      // Should not throw
-      analytics.trackPageView(deviceCount: 1);
+      analytics
+        ..dispose()
+        // Should not throw
+        ..trackPageView(deviceCount: 1);
     });
   });
 }

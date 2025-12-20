@@ -15,7 +15,12 @@
 //! - Contract validation: <500ms
 
 // Allow unwrap/expect in benchmarks - panics are acceptable for setup code
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::print_stderr
+)]
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::fs;

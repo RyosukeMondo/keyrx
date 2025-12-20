@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:test/test.dart';
-import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'package:core_logic/models/models.dart';
-import 'package:core_logic/models/virtual_layout_type.dart';
+import 'package:http/http.dart' as http;
+import 'package:test/test.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Integration tests for the KeyRx backend API server
 ///
@@ -32,7 +32,7 @@ void main() {
     );
 
     // Wait for server to start
-    await Future.delayed(const Duration(seconds: 3));
+    await Future<void>.delayed(const Duration(seconds: 3));
 
     // Verify server is running
     var retries = 0;
@@ -47,7 +47,7 @@ void main() {
         if (retries >= 5) {
           throw Exception('Failed to start server: $e');
         }
-        await Future.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
       }
     }
   });
@@ -72,7 +72,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('profiles', isA<List>()));
+      expect(data, containsPair('profiles', isA<List<dynamic>>()));
     });
 
     test('POST /api/hardware/profiles - save profile', () async {
@@ -92,7 +92,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('profile', isA<Map>()));
+      expect(data, containsPair('profile', isA<Map<String, dynamic>>()));
     });
 
     test('DELETE /api/hardware/profiles/:id - delete profile', () async {
@@ -112,7 +112,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('keymaps', isA<List>()));
+      expect(data, containsPair('keymaps', isA<List<dynamic>>()));
     });
 
     test('POST /api/keymaps - save keymap', () async {
@@ -130,7 +130,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('keymap', isA<Map>()));
+      expect(data, containsPair('keymap', isA<Map<String, dynamic>>()));
     });
 
     test('DELETE /api/keymaps/:id - delete keymap', () async {
@@ -150,7 +150,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('layouts', isA<List>()));
+      expect(data, containsPair('layouts', isA<List<dynamic>>()));
     });
 
     test('POST /api/layouts - save layout', () async {
@@ -168,7 +168,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('layout', isA<Map>()));
+      expect(data, containsPair('layout', isA<Map<String, dynamic>>()));
     });
 
     test('DELETE /api/layouts/:id - delete layout', () async {
@@ -188,7 +188,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('devices', isA<List>()));
+      expect(data, containsPair('devices', isA<List<dynamic>>()));
     });
 
     test('POST /api/devices/refresh - refresh devices', () async {
@@ -198,7 +198,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('devices', isA<List>()));
+      expect(data, containsPair('devices', isA<List<dynamic>>()));
     });
 
     test('POST /api/devices/virtual - add virtual device', () async {
@@ -237,7 +237,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('profiles', isA<List>()));
+      expect(data, containsPair('profiles', isA<List<dynamic>>()));
     });
 
     test('POST /api/profiles/refresh - refresh profiles', () async {
@@ -247,7 +247,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('profiles', isA<List>()));
+      expect(data, containsPair('profiles', isA<List<dynamic>>()));
     });
 
     test('GET /api/profiles/compatible/:layoutType - find compatible profiles', () async {
@@ -257,7 +257,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('profiles', isA<List>()));
+      expect(data, containsPair('profiles', isA<List<dynamic>>()));
     });
   });
 
@@ -269,7 +269,7 @@ void main() {
 
       expect(response.statusCode, equals(200));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      expect(data, containsPair('config', isA<Map>()));
+      expect(data, containsPair('config', isA<Map<String, dynamic>>()));
     });
   });
 
@@ -417,7 +417,7 @@ void main() {
       });
 
       // Wait for connection message
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // Trigger device refresh
       await http.post(Uri.parse('$baseUrl/api/devices/refresh'));
@@ -433,7 +433,7 @@ void main() {
       if (hasEvent) {
         final event = events.firstWhere((e) => e['type'] == 'devices_updated');
         expect(event['type'], equals('devices_updated'));
-        expect(event['data'], isA<List>());
+        expect(event['data'], isA<List<dynamic>>());
         expect(event, containsPair('timestamp', isA<String>()));
       }
 
@@ -459,7 +459,7 @@ void main() {
       });
 
       // Wait for connection
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // Create a hardware profile to trigger change event
       final profile = const HardwareProfile(
@@ -516,13 +516,13 @@ void main() {
       });
 
       // Wait for connections
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // Trigger an event
       await http.post(Uri.parse('$baseUrl/api/devices/refresh'));
 
       // Wait for events to be received
-      await Future.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(seconds: 2));
 
       // Both clients should have received events
       expect(events1.isNotEmpty, isTrue);
@@ -556,7 +556,7 @@ void main() {
       for (final response in responses) {
         expect(response.statusCode, equals(200));
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        expect(data, containsPair('devices', isA<List>()));
+        expect(data, containsPair('devices', isA<List<dynamic>>()));
       }
     });
 
@@ -608,7 +608,7 @@ void main() {
       });
 
       // Wait for connection
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // Create profile via REST API
       final profile = const HardwareProfile(

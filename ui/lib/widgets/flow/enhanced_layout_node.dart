@@ -205,42 +205,42 @@ class EnhancedLayoutNode extends StatelessWidget {
 
   // Connection handles on left and right edges
   Widget _buildConnectionHandles(_LayoutStatus status) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Input handle (left)
-          Row(
-            children: List.generate(
-              2,
-              (index) => Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(right: 4),
-                decoration: BoxDecoration(
-                  color: status.iconColor.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: status.iconColor),
-                ),
-              ),
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      // Input handle (left)
+      Row(
+        children: List.generate(
+          2,
+          (index) => Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: status.iconColor.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+              border: Border.all(color: status.iconColor),
             ),
           ),
-          // Output handle (right)
-          Row(
-            children: List.generate(
-              2,
-              (index) => Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(left: 4),
-                decoration: BoxDecoration(
-                  color: status.iconColor.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: status.iconColor),
-                ),
-              ),
+        ),
+      ),
+      // Output handle (right)
+      Row(
+        children: List.generate(
+          2,
+          (index) => Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(left: 4),
+            decoration: BoxDecoration(
+              color: status.iconColor.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+              border: Border.all(color: status.iconColor),
             ),
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   _LayoutStatus _getLayoutStatus() =>
       isValid ? _LayoutStatus.valid : _LayoutStatus.invalid;

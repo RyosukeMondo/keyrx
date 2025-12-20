@@ -518,7 +518,7 @@ mod tests {
 
     fn create_test_contract() -> FfiContract {
         FfiContract {
-            schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+            schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
             version: "1.0.0".to_string(),
             domain: "test".to_string(),
             description: "Test contract".to_string(),
@@ -710,7 +710,7 @@ mod tests {
 
     fn create_object_return_contract() -> FfiContract {
         FfiContract {
-            schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+            schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
             version: "1.0.0".to_string(),
             domain: "test".to_string(),
             description: "Test contract".to_string(),

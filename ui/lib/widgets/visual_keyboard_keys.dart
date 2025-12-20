@@ -77,7 +77,7 @@ class KeyWidget extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   /// Callback when hover state changes.
-  final void Function(bool hovered)? onHoverChanged;
+  final void Function({required bool hovered})? onHoverChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -88,8 +88,8 @@ class KeyWidget extends StatelessWidget {
     final textColor = _getTextColor(colorScheme);
 
     return MouseRegion(
-      onEnter: (_) => onHoverChanged?.call(true),
-      onExit: (_) => onHoverChanged?.call(false),
+      onEnter: (_) => onHoverChanged?.call(hovered: true),
+      onExit: (_) => onHoverChanged?.call(hovered: false),
       child: GestureDetector(
         onTap: enabled ? onTap : null,
         onLongPress: enabled ? onLongPress : null,

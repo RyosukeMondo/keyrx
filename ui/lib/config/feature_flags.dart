@@ -81,7 +81,10 @@ class FeatureFlagService {
       }
     }
 
-    _logger.debug('feature_flags.overrides_loaded', context: {'count': _overrides.length});
+    _logger.debug(
+      'feature_flags.overrides_loaded',
+      context: {'count': _overrides.length},
+    );
   }
 
   /// Check if a feature flag is enabled.
@@ -112,7 +115,10 @@ class FeatureFlagService {
       await _preferences?.setBool(key, enabled);
       _overrides[flag] = enabled;
 
-      _logger.info('feature_flags.flag_set', context: {'flag': flag.name, 'value': enabled});
+      _logger.info(
+        'feature_flags.flag_set',
+        context: {'flag': flag.name, 'value': enabled},
+      );
     } on Exception catch (e, st) {
       _logger.error(
         'feature_flags.set_failed',

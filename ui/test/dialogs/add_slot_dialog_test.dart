@@ -387,9 +387,11 @@ void main() {
 
     testWidgets('disables buttons while saving', (tester) async {
       // Use a completer to control when the async operation finishes
-      fakeSlotActions.addSlotDelay = const Duration(seconds: 2);
-      fakeSlotActions.addSlotResult =
-          ConfigOperationResult<RuntimeConfig>.success(const RuntimeConfig());
+      fakeSlotActions
+        ..addSlotDelay = const Duration(seconds: 2)
+        ..addSlotResult = ConfigOperationResult<RuntimeConfig>.success(
+          const RuntimeConfig(),
+        );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Dialog'));

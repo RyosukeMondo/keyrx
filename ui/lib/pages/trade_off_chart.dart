@@ -58,7 +58,11 @@ class PresetRegion {
 
 /// Configuration for the trade-off chart.
 class TradeOffChartConfig {
-  const TradeOffChartConfig({this.minTimeout = 100, this.maxTimeout = 1000, this.maxMissRate = 35});
+  const TradeOffChartConfig({
+    this.minTimeout = 100,
+    this.maxTimeout = 1000,
+    this.maxMissRate = 35,
+  });
 
   final double minTimeout;
   final double maxTimeout;
@@ -101,7 +105,10 @@ class TradeOffChart extends StatelessWidget {
         maxY: config.maxMissRate,
         gridData: _buildGridData(theme),
         titlesData: _buildTitlesData(theme),
-        borderData: FlBorderData(show: true, border: Border.all(color: theme.dividerColor)),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: theme.dividerColor),
+        ),
         lineBarsData: [
           // Preset region backgrounds (for reference)
           ...presets.map(_buildPresetRegionBar),
@@ -117,10 +124,14 @@ class TradeOffChart extends StatelessWidget {
   FlGridData _buildGridData(ThemeData theme) => FlGridData(
     horizontalInterval: 5,
     verticalInterval: 100,
-    getDrawingHorizontalLine: (value) =>
-        FlLine(color: theme.dividerColor.withValues(alpha: 0.3), strokeWidth: 1),
-    getDrawingVerticalLine: (value) =>
-        FlLine(color: theme.dividerColor.withValues(alpha: 0.3), strokeWidth: 1),
+    getDrawingHorizontalLine: (value) => FlLine(
+      color: theme.dividerColor.withValues(alpha: 0.3),
+      strokeWidth: 1,
+    ),
+    getDrawingVerticalLine: (value) => FlLine(
+      color: theme.dividerColor.withValues(alpha: 0.3),
+      strokeWidth: 1,
+    ),
   );
 
   FlTitlesData _buildTitlesData(ThemeData theme) => FlTitlesData(
@@ -149,23 +160,31 @@ class TradeOffChart extends StatelessWidget {
   );
 
   // Create a subtle background bar for the preset region
-  LineChartBarData _buildPresetRegionBar(PresetRegion preset) => LineChartBarData(
-    spots: [FlSpot(preset.minMs.toDouble(), 0), FlSpot(preset.maxMs.toDouble(), 0)],
-    color: Colors.transparent,
-    barWidth: 0,
-    dotData: const FlDotData(show: false),
-    belowBarData: BarAreaData(),
-  );
+  LineChartBarData _buildPresetRegionBar(PresetRegion preset) =>
+      LineChartBarData(
+        spots: [
+          FlSpot(preset.minMs.toDouble(), 0),
+          FlSpot(preset.maxMs.toDouble(), 0),
+        ],
+        color: Colors.transparent,
+        barWidth: 0,
+        dotData: const FlDotData(show: false),
+        belowBarData: BarAreaData(),
+      );
 
-  LineChartBarData _buildMainCurve(ThemeData theme, List<FlSpot> spots) => LineChartBarData(
-    spots: spots,
-    isCurved: true,
-    curveSmoothness: 0.3,
-    color: theme.colorScheme.primary,
-    barWidth: 3,
-    dotData: const FlDotData(show: false),
-    belowBarData: BarAreaData(show: true, color: theme.colorScheme.primary.withValues(alpha: 0.1)),
-  );
+  LineChartBarData _buildMainCurve(ThemeData theme, List<FlSpot> spots) =>
+      LineChartBarData(
+        spots: spots,
+        isCurved: true,
+        curveSmoothness: 0.3,
+        color: theme.colorScheme.primary,
+        barWidth: 3,
+        dotData: const FlDotData(show: false),
+        belowBarData: BarAreaData(
+          show: true,
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      );
 
   ExtraLinesData _buildExtraLines(ThemeData theme, double currentMissRate) {
     final verticalLines = <VerticalLine>[];
@@ -175,7 +194,10 @@ class TradeOffChart extends StatelessWidget {
       final stdDev = userTypingStdDev ?? 50;
       verticalLines.addAll([
         VerticalLine(
-          x: (userTypingMean! - stdDev).clamp(config.minTimeout, config.maxTimeout),
+          x: (userTypingMean! - stdDev).clamp(
+            config.minTimeout,
+            config.maxTimeout,
+          ),
           color: Colors.purple.withValues(alpha: 0.5),
           strokeWidth: 1,
           dashArray: [3, 3],
@@ -186,12 +208,19 @@ class TradeOffChart extends StatelessWidget {
           label: VerticalLineLabel(
             show: true,
             alignment: Alignment.topLeft,
-            style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 10),
+            style: const TextStyle(
+              color: Colors.purple,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+            ),
             labelResolver: (_) => 'Your typing\n${userTypingMean!.toInt()}ms',
           ),
         ),
         VerticalLine(
-          x: (userTypingMean! + stdDev).clamp(config.minTimeout, config.maxTimeout),
+          x: (userTypingMean! + stdDev).clamp(
+            config.minTimeout,
+            config.maxTimeout,
+          ),
           color: Colors.purple.withValues(alpha: 0.5),
           strokeWidth: 1,
           dashArray: [3, 3],
@@ -237,7 +266,11 @@ class TradeOffChart extends StatelessWidget {
 
   List<FlSpot> _generateChartData() {
     final spots = <FlSpot>[];
-    for (var timeout = config.minTimeout; timeout <= config.maxTimeout; timeout += 10) {
+    for (
+      var timeout = config.minTimeout;
+      timeout <= config.maxTimeout;
+      timeout += 10
+    ) {
       final missRate = statistics.calculateMissRate(timeout);
       spots.add(FlSpot(timeout, missRate.clamp(0, config.maxMissRate)));
     }

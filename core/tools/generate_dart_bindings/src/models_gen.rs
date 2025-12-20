@@ -5,8 +5,8 @@
 
 use crate::templates::{
     context, render, to_camel_case, to_pascal_case, to_snake_case, CONSTRUCTOR_PARAM_OPTIONAL,
-    CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, FROM_JSON_OPTIONAL, FROM_JSON_REQUIRED,
-    MODEL_CLASS_TEMPLATE, MODEL_FIELD_TEMPLATE, TO_JSON_FIELD,
+    CONSTRUCTOR_PARAM_REQUIRED, ENUM_CLASS_TEMPLATE, MODEL_CLASS_TEMPLATE, MODEL_FIELD_TEMPLATE,
+    TO_JSON_FIELD,
 };
 use crate::type_mapper::{base_type, is_nullable, map_to_dart_native_type, TypeMappingError};
 use keyrx_core::ffi::contract::{FfiContract, TypeDefinition};

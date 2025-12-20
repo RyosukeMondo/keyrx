@@ -143,10 +143,9 @@ void main() {
       // Get selection notifier and select a node
       final container = tester.element(find.byType(KeyboardNavigableCanvas));
       final providerContainer = ProviderScope.containerOf(container);
-      final selection = providerContainer.read(
-        selectionNotifierProvider.notifier,
-      );
-      selection.selectNode('device-1');
+      providerContainer
+          .read(selectionNotifierProvider.notifier)
+          .selectNode('device-1');
       await tester.pumpAndSettle();
 
       // Verify initial selection
@@ -182,11 +181,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set zoom to 2x
-      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2, 2, 1);
       await tester.pumpAndSettle();
 
       // Verify zoom is 2x
-      expect(transformationController.value.getMaxScaleOnAxis(), 2.0);
+      expect(transformationController.value.getMaxScaleOnAxis(), 2);
 
       // Press Ctrl+0
       await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
@@ -195,7 +194,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify zoom reset to 1.0
-      expect(transformationController.value.getMaxScaleOnAxis(), 1.0);
+      expect(transformationController.value.getMaxScaleOnAxis(), 1);
     });
 
     testWidgets('Ctrl++ zooms in by 10%', (tester) async {
@@ -229,7 +228,7 @@ void main() {
 
     testWidgets('Ctrl+- zooms out by 10%', (tester) async {
       // Start with 2x zoom
-      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2, 2, 1);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -365,9 +364,7 @@ void main() {
         ),
       ];
 
-      final tracker = FocusTracker(nodes: nodes);
-
-      tracker.focusNext();
+      final tracker = FocusTracker(nodes: nodes)..focusNext();
       expect(tracker.focusedIndex, 1);
       expect(tracker.focusedNodeId, 'device-2');
 
@@ -400,10 +397,9 @@ void main() {
         ),
       ];
 
-      final tracker = FocusTracker(nodes: nodes);
-
-      // Should wrap around to last
-      tracker.focusPrevious();
+      final tracker = FocusTracker(nodes: nodes)
+        // Should wrap around to last
+        ..focusPrevious();
       expect(tracker.focusedIndex, 2);
       expect(tracker.focusedNodeId, 'device-3');
 
@@ -418,8 +414,9 @@ void main() {
       expect(tracker.focusedNodeId, isNull);
 
       // Should not crash
-      tracker.focusNext();
-      tracker.focusPrevious();
+      tracker
+        ..focusNext()
+        ..focusPrevious();
     });
 
     test('isNodeFocused returns correct value', () {
@@ -459,11 +456,11 @@ void main() {
     });
 
     test('resetZoom sets scale to 1.0', () {
-      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1);
       expect(transformationController.value.getMaxScaleOnAxis(), 2.5);
 
       zoomController.resetZoom();
-      expect(transformationController.value.getMaxScaleOnAxis(), 1.0);
+      expect(transformationController.value.getMaxScaleOnAxis(), 1);
     });
 
     test('zoomIn increases scale by 10%', () {
@@ -477,7 +474,7 @@ void main() {
     });
 
     test('zoomOut decreases scale by 10%', () {
-      transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2, 2, 1);
       final initialScale = transformationController.value.getMaxScaleOnAxis();
 
       zoomController.zoomOut();
@@ -487,7 +484,7 @@ void main() {
     });
 
     test('zoom is clamped to min 0.5', () {
-      transformationController.value = Matrix4.diagonal3Values(0.5, 0.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(0.5, 0.5, 1);
 
       zoomController.zoomOut();
 
@@ -496,7 +493,7 @@ void main() {
     });
 
     test('zoom is clamped to max 2.5', () {
-      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1.0);
+      transformationController.value = Matrix4.diagonal3Values(2.5, 2.5, 1);
 
       zoomController.zoomIn();
 

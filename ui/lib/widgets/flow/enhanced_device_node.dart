@@ -276,28 +276,26 @@ class EnhancedDeviceNode extends StatelessWidget {
 
   // Visual connection handles on the right edge
   Widget _buildConnectionHandles(_DeviceStatus status) => Align(
-        alignment: Alignment.centerRight,
-        child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: List.generate(
-            totalSlotCount.clamp(0, 5),
-            (index) => Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: index < activeSlotCount
-                    ? status.iconColor
-                    : status.iconColor.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: status.iconColor.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
+    alignment: Alignment.centerRight,
+    child: Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: List.generate(
+        totalSlotCount.clamp(0, 5),
+        (index) => Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: index < activeSlotCount
+                ? status.iconColor
+                : status.iconColor.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(color: status.iconColor.withValues(alpha: 0.5)),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   _DeviceStatus _getDeviceStatus() {
     if (hasError) {

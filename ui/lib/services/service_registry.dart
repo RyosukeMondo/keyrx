@@ -129,7 +129,7 @@ class ServiceRegistry {
 
     if (kIsWeb) {
       // Web platform: Use HTTP/WebSocket transport
-      return _createWebRegistry(
+      return ServiceRegistry._createWebRegistry(
         backendUrl:
             backendUrl ??
             const String.fromEnvironment(
@@ -139,7 +139,6 @@ class ServiceRegistry {
         errorTranslator: errorTranslator,
         mappingRepository: mappingRepository,
         apiDocsService: apiDocsService,
-        profileAutosaveService: profileAutosaveService,
         layoutService: layoutService,
         hardwareService: hardwareService,
         keymapService: keymapService,
@@ -147,7 +146,7 @@ class ServiceRegistry {
       );
     } else {
       // Desktop platform: Use FFI bridge
-      return _createDesktopRegistry(
+      return ServiceRegistry._createDesktopRegistry(
         bridge: bridge,
         errorTranslator: errorTranslator,
         mappingRepository: mappingRepository,
@@ -171,13 +170,12 @@ class ServiceRegistry {
   }
 
   /// Create service registry for web platform.
-  static ServiceRegistry _createWebRegistry({
+  factory ServiceRegistry._createWebRegistry({
     required String backendUrl,
     required PerformanceSpan bootstrapSpan,
     ErrorTranslator? errorTranslator,
     MappingRepositoryUI? mappingRepository,
     ApiDocsService? apiDocsService,
-    ProfileAutosaveService? profileAutosaveService,
     LayoutServiceUI? layoutService,
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
@@ -251,7 +249,7 @@ class ServiceRegistry {
   }
 
   /// Create service registry for desktop platform.
-  static ServiceRegistry _createDesktopRegistry({
+  factory ServiceRegistry._createDesktopRegistry({
     required PerformanceSpan bootstrapSpan,
     KeyrxBridge? bridge,
     ErrorTranslator? errorTranslator,

@@ -10,6 +10,7 @@ use tokio::time::timeout;
 
 /// Test the full lifecycle of the daemon: start process -> connect -> start engine -> stop engine -> stop process.
 #[tokio::test]
+#[allow(clippy::print_stdout, clippy::unwrap_used, deprecated)]
 async fn test_daemon_lifecycle() -> Result<()> {
     // 1. Setup
     let temp_dir = TempDir::new()?;

@@ -7,11 +7,17 @@ use crate::templates::{
 use crate::type_mapper::map_to_dart_native_type;
 use anyhow::Result;
 use chrono;
-use keyrx_core::ffi::contract::{EventContract, FfiContract, FunctionContract};
+use keyrx_core::ffi::contract::FfiContract;
 use std::collections::HashSet;
 
 pub struct IpcClientGenerator {
     // Generation state, if any
+}
+
+impl Default for IpcClientGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IpcClientGenerator {
@@ -67,15 +73,13 @@ fn generate_events(contract: &FfiContract, enum_names: &HashSet<String>) -> Resu
 
         let event_mapper = if event_type.starts_with("Map<") {
             "event.params".to_string()
+        } else if enum_names.contains(&event_type) {
+            format!("{}.fromJson(event.params as String)", event_type)
         } else {
-            if enum_names.contains(&event_type) {
-                format!("{}.fromJson(event.params as String)", event_type)
-            } else {
-                format!(
-                    "{}.fromJson(event.params as Map<String, dynamic>)",
-                    event_type
-                )
-            }
+            format!(
+                "{}.fromJson(event.params as Map<String, dynamic>)",
+                event_type
+            )
         };
 
         let mut ctx = context();

@@ -230,17 +230,17 @@ void main() {
       addTearDown(container.dispose);
 
       await container.read(runtimeConfigProvider.future);
-      final actions = container.read(keyFlowActionsProvider);
-
-      actions.addSlot(
-        device,
-        const ProfileSlot(
-          id: 'slot-b',
-          hardwareProfileId: 'hp-b',
-          keymapId: 'km-b',
-          priority: 1,
-        ),
-      );
+      container
+          .read(keyFlowActionsProvider)
+          .addSlot(
+            device,
+            const ProfileSlot(
+              id: 'slot-b',
+              hardwareProfileId: 'hp-b',
+              keymapId: 'km-b',
+              priority: 1,
+            ),
+          );
 
       final runtimeValue = container.read(runtimeConfigNotifierProvider).value;
       expect(runtimeValue, updatedConfig);

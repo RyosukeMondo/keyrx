@@ -6,13 +6,11 @@
 /// automatically creates HTTP-based service implementations instead of FFI.
 library;
 
-import '../models/bridge_models.dart';
 import '../models/models.dart';
 
 // Re-export all models and types so code using conditional imports can access them
 export '../models/bridge_models.dart';
 export '../models/models.dart';
-
 // Re-export types from type-only files (no FFI dependencies)
 export 'bridge_session_types.dart';
 export 'bridge_testing_types.dart';

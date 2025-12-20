@@ -12,7 +12,8 @@ part 'analytics_providers.g.dart';
 
 /// Provider for SharedPreferences instance.
 @Riverpod(keepAlive: true)
-Future<SharedPreferences> sharedPreferences(Ref ref) async => SharedPreferences.getInstance();
+Future<SharedPreferences> sharedPreferences(Ref ref) async =>
+    SharedPreferences.getInstance();
 
 /// Provider for FeatureFlagService.
 @Riverpod(keepAlive: true)
@@ -73,7 +74,8 @@ KeyFlowAnalytics keyFlowAnalytics(Ref ref) {
 @riverpod
 class AnalyticsTracker extends _$AnalyticsTracker {
   @override
-  Future<bool> build() async => await ref.watch(keyFlowAnalyticsEnabledProvider.future);
+  Future<bool> build() async =>
+      await ref.watch(keyFlowAnalyticsEnabledProvider.future);
 
   KeyFlowAnalytics get _analytics => ref.read(keyFlowAnalyticsProvider);
 
@@ -112,10 +114,18 @@ class AnalyticsTracker extends _$AnalyticsTracker {
   }
 
   /// Track slot deleted.
-  void trackSlotDeleted({required String deviceId, required String slotId, int? priority}) {
+  void trackSlotDeleted({
+    required String deviceId,
+    required String slotId,
+    int? priority,
+  }) {
     state.whenData((enabled) {
       if (enabled) {
-        _analytics.trackSlotDeleted(deviceId: deviceId, slotId: slotId, priority: priority);
+        _analytics.trackSlotDeleted(
+          deviceId: deviceId,
+          slotId: slotId,
+          priority: priority,
+        );
       }
     });
   }
@@ -178,10 +188,18 @@ class AnalyticsTracker extends _$AnalyticsTracker {
   }
 
   /// Track edge interaction.
-  void trackEdgeInteraction({required String action, required String edgeId, bool? isActive}) {
+  void trackEdgeInteraction({
+    required String action,
+    required String edgeId,
+    bool? isActive,
+  }) {
     state.whenData((enabled) {
       if (enabled) {
-        _analytics.trackEdgeInteraction(action: action, edgeId: edgeId, isActive: isActive);
+        _analytics.trackEdgeInteraction(
+          action: action,
+          edgeId: edgeId,
+          isActive: isActive,
+        );
       }
     });
   }
@@ -196,7 +214,10 @@ class AnalyticsTracker extends _$AnalyticsTracker {
   }
 
   /// Track keyboard shortcut.
-  void trackKeyboardShortcut({required String shortcut, required String action}) {
+  void trackKeyboardShortcut({
+    required String shortcut,
+    required String action,
+  }) {
     state.whenData((enabled) {
       if (enabled) {
         _analytics.trackKeyboardShortcut(shortcut: shortcut, action: action);

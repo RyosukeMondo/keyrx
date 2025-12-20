@@ -4,8 +4,8 @@ library;
 import 'package:core_logic/models/flow/flow_graph.dart';
 
 /// Validation error for a specific node or edge in the flow graph.
-class ValidationError {
-  const ValidationError({
+class FlowValidationError {
+  const FlowValidationError({
     required this.nodeId,
     required this.message,
     required this.suggestion,
@@ -34,7 +34,7 @@ class ValidationError {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ValidationError &&
+      other is FlowValidationError &&
           runtimeType == other.runtimeType &&
           nodeId == other.nodeId &&
           edgeId == other.edgeId &&
@@ -68,8 +68,8 @@ class FlowValidator {
   /// - Orphaned slots (disconnected edges)
   /// - Priority conflicts (duplicate priorities on same device)
   /// - Disconnected devices
-  List<ValidationError> validate(FlowGraph graph) {
-    final errors = <ValidationError>[];
+  List<FlowValidationError> validate(FlowGraph graph) {
+    final errors = <FlowValidationError>[];
 
     // Track which nodes are referenced by edges
     final referencedProfiles = <String>{};
@@ -89,7 +89,7 @@ class FlowValidator {
       // Check if edge endpoints exist
       if (fromNode == null) {
         errors.add(
-          ValidationError(
+          FlowValidationError(
             nodeId: edge.from,
             edgeId: edge.slotId,
             message: 'Missing source node "${edge.from}"',
@@ -102,7 +102,7 @@ class FlowValidator {
 
       if (toNode == null) {
         errors.add(
-          ValidationError(
+          FlowValidationError(
             nodeId: edge.to,
             edgeId: edge.slotId,
             message: 'Missing target node "${edge.to}"',
@@ -129,7 +129,7 @@ class FlowValidator {
 
           if (count > 1) {
             errors.add(
-              ValidationError(
+              FlowValidationError(
                 nodeId: id,
                 edgeId: edge.slotId,
                 message: 'Priority conflict on device',
@@ -148,7 +148,7 @@ class FlowValidator {
       // Validate edge status
       if (edge.status == EdgeStatus.invalid) {
         errors.add(
-          ValidationError(
+          FlowValidationError(
             nodeId: edge.from,
             edgeId: edge.slotId,
             message: 'Invalid slot configuration',
@@ -167,7 +167,7 @@ class FlowValidator {
           // Check if device is disconnected
           if (!isConnected) {
             errors.add(
-              ValidationError(
+              FlowValidationError(
                 nodeId: id,
                 message: 'Device disconnected',
                 suggestion: 'Connect the device to activate its slots.',
@@ -180,7 +180,7 @@ class FlowValidator {
           final hasSlots = graph.edges.any((e) => e.from == id);
           if (isConnected && !hasSlots) {
             errors.add(
-              ValidationError(
+              FlowValidationError(
                 nodeId: id,
                 message: 'No slots configured',
                 suggestion:
@@ -193,7 +193,7 @@ class FlowValidator {
         hardwareProfile: (id, _) {
           if (!referencedProfiles.contains(id)) {
             errors.add(
-              ValidationError(
+              FlowValidationError(
                 nodeId: id,
                 message: 'Unused hardware profile "$id"',
                 suggestion:
@@ -207,7 +207,7 @@ class FlowValidator {
         keymap: (id, _, __) {
           if (!referencedKeymaps.contains(id)) {
             errors.add(
-              ValidationError(
+              FlowValidationError(
                 nodeId: id,
                 message: 'Unused keymap "$id"',
                 suggestion:
@@ -225,11 +225,11 @@ class FlowValidator {
   }
 
   /// Gets all errors for a specific node.
-  List<ValidationError> getNodeErrors(FlowGraph graph, String nodeId) =>
+  List<FlowValidationError> getNodeErrors(FlowGraph graph, String nodeId) =>
       validate(graph).where((e) => e.nodeId == nodeId).toList();
 
   /// Gets all errors for a specific edge.
-  List<ValidationError> getEdgeErrors(FlowGraph graph, String edgeId) =>
+  List<FlowValidationError> getEdgeErrors(FlowGraph graph, String edgeId) =>
       validate(graph).where((e) => e.edgeId == edgeId).toList();
 
   /// Checks if the graph is valid (no errors, only warnings/info allowed).

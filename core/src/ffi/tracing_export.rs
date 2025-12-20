@@ -598,7 +598,7 @@ mod tests {
         assert_eq!(engine_events.len(), 5);
 
         // Filter by duration
-        let slow_events = buffer.get_filtered_events(|e| e.duration_us.map_or(false, |d| d >= 500));
+        let slow_events = buffer.get_filtered_events(|e| e.duration_us.is_some_and(|d| d >= 500));
         assert_eq!(slow_events.len(), 5);
     }
 

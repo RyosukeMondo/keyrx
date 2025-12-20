@@ -46,7 +46,7 @@ class _LogViewerState extends State<LogViewer> {
 
   Future<void> _initializeLogging() async {
     await widget.observabilityService.initialize();
-    await widget.observabilityService.setLogEnabled(true);
+    await widget.observabilityService.setLogEnabled(enabled: true);
 
     // Subscribe to log stream
     _logSubscription = widget.observabilityService.logStream.listen((logs) {

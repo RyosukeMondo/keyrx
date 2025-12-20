@@ -7,14 +7,14 @@ import 'package:core_logic/models/key_mapping.dart';
 import 'key_mappings_util.dart';
 
 /// Result of a mapping validation operation.
-class ValidationResult {
-  const ValidationResult._({required this.isValid, this.errorMessage});
+class MappingValidationResult {
+  const MappingValidationResult._({required this.isValid, this.errorMessage});
 
   /// Creates a successful validation result.
-  const ValidationResult.valid() : this._(isValid: true);
+  const MappingValidationResult.valid() : this._(isValid: true);
 
   /// Creates a failed validation result with an error message.
-  const ValidationResult.invalid(String message)
+  const MappingValidationResult.invalid(String message)
     : this._(isValid: false, errorMessage: message);
 
   /// Whether the validation passed.
@@ -35,28 +35,28 @@ class MappingValidator {
   /// Checks:
   /// - fromKey is not null/empty and is a known key
   /// - For remap actions, the target key is provided and known
-  ValidationResult validateMapping(String? fromKey, KeyMapping mapping) {
+  MappingValidationResult validateMapping(String? fromKey, KeyMapping mapping) {
     if (fromKey == null || fromKey.isEmpty) {
-      return const ValidationResult.invalid('No key selected.');
+      return const MappingValidationResult.invalid('No key selected.');
     }
 
     if (!KeyMappings.isKnownKey(fromKey)) {
-      return ValidationResult.invalid('Unknown key: $fromKey');
+      return MappingValidationResult.invalid('Unknown key: $fromKey');
     }
 
     if (mapping.type == KeyActionType.remap) {
       final targetKey = mapping.to?.trim();
       if (targetKey == null || targetKey.isEmpty) {
-        return const ValidationResult.invalid(
+        return const MappingValidationResult.invalid(
           'Provide a target key for remap.',
         );
       }
       if (!KeyMappings.isKnownKey(targetKey)) {
-        return ValidationResult.invalid('Unknown target key: $targetKey');
+        return MappingValidationResult.invalid('Unknown target key: $targetKey');
       }
     }
 
-    return const ValidationResult.valid();
+    return const MappingValidationResult.valid();
   }
 
   /// Validates a combo configuration before adding.
@@ -65,24 +65,24 @@ class MappingValidator {
   /// - At least 2 keys are provided
   /// - Output is not empty
   /// - All keys are known
-  ValidationResult validateCombo(List<String> keys, String output) {
+  MappingValidationResult validateCombo(List<String> keys, String output) {
     if (keys.length < 2) {
-      return const ValidationResult.invalid(
+      return const MappingValidationResult.invalid(
         'Provide at least 2 keys for a combo.',
       );
     }
 
     if (output.trim().isEmpty) {
-      return const ValidationResult.invalid('Provide an output for the combo.');
+      return const MappingValidationResult.invalid('Provide an output for the combo.');
     }
 
     final unknownKeys = keys.where((k) => !KeyMappings.isKnownKey(k)).toList();
     if (unknownKeys.isNotEmpty) {
-      return ValidationResult.invalid(
+      return MappingValidationResult.invalid(
         'Unknown key(s) in combo: ${unknownKeys.join(", ")}',
       );
     }
 
-    return const ValidationResult.valid();
+    return const MappingValidationResult.valid();
   }
 }

@@ -37,7 +37,7 @@ fn create_empty_contract() -> FfiContract {
 /// Create a contract with multiple parameter types
 fn create_multi_param_contract() -> FfiContract {
     FfiContract {
-        schema: "https://keyrx.dev/schemas/ffi-contract-v1.json".to_string(),
+        schema: Some("https://keyrx.dev/schemas/ffi-contract-v1.json".to_string()),
         version: "1.0.0".to_string(),
         domain: "multi".to_string(),
         description: "Contract with multiple param types".to_string(),

@@ -124,7 +124,7 @@ abstract class ObservabilityService {
   Future<void> clearLogs();
 
   /// Enable or disable log buffering.
-  Future<void> setLogEnabled(bool enabled);
+  Future<void> setLogEnabled({required bool enabled});
 
   /// Fetch the current metrics snapshot.
   Future<MetricsSnapshot?> getMetrics();
@@ -254,7 +254,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
   }
 
   @override
-  Future<void> setLogEnabled(bool enabled) async {
+  Future<void> setLogEnabled({required bool enabled}) async {
     if (_bridge.loadFailure != null) {
       return;
     }

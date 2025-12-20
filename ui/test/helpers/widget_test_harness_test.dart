@@ -14,8 +14,9 @@ void main() {
 
       await harness.pumpPage(tester, const Text('Hello Harness'));
 
-      tester.expectOne(find.byType(Scaffold));
-      tester.expectOne(find.text('Hello Harness'));
+      tester
+        ..expectOne(find.byType(Scaffold))
+        ..expectOne(find.text('Hello Harness'));
     });
 
     testWidgets('supports Riverpod reads and tester extensions', (

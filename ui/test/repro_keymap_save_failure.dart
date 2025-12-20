@@ -86,8 +86,7 @@ void main() {
 
     test('Should handle missing StandardKey value gracefully', () {
       final json = {'type': 'standard_key'}; // value missing
-      final binding = ActionBinding.fromJson(json);
-      binding.map(
+      ActionBinding.fromJson(json).map(
         standardKey: (b) => expect(b.value, ''),
         macro: (_) => fail('wrong type'),
         layerToggle: (_) => fail('wrong type'),

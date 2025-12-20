@@ -14,7 +14,7 @@ class ValidationBadge extends StatelessWidget {
   const ValidationBadge({required this.errors, super.key, this.onTap});
 
   /// List of validation errors to display
-  final List<ValidationError> errors;
+  final List<FlowValidationError> errors;
 
   /// Optional callback when badge is tapped
   final VoidCallback? onTap;
@@ -136,7 +136,7 @@ class ValidationErrorsDialog extends StatelessWidget {
   });
 
   /// List of errors to display
-  final List<ValidationError> errors;
+  final List<FlowValidationError> errors;
 
   /// Dialog title (e.g., "Node Validation Errors")
   final String title;
@@ -179,7 +179,7 @@ class ValidationErrorsDialog extends StatelessWidget {
 class _ValidationErrorItem extends StatelessWidget {
   const _ValidationErrorItem({required this.error});
 
-  final ValidationError error;
+  final FlowValidationError error;
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +276,7 @@ class EdgeValidationIndicator extends StatelessWidget {
   final FlowEdge edge;
 
   /// Validation errors for this edge
-  final List<ValidationError> errors;
+  final List<FlowValidationError> errors;
 
   /// Callback when indicator is tapped
   final VoidCallback onTap;

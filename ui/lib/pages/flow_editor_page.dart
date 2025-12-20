@@ -542,7 +542,7 @@ class _FlowEditorPageState extends ConsumerState<FlowEditorPage>
     );
   }
 
-  void _showValidationErrors(String nodeId, List<ValidationError> errors) {
+  void _showValidationErrors(String nodeId, List<FlowValidationError> errors) {
     showDialog<void>(
       context: context,
       builder: (context) => ValidationErrorsDialog(

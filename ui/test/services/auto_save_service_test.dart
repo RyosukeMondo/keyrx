@@ -177,9 +177,10 @@ void main() {
         return ConfigOperationResult.success(testConfig);
       };
 
-      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
-      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
-      service.scheduleSave(const AddSlotOperation(testDevice, testSlot));
+      service
+        ..scheduleSave(const AddSlotOperation(testDevice, testSlot))
+        ..scheduleSave(const AddSlotOperation(testDevice, testSlot))
+        ..scheduleSave(const AddSlotOperation(testDevice, testSlot));
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 

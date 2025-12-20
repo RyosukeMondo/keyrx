@@ -117,7 +117,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Toggle a layer's active state.
-  void toggleLayer(String name, bool active) {
+  void toggleLayer(String name, {required bool active}) {
     final index = _layers.indexWhere((l) => l.name == name);
     if (index >= 0) {
       _layers[index] = LayerInfo(

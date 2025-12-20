@@ -61,7 +61,7 @@ mod tests {
         // For now, verify it exists and can be built
 
         let output = Command::new("cargo")
-            .args(&["build", "-p", "module_splitter"])
+            .args(["build", "-p", "module_splitter"])
             .current_dir("core/tools")
             .output();
 
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn test_dart_bindings_generator_builds() {
         let output = Command::new("cargo")
-            .args(&["build", "--bin", "generate_dart_bindings"])
+            .args(["build", "--bin", "generate_dart_bindings"])
             .current_dir("core/tools/generate_dart_bindings")
             .output();
 
@@ -296,7 +296,7 @@ mod tests {
             && name
                 .chars()
                 .next()
-                .map_or(false, |c| c.is_alphabetic() || c == '_')
+                .is_some_and(|c| c.is_alphabetic() || c == '_')
             && name.chars().all(|c| c.is_alphanumeric() || c == '_')
     }
 }

@@ -189,7 +189,7 @@ class _VisualKeyboardState extends State<VisualKeyboard> {
           onLongPress: widget.onKeyLongPress != null
               ? () => widget.onKeyLongPress!(key)
               : null,
-          onHoverChanged: (hovered) {
+          onHoverChanged: ({required hovered}) {
             setState(() {
               _hoveredKeyId = hovered ? key.id : null;
             });

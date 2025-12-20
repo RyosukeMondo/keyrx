@@ -76,8 +76,7 @@ class _WebStubDaemonService implements DaemonService {
     String? configPath,
     String? scriptPath,
     bool useAllDevices = true,
-  }) async =>
-      [];
+  }) async => [];
 
   @override
   Future<void> stopEngine() async {
@@ -99,8 +98,7 @@ class _WebStubDaemonService implements DaemonService {
   Future<dynamic> sendRequest(
     String method, [
     Map<String, dynamic>? params,
-  ]) async =>
-      null;
+  ]) async => null;
 
   @override
   Future<void> dispose() async {

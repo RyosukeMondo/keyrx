@@ -86,8 +86,9 @@ void main() {
         async.elapse(const Duration(milliseconds: 50));
         service.queueSave(latest);
 
-        async.elapse(const Duration(milliseconds: 100));
-        async.flushMicrotasks();
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
 
         expect(savedProfiles.length, 1);
         expect(savedProfiles.single.id, 'latest');
@@ -147,8 +148,9 @@ void main() {
 
         service.queueSave(profile);
 
-        async.elapse(const Duration(milliseconds: 20));
-        async.flushMicrotasks();
+        async
+          ..elapse(const Duration(milliseconds: 20))
+          ..flushMicrotasks();
 
         final savingAttempts = statuses
             .where((status) => status.state == AutosaveState.saving)
