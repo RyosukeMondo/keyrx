@@ -9,22 +9,14 @@ import 'dart:typed_data';
 
 import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/bindings.dart';
-import 'package:core_logic/ffi/bridge.dart';
 import 'package:core_logic/ffi/bridge_config.dart';
 import 'package:core_logic/ffi/generated_bindings.dart';
 import 'package:core_logic/ffi/profile_registry_ffi.dart';
-import 'package:core_logic/models/models.dart';
-import 'package:core_logic/services/config_result.dart';
-import 'package:core_logic/services/keymap_service.dart';
-import 'package:core_logic/services/profile_registry_service.dart';
-import 'package:core_logic/services/runtime_service.dart';
-import 'package:core_logic/services/script_file_service.dart';
-import 'package:core_logic/services/test_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyrx_ui/services/api_docs_service.dart';
 import 'package:keyrx_ui/services/daemon_manager.dart';
 import 'package:keyrx_ui/services/device_profile_service.dart';
-import 'package:keyrx_ui/services/device_registry_service.dart';
+import 'package:keyrx_ui/services/device_registry_service.dart' as ui;
 import 'package:keyrx_ui/services/device_service.dart';
 import 'package:keyrx_ui/services/engine_service.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
@@ -417,7 +409,7 @@ class FakeDeviceProfileService implements DeviceProfileService {
 }
 
 /// Fake DeviceRegistryService that returns controlled device lists.
-class FakeDeviceRegistryService implements DeviceRegistryService {
+class FakeDeviceRegistryService implements ui.DeviceRegistryService {
   final _controller = StreamController<List<DeviceState>>.broadcast();
   List<DeviceState> _devices = [];
 
@@ -436,28 +428,28 @@ class FakeDeviceRegistryService implements DeviceRegistryService {
   Future<void> removeVirtualDevice(String key) async {}
 
   @override
-  Future<DeviceRegistryOperationResult> toggleRemap(
+  Future<ui.DeviceRegistryOperationResult> toggleRemap(
     String deviceKey, {
     required bool enabled,
-  }) async => const DeviceRegistryOperationResult.success();
+  }) async => const ui.DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> assignProfile(
+  Future<ui.DeviceRegistryOperationResult> assignProfile(
     String deviceKey,
     String profileId,
-  ) async => const DeviceRegistryOperationResult.success();
+  ) async => const ui.DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> setUserLabel(
+  Future<ui.DeviceRegistryOperationResult> setUserLabel(
     String deviceKey,
     String? label,
-  ) async => const DeviceRegistryOperationResult.success();
+  ) async => const ui.DeviceRegistryOperationResult.success();
 
   @override
-  Future<DeviceRegistryOperationResult> toggleDevice(
+  Future<ui.DeviceRegistryOperationResult> toggleDevice(
     String deviceKey, {
     required bool enabled,
-  }) async => const DeviceRegistryOperationResult.success();
+  }) async => const ui.DeviceRegistryOperationResult.success();
 
   @override
   Future<List<DeviceState>> refresh() async {

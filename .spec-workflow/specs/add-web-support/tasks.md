@@ -1,6 +1,6 @@
 # Tasks: Add Web Support
 
-- [ ] 1. Refactor services to conditional export pattern
+- [-] 1. Refactor services to conditional export pattern
   - File: packages/core_logic/lib/services/*.dart (11 services)
   - Rename *_impl.dart to *_ffi.dart
   - Extract abstract interface to base file

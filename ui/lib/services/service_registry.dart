@@ -1,17 +1,8 @@
 import 'dart:async';
 
 import 'package:core_logic/core_logic.dart';
-import 'package:core_logic/ffi/bridge.dart';
-import 'package:core_logic/repositories/device_config_repository.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
-import 'package:core_logic/services/hardware_service.dart' as core;
-import 'package:core_logic/services/keymap_service.dart';
-import 'package:core_logic/services/layout_service.dart' as core;
-import 'package:core_logic/services/profile_registry_service.dart';
-import 'package:core_logic/services/runtime_service.dart';
-import 'package:core_logic/services/script_file_service.dart';
-import 'package:core_logic/services/test_service.dart';
 
 import '../repositories/mapping_repository_ui.dart';
 import '../utils/performance_timeline.dart';
@@ -19,7 +10,7 @@ import 'api_docs_service.dart';
 import 'daemon_manager.dart';
 import 'daemon_service.dart';
 import 'device_profile_service.dart';
-import 'device_registry_service.dart';
+import 'device_registry_service.dart' as ui;
 import 'device_service.dart';
 import 'engine_service.dart';
 import 'engine_service_impl.dart';
@@ -57,7 +48,7 @@ class ServiceRegistry {
     MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
-    DeviceRegistryService? deviceRegistryService,
+    ui.DeviceRegistryService? deviceRegistryService,
     ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,
@@ -113,14 +104,14 @@ class ServiceRegistry {
     // Note: Fire-and-forget migration to avoid blocking UI startup.
     // Migration failures are handled gracefully (best-effort).
     unawaited(
-      DeviceRegistryServiceImpl.migrateFromSharedPreferences(
+      ui.DeviceRegistryServiceImpl.migrateFromSharedPreferences(
         sharedDeviceRegistry,
       ),
     );
 
     final deviceRegistry =
         deviceRegistryService ??
-        DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
+        ui.DeviceRegistryServiceImpl(coreService: sharedDeviceRegistry);
 
     final profileRegistry =
         profileRegistryService ??
@@ -129,8 +120,8 @@ class ServiceRegistry {
     final tests = testService ?? TestServiceImpl(bridge: effectiveBridge);
 
     // Create core services
-    final coreLayout = core.LayoutService(bridge: effectiveBridge);
-    final coreHardware = core.HardwareService(bridge: effectiveBridge);
+    final coreLayout = LayoutServiceFFI(bridge: effectiveBridge);
+    final coreHardware = HardwareServiceFFI(bridge: effectiveBridge);
     final coreMapping = core.MappingRepository();
 
     // Create UI wrappers
@@ -138,7 +129,7 @@ class ServiceRegistry {
     final hardware = hardwareService ?? HardwareServiceUI(coreHardware);
     final mapping = mappingRepository ?? MappingRepositoryUI(coreMapping);
 
-    final keymaps = keymapService ?? KeymapService(bridge: effectiveBridge);
+    final keymaps = keymapService ?? KeymapServiceFFI(bridge: effectiveBridge);
     final runtime =
         runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
     final daemon = daemonManager ?? DaemonManager(DaemonService());
@@ -189,7 +180,7 @@ class ServiceRegistry {
     required MappingRepositoryUI mappingRepository,
     required DeviceService deviceService,
     required DeviceProfileService deviceProfileService,
-    required DeviceRegistryService deviceRegistryService,
+    required ui.DeviceRegistryService deviceRegistryService,
     required ProfileRegistryService profileRegistryService,
     required ScriptFileService scriptFileService,
     required TestService testService,
@@ -237,7 +228,7 @@ class ServiceRegistry {
   final MappingRepositoryUI mappingRepository;
   final DeviceService deviceService;
   final DeviceProfileService deviceProfileService;
-  final DeviceRegistryService deviceRegistryService;
+  final ui.DeviceRegistryService deviceRegistryService;
   final ProfileRegistryService profileRegistryService;
   final ScriptFileService scriptFileService;
   final TestService testService;
@@ -258,7 +249,7 @@ class ServiceRegistry {
     MappingRepositoryUI? mappingRepository,
     DeviceService? deviceService,
     DeviceProfileService? deviceProfileService,
-    DeviceRegistryService? deviceRegistryService,
+    ui.DeviceRegistryService? deviceRegistryService,
     ProfileRegistryService? profileRegistryService,
     ScriptFileService? scriptFileService,
     TestService? testService,

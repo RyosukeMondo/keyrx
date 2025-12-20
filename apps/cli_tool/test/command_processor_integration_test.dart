@@ -27,9 +27,9 @@ void main() {
       repository: repository,
     );
     runtimeService = RuntimeServiceImpl(bridge: bridge);
-    hardwareService = HardwareService(bridge: bridge);
-    layoutService = LayoutService(bridge: bridge);
-    keymapService = KeymapService(bridge: bridge);
+    hardwareService = HardwareServiceFFI(bridge: bridge);
+    layoutService = LayoutServiceFFI(bridge: bridge);
+    keymapService = KeymapServiceFFI(bridge: bridge);
     profileRegistry = ProfileRegistryServiceImpl(bridge: bridge);
     testService = TestServiceImpl(bridge: bridge);
     scriptFileService = const ScriptFileService();
