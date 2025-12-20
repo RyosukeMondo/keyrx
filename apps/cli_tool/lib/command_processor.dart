@@ -9,6 +9,9 @@ class CommandProcessor {
   final HardwareService hardwareService;
   final LayoutService layoutService;
   final KeymapService keymapService;
+  final ProfileRegistryService profileRegistry;
+  final TestService testService;
+  final ScriptFileService scriptFileService;
 
   CommandProcessor(
     this.bridge,
@@ -17,6 +20,9 @@ class CommandProcessor {
     this.hardwareService,
     this.layoutService,
     this.keymapService,
+    this.profileRegistry,
+    this.testService,
+    this.scriptFileService,
   );
 
   Future<void> process() async {
@@ -289,6 +295,158 @@ class CommandProcessor {
             }
           } else {
             response['error'] = 'Invalid payload for deleteKeymap (expected keymap id)';
+          }
+          break;
+        case 'listProfiles':
+          final profileIds = await profileRegistry.listProfiles();
+          response['result'] = profileIds;
+          break;
+        case 'getProfile':
+          if (payload is String) {
+            final profile = await profileRegistry.getProfile(payload);
+            if (profile != null) {
+              response['result'] = profile.toJson();
+            } else {
+              response['error'] = 'Profile not found: $payload';
+            }
+          } else {
+            response['error'] = 'Invalid payload for getProfile (expected profile id)';
+          }
+          break;
+        case 'saveProfile':
+          if (payload is Map<String, dynamic>) {
+            try {
+              final profile = Profile.fromJson(payload);
+              final result = await profileRegistry.saveProfile(profile);
+              if (result.success) {
+                response['result'] = 'ok';
+              } else {
+                response['error'] = result.errorMessage;
+              }
+            } catch (e) {
+              response['error'] = 'Failed to parse saveProfile payload: $e';
+            }
+          } else {
+            response['error'] = 'Invalid payload for saveProfile';
+          }
+          break;
+        case 'deleteProfile':
+          if (payload is String) {
+            final result = await profileRegistry.deleteProfile(payload);
+            if (result.success) {
+              response['result'] = 'ok';
+            } else {
+              response['error'] = result.errorMessage;
+            }
+          } else {
+            response['error'] = 'Invalid payload for deleteProfile (expected profile id)';
+          }
+          break;
+        case 'findCompatibleProfiles':
+          if (payload is String) {
+            LayoutType? layoutType;
+            switch (payload.toLowerCase()) {
+              case 'standard':
+                layoutType = LayoutType.standard;
+                break;
+              case 'matrix':
+                layoutType = LayoutType.matrix;
+                break;
+              case 'split':
+                layoutType = LayoutType.split;
+                break;
+              default:
+                response['error'] = 'Invalid layout type: $payload (must be standard, matrix, or split)';
+            }
+            if (layoutType != null) {
+              final profiles = await profileRegistry.findCompatibleProfiles(layoutType);
+              response['result'] = profiles.map((p) => p.toJson()).toList();
+            }
+          } else {
+            response['error'] = 'Invalid payload for findCompatibleProfiles (expected layout type string)';
+          }
+          break;
+        case 'validateScript':
+          if (payload is String) {
+            final result = await testService.discoverTests(payload);
+            if (result.hasError) {
+              response['error'] = result.errorMessage;
+            } else {
+              response['result'] = {
+                'tests': result.tests.map((t) => {
+                  'name': t.name,
+                  'file': t.file,
+                  'line': t.line,
+                }).toList(),
+              };
+            }
+          } else {
+            response['error'] = 'Invalid payload for validateScript (expected script path)';
+          }
+          break;
+        case 'runTests':
+          if (payload is Map<String, dynamic>) {
+            final scriptPath = payload['script'] as String?;
+            final filter = payload['filter'] as String?;
+
+            if (scriptPath == null) {
+              response['error'] = 'Invalid payload for runTests: requires script field';
+            } else {
+              final result = await testService.runTests(scriptPath, filter: filter);
+              if (result.hasError) {
+                response['error'] = result.errorMessage;
+              } else {
+                response['result'] = {
+                  'total': result.total,
+                  'passed': result.passed,
+                  'failed': result.failed,
+                  'durationMs': result.durationMs,
+                  'results': result.results.map((r) => {
+                    'name': r.name,
+                    'passed': r.passed,
+                    'error': r.error,
+                    'durationMs': r.durationMs,
+                  }).toList(),
+                };
+              }
+            }
+          } else {
+            response['error'] = 'Invalid payload for runTests (expected object with script field)';
+          }
+          break;
+        case 'testScript':
+          if (payload is Map<String, dynamic>) {
+            final path = payload['path'] as String?;
+            final content = payload['content'] as String?;
+
+            if (path == null || content == null) {
+              response['error'] = 'Invalid payload for testScript: requires path and content fields';
+            } else {
+              final saveResult = await scriptFileService.saveScript(path, content);
+              if (!saveResult.success) {
+                response['error'] = saveResult.errorMessage;
+              } else {
+                final testResult = await testService.runTests(path);
+                if (testResult.hasError) {
+                  response['error'] = testResult.errorMessage;
+                } else {
+                  response['result'] = {
+                    'total': testResult.total,
+                    'passed': testResult.passed,
+                    'failed': testResult.failed,
+                    'durationMs': testResult.durationMs,
+                    'results': testResult.results.map((r) => {
+                      'name': r.name,
+                      'passed': r.passed,
+                      'error': r.error,
+                      'durationMs': r.durationMs,
+                    }).toList(),
+                  };
+                }
+              }
+            }
+          } else {
+            response['error'] = 'Invalid payload for testScript (expected object with path and content fields)';
           }
           break;
         case 'echo':

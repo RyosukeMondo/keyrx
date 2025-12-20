@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:keyrx_cli/command_processor.dart';
 import 'package:core_logic/core_logic.dart';
 import 'package:core_logic/ffi/mock_bridge.dart';
@@ -14,6 +13,9 @@ void main() {
   late HardwareService hardwareService;
   late LayoutService layoutService;
   late KeymapService keymapService;
+  late ProfileRegistryService profileRegistry;
+  late TestService testService;
+  late ScriptFileService scriptFileService;
 
   setUp(() {
     bridge = MockKeyrxBridge();
@@ -28,6 +30,9 @@ void main() {
     hardwareService = HardwareService(bridge: bridge);
     layoutService = LayoutService(bridge: bridge);
     keymapService = KeymapService(bridge: bridge);
+    profileRegistry = ProfileRegistryServiceImpl(bridge: bridge);
+    testService = TestServiceImpl(bridge: bridge);
+    scriptFileService = const ScriptFileService();
 
     processor = CommandProcessor(
       bridge,
@@ -36,6 +41,9 @@ void main() {
       hardwareService,
       layoutService,
       keymapService,
+      profileRegistry,
+      testService,
+      scriptFileService,
     );
   });
 

@@ -43,7 +43,7 @@
   - _Requirements: REQ-4_
   - _Prompt: Role: Import refactoring specialist | Task: Update all UI imports from relative paths to package:core_logic for ProfileRegistryService, TestService, ScriptFileService, following existing DeviceRegistryService import pattern in ServiceRegistry | Restrictions: Do NOT modify service usage, only import statements, ensure UI builds after changes | Success: All imports use package:core_logic, no broken imports, flutter build succeeds, no compilation errors_
 
-- [ ] 5. Add CLI commands for profile and test management
+- [x] 5. Add CLI commands for profile and test management
   - File: apps/cli_tool/lib/command_processor.dart
   - Add ProfileRegistryService, TestService, ScriptFileService to constructor
   - Implement 8 new commands: listProfiles, getProfile, saveProfile, deleteProfile, findCompatibleProfiles, testScript, validateScript, runTests

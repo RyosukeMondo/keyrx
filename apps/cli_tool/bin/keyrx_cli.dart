@@ -63,6 +63,9 @@ Future<void> main(List<String> arguments) async {
     final hardwareService = HardwareService(bridge: bridge);
     final layoutService = LayoutService(bridge: bridge);
     final keymapService = KeymapService(bridge: bridge);
+    final profileRegistry = ProfileRegistryServiceImpl(bridge: bridge);
+    final testService = TestServiceImpl(bridge: bridge);
+    final scriptFileService = const ScriptFileService();
 
     final processor = CommandProcessor(
       bridge,
@@ -71,6 +74,9 @@ Future<void> main(List<String> arguments) async {
       hardwareService,
       layoutService,
       keymapService,
+      profileRegistry,
+      testService,
+      scriptFileService,
     );
     await processor.process();
     
