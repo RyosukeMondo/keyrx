@@ -31,11 +31,11 @@ final deviceEventHandlerProvider =
 // ignore: unused_element
 typedef DeviceEventHandlerRef = AutoDisposeProviderRef<DeviceEventHandler>;
 String _$deviceStreamNotifierHash() =>
-    r'19748d82b8333d8926e8e17ac18a43651d752003';
+    r'55891ea98792a1cd7072b8db1550483c12b1be13';
 
 /// Provider for device state stream.
 ///
-/// Subscribes to FFI bridge events and emits DeviceStateEvent for:
+/// Subscribes to DeviceRegistryService events and emits DeviceStateEvent for:
 /// - Device connections/disconnections
 /// - Device updates
 /// - Profile updates

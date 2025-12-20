@@ -48,12 +48,6 @@ void main() {
 
       // Test that all providers can be read without errors
       expect(
-        () => container.read(bridgeProvider),
-        returnsNormally,
-        reason: 'bridgeProvider should not throw',
-      );
-
-      expect(
         () => container.read(serviceRegistryProvider),
         returnsNormally,
         reason: 'serviceRegistryProvider should not throw',

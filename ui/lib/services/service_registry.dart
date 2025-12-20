@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:core_logic/core_logic.dart';
+import 'package:core_logic/ffi/mock_bridge.dart'
+    if (dart.library.html) 'package:core_logic/ffi/mock_bridge_stub.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/device_registry_service.dart' as core_impl;
 import 'package:core_logic/services/device_registry_service_web.dart'
@@ -273,7 +275,20 @@ class ServiceRegistry {
       'ffi.bridge.open',
       context: {'source': 'service_registry'},
     );
-    final effectiveBridge = bridge ?? KeyrxBridge.open();
+
+    // Create bridge if not provided, respecting MOCK_FFI environment variable
+    final KeyrxBridge effectiveBridge;
+    if (bridge != null) {
+      effectiveBridge = bridge;
+    } else {
+      const useMockBridge = bool.fromEnvironment('MOCK_FFI');
+      if (useMockBridge) {
+        effectiveBridge = MockKeyrxBridge();
+      } else {
+        effectiveBridge = KeyrxBridge.open();
+      }
+    }
+
     bridgeSpan.finish(
       context: {'load_failure': effectiveBridge.loadFailure?.toString()},
     );

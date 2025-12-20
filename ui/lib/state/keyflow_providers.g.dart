@@ -6,7 +6,7 @@ part of 'keyflow_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$keyFlowRepositoryHash() => r'655fe15ae7fc5241aa3850e56ba45125ff7c39c2';
+String _$keyFlowRepositoryHash() => r'83686edaf4a88f834d4347abcbf52dae0619413a';
 
 /// See also [keyFlowRepository].
 @ProviderFor(keyFlowRepository)
@@ -23,7 +23,7 @@ final keyFlowRepositoryProvider = Provider<KeyFlowRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef KeyFlowRepositoryRef = ProviderRef<KeyFlowRepository>;
-String _$runtimeConfigHash() => r'2fe5217bad1e1fd3448c41f5123454ffcb27d510';
+String _$runtimeConfigHash() => r'7169d8f852ee6c94b4450016a2a9419f27fb17b4';
 
 /// See also [runtimeConfig].
 @ProviderFor(runtimeConfig)
@@ -40,7 +40,7 @@ final runtimeConfigProvider = AutoDisposeFutureProvider<RuntimeConfig>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RuntimeConfigRef = AutoDisposeFutureProviderRef<RuntimeConfig>;
-String _$flowGraphHash() => r'dcd4a05069a47787cb7912d759a2b0153614a5c3';
+String _$flowGraphHash() => r'84cb0e2af210bacf38949fbaaa42f3417211d8ef';
 
 /// See also [flowGraph].
 @ProviderFor(flowGraph)
@@ -57,7 +57,7 @@ final flowGraphProvider = AutoDisposeFutureProvider<FlowGraph>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FlowGraphRef = AutoDisposeFutureProviderRef<FlowGraph>;
-String _$deviceStatesHash() => r'a826829e82fbf1fc41c9c85d30701ba0d03c81c7';
+String _$deviceStatesHash() => r'2ef129947c7e2975b838c4009c7e02560f3052e6';
 
 /// Provider for device registry states (device enabled/disabled toggles).
 ///
@@ -77,7 +77,7 @@ final deviceStatesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeviceStatesRef = AutoDisposeStreamProviderRef<List<DeviceState>>;
-String _$keyFlowActionsHash() => r'554164098f039b1852574c00311f10c4bb603837';
+String _$keyFlowActionsHash() => r'7df4d533a6abdbb7fb4450571e9deab479553708';
 
 /// See also [keyFlowActions].
 @ProviderFor(keyFlowActions)
@@ -95,7 +95,7 @@ final keyFlowActionsProvider = AutoDisposeProvider<KeyFlowActions>.internal(
 // ignore: unused_element
 typedef KeyFlowActionsRef = AutoDisposeProviderRef<KeyFlowActions>;
 String _$availableHardwareProfilesHash() =>
-    r'845a4a0a9eca045e1ca87ea6a80ea892b91f4950';
+    r'6822f60e1ba75980b1f4fc32d890d957d5d46201';
 
 /// Provider for available hardware profiles.
 ///
@@ -116,7 +116,7 @@ final availableHardwareProfilesProvider =
 // ignore: unused_element
 typedef AvailableHardwareProfilesRef =
     AutoDisposeFutureProviderRef<List<HardwareProfile>>;
-String _$availableKeymapsHash() => r'b497c50f90c2c16118975cfe892e9db11ac33f8a';
+String _$availableKeymapsHash() => r'f37711c72608567f5ec91528d0aaaaa3a0cfc154';
 
 /// Provider for available keymaps.
 ///
@@ -137,7 +137,7 @@ final availableKeymapsProvider =
 // ignore: unused_element
 typedef AvailableKeymapsRef = AutoDisposeFutureProviderRef<List<Keymap>>;
 String _$runtimeConfigNotifierHash() =>
-    r'cf899419869ce2db7fce829acd2aea4eb80ad4f2';
+    r'0b89ef3bf30b58db984aaf724e01cf4c4548fc6a';
 
 /// See also [RuntimeConfigNotifier].
 @ProviderFor(RuntimeConfigNotifier)

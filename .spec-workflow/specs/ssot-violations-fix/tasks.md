@@ -54,7 +54,7 @@
   - _Requirements: 2_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Flutter State Management Expert | Task: Refactor device_stream_provider to use core DeviceService instead of direct FFI bridge access. Use Riverpod dependency injection patterns. | Restrictions: Preserve existing provider API, maintain stream functionality, remove all FFI imports | Success: Provider uses DeviceService, no direct FFI access, functionality preserved, 1 fewer SSOT violation | Instructions: Mark in-progress `[-]`, refactor provider, log changes with integration details, mark complete `[x]`._
 
-- [ ] 6. Migrate providers_setup FFI usage (5 violations)
+- [-] 6. Migrate providers_setup FFI usage (5 violations)
   - Files: ui/lib/state/providers_setup.dart
   - Identify all 5 FFI bridge usages in this file
   - Replace with appropriate core service injections

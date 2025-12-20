@@ -21,15 +21,19 @@ part 'keyflow_providers.g.dart';
 
 @Riverpod(keepAlive: true)
 KeyFlowRepository keyFlowRepository(Ref ref) {
-  final bridge = ref.watch(bridgeProvider);
+  final registry = ref.watch(serviceRegistryProvider);
 
-  // On web (bridge is null), use RuntimeServiceWeb via HTTP API
+  // ServiceRegistry.bridge is null on web, non-null on desktop
+  final bridge = registry.bridge;
+
   if (bridge == null) {
+    // Web platform: use RuntimeServiceWeb via HTTP API
     final repository = KeyFlowRepository(runtimeApi: _WebRuntimeApiAdapter());
     ref.onDispose(repository.dispose);
     return repository;
   }
 
+  // Desktop platform: use FFI bridge
   final repository = KeyFlowRepository.forBridge(bridge);
   ref.onDispose(repository.dispose);
   return repository;

@@ -58,7 +58,6 @@ class WidgetTestHarness {
           appState: effectiveAppState,
         );
     final mergedOverrides = [
-      bridgeProvider.overrideWithValue(effectiveBridge),
       serviceRegistryProvider.overrideWithValue(effectiveRegistry),
       keyrxFacadeProvider.overrideWithValue(effectiveFacade),
       apiDocsServiceProvider.overrideWithValue(

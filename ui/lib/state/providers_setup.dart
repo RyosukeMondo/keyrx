@@ -5,10 +5,6 @@
 /// continue to work via the adapter in [createProviders].
 library;
 
-import 'package:core_logic/ffi/bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/bridge_stub.dart';
-import 'package:core_logic/ffi/mock_bridge.dart'
-    if (dart.library.html) 'package:core_logic/ffi/mock_bridge_stub.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,47 +14,16 @@ import '../services/facade/keyrx_facade.dart';
 import '../services/service_registry.dart';
 import 'app_state.dart';
 
-final bridgeProvider = Provider<KeyrxBridge?>((ref) {
-  debugPrint('[DEBUG] bridgeProvider: initializing (kIsWeb=$kIsWeb)');
-  // On web, we don't use a bridge - ServiceRegistry.real() handles web automatically
-  if (kIsWeb) {
-    debugPrint('[DEBUG] bridgeProvider: returning null for web platform');
-    return null;
-  }
-
-  const useMockBridge = bool.fromEnvironment('MOCK_FFI');
-
-  final KeyrxBridge bridge;
-  if (useMockBridge) {
-    bridge = MockKeyrxBridge();
-  } else {
-    bridge = KeyrxBridge.open();
-  }
-
-  ref.onDispose(() async {
-    if (bridge is MockKeyrxBridge) {
-      await bridge.dispose();
-    }
-  });
-
-  debugPrint('[DEBUG] bridgeProvider: initialized successfully');
-  return bridge;
-});
-
 final serviceRegistryProvider = Provider<ServiceRegistry>((ref) {
   debugPrint('[DEBUG] serviceRegistryProvider: initializing');
-  final bridge = ref.watch(bridgeProvider);
-  debugPrint(
-    '[DEBUG] serviceRegistryProvider: bridge obtained (isNull=${bridge == null})',
-  );
 
   // ServiceRegistry.real() automatically detects web platform and creates appropriate services
+  // It also handles bridge creation internally (including MOCK_FFI support)
   const backendUrl = kIsWeb ? 'http://192.168.11.24:18888' : null;
   debugPrint('[DEBUG] serviceRegistryProvider: backendUrl=$backendUrl');
 
   try {
     final registry = ServiceRegistry.real(
-      bridge: bridge,
       backendUrl: backendUrl,
     );
     debugPrint('[DEBUG] serviceRegistryProvider: initialized successfully');

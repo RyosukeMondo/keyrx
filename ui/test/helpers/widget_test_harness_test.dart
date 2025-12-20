@@ -29,7 +29,8 @@ void main() {
         tester,
         Consumer(
           builder: (context, ref, _) {
-            final bridge = ref.read(bridgeProvider);
+            final registry = ref.read(serviceRegistryProvider);
+            final bridge = registry.bridge;
             return Column(
               children: [
                 Text('Bridge: ${bridge?.version ?? 'unknown'}'),

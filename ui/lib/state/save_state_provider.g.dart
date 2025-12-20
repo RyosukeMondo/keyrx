@@ -6,7 +6,7 @@ part of 'save_state_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$autoSaveServiceHash() => r'bb0f16804248513619389828b1174f370fa6cacf';
+String _$autoSaveServiceHash() => r'fd876914fb4f69840d700523dec3ff515d336264';
 
 /// Provider for the auto-save service instance.
 ///
