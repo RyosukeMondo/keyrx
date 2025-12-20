@@ -166,6 +166,7 @@ class WidgetTestHarness {
       keymapService: KeymapServiceFFI(bridge: bridge),
       runtimeService: FakeRuntimeService(),
       metricsService: FakeMetricsService(),
+      benchmarkService: FakeBenchmarkService(),
       daemonManager: MockDaemonManager(),
     );
   }

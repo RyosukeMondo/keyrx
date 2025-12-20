@@ -102,6 +102,7 @@ void main() {
       ),
       keymapService: KeymapServiceFFI(bridge: FakeBridge()),
       metricsService: FakeMetricsService(),
+      benchmarkService: FakeBenchmarkService(),
       daemonManager: MockDaemonManager(),
     );
     final facade = KeyrxFacade.real(registry);

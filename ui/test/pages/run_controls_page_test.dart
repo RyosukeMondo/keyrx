@@ -41,7 +41,8 @@ void main() {
         hardwareService: FakeHardwareService(),
         keymapService: KeymapServiceFFI(bridge: FakeBridge()),
         metricsService: FakeMetricsService(),
-      daemonManager: MockDaemonManager(),
+        benchmarkService: FakeBenchmarkService(),
+        daemonManager: MockDaemonManager(),
       );
       facade = KeyrxFacade.real(registry);
     });

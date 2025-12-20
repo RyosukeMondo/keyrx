@@ -42,7 +42,6 @@ class ObservabilityLogEntry {
     target: coreEntry.target,
     message: coreEntry.message,
     fields: coreEntry.fields.map<String, String>((key, value) => MapEntry(key, value.toString())),
-    span: null,
   );
 
   final int timestamp;

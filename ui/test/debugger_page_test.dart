@@ -33,7 +33,8 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     runtimeService: FakeRuntimeService(),
     metricsService: FakeMetricsService(),
-      daemonManager: MockDaemonManager(),
+    benchmarkService: FakeBenchmarkService(),
+    daemonManager: MockDaemonManager(),
   );
 }
 

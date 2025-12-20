@@ -5,7 +5,6 @@ import 'package:core_logic/ffi/mock_bridge.dart'
     if (dart.library.html) 'package:core_logic/ffi/mock_bridge_stub.dart';
 import 'package:core_logic/repositories/mapping_repository.dart' as core;
 import 'package:core_logic/services/benchmark_service.dart' as core_benchmark;
-import 'package:core_logic/services/device_registry_service.dart' as core_impl;
 import 'package:core_logic/services/device_registry_service_ffi.dart'
     as core_ffi;
 import 'package:core_logic/services/device_registry_service_web.dart'

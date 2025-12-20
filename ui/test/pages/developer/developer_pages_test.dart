@@ -8,7 +8,7 @@ import 'package:keyrx_ui/pages/developer/benchmark_page.dart';
 import 'package:keyrx_ui/pages/developer/doctor_page.dart';
 import 'package:keyrx_ui/pages/developer/test_runner_page.dart';
 import 'package:keyrx_ui/repositories/mapping_repository_ui.dart';
-import 'package:keyrx_ui/services/benchmark_service.dart';
+import 'package:keyrx_ui/services/benchmark_service.dart' as ui_benchmark;
 import 'package:keyrx_ui/services/doctor_service.dart';
 import 'package:keyrx_ui/services/facade/keyrx_facade.dart';
 import 'package:keyrx_ui/services/hardware_service_ui.dart';
@@ -22,7 +22,7 @@ import '../../helpers/fake_services.dart';
 // Mock services
 class MockTestService extends Mock implements TestService {}
 
-class MockBenchmarkService extends Mock implements BenchmarkService {}
+class MockBenchmarkService extends Mock implements ui_benchmark.BenchmarkService {}
 
 class MockDoctorService extends Mock implements DoctorService {}
 
@@ -47,7 +47,8 @@ Widget _buildTestRunner(MockTestService mockService) {
     ),
     keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     metricsService: FakeMetricsService(),
-      daemonManager: MockDaemonManager(),
+    benchmarkService: FakeBenchmarkService(),
+    daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
 
@@ -132,8 +133,8 @@ void main() {
 
     testWidgets('runs benchmark and shows results', (tester) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
-        (_) async => const BenchmarkServiceResult(
-          data: BenchmarkData(
+        (_) async => const ui_benchmark.BenchmarkServiceResult(
+          data: ui_benchmark.BenchmarkData(
             minNs: 100,
             maxNs: 500,
             meanNs: 250,
@@ -164,8 +165,8 @@ void main() {
       tester,
     ) async {
       when(() => mockBenchmarkService.runBenchmark(any())).thenAnswer(
-        (_) async => const BenchmarkServiceResult(
-          data: BenchmarkData(
+        (_) async => const ui_benchmark.BenchmarkServiceResult(
+          data: ui_benchmark.BenchmarkData(
             minNs: 100000,
             maxNs: 2000000, // 2ms
             meanNs: 1500000,

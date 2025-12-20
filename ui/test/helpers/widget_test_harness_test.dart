@@ -33,7 +33,7 @@ void main() {
             final bridge = registry.bridge;
             return Column(
               children: [
-                Text('Bridge: ${bridge?.version ?? 'unknown'}'),
+                Text('Bridge: ${bridge.version}'),
                 ElevatedButton(
                   onPressed: () => counter.value++,
                   child: const Text('Increment'),
