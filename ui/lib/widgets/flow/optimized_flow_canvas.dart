@@ -162,8 +162,7 @@ class RenderEdgeLayer extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final canvas = context.canvas;
-    canvas
+    final canvas = context.canvas
       ..save()
       ..translate(offset.dx, offset.dy);
 

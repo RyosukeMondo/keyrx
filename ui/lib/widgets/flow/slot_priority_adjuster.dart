@@ -81,13 +81,11 @@ class _SlotPriorityAdjusterState extends ConsumerState<SlotPriorityAdjuster> {
       _isReordering = true;
     });
 
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
+    final adjustedIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
 
     final reorderedSlots = List<ProfileSlot>.from(_orderedSlots);
     final movedSlot = reorderedSlots.removeAt(oldIndex);
-    reorderedSlots.insert(newIndex, movedSlot);
+    reorderedSlots.insert(adjustedIndex, movedSlot);
 
     setState(() {
       _orderedSlots = reorderedSlots;

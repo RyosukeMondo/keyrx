@@ -123,14 +123,12 @@ class DeviceStreamNotifier extends _$DeviceStreamNotifier {
     _logger.info('device_stream.dispose');
 
     if (_bridge != null && _subscribed) {
-      for (final eventType in [
+      [
         EventType.deviceConnected,
         EventType.deviceDisconnected,
         EventType.deviceUpdated,
         EventType.profileUpdated,
-      ]) {
-        _bridge!.unregisterEventCallback(eventType);
-      }
+      ].forEach(_bridge!.unregisterEventCallback);
     }
 
     _eventController.close();
