@@ -46,7 +46,8 @@ Widget _buildTestRunner(MockTestService mockService) {
       core.HardwareServiceFFI(bridge: FakeBridge()),
     ),
     keymapService: KeymapServiceFFI(bridge: FakeBridge()),
-    daemonManager: MockDaemonManager(),
+    metricsService: FakeMetricsService(),
+      daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
 

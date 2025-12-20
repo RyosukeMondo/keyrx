@@ -37,7 +37,9 @@ class _MetricsDashboardPageState extends State<MetricsDashboardPage> {
   void initState() {
     super.initState();
     final registry = context.read<ServiceRegistry>();
-    _metricsService = MetricsServiceImpl(bridge: registry.bridge);
+    _metricsService = MetricsServiceImpl(
+      coreMetricsService: registry.metricsService,
+    );
   }
 
   @override

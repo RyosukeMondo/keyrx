@@ -585,3 +585,20 @@ class FakeDaemonManager extends Fake implements DaemonManager {
   @override
   Future<void> restartDaemon() async {}
 }
+
+class FakeMetricsService extends Fake implements MetricsService {
+  @override
+  Future<MetricsSnapshot?> getSnapshot() async => null;
+
+  @override
+  Future<void> startUpdates() async {}
+
+  @override
+  Future<void> stopUpdates() async {}
+
+  @override
+  Future<void> setThresholds(MetricsThresholds thresholds) async {}
+
+  @override
+  Future<MetricsThresholds?> getThresholds() async => null;
+}

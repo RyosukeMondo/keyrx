@@ -101,6 +101,7 @@ void main() {
         core.HardwareServiceFFI(bridge: FakeBridge()),
       ),
       keymapService: KeymapServiceFFI(bridge: FakeBridge()),
+      metricsService: FakeMetricsService(),
       daemonManager: MockDaemonManager(),
     );
     final facade = KeyrxFacade.real(registry);

@@ -10,6 +10,7 @@ import 'package:core_logic/services/device_registry_service_web.dart'
 import 'package:core_logic/services/hardware_service_web.dart';
 import 'package:core_logic/services/keymap_service_web.dart';
 import 'package:core_logic/services/layout_service_web.dart';
+import 'package:core_logic/services/metrics_service.dart' as core_metrics;
 import 'package:core_logic/services/runtime_service_web.dart';
 import 'package:core_logic/services/script_file_service_web.dart';
 import 'package:core_logic/web/api_client.dart';
@@ -50,6 +51,7 @@ class ServiceRegistry {
     required this.hardwareService,
     required this.keymapService,
     required this.runtimeService,
+    required this.metricsService,
     required this.daemonManager,
   });
 
@@ -71,6 +73,7 @@ class ServiceRegistry {
     required HardwareServiceUI hardwareService,
     required KeymapService keymapService,
     required RuntimeService runtimeService,
+    required core_metrics.MetricsService metricsService,
     required DaemonManager daemonManager,
     ProfileAutosaveService? profileAutosaveService,
   }) {
@@ -99,6 +102,7 @@ class ServiceRegistry {
       hardwareService: hardwareService,
       keymapService: keymapService,
       runtimeService: runtimeService,
+      metricsService: metricsService,
       daemonManager: daemonManager,
     );
   }
@@ -122,6 +126,7 @@ class ServiceRegistry {
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
+    core_metrics.MetricsService? metricsService,
     DaemonManager? daemonManager,
   }) {
     final bootstrapSpan = PerformanceTimelineTracer.start(
@@ -144,6 +149,7 @@ class ServiceRegistry {
         layoutService: layoutService,
         hardwareService: hardwareService,
         keymapService: keymapService,
+        metricsService: metricsService,
         bootstrapSpan: bootstrapSpan,
       );
     } else {
@@ -165,6 +171,7 @@ class ServiceRegistry {
         hardwareService: hardwareService,
         keymapService: keymapService,
         runtimeService: runtimeService,
+        metricsService: metricsService,
         daemonManager: daemonManager,
         bootstrapSpan: bootstrapSpan,
       );
@@ -181,6 +188,7 @@ class ServiceRegistry {
     LayoutServiceUI? layoutService,
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
+    core_metrics.MetricsService? metricsService,
   }) {
     final translator = errorTranslator ?? const ErrorTranslatorImpl();
 
@@ -220,6 +228,7 @@ class ServiceRegistry {
     final stubTest = _WebStubTestService();
     final stubResolver = _WebStubStoragePathResolver();
     final stubAutosave = _WebStubProfileAutosaveService();
+    final stubMetrics = metricsService ?? _WebStubMetricsService();
     final stubDaemon = _WebStubDaemonManager();
 
     final registry = ServiceRegistry(
@@ -240,6 +249,7 @@ class ServiceRegistry {
       hardwareService: hardware,
       keymapService: keymaps,
       runtimeService: coreRuntime,
+      metricsService: stubMetrics,
       daemonManager: stubDaemon,
     );
 
@@ -269,6 +279,7 @@ class ServiceRegistry {
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
+    core_metrics.MetricsService? metricsService,
     DaemonManager? daemonManager,
   }) {
     final bridgeSpan = PerformanceTimelineTracer.start(
@@ -350,6 +361,9 @@ class ServiceRegistry {
     final keymaps = keymapService ?? KeymapServiceFFI(bridge: effectiveBridge);
     final runtime =
         runtimeService ?? RuntimeServiceImpl(bridge: effectiveBridge);
+    final coreMetrics =
+        metricsService ??
+        core_metrics.MetricsServiceImpl(bridge: effectiveBridge);
     final daemon = daemonManager ?? DaemonManager(DaemonService());
 
     final docs = apiDocsService ?? ApiDocsServiceImpl();
@@ -378,6 +392,7 @@ class ServiceRegistry {
       hardwareService: hardware,
       keymapService: keymaps,
       runtimeService: runtime,
+      metricsService: coreMetrics,
       daemonManager: daemon,
     );
 
@@ -409,6 +424,7 @@ class ServiceRegistry {
   final HardwareServiceUI hardwareService;
   final KeymapService keymapService;
   final RuntimeService runtimeService;
+  final core_metrics.MetricsService metricsService;
   final DaemonManager daemonManager;
 
   /// Convenience for producing a registry with selective overrides.
@@ -430,6 +446,7 @@ class ServiceRegistry {
     HardwareServiceUI? hardwareService,
     KeymapService? keymapService,
     RuntimeService? runtimeService,
+    core_metrics.MetricsService? metricsService,
     DaemonManager? daemonManager,
   }) => ServiceRegistry(
     errorTranslator: errorTranslator ?? this.errorTranslator,
@@ -451,6 +468,7 @@ class ServiceRegistry {
     hardwareService: hardwareService ?? this.hardwareService,
     keymapService: keymapService ?? this.keymapService,
     runtimeService: runtimeService ?? this.runtimeService,
+    metricsService: metricsService ?? this.metricsService,
     daemonManager: daemonManager ?? this.daemonManager,
   );
 
@@ -594,6 +612,23 @@ class _WebStubProfileAutosaveService implements ProfileAutosaveService {
   dynamic noSuchMethod(Invocation invocation) => throw UnsupportedError(
     'ProfileAutosaveService not available on web platform',
   );
+}
+
+class _WebStubMetricsService implements core_metrics.MetricsService {
+  @override
+  Future<core_metrics.MetricsSnapshot?> getSnapshot() async => null;
+
+  @override
+  Future<void> startUpdates() async {}
+
+  @override
+  Future<void> stopUpdates() async {}
+
+  @override
+  Future<void> setThresholds(core_metrics.MetricsThresholds thresholds) async {}
+
+  @override
+  Future<core_metrics.MetricsThresholds?> getThresholds() async => null;
 }
 
 class _WebStubDaemonManager implements DaemonManager {

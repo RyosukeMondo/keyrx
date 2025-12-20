@@ -34,6 +34,7 @@ void main() {
         hardwareService: FakeHardwareService(),
         keymapService: FakeKeymapService(),
         deviceProfileService: FakeDeviceProfileService(),
+        metricsService: FakeMetricsService(),
         daemonManager: MockDaemonManager(),
       );
       final facade = KeyrxFacade.real(registry);
@@ -76,6 +77,7 @@ void main() {
         hardwareService: FakeHardwareService(),
         keymapService: FakeKeymapService(),
         deviceProfileService: FakeDeviceProfileService(),
+        metricsService: FakeMetricsService(),
         daemonManager: MockDaemonManager(),
       );
       final facade = KeyrxFacade.real(registry);
@@ -118,6 +120,7 @@ void main() {
         hardwareService: FakeHardwareService(),
         keymapService: FakeKeymapService(),
         deviceProfileService: FakeDeviceProfileService(),
+        metricsService: FakeMetricsService(),
         daemonManager: MockDaemonManager(),
       );
       final facade = KeyrxFacade.real(registry);
@@ -160,6 +163,7 @@ void main() {
         hardwareService: FakeHardwareService(),
         keymapService: FakeKeymapService(),
         deviceProfileService: FakeDeviceProfileService(),
+        metricsService: FakeMetricsService(),
         daemonManager: MockDaemonManager(),
       );
       final facade = KeyrxFacade.real(registry);

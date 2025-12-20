@@ -40,7 +40,8 @@ void main() {
         layoutService: FakeLayoutService(),
         hardwareService: FakeHardwareService(),
         keymapService: KeymapServiceFFI(bridge: FakeBridge()),
-        daemonManager: MockDaemonManager(),
+        metricsService: FakeMetricsService(),
+      daemonManager: MockDaemonManager(),
       );
       facade = KeyrxFacade.real(registry);
     });

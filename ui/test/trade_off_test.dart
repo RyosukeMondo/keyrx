@@ -91,7 +91,8 @@ Widget _buildTestWidget({_FakeEngineService? engine}) {
     deviceRegistryService: FakeDeviceRegistryService(),
     profileRegistryService: FakeProfileRegistryService(),
     runtimeService: FakeRuntimeService(),
-    daemonManager: MockDaemonManager(),
+    metricsService: FakeMetricsService(),
+      daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
 

@@ -92,7 +92,8 @@ Widget _buildTestWidget({required _FakeEngineService engine}) {
       core.HardwareServiceFFI(bridge: FakeBridge()),
     ),
     keymapService: KeymapServiceFFI(bridge: FakeBridge()),
-    daemonManager: MockDaemonManager(),
+    metricsService: FakeMetricsService(),
+      daemonManager: MockDaemonManager(),
   );
   final facade = KeyrxFacade.real(registry);
 

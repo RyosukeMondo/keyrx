@@ -32,7 +32,8 @@ ServiceRegistry _buildRegistry(FakeEngineService engine) {
     hardwareService: HardwareServiceUI(core.HardwareServiceFFI(bridge: bridge)),
     keymapService: KeymapServiceFFI(bridge: FakeBridge()),
     runtimeService: FakeRuntimeService(),
-    daemonManager: MockDaemonManager(),
+    metricsService: FakeMetricsService(),
+      daemonManager: MockDaemonManager(),
   );
 }
 
