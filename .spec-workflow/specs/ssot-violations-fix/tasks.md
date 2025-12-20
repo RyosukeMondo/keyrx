@@ -207,7 +207,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec ssot-violations-fix: Role: Code Quality Specialist | Task: Run flutter analyze to verify 0 errors and 0 warnings after refactoring. Fix any issues introduced by the SSOT work. | Restrictions: Must achieve clean analysis, no errors or warnings tolerated | Success: flutter analyze reports 0 issues, code quality maintained, no regressions introduced | Instructions: Mark in-progress `[-]`, run analysis, fix issues, log results, mark complete `[x]`._
 
-- [ ] 20. Create summary commit
+- [-] 20. Create summary commit
   - Files: All modified files
   - Review all changes made during SSOT fix work
   - Create comprehensive commit message
