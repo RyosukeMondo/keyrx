@@ -563,18 +563,14 @@ class _WebStubTestService implements TestService {
 
 class _WebStubStoragePathResolver implements StoragePathResolver {
   @override
-  String resolveProfilesPath() {
-    // Return a sensible default path for web platform
-    // The backend will handle the actual file system paths
-    return '.keyrx';
-  }
+  // Return a sensible default path for web platform
+  // The backend will handle the actual file system paths
+  String resolveProfilesPath() => '.keyrx';
 
   @override
-  Future<String> ensureProfilesDirectory() async {
-    // On web, directory creation is handled by backend
-    // Just return the path that will be sent to the backend
-    return resolveProfilesPath();
-  }
+  // On web, directory creation is handled by backend
+  // Just return the path that will be sent to the backend
+  Future<String> ensureProfilesDirectory() async => resolveProfilesPath();
 }
 
 class _WebStubProfileAutosaveService implements ProfileAutosaveService {

@@ -218,10 +218,8 @@ class AutoSaveService {
   };
 
   /// Calculate exponential backoff delay in milliseconds.
-  int _calculateBackoffDelay(int attempt) {
-    // Base delay: 100ms, exponential: 100, 200, 400, ...
-    return 100 * (1 << (attempt - 1));
-  }
+  /// Base delay: 100ms, exponential: 100, 200, 400, ...
+  int _calculateBackoffDelay(int attempt) => 100 * (1 << (attempt - 1));
 
   void _updateState(SaveState newState) {
     _currentState = newState;

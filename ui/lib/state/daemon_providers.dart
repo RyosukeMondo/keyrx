@@ -71,14 +71,13 @@ class _WebStubDaemonService implements DaemonService {
   }
 
   @override
+  // No-op on web - engine controlled via backend API
   Future<List<DaemonDeviceInfo>> startEngine({
     String? configPath,
     String? scriptPath,
     bool useAllDevices = true,
-  }) async {
-    // No-op on web - engine controlled via backend API
-    return [];
-  }
+  }) async =>
+      [];
 
   @override
   Future<void> stopEngine() async {
@@ -86,10 +85,9 @@ class _WebStubDaemonService implements DaemonService {
   }
 
   @override
-  Future<EngineStatus> getStatus() async {
-    // Return unavailable status on web
-    return const EngineStatus(status: 'unavailable');
-  }
+  // Return unavailable status on web
+  Future<EngineStatus> getStatus() async =>
+      const EngineStatus(status: 'unavailable');
 
   @override
   Future<void> reloadConfig({String? configPath, String? scriptPath}) async {
@@ -97,13 +95,12 @@ class _WebStubDaemonService implements DaemonService {
   }
 
   @override
+  // No-op on web - API calls go through WebApiClient
   Future<dynamic> sendRequest(
     String method, [
     Map<String, dynamic>? params,
-  ]) async {
-    // No-op on web - API calls go through WebApiClient
-    return null;
-  }
+  ]) async =>
+      null;
 
   @override
   Future<void> dispose() async {

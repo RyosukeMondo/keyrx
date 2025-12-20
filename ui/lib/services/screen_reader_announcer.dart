@@ -100,8 +100,7 @@ class ScreenReaderAnnouncer {
     SemanticsService.announce(message, TextDirection.ltr);
   }
 
-  bool get _canAnnounce {
-    // Check if semantics are enabled (screen reader is active)
-    return SemanticsBinding.instance.accessibilityFeatures.accessibleNavigation;
-  }
+  // Check if semantics are enabled (screen reader is active)
+  bool get _canAnnounce =>
+      SemanticsBinding.instance.accessibilityFeatures.accessibleNavigation;
 }

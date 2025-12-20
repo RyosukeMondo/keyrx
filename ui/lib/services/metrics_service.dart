@@ -296,11 +296,9 @@ class MetricsServiceImpl implements MetricsService {
   }
 
   @override
-  Future<MetricsThresholds?> getThresholds() async {
-    // Note: The generated bindings for getThresholds might not be
-    // available if the struct definition wasn't exported.
-    return null;
-  }
+  // Note: The generated bindings for getThresholds might not be
+  // available if the struct definition wasn't exported.
+  Future<MetricsThresholds?> getThresholds() async => null;
 
   @override
   Future<void> dispose() async {
