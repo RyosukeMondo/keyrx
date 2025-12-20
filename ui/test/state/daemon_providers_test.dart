@@ -51,7 +51,7 @@ void main() {
 
       final eventsAsync = container.read(daemonEventsProvider);
 
-      expect(eventsAsync, isA<AsyncValue>());
+      expect(eventsAsync, isA<AsyncValue<dynamic>>());
     });
 
     test('multiple containers create independent service instances', () {

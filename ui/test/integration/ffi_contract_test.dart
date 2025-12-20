@@ -79,7 +79,7 @@ void main() {
       final json = jsonDecode(raw);
       expect(
         json,
-        isA<Map>(),
+        isA<Map<String, dynamic>>(),
         reason: 'Runtime config should be a JSON object',
       );
     });
@@ -94,7 +94,7 @@ void main() {
       expect(() => configBindings.listHardwareProfiles(), returnsNormally);
 
       final profiles = configBindings.listHardwareProfiles();
-      expect(profiles, isA<List>(), reason: 'Should return a List');
+      expect(profiles, isA<List<dynamic>>(), reason: 'Should return a List');
     });
   });
 }
