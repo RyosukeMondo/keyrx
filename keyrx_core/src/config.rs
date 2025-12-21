@@ -296,6 +296,33 @@ pub enum KeyMapping {
     },
 }
 
+/// Device identifier pattern for matching keyboards
+///
+/// The pattern string is used to match against device names/IDs.
+/// Examples:
+/// - "*" matches all devices
+/// - "USB Keyboard" matches devices with that exact name
+/// - Platform-specific patterns may be supported by the daemon
+#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[repr(C)]
+pub struct DeviceIdentifier {
+    /// Pattern string for matching device names/IDs
+    pub pattern: alloc::string::String,
+}
+
+/// Device-specific configuration
+///
+/// Contains all key mappings for a specific device or device pattern.
+/// Multiple devices can share the same configuration by using pattern matching.
+#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[repr(C)]
+pub struct DeviceConfig {
+    /// Device identifier pattern
+    pub identifier: DeviceIdentifier,
+    /// List of key mappings for this device
+    pub mappings: Vec<KeyMapping>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

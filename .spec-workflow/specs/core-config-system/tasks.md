@@ -55,7 +55,7 @@
   - _Requirements: 1.3_
   - _Prompt: Role: Rust Developer with expertise in enum design and binary serialization | Task: Define KeyMapping enum with all 6 variants in keyrx_core/src/config.rs following requirement 1.3 | Restrictions: Must use #[repr(C)], include all 6 variants exactly as specified, derive all required rkyv traits | Success: Enum compiles, all variants work with correct field types, serialization works, supports nested mappings_
 
-- [ ] 5. Define DeviceIdentifier and DeviceConfig structs
+- [x] 5. Define DeviceIdentifier and DeviceConfig structs
   - File: keyrx_core/src/config.rs (same file as tasks 1-4)
   - Create DeviceIdentifier struct with pattern field (String)
   - Create DeviceConfig struct with identifier (DeviceIdentifier) and mappings (Vec<KeyMapping>)
