@@ -7,7 +7,6 @@ pub const PHYSICAL_MODIFIERS: &[&str] = &[
 
 /// Parse a physical key name (without VK_ prefix requirement).
 /// Used for input keys where prefix is optional.
-#[allow(dead_code)] // Will be used in DSL functions (task 5+)
 pub fn parse_physical_key(s: &str) -> Result<KeyCode, ParseError> {
     // If it has VK_ prefix, strip it
     let name = s.strip_prefix("VK_").unwrap_or(s);

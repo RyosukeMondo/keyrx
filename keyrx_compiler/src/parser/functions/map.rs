@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::parser::core::ParserState;
 use crate::parser::validators::{
-    parse_key_name, parse_lock_id, parse_modifier_id, parse_virtual_key,
+    parse_lock_id, parse_modifier_id, parse_physical_key, parse_virtual_key,
 };
 
 pub fn register_map_function(engine: &mut Engine, state: Arc<Mutex<ParserState>>) {
@@ -14,7 +14,7 @@ pub fn register_map_function(engine: &mut Engine, state: Arc<Mutex<ParserState>>
         move |from: &str, to: &str| -> Result<(), Box<EvalAltResult>> {
             let mut state = state_clone.lock().unwrap();
             let from_key =
-                parse_key_name(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
+                parse_physical_key(from).map_err(|e| format!("Invalid 'from' key: {}", e))?;
 
             let mapping = if to.starts_with("VK_") {
                 let to_key =
