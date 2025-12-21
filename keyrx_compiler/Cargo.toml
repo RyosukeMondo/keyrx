@@ -1,0 +1,12 @@
+[package]
+name = "keyrx_compiler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rhai = { workspace = true }
+serde = { workspace = true }
+clap = { workspace = true }
