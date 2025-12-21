@@ -14,7 +14,7 @@ mod tests {
     #[test]
     fn test_validate_contracts_tool_exists() {
         let output = Command::new("bash")
-            .arg("../scripts/validate_ffi_contracts.sh")
+            .arg("../scripts/ffi/validate_contracts.sh")
             .arg("--help")
             .output();
 
@@ -23,12 +23,12 @@ mod tests {
                 // Tool should exist and respond to --help
                 assert!(
                     result.status.success() || result.status.code() == Some(1),
-                    "validate_ffi_contracts.sh should respond to --help"
+                    "validate_contracts.sh should respond to --help"
                 );
             }
             Err(_) => {
                 // Tool might not exist yet, which is okay for initial testing
-                println!("Note: validate_ffi_contracts.sh not found (may not be implemented yet)");
+                println!("Note: validate_contracts.sh not found (may not be implemented yet)");
             }
         }
     }
@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn test_breaking_change_detector_tool_exists() {
         let output = Command::new("bash")
-            .arg("../scripts/detect_ffi_breaking_changes.sh")
+            .arg("../scripts/ffi/detect_breaking_changes.sh")
             .arg("--help")
             .output();
 
@@ -45,11 +45,11 @@ mod tests {
             Ok(result) => {
                 assert!(
                     result.status.success() || result.status.code() == Some(1),
-                    "detect_ffi_breaking_changes.sh should respond to --help"
+                    "detect_breaking_changes.sh should respond to --help"
                 );
             }
             Err(_) => {
-                println!("Note: detect_ffi_breaking_changes.sh not found");
+                println!("Note: detect_breaking_changes.sh not found");
             }
         }
     }
