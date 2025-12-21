@@ -366,7 +366,7 @@
   - _Requirements: 1.7_
   - _Prompt: Role: Rust Developer with expertise in module systems and library design | Task: Update keyrx_core/src/lib.rs to export config module following requirement 1.7 | Restrictions: Must maintain no_std compatibility, export all public types (including Condition), follow Rust module conventions | Success: Config types are accessible from keyrx_core, no_std builds work, all types exported correctly_
 
-- [ ] 26. Update keyrx_compiler/src/main.rs to add mod declarations
+- [x] 26. Update keyrx_compiler/src/main.rs to add mod declarations
   - File: keyrx_compiler/src/main.rs (update from task 18)
   - Add mod declarations: mod parser; mod serialize; mod import_resolver; mod error;
   - Verify all modules compile together
