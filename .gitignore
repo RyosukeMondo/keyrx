@@ -1,0 +1,28 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Node.js artifacts
+node_modules/
+dist/
+.vite/
+
+# Log files
+scripts/logs/*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swn
+*.swo
+*~
+
+# Backup files
+*.bak
+*.tmp

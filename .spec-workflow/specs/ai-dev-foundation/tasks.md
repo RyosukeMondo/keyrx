@@ -67,7 +67,7 @@
   - _Requirements: 1.6_
   - _Prompt: Role: Frontend Developer specializing in React, TypeScript, and WASM | Task: Initialize keyrx_ui using Vite with React and TypeScript following requirement 1.6, configuring WASM integration | Restrictions: Must use React 18+, TypeScript 5+, configure vite-plugin-wasm correctly, follow modern React practices | Success: npm install succeeds, npm run dev starts dev server, WASM plugin is configured, directory structure matches specification_
 
-- [ ] 1.5 Create root .gitignore
+- [x] 1.5 Create root .gitignore
   - File: .gitignore (root)
   - Add Rust build artifacts: target/, Cargo.lock (for binaries)
   - Add Node.js artifacts: node_modules/, dist/, .vite/
