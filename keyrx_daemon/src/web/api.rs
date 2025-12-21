@@ -27,3 +27,29 @@ async fn get_config() -> Json<Value> {
         "config": "placeholder"
     }))
 }
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_router() {
+        let router = create_router();
+        // Just verify router can be created
+        assert!(std::mem::size_of_val(&router) > 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_status() {
+        let result = get_status().await;
+        let value = result.0;
+        assert_eq!(value["status"], "running");
+    }
+
+    #[tokio::test]
+    async fn test_get_config() {
+        let result = get_config().await;
+        let value = result.0;
+        assert_eq!(value["config"], "placeholder");
+    }
+}

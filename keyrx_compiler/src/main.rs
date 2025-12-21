@@ -5,6 +5,7 @@
 use clap::Parser;
 
 mod dfa_gen;
+mod error;
 mod mphf_gen;
 mod parser;
 mod serialize;
