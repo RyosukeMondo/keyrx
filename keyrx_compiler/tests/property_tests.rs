@@ -73,25 +73,12 @@ fn condition_item_strategy() -> impl Strategy<Value = ConditionItem> {
 
 /// Strategy for generating arbitrary Condition
 fn condition_strategy() -> impl Strategy<Value = Condition> {
-    let leaf = prop_oneof![
+    prop_oneof![
         (0u8..=0xFE).prop_map(Condition::ModifierActive),
         (0u8..=0xFE).prop_map(Condition::LockActive),
-    ];
-
-    leaf.prop_recursive(
-        2,  // depth
-        10, // max nodes
-        5,  // items per collection
-        |inner| {
-            prop_oneof![
-                prop::collection::vec(condition_item_strategy(), 1..5)
-                    .prop_map(Condition::AllActive),
-                prop::collection::vec(condition_item_strategy(), 1..5)
-                    .prop_map(Condition::NotActive),
-                inner,
-            ]
-        },
-    )
+        prop::collection::vec(condition_item_strategy(), 1..5).prop_map(Condition::AllActive),
+        prop::collection::vec(condition_item_strategy(), 1..5).prop_map(Condition::NotActive),
+    ]
 }
 
 /// Strategy for generating arbitrary BaseKeyMapping
@@ -444,17 +431,14 @@ mod edge_case_tests {
                     pattern: format!("Device {}", i),
                 },
                 mappings: vec![
-                    KeyMapping::Base(BaseKeyMapping::Simple {
-                        from: KeyCode::A,
-                        to: KeyCode::B,
-                    }),
-                    KeyMapping::Conditional {
-                        condition: Condition::ModifierActive(i as u8),
-                        mappings: vec![BaseKeyMapping::Simple {
+                    KeyMapping::simple(KeyCode::A, KeyCode::B),
+                    KeyMapping::conditional(
+                        Condition::ModifierActive(i as u8),
+                        vec![BaseKeyMapping::Simple {
                             from: KeyCode::C,
                             to: KeyCode::D,
                         }],
-                    },
+                    ),
                 ],
             });
         }
@@ -477,8 +461,8 @@ mod edge_case_tests {
     }
 
     #[test]
-    fn test_all_base_mapping_variants() {
-        // Create a config with all BaseKeyMapping variants
+    fn test_all_mapping_variants() {
+        // Create a config with all KeyMapping variants
         let config = ConfigRoot {
             version: Version::current(),
             devices: vec![DeviceConfig {
@@ -486,32 +470,11 @@ mod edge_case_tests {
                     pattern: "*".to_string(),
                 },
                 mappings: vec![
-                    KeyMapping::Base(BaseKeyMapping::Simple {
-                        from: KeyCode::A,
-                        to: KeyCode::B,
-                    }),
-                    KeyMapping::Base(BaseKeyMapping::Modifier {
-                        from: KeyCode::CapsLock,
-                        modifier_id: 0x01,
-                    }),
-                    KeyMapping::Base(BaseKeyMapping::Lock {
-                        from: KeyCode::ScrollLock,
-                        lock_id: 0x02,
-                    }),
-                    KeyMapping::Base(BaseKeyMapping::TapHold {
-                        from: KeyCode::Space,
-                        tap: KeyCode::Space,
-                        hold_modifier: 0x00,
-                        threshold_ms: 200,
-                    }),
-                    KeyMapping::Base(BaseKeyMapping::ModifiedOutput {
-                        from: KeyCode::A,
-                        to: KeyCode::A,
-                        shift: true,
-                        ctrl: false,
-                        alt: false,
-                        win: false,
-                    }),
+                    KeyMapping::simple(KeyCode::A, KeyCode::B),
+                    KeyMapping::modifier(KeyCode::CapsLock, 0x01),
+                    KeyMapping::lock(KeyCode::ScrollLock, 0x02),
+                    KeyMapping::tap_hold(KeyCode::Space, KeyCode::Space, 0x00, 200),
+                    KeyMapping::modified_output(KeyCode::A, KeyCode::A, true, false, false, false),
                 ],
             }],
             metadata: Metadata {
@@ -538,37 +501,37 @@ mod edge_case_tests {
                     pattern: "*".to_string(),
                 },
                 mappings: vec![
-                    KeyMapping::Conditional {
-                        condition: Condition::ModifierActive(0x01),
-                        mappings: vec![BaseKeyMapping::Simple {
+                    KeyMapping::conditional(
+                        Condition::ModifierActive(0x01),
+                        vec![BaseKeyMapping::Simple {
                             from: KeyCode::A,
                             to: KeyCode::B,
                         }],
-                    },
-                    KeyMapping::Conditional {
-                        condition: Condition::LockActive(0x02),
-                        mappings: vec![BaseKeyMapping::Simple {
+                    ),
+                    KeyMapping::conditional(
+                        Condition::LockActive(0x02),
+                        vec![BaseKeyMapping::Simple {
                             from: KeyCode::C,
                             to: KeyCode::D,
                         }],
-                    },
-                    KeyMapping::Conditional {
-                        condition: Condition::AllActive(vec![
+                    ),
+                    KeyMapping::conditional(
+                        Condition::AllActive(vec![
                             ConditionItem::ModifierActive(0x01),
                             ConditionItem::LockActive(0x02),
                         ]),
-                        mappings: vec![BaseKeyMapping::Simple {
+                        vec![BaseKeyMapping::Simple {
                             from: KeyCode::E,
                             to: KeyCode::F,
                         }],
-                    },
-                    KeyMapping::Conditional {
-                        condition: Condition::NotActive(vec![ConditionItem::ModifierActive(0x01)]),
-                        mappings: vec![BaseKeyMapping::Simple {
+                    ),
+                    KeyMapping::conditional(
+                        Condition::NotActive(vec![ConditionItem::ModifierActive(0x01)]),
+                        vec![BaseKeyMapping::Simple {
                             from: KeyCode::G,
                             to: KeyCode::H,
                         }],
-                    },
+                    ),
                 ],
             }],
             metadata: Metadata {

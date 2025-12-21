@@ -1,4 +1,4 @@
-use keyrx_core::config::{BaseKeyMapping, KeyCode, KeyMapping};
+use keyrx_core::config::{KeyCode, KeyMapping};
 use rhai::{Engine, EvalAltResult};
 use std::sync::{Arc, Mutex};
 
@@ -55,10 +55,12 @@ pub fn register_modifier_functions(engine: &mut Engine, state: Arc<Mutex<ParserS
                 &mut state,
                 from_key,
                 to_key,
-                shift,
-                ctrl,
-                alt,
-                win,
+                ModifierFlags {
+                    shift,
+                    ctrl,
+                    alt,
+                    win,
+                },
                 "with_mods",
             )
         },
@@ -85,31 +87,40 @@ fn register_single_mod_fn(
                 return Err(format!("{} 'to' must have VK_ prefix, got: {}", name, to).into());
             }
             let to_key = parse_virtual_key(to).map_err(|e| format!("Invalid 'to' key: {}", e))?;
-            add_modified_output(&mut state, from_key, to_key, shift, ctrl, alt, win, name)
+            add_modified_output(
+                &mut state,
+                from_key,
+                to_key,
+                ModifierFlags {
+                    shift,
+                    ctrl,
+                    alt,
+                    win,
+                },
+                name,
+            )
         },
     );
+}
+
+struct ModifierFlags {
+    shift: bool,
+    ctrl: bool,
+    alt: bool,
+    win: bool,
 }
 
 fn add_modified_output(
     state: &mut ParserState,
     from: KeyCode,
     to: KeyCode,
-    shift: bool,
-    ctrl: bool,
-    alt: bool,
-    win: bool,
+    flags: ModifierFlags,
     fn_name: &str,
 ) -> Result<(), Box<EvalAltResult>> {
-    let mapping = BaseKeyMapping::ModifiedOutput {
-        from,
-        to,
-        shift,
-        ctrl,
-        alt,
-        win,
-    };
+    let mapping =
+        KeyMapping::modified_output(from, to, flags.shift, flags.ctrl, flags.alt, flags.win);
     if let Some(ref mut device) = state.current_device {
-        device.mappings.push(KeyMapping::Base(mapping));
+        device.mappings.push(mapping);
         Ok(())
     } else {
         Err(format!("{}() must be called inside a device() block", fn_name).into())

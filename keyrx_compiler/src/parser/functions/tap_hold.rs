@@ -1,4 +1,4 @@
-use keyrx_core::config::{BaseKeyMapping, KeyMapping};
+use keyrx_core::config::KeyMapping;
 use rhai::{Engine, EvalAltResult};
 use std::sync::{Arc, Mutex};
 
@@ -34,15 +34,11 @@ pub fn register_tap_hold_function(engine: &mut Engine, state: Arc<Mutex<ParserSt
             let hold_modifier =
                 parse_modifier_id(hold).map_err(|e| format!("Invalid hold modifier: {}", e))?;
 
-            let mapping = BaseKeyMapping::TapHold {
-                from: from_key,
-                tap: tap_key,
-                hold_modifier,
-                threshold_ms: threshold_ms as u16,
-            };
+            let mapping =
+                KeyMapping::tap_hold(from_key, tap_key, hold_modifier, threshold_ms as u16);
 
             if let Some(ref mut device) = state.current_device {
-                device.mappings.push(KeyMapping::Base(mapping));
+                device.mappings.push(mapping);
                 Ok(())
             } else {
                 Err("tap_hold() must be called inside a device() block".into())

@@ -7,7 +7,7 @@ use crate::error::ParseError;
 use keyrx_core::config::{ConfigRoot, DeviceConfig, Metadata, Version};
 
 /// Parser state shared across Rhai custom functions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ParserState {
     pub devices: Vec<DeviceConfig>,
     pub current_device: Option<DeviceConfig>,
@@ -15,10 +15,7 @@ pub struct ParserState {
 
 impl ParserState {
     pub fn new() -> Self {
-        Self {
-            devices: Vec::new(),
-            current_device: None,
-        }
+        Self::default()
     }
 }
 

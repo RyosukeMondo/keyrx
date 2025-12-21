@@ -6,10 +6,6 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[[bench]]
-name = "compile_bench"
-harness = false
-
 [dependencies]
 keyrx_core = { path = "../keyrx_core" }
 rhai = { workspace = true }

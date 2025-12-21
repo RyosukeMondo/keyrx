@@ -203,7 +203,7 @@ pub fn deserialize(bytes: &[u8]) -> Result<&rkyv::Archived<ConfigRoot>, Deserial
 mod tests {
     use super::*;
     use keyrx_core::config::{
-        BaseKeyMapping, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+        DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
     };
 
     fn create_test_config() -> ConfigRoot {
@@ -213,10 +213,7 @@ mod tests {
                 identifier: DeviceIdentifier {
                     pattern: "Test Device".to_string(),
                 },
-                mappings: vec![KeyMapping::Base(BaseKeyMapping::Simple {
-                    from: KeyCode::A,
-                    to: KeyCode::B,
-                })],
+                mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
             }],
             metadata: Metadata {
                 compilation_timestamp: 1234567890,

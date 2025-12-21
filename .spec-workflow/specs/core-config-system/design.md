@@ -153,9 +153,9 @@ enum KeyCode {
     // 100+ total variants
 }
 
-// Six mapping variants for different behaviors
+// Base key mapping types (non-recursive leaf mappings)
 #[repr(C)]
-enum KeyMapping {
+enum BaseKeyMapping {
     // Simple 1:1 remapping
     Simple { from: KeyCode, to: KeyCode },
 
@@ -182,12 +182,30 @@ enum KeyMapping {
         alt: bool,
         win: bool,
     },
+}
+
+// Key mapping with conditional support (split from BaseKeyMapping)
+// This split design avoids rkyv recursion issues with 0.7
+#[repr(C)]
+enum KeyMapping {
+    // Wrap base mapping types
+    Base(BaseKeyMapping),
 
     // Conditional mappings (when/when_not blocks)
     Conditional {
         condition: Condition,
-        mappings: Vec<KeyMapping>,
+        mappings: Vec<BaseKeyMapping>,  // Limited to 1-level nesting
     },
+}
+
+// Ergonomic helper functions hide the split design
+impl KeyMapping {
+    fn simple(from: KeyCode, to: KeyCode) -> Self;
+    fn modifier(from: KeyCode, modifier_id: u8) -> Self;
+    fn lock(from: KeyCode, lock_id: u8) -> Self;
+    fn tap_hold(from: KeyCode, tap: KeyCode, hold_modifier: u8, threshold_ms: u16) -> Self;
+    fn modified_output(from: KeyCode, to: KeyCode, shift: bool, ctrl: bool, alt: bool, win: bool) -> Self;
+    fn conditional(condition: Condition, mappings: Vec<BaseKeyMapping>) -> Self;
 }
 
 // Condition types for when/when_not
@@ -196,13 +214,13 @@ enum Condition {
     ModifierActive(u8),           // MD_XX active
     LockActive(u8),               // LK_XX active
     AllActive(Vec<ConditionItem>), // All must be true (AND)
-    NotActive(Box<Condition>),     // Negation (when_not)
+    NotActive(Vec<ConditionItem>), // Negation (when_not) - limited to item negation
 }
 
 #[repr(C)]
 enum ConditionItem {
-    Modifier(u8),  // MD_XX
-    Lock(u8),      // LK_XX
+    ModifierActive(u8),  // MD_XX
+    LockActive(u8),      // LK_XX
 }
 
 // Root configuration

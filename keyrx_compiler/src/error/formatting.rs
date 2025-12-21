@@ -10,6 +10,7 @@ pub fn hex_encode(bytes: &[u8]) -> String {
 }
 
 /// Formats a ParseError in a user-friendly format with code snippets and suggestions.
+#[allow(dead_code)] // Will be used in error formatting tasks (task 19+)
 pub fn format_error_user_friendly(error: &ParseError) -> String {
     match error {
         ParseError::SyntaxError {
@@ -94,6 +95,7 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
     }
 }
 
+#[allow(dead_code)] // Will be used in error formatting tasks (task 19+)
 fn format_invalid_prefix_suggestion(expected: &str, got: &str, context: &str) -> String {
     if got.starts_with("MD_") {
         format!(
@@ -119,6 +121,7 @@ fn format_invalid_prefix_suggestion(expected: &str, got: &str, context: &str) ->
     }
 }
 
+#[allow(dead_code)] // Will be used in error formatting tasks (task 19+)
 fn format_missing_prefix_suggestion(key: &str, context: &str) -> String {
     if context.contains("output") || context.contains("to") {
         format!(
@@ -139,6 +142,7 @@ fn format_missing_prefix_suggestion(key: &str, context: &str) -> String {
 }
 
 /// Formats a ParseError as a JSON object for machine consumption.
+#[allow(dead_code)] // Will be used in CLI tasks (task 16+)
 pub fn format_error_json(error: &ParseError) -> String {
     match error {
         ParseError::SyntaxError { file, line, column, message } => {
@@ -206,6 +210,7 @@ pub fn format_error_json(error: &ParseError) -> String {
     }
 }
 
+#[allow(dead_code)] // Will be used in CLI tasks (task 16+)
 fn format_remaining_error_json(error: &ParseError) -> String {
     match error {
         ParseError::MissingPrefix { key, context } => {

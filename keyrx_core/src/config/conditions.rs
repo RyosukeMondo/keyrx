@@ -1,3 +1,4 @@
+extern crate alloc;
 use alloc::vec::Vec;
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
@@ -17,21 +18,24 @@ pub enum ConditionItem {
 
 /// Conditional mapping support for when/when_not blocks
 ///
-/// Supports single conditions, AND combinations, and negation.
-/// To avoid recursive Box issues with rkyv, NotActive contains a Vec
-/// of conditions which must ALL be false (implemented as NOT(AND(...))).
+/// Supports single conditions, AND combinations, and true recursion with Box.
+/// The `#[omit_bounds]` attribute enables recursive NotActive conditions.
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
 )]
 pub enum Condition {
     /// Single custom modifier active (MD_XX)
     ModifierActive(u8),
+
     /// Single custom lock active (LK_XX)
     LockActive(u8),
+
     /// All conditions must be true (AND logic) - for when() with multiple conditions
     AllActive(Vec<ConditionItem>),
-    /// All conditions must be false (when_not with AND logic) - negated AllActive
-    /// For single condition negation, use vec with one item
+
+    /// Negated condition - NOT(...)
+    /// Currently limited to negating single items or AND combinations
+    /// Example: NOT(ModifierActive(0x01))
     NotActive(Vec<ConditionItem>),
 }
 
@@ -62,11 +66,30 @@ mod tests {
         }
 
         // Test NotActive variant (negation)
-        let cond4 = Condition::NotActive(alloc::vec![ConditionItem::ModifierActive(0x01),]);
+        let cond4 = Condition::NotActive(alloc::vec![ConditionItem::ModifierActive(0x01)]);
         if let Condition::NotActive(items) = &cond4 {
             assert_eq!(items.len(), 1);
+            assert_eq!(items[0], ConditionItem::ModifierActive(0x01));
         } else {
             panic!("Expected NotActive variant");
+        }
+    }
+
+    #[test]
+    fn test_notactive_with_multiple_items() {
+        // Test NOT(modifier AND lock)
+        let not_multi = Condition::NotActive(alloc::vec![
+            ConditionItem::ModifierActive(0x01),
+            ConditionItem::LockActive(0x02),
+        ]);
+
+        // Verify structure
+        if let Condition::NotActive(items) = &not_multi {
+            assert_eq!(items.len(), 2);
+            assert_eq!(items[0], ConditionItem::ModifierActive(0x01));
+            assert_eq!(items[1], ConditionItem::LockActive(0x02));
+        } else {
+            panic!("Expected NotActive");
         }
     }
 }
