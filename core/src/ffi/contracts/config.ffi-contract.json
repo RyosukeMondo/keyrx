@@ -10,8 +10,8 @@
             "description": "List all saved virtual layouts.",
             "parameters": [],
             "returns": {
-                "type": "List<VirtualLayout>",
-                "description": "List of virtual layouts"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing list of virtual layouts"
             },
             "errors": []
         },
@@ -28,8 +28,8 @@
                 }
             ],
             "returns": {
-                "type": "VirtualLayout",
-                "description": "Saved virtual layout"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing saved virtual layout"
             },
             "errors": []
         },
@@ -46,8 +46,8 @@
                 }
             ],
             "returns": {
-                "type": "void",
-                "description": "JSON result object"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope"
             },
             "errors": []
         },
@@ -57,8 +57,8 @@
             "description": "List all saved hardware profiles.",
             "parameters": [],
             "returns": {
-                "type": "List<HardwareProfile>",
-                "description": "List of hardware profiles"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing list of hardware profiles"
             },
             "errors": []
         },
@@ -75,8 +75,8 @@
                 }
             ],
             "returns": {
-                "type": "HardwareProfile",
-                "description": "Saved hardware profile"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing saved hardware profile"
             },
             "errors": []
         },
@@ -93,8 +93,8 @@
                 }
             ],
             "returns": {
-                "type": "void",
-                "description": "JSON result object"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope"
             },
             "errors": []
         },
@@ -104,8 +104,8 @@
             "description": "List all saved keymaps.",
             "parameters": [],
             "returns": {
-                "type": "List<Keymap>",
-                "description": "List of keymaps"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing list of keymaps"
             },
             "errors": []
         },
@@ -122,8 +122,8 @@
                 }
             ],
             "returns": {
-                "type": "Keymap",
-                "description": "Saved keymap"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope containing saved keymap"
             },
             "errors": []
         },
@@ -140,8 +140,8 @@
                 }
             ],
             "returns": {
-                "type": "void",
-                "description": "JSON result object"
+                "type": "*mut c_char",
+                "description": "JSON string with ok:/error: envelope"
             },
             "errors": []
         },

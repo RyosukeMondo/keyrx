@@ -14,7 +14,7 @@ use crate::observability::bridge::GLOBAL_LOG_BRIDGE;
 use crate::observability::entry::CLogEntry;
 #[cfg(test)]
 use crate::observability::metrics_bridge::ThresholdViolation;
-use crate::observability::metrics_bridge::{MetricsBridge, MetricsSnapshotFfi};
+use crate::observability::metrics_bridge::{MetricsBridge, MetricsSnapshotFfi, ThresholdCallback};
 use ffi_export::ffi_export;
 use std::ffi::{c_char, CString};
 use std::sync::{Arc, RwLock};
@@ -448,7 +448,7 @@ fn metrics_trigger_callback() -> crate::ffi::error::FfiResult<()> {
 /// during the callback invocation - it must not be retained.
 #[no_mangle]
 pub extern "C" fn keyrx_metrics_set_threshold_callback(
-    callback: Option<crate::observability::metrics_bridge::ThresholdCallback>,
+    callback: Option<ThresholdCallback>,
 ) -> i32 {
     if let Some(bridge) = get_metrics_bridge() {
         if let Some(cb) = callback {

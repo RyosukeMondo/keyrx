@@ -49,6 +49,7 @@
 //! ```
 
 use std::collections::HashMap;
+use std::os::raw::c_char;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -353,7 +354,7 @@ pub extern "C" fn keyrx_trace_clear() {
 ///
 /// The returned pointer must be freed using `keyrx_trace_free_json`.
 #[no_mangle]
-pub extern "C" fn keyrx_trace_get_events_json() -> *mut std::os::raw::c_char {
+pub extern "C" fn keyrx_trace_get_events_json() -> *mut c_char {
     use std::time::Instant;
     let start = Instant::now();
 
@@ -395,9 +396,9 @@ pub extern "C" fn keyrx_trace_get_events_json() -> *mut std::os::raw::c_char {
 /// The `domain` pointer must be valid or null. The returned pointer must be freed using `keyrx_trace_free_json`.
 #[no_mangle]
 pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
-    domain: *const std::os::raw::c_char,
+    domain: *const c_char,
     min_duration_us: u64,
-) -> *mut std::os::raw::c_char {
+) -> *mut c_char {
     use std::time::Instant;
     let start = Instant::now();
 
@@ -461,7 +462,7 @@ pub unsafe extern "C" fn keyrx_trace_get_filtered_events_json(
 /// The pointer must have been returned by `keyrx_trace_get_events_json` or
 /// `keyrx_trace_get_filtered_events_json` and must only be freed once.
 #[no_mangle]
-pub unsafe extern "C" fn keyrx_trace_free_json(json: *mut std::os::raw::c_char) {
+pub unsafe extern "C" fn keyrx_trace_free_json(json: *mut c_char) {
     use std::time::Instant;
     let start = Instant::now();
 
