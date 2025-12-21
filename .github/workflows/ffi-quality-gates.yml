@@ -70,8 +70,8 @@ jobs:
       - name: Validate FFI contracts
         id: contracts
         run: |
-          chmod +x scripts/validate_ffi_contracts.sh
-          if scripts/validate_ffi_contracts.sh --check --verbose; then
+          chmod +x scripts/verify/contracts.sh
+          if scripts/verify/contracts.sh --check --verbose; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             echo "status=failed" >> $GITHUB_OUTPUT
@@ -82,8 +82,8 @@ jobs:
       - name: Check module sizes
         id: module-sizes
         run: |
-          chmod +x scripts/analyze_module_sizes.sh
-          if scripts/analyze_module_sizes.sh; then
+          chmod +x scripts/check/module-sizes.sh
+          if scripts/check/module-sizes.sh; then
             echo "status=passed" >> $GITHUB_OUTPUT
           else
             VIOLATIONS=$(python3 -c "import json; data=json.load(open('.spec-workflow/analysis/module-sizes.json')); print(data['summary']['violations'])")
@@ -95,8 +95,8 @@ jobs:
       - name: Detect breaking changes
         id: breaking-changes
         run: |
-          chmod +x scripts/detect_ffi_breaking_changes.sh
-          scripts/detect_ffi_breaking_changes.sh \
+          chmod +x scripts/verify/breaking-changes.sh
+          scripts/verify/breaking-changes.sh \
             --base "origin/${{ github.base_ref }}" \
             --format json > breaking_changes.json || true
 
@@ -200,7 +200,7 @@ jobs:
           fi
 
           if [ "${{ steps.contracts.outputs.status }}" != "passed" ]; then
-            echo "- ❌ **Contract validation failed** - Run \`scripts/validate_ffi_contracts.sh --fix\`" >> quality-gate-report.md
+            echo "- ❌ **Contract validation failed** - Run \`scripts/verify/contracts.sh --fix\`" >> quality-gate-report.md
             FAILED_CHECKS=$((FAILED_CHECKS + 1))
           fi
 

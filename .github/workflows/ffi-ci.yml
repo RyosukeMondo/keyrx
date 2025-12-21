@@ -7,18 +7,18 @@ on:
       - 'core/src/ffi/**'
       - 'core/tools/generate_dart_bindings/**'
       - 'core/macros/ffi_export/**'
-      - 'scripts/validate_ffi_contracts.sh'
-      - 'scripts/analyze_module_sizes.sh'
-      - 'scripts/detect_ffi_breaking_changes.sh'
+      - 'scripts/verify/contracts.sh'
+      - 'scripts/check/module-sizes.sh'
+      - 'scripts/verify/breaking-changes.sh'
       - '.github/workflows/ffi-ci.yml'
   pull_request:
     paths:
       - 'core/src/ffi/**'
       - 'core/tools/generate_dart_bindings/**'
       - 'core/macros/ffi_export/**'
-      - 'scripts/validate_ffi_contracts.sh'
-      - 'scripts/analyze_module_sizes.sh'
-      - 'scripts/detect_ffi_breaking_changes.sh'
+      - 'scripts/verify/contracts.sh'
+      - 'scripts/check/module-sizes.sh'
+      - 'scripts/verify/breaking-changes.sh'
       - '.github/workflows/ffi-ci.yml'
 
 concurrency:
@@ -55,8 +55,8 @@ jobs:
 
       - name: Validate FFI contracts
         run: |
-          chmod +x scripts/validate_ffi_contracts.sh
-          scripts/validate_ffi_contracts.sh --check --verbose
+          chmod +x scripts/verify/contracts.sh
+          scripts/verify/contracts.sh --check --verbose
         env:
           CI: true
 
@@ -83,8 +83,8 @@ jobs:
       - name: Run module size analysis
         id: module-analysis
         run: |
-          chmod +x scripts/analyze_module_sizes.sh
-          scripts/analyze_module_sizes.sh || true
+          chmod +x scripts/check/module-sizes.sh
+          scripts/check/module-sizes.sh || true
 
           # Extract violation count for summary
           VIOLATIONS=$(python3 -c "import json; data=json.load(open('.spec-workflow/analysis/module-sizes.json')); print(data['summary']['violations'])")

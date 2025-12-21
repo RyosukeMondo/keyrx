@@ -28,7 +28,7 @@ dev-trace:
 
 # Watch Rust FFI files and regenerate Dart bindings on change
 dev-watch:
-    ./scripts/dev/ffi_watch.sh
+    ./scripts/dev/watch-ffi.sh
 
 # Run Flutter UI in development mode
 ui:
@@ -74,7 +74,7 @@ ui-test-watch:
 # Generate Flutter coverage and HTML report
 ui-coverage:
     @echo "Collecting Flutter coverage and generating HTML report..."
-    ./ui/scripts/generate_coverage_report.sh
+    ./scripts/generate/coverage.sh
     @echo "Coverage report available at ui/coverage/html/index.html"
 
 # Run full Flutter quality gate (format, analyze, metrics, tests)
@@ -90,6 +90,16 @@ ui-verify: ui-check
 # Run all quality checks (fmt, clippy, test, docs, bindings, Flutter quality)
 check: fmt-check clippy test docs verify-bindings ui-quality
     @echo "All checks passed!"
+
+# Check module sizes against 500-line limit
+check-module-sizes:
+    @echo "Checking module sizes..."
+    @./scripts/check/module-sizes.sh
+
+# Check performance benchmarks
+check-performance:
+    @echo "Running performance checks..."
+    @./scripts/check/performance.sh
 
 # Format all Rust code
 fmt:
@@ -111,21 +121,36 @@ test:
 test-cargo:
     cd core && KEYRX_SKIP_DEVICE_SCAN=1 cargo test
 
+# Run daemon integration tests
+test-daemon:
+    @echo "Running daemon tests..."
+    @./scripts/test/daemon.sh
+
+# Run end-to-end tests
+test-e2e:
+    @echo "Running end-to-end tests..."
+    @./scripts/test/e2e.sh
+
+# Run API contract tests
+test-contracts:
+    @echo "Running API contract tests..."
+    @./scripts/test/contracts.sh
+
 # Run benchmarks
 bench:
     cd core && cargo bench
 
 # Run FFI performance benchmarks with detailed reporting
 bench-ffi *ARGS:
-    ./scripts/metrics/benchmark.sh {{ARGS}}
+    ./scripts/check/performance.sh {{ARGS}}
 
 # Run FFI benchmarks and save as baseline
 bench-ffi-baseline NAME:
-    ./scripts/metrics/benchmark.sh --baseline {{NAME}}
+    ./scripts/check/performance.sh --baseline {{NAME}}
 
 # Run FFI benchmarks and compare against baseline
 bench-ffi-compare NAME:
-    ./scripts/metrics/benchmark.sh --compare {{NAME}}
+    ./scripts/check/performance.sh --compare {{NAME}}
 
 # Clean build artifacts
 clean:
@@ -147,59 +172,83 @@ docs: docs-errors docs-api
     @echo "All documentation generated!"
 
 # Generate Dart FFI bindings using Rust code generator
+# SSOT: Bindings/Models → packages/core_logic/lib, IPC Client → ui/lib
 gen-dart-bindings:
-    @echo "Generating Dart FFI bindings..."
+    @echo "Generating Dart FFI bindings (SSOT architecture)..."
+    @echo "  • Bindings/Models → packages/core_logic/lib/"
+    @echo "  • IPC Client      → ui/lib/services/generated/"
     cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --verbose
-    @echo "Dart FFI bindings generated successfully!"
+    @echo "✓ Dart FFI bindings generated successfully!"
 
 # Check if Dart FFI bindings are up-to-date (fails if regeneration needed)
 check-dart-bindings:
     @echo "Checking Dart FFI bindings are up-to-date..."
     cargo run --release --manifest-path core/tools/generate_dart_bindings/Cargo.toml -- --check
+    @echo "✓ Bindings and models are in sync!"
 
 # Verify Dart FFI bindings are in sync with Rust exports
 verify-bindings: check-dart-bindings
     @echo "Dart FFI bindings are up-to-date!"
 
+# Verify JSON contracts match Rust #[ffi_export] annotations
+verify-contracts:
+    @echo "Verifying FFI contracts..."
+    @./scripts/verify/contracts.sh
+
+# Verify no SSOT violations in Dart code
+verify-ssot:
+    @echo "Verifying SSOT compliance..."
+    @./scripts/verify/ssot.sh
+
+# Verify registry consistency (CLI persistence)
+verify-registry:
+    @echo "Verifying registry consistency..."
+    @./scripts/verify/registry.sh
+
+# Run all verification checks
+verify-all:
+    @echo "Running all verifications..."
+    @./scripts/verify/all.sh
+
 # Watch FFI sources and auto-regenerate Dart bindings on change (cargo-watch)
 ffi-watch:
     @echo "Starting FFI watch mode (cargo-watch)..."
     @echo "Monitoring: core/src/ffi/ and core/src/api.rs"
-    @echo "Trigger: ./scripts/dev/ffi_watch.sh (incremental generation)"
+    @echo "Trigger: ./scripts/dev/watch-ffi.sh (incremental generation)"
     @if ! command -v cargo-watch >/dev/null 2>&1; then \
         echo "Error: cargo-watch not found. Install via:"; \
         echo "  cargo install cargo-watch"; \
         exit 1; \
     fi
-    cd core && cargo watch -c -w src/ffi -w src/api.rs -s '../scripts/dev/ffi_watch.sh' --delay 0.5
+    cd core && cargo watch -c -w src/ffi -w src/api.rs -s '../scripts/dev/watch-ffi.sh' --delay 0.5
 
 # Create an FFI implementation log entry from the template
 ffi-log task_id base_ref="":
     if [ -n "{{base_ref}}" ]; then \
-        scripts/ffi/log_implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
+        scripts/dev/log-implementation.sh --task-id {{task_id}} --base-ref {{base_ref}}; \
     else \
-        scripts/ffi/log_implementation.sh --task-id {{task_id}}; \
+        scripts/dev/log-implementation.sh --task-id {{task_id}}; \
     fi
 
 # Detect FFI contract breaking changes against a base reference
 diff-ffi-contracts base_ref="HEAD~1" format="text":
     @echo "Detecting FFI breaking changes..."
-    @./scripts/ffi/detect_breaking_changes.sh --base {{base_ref}} --format {{format}}
+    @./scripts/verify/breaking-changes.sh --base {{base_ref}} --format {{format}}
 
 # Display FFI call metrics (call count, latency, error rates)
 ffi-metrics format="text":
-    @./scripts/metrics/ffi_summary.sh {{ if format == "json" { "--json" } else { "" } }}
+    @./scripts/generate/ffi-summary.sh {{ if format == "json" { "--json" } else { "" } }}
 
 # Generate FFI contract metrics dashboard
 ffi-dashboard:
     @echo "Generating FFI contract metrics dashboard..."
-    @./scripts/metrics/contract_dashboard.sh
+    @./scripts/generate/metrics-dashboard.sh
     @echo "Dashboard available at .spec-workflow/analysis/contract-dashboard.html"
 
 # Analyze FFI implementation history (velocity, churn, coverage, AI effectiveness)
 analyze-ffi:
     @echo "Analyzing FFI implementation history..."
-    @./scripts/metrics/ffi_history.sh
+    @./scripts/generate/metrics-history.sh
     @echo "Analysis available at .spec-workflow/analysis/implementation-insights.html"
 
 # Run comprehensive build (error docs + bindings + Rust + Flutter)

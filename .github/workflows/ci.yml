@@ -266,7 +266,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq bc
       - name: Generate contract dashboard
-        run: ./scripts/generate_contract_metrics.sh
+        run: ./scripts/generate/metrics-dashboard.sh
       - name: Upload dashboard
         uses: actions/upload-artifact@v4
         with:

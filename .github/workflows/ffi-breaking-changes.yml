@@ -33,8 +33,8 @@ jobs:
         id: detect-pr
         run: |
           # Compare against the base branch
-          chmod +x scripts/detect_ffi_breaking_changes.sh
-          scripts/detect_ffi_breaking_changes.sh \
+          chmod +x scripts/verify/breaking-changes.sh
+          scripts/verify/breaking-changes.sh \
             --base "origin/${{ github.base_ref }}" \
             --format json > breaking_changes.json
 
@@ -45,7 +45,7 @@ jobs:
           echo "version_bumped=$(jq -r '.summary.version_bumped' breaking_changes.json)" >> $GITHUB_OUTPUT
 
           # Generate markdown report
-          scripts/detect_ffi_breaking_changes.sh \
+          scripts/verify/breaking-changes.sh \
             --base "origin/${{ github.base_ref }}" \
             --format markdown > breaking_changes.md
         continue-on-error: true
@@ -54,8 +54,8 @@ jobs:
         if: github.event_name == 'push'
         id: detect-push
         run: |
-          chmod +x scripts/detect_ffi_breaking_changes.sh
-          scripts/detect_ffi_breaking_changes.sh \
+          chmod +x scripts/verify/breaking-changes.sh
+          scripts/verify/breaking-changes.sh \
             --base "HEAD~1" \
             --format json > breaking_changes.json
 
