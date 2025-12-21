@@ -11,7 +11,7 @@
   - _Requirements: 1.1_
   - _Prompt: Role: Rust Developer specializing in workspace architecture | Task: Create root Cargo.toml with workspace configuration for 4 crates following requirement 1.1 | Restrictions: Must use Rust edition 2021, follow workspace best practices, do not add unnecessary global dependencies | Success: Workspace compiles with all members, resolver is set to "2", workspace dependencies are properly configured_
 
-- [ ] 1.1 Initialize keyrx_core library crate
+- [x] 1.1 Initialize keyrx_core library crate
   - File: keyrx_core/Cargo.toml, keyrx_core/src/lib.rs
   - Run `cargo new --lib keyrx_core`
   - Configure as `no_std` crate with `#![no_std]` attribute
