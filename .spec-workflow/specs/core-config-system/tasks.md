@@ -333,7 +333,7 @@
   - _Requirements: 7.5_
   - _Prompt: Role: Security Engineer with expertise in fuzzing and vulnerability discovery | Task: Set up fuzzing for Rhai parser in keyrx_core/fuzz/fuzz_targets/fuzz_parser.rs following requirement 7.5 | Restrictions: Must use cargo-fuzz, parser must never panic, run for 60+ seconds minimum, test arbitrary inputs | Success: Fuzz target runs without crashes, parser handles all inputs gracefully, no panics discovered_
 
-- [ ] 23. Set up fuzzing for deserializer
+- [x] 23. Set up fuzzing for deserializer
   - File: keyrx_core/fuzz/fuzz_targets/fuzz_deserialize.rs
   - Create fuzz target that feeds random bytes to deserializer
   - Ensure deserializer never panics on arbitrary input
