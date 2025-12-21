@@ -1,0 +1,30 @@
+KeyRX Bindings Verification
+============================================================
+Project root: /home/rmondo/repos/keyrx
+
+Reading existing bindings: packages/core_logic/lib/ffi/generated_bindings.dart
+Checking bindings using Rust tool...
+ERROR: Bindings check failed!
+
+   Compiling keyrx_core v0.1.0 (/home/rmondo/repos/keyrx/core)
+   Compiling generate_dart_bindings v0.1.0 (/home/rmondo/repos/keyrx/core/tools/generate_dart_bindings)
+    Finished `release` profile [optimized] target(s) in 22.35s
+     Running `target/release/generate-dart-bindings --check --output packages/core_logic/lib`
+Warning: Skipping IPC generation for base.register_event_callback due to incompatible parameter 'callback' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.log_set_callback due to incompatible parameter 'callback' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.metrics_set_callback due to incompatible parameter 'callback' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.metrics_snapshot due to incompatible return type: Pointer<Void>
+Warning: Skipping IPC generation for observability.metrics_free_snapshot due to incompatible parameter 'snapshot' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.metrics_set_threshold_callback due to incompatible parameter 'callback' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.metrics_get_thresholds due to incompatible parameter 'latency_warn_micros' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.c_log_entry_free due to incompatible parameter 'entry' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for observability.c_log_entry_create due to incompatible return type: Pointer<Void>
+Warning: Skipping IPC generation for telemetry.snapshot due to incompatible return type: Pointer<Void>
+Warning: Skipping IPC generation for telemetry.free_snapshot due to incompatible parameter 'telemetry' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for transition_log.export_json due to incompatible parameter 'engine_ptr' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for transition_log.len due to incompatible parameter 'engine_ptr' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for transition_log.capacity due to incompatible parameter 'engine_ptr' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for transition_log.clear due to incompatible parameter 'engine_ptr' of type 'Pointer<Void>'
+Warning: Skipping IPC generation for transition_log.statistics due to incompatible parameter 'engine_ptr' of type 'Pointer<Void>'
+Error: Generated bindings are out of date. Run without --check to regenerate.
+

@@ -19,7 +19,7 @@ import '../widgets/settings/threshold_settings_dialog.dart';
 class DebugPage extends StatefulWidget {
   const DebugPage({required this.metricsService, super.key});
 
-  final MetricsService metricsService;
+  final UIMetricsService metricsService;
 
   @override
   State<DebugPage> createState() => _DebugPageState();

@@ -20,7 +20,7 @@ class MetricsDashboardPage extends StatefulWidget {
 }
 
 class _MetricsDashboardPageState extends State<MetricsDashboardPage> {
-  late final MetricsService _metricsService;
+  late final UIMetricsService _metricsService;
   Duration _selectedRange = const Duration(minutes: 1);
 
   static const List<Duration> _rangeOptions = <Duration>[
@@ -37,7 +37,7 @@ class _MetricsDashboardPageState extends State<MetricsDashboardPage> {
   void initState() {
     super.initState();
     final registry = context.read<ServiceRegistry>();
-    _metricsService = MetricsServiceImpl(
+    _metricsService = UIMetricsServiceImpl(
       coreMetricsService: registry.metricsService,
     );
   }

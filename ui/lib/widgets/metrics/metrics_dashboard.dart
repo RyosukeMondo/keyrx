@@ -26,7 +26,7 @@ class MetricsDashboard extends StatefulWidget {
     super.key,
   }) : assert(maxHistoryPoints > 0);
 
-  final MetricsService metricsService;
+  final UIMetricsService metricsService;
   final int maxHistoryPoints;
 
   @override

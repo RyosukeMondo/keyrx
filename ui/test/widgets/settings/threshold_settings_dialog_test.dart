@@ -4,7 +4,7 @@ import 'package:keyrx_ui/services/metrics_service.dart';
 import 'package:keyrx_ui/widgets/settings/settings.dart';
 import 'package:mockito/mockito.dart';
 
-class MockMetricsService extends Mock implements MetricsService {}
+class MockMetricsService extends Mock implements UIMetricsService {}
 
 void main() {
   group('ThresholdSettingsDialog', () {

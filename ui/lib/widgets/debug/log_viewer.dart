@@ -18,7 +18,7 @@ import '../../services/observability_service.dart';
 class LogViewer extends StatefulWidget {
   const LogViewer({required this.observabilityService, super.key});
 
-  final ObservabilityService observabilityService;
+  final UIObservabilityService observabilityService;
 
   @override
   State<LogViewer> createState() => _LogViewerState();

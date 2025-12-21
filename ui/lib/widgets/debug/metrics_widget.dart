@@ -11,13 +11,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../services/metrics_service.dart';
 import '../../services/observability_service.dart';
 
 /// Widget for viewing real-time performance metrics.
 class MetricsWidget extends StatefulWidget {
   const MetricsWidget({required this.observabilityService, super.key});
 
-  final ObservabilityService observabilityService;
+  final UIObservabilityService observabilityService;
 
   @override
   State<MetricsWidget> createState() => _MetricsWidgetState();

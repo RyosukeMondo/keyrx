@@ -4,9 +4,9 @@
     {
       "label": "Verify Dart Bindings",
       "type": "shell",
-      "command": "python",
+      "command": "python3",
       "args": [
-        "scripts/verify_dart_bindings.py"
+        "scripts/ffi/verify_bindings.py"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -37,9 +37,15 @@
     {
       "label": "Generate Dart Bindings",
       "type": "shell",
-      "command": "python",
+      "command": "cargo",
       "args": [
-        "scripts/generate_dart_bindings.py"
+        "run",
+        "--release",
+        "--manifest-path",
+        "core/tools/generate_dart_bindings/Cargo.toml",
+        "--",
+        "--output",
+        "packages/core_logic/lib"
       ],
       "problemMatcher": []
     }

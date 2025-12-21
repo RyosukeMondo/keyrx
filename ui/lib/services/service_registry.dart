@@ -378,13 +378,12 @@ class ServiceRegistry {
         metricsService ??
         core_metrics.MetricsServiceImpl(bridge: effectiveBridge);
 
-    // Create core benchmark service and UI wrapper
-    final coreBenchmark = core_benchmark.BenchmarkServiceImpl(
-      bridge: effectiveBridge,
-    );
+    // Create core benchmark service (UI now just re-exports core classes)
     final benchmark =
         benchmarkService ??
-        ui_benchmark.BenchmarkServiceImpl(coreService: coreBenchmark);
+        core_benchmark.BenchmarkServiceImpl(
+          bridge: effectiveBridge,
+        );
 
     final daemon = daemonManager ?? DaemonManager(DaemonService());
 

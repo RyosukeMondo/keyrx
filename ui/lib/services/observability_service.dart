@@ -7,7 +7,7 @@ library;
 import 'dart:async';
 
 import 'package:core_logic/models/log_entry.dart' as core;
-import 'package:core_logic/services/metrics_service.dart' as core_metrics;
+import 'package:core_logic/services/metrics_service.dart';
 import 'package:core_logic/services/observability_service.dart' as core_observability;
 
 /// Log entry from the engine for UI display.
@@ -76,55 +76,10 @@ enum LogLevel {
   bool operator <=(LogLevel other) => index <= other.index;
 }
 
-/// Metrics snapshot from the engine.
-class MetricsSnapshot {
-  const MetricsSnapshot({
-    required this.timestamp,
-    required this.eventLatencyP50,
-    required this.eventLatencyP95,
-    required this.eventLatencyP99,
-    required this.eventsProcessed,
-    required this.errorsCount,
-    required this.memoryUsed,
-  });
-
-  factory MetricsSnapshot.fromJson(Map<String, dynamic> json) =>
-      MetricsSnapshot(
-        timestamp: json['timestamp'] as int,
-        eventLatencyP50: json['event_latency_p50'] as int,
-        eventLatencyP95: json['event_latency_p95'] as int,
-        eventLatencyP99: json['event_latency_p99'] as int,
-        eventsProcessed: json['events_processed'] as int,
-        errorsCount: json['errors_count'] as int,
-        memoryUsed: json['memory_used'] as int,
-      );
-
-  /// Convert from core MetricsSnapshot to UI MetricsSnapshot.
-  factory MetricsSnapshot.fromCore(core_metrics.MetricsSnapshot coreSnapshot) =>
-      MetricsSnapshot(
-        timestamp: coreSnapshot.timestamp,
-        eventLatencyP50: coreSnapshot.eventLatencyP50,
-        eventLatencyP95: coreSnapshot.eventLatencyP95,
-        eventLatencyP99: coreSnapshot.eventLatencyP99,
-        eventsProcessed: coreSnapshot.eventsProcessed,
-        errorsCount: coreSnapshot.errorsCount,
-        memoryUsed: coreSnapshot.memoryUsed,
-      );
-
-  final int timestamp;
-  final int eventLatencyP50;
-  final int eventLatencyP95;
-  final int eventLatencyP99;
-  final int eventsProcessed;
-  final int errorsCount;
-  final int memoryUsed;
-
-  DateTime get dateTime =>
-      DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: true);
-}
-
-/// Abstraction for observability operations.
-abstract class ObservabilityService {
+/// UI-specific abstraction for observability operations with polling streams.
+///
+/// Wraps core_logic ObservabilityService and adds UI-specific polling features.
+abstract class UIObservabilityService {
   /// Stream of log entries.
   ///
   /// Emits new log entries as they are captured by the log bridge.
@@ -165,16 +120,16 @@ abstract class ObservabilityService {
   Future<void> dispose();
 }
 
-/// Real ObservabilityService that wraps core ObservabilityService.
-class ObservabilityServiceImpl implements ObservabilityService {
-  ObservabilityServiceImpl({
+/// UI ObservabilityService implementation that wraps core ObservabilityService with polling.
+class UIObservabilityServiceImpl implements UIObservabilityService {
+  UIObservabilityServiceImpl({
     required core_observability.ObservabilityService coreObservabilityService,
-    required core_metrics.MetricsService metricsService,
+    required MetricsService metricsService,
   })  : _coreObservabilityService = coreObservabilityService,
         _metricsService = metricsService;
 
   final core_observability.ObservabilityService _coreObservabilityService;
-  final core_metrics.MetricsService _metricsService;
+  final MetricsService _metricsService;
   final StreamController<List<ObservabilityLogEntry>> _logController =
       StreamController<List<ObservabilityLogEntry>>.broadcast();
   final StreamController<MetricsSnapshot> _metricsController =
@@ -240,8 +195,7 @@ class ObservabilityServiceImpl implements ObservabilityService {
 
   @override
   Future<MetricsSnapshot?> getMetrics() async {
-    final coreSnapshot = await _metricsService.getSnapshot();
-    return coreSnapshot != null ? MetricsSnapshot.fromCore(coreSnapshot) : null;
+    return _metricsService.getSnapshot();
   }
 
   @override

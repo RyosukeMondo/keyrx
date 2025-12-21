@@ -1,7 +1,7 @@
 /// Service for accessing performance metrics from the KeyRx Core engine.
 ///
 /// Provides a Flutter-friendly API to fetch, cache, and stream real-time
-/// performance metrics. This UI layer delegates to core_logic MetricsService
+/// performance metrics. This UI layer wraps core_logic MetricsService
 /// and adds UI-specific features like polling and violation streams.
 library;
 
@@ -61,37 +61,32 @@ class ThresholdViolation {
   };
 }
 
-/// Abstraction for metrics operations.
-abstract class MetricsService {
-  /// Stream of metrics snapshots.
-  ///
-  /// Emits periodic metrics updates when streaming is enabled.
+/// UI-specific abstraction for metrics operations with polling and caching.
+///
+/// Wraps core MetricsService and adds UI-specific features:
+/// - Polling-based metrics stream
+/// - Snapshot caching
+/// - Threshold violation stream
+abstract class UIMetricsService {
+  /// Stream of metrics snapshots (polled periodically).
   Stream<core.MetricsSnapshot> get metricsStream;
 
   /// Stream of threshold violations.
-  ///
-  /// Emits alerts when metrics exceed configured thresholds.
   Stream<ThresholdViolation> get violationStream;
 
   /// Last cached metrics snapshot.
   core.MetricsSnapshot? get cachedSnapshot;
 
   /// Fetch the current metrics snapshot.
-  ///
-  /// Updates the cache and returns the latest snapshot.
   Future<core.MetricsSnapshot?> getSnapshot();
 
   /// Start streaming metrics updates.
-  ///
-  /// Metrics will be fetched periodically and emitted via [metricsStream].
   Future<void> startUpdates();
 
   /// Stop streaming metrics updates.
   Future<void> stopUpdates();
 
   /// Configure performance thresholds.
-  ///
-  /// When thresholds are exceeded, violations are emitted via [violationStream].
   Future<void> setThresholds(core.MetricsThresholds thresholds);
 
   /// Get current threshold configuration.
@@ -102,8 +97,8 @@ abstract class MetricsService {
 }
 
 /// UI MetricsService implementation that delegates to core service.
-class MetricsServiceImpl implements MetricsService {
-  MetricsServiceImpl({required core.MetricsService coreMetricsService})
+class UIMetricsServiceImpl implements UIMetricsService {
+  UIMetricsServiceImpl({required core.MetricsService coreMetricsService})
       : _coreMetricsService = coreMetricsService;
 
   final core.MetricsService _coreMetricsService;

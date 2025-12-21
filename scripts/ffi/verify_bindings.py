@@ -27,7 +27,7 @@ def main():
     print(f"Project root: {project_root}")
 
     # Path to existing generated bindings
-    existing_bindings = project_root / 'ui' / 'lib' / 'ffi' / 'generated' / 'bindings_generated.dart'
+    existing_bindings = project_root / 'packages' / 'core_logic' / 'lib' / 'ffi' / 'generated_bindings.dart'
 
     if not existing_bindings.exists():
         print("ERROR: Generated bindings file not found!")
@@ -43,7 +43,7 @@ def main():
     print("Checking bindings using Rust tool...")
     try:
         result = subprocess.run(
-            ["cargo", "run", "--release", "--manifest-path", "core/tools/generate_dart_bindings/Cargo.toml", "--", "--check"],
+            ["cargo", "run", "--release", "--manifest-path", "core/tools/generate_dart_bindings/Cargo.toml", "--", "--check", "--output", "packages/core_logic/lib"],
             cwd=project_root,
             capture_output=True,
             text=True,

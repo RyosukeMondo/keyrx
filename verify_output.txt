@@ -1,0 +1,7 @@
+KeyRX Bindings Verification
+============================================================
+Project root: /home/rmondo/repos/keyrx
+ERROR: Generated bindings file not found!
+Expected: /home/rmondo/repos/keyrx/ui/lib/ffi/generated/bindings_generated.dart
+
+Run: just gen-bindings
