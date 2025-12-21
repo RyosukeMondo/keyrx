@@ -78,7 +78,7 @@
   - _Requirements: 1.1_
   - _Prompt: Role: Rust Systems Programmer with expertise in data structures and serialization | Task: Define Metadata and ConfigRoot structs in keyrx_core/src/config.rs following requirement 1.1 | Restrictions: Must use #[repr(C)], derive all rkyv traits, ConfigRoot is the top-level structure containing all config data | Success: Structs compile, rkyv serialization works, ConfigRoot can be serialized and deserialized_
 
-- [ ] 7. Write unit tests for config data structures
+- [x] 7. Write unit tests for config data structures
   - File: keyrx_core/src/config.rs (add #[cfg(test)] mod tests at end)
   - Test Version::current() returns 1.0.0
   - Test Version Display formatting
