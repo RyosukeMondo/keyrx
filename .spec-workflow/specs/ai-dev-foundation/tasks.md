@@ -140,7 +140,7 @@
   - _Requirements: 2.8_
   - _Prompt: Role: QA Automation Engineer with expertise in Rust tooling and quality gates | Task: Implement verify.sh following requirement 2.8 and design.md Component 3, running clippy, fmt, tests, and coverage checks | Restrictions: Must check tool availability (cargo-tarpaulin), abort on first failure, output summary table, enforce 80% minimum coverage | Success: Script runs all checks in order, stops on first failure, outputs summary table, --skip-coverage bypasses tarpaulin, coverage threshold is enforced_
 
-- [ ] 3.2 Implement test.sh script
+- [x] 3.2 Implement test.sh script
   - File: scripts/test.sh
   - Add shebang and source scripts/lib/common.sh
   - Implement argument parsing: --unit, --integration, --fuzz DURATION, --bench, --error, --json, --quiet, --log-file
