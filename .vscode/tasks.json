@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "python3",
       "args": [
-        "scripts/ffi/verify_bindings.py"
+        "scripts/verify/bindings.py"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -45,7 +45,10 @@
         "core/tools/generate_dart_bindings/Cargo.toml",
         "--",
         "--output",
-        "packages/core_logic/lib"
+        "packages/core_logic/lib",
+        "--ipc-output",
+        "ui/lib",
+        "--verbose"
       ],
       "problemMatcher": []
     }

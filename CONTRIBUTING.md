@@ -51,7 +51,7 @@ just dev
 
 **FFI Watch Mode (Auto-regenerate bindings):**
 ```bash
-./scripts/dev/ffi_watch.sh
+./scripts/dev/watch-ffi.sh
 # Watches Rust FFI files, regenerates Dart bindings on change
 ```
 
@@ -86,7 +86,7 @@ Git hooks are automatically installed with `just setup` (or `scripts/setup/git_h
 1. `cargo fmt --check` (core)
 2. `cargo clippy -- -D warnings` (core)
 3. `RUST_TEST_THREADS=1 cargo test --lib` (core, serial to avoid flakiness)
-4. `python3 scripts/verify_bindings.py` (FFI drift check)
+4. `python3 scripts/verify/bindings.py` (FFI drift check)
 5. Dart/Flutter toolchain presence check (UI)
 6. `dart format --set-exit-if-changed` (UI)
 7. `flutter analyze --fatal-infos` on staged Dart files only (UI)
