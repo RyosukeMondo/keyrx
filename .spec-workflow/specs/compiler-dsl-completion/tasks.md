@@ -12,7 +12,7 @@
   - _Requirements: 2.1, 2.5_
   - _Prompt: Role: Rust Backend Developer with expertise in parsing and error handling | Task: Create comprehensive prefix validation module implementing parse_physical_key() and parse_virtual_key() functions that convert user strings like "VK_A" to KeyCode::A enum variants, following requirements 2.1 and 2.5, using KeyCode enum from keyrx_core | Restrictions: Must validate VK_ prefix exists, return actionable ParseError on invalid input, implement fuzzy matching for suggestions (e.g., "VK_Shft" suggests "VK_LShift"), do not panic on invalid input | Success: All 100+ KeyCode variants parseable by name, invalid names rejected with helpful suggestions, VK_ prefix enforced, no unwrap() or expect() in code_
 
-- [ ] 2. Add modifier/lock ID validation
+- [x] 2. Add modifier/lock ID validation
   - File: `keyrx_compiler/src/parser/validators.rs` (continue)
   - Implement `parse_modifier_id()` - extract and validate MD_XX (hex 00-FE)
   - Implement `parse_lock_id()` - extract and validate LK_XX (hex 00-FE)
@@ -22,7 +22,7 @@
   - _Requirements: 2.2, 2.3, 2.4_
   - _Prompt: Role: Rust Developer specializing in validation logic and hex parsing | Task: Implement parse_modifier_id() and parse_lock_id() functions that extract hex IDs from "MD_XX" and "LK_XX" strings, validate range 00-FE (0-254), and reject physical modifier names like "MD_LShift", following requirements 2.2, 2.3, and 2.4 | Restrictions: Must parse hex with u8::from_str_radix, reject values >0xFE, detect PHYSICAL_MODIFIERS constant list ["LShift", "RShift", "LCtrl", "RCtrl", "LAlt", "RAlt", "LWin", "RWin"] and return PhysicalModifierInMD error, do not use unwrap() | Success: "MD_00" through "MD_FE" accepted (0-254), "MD_FF" rejected with out-of-range error, "MD_LShift" rejected with physical name error, all error messages actionable_
 
-- [ ] 3. Add condition string parsing
+- [x] 3. Add condition string parsing
   - File: `keyrx_compiler/src/parser/validators.rs` (continue)
   - Implement `parse_condition_string()` - convert "MD_00" or "LK_01" to Condition enum
   - Implement `parse_condition_item()` - convert to ConditionItem enum
