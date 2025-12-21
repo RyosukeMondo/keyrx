@@ -3,7 +3,6 @@
 //! Provides a unified wrapper that combines panic catching, error handling,
 //! and JSON serialization for FFI functions.
 
-use crate::json::serialize_to_c_string;
 use crate::panic::handle_panic;
 use serde::Serialize;
 use std::ffi::{c_char, CString};
@@ -58,22 +57,31 @@ where
 
     match result {
         Ok(Ok(value)) => {
-            // Success path: serialize to JSON
-            match serialize_to_c_string(&value) {
-                Ok(ptr) => ptr,
+            // Success path: serialize to JSON with ok: envelope
+            match serde_json::to_string(&value) {
+                Ok(json) => {
+                    let enveloped = format!("ok:{}", json);
+                    match CString::new(enveloped) {
+                        Ok(cs) => cs.into_raw(),
+                        Err(_) => {
+                            set_error("JSON contains null byte");
+                            std::ptr::null()
+                        }
+                    }
+                }
                 Err(e) => {
-                    set_error(&e);
+                    set_error(&format!("Serialization failed: {}", e));
                     std::ptr::null()
                 }
             }
         }
         Ok(Err(e)) => {
-            // Implementation returned an error
+            // Implementation returned an error - set error pointer and return null
             set_error(&e);
             std::ptr::null()
         }
         Err(panic_msg) => {
-            // Panic was caught
+            // Panic was caught - set error pointer and return null
             set_error(&panic_msg);
             std::ptr::null()
         }
@@ -108,8 +116,9 @@ where
 
     match result {
         Ok(Ok(value)) => {
-            // Success path: convert String directly to CString
-            match CString::new(value) {
+            // Success path: wrap string with ok: envelope
+            let enveloped = format!("ok:{}", value);
+            match CString::new(enveloped) {
                 Ok(cs) => cs.into_raw(),
                 Err(_) => {
                     set_error("String contains null byte");
@@ -118,12 +127,12 @@ where
             }
         }
         Ok(Err(e)) => {
-            // Implementation returned an error
+            // Implementation returned an error - set error pointer and return null
             set_error(&e);
             std::ptr::null()
         }
         Err(panic_msg) => {
-            // Panic was caught
+            // Panic was caught - set error pointer and return null
             set_error(&panic_msg);
             std::ptr::null()
         }

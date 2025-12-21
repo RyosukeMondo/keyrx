@@ -166,10 +166,18 @@ unsafe fn get_result_string(ptr: *const c_char) -> Option<String> {
         return None;
     }
     let c_str = CStr::from_ptr(ptr);
-    let result = c_str.to_str().ok()?.to_string();
+    let enveloped = c_str.to_str().ok()?.to_string();
     // Free the memory allocated by serialize_to_c_string
     drop(CString::from_raw(ptr as *mut c_char));
-    Some(result)
+
+    // Strip ok: or error: envelope
+    if let Some(json) = enveloped.strip_prefix("ok:") {
+        Some(json.to_string())
+    } else if let Some(json) = enveloped.strip_prefix("error:") {
+        None // Error case - return None
+    } else {
+        Some(enveloped) // Fallback for non-enveloped (shouldn't happen)
+    }
 }
 
 /// Get error string and free memory.
