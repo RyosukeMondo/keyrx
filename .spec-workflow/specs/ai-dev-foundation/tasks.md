@@ -307,7 +307,7 @@
 
 ## Phase 8: Testing and Validation
 
-- [ ] 8. Write script unit tests with BATS
+- [x] 8. Write script unit tests with BATS
   - File: scripts/tests/test_build.bats, scripts/tests/test_verify.bats
   - Install BATS testing framework (document in setup target)
   - Create scripts/tests/ directory

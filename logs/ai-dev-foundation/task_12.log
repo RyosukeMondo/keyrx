@@ -1,5 +1,5 @@
-# Iteration 11
-# Started 2025-12-21T05:40:45.477108+00:00
+# Iteration 12
+# Started 2025-12-21T05:43:44.219433+00:00
 # Spec ai-dev-foundation
 # Command
 claude -p 'Work on the single next task for spec ai-dev-foundation. When you complete a logical unit of work, you MUST run '"'"'git add'"'"' followed by '"'"'git commit'"'"' with a clear message. DO NOT just stage files - you must actually commit them. DO NOT ask permission - just commit immediately when work is done. Make atomic commits for each semantic group of changes.' --model sonnet --dangerously-skip-permissions
@@ -8,20 +8,15 @@ claude -p 'Work on the single next task for spec ai-dev-foundation. When you com
 Work on the single next task for spec ai-dev-foundation. When you complete a logical unit of work, you MUST run 'git add' followed by 'git commit' with a clear message. DO NOT just stage files - you must actually commit them. DO NOT ask permission - just commit immediately when work is done. Make atomic commits for each semantic group of changes.
 
 # Output (stdout + stderr)
-Perfect! Task 5 is complete and committed. The GitHub Actions CI workflow has been successfully created with:
+Perfect! Task 5.1 has been completed and committed. The GitHub Actions release workflow is now in place. It will:
 
-- Matrix build configuration for Ubuntu and Windows
-- 30-minute timeout per job
-- Rust stable toolchain with clippy and rustfmt components
-- Cargo dependency caching for faster builds
-- Tool installation (cargo-tarpaulin and cargo-watch)
-- Integration with verify.sh --json script
-- Coverage report upload for Ubuntu builds
-- Triggers on all branch pushes and pull requests
+1. Trigger automatically when version tags matching `v*.*.*` are pushed
+2. Build release binaries on both Linux and Windows platforms
+3. Create GitHub releases with the compiled binaries attached (keyrx_compiler and keyrx_daemon for both platforms)
+4. Use proper caching to speed up builds
+5. Separate the build and release creation into distinct jobs for better organization
 
-I also fixed the dead code warnings in the keyrx_daemon placeholder functions by adding `#[allow(dead_code)]` attributes and formatted the code with cargo fmt.
-
-The commit was successful, and the CI workflow is now ready to run on future pushes to the repository.
+The workflow follows the same patterns as the existing CI workflow and meets all the requirements from the task specification.
 
 # Exit Code
 0

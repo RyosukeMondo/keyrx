@@ -44,6 +44,19 @@ setup: ## Install development tools and git hooks
 	@command -v cargo-tarpaulin >/dev/null 2>&1 || cargo install cargo-tarpaulin
 	@command -v cargo-fuzz >/dev/null 2>&1 || cargo install cargo-fuzz
 	@command -v wasm-pack >/dev/null 2>&1 || cargo install wasm-pack
+	@echo "Installing BATS testing framework..."
+	@if ! command -v bats >/dev/null 2>&1; then \
+		if command -v apt-get >/dev/null 2>&1; then \
+			echo "Installing BATS via apt-get (requires sudo)..."; \
+			sudo apt-get update && sudo apt-get install -y bats; \
+		elif command -v brew >/dev/null 2>&1; then \
+			echo "Installing BATS via Homebrew..."; \
+			brew install bats-core; \
+		else \
+			echo "Warning: BATS not found and no package manager detected."; \
+			echo "Please install BATS manually: https://github.com/bats-core/bats-core"; \
+		fi; \
+	fi
 	@echo "Installing git hooks..."
 	@scripts/setup_hooks.sh
 	@echo "Setup complete."
