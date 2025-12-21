@@ -309,7 +309,7 @@
   - _Requirements: 7.3_
   - _Prompt: Role: QA Engineer with expertise in integration testing and CLI testing | Task: Write comprehensive integration tests for CLI in keyrx_compiler/tests/integration/cli_tests.rs following requirement 7.3 | Restrictions: Must test all subcommands end-to-end, use temporary files, verify output formats, test error scenarios including prefix validation | Success: All integration tests pass, all CLI workflows verified, error handling tested_
 
-- [ ] 21. Write property-based tests for deterministic serialization
+- [x] 21. Write property-based tests for deterministic serialization
   - File: keyrx_compiler/tests/property_tests.rs
   - Use proptest or quickcheck crate
   - Generate arbitrary ConfigRoot instances (with all 6 KeyMapping variants)
