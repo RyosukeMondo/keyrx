@@ -1,16 +1,17 @@
 #[cfg(feature = "web")]
 pub mod api;
 #[cfg(feature = "web")]
-pub mod ws;
-#[cfg(feature = "web")]
 pub mod static_files;
+#[cfg(feature = "web")]
+pub mod ws;
 
 #[cfg(feature = "web")]
-use axum::{Router, routing::get};
+use axum::{routing::get, Router};
 #[cfg(feature = "web")]
 use std::net::SocketAddr;
 
 #[cfg(feature = "web")]
+#[allow(dead_code)]
 pub async fn create_app() -> Router {
     Router::new()
         .route("/", get(|| async { "KeyRx Daemon Web Server" }))
@@ -20,6 +21,7 @@ pub async fn create_app() -> Router {
 }
 
 #[cfg(feature = "web")]
+#[allow(dead_code)]
 pub async fn serve(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_app().await;
     let listener = tokio::net::TcpListener::bind(addr).await?;

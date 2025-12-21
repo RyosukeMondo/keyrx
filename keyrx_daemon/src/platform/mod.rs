@@ -10,6 +10,7 @@ pub use linux::LinuxPlatform;
 #[cfg(feature = "windows")]
 pub use windows::WindowsPlatform;
 
+#[allow(dead_code)]
 pub enum Platform {
     #[cfg(feature = "linux")]
     Linux(LinuxPlatform),
@@ -20,6 +21,7 @@ pub enum Platform {
 }
 
 impl Platform {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         #[cfg(feature = "linux")]
         {
@@ -35,6 +37,7 @@ impl Platform {
         }
     }
 
+    #[allow(dead_code)]
     pub fn init(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             #[cfg(feature = "linux")]
@@ -46,6 +49,7 @@ impl Platform {
         }
     }
 
+    #[allow(dead_code)]
     pub fn process_events(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             #[cfg(feature = "linux")]
