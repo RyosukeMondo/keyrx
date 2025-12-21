@@ -1,6 +1,8 @@
 /// FFI implementation of KeymapService.
 library;
 
+import 'dart:convert';
+
 import '../ffi/bridge.dart';
 import '../ffi/generated_bindings.dart';
 import '../models/keymap.dart';
@@ -13,21 +15,25 @@ class KeymapServiceFFI implements KeymapService {
   final KeyrxBridge _bridge;
 
   @override
-  Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async =>
-      _guard('list keymaps', (bindings) {
-        try {
-          final keymaps = bindings.listKeymaps();
-          return ConfigOperationResult.success(keymaps);
-        } catch (e) {
-          return ConfigOperationResult.error('list keymaps failed: $e');
-        }
-      });
+  Future<ConfigOperationResult<List<Keymap>>> listKeymaps() async => _guard('list keymaps', (
+    bindings,
+  ) {
+    try {
+      final keymapsJson = bindings.listKeymaps();
+      final List<dynamic> list = jsonDecode(keymapsJson);
+      final keymaps = list.map((item) => Keymap.fromJson(item as Map<String, dynamic>)).toList();
+      return ConfigOperationResult.success(keymaps);
+    } catch (e) {
+      return ConfigOperationResult.error('list keymaps failed: $e');
+    }
+  });
 
   @override
   Future<ConfigOperationResult<Keymap>> saveKeymap(Keymap keymap) async =>
       _guard('save keymap', (bindings) {
         try {
-          final saved = bindings.saveKeymap(keymap);
+          final savedJson = bindings.saveKeymap(keymap);
+          final saved = Keymap.fromJson(jsonDecode(savedJson) as Map<String, dynamic>);
           return ConfigOperationResult.success(saved);
         } catch (e) {
           return ConfigOperationResult.error('save keymap failed: $e');
@@ -51,16 +57,12 @@ class KeymapServiceFFI implements KeymapService {
   ) async {
     final loadFailure = _bridge.loadFailure;
     if (loadFailure != null) {
-      return ConfigOperationResult.error(
-        'Engine unavailable ($operation): $loadFailure',
-      );
+      return ConfigOperationResult.error('Engine unavailable ($operation): $loadFailure');
     }
 
     final bindings = _bridge.configBindings;
     if (bindings == null) {
-      return ConfigOperationResult.error(
-        'Config bindings unavailable ($operation)',
-      );
+      return ConfigOperationResult.error('Config bindings unavailable ($operation)');
     }
 
     return action(bindings);

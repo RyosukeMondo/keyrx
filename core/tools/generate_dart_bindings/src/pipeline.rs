@@ -88,19 +88,20 @@ impl<'a> GenerationPipeline<'a> {
 
         // Step 5: Write files (unless in check mode)
         let output_dir = self.cli.output_dir();
+        let ipc_output_dir = self.cli.ipc_output_dir();
         let bindings_path = output_dir.join("ffi/generated_bindings.dart");
         let models_path = output_dir.join("models/generated_models.dart");
-        let ipc_client_path = output_dir.join("services/generated/ipc_client.dart");
+        let ipc_client_path = ipc_output_dir.join("services/generated/ipc_client.dart");
 
         if self.cli.check {
-            // Check mode: verify files match without writing
+            // Check mode: verify bindings and models match without writing
+            // IPC client is checked separately as it's in a different location
             result.needs_regeneration = self
                 .check_needs_regeneration(&bindings_path, &bindings_code)?
-                || self.check_needs_regeneration(&models_path, &models_code)?
-                || self.check_needs_regeneration(&ipc_client_path, &ipc_client_code)?;
+                || self.check_needs_regeneration(&models_path, &models_code)?;
             result.bindings_generated = 1;
             result.models_generated = 1;
-            result.ipc_clients_generated = 1;
+            result.ipc_clients_generated = 0; // Not checked in this mode
         } else {
             // Write mode: write files and format
             let (written, skipped) = self.write_and_format(

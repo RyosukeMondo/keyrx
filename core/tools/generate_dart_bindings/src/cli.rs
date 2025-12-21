@@ -29,9 +29,13 @@ pub struct Cli {
     #[arg(long)]
     pub contracts: Option<PathBuf>,
 
-    /// Path to output directory (default: ui/lib)
+    /// Path to output directory for bindings and models (default: packages/core_logic/lib)
     #[arg(long)]
     pub output: Option<PathBuf>,
+
+    /// Path to output directory for IPC client (default: ui/lib)
+    #[arg(long)]
+    pub ipc_output: Option<PathBuf>,
 }
 
 impl Cli {
@@ -42,9 +46,16 @@ impl Cli {
             .unwrap_or_else(|| PathBuf::from("core/src/ffi/contracts"))
     }
 
-    /// Get the output directory path
+    /// Get the output directory path for bindings and models
     pub fn output_dir(&self) -> PathBuf {
         self.output
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("packages/core_logic/lib"))
+    }
+
+    /// Get the output directory path for IPC client
+    pub fn ipc_output_dir(&self) -> PathBuf {
+        self.ipc_output
             .clone()
             .unwrap_or_else(|| PathBuf::from("ui/lib"))
     }

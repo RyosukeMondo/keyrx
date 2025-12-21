@@ -194,9 +194,7 @@ class UIObservabilityServiceImpl implements UIObservabilityService {
       _coreObservabilityService.setLogEnabled(enabled: enabled);
 
   @override
-  Future<MetricsSnapshot?> getMetrics() async {
-    return _metricsService.getSnapshot();
-  }
+  Future<MetricsSnapshot?> getMetrics() => _metricsService.getSnapshot();
 
   @override
   Future<void> startMetricsUpdates() async {

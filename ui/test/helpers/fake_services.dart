@@ -5,6 +5,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:core_logic/core_logic.dart';
@@ -537,31 +538,31 @@ class FakeRuntimeService implements RuntimeService {
 /// Fake ConfigBindings for testing.
 class FakeConfigBindings implements ConfigBindings {
   @override
-  List<VirtualLayout> listVirtualLayouts() => const [];
+  String listVirtualLayouts() => 'ok:[]';
 
   @override
-  VirtualLayout saveVirtualLayout(VirtualLayout layout) => layout;
+  String saveVirtualLayout(VirtualLayout layout) => 'ok:${jsonEncode(layout)}';
 
   @override
-  void deleteVirtualLayout(String id) {}
+  String deleteVirtualLayout(String id) => 'ok:null';
 
   @override
-  List<Keymap> listKeymaps() => const [];
+  String listKeymaps() => 'ok:[]';
 
   @override
-  Keymap saveKeymap(Keymap keymap) => keymap;
+  String saveKeymap(Keymap keymap) => 'ok:${jsonEncode(keymap)}';
 
   @override
-  void deleteKeymap(String id) {}
+  String deleteKeymap(String id) => 'ok:null';
 
   @override
-  List<HardwareProfile> listHardwareProfiles() => const [];
+  String listHardwareProfiles() => 'ok:[]';
 
   @override
-  HardwareProfile saveHardwareProfile(HardwareProfile profile) => profile;
+  String saveHardwareProfile(HardwareProfile profile) => 'ok:${jsonEncode(profile)}';
 
   @override
-  void deleteHardwareProfile(String id) {}
+  String deleteHardwareProfile(String id) => 'ok:null';
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -612,6 +613,5 @@ class FakeBenchmarkService extends Fake
     String? scriptPath,
   }) async => ui_benchmark.BenchmarkServiceResult.error('Not available in test');
 
-  @override
   Future<void> dispose() async {}
 }

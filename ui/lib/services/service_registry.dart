@@ -666,7 +666,6 @@ class _WebStubBenchmarkService implements ui_benchmark.BenchmarkService {
         'Benchmark not available on web platform',
       );
 
-  @override
   Future<void> dispose() async {}
 }
 

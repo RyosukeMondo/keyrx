@@ -54,9 +54,12 @@ pub fn generate_models_from_types(
     contract: &FfiContract,
     enum_names: &HashSet<String>,
 ) -> Result<Vec<GeneratedModel>, ModelGenError> {
-    contract
-        .types
-        .iter()
+    // Sort types for deterministic output
+    let mut sorted_types: Vec<_> = contract.types.iter().collect();
+    sorted_types.sort_by_key(|(k, _)| *k);
+
+    sorted_types
+        .into_iter()
         .filter_map(|(name, type_def)| {
             if type_def.is_object() {
                 Some(generate_model_class(name, type_def, enum_names))

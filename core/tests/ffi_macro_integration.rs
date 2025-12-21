@@ -173,7 +173,7 @@ unsafe fn get_result_string(ptr: *const c_char) -> Option<String> {
     // Strip ok: or error: envelope
     if let Some(json) = enveloped.strip_prefix("ok:") {
         Some(json.to_string())
-    } else if let Some(json) = enveloped.strip_prefix("error:") {
+    } else if enveloped.strip_prefix("error:").is_some() {
         None // Error case - return None
     } else {
         Some(enveloped) // Fallback for non-enveloped (shouldn't happen)

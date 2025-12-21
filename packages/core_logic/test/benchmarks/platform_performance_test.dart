@@ -41,10 +41,9 @@ class FFIListProfilesBenchmark extends AsyncBenchmarkBase {
 
     when(() => bridge.loadFailure).thenReturn(null);
     when(() => bridge.configBindings).thenReturn(bindings);
-    when(() => bindings.listHardwareProfiles()).thenReturn([
-      const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'),
-      const HardwareProfile(id: 'test-2', virtualLayoutId: 'layout-2'),
-    ]);
+    when(() => bindings.listHardwareProfiles()).thenReturn(
+      'ok:[{"id":"test-1","virtual_layout_id":"layout-1"},{"id":"test-2","virtual_layout_id":"layout-2"}]',
+    );
 
     service = HardwareServiceFFI(bridge: bridge);
   }
@@ -128,7 +127,7 @@ class FFISaveProfileBenchmark extends AsyncBenchmarkBase {
 
     when(() => bridge.loadFailure).thenReturn(null);
     when(() => bridge.configBindings).thenReturn(bindings);
-    when(() => bindings.saveHardwareProfile(any())).thenReturn(profile);
+    when(() => bindings.saveHardwareProfile(any())).thenReturn('ok:{"id":"test-1","virtual_layout_id":"layout-1"}');
 
     service = HardwareServiceFFI(bridge: bridge);
   }
@@ -204,7 +203,7 @@ class FFIDeleteProfileBenchmark extends AsyncBenchmarkBase {
 
     when(() => bridge.loadFailure).thenReturn(null);
     when(() => bridge.configBindings).thenReturn(bindings);
-    when(() => bindings.deleteHardwareProfile(any())).thenReturn(null);
+    when(() => bindings.deleteHardwareProfile(any())).thenReturn('ok:null');
 
     service = HardwareServiceFFI(bridge: bridge);
   }
@@ -266,7 +265,7 @@ class FFIEventLatencyBenchmark extends AsyncBenchmarkBase {
     when(() => bridge.configBindings).thenReturn(bindings);
     when(
       () => bindings.saveHardwareProfile(any()),
-    ).thenReturn(const HardwareProfile(id: 'test-1', virtualLayoutId: 'layout-1'));
+    ).thenReturn('ok:{"id":"test-1","virtual_layout_id":"layout-1"}');
 
     service = HardwareServiceFFI(bridge: bridge);
     controller = StreamController<void>.broadcast();

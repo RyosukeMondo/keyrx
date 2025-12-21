@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import '../ffi/bridge.dart';
 import '../ffi/generated_bindings.dart';
@@ -13,8 +14,7 @@ class HardwareServiceFFI implements HardwareService {
   HardwareServiceFFI({required KeyrxBridge bridge}) : _bridge = bridge;
 
   final KeyrxBridge _bridge;
-  final StreamController<void> _changesController =
-      StreamController.broadcast();
+  final StreamController<void> _changesController = StreamController.broadcast();
 
   @override
   Stream<void> get changes => _changesController.stream;
@@ -23,24 +23,23 @@ class HardwareServiceFFI implements HardwareService {
   Future<ConfigOperationResult<List<HardwareProfile>>> listProfiles() async =>
       _guard('list hardware profiles', (bindings) {
         try {
-          final profiles = bindings.listHardwareProfiles();
+          final profilesJson = bindings.listHardwareProfiles();
+          final List<dynamic> list = jsonDecode(profilesJson);
+          final profiles = list
+              .map((item) => HardwareProfile.fromJson(item as Map<String, dynamic>))
+              .toList();
           return ConfigOperationResult.success(profiles);
         } catch (e) {
-          return ConfigOperationResult.error(
-            'list hardware profiles failed: $e',
-          );
+          return ConfigOperationResult.error('list hardware profiles failed: $e');
         }
       });
 
   @override
-  Future<ConfigOperationResult<HardwareProfile>> saveProfile(
-    HardwareProfile profile,
-  ) async {
-    final result = await _guard<HardwareProfile>('save hardware profile', (
-      bindings,
-    ) {
+  Future<ConfigOperationResult<HardwareProfile>> saveProfile(HardwareProfile profile) async {
+    final result = await _guard<HardwareProfile>('save hardware profile', (bindings) {
       try {
-        final saved = bindings.saveHardwareProfile(profile);
+        final savedJson = bindings.saveHardwareProfile(profile);
+        final saved = HardwareProfile.fromJson(jsonDecode(savedJson) as Map<String, dynamic>);
         return ConfigOperationResult.success(saved);
       } catch (e) {
         return ConfigOperationResult.error('save hardware profile failed: $e');
@@ -60,9 +59,7 @@ class HardwareServiceFFI implements HardwareService {
         bindings.deleteHardwareProfile(id);
         return ConfigOperationResult.success();
       } catch (e) {
-        return ConfigOperationResult.error(
-          'delete hardware profile failed: $e',
-        );
+        return ConfigOperationResult.error('delete hardware profile failed: $e');
       }
     });
 
@@ -78,16 +75,12 @@ class HardwareServiceFFI implements HardwareService {
   ) async {
     final loadFailure = _bridge.loadFailure;
     if (loadFailure != null) {
-      return ConfigOperationResult.error(
-        'Engine unavailable ($operation): $loadFailure',
-      );
+      return ConfigOperationResult.error('Engine unavailable ($operation): $loadFailure');
     }
 
     final bindings = _bridge.configBindings;
     if (bindings == null) {
-      return ConfigOperationResult.error(
-        'Config bindings unavailable ($operation)',
-      );
+      return ConfigOperationResult.error('Config bindings unavailable ($operation)');
     }
 
     return action(bindings);

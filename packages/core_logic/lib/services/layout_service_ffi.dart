@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import '../ffi/bridge.dart';
 import '../ffi/generated_bindings.dart';
@@ -22,7 +23,11 @@ class LayoutServiceFFI implements LayoutService {
   Future<ConfigOperationResult<List<VirtualLayout>>> listLayouts() async =>
       _guard('list layouts', (bindings) {
         try {
-          final layouts = bindings.listVirtualLayouts();
+          final layoutsJson = bindings.listVirtualLayouts();
+          final List<dynamic> list = jsonDecode(layoutsJson);
+          final layouts = list
+              .map((item) => VirtualLayout.fromJson(item as Map<String, dynamic>))
+              .toList();
           return ConfigOperationResult.success(layouts);
         } catch (e) {
           return ConfigOperationResult.error('list layouts failed: $e');
@@ -30,12 +35,11 @@ class LayoutServiceFFI implements LayoutService {
       });
 
   @override
-  Future<ConfigOperationResult<VirtualLayout>> saveLayout(
-    VirtualLayout layout,
-  ) async {
+  Future<ConfigOperationResult<VirtualLayout>> saveLayout(VirtualLayout layout) async {
     final result = await _guard<VirtualLayout>('save layout', (bindings) {
       try {
-        final saved = bindings.saveVirtualLayout(layout);
+        final savedJson = bindings.saveVirtualLayout(layout);
+        final saved = VirtualLayout.fromJson(jsonDecode(savedJson) as Map<String, dynamic>);
         return ConfigOperationResult.success(saved);
       } catch (e) {
         return ConfigOperationResult.error('save layout failed: $e');
@@ -71,16 +75,12 @@ class LayoutServiceFFI implements LayoutService {
   ) async {
     final loadFailure = _bridge.loadFailure;
     if (loadFailure != null) {
-      return ConfigOperationResult.error(
-        'Engine unavailable ($operation): $loadFailure',
-      );
+      return ConfigOperationResult.error('Engine unavailable ($operation): $loadFailure');
     }
 
     final bindings = _bridge.configBindings;
     if (bindings == null) {
-      return ConfigOperationResult.error(
-        'Config bindings unavailable ($operation)',
-      );
+      return ConfigOperationResult.error('Config bindings unavailable ($operation)');
     }
 
     return action(bindings);
