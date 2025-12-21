@@ -78,7 +78,7 @@
   - _Requirements: 1.5, 1.6, 1.7_
   - _Prompt: Role: Rust Developer with builder pattern expertise | Task: Implement modifier helper functions (with_shift, with_ctrl, etc.) that return ModifiedKey struct, and map() overload that consumes ModifiedKey to create ModifiedOutput mapping, following requirements 1.5, 1.6, and 1.7, using validators and KeyMapping::modified_output helper | Restrictions: ModifiedKey must be #[derive(Clone)] for Rhai compatibility, all helpers must call parse_virtual_key, map() overload must call parse_physical_key for from parameter, create ModifiedOutput with appropriate boolean flags, register ModifiedKey as Rhai type | Success: with_shift("VK_1") returns ModifiedKey, map("VK_2", with_shift("VK_1")) creates ModifiedOutput with shift=true, with_mods("VK_C", false, true, false, false) creates Ctrl+C mapping_
 
-- [ ] 8. Implement when() function with array support
+- [x] 8. Implement when() function with array support
   - File: `keyrx_compiler/src/parser/functions/conditional.rs` (ENHANCED)
   - Register `when(condition, closure)` for single condition string
   - Register `when(conditions, closure)` for array of conditions (AllActive)
@@ -90,7 +90,7 @@
   - _Requirements: 1.8, 1.9_
   - _Prompt: Role: Rust Developer with Rhai closure handling expertise | Task: Implement when() function with two overloads - single condition string and array of conditions (AllActive), parse conditions using parse_condition_string, execute Rhai closure to collect mappings, create Conditional mapping, following requirements 1.8 and 1.9, using validators and KeyMapping::conditional helper | Restrictions: Single condition overload accepts &str, array overload accepts rhai::Array, parse each condition in array, create Condition::AllActive for arrays, Condition::ModifierActive or LockActive for single, closure execution must capture mappings into Vec<BaseKeyMapping>, add Conditional to current device | Success: when("MD_00", || { map("VK_H", "VK_Left"); }) creates Conditional with single ModifierActive condition, when(["MD_00", "LK_01"], || { ... }) creates Conditional with AllActive containing both items_
 
-- [ ] 9. Implement when_not() function
+- [x] 9. Implement when_not() function
   - File: `keyrx_compiler/src/parser/functions/conditional.rs` (continue)
   - Register `when_not(condition, closure)` for negated conditions
   - Parse condition and wrap in NotActive

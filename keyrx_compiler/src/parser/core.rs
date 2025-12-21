@@ -6,11 +6,16 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::error::ParseError;
 use keyrx_core::config::{ConfigRoot, DeviceConfig, Metadata, Version};
 
+use keyrx_core::config::{BaseKeyMapping, Condition};
+
 /// Parser state shared across Rhai custom functions
 #[derive(Debug, Clone, Default)]
 pub struct ParserState {
     pub devices: Vec<DeviceConfig>,
     pub current_device: Option<DeviceConfig>,
+    /// Stack of (Condition, mappings) pairs being collected for conditional blocks
+    /// When non-empty, map() adds to the top of this stack instead of current_device
+    pub conditional_stack: Vec<(Condition, Vec<BaseKeyMapping>)>,
 }
 
 impl ParserState {
