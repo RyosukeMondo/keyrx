@@ -147,7 +147,7 @@
   - _Requirements: 7.2_
   - _Prompt: Role: Rust Test Engineer with expertise in validation testing | Task: Write comprehensive unit tests for prefix validation functions following requirement 7.2 | Restrictions: Must test all valid and invalid cases, verify error messages, use #[cfg(test)] module | Success: All tests pass, coverage >90%, all validation edge cases tested_
 
-- [ ] 11. Implement import resolver module
+- [x] 11. Implement import resolver module
   - File: keyrx_compiler/src/import_resolver.rs
   - Create ImportResolver struct with visited_files (HashSet<PathBuf>) field
   - Implement resolve_imports(path: &Path) -> Result<Vec<PathBuf>, ParseError>
@@ -159,7 +159,7 @@
   - _Requirements: 4.1, 4.2, 4.3_
   - _Prompt: Role: Rust Developer with expertise in file I/O and graph algorithms | Task: Implement import resolver in keyrx_compiler/src/import_resolver.rs following requirements 4.1-4.3 | Restrictions: Must detect circular imports, resolve relative paths correctly, return ParseError on failures, use HashSet for cycle detection | Success: Resolver handles recursive imports, detects cycles, resolves paths correctly, all error cases covered_
 
-- [ ] 12. Write unit tests for import resolver
+- [x] 12. Write unit tests for import resolver
   - File: keyrx_compiler/src/import_resolver.rs (add #[cfg(test)] mod tests)
   - Test simple import resolution
   - Test recursive imports (3+ levels deep)
