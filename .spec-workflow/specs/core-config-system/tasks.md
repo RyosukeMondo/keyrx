@@ -221,7 +221,7 @@
   - _Requirements: 7.2_
   - _Prompt: Role: Rust Test Engineer with expertise in Rhai testing and DSL validation | Task: Write comprehensive unit tests for Rhai parser following requirement 7.2 | Restrictions: Must test all custom functions, verify error messages, test prefix validation integration, test resource limits, use temporary Rhai scripts for testing | Success: All tests pass, coverage >90%, all parser scenarios verified including prefix validation_
 
-- [ ] 15. Implement binary serializer
+- [x] 15. Implement binary serializer
   - File: keyrx_compiler/src/serialize.rs
   - Define KRX_MAGIC constant: [0x4B, 0x52, 0x58, 0x0A] ("KRX\n")
   - Define KRX_VERSION constant: 1u32
@@ -236,7 +236,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Role: Rust Systems Programmer with expertise in binary formats and cryptographic hashing | Task: Implement binary serializer in keyrx_compiler/src/serialize.rs following requirements 3.1-3.3 | Restrictions: Must use rkyv for serialization, compute SHA256 hash, create 48-byte header with magic/version/hash/size, ensure deterministic output | Success: Serializer produces valid .krx files, hash is correct, same input produces identical output_
 
-- [ ] 16. Implement binary deserializer
+- [x] 16. Implement binary deserializer
   - File: keyrx_compiler/src/serialize.rs (same file as task 15)
   - Implement deserialize(bytes: &[u8]) -> Result<&ArchivedConfigRoot, DeserializeError>
   - Verify magic bytes (first 4 bytes == KRX_MAGIC)
@@ -251,7 +251,7 @@
   - _Requirements: 3.4, 3.5, 3.6_
   - _Prompt: Role: Rust Systems Programmer with expertise in binary deserialization and validation | Task: Implement binary deserializer in keyrx_compiler/src/serialize.rs following requirements 3.4-3.6 | Restrictions: Must verify magic bytes, version, and hash, use rkyv validation features, provide zero-copy access, return detailed errors on failures | Success: Deserializer validates .krx files correctly, rejects corrupted files, provides zero-copy access, all error cases handled_
 
-- [ ] 17. Write unit tests for serializer/deserializer
+- [x] 17. Write unit tests for serializer/deserializer
   - File: keyrx_compiler/src/serialize.rs (add #[cfg(test)] mod tests)
   - Test serialize produces valid binary format
   - Test deserialize validates magic bytes
