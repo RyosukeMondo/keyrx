@@ -45,7 +45,7 @@
 
 ## Phase 2: DSL Function Implementation (Core Functionality)
 
-- [ ] 5. Implement map() function with prefix dispatch
+- [x] 5. Implement map() function with prefix dispatch
   - File: `keyrx_compiler/src/parser/functions/map.rs` (ENHANCED)
   - Register `map(from, to)` function in Rhai engine
   - Detect output prefix (VK_/MD_/LK_) and create appropriate mapping
