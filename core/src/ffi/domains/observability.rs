@@ -531,6 +531,212 @@ fn metrics_get_thresholds(
     }
 }
 
+// ─── C-Style FFI Functions (Contract Implementations) ─────────────────────
+
+/// Get a metrics snapshot as a raw pointer.
+///
+/// The returned pointer must be freed with `keyrx_metrics_free_snapshot`.
+///
+/// # Returns
+/// Pointer to MetricsSnapshotFfi or null if bridge is unavailable.
+///
+/// # Safety
+/// The returned pointer must be freed with `keyrx_metrics_free_snapshot`.
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_snapshot() -> *mut MetricsSnapshotFfi {
+    if let Some(bridge) = get_metrics_bridge() {
+        let snapshot = bridge.snapshot();
+        Box::into_raw(Box::new(snapshot.into()))
+    } else {
+        std::ptr::null_mut()
+    }
+}
+
+/// Free a metrics snapshot pointer.
+///
+/// # Arguments
+/// * `snapshot` - Pointer to MetricsSnapshotFfi to free
+///
+/// # Safety
+/// The snapshot pointer must have been created by `keyrx_metrics_snapshot`.
+/// Do not call this function twice on the same pointer.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_metrics_free_snapshot(snapshot: *mut MetricsSnapshotFfi) {
+    if !snapshot.is_null() {
+        let _ = Box::from_raw(snapshot);
+    }
+}
+
+/// Get a metrics snapshot as a JSON string.
+///
+/// The returned string must be freed with `keyrx_free_string`.
+///
+/// # Returns
+/// Pointer to JSON string or null on error.
+///
+/// # Safety
+/// The returned pointer must be freed with `keyrx_free_string`.
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_snapshot_json() -> *mut c_char {
+    if let Some(bridge) = get_metrics_bridge() {
+        let snapshot = bridge.snapshot();
+        match serde_json::to_string(&snapshot) {
+            Ok(json) => match CString::new(json) {
+                Ok(c_string) => c_string.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            },
+            Err(_) => std::ptr::null_mut(),
+        }
+    } else {
+        std::ptr::null_mut()
+    }
+}
+
+/// Start background metrics updates.
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed (bridge unavailable)
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_start_updates() -> i32 {
+    if let Some(bridge) = get_metrics_bridge() {
+        bridge.start_updates();
+        tracing::debug!(
+            service = "keyrx",
+            event = "metrics_updates_started",
+            component = "ffi_observability",
+            "Metrics background updates started"
+        );
+        0
+    } else {
+        -1
+    }
+}
+
+/// Stop background metrics updates.
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed (bridge unavailable)
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_stop_updates() -> i32 {
+    if let Some(bridge) = get_metrics_bridge() {
+        bridge.stop_updates();
+        tracing::debug!(
+            service = "keyrx",
+            event = "metrics_updates_stopped",
+            component = "ffi_observability",
+            "Metrics background updates stopped"
+        );
+        0
+    } else {
+        -1
+    }
+}
+
+/// Trigger an immediate metrics callback.
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed (bridge unavailable)
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_trigger_callback() -> i32 {
+    if let Some(bridge) = get_metrics_bridge() {
+        bridge.trigger_callback();
+        tracing::trace!(
+            service = "keyrx",
+            event = "metrics_callback_triggered",
+            component = "ffi_observability",
+            "Metrics callback triggered manually"
+        );
+        0
+    } else {
+        -1
+    }
+}
+
+/// Set threshold values for violation detection.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Latency warning threshold in microseconds
+/// * `latency_error_micros` - Latency error threshold in microseconds
+/// * `memory_warn_bytes` - Memory warning threshold in bytes
+/// * `memory_error_bytes` - Memory error threshold in bytes
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed (bridge unavailable)
+#[no_mangle]
+pub extern "C" fn keyrx_metrics_set_thresholds(
+    latency_warn_micros: u64,
+    latency_error_micros: u64,
+    memory_warn_bytes: u64,
+    memory_error_bytes: u64,
+) -> i32 {
+    use crate::observability::metrics_bridge::MetricsThresholds;
+
+    if let Some(bridge) = get_metrics_bridge() {
+        let thresholds = MetricsThresholds {
+            latency_warn_micros,
+            latency_error_micros,
+            memory_warn_bytes,
+            memory_error_bytes,
+        };
+        bridge.set_thresholds(thresholds.clone());
+        tracing::debug!(
+            service = "keyrx",
+            event = "thresholds_set",
+            component = "ffi_observability",
+            ?thresholds,
+            "Metrics thresholds updated"
+        );
+        0
+    } else {
+        -1
+    }
+}
+
+/// Get current threshold values.
+///
+/// # Arguments
+/// * `latency_warn_micros` - Output pointer for latency warning threshold
+/// * `latency_error_micros` - Output pointer for latency error threshold
+/// * `memory_warn_bytes` - Output pointer for memory warning threshold
+/// * `memory_error_bytes` - Output pointer for memory error threshold
+///
+/// # Returns
+/// - 0: Success
+/// - -1: Failed (bridge unavailable or null pointer)
+///
+/// # Safety
+/// All output pointers must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn keyrx_metrics_get_thresholds(
+    latency_warn_micros: *mut u64,
+    latency_error_micros: *mut u64,
+    memory_warn_bytes: *mut u64,
+    memory_error_bytes: *mut u64,
+) -> i32 {
+    if latency_warn_micros.is_null()
+        || latency_error_micros.is_null()
+        || memory_warn_bytes.is_null()
+        || memory_error_bytes.is_null()
+    {
+        return -1;
+    }
+
+    if let Some(bridge) = get_metrics_bridge() {
+        let thresholds = bridge.get_thresholds();
+        *latency_warn_micros = thresholds.latency_warn_micros;
+        *latency_error_micros = thresholds.latency_error_micros;
+        *memory_warn_bytes = thresholds.memory_warn_bytes;
+        *memory_error_bytes = thresholds.memory_error_bytes;
+        0
+    } else {
+        -1
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -6,15 +6,32 @@
   "protocol_version": 1,
   "functions": [
     {
+      "name": "on_state",
+      "rust_name": "keyrx_on_state",
+      "description": "Register callback for engine state updates",
+      "parameters": [
+        {
+          "name": "callback",
+          "type": "Option<unsafe extern \"C\" fn(*const u8, usize)>",
+          "description": "Callback function pointer for state updates, or NULL to unregister",
+          "required": false
+        }
+      ],
+      "returns": {
+        "type": "void",
+        "description": "None"
+      },
+      "errors": [],
+      "events_emitted": []
+    },
+    {
       "name": "start_loop",
+      "rust_name": "keyrx_engine_start_loop",
       "description": "Start the event processing loop",
       "parameters": [],
       "returns": {
-        "type": "object",
-        "description": "Engine start result",
-        "properties": {
-          "running": { "type": "bool", "description": "Whether the loop is running" }
-        }
+        "type": "i32",
+        "description": "0 on success, -1 if already running"
       },
       "errors": [
         {
@@ -30,14 +47,12 @@
     },
     {
       "name": "stop_loop",
+      "rust_name": "keyrx_engine_stop_loop",
       "description": "Stop the event processing loop",
       "parameters": [],
       "returns": {
-        "type": "object",
-        "description": "Engine stop result",
-        "properties": {
-          "stopped": { "type": "bool", "description": "Whether the loop stopped cleanly" }
-        }
+        "type": "i32",
+        "description": "0 on success, -1 if not running"
       },
       "errors": [
         {

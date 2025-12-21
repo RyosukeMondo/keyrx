@@ -124,6 +124,24 @@
             "errors": []
         },
         {
+            "name": "free_string",
+            "rust_name": "keyrx_free_string",
+            "description": "Free a string returned by FFI functions.",
+            "parameters": [
+                {
+                    "name": "s",
+                    "type": "*mut c_char",
+                    "description": "String pointer to free",
+                    "required": true
+                }
+            ],
+            "returns": {
+                "type": "void",
+                "description": "None"
+            },
+            "errors": []
+        },
+        {
             "name": "free_event_payload",
             "rust_name": "keyrx_free_event_payload",
             "description": "Free event payload.",

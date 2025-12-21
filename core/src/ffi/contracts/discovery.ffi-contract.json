@@ -7,28 +7,19 @@
   "functions": [
     {
       "name": "start_discovery",
+      "rust_name": "keyrx_discovery_start_discovery",
       "description": "Start keyboard layout discovery process",
       "parameters": [
         {
-          "name": "device_id",
-          "type": "string",
-          "description": "Device identifier in format 'vendor_id:product_id'",
+          "name": "params_json",
+          "type": "*const c_char",
+          "description": "JSON parameters with device_id and rows",
           "required": true
-        },
-        {
-          "name": "rows",
-          "type": "u8",
-          "description": "Number of rows in the keyboard layout",
-          "required": true,
-          "constraints": {
-            "min": 1,
-            "max": 16
-          }
         }
       ],
       "returns": {
-        "type": "DiscoverySummary",
-        "description": "Summary of the started discovery session"
+        "type": "*mut c_char",
+        "description": "JSON DiscoverySummary (caller must free)"
       },
       "errors": [
         {
@@ -61,11 +52,12 @@
     },
     {
       "name": "stop_discovery",
+      "rust_name": "keyrx_discovery_stop_discovery",
       "description": "Stop the current discovery session",
       "parameters": [],
       "returns": {
-        "type": "DiscoverySummary",
-        "description": "Final summary of the stopped discovery session"
+        "type": "*mut c_char",
+        "description": "JSON DiscoverySummary (caller must free)"
       },
       "errors": [
         {
@@ -94,11 +86,12 @@
     },
     {
       "name": "get_discovery_status",
+      "rust_name": "keyrx_discovery_get_discovery_status",
       "description": "Get the current status of the discovery session",
       "parameters": [],
       "returns": {
-        "type": "DiscoverySummary",
-        "description": "Current discovery session status"
+        "type": "*mut c_char",
+        "description": "JSON DiscoverySummary (caller must free)"
       },
       "errors": [
         {

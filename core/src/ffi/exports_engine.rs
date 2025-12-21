@@ -7,7 +7,7 @@
 
 use crate::engine::layout::{LayoutCompositor, ModifierCoordinator};
 use crate::engine::state::{snapshot::StateSnapshot, EngineState, StateDelta};
-use crate::ffi::events::{global_event_registry, EventCallback, EventType};
+use crate::ffi::events::{global_event_registry, EventType};
 use crate::ffi::tracing::{correlation_id, new_correlation_id};
 use ffi_export::ffi_export;
 use serde::{Deserialize, Serialize};
@@ -115,7 +115,7 @@ pub fn publish_state_update_with_layouts(
 #[instrument(skip(callback), fields(correlation_id = %correlation_id(), has_callback = callback.is_some()))]
 #[ffi_export(domain = "engine", version = "1.0.0")]
 #[no_mangle]
-pub extern "C" fn keyrx_on_state(callback: Option<EventCallback>) {
+pub extern "C" fn keyrx_on_state(callback: Option<unsafe extern "C" fn(*const u8, usize)>) {
     new_correlation_id();
 
     if callback.is_some() {
