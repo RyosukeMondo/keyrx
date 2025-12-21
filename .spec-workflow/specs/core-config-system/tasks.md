@@ -375,7 +375,7 @@
   - _Requirements: All_
   - _Prompt: Role: Rust Developer with expertise in project structure and module organization | Task: Update keyrx_compiler/src/main.rs to declare all modules following structure.md conventions | Restrictions: Must declare all modules (parser, serialize, import_resolver, error), verify compilation, follow Rust module patterns | Success: All modules compile together, imports work correctly, no compilation errors_
 
-- [ ] 27. Add example Rhai configuration files
+- [x] 27. Add example Rhai configuration files
   - File: keyrx_compiler/examples/simple.rhai
   - Write simple example with device() and map() calls (VK_ outputs)
   - File: keyrx_compiler/examples/advanced.rhai
