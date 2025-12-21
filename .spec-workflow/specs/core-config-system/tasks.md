@@ -392,7 +392,7 @@
   - _Requirements: 2.1-2.7_
   - _Prompt: Role: Technical Writer with expertise in DSL documentation and examples | Task: Create comprehensive example Rhai configuration files in keyrx_compiler/examples/ demonstrating all DSL features | Restrictions: Must be valid Rhai syntax, show all DSL operations (map, tap_hold, when, when_not, with_shift, etc.), include helpful comments, demonstrate prefix system clearly | Success: Examples are clear and working, demonstrate all key DSL features, comments explain syntax and showcase advanced use cases_
 
-- [ ] 28. Add README.md for keyrx_compiler
+- [x] 28. Add README.md for keyrx_compiler
   - File: keyrx_compiler/README.md
   - Document CLI usage with examples
   - Show compile, verify, hash, parse commands
