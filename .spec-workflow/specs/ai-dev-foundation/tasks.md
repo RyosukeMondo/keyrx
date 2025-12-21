@@ -326,7 +326,7 @@
   - _Requirements: All script requirements (2.7-2.11)_
   - _Prompt: Role: Test Automation Engineer with expertise in Bash testing and BATS framework | Task: Write comprehensive unit tests for build.sh and verify.sh following design.md Testing Strategy, covering success and failure scenarios | Restrictions: Must test both success and failure cases, validate output format, check exit codes, use BATS best practices (setup/teardown), do not modify production code | Success: All tests pass, scripts are validated for correct behavior, failure scenarios are tested, JSON output is validated with jq_
 
-- [ ] 8.1 Create integration test for full workflow
+- [x] 8.1 Create integration test for full workflow
   - File: scripts/tests/integration_test.sh
   - Write end-to-end workflow test:
     1. Fresh workspace check (verify all crates exist)
