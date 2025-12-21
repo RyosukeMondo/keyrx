@@ -120,7 +120,7 @@
   - _Requirements: 2.7_
   - _Prompt: Role: Build Engineer with expertise in Rust toolchain and automation | Task: Implement build.sh following requirement 2.7 and design.md Component 2, supporting all specified flags and output modes | Restrictions: Must use cargo build, check tool availability before use, handle errors gracefully, output consistent markers | Success: Script builds workspace successfully, --release flag works, --watch mode runs continuously, --json outputs valid JSON, exit codes are correct (0 on success, 1 on failure)_
 
-- [ ] 3.1 Implement verify.sh script
+- [x] 3.1 Implement verify.sh script
   - File: scripts/verify.sh
   - Add shebang and source scripts/lib/common.sh
   - Implement argument parsing: --skip-coverage, --error, --json, --quiet, --log-file
