@@ -7,13 +7,25 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::fmt;
-use rkyv::{Archive, Deserialize, Serialize};
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+use serde::{Deserialize, Serialize};
 
 /// Version information for binary compatibility checking
 ///
 /// Uses semantic versioning with major.minor.patch format.
 /// All fields are u8 to keep the struct compact.
-#[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Debug,
+)]
 #[repr(C)]
 pub struct Version {
     pub major: u8,
@@ -42,7 +54,19 @@ impl fmt::Display for Version {
 ///
 /// All variants have explicit discriminants to prevent reordering issues.
 /// Keys are organized by category for maintainability.
-#[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+)]
 #[repr(u16)]
 pub enum KeyCode {
     // Letters: A-Z (0x00-0x19)
@@ -222,7 +246,9 @@ pub enum KeyCode {
 /// Basic condition check for a single modifier or lock
 ///
 /// Used in composite conditions.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 pub enum ConditionItem {
     /// Custom modifier is active (MD_XX)
     ModifierActive(u8),
@@ -235,7 +261,9 @@ pub enum ConditionItem {
 /// Supports single conditions, AND combinations, and negation.
 /// To avoid recursive Box issues with rkyv, NotActive contains a Vec
 /// of conditions which must ALL be false (implemented as NOT(AND(...))).
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 pub enum Condition {
     /// Single custom modifier active (MD_XX)
     ModifierActive(u8),
@@ -252,7 +280,9 @@ pub enum Condition {
 ///
 /// Used as the leaf mappings within conditional blocks.
 /// This prevents infinite recursion in rkyv serialization.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub enum BaseKeyMapping {
     /// Simple 1:1 key remapping
@@ -283,7 +313,9 @@ pub enum BaseKeyMapping {
 ///
 /// Defines all possible mapping types.
 /// Conditional mappings contain base mappings to limit recursion depth to 1 level.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub enum KeyMapping {
     /// Base mapping (non-conditional)
@@ -303,7 +335,9 @@ pub enum KeyMapping {
 /// - "*" matches all devices
 /// - "USB Keyboard" matches devices with that exact name
 /// - Platform-specific patterns may be supported by the daemon
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub struct DeviceIdentifier {
     /// Pattern string for matching device names/IDs
@@ -314,7 +348,9 @@ pub struct DeviceIdentifier {
 ///
 /// Contains all key mappings for a specific device or device pattern.
 /// Multiple devices can share the same configuration by using pattern matching.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub struct DeviceConfig {
     /// Device identifier pattern
@@ -327,7 +363,9 @@ pub struct DeviceConfig {
 ///
 /// Contains information about when and how the configuration was compiled.
 /// This is useful for debugging and verification purposes.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub struct Metadata {
     /// Unix timestamp (seconds since epoch) when the config was compiled
@@ -342,7 +380,9 @@ pub struct Metadata {
 ///
 /// This is the top-level structure that gets serialized to .krx binary format.
 /// Contains all device configurations and metadata.
-#[derive(Archive, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug,
+)]
 #[repr(C)]
 pub struct ConfigRoot {
     /// Binary format version

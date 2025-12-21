@@ -3,6 +3,9 @@
 //! This module handles resolving `import "path/to/file.rhai"` statements in Rhai scripts,
 //! including recursive imports and circular dependency detection.
 
+// Allow dead_code - import resolution will be used in task 24 for multi-file imports
+#![allow(dead_code)]
+
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
