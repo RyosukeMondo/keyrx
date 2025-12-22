@@ -32,7 +32,10 @@ use thiserror::Error;
 pub mod output_capture;
 pub mod virtual_keyboard;
 
-pub use output_capture::{CapturedEvent, OutputCapture};
+pub use output_capture::{
+    assert_events, assert_events_msg, compare_events, CapturedEvent, EventAssertionResult,
+    EventComparison, OutputCapture,
+};
 pub use virtual_keyboard::VirtualKeyboard;
 
 /// Errors that can occur during virtual device operations.
