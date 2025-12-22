@@ -112,7 +112,7 @@
   - _Requirements: 1.1_
   - _Prompt: Role: Rust Developer with expertise in Linux device discovery | Task: Implement keyboard device enumeration by scanning /dev/input/ and filtering for keyboard capabilities following requirement 1.1 | Restrictions: Must iterate /dev/input/event* files, use evdev::Device::open for each, check supported_events for EV_KEY, filter for devices with alphabetic keys (KEY_A through KEY_Z), skip devices without keyboard keys (mice, etc.), return Vec of keyboard devices, handle permission errors gracefully (log and skip), add doc comments | Success: enumerate_keyboards finds all connected keyboards, filters out mice and other non-keyboard devices, handles permission errors by skipping (with log), returns empty Vec if no keyboards found, works with multiple keyboards_
 
-- [ ] 11. Implement pattern matching for devices
+- [-] 11. Implement pattern matching for devices
   - File: `keyrx_daemon/src/device_manager.rs` (continue)
   - Implement `match_device(device: &evdev::Device, pattern: &str) -> bool`
   - Support wildcard pattern `"*"` (matches all)

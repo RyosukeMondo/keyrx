@@ -9,7 +9,7 @@ use crate::platform::DeviceError;
 mod linux;
 
 #[cfg(feature = "linux")]
-pub use linux::enumerate_keyboards;
+pub use linux::{enumerate_keyboards, match_device};
 
 /// Errors that can occur during device discovery.
 #[derive(Debug, thiserror::Error)]

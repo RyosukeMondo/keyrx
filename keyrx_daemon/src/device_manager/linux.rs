@@ -1,7 +1,8 @@
-//! Linux-specific device enumeration using evdev.
+//! Linux-specific device enumeration and pattern matching using evdev.
 //!
 //! This module scans `/dev/input/event*` devices and identifies keyboards
-//! based on their capabilities (presence of alphabetic keys).
+//! based on their capabilities (presence of alphabetic keys). It also
+//! provides pattern matching for selecting devices based on configuration.
 
 use std::fs;
 use std::path::Path;
@@ -228,6 +229,111 @@ pub fn open_keyboard(path: &Path) -> Result<Option<KeyboardInfo>, DiscoveryError
     }))
 }
 
+/// Matches a device against a pattern string.
+///
+/// This function checks if a device (identified by `KeyboardInfo`) matches
+/// the given pattern. Patterns are matched against both the device name
+/// and serial number (if available).
+///
+/// # Pattern Syntax
+///
+/// - `"*"` - Wildcard: matches any device
+/// - `"prefix*"` - Prefix pattern: matches devices whose name or serial
+///   starts with "prefix" (case-insensitive)
+/// - `"exact"` - Exact match: matches devices whose name or serial
+///   equals "exact" (case-insensitive)
+///
+/// # Arguments
+///
+/// * `device` - Information about the keyboard device to match
+/// * `pattern` - Pattern string from configuration
+///
+/// # Returns
+///
+/// `true` if the device matches the pattern, `false` otherwise.
+///
+/// # Examples
+///
+/// ```ignore
+/// use keyrx_daemon::device_manager::{KeyboardInfo, match_device};
+/// use std::path::PathBuf;
+///
+/// let device = KeyboardInfo {
+///     path: PathBuf::from("/dev/input/event0"),
+///     name: "USB Keyboard".to_string(),
+///     serial: Some("ABC123".to_string()),
+///     phys: None,
+/// };
+///
+/// // Wildcard matches all
+/// assert!(match_device(&device, "*"));
+///
+/// // Prefix pattern
+/// assert!(match_device(&device, "USB*"));
+///
+/// // Exact match
+/// assert!(match_device(&device, "USB Keyboard"));
+///
+/// // Case-insensitive
+/// assert!(match_device(&device, "usb keyboard"));
+/// ```
+pub fn match_device(device: &KeyboardInfo, pattern: &str) -> bool {
+    // Wildcard pattern matches everything
+    if pattern == "*" {
+        return true;
+    }
+
+    // Check for prefix pattern (ends with *)
+    if let Some(prefix) = pattern.strip_suffix('*') {
+        let prefix_lower = prefix.to_lowercase();
+
+        // Match against device name
+        if device.name.to_lowercase().starts_with(&prefix_lower) {
+            return true;
+        }
+
+        // Match against serial if available
+        if let Some(ref serial) = device.serial {
+            if serial.to_lowercase().starts_with(&prefix_lower) {
+                return true;
+            }
+        }
+
+        // Match against physical path if available
+        if let Some(ref phys) = device.phys {
+            if phys.to_lowercase().starts_with(&prefix_lower) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Exact match (case-insensitive)
+    let pattern_lower = pattern.to_lowercase();
+
+    // Match against device name
+    if device.name.to_lowercase() == pattern_lower {
+        return true;
+    }
+
+    // Match against serial if available
+    if let Some(ref serial) = device.serial {
+        if serial.to_lowercase() == pattern_lower {
+            return true;
+        }
+    }
+
+    // Match against physical path if available
+    if let Some(ref phys) = device.phys {
+        if phys.to_lowercase() == pattern_lower {
+            return true;
+        }
+    }
+
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -309,5 +415,193 @@ mod tests {
         assert_eq!(info.name, "AT Translated Set 2 keyboard");
         assert_eq!(info.serial.as_deref(), Some("0000:00:00"));
         assert_eq!(info.phys.as_deref(), Some("isa0060/serio0/input0"));
+    }
+
+    // Pattern matching tests - these don't require real devices
+    mod pattern_matching {
+        use super::*;
+
+        /// Creates a test device with all fields populated
+        fn create_test_device() -> KeyboardInfo {
+            KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "USB Keyboard".to_string(),
+                serial: Some("ABC123".to_string()),
+                phys: Some("usb-0000:00:14.0-1/input0".to_string()),
+            }
+        }
+
+        /// Creates a test device with no serial/phys
+        fn create_minimal_device() -> KeyboardInfo {
+            KeyboardInfo {
+                path: PathBuf::from("/dev/input/event1"),
+                name: "AT Translated Set 2 keyboard".to_string(),
+                serial: None,
+                phys: None,
+            }
+        }
+
+        #[test]
+        fn test_wildcard_matches_all() {
+            let device = create_test_device();
+            assert!(match_device(&device, "*"));
+        }
+
+        #[test]
+        fn test_wildcard_matches_minimal_device() {
+            let device = create_minimal_device();
+            assert!(match_device(&device, "*"));
+        }
+
+        #[test]
+        fn test_exact_match_name() {
+            let device = create_test_device();
+            assert!(match_device(&device, "USB Keyboard"));
+        }
+
+        #[test]
+        fn test_exact_match_serial() {
+            let device = create_test_device();
+            assert!(match_device(&device, "ABC123"));
+        }
+
+        #[test]
+        fn test_exact_match_phys() {
+            let device = create_test_device();
+            assert!(match_device(&device, "usb-0000:00:14.0-1/input0"));
+        }
+
+        #[test]
+        fn test_exact_match_case_insensitive() {
+            let device = create_test_device();
+            assert!(match_device(&device, "usb keyboard"));
+            assert!(match_device(&device, "USB KEYBOARD"));
+            assert!(match_device(&device, "Usb Keyboard"));
+        }
+
+        #[test]
+        fn test_prefix_pattern_name() {
+            let device = create_test_device();
+            assert!(match_device(&device, "USB*"));
+            assert!(match_device(&device, "USB Key*"));
+            assert!(match_device(&device, "USB Keyboard*"));
+        }
+
+        #[test]
+        fn test_prefix_pattern_serial() {
+            let device = create_test_device();
+            assert!(match_device(&device, "ABC*"));
+            assert!(match_device(&device, "ABC1*"));
+        }
+
+        #[test]
+        fn test_prefix_pattern_phys() {
+            let device = create_test_device();
+            assert!(match_device(&device, "usb-*"));
+            assert!(match_device(&device, "usb-0000:*"));
+        }
+
+        #[test]
+        fn test_prefix_pattern_case_insensitive() {
+            let device = create_test_device();
+            assert!(match_device(&device, "usb*"));
+            assert!(match_device(&device, "USB*"));
+            assert!(match_device(&device, "abc*"));
+            assert!(match_device(&device, "ABC*"));
+        }
+
+        #[test]
+        fn test_no_match_exact() {
+            let device = create_test_device();
+            assert!(!match_device(&device, "Logitech Keyboard"));
+            assert!(!match_device(&device, "XYZ789"));
+        }
+
+        #[test]
+        fn test_no_match_prefix() {
+            let device = create_test_device();
+            assert!(!match_device(&device, "Logitech*"));
+            assert!(!match_device(&device, "XYZ*"));
+        }
+
+        #[test]
+        fn test_minimal_device_no_serial_match() {
+            let device = create_minimal_device();
+            // Serial pattern shouldn't match if device has no serial
+            assert!(!match_device(&device, "ABC*"));
+        }
+
+        #[test]
+        fn test_empty_prefix_pattern() {
+            let device = create_test_device();
+            // "*" alone is handled as wildcard, but prefix "" with * should also work
+            assert!(match_device(&device, "*"));
+        }
+
+        #[test]
+        fn test_vendor_id_style_pattern() {
+            // Common pattern for matching USB devices by vendor ID
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event2"),
+                name: "USB\\VID_04D9&PID_0024".to_string(),
+                serial: None,
+                phys: None,
+            };
+            assert!(match_device(&device, "USB\\VID_04D9*"));
+        }
+
+        #[test]
+        fn test_at_keyboard_pattern() {
+            let device = create_minimal_device();
+            assert!(match_device(&device, "AT*"));
+            assert!(match_device(&device, "AT Translated*"));
+        }
+
+        #[test]
+        fn test_partial_match_is_not_exact() {
+            let device = create_test_device();
+            // "USB" alone shouldn't match "USB Keyboard" for exact match
+            assert!(!match_device(&device, "USB"));
+            // But "USB*" prefix should match
+            assert!(match_device(&device, "USB*"));
+        }
+
+        #[test]
+        fn test_asterisk_in_middle_is_literal() {
+            // An asterisk in the middle is treated literally, not as a glob
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event3"),
+                name: "Test*Device".to_string(),
+                serial: None,
+                phys: None,
+            };
+            // Exact match with literal asterisk
+            assert!(match_device(&device, "Test*Device"));
+            // Prefix pattern ending with asterisk
+            assert!(match_device(&device, "Test**"));
+        }
+
+        #[test]
+        fn test_multiple_devices_same_pattern() {
+            let devices = vec![
+                KeyboardInfo {
+                    path: PathBuf::from("/dev/input/event0"),
+                    name: "USB Keyboard 1".to_string(),
+                    serial: None,
+                    phys: None,
+                },
+                KeyboardInfo {
+                    path: PathBuf::from("/dev/input/event1"),
+                    name: "USB Keyboard 2".to_string(),
+                    serial: None,
+                    phys: None,
+                },
+            ];
+
+            // Both should match the same prefix pattern
+            for device in &devices {
+                assert!(match_device(device, "USB*"));
+            }
+        }
     }
 }
