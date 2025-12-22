@@ -208,7 +208,7 @@
   - _Requirements: 1.6, 4.10, 6.4, 6.5, 6.6, Observability_
   - _Prompt: Role: Rust Developer with expertise in structured logging and observability | Task: Add structured logging to EventProcessor using log crate (with JSON format), logging config_loaded, key_processed, state_transition, and platform_error events following requirements 1.6, 4.10, 6.4-6.6 and Observability section | Restrictions: Must use log::debug!, log::info!, log::error! macros, log JSON strings manually (format as "{\"timestamp\":\"...\",\"level\":\"...\",\"service\":\"keyrx_daemon\",\"event_type\":\"...\",\"context\":{...}}"), use chrono or time crate for timestamps if needed, log key_processed at DEBUG level with input/output keys and latency_us (measure with std::time::Instant), log config_loaded at INFO level with device count, log platform_error at ERROR level with error details, never log PII or secrets, add doc comments explaining log format | Success: EventProcessor logs config_loaded on new(), logs key_processed on each process_one with latency measurement, logs platform_error on device errors, all logs are valid JSON with required schema fields, compiles with log crate dependency_
 
-- [-] 20. Write EventProcessor integration tests
+- [x] 20. Write EventProcessor integration tests
   - File: `keyrx_daemon/tests/processor_tests.rs` (NEW)
   - Test end-to-end: load config → create processor → process events → verify output
   - Test passthrough, simple remap, modifier activation, lock toggle
