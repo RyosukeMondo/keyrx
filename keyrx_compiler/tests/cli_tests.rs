@@ -17,7 +17,8 @@ fn setup_test_dir() -> TempDir {
     TempDir::new().expect("Failed to create temp directory")
 }
 
-/// Helper to get the path to the keyrx_compiler binary
+/// Helper to get a command for the keyrx_compiler binary
+#[allow(deprecated)]
 fn get_binary() -> Command {
     Command::cargo_bin("keyrx_compiler").expect("Failed to find keyrx_compiler binary")
 }
@@ -478,7 +479,6 @@ fn test_hash_determinism() {
 }
 
 #[test]
-#[ignore] // TODO(task 17): Enable when --verify flag is added to CLI
 fn test_hash_verify_valid() {
     let temp_dir = setup_test_dir();
     let input = create_simple_rhai_config(&temp_dir, "config.rhai");
@@ -504,7 +504,6 @@ fn test_hash_verify_valid() {
 }
 
 #[test]
-#[ignore] // TODO(task 17): Enable when --verify flag is added to CLI
 fn test_hash_verify_corrupted() {
     let temp_dir = setup_test_dir();
     let input = create_simple_rhai_config(&temp_dir, "config.rhai");
@@ -540,7 +539,6 @@ fn test_hash_verify_corrupted() {
 }
 
 #[test]
-#[ignore] // TODO(task 17): Enable when --verify flag is added to CLI
 fn test_hash_verify_displays_both_hashes_on_mismatch() {
     let temp_dir = setup_test_dir();
     let input = create_simple_rhai_config(&temp_dir, "config.rhai");

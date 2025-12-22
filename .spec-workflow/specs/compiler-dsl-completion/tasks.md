@@ -198,7 +198,7 @@
   - _Requirements: 3.1-3.10_
   - **Implementation**: Updated main.rs to use clap derive macros with full CLI definition. Implemented all 4 subcommands (compile, verify, hash, parse) with appropriate arguments. Compile subcommand has optional --output flag that defaults to input file with .krx extension. Verify subcommand takes a file path. Hash subcommand takes a file path and optional --verify flag. Parse subcommand takes input path and optional --json flag. All subcommands route to their respective cli::handle_X() functions. Added NO_COLOR environment variable support in comments for future colored output implementation. All tests pass (31 passed, 3 ignored). Help output is clear and informative. Exit codes: 0 on success, 1 on error.
 
-- [ ] 18. Write CLI integration tests
+- [x] 18. Write CLI integration tests
   - File: `keyrx_compiler/tests/cli_tests.rs` (ENHANCED)
   - Test compile subcommand creates .krx file
   - Test verify subcommand on valid and invalid .krx
@@ -211,7 +211,7 @@
   - Purpose: Ensure CLI works end-to-end
   - _Leverage: assert_cmd crate for CLI testing_
   - _Requirements: 3.1-3.9, 4.1_
-  - _Prompt: Role: QA Engineer with CLI testing expertise | Task: Create comprehensive CLI integration tests using assert_cmd crate, testing all subcommands with valid and invalid inputs, following requirements 3.1-3.9 and 4.1 | Restrictions: Use Command::cargo_bin("keyrx_compiler"), create temp files with tempfile crate, test exit codes (0 for success, 1 for errors), verify stdout/stderr output with .assert(), test help output, test invalid subcommands, clean up temp files | Success: All subcommands tested end-to-end, error cases covered, help text verified, tests run reliably in CI_
+  - **Implementation**: Enhanced existing CLI test suite to comprehensive 34-test coverage. Enabled 3 previously ignored hash verification tests (test_hash_verify_valid, test_hash_verify_corrupted, test_hash_verify_displays_both_hashes_on_mismatch) since --verify flag is fully implemented. Suppressed deprecation warning for Command::cargo_bin() with #[allow(deprecated)] as we use standard cargo setup. Tests cover: **Compile** (9 tests: simple/advanced configs, default output, error cases including missing file, syntax error, invalid prefix, physical modifier error, empty config, multiple devices), **Verify** (5 tests: valid file, missing file, corrupted magic/hash, truncated file), **Hash** (7 tests: extract, determinism, verify valid/corrupted, mismatch display, missing/truncated file), **Parse** (6 tests: human-readable/JSON output, advanced config, missing file, syntax/prefix errors), **Help** (5 tests: main help and each subcommand), **Edge Cases** (2 tests: no subcommand, invalid subcommand). All tests use tempfile for cleanup, verify exit codes (0=success, 1=error, 2=usage error), check stdout/stderr with predicates, and validate JSON output. All 236 keyrx_compiler tests pass successfully._
 
 ## Phase 4: Error Formatting (User Experience)
 
