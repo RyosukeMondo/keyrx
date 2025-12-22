@@ -13,7 +13,7 @@
   - _Requirements: 1.1, 2.1_
   - _Prompt: Role: Rust Developer with expertise in cross-platform development and Cargo configuration | Task: Add Linux-specific dependencies (evdev, nix, signal-hook) to keyrx_daemon/Cargo.toml with appropriate cfg attributes for platform-specific compilation, following requirements 1.1 and 2.1 | Restrictions: Must use target.'cfg(target_os = "linux")'.dependencies for platform-specific deps, keep existing dependencies unchanged, use latest stable versions of crates, add comments explaining each dependency's purpose | Success: evdev, nix, and signal-hook added with Linux-only cfg, cargo build compiles on Linux, cargo build compiles on non-Linux (skipping platform deps), no version conflicts_
 
-- [ ] 2. Create KeyCode mapping functions
+- [x] 2. Create KeyCode mapping functions
   - File: `keyrx_daemon/src/platform/linux.rs` (NEW)
   - Implement `evdev_to_keycode(code: u16) -> Option<KeyCode>` for all keys
   - Implement `keycode_to_evdev(keycode: KeyCode) -> u16` for output
