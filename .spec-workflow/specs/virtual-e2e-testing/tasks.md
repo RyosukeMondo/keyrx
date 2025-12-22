@@ -227,7 +227,7 @@
     Success: Tests verify press→press, release→release, passthrough for unmapped keys
     After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record what was built, then mark [x] as complete_
 
-- [ ] 15. Add modifier and lock state tests
+- [x] 15. Add modifier and lock state tests
   - File: `keyrx_daemon/tests/virtual_e2e_tests.rs` (continue)
   - Test modifier activation (no output, state change)
   - Test lock toggle (toggle on press, ignore release)
