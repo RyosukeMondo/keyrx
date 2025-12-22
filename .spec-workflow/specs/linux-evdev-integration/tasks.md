@@ -89,7 +89,7 @@
   - _Requirements: 2.4_
   - _Prompt: Role: Rust Developer with expertise in resource cleanup and RAII | Task: Implement proper cleanup for UinputOutput including held key release and device destruction, with Drop trait implementation following requirement 2.4 | Restrictions: Must track held keys (HashSet<KeyCode>) if needed, inject release events for any held keys before destroy, use UI_DEV_DESTROY ioctl to remove device, close file descriptor, implement Drop to ensure cleanup even on panic, log cleanup at DEBUG level | Success: destroy() releases held keys and removes virtual device, Drop calls destroy automatically, no orphaned devices after daemon exit (verify with ls /dev/input/), clean shutdown even on panic_
 
-- [ ] 9. Write UinputOutput unit tests
+- [x] 9. Write UinputOutput unit tests
   - File: `keyrx_daemon/src/platform/linux.rs` (add to tests module)
   - Test device creation with correct capabilities
   - Test event injection (requires root or udev rules)

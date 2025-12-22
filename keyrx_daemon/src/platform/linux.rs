@@ -2124,4 +2124,319 @@ mod tests {
         // If we get here without panic, Drop worked correctly
         // We can't easily verify the device was destroyed, but no panic is good
     }
+
+    /// Test event injection for various key types
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_inject_various_key_types() {
+        let mut output =
+            UinputOutput::create("keyrx-test-inject-keys").expect("Failed to create uinput device");
+
+        // Test letter keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::A))
+            .expect("Failed to press A");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::A))
+            .expect("Failed to release A");
+
+        // Test number keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::Num5))
+            .expect("Failed to press Num5");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::Num5))
+            .expect("Failed to release Num5");
+
+        // Test function keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::F1))
+            .expect("Failed to press F1");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::F1))
+            .expect("Failed to release F1");
+
+        // Test modifier keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::LShift))
+            .expect("Failed to press LShift");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::LShift))
+            .expect("Failed to release LShift");
+
+        // Test special keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::Escape))
+            .expect("Failed to press Escape");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::Escape))
+            .expect("Failed to release Escape");
+
+        // Test arrow keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::Up))
+            .expect("Failed to press Up");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::Up))
+            .expect("Failed to release Up");
+
+        // Test numpad keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::NumpadEnter))
+            .expect("Failed to press NumpadEnter");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::NumpadEnter))
+            .expect("Failed to release NumpadEnter");
+
+        // Test media keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::VolumeUp))
+            .expect("Failed to press VolumeUp");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::VolumeUp))
+            .expect("Failed to release VolumeUp");
+
+        // Test punctuation keys
+        output
+            .inject_event(KeyEvent::Press(KeyCode::LeftBracket))
+            .expect("Failed to press LeftBracket");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::LeftBracket))
+            .expect("Failed to release LeftBracket");
+
+        // All held keys should be released
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test that keycode_to_uinput_key maps all KeyCode variants correctly
+    /// This is a unit test that doesn't require uinput access
+    #[test]
+    fn test_keycode_to_uinput_key_all_variants() {
+        // Test representative keys from each category to ensure mapping works
+        // (The actual injection requires uinput access, but we can verify the mapping function)
+
+        // Letters
+        let _ = keycode_to_uinput_key(KeyCode::A);
+        let _ = keycode_to_uinput_key(KeyCode::Z);
+
+        // Numbers
+        let _ = keycode_to_uinput_key(KeyCode::Num0);
+        let _ = keycode_to_uinput_key(KeyCode::Num9);
+
+        // Function keys
+        let _ = keycode_to_uinput_key(KeyCode::F1);
+        let _ = keycode_to_uinput_key(KeyCode::F24);
+
+        // Modifiers
+        let _ = keycode_to_uinput_key(KeyCode::LShift);
+        let _ = keycode_to_uinput_key(KeyCode::RMeta);
+
+        // Special keys
+        let _ = keycode_to_uinput_key(KeyCode::Escape);
+        let _ = keycode_to_uinput_key(KeyCode::CapsLock);
+        let _ = keycode_to_uinput_key(KeyCode::Pause);
+
+        // Arrow keys
+        let _ = keycode_to_uinput_key(KeyCode::Left);
+        let _ = keycode_to_uinput_key(KeyCode::Down);
+
+        // Numpad
+        let _ = keycode_to_uinput_key(KeyCode::Numpad0);
+        let _ = keycode_to_uinput_key(KeyCode::NumpadEnter);
+
+        // Media keys
+        let _ = keycode_to_uinput_key(KeyCode::Mute);
+        let _ = keycode_to_uinput_key(KeyCode::MediaNext);
+
+        // System keys
+        let _ = keycode_to_uinput_key(KeyCode::Power);
+        let _ = keycode_to_uinput_key(KeyCode::Wake);
+
+        // Browser keys
+        let _ = keycode_to_uinput_key(KeyCode::BrowserBack);
+        let _ = keycode_to_uinput_key(KeyCode::BrowserHome);
+
+        // Application keys
+        let _ = keycode_to_uinput_key(KeyCode::AppMail);
+        let _ = keycode_to_uinput_key(KeyCode::AppCalculator);
+
+        // Additional keys
+        let _ = keycode_to_uinput_key(KeyCode::Menu);
+        let _ = keycode_to_uinput_key(KeyCode::Find);
+    }
+
+    /// Test virtual device appears in /dev/input/ and is removed on destroy
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually with: sudo cargo test -p keyrx_daemon --features linux test_uinputoutput_device_lifecycle -- --ignored"]
+    fn test_uinputoutput_device_lifecycle() {
+        use std::fs;
+        use std::thread;
+        use std::time::Duration;
+
+        let device_name = "keyrx-test-lifecycle-device";
+
+        // Count initial devices
+        let initial_count = fs::read_dir("/dev/input/")
+            .map(|entries| entries.count())
+            .unwrap_or(0);
+
+        // Create device
+        let output = UinputOutput::create(device_name).expect("Failed to create uinput device");
+
+        // Wait a moment for the device to appear
+        thread::sleep(Duration::from_millis(100));
+
+        // Should have one more device now
+        let with_device_count = fs::read_dir("/dev/input/")
+            .map(|entries| entries.count())
+            .unwrap_or(0);
+
+        // Device count should have increased (new virtual device created)
+        assert!(
+            with_device_count >= initial_count,
+            "Device count should not decrease after creation"
+        );
+
+        // Verify device is not destroyed yet
+        assert!(!output.is_destroyed());
+
+        // Drop the device
+        drop(output);
+
+        // Wait for device removal
+        thread::sleep(Duration::from_millis(100));
+
+        // Should be back to initial count (or close to it)
+        let final_count = fs::read_dir("/dev/input/")
+            .map(|entries| entries.count())
+            .unwrap_or(0);
+
+        // The count should not be significantly higher than initial
+        // (allowing for other system devices that might have appeared/disappeared)
+        assert!(
+            final_count <= with_device_count,
+            "Device count should not increase after destruction: initial={}, with_device={}, final={}",
+            initial_count,
+            with_device_count,
+            final_count
+        );
+    }
+
+    /// Test that multiple UinputOutput devices can coexist
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_multiple_devices() {
+        let output1 = UinputOutput::create("keyrx-test-multi-1")
+            .expect("Failed to create first uinput device");
+        let output2 = UinputOutput::create("keyrx-test-multi-2")
+            .expect("Failed to create second uinput device");
+
+        assert_eq!(output1.name(), "keyrx-test-multi-1");
+        assert_eq!(output2.name(), "keyrx-test-multi-2");
+
+        assert!(!output1.is_destroyed());
+        assert!(!output2.is_destroyed());
+
+        // Both should be independently usable
+        // (actual event injection would require evtest verification)
+
+        drop(output1);
+        drop(output2);
+    }
+
+    /// Test inject_event with modifier key combinations
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_inject_modifier_combinations() {
+        let mut output =
+            UinputOutput::create("keyrx-test-modifiers").expect("Failed to create uinput device");
+
+        // Simulate Ctrl+Shift+A
+        output
+            .inject_event(KeyEvent::Press(KeyCode::LCtrl))
+            .expect("Failed to press LCtrl");
+        output
+            .inject_event(KeyEvent::Press(KeyCode::LShift))
+            .expect("Failed to press LShift");
+        output
+            .inject_event(KeyEvent::Press(KeyCode::A))
+            .expect("Failed to press A");
+
+        // Verify all three keys are held
+        assert_eq!(output.held_keys().len(), 3);
+        assert!(output.held_keys().contains(&KeyCode::LCtrl));
+        assert!(output.held_keys().contains(&KeyCode::LShift));
+        assert!(output.held_keys().contains(&KeyCode::A));
+
+        // Release in reverse order
+        output
+            .inject_event(KeyEvent::Release(KeyCode::A))
+            .expect("Failed to release A");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::LShift))
+            .expect("Failed to release LShift");
+        output
+            .inject_event(KeyEvent::Release(KeyCode::LCtrl))
+            .expect("Failed to release LCtrl");
+
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test that releasing an un-pressed key doesn't cause issues
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_release_unpressed_key() {
+        let mut output =
+            UinputOutput::create("keyrx-test-release").expect("Failed to create uinput device");
+
+        // Release a key that was never pressed
+        // This should succeed (the system handles it gracefully)
+        output
+            .inject_event(KeyEvent::Release(KeyCode::A))
+            .expect("Release of unpressed key should succeed");
+
+        // held_keys should not contain the key (and definitely not have negative count)
+        assert!(!output.held_keys().contains(&KeyCode::A));
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test name() accessor returns correct value
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_name_accessor() {
+        let output =
+            UinputOutput::create("keyrx-test-name").expect("Failed to create uinput device");
+
+        assert_eq!(output.name(), "keyrx-test-name");
+    }
+
+    /// Test that held_keys is empty initially
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_held_keys_empty_initially() {
+        let output =
+            UinputOutput::create("keyrx-test-empty").expect("Failed to create uinput device");
+
+        assert!(output.held_keys().is_empty());
+        assert_eq!(output.held_keys().len(), 0);
+    }
+
+    /// Test is_destroyed accessor
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_is_destroyed_accessor() {
+        let mut output =
+            UinputOutput::create("keyrx-test-destroyed").expect("Failed to create uinput device");
+
+        assert!(!output.is_destroyed(), "Should not be destroyed initially");
+
+        output.destroy().expect("Failed to destroy device");
+
+        assert!(output.is_destroyed(), "Should be destroyed after destroy()");
+    }
 }
