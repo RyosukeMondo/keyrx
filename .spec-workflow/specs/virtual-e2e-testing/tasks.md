@@ -128,7 +128,7 @@
 
 ## Phase 3: E2E Test Harness
 
-- [ ] 9. Create E2EError type and helpers
+- [x] 9. Create E2EError type and helpers
   - File: `keyrx_daemon/tests/e2e_harness.rs` (NEW)
   - Define E2EError enum with all error variants
   - Create E2EConfig struct for test configuration
