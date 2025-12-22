@@ -4,7 +4,7 @@
 //!
 //! - [`install_signal_handlers`]: Sets up signal handlers for graceful shutdown and reload
 //! - [`SignalHandler`]: Manages signal state and detection
-//! - Future: [`Daemon`]: Main daemon struct coordinating all components
+//! - [`Daemon`]: Main daemon struct coordinating all components
 //!
 //! # Signal Handling
 //!
@@ -14,28 +14,41 @@
 //! - **SIGINT**: Same as SIGTERM (Ctrl+C handling)
 //! - **SIGHUP**: Configuration reload - reloads .krx file without restarting
 //!
+//! # Daemon Lifecycle
+//!
+//! 1. **Initialization**: Load configuration, discover devices, create uinput output
+//! 2. **Signal Setup**: Install handlers for SIGTERM, SIGINT, SIGHUP
+//! 3. **Event Loop**: Process keyboard events from all managed devices
+//! 4. **Shutdown**: Release devices, destroy virtual output, exit cleanly
+//!
 //! # Example
 //!
 //! ```no_run
-//! use std::sync::atomic::{AtomicBool, Ordering};
-//! use std::sync::Arc;
-//! use keyrx_daemon::daemon::install_signal_handlers;
+//! use std::path::Path;
+//! use keyrx_daemon::daemon::Daemon;
 //!
-//! let running = Arc::new(AtomicBool::new(true));
-//! install_signal_handlers(running.clone()).expect("Failed to install signal handlers");
+//! // Initialize daemon with configuration
+//! let mut daemon = Daemon::new(Path::new("config.krx"))?;
 //!
-//! // Main event loop
-//! while running.load(Ordering::SeqCst) {
-//!     // Process events
-//!     std::thread::sleep(std::time::Duration::from_millis(10));
-//! }
-//! println!("Shutdown requested");
+//! // Run the event loop (blocks until shutdown signal)
+//! // daemon.run()?;  // Will be implemented in task #17
+//!
+//! // Shutdown is automatic via Drop trait
+//! # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
 //! ```
 
 use std::io;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
+
+use log::info;
+
+use crate::config_loader::{load_config, ConfigError};
+use crate::device_manager::DeviceManager;
+use crate::platform::linux::UinputOutput;
+use crate::platform::DeviceError;
 
 #[cfg(feature = "linux")]
 mod linux;
@@ -50,9 +63,13 @@ pub enum DaemonError {
     #[error("failed to install signal handlers: {0}")]
     SignalError(#[from] io::Error),
 
-    /// Configuration error (file not found, parse error).
+    /// Configuration loading error (file not found, parse error).
     #[error("configuration error: {0}")]
-    ConfigError(String),
+    Config(#[from] ConfigError),
+
+    /// Device access error.
+    #[error("device error: {0}")]
+    Device(#[from] DeviceError),
 
     /// Permission error (cannot grab device, cannot create uinput).
     #[error("permission error: {0}")]
@@ -132,20 +149,352 @@ impl Default for ReloadState {
     }
 }
 
+// ============================================================================
+// Archived Config Conversion Helpers
+// ============================================================================
+//
+// These functions convert rkyv-archived configuration types to owned types.
+// This is necessary because DeviceManager and KeyLookup operate on owned types.
+
+use keyrx_core::config::{
+    BaseKeyMapping, Condition, ConditionItem, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping,
+};
+
+// Import the archived types from their modules
+use keyrx_core::config::conditions::{ArchivedCondition, ArchivedConditionItem};
+use keyrx_core::config::keys::ArchivedKeyCode;
+use keyrx_core::config::mappings::{
+    ArchivedBaseKeyMapping, ArchivedDeviceConfig, ArchivedKeyMapping,
+};
+
+/// Converts an archived KeyCode to an owned KeyCode.
+///
+/// For enums with `#[repr(u16)]` and no data fields, the archived and owned
+/// representations are identical, so we can safely transmute.
+fn convert_archived_keycode(archived: &ArchivedKeyCode) -> KeyCode {
+    // SAFETY: ArchivedKeyCode has the same representation as KeyCode for simple
+    // #[repr(u16)] enums with no data fields. rkyv generates identical layout.
+    unsafe { std::mem::transmute_copy(archived) }
+}
+
+/// Converts an archived ConditionItem to an owned ConditionItem.
+fn convert_archived_condition_item(archived: &ArchivedConditionItem) -> ConditionItem {
+    match archived {
+        ArchivedConditionItem::ModifierActive(id) => ConditionItem::ModifierActive(*id),
+        ArchivedConditionItem::LockActive(id) => ConditionItem::LockActive(*id),
+    }
+}
+
+/// Converts an archived Condition to an owned Condition.
+fn convert_archived_condition(archived: &ArchivedCondition) -> Condition {
+    match archived {
+        ArchivedCondition::ModifierActive(id) => Condition::ModifierActive(*id),
+        ArchivedCondition::LockActive(id) => Condition::LockActive(*id),
+        ArchivedCondition::AllActive(items) => {
+            Condition::AllActive(items.iter().map(convert_archived_condition_item).collect())
+        }
+        ArchivedCondition::NotActive(items) => {
+            Condition::NotActive(items.iter().map(convert_archived_condition_item).collect())
+        }
+    }
+}
+
+/// Converts an archived BaseKeyMapping to an owned BaseKeyMapping.
+fn convert_archived_base_mapping(archived: &ArchivedBaseKeyMapping) -> BaseKeyMapping {
+    match archived {
+        ArchivedBaseKeyMapping::Simple { from, to } => BaseKeyMapping::Simple {
+            from: convert_archived_keycode(from),
+            to: convert_archived_keycode(to),
+        },
+        ArchivedBaseKeyMapping::Modifier { from, modifier_id } => BaseKeyMapping::Modifier {
+            from: convert_archived_keycode(from),
+            modifier_id: *modifier_id,
+        },
+        ArchivedBaseKeyMapping::Lock { from, lock_id } => BaseKeyMapping::Lock {
+            from: convert_archived_keycode(from),
+            lock_id: *lock_id,
+        },
+        ArchivedBaseKeyMapping::TapHold {
+            from,
+            tap,
+            hold_modifier,
+            threshold_ms,
+        } => BaseKeyMapping::TapHold {
+            from: convert_archived_keycode(from),
+            tap: convert_archived_keycode(tap),
+            hold_modifier: *hold_modifier,
+            threshold_ms: *threshold_ms,
+        },
+        ArchivedBaseKeyMapping::ModifiedOutput {
+            from,
+            to,
+            shift,
+            ctrl,
+            alt,
+            win,
+        } => BaseKeyMapping::ModifiedOutput {
+            from: convert_archived_keycode(from),
+            to: convert_archived_keycode(to),
+            shift: *shift,
+            ctrl: *ctrl,
+            alt: *alt,
+            win: *win,
+        },
+    }
+}
+
+/// Converts an archived KeyMapping to an owned KeyMapping.
+fn convert_archived_key_mapping(archived: &ArchivedKeyMapping) -> KeyMapping {
+    match archived {
+        ArchivedKeyMapping::Base(base) => KeyMapping::Base(convert_archived_base_mapping(base)),
+        ArchivedKeyMapping::Conditional {
+            condition,
+            mappings,
+        } => KeyMapping::Conditional {
+            condition: convert_archived_condition(condition),
+            mappings: mappings.iter().map(convert_archived_base_mapping).collect(),
+        },
+    }
+}
+
+/// Converts an archived DeviceConfig to an owned DeviceConfig.
+fn convert_archived_device_config(archived: &ArchivedDeviceConfig) -> DeviceConfig {
+    DeviceConfig {
+        identifier: DeviceIdentifier {
+            pattern: archived.identifier.pattern.to_string(),
+        },
+        mappings: archived
+            .mappings
+            .iter()
+            .map(convert_archived_key_mapping)
+            .collect(),
+    }
+}
+
+/// The main keyrx daemon.
+///
+/// `Daemon` coordinates all components for keyboard event processing:
+///
+/// - **Configuration**: Loads and manages the .krx configuration file
+/// - **Device Manager**: Discovers and manages input keyboard devices
+/// - **Output Device**: Creates virtual keyboard for injecting remapped events
+/// - **Signal Handling**: Responds to SIGTERM, SIGINT (shutdown), SIGHUP (reload)
+///
+/// # Initialization Order
+///
+/// The daemon initializes components in this order:
+///
+/// 1. Load configuration from .krx file
+/// 2. Discover and match input devices
+/// 3. Create uinput virtual keyboard
+/// 4. Install signal handlers
+///
+/// This order ensures we fail fast on configuration errors before grabbing devices.
+///
+/// # Example
+///
+/// ```no_run
+/// use std::path::Path;
+/// use keyrx_daemon::daemon::Daemon;
+///
+/// // Initialize daemon
+/// let mut daemon = Daemon::new(Path::new("config.krx"))?;
+///
+/// // Check device count
+/// println!("Managing {} devices", daemon.device_count());
+///
+/// // Run event loop (blocks until shutdown)
+/// // daemon.run()?;  // Will be implemented in task #17
+/// # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
+/// ```
+pub struct Daemon {
+    /// Path to the configuration file (for reload support).
+    config_path: PathBuf,
+
+    /// Device manager handling input keyboards.
+    device_manager: DeviceManager,
+
+    /// Virtual keyboard for output injection.
+    output: UinputOutput,
+
+    /// Running flag for event loop control.
+    running: Arc<AtomicBool>,
+
+    /// Signal handler for reload detection.
+    signal_handler: SignalHandler,
+}
+
+impl Daemon {
+    /// Creates a new daemon instance with the specified configuration file.
+    ///
+    /// This method performs the complete initialization sequence:
+    ///
+    /// 1. Loads and validates the .krx configuration file
+    /// 2. Discovers input keyboard devices matching the configuration patterns
+    /// 3. Creates a uinput virtual keyboard for output
+    /// 4. Installs signal handlers for graceful shutdown and reload
+    ///
+    /// # Arguments
+    ///
+    /// * `config_path` - Path to the .krx configuration file
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Daemon)` - Successfully initialized daemon
+    /// * `Err(DaemonError::Config)` - Configuration file error
+    /// * `Err(DaemonError::DiscoveryError)` - No matching devices found
+    /// * `Err(DaemonError::Device)` - Failed to create uinput device
+    /// * `Err(DaemonError::SignalError)` - Failed to install signal handlers
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use keyrx_daemon::daemon::Daemon;
+    ///
+    /// match Daemon::new(Path::new("config.krx")) {
+    ///     Ok(daemon) => {
+    ///         println!("Daemon initialized with {} device(s)", daemon.device_count());
+    ///     }
+    ///     Err(e) => {
+    ///         eprintln!("Failed to initialize daemon: {}", e);
+    ///     }
+    /// }
+    /// ```
+    pub fn new(config_path: &Path) -> Result<Self, DaemonError> {
+        info!(
+            "Initializing keyrx daemon with config: {}",
+            config_path.display()
+        );
+
+        // Step 1: Load and validate configuration
+        info!("Loading configuration...");
+        let config = load_config(config_path)?;
+        info!(
+            "Configuration loaded: {} device configuration(s)",
+            config.devices.len()
+        );
+
+        // Convert archived device configs to owned for DeviceManager
+        let device_configs: Vec<keyrx_core::config::DeviceConfig> = config
+            .devices
+            .iter()
+            .map(convert_archived_device_config)
+            .collect();
+
+        // Step 2: Discover and match input devices
+        info!("Discovering input devices...");
+        let device_manager = DeviceManager::discover(&device_configs)?;
+        info!(
+            "Device discovery complete: {} device(s) matched",
+            device_manager.device_count()
+        );
+
+        // Step 3: Create uinput virtual keyboard
+        info!("Creating virtual keyboard...");
+        let output = UinputOutput::create("keyrx Virtual Keyboard")?;
+        info!("Virtual keyboard created");
+
+        // Step 4: Install signal handlers
+        info!("Installing signal handlers...");
+        let running = Arc::new(AtomicBool::new(true));
+        let signal_handler = install_signal_handlers(Arc::clone(&running))?;
+        info!("Signal handlers installed");
+
+        info!("Daemon initialization complete");
+
+        Ok(Self {
+            config_path: config_path.to_path_buf(),
+            device_manager,
+            output,
+            running,
+            signal_handler,
+        })
+    }
+
+    /// Returns the number of managed devices.
+    #[must_use]
+    pub fn device_count(&self) -> usize {
+        self.device_manager.device_count()
+    }
+
+    /// Returns whether the daemon is still running.
+    ///
+    /// This is set to `false` when a shutdown signal (SIGTERM, SIGINT) is received.
+    #[must_use]
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
+    }
+
+    /// Returns the path to the configuration file.
+    #[must_use]
+    pub fn config_path(&self) -> &Path {
+        &self.config_path
+    }
+
+    /// Returns a reference to the device manager.
+    #[must_use]
+    pub fn device_manager(&self) -> &DeviceManager {
+        &self.device_manager
+    }
+
+    /// Returns a mutable reference to the device manager.
+    pub fn device_manager_mut(&mut self) -> &mut DeviceManager {
+        &mut self.device_manager
+    }
+
+    /// Returns a reference to the output device.
+    #[must_use]
+    pub fn output(&self) -> &UinputOutput {
+        &self.output
+    }
+
+    /// Returns a mutable reference to the output device.
+    pub fn output_mut(&mut self) -> &mut UinputOutput {
+        &mut self.output
+    }
+
+    /// Returns a reference to the signal handler.
+    #[must_use]
+    pub fn signal_handler(&self) -> &SignalHandler {
+        &self.signal_handler
+    }
+
+    /// Returns the running flag for external coordination.
+    #[must_use]
+    pub fn running_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.running)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_daemon_error_display() {
-        let err = DaemonError::ConfigError("test error".to_string());
-        assert_eq!(err.to_string(), "configuration error: test error");
-
         let err = DaemonError::PermissionError("access denied".to_string());
         assert_eq!(err.to_string(), "permission error: access denied");
 
         let err = DaemonError::RuntimeError("event loop failed".to_string());
         assert_eq!(err.to_string(), "runtime error: event loop failed");
+    }
+
+    #[test]
+    fn test_daemon_error_config_variant() {
+        use crate::config_loader::ConfigError;
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let config_err = ConfigError::Io(io_err);
+        let daemon_err = DaemonError::Config(config_err);
+        assert!(daemon_err.to_string().contains("configuration error"));
+    }
+
+    #[test]
+    fn test_daemon_error_device_variant() {
+        use crate::platform::DeviceError;
+        let device_err = DeviceError::NotFound("test device".to_string());
+        let daemon_err = DaemonError::Device(device_err);
+        assert!(daemon_err.to_string().contains("device error"));
     }
 
     #[test]
@@ -203,5 +552,84 @@ mod tests {
     fn test_reload_state_default() {
         let state = ReloadState::default();
         assert!(!state.check_and_clear());
+    }
+
+    // Daemon tests - these require real devices/permissions
+    mod daemon_tests {
+        use super::*;
+        use std::path::Path;
+
+        #[test]
+        fn test_daemon_new_missing_config() {
+            let result = Daemon::new(Path::new("/nonexistent/path/config.krx"));
+            assert!(result.is_err());
+
+            // Should be a Config error
+            match result {
+                Err(DaemonError::Config(_)) => {} // Expected
+                Err(e) => panic!("Expected Config error, got: {}", e),
+                Ok(_) => panic!("Expected error, got Ok"),
+            }
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_new_real_devices() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create a minimal valid config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            // Serialize and write to temp file
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            // Try to create daemon
+            match Daemon::new(temp_file.path()) {
+                Ok(daemon) => {
+                    assert!(daemon.device_count() > 0, "Should have at least one device");
+                    assert!(daemon.is_running(), "Daemon should be running initially");
+                    println!("Daemon created with {} device(s)", daemon.device_count());
+                }
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                }
+            }
+        }
+
+        #[test]
+        fn test_daemon_error_from_discovery_error() {
+            use crate::device_manager::DiscoveryError;
+            let discovery_err = DiscoveryError::NoDevicesFound;
+            let daemon_err = DaemonError::from(discovery_err);
+            assert!(daemon_err.to_string().contains("device discovery"));
+        }
+
+        #[test]
+        fn test_daemon_error_from_io_error() {
+            let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "test");
+            let daemon_err = DaemonError::SignalError(io_err);
+            assert!(daemon_err.to_string().contains("signal handlers"));
+        }
     }
 }
