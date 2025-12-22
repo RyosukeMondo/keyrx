@@ -178,7 +178,8 @@ mod parse_modifier_id_tests {
             result,
             Err(ParseError::ModifierIdOutOfRange {
                 got: 0xFF,
-                max: 0xFE
+                max: 0xFE,
+                import_chain: _,
             })
         ));
     }
@@ -264,7 +265,8 @@ mod parse_lock_id_tests {
             result,
             Err(ParseError::LockIdOutOfRange {
                 got: 0xFF,
-                max: 0xFE
+                max: 0xFE,
+                import_chain: _,
             })
         ));
     }

@@ -58,6 +58,7 @@ impl Parser {
         let script = std::fs::read_to_string(path).map_err(|_e| ParseError::ImportNotFound {
             path: path.to_path_buf(),
             searched_paths: vec![path.to_path_buf()],
+            import_chain: Vec::new(),
         })?;
 
         self.parse_string(&script, path)
@@ -88,6 +89,7 @@ impl Parser {
         {
             return Err(ParseError::ResourceLimitExceeded {
                 limit_type: "execution timeout (10 seconds)".to_string(),
+                import_chain: Vec::new(),
             });
         }
         Ok(())
@@ -101,6 +103,7 @@ impl Parser {
                 line: 0,
                 column: 0,
                 message: "Unclosed device() block".to_string(),
+                import_chain: Vec::new(),
             });
         }
 
@@ -127,6 +130,7 @@ impl Parser {
             line: position.line().unwrap_or(0),
             column: position.position().unwrap_or(0),
             message: err.to_string(),
+            import_chain: Vec::new(),
         }
     }
 }

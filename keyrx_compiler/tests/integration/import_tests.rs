@@ -323,6 +323,7 @@ device_end();
         Err(keyrx_compiler::error::ParseError::ImportNotFound {
             path,
             searched_paths,
+            import_chain: _,
         }) => {
             assert!(
                 path.to_str().unwrap().contains("nonexistent.rhai"),

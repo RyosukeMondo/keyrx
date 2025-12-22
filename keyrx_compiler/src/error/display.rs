@@ -11,6 +11,7 @@ impl fmt::Display for ParseError {
                 line,
                 column,
                 message,
+                import_chain: _,
             } => write!(
                 f,
                 "{}:{}:{}: Syntax error: {}",
@@ -24,32 +25,48 @@ impl fmt::Display for ParseError {
                 expected,
                 got,
                 context,
+                import_chain: _,
             } => write!(
                 f,
                 "Invalid prefix: expected {}, got '{}' (context: {})",
                 expected, got, context
             ),
 
-            ParseError::ModifierIdOutOfRange { got, max } => write!(
+            ParseError::ModifierIdOutOfRange {
+                got,
+                max,
+                import_chain: _,
+            } => write!(
                 f,
                 "Modifier ID out of range: {} (valid range: 00-{:02X})",
                 got, max
             ),
 
-            ParseError::LockIdOutOfRange { got, max } => write!(
+            ParseError::LockIdOutOfRange {
+                got,
+                max,
+                import_chain: _,
+            } => write!(
                 f,
                 "Lock ID out of range: {} (valid range: 00-{:02X})",
                 got, max
             ),
 
-            ParseError::PhysicalModifierInMD { name } => write!(
+            ParseError::PhysicalModifierInMD {
+                name,
+                import_chain: _,
+            } => write!(
                 f,
                 "Physical modifier name '{}' cannot be used with MD_ prefix. \
                  Use MD_00 through MD_FE for custom modifiers.",
                 name
             ),
 
-            ParseError::MissingPrefix { key, context } => write!(
+            ParseError::MissingPrefix {
+                key,
+                context,
+                import_chain: _,
+            } => write!(
                 f,
                 "Missing prefix for key '{}' (context: {}). \
                  Use VK_ for virtual keys, MD_ for modifiers, LK_ for locks.",
@@ -59,6 +76,7 @@ impl fmt::Display for ParseError {
             ParseError::ImportNotFound {
                 path,
                 searched_paths,
+                import_chain: _,
             } => {
                 write!(f, "Import file not found: {}", path.display())?;
                 if !searched_paths.is_empty() {
@@ -81,9 +99,10 @@ impl fmt::Display for ParseError {
                 Ok(())
             }
 
-            ParseError::ResourceLimitExceeded { limit_type } => {
-                write!(f, "Resource limit exceeded: {}", limit_type)
-            }
+            ParseError::ResourceLimitExceeded {
+                limit_type,
+                import_chain: _,
+            } => write!(f, "Resource limit exceeded: {}", limit_type),
         }
     }
 }

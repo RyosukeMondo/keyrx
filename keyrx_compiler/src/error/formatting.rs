@@ -5,7 +5,7 @@
 
 #![allow(dead_code)] // Functions will be used in CLI integration
 
-use crate::error::types::ParseError;
+use crate::error::types::{ImportStep, ParseError};
 use colored::*;
 use std::path::Path;
 
@@ -18,9 +18,39 @@ pub fn hex_encode(bytes: &[u8]) -> String {
         .join("")
 }
 
+/// Formats an import chain to show the path from main file to error location.
+///
+/// Displays as: main.rhai → a.rhai (line 5) → b.rhai (line 2)
+///
+/// If the import_chain is empty, returns an empty string.
+fn format_import_chain(import_chain: &[ImportStep]) -> String {
+    if import_chain.is_empty() {
+        return String::new();
+    }
+
+    let mut output = String::new();
+    output.push_str(&format!("{}\n", "Import chain:".blue().bold()));
+
+    for (i, step) in import_chain.iter().enumerate() {
+        output.push_str(&format!(
+            "  {} {} (line {})",
+            step.file.display(),
+            "→".blue(),
+            step.line
+        ));
+        if i < import_chain.len() - 1 {
+            output.push('\n');
+        }
+    }
+
+    output.push_str("\n\n");
+    output
+}
+
 /// Formats a ParseError with colored output, code snippets, and helpful suggestions.
 ///
 /// This is the main error formatting function that shows:
+/// - Import chain (if error occurred in imported file)
 /// - File:line:column location in blue
 /// - "Error:" label in red
 /// - 3 lines of context around the error with line numbers
@@ -35,8 +65,12 @@ pub fn format_error(error: &ParseError, _file: &Path, source: &str) -> String {
             line,
             column,
             message,
+            import_chain,
         } => {
             let mut output = String::new();
+
+            // Import chain (if present)
+            output.push_str(&format_import_chain(import_chain));
 
             // Location header: file:line:column
             output.push_str(&format!(
@@ -62,19 +96,36 @@ pub fn format_error(error: &ParseError, _file: &Path, source: &str) -> String {
             expected,
             got,
             context,
-        } => format_invalid_prefix_error(expected, got, context),
-        ParseError::ModifierIdOutOfRange { got, max } => {
-            format_range_error("Modifier", got, max, "MD")
+            import_chain,
+        } => format_invalid_prefix_error(expected, got, context, import_chain),
+        ParseError::ModifierIdOutOfRange {
+            got,
+            max,
+            import_chain,
+        } => format_range_error("Modifier", got, max, "MD", import_chain),
+        ParseError::LockIdOutOfRange {
+            got,
+            max,
+            import_chain,
+        } => format_range_error("Lock", got, max, "LK", import_chain),
+        ParseError::PhysicalModifierInMD { name, import_chain } => {
+            format_physical_modifier_error(name, import_chain)
         }
-        ParseError::LockIdOutOfRange { got, max } => format_range_error("Lock", got, max, "LK"),
-        ParseError::PhysicalModifierInMD { name } => format_physical_modifier_error(name),
-        ParseError::MissingPrefix { key, context } => format_missing_prefix_error(key, context),
+        ParseError::MissingPrefix {
+            key,
+            context,
+            import_chain,
+        } => format_missing_prefix_error(key, context, import_chain),
         ParseError::ImportNotFound {
             path,
             searched_paths,
-        } => format_import_not_found_error(path, searched_paths),
+            import_chain,
+        } => format_import_not_found_error(path, searched_paths, import_chain),
         ParseError::CircularImport { chain } => format_circular_import_error(chain),
-        ParseError::ResourceLimitExceeded { limit_type } => format_resource_limit_error(limit_type),
+        ParseError::ResourceLimitExceeded {
+            limit_type,
+            import_chain,
+        } => format_resource_limit_error(limit_type, import_chain),
     }
 }
 
@@ -123,8 +174,16 @@ fn format_code_snippet(source: &str, error_line: usize, error_column: usize) -> 
 }
 
 /// Formats an InvalidPrefix error with specific suggestions.
-fn format_invalid_prefix_error(expected: &str, got: &str, context: &str) -> String {
+fn format_invalid_prefix_error(
+    expected: &str,
+    got: &str,
+    context: &str,
+    import_chain: &[ImportStep],
+) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!("{} ", "Error:".red().bold()));
 
@@ -181,8 +240,17 @@ fn is_valid_hex_id(s: &str, prefix: &str) -> bool {
 }
 
 /// Formats a range error (ModifierIdOutOfRange or LockIdOutOfRange).
-fn format_range_error(type_name: &str, got: &u16, max: &u8, prefix: &str) -> String {
+fn format_range_error(
+    type_name: &str,
+    got: &u16,
+    max: &u8,
+    prefix: &str,
+    import_chain: &[ImportStep],
+) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!(
         "{} {} ID out of range: {}\n",
@@ -213,8 +281,11 @@ fn format_range_error(type_name: &str, got: &u16, max: &u8, prefix: &str) -> Str
 }
 
 /// Formats a PhysicalModifierInMD error.
-fn format_physical_modifier_error(name: &str) -> String {
+fn format_physical_modifier_error(name: &str, import_chain: &[ImportStep]) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!(
         "{} Physical modifier name '{}' cannot be used with MD_ prefix.\n",
@@ -241,8 +312,11 @@ fn format_physical_modifier_error(name: &str) -> String {
 }
 
 /// Formats a MissingPrefix error.
-fn format_missing_prefix_error(key: &str, context: &str) -> String {
+fn format_missing_prefix_error(key: &str, context: &str, import_chain: &[ImportStep]) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!(
         "{} Missing prefix for key '{}'\n",
@@ -284,8 +358,15 @@ fn format_missing_prefix_error(key: &str, context: &str) -> String {
 }
 
 /// Formats an ImportNotFound error.
-fn format_import_not_found_error(path: &Path, searched_paths: &[std::path::PathBuf]) -> String {
+fn format_import_not_found_error(
+    path: &Path,
+    searched_paths: &[std::path::PathBuf],
+    import_chain: &[ImportStep],
+) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!(
         "{} Import file not found: {}\n",
@@ -338,8 +419,11 @@ fn format_circular_import_error(chain: &[std::path::PathBuf]) -> String {
 }
 
 /// Formats a ResourceLimitExceeded error.
-fn format_resource_limit_error(limit_type: &str) -> String {
+fn format_resource_limit_error(limit_type: &str, import_chain: &[ImportStep]) -> String {
     let mut output = String::new();
+
+    // Import chain (if present)
+    output.push_str(&format_import_chain(import_chain));
 
     output.push_str(&format!(
         "{} Resource limit exceeded: {}\n",
@@ -369,6 +453,7 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
             line,
             column,
             message,
+            import_chain: _,
         } => {
             format!(
                 "{}:{}:{}: Syntax error: {}\n\n\
@@ -383,22 +468,34 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
             expected,
             got,
             context,
+            import_chain: _,
         } => format_invalid_prefix_suggestion(expected, got, context),
-        ParseError::ModifierIdOutOfRange { got, max } => {
+        ParseError::ModifierIdOutOfRange {
+            got,
+            max,
+            import_chain: _,
+        } => {
             format!(
                 "Modifier ID out of range: {} (valid range: MD_00 to MD_{:02X})\n\n\
                  Help: Custom modifier IDs must be in the range 00-{:02X} (0-{}).",
                 got, max, max, max
             )
         }
-        ParseError::LockIdOutOfRange { got, max } => {
+        ParseError::LockIdOutOfRange {
+            got,
+            max,
+            import_chain: _,
+        } => {
             format!(
                 "Lock ID out of range: {} (valid range: LK_00 to LK_{:02X})\n\n\
                  Help: Custom lock IDs must be in the range 00-{:02X} (0-{}).",
                 got, max, max, max
             )
         }
-        ParseError::PhysicalModifierInMD { name } => {
+        ParseError::PhysicalModifierInMD {
+            name,
+            import_chain: _,
+        } => {
             format!(
                 "Physical modifier name '{}' cannot be used with MD_ prefix.\n\n\
                  Physical modifiers (LShift, RShift, LCtrl, RCtrl, LAlt, RAlt, LMeta, RMeta)\n\
@@ -408,12 +505,15 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
                 name
             )
         }
-        ParseError::MissingPrefix { key, context } => {
-            format_missing_prefix_suggestion(key, context)
-        }
+        ParseError::MissingPrefix {
+            key,
+            context,
+            import_chain: _,
+        } => format_missing_prefix_suggestion(key, context),
         ParseError::ImportNotFound {
             path,
             searched_paths,
+            import_chain: _,
         } => {
             let mut msg = format!("Import file not found: {}\n", path.display());
             if !searched_paths.is_empty() {
@@ -436,7 +536,10 @@ pub fn format_error_user_friendly(error: &ParseError) -> String {
             msg.push_str("\n\nHelp: Remove the circular dependency by restructuring your imports.");
             msg
         }
-        ParseError::ResourceLimitExceeded { limit_type } => {
+        ParseError::ResourceLimitExceeded {
+            limit_type,
+            import_chain: _,
+        } => {
             format!(
                 "Resource limit exceeded: {}\n\n\
                  Help: Your script is too complex. Consider simplifying or breaking it into smaller parts.",
@@ -496,7 +599,13 @@ fn format_missing_prefix_suggestion(key: &str, context: &str) -> String {
 #[allow(dead_code)] // Will be used in CLI tasks (task 16+)
 pub fn format_error_json(error: &ParseError) -> String {
     match error {
-        ParseError::SyntaxError { file, line, column, message } => {
+        ParseError::SyntaxError {
+            file,
+            line,
+            column,
+            message,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E001",
                 "error_type": "SyntaxError",
@@ -505,9 +614,15 @@ pub fn format_error_json(error: &ParseError) -> String {
                 "line": line,
                 "column": column,
                 "suggestion": "Check your Rhai script syntax at the indicated location."
-            }).to_string()
+            })
+            .to_string()
         }
-        ParseError::InvalidPrefix { expected, got, context } => {
+        ParseError::InvalidPrefix {
+            expected,
+            got,
+            context,
+            import_chain: _,
+        } => {
             let suggestion = if got.starts_with("MD_") && !got.chars().nth(3).is_some_and(|c| c.is_ascii_hexdigit()) {
                 format!("Use MD_00 through MD_FE for custom modifiers, not physical modifier names like '{}'", got)
             } else if got.starts_with("VK_") && context.contains("hold") {
@@ -526,7 +641,11 @@ pub fn format_error_json(error: &ParseError) -> String {
                 "suggestion": suggestion
             }).to_string()
         }
-        ParseError::ModifierIdOutOfRange { got, max } => {
+        ParseError::ModifierIdOutOfRange {
+            got,
+            max,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E003",
                 "error_type": "ModifierIdOutOfRange",
@@ -535,9 +654,14 @@ pub fn format_error_json(error: &ParseError) -> String {
                 "max": max,
                 "valid_range": format!("MD_00 to MD_{:02X}", max),
                 "suggestion": format!("Use a modifier ID between 00 and {:02X} ({} in decimal)", max, max)
-            }).to_string()
+            })
+            .to_string()
         }
-        ParseError::LockIdOutOfRange { got, max } => {
+        ParseError::LockIdOutOfRange {
+            got,
+            max,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E004",
                 "error_type": "LockIdOutOfRange",
@@ -546,16 +670,21 @@ pub fn format_error_json(error: &ParseError) -> String {
                 "max": max,
                 "valid_range": format!("LK_00 to LK_{:02X}", max),
                 "suggestion": format!("Use a lock ID between 00 and {:02X} ({} in decimal)", max, max)
-            }).to_string()
+            })
+            .to_string()
         }
-        ParseError::PhysicalModifierInMD { name } => {
+        ParseError::PhysicalModifierInMD {
+            name,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E005",
                 "error_type": "PhysicalModifierInMD",
                 "message": format!("Physical modifier name '{}' cannot be used with MD_ prefix", name),
                 "physical_modifier": name,
                 "suggestion": "Use MD_00 through MD_FE for custom modifiers. Physical modifiers (LShift, RShift, etc.) should not have MD_ prefix."
-            }).to_string()
+            })
+            .to_string()
         }
         _ => format_remaining_error_json(error),
     }
@@ -564,7 +693,11 @@ pub fn format_error_json(error: &ParseError) -> String {
 #[allow(dead_code)] // Will be used in CLI tasks (task 16+)
 fn format_remaining_error_json(error: &ParseError) -> String {
     match error {
-        ParseError::MissingPrefix { key, context } => {
+        ParseError::MissingPrefix {
+            key,
+            context,
+            import_chain: _,
+        } => {
             let suggestion = if context.contains("output") || context.contains("to") {
                 format!("Add prefix to '{}': use VK_{} for virtual key, MD_XX for custom modifier, or LK_XX for custom lock", key, key)
             } else {
@@ -578,9 +711,14 @@ fn format_remaining_error_json(error: &ParseError) -> String {
                 "key": key,
                 "context": context,
                 "suggestion": suggestion
-            }).to_string()
+            })
+            .to_string()
         }
-        ParseError::ImportNotFound { path, searched_paths } => {
+        ParseError::ImportNotFound {
+            path,
+            searched_paths,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E007",
                 "error_type": "ImportNotFound",
@@ -588,7 +726,8 @@ fn format_remaining_error_json(error: &ParseError) -> String {
                 "path": path.to_string_lossy(),
                 "searched_paths": searched_paths.iter().map(|p| p.to_string_lossy().to_string()).collect::<Vec<_>>(),
                 "suggestion": "Make sure the file exists and the path is correct"
-            }).to_string()
+            })
+            .to_string()
         }
         ParseError::CircularImport { chain } => {
             serde_json::json!({
@@ -597,16 +736,21 @@ fn format_remaining_error_json(error: &ParseError) -> String {
                 "message": "Circular import detected",
                 "import_chain": chain.iter().map(|p| p.to_string_lossy().to_string()).collect::<Vec<_>>(),
                 "suggestion": "Remove the circular dependency by restructuring your imports"
-            }).to_string()
+            })
+            .to_string()
         }
-        ParseError::ResourceLimitExceeded { limit_type } => {
+        ParseError::ResourceLimitExceeded {
+            limit_type,
+            import_chain: _,
+        } => {
             serde_json::json!({
                 "error_code": "E009",
                 "error_type": "ResourceLimitExceeded",
                 "message": format!("Resource limit exceeded: {}", limit_type),
                 "limit_type": limit_type,
                 "suggestion": "Simplify your script or break it into smaller parts"
-            }).to_string()
+            })
+            .to_string()
         }
         _ => unreachable!(),
     }

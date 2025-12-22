@@ -20,6 +20,7 @@ pub fn parse_virtual_key(s: &str) -> Result<KeyCode, ParseError> {
         return Err(ParseError::MissingPrefix {
             key: s.to_string(),
             context: "virtual key".to_string(),
+            import_chain: Vec::new(),
         });
     }
     parse_key_name(&s[3..])
@@ -30,21 +31,28 @@ pub fn parse_modifier_id(s: &str) -> Result<u8, ParseError> {
         return Err(ParseError::MissingPrefix {
             key: s.to_string(),
             context: "custom modifier".to_string(),
+            import_chain: Vec::new(),
         });
     }
     let id_part = &s[3..];
     if PHYSICAL_MODIFIERS.contains(&id_part) {
         return Err(ParseError::PhysicalModifierInMD {
             name: id_part.to_string(),
+            import_chain: Vec::new(),
         });
     }
     let id = u16::from_str_radix(id_part, 16).map_err(|_| ParseError::InvalidPrefix {
         expected: "MD_XX (hex, 00-FE)".to_string(),
         got: s.to_string(),
         context: "custom modifier ID".to_string(),
+        import_chain: Vec::new(),
     })?;
     if id > 0xFE {
-        return Err(ParseError::ModifierIdOutOfRange { got: id, max: 0xFE });
+        return Err(ParseError::ModifierIdOutOfRange {
+            got: id,
+            max: 0xFE,
+            import_chain: Vec::new(),
+        });
     }
     Ok(id as u8)
 }
@@ -54,6 +62,7 @@ pub fn parse_lock_id(s: &str) -> Result<u8, ParseError> {
         return Err(ParseError::MissingPrefix {
             key: s.to_string(),
             context: "custom lock".to_string(),
+            import_chain: Vec::new(),
         });
     }
     let id_part = &s[3..];
@@ -61,9 +70,14 @@ pub fn parse_lock_id(s: &str) -> Result<u8, ParseError> {
         expected: "LK_XX (hex, 00-FE)".to_string(),
         got: s.to_string(),
         context: "custom lock ID".to_string(),
+        import_chain: Vec::new(),
     })?;
     if id > 0xFE {
-        return Err(ParseError::LockIdOutOfRange { got: id, max: 0xFE });
+        return Err(ParseError::LockIdOutOfRange {
+            got: id,
+            max: 0xFE,
+            import_chain: Vec::new(),
+        });
     }
     Ok(id as u8)
 }
@@ -80,6 +94,7 @@ pub fn parse_condition_string(s: &str) -> Result<Condition, ParseError> {
             expected: "MD_XX or LK_XX".to_string(),
             got: s.to_string(),
             context: "condition".to_string(),
+            import_chain: Vec::new(),
         })
     }
 }
@@ -495,6 +510,7 @@ pub fn parse_key_name(name: &str) -> Result<KeyCode, ParseError> {
                 line: 0,
                 column: 0,
                 message,
+                import_chain: Vec::new(),
             });
         }
     };

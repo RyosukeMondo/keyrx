@@ -55,6 +55,7 @@ impl ImportResolver {
             .map_err(|_| ParseError::ImportNotFound {
                 path: path.to_path_buf(),
                 searched_paths: vec![path.to_path_buf()],
+                import_chain: Vec::new(),
             })?;
 
         // Check for circular imports
@@ -73,6 +74,7 @@ impl ImportResolver {
             fs::read_to_string(&canonical_path).map_err(|_| ParseError::ImportNotFound {
                 path: path.to_path_buf(),
                 searched_paths: vec![canonical_path.clone()],
+                import_chain: Vec::new(),
             })?;
 
         // Find all import statements in the file
@@ -147,6 +149,7 @@ impl ImportResolver {
             .ok_or_else(|| ParseError::ImportNotFound {
                 path: PathBuf::from(import_path),
                 searched_paths: vec![current_file.to_path_buf()],
+                import_chain: Vec::new(),
             })?;
 
         // Resolve the import path relative to the current directory
@@ -157,6 +160,7 @@ impl ImportResolver {
             return Err(ParseError::ImportNotFound {
                 path: PathBuf::from(import_path),
                 searched_paths: vec![resolved_path.clone(), current_dir.join(import_path)],
+                import_chain: Vec::new(),
             });
         }
 
@@ -332,6 +336,7 @@ import "missing.rhai"
             Err(ParseError::ImportNotFound {
                 path,
                 searched_paths,
+                import_chain: _,
             }) => {
                 assert!(path.to_str().unwrap().contains("missing.rhai"));
                 assert!(!searched_paths.is_empty());
