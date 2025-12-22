@@ -485,6 +485,15 @@ impl ManagedDevice {
 /// 4. Create a `ManagedDevice` for matched devices
 /// 5. Unmatched devices are logged but not grabbed
 ///
+/// # Hot-Plug Support
+///
+/// The manager supports device hot-plug through the [`refresh`][Self::refresh] method:
+///
+/// - Call `refresh()` periodically or in response to udev events
+/// - Newly connected devices are automatically matched and added
+/// - Disconnected devices are automatically detected and removed
+/// - State for existing devices is preserved
+///
 /// # Example
 ///
 /// ```ignore
@@ -504,12 +513,12 @@ impl ManagedDevice {
 /// ];
 ///
 /// // Discover and match devices
-/// let manager = DeviceManager::discover(&configs)?;
+/// let mut manager = DeviceManager::discover(&configs)?;
 ///
 /// println!("Managing {} device(s)", manager.device_count());
-/// for device in manager.devices() {
-///     println!("  - {}", device.info().name);
-/// }
+///
+/// // Later, handle hot-plug events
+/// manager.refresh(&configs)?;
 /// ```
 pub struct DeviceManager {
     /// Managed devices with their configurations and state.
@@ -704,6 +713,145 @@ impl DeviceManager {
                 );
             }
         }
+    }
+
+    /// Refreshes the device list to handle hot-plug events.
+    ///
+    /// This method re-enumerates available keyboards and:
+    /// - Adds newly connected devices that match a configuration
+    /// - Removes disconnected devices and cleans up their resources
+    /// - Preserves state for devices that are still connected
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - Device configurations to match new devices against
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(RefreshResult)` - Summary of devices added and removed
+    /// * `Err(DiscoveryError::Io)` - Failed to enumerate devices
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Periodically refresh to detect USB keyboard plug/unplug
+    /// loop {
+    ///     std::thread::sleep(std::time::Duration::from_secs(1));
+    ///
+    ///     let result = manager.refresh(&configs)?;
+    ///     if result.added > 0 {
+    ///         println!("Added {} new device(s)", result.added);
+    ///     }
+    ///     if result.removed > 0 {
+    ///         println!("Removed {} disconnected device(s)", result.removed);
+    ///     }
+    /// }
+    /// ```
+    pub fn refresh(&mut self, configs: &[DeviceConfig]) -> Result<RefreshResult, DiscoveryError> {
+        // Enumerate currently available keyboards
+        let current_keyboards = enumerate_keyboards()?;
+
+        // Build set of current device paths for comparison
+        let current_paths: std::collections::HashSet<_> =
+            current_keyboards.iter().map(|k| k.path.clone()).collect();
+
+        // Find disconnected devices (present in our list but not on system)
+        let mut removed_count = 0;
+        self.devices.retain(|device| {
+            let still_present = current_paths.contains(&device.info.path);
+            if !still_present {
+                info!(
+                    "Device disconnected: '{}' ({})",
+                    device.info.name,
+                    device.info.path.display()
+                );
+                removed_count += 1;
+            }
+            still_present
+        });
+
+        // Build set of already-managed device paths (owned values to avoid borrow issues)
+        let managed_paths: std::collections::HashSet<_> =
+            self.devices.iter().map(|d| d.info.path.clone()).collect();
+
+        // Collect new devices to add (to avoid borrowing issues)
+        let mut new_devices = Vec::new();
+
+        // Find newly connected devices (present on system but not in our list)
+        for keyboard_info in current_keyboards {
+            if managed_paths.contains(&keyboard_info.path) {
+                continue; // Already managing this device
+            }
+
+            // Try to match against configurations
+            for (config_idx, config) in configs.iter().enumerate() {
+                let pattern = &config.identifier.pattern;
+
+                if match_device(&keyboard_info, pattern) {
+                    info!(
+                        "New device connected: '{}' matches pattern '{}' (config #{})",
+                        keyboard_info.name, pattern, config_idx
+                    );
+
+                    // Try to open the device
+                    match EvdevInput::open(&keyboard_info.path) {
+                        Ok(input) => {
+                            let managed = ManagedDevice::new(
+                                keyboard_info.clone(),
+                                input,
+                                config,
+                                config_idx,
+                            );
+                            new_devices.push(managed);
+                            break; // First matching config wins
+                        }
+                        Err(e) => {
+                            warn!("Failed to open new device '{}': {}", keyboard_info.name, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add all new devices
+        let added_count = new_devices.len();
+        self.devices.extend(new_devices);
+
+        if added_count > 0 || removed_count > 0 {
+            info!(
+                "Device refresh: {} added, {} removed, {} total managed",
+                added_count,
+                removed_count,
+                self.devices.len()
+            );
+        } else {
+            debug!("Device refresh: no changes detected");
+        }
+
+        Ok(RefreshResult {
+            added: added_count,
+            removed: removed_count,
+        })
+    }
+}
+
+/// Result of a device refresh operation.
+///
+/// This struct contains statistics about the changes made during a
+/// [`DeviceManager::refresh`] call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RefreshResult {
+    /// Number of new devices added during refresh.
+    pub added: usize,
+    /// Number of disconnected devices removed during refresh.
+    pub removed: usize,
+}
+
+impl RefreshResult {
+    /// Returns `true` if any devices were added or removed.
+    #[must_use]
+    pub fn has_changes(&self) -> bool {
+        self.added > 0 || self.removed > 0
     }
 }
 
@@ -1273,6 +1421,121 @@ mod tests {
                     println!("Discovery error (expected if no permissions): {}", e);
                 }
             }
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input devices"]
+        fn test_device_manager_refresh_real_devices() {
+            let configs = vec![create_config("*")];
+
+            match DeviceManager::discover(&configs) {
+                Ok(mut manager) => {
+                    let initial_count = manager.device_count();
+                    println!("Initially managing {} device(s)", initial_count);
+
+                    // Refresh should not change anything if no devices added/removed
+                    let result = manager.refresh(&configs);
+                    assert!(result.is_ok(), "Refresh should succeed");
+
+                    let refresh_result = result.unwrap();
+                    println!(
+                        "Refresh result: {} added, {} removed",
+                        refresh_result.added, refresh_result.removed
+                    );
+
+                    // Device count should remain same if nothing changed
+                    assert_eq!(
+                        manager.device_count(),
+                        initial_count,
+                        "Device count should be stable"
+                    );
+                }
+                Err(e) => {
+                    println!("Discovery error (expected if no permissions): {}", e);
+                }
+            }
+        }
+    }
+
+    // RefreshResult tests - pure struct tests that don't require real devices
+    mod refresh_result {
+        use super::*;
+
+        #[test]
+        fn test_refresh_result_default_no_changes() {
+            let result = RefreshResult {
+                added: 0,
+                removed: 0,
+            };
+            assert!(!result.has_changes());
+        }
+
+        #[test]
+        fn test_refresh_result_has_changes_added() {
+            let result = RefreshResult {
+                added: 1,
+                removed: 0,
+            };
+            assert!(result.has_changes());
+        }
+
+        #[test]
+        fn test_refresh_result_has_changes_removed() {
+            let result = RefreshResult {
+                added: 0,
+                removed: 1,
+            };
+            assert!(result.has_changes());
+        }
+
+        #[test]
+        fn test_refresh_result_has_changes_both() {
+            let result = RefreshResult {
+                added: 2,
+                removed: 1,
+            };
+            assert!(result.has_changes());
+        }
+
+        #[test]
+        fn test_refresh_result_debug_impl() {
+            let result = RefreshResult {
+                added: 3,
+                removed: 2,
+            };
+            let debug_str = format!("{:?}", result);
+            assert!(debug_str.contains("added: 3"));
+            assert!(debug_str.contains("removed: 2"));
+        }
+
+        #[test]
+        fn test_refresh_result_clone() {
+            let result = RefreshResult {
+                added: 1,
+                removed: 2,
+            };
+            let cloned = result;
+            assert_eq!(result.added, cloned.added);
+            assert_eq!(result.removed, cloned.removed);
+        }
+
+        #[test]
+        fn test_refresh_result_equality() {
+            let result1 = RefreshResult {
+                added: 1,
+                removed: 2,
+            };
+            let result2 = RefreshResult {
+                added: 1,
+                removed: 2,
+            };
+            let result3 = RefreshResult {
+                added: 2,
+                removed: 2,
+            };
+
+            assert_eq!(result1, result2);
+            assert_ne!(result1, result3);
         }
     }
 }

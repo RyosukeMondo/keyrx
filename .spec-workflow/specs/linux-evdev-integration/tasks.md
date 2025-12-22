@@ -134,7 +134,7 @@
   - _Requirements: 3.1, 3.2, 3.4_
   - _Prompt: Role: Rust Software Architect with expertise in resource management | Task: Implement DeviceManager that discovers devices and matches them to configurations, creating ManagedDevice instances following requirements 3.1, 3.2, and 3.4 | Restrictions: Must enumerate keyboards, match each against config patterns in priority order (specific before wildcard), create ManagedDevice with EvdevInput, DeviceState, and KeyLookup, handle no-match case (skip device, don't grab), log matched devices at INFO level, log unmatched devices at DEBUG level, return error if no devices match any config | Success: DeviceManager::discover creates ManagedDevice for each matched device, unmatched devices are not grabbed, multiple devices can match same pattern, priority order respected (first matching config wins), empty device list returns error with available devices listed_
 
-- [ ] 13. Add device hot-plug support
+- [-] 13. Add device hot-plug support
   - File: `keyrx_daemon/src/device_manager.rs` (continue)
   - Implement `refresh(&mut self) -> Result<(), DiscoveryError>`
   - Detect newly connected devices
