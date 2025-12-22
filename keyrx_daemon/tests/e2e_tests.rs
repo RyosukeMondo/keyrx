@@ -3,16 +3,42 @@
 //! These tests validate complete system behavior using real input devices and uinput.
 //! All tests are marked `#[ignore]` for CI compatibility.
 //!
+//! # Virtual E2E Tests for CI
+//!
+//! **For CI/CD environments or testing without physical hardware, use the virtual E2E tests
+//! in [`virtual_e2e_tests.rs`](./virtual_e2e_tests.rs) instead.**
+//!
+//! Virtual tests use uinput to create simulated keyboard devices, allowing full integration
+//! testing without requiring physical hardware. They are the preferred approach for:
+//! - Continuous Integration pipelines
+//! - Development without physical keyboard access
+//! - Automated testing of key remapping logic
+//!
+//! Run virtual tests with:
+//! ```bash
+//! sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests -- --ignored
+//! ```
+//!
+//! # When to Use Hardware Tests (This File)
+//!
+//! Use the tests in this file when you need to:
+//! - Verify behavior with actual physical keypresses
+//! - Test device discovery with real USB/Bluetooth keyboards
+//! - Validate keyboard grabbing and release behavior
+//! - Perform manual interactive testing sessions
+//!
+//! These tests are **not suitable for CI** as they require physical hardware.
+//!
 //! # Hardware Requirements
 //!
 //! - Physical keyboard connected via USB or built-in
 //! - User must be in `input` and `uinput` groups (or run as root)
 //! - `/dev/uinput` must be accessible
 //!
-//! # Running E2E Tests
+//! # Running Hardware E2E Tests
 //!
 //! ```bash
-//! # Run all E2E tests (requires hardware + permissions)
+//! # Run all hardware E2E tests (requires hardware + permissions)
 //! sudo cargo test --package keyrx_daemon --test e2e_tests -- --ignored
 //!
 //! # Run a specific E2E test
