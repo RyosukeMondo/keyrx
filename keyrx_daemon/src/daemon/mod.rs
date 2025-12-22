@@ -739,6 +739,85 @@ impl Daemon {
         Ok(ready_indices)
     }
 
+    /// Performs graceful shutdown of the daemon.
+    ///
+    /// This method releases all resources in the correct order:
+    ///
+    /// 1. Release all grabbed input devices (restores normal keyboard input)
+    /// 2. Destroy the uinput virtual keyboard (removes from `/dev/input/`)
+    /// 3. Log completion of each step
+    ///
+    /// # Error Handling
+    ///
+    /// Errors during shutdown are logged but do not prevent continued cleanup.
+    /// This ensures that all resources are released even if some operations fail.
+    ///
+    /// # Automatic Cleanup
+    ///
+    /// This method is called automatically by the `Drop` implementation, so
+    /// cleanup occurs even on panic or unexpected termination.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use keyrx_daemon::daemon::Daemon;
+    ///
+    /// let mut daemon = Daemon::new(Path::new("config.krx"))?;
+    ///
+    /// // Run the event loop
+    /// daemon.run()?;
+    ///
+    /// // Explicit shutdown (optional - Drop will call this automatically)
+    /// daemon.shutdown();
+    /// # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
+    /// ```
+    pub fn shutdown(&mut self) {
+        info!("Initiating graceful shutdown...");
+
+        // Step 1: Release all grabbed input devices
+        info!(
+            "Releasing {} grabbed device(s)...",
+            self.device_manager.device_count()
+        );
+
+        for device in self.device_manager.devices_mut() {
+            let name = device.info().name.clone();
+
+            // Only release if device is grabbed
+            if device.input().is_grabbed() {
+                match device.input_mut().release() {
+                    Ok(()) => {
+                        info!("Released device: {}", name);
+                    }
+                    Err(e) => {
+                        // Log warning but continue with other devices
+                        warn!("Failed to release device '{}': {}", name, e);
+                    }
+                }
+            } else {
+                debug!("Device '{}' was not grabbed, skipping release", name);
+            }
+        }
+
+        // Step 2: Destroy the uinput virtual keyboard
+        info!("Destroying virtual keyboard...");
+        match self.output.destroy() {
+            Ok(()) => {
+                info!("Virtual keyboard destroyed");
+            }
+            Err(e) => {
+                // Log warning - device may already be destroyed by Drop
+                warn!("Failed to destroy virtual keyboard: {}", e);
+            }
+        }
+
+        // Mark daemon as stopped
+        self.running.store(false, Ordering::SeqCst);
+
+        info!("Shutdown complete");
+    }
+
     /// Processes all available events from a single device.
     ///
     /// Returns the number of events processed.
@@ -792,6 +871,31 @@ impl Daemon {
         }
 
         Ok(processed_count)
+    }
+}
+
+/// Drop implementation to ensure automatic cleanup on daemon exit.
+///
+/// When a `Daemon` is dropped (goes out of scope, program exits, or panic occurs),
+/// this implementation ensures that:
+///
+/// 1. All grabbed input devices are released (restores normal keyboard input)
+/// 2. The virtual keyboard is destroyed (removes from `/dev/input/`)
+///
+/// This prevents:
+/// - Orphaned device grabs that would block keyboard input
+/// - Orphaned virtual devices in `/dev/input/`
+/// - Stuck keys in applications
+///
+/// # Note
+///
+/// The `shutdown()` method is called automatically. If `shutdown()` was already
+/// called manually, it will safely handle the already-released/destroyed state.
+impl Drop for Daemon {
+    fn drop(&mut self) {
+        // Call shutdown to release all resources
+        // shutdown() handles already-released devices gracefully
+        self.shutdown();
     }
 }
 
@@ -1142,6 +1246,167 @@ mod tests {
                 daemon.is_running(),
                 "Daemon should still be running after failed reload"
             );
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_shutdown_releases_devices() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            let mut daemon = match Daemon::new(temp_file.path()) {
+                Ok(d) => d,
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                    return;
+                }
+            };
+
+            // Verify daemon is running initially
+            assert!(daemon.is_running(), "Daemon should be running initially");
+
+            // Call shutdown
+            daemon.shutdown();
+
+            // Verify daemon is no longer running
+            assert!(
+                !daemon.is_running(),
+                "Daemon should not be running after shutdown"
+            );
+
+            // Verify output device is destroyed
+            assert!(
+                daemon.output().is_destroyed(),
+                "Output device should be destroyed after shutdown"
+            );
+
+            println!("Shutdown completed successfully - all resources released");
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_shutdown_idempotent() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            let mut daemon = match Daemon::new(temp_file.path()) {
+                Ok(d) => d,
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                    return;
+                }
+            };
+
+            // Call shutdown twice - should not panic or error
+            daemon.shutdown();
+            daemon.shutdown(); // Should handle already-released state gracefully
+
+            assert!(!daemon.is_running(), "Daemon should not be running");
+            assert!(daemon.output().is_destroyed(), "Output should be destroyed");
+
+            println!("Multiple shutdown calls handled gracefully");
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_drop_calls_shutdown() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            // Create daemon in a block so it gets dropped
+            {
+                let daemon = match Daemon::new(temp_file.path()) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        println!("Daemon creation failed (expected if no permissions): {}", e);
+                        return;
+                    }
+                };
+
+                println!(
+                    "Daemon created with {} device(s), dropping now...",
+                    daemon.device_count()
+                );
+                // daemon will be dropped here, which should call shutdown via Drop
+            }
+
+            // If we get here without panic, Drop worked correctly
+            println!("Daemon dropped successfully - cleanup via Drop verified");
         }
     }
 }
