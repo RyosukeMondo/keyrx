@@ -734,6 +734,380 @@ impl E2EHarness {
         }
     }
 
+    // ========================================================================
+    // Test Interaction Methods
+    // ========================================================================
+
+    /// Injects a sequence of key events into the virtual keyboard.
+    ///
+    /// This method delegates to [`VirtualKeyboard::inject_sequence`] and is the
+    /// primary way to send test input through the daemon.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - Slice of key events to inject in order
+    ///
+    /// # Errors
+    ///
+    /// - [`E2EError::VirtualDevice`] if injection fails
+    /// - [`E2EError::DaemonCrashed`] if the daemon has exited
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use keyrx_core::runtime::KeyEvent;
+    /// use keyrx_core::config::KeyCode;
+    ///
+    /// let mut harness = E2EHarness::setup(config)?;
+    ///
+    /// // Inject a key tap (press + release)
+    /// harness.inject(&[
+    ///     KeyEvent::Press(KeyCode::A),
+    ///     KeyEvent::Release(KeyCode::A),
+    /// ])?;
+    /// ```
+    pub fn inject(&mut self, events: &[KeyEvent]) -> Result<(), E2EError> {
+        // Check if daemon is still running before injection
+        if !self.is_daemon_running() {
+            let stderr = self
+                .daemon_process
+                .as_mut()
+                .and_then(|p| Self::read_child_stderr(p));
+            let exit_code = self
+                .daemon_process
+                .as_mut()
+                .and_then(|p| p.try_wait().ok().flatten())
+                .and_then(|s| s.code());
+            return Err(E2EError::DaemonCrashed { exit_code, stderr });
+        }
+
+        self.virtual_input
+            .inject_sequence(events, None)
+            .map_err(E2EError::from)
+    }
+
+    /// Injects a sequence of key events with a delay between each.
+    ///
+    /// This is useful when you need to simulate realistic typing speed or
+    /// when the daemon needs time to process events between injections.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - Slice of key events to inject in order
+    /// * `delay` - Time to wait between each event
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use std::time::Duration;
+    ///
+    /// // Inject with 5ms delay between events
+    /// harness.inject_with_delay(
+    ///     &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+    ///     Duration::from_millis(5),
+    /// )?;
+    /// ```
+    pub fn inject_with_delay(
+        &mut self,
+        events: &[KeyEvent],
+        delay: Duration,
+    ) -> Result<(), E2EError> {
+        // Check if daemon is still running before injection
+        if !self.is_daemon_running() {
+            let stderr = self
+                .daemon_process
+                .as_mut()
+                .and_then(|p| Self::read_child_stderr(p));
+            let exit_code = self
+                .daemon_process
+                .as_mut()
+                .and_then(|p| p.try_wait().ok().flatten())
+                .and_then(|s| s.code());
+            return Err(E2EError::DaemonCrashed { exit_code, stderr });
+        }
+
+        self.virtual_input
+            .inject_sequence(events, Some(delay))
+            .map_err(E2EError::from)
+    }
+
+    /// Captures output events from the daemon with a timeout.
+    ///
+    /// This method delegates to [`OutputCapture::collect_events`] and collects
+    /// all events that arrive within the specified timeout.
+    ///
+    /// # Arguments
+    ///
+    /// * `timeout` - Time to wait for additional events after receiving each event.
+    ///   The timeout resets after each event, so this is effectively the "idle timeout".
+    ///
+    /// # Returns
+    ///
+    /// A vector of captured events (may be empty if no events arrived within timeout).
+    ///
+    /// # Errors
+    ///
+    /// - [`E2EError::VirtualDevice`] if capture fails
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use std::time::Duration;
+    ///
+    /// // Capture events with 100ms idle timeout
+    /// let events = harness.capture(Duration::from_millis(100))?;
+    /// println!("Captured {} events", events.len());
+    /// ```
+    pub fn capture(&mut self, timeout: Duration) -> Result<Vec<KeyEvent>, E2EError> {
+        self.output_capture
+            .collect_events(timeout)
+            .map_err(E2EError::from)
+    }
+
+    /// Captures a specific number of events with a timeout.
+    ///
+    /// This is useful when you know exactly how many events to expect.
+    /// The method returns as soon as the expected count is reached or the
+    /// timeout expires.
+    ///
+    /// # Arguments
+    ///
+    /// * `count` - Number of events to capture
+    /// * `timeout` - Maximum total time to wait for all events
+    ///
+    /// # Returns
+    ///
+    /// A vector of captured events (may have fewer than `count` if timeout expires).
+    ///
+    /// # Errors
+    ///
+    /// - [`E2EError::VirtualDevice`] if capture fails
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Capture exactly 2 events (press + release)
+    /// let events = harness.capture_n(2, Duration::from_millis(500))?;
+    /// assert_eq!(events.len(), 2);
+    /// ```
+    pub fn capture_n(
+        &mut self,
+        count: usize,
+        timeout: Duration,
+    ) -> Result<Vec<KeyEvent>, E2EError> {
+        let mut events = Vec::with_capacity(count);
+        let start = Instant::now();
+
+        while events.len() < count {
+            let remaining = timeout.saturating_sub(start.elapsed());
+            if remaining.is_zero() {
+                break;
+            }
+
+            match self.output_capture.next_event(remaining)? {
+                Some(event) => events.push(event),
+                None => break, // Timeout
+            }
+        }
+
+        Ok(events)
+    }
+
+    /// Drains any pending events from the output capture.
+    ///
+    /// This is useful before starting a test to ensure no stale events
+    /// from previous operations affect the results.
+    ///
+    /// # Returns
+    ///
+    /// The number of events that were drained.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let drained = harness.drain()?;
+    /// println!("Cleared {} stale events", drained);
+    /// ```
+    pub fn drain(&mut self) -> Result<usize, E2EError> {
+        self.output_capture.drain().map_err(E2EError::from)
+    }
+
+    /// Injects events and captures the resulting output in one operation.
+    ///
+    /// This is the most common pattern for E2E testing. The method:
+    /// 1. Drains any pending output events (to avoid stale data)
+    /// 2. Injects the input events
+    /// 3. Captures output events until the timeout expires
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - Events to inject
+    /// * `capture_timeout` - Time to wait for output events after injection
+    ///
+    /// # Returns
+    ///
+    /// A vector of captured output events.
+    ///
+    /// # Errors
+    ///
+    /// - [`E2EError::VirtualDevice`] if injection or capture fails
+    /// - [`E2EError::DaemonCrashed`] if the daemon has exited
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Test A→B remapping
+    /// let output = harness.inject_and_capture(
+    ///     &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+    ///     Duration::from_millis(100),
+    /// )?;
+    ///
+    /// // Expect B events (if A→B remapping is configured)
+    /// assert_eq!(output, vec![
+    ///     KeyEvent::Press(KeyCode::B),
+    ///     KeyEvent::Release(KeyCode::B),
+    /// ]);
+    /// ```
+    pub fn inject_and_capture(
+        &mut self,
+        events: &[KeyEvent],
+        capture_timeout: Duration,
+    ) -> Result<Vec<KeyEvent>, E2EError> {
+        // Drain any stale events before the test
+        self.drain()?;
+
+        // Inject the input events
+        self.inject(events)?;
+
+        // Small delay to allow events to propagate through the daemon
+        std::thread::sleep(Duration::from_millis(10));
+
+        // Capture the output
+        self.capture(capture_timeout)
+    }
+
+    /// Injects events and captures a specific number of output events.
+    ///
+    /// Similar to [`inject_and_capture`](Self::inject_and_capture) but waits
+    /// for exactly `expected_count` events instead of using an idle timeout.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - Events to inject
+    /// * `expected_count` - Number of output events expected
+    /// * `timeout` - Maximum time to wait for all events
+    ///
+    /// # Returns
+    ///
+    /// A vector of captured output events.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Inject 2 events, expect 2 output events
+    /// let output = harness.inject_and_capture_n(
+    ///     &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+    ///     2,
+    ///     Duration::from_millis(500),
+    /// )?;
+    /// ```
+    pub fn inject_and_capture_n(
+        &mut self,
+        events: &[KeyEvent],
+        expected_count: usize,
+        timeout: Duration,
+    ) -> Result<Vec<KeyEvent>, E2EError> {
+        // Drain any stale events before the test
+        self.drain()?;
+
+        // Inject the input events
+        self.inject(events)?;
+
+        // Small delay to allow events to propagate through the daemon
+        std::thread::sleep(Duration::from_millis(10));
+
+        // Capture the expected number of output events
+        self.capture_n(expected_count, timeout)
+    }
+
+    /// Verifies that captured events match expected events.
+    ///
+    /// This method compares the captured and expected events and returns
+    /// a detailed error if they don't match.
+    ///
+    /// # Arguments
+    ///
+    /// * `captured` - Events that were actually captured
+    /// * `expected` - Events that were expected
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if events match, or [`E2EError::VerificationFailed`] with
+    /// detailed diff information.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let captured = harness.inject_and_capture(
+    ///     &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+    ///     Duration::from_millis(100),
+    /// )?;
+    ///
+    /// harness.verify(
+    ///     &captured,
+    ///     &[KeyEvent::Press(KeyCode::B), KeyEvent::Release(KeyCode::B)],
+    /// )?;
+    /// ```
+    pub fn verify(&self, captured: &[KeyEvent], expected: &[KeyEvent]) -> Result<(), E2EError> {
+        use keyrx_daemon::test_utils::compare_events;
+
+        let result = compare_events(captured, expected);
+        if result.passed {
+            Ok(())
+        } else {
+            Err(E2EError::VerificationFailed {
+                captured: captured.to_vec(),
+                expected: expected.to_vec(),
+                diff: result.format_diff(),
+            })
+        }
+    }
+
+    /// Injects events, captures output, and verifies against expected events.
+    ///
+    /// This is the most convenient method for E2E testing, combining
+    /// injection, capture, and verification in one call.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - Events to inject
+    /// * `expected` - Expected output events
+    /// * `capture_timeout` - Time to wait for output events
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if verification passes, or an error describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Test that A is remapped to B
+    /// harness.test_mapping(
+    ///     &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+    ///     &[KeyEvent::Press(KeyCode::B), KeyEvent::Release(KeyCode::B)],
+    ///     Duration::from_millis(100),
+    /// )?;
+    /// ```
+    pub fn test_mapping(
+        &mut self,
+        input: &[KeyEvent],
+        expected: &[KeyEvent],
+        capture_timeout: Duration,
+    ) -> Result<(), E2EError> {
+        let captured = self.inject_and_capture(input, capture_timeout)?;
+        self.verify(&captured, expected)
+    }
+
     /// Finds the daemon binary path.
     ///
     /// Looks in the following order:
@@ -1234,5 +1608,211 @@ mod tests {
 
         // Should be an error
         assert!(result.is_err());
+    }
+
+    // ------------------------------------------------------------------------
+    // E2EHarness Inject/Capture/Verify Method Tests
+    // ------------------------------------------------------------------------
+
+    /// Test that inject, capture, and verify methods can be called on harness
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_capture_verify -- --ignored"]
+    fn test_e2e_harness_inject_capture_verify() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Inject A key press and release
+        let input = vec![KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)];
+
+        let captured = harness
+            .inject_and_capture(&input, Duration::from_millis(500))
+            .expect("Failed to inject and capture");
+
+        // Expect B events due to A→B remapping
+        let expected = vec![KeyEvent::Press(KeyCode::B), KeyEvent::Release(KeyCode::B)];
+
+        harness
+            .verify(&captured, &expected)
+            .expect("Verification should pass for A→B remap");
+    }
+
+    /// Test the test_mapping convenience method
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_test_mapping -- --ignored"]
+    fn test_e2e_harness_test_mapping() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Test the mapping in one call
+        harness
+            .test_mapping(
+                &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+                &[KeyEvent::Press(KeyCode::B), KeyEvent::Release(KeyCode::B)],
+                Duration::from_millis(500),
+            )
+            .expect("Test mapping should pass");
+    }
+
+    /// Test inject_with_delay method
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_with_delay -- --ignored"]
+    fn test_e2e_harness_inject_with_delay() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Drain any pending events
+        harness.drain().expect("Failed to drain events");
+
+        // Inject with delay
+        let start = Instant::now();
+        harness
+            .inject_with_delay(
+                &[
+                    KeyEvent::Press(KeyCode::A),
+                    KeyEvent::Release(KeyCode::A),
+                    KeyEvent::Press(KeyCode::A),
+                    KeyEvent::Release(KeyCode::A),
+                ],
+                Duration::from_millis(10),
+            )
+            .expect("Failed to inject with delay");
+        let elapsed = start.elapsed();
+
+        // Should have taken at least 30ms (3 delays of 10ms each)
+        // Allow some tolerance for scheduling
+        assert!(
+            elapsed >= Duration::from_millis(20),
+            "Inject with delay should have taken at least 20ms, took {:?}",
+            elapsed
+        );
+    }
+
+    /// Test capture_n method
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_capture_n -- --ignored"]
+    fn test_e2e_harness_capture_n() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Drain any pending events
+        harness.drain().expect("Failed to drain events");
+
+        // Inject 4 events (2 key taps)
+        harness
+            .inject(&[
+                KeyEvent::Press(KeyCode::A),
+                KeyEvent::Release(KeyCode::A),
+                KeyEvent::Press(KeyCode::A),
+                KeyEvent::Release(KeyCode::A),
+            ])
+            .expect("Failed to inject events");
+
+        // Capture exactly 4 events
+        let captured = harness
+            .capture_n(4, Duration::from_millis(500))
+            .expect("Failed to capture_n events");
+
+        assert_eq!(captured.len(), 4, "Should have captured 4 events");
+    }
+
+    /// Test inject_and_capture_n method
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_and_capture_n -- --ignored"]
+    fn test_e2e_harness_inject_and_capture_n() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Inject and capture exactly 2 events
+        let captured = harness
+            .inject_and_capture_n(
+                &[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)],
+                2,
+                Duration::from_millis(500),
+            )
+            .expect("Failed to inject and capture_n");
+
+        assert_eq!(captured.len(), 2, "Should have captured 2 events");
+        assert_eq!(captured[0], KeyEvent::Press(KeyCode::B));
+        assert_eq!(captured[1], KeyEvent::Release(KeyCode::B));
+    }
+
+    /// Test drain method
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_drain -- --ignored"]
+    fn test_e2e_harness_drain() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Inject some events
+        harness
+            .inject(&[KeyEvent::Press(KeyCode::A), KeyEvent::Release(KeyCode::A)])
+            .expect("Failed to inject events");
+
+        // Wait a bit for events to propagate
+        std::thread::sleep(Duration::from_millis(50));
+
+        // Drain should clear them
+        let drained = harness.drain().expect("Failed to drain events");
+        assert!(drained > 0, "Should have drained some events");
+
+        // Now capture should return empty
+        let captured = harness
+            .capture(Duration::from_millis(50))
+            .expect("Failed to capture events");
+        assert!(captured.is_empty(), "Should have no events after drain");
+    }
+
+    /// Test verify returns error on mismatch
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_verify_mismatch -- --ignored"]
+    fn test_e2e_harness_verify_mismatch() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Verify with mismatched events
+        let captured = vec![KeyEvent::Press(KeyCode::B), KeyEvent::Release(KeyCode::B)];
+        let expected = vec![KeyEvent::Press(KeyCode::C), KeyEvent::Release(KeyCode::C)];
+
+        let result = harness.verify(&captured, &expected);
+        assert!(result.is_err(), "Should fail verification");
+
+        match result {
+            Err(E2EError::VerificationFailed { diff, .. }) => {
+                assert!(diff.contains("FAILED"), "Diff should show failure");
+            }
+            _ => panic!("Expected VerificationFailed error"),
+        }
+    }
+
+    /// Test passthrough behavior for unmapped keys
+    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
+    #[test]
+    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_passthrough -- --ignored"]
+    fn test_e2e_harness_passthrough() {
+        let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
+        let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
+
+        // Inject C key (not mapped) - should pass through unchanged
+        let captured = harness
+            .inject_and_capture(
+                &[KeyEvent::Press(KeyCode::C), KeyEvent::Release(KeyCode::C)],
+                Duration::from_millis(500),
+            )
+            .expect("Failed to inject and capture");
+
+        // Should get C events (passthrough)
+        harness
+            .verify(
+                &captured,
+                &[KeyEvent::Press(KeyCode::C), KeyEvent::Release(KeyCode::C)],
+            )
+            .expect("Unmapped key should pass through unchanged");
     }
 }

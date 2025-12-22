@@ -161,7 +161,7 @@
     Success: setup() returns harness with working virtual keyboard, running daemon, and connected output capture
     After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record what was built, then mark [x] as complete_
 
-- [ ] 11. Implement E2EHarness inject and capture methods
+- [-] 11. Implement E2EHarness inject and capture methods
   - File: `keyrx_daemon/tests/e2e_harness.rs` (continue)
   - Implement inject(events) delegating to VirtualKeyboard
   - Implement capture(timeout) delegating to OutputCapture
