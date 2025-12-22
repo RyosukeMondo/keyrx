@@ -1,8 +1,10 @@
 #[cfg(feature = "windows")]
+#[allow(unused_imports)] // Will be used when Windows implementation is complete
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
 #[cfg(feature = "windows")]
 pub struct WindowsPlatform {
+    #[allow(dead_code)] // Will be used when Windows implementation is complete
     hook_handle: Option<isize>,
 }
 

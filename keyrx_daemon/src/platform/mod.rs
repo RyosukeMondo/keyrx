@@ -161,6 +161,7 @@ pub trait OutputDevice {
 }
 
 #[allow(dead_code)]
+#[allow(clippy::large_enum_variant)] // LinuxPlatform is large but this enum is a placeholder
 pub enum Platform {
     #[cfg(feature = "linux")]
     Linux(LinuxPlatform),
