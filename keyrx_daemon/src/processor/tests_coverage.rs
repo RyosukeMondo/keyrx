@@ -13,7 +13,7 @@ use crate::processor::test_utils::create_test_config;
 #[test]
 fn test_process_one_input_error_not_end_of_stream() {
     let config = create_test_config(vec![]);
-    let mut input = MockInput::new(vec![]);
+    let input = MockInput::new(vec![]);
     let output = MockOutput::new();
 
     // MockInput returns EndOfStream, which doesn't log

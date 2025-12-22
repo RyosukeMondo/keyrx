@@ -275,6 +275,7 @@ pub struct E2EConfig {
 
 impl E2EConfig {
     /// Creates a new E2EConfig with the given device pattern and mappings.
+    #[allow(dead_code)]
     pub fn new(device_pattern: impl Into<String>, mappings: Vec<KeyMapping>) -> Self {
         Self {
             device_pattern: device_pattern.into(),
@@ -846,17 +847,20 @@ impl E2EHarness {
     }
 
     /// Returns a mutable reference to the virtual input keyboard.
+    #[allow(dead_code)]
     pub fn virtual_input_mut(&mut self) -> &mut VirtualKeyboard {
         &mut self.virtual_input
     }
 
     /// Returns a reference to the output capture.
+    #[allow(dead_code)]
     #[must_use]
     pub fn output_capture(&self) -> &OutputCapture {
         &self.output_capture
     }
 
     /// Returns a mutable reference to the output capture.
+    #[allow(dead_code)]
     pub fn output_capture_mut(&mut self) -> &mut OutputCapture {
         &mut self.output_capture
     }
