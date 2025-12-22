@@ -269,7 +269,7 @@
   - _Prompt: Role: Linux System Administrator with udev expertise | Task: Create udev rules file granting necessary permissions for keyrx daemon to operate without root following requirements 5.1, 5.2, and 5.4 | Restrictions: Must grant input group read access to /dev/input/event*, grant uinput group read/write access to /dev/uinput, create uinput device node if not exists, include header comments with installation instructions (copy to /etc/udev/rules.d/, reload with udevadm), test on common distributions | Success: Rules file has correct syntax, grants appropriate permissions, includes installation instructions, works on Ubuntu/Fedora/Arch, non-root user in correct groups can run daemon_
   - **Completed**: Created comprehensive udev rules file with detailed installation instructions (5-step process), troubleshooting guide, security notes, and distribution compatibility info. Rules grant input group read access to /dev/input/event* devices and uinput group read/write access to /dev/uinput with static_node option for boot-time creation. Updated setup_linux.sh to source rules from the project file instead of embedding inline.
 
-- [ ] 25. Create systemd service file
+- [x] 25. Create systemd service file
   - File: `keyrx_daemon/systemd/keyrx.service` (NEW)
   - Type=simple for foreground daemon
   - ExecStart with config path
@@ -279,6 +279,7 @@
   - _Leverage: Standard systemd service format_
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
   - _Prompt: Role: Linux System Administrator with systemd expertise | Task: Create systemd service file for keyrx daemon with proper configuration for reliable service operation following requirements 6.1-6.5 | Restrictions: Must set Type=simple (daemon runs in foreground), set User/Group for non-root operation, set ExecStart with --config path (use Environment or EnvironmentFile for config path), set Restart=on-failure with RestartSec=1, set ExecReload for SIGHUP, add Documentation and Description, include installation instructions in comments | Success: Service file has correct syntax, starts daemon with config, restarts on failure, reloads on systemctl reload, logs to journald, can be enabled/started/stopped via systemctl_
+  - **Completed**: Created two comprehensive systemd service files - keyrx.service (system-wide) and keyrx-user.service (user-level). System service runs as dedicated 'keyrx' user with input/uinput groups, includes extensive security hardening (NoNewPrivileges, ProtectSystem, DeviceAllow, SystemCallFilter), ExecReload for SIGHUP config reload, and StartLimitBurst for restart throttling. User service provides per-user alternative with %h home directory expansion and loginctl lingering support. Both include detailed installation instructions, prerequisites, usage examples, and troubleshooting guides.
 
 - [ ] 26. Write CLI and service tests
   - File: `keyrx_daemon/tests/cli_tests.rs` (NEW)
