@@ -3,6 +3,7 @@
 //! This module provides the Linux-specific implementation for keyboard input capture
 //! and event injection using the evdev and uinput kernel interfaces.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use evdev::{Device, InputEventKind, Key};
@@ -531,9 +532,13 @@ impl InputDevice for EvdevInput {
 #[allow(dead_code)] // Methods will be used in task #17 (Daemon event loop)
 pub struct UinputOutput {
     /// The underlying uinput device handle.
-    device: UInputDevice,
+    /// Wrapped in Option to allow taking ownership during destroy().
+    device: Option<UInputDevice>,
     /// Name of the virtual device for identification.
     name: String,
+    /// Set of currently held (pressed but not yet released) keys.
+    /// Used during cleanup to release any keys still held when the device is destroyed.
+    held_keys: HashSet<KeyCode>,
 }
 
 #[allow(dead_code)] // Methods will be used in task #17 (Daemon event loop)
@@ -621,8 +626,9 @@ impl UinputOutput {
             })?;
 
         Ok(Self {
-            device,
+            device: Some(device),
             name: name.to_string(),
+            held_keys: HashSet::new(),
         })
     }
 
@@ -640,6 +646,111 @@ impl UinputOutput {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    /// Returns whether the device has been destroyed.
+    ///
+    /// After calling `destroy()`, this returns `true` and subsequent operations
+    /// will fail with `DeviceError::InjectionFailed`.
+    #[must_use]
+    pub fn is_destroyed(&self) -> bool {
+        self.device.is_none()
+    }
+
+    /// Returns the set of currently held keys.
+    ///
+    /// This is primarily useful for debugging and testing. Keys are tracked
+    /// during `inject_event()` calls: Press adds keys, Release removes them.
+    #[must_use]
+    pub fn held_keys(&self) -> &HashSet<KeyCode> {
+        &self.held_keys
+    }
+
+    /// Destroys the virtual device, releasing any held keys first.
+    ///
+    /// This method performs cleanup in the following order:
+    /// 1. Releases any keys that are currently held (pressed but not released)
+    /// 2. Removes the virtual device from the system
+    ///
+    /// After calling this method, the device is no longer usable and any
+    /// subsequent `inject_event()` calls will return an error.
+    ///
+    /// # Automatic Cleanup
+    ///
+    /// This method is called automatically when the `UinputOutput` is dropped,
+    /// ensuring proper cleanup even if the caller forgets to call `destroy()`
+    /// or if the program panics.
+    ///
+    /// # Errors
+    ///
+    /// - `DeviceError::InjectionFailed`: Failed to release a held key
+    ///
+    /// Note: Errors during cleanup are logged but do not prevent the device
+    /// from being destroyed. The device will be removed regardless.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_daemon::platform::linux::UinputOutput;
+    /// use keyrx_daemon::platform::OutputDevice;
+    /// use keyrx_core::runtime::event::KeyEvent;
+    /// use keyrx_core::config::KeyCode;
+    ///
+    /// let mut output = UinputOutput::create("keyrx")?;
+    ///
+    /// // Press some keys
+    /// output.inject_event(KeyEvent::Press(KeyCode::A))?;
+    ///
+    /// // Destroy will release A before removing the device
+    /// output.destroy()?;
+    ///
+    /// // Device is no longer usable
+    /// assert!(output.is_destroyed());
+    /// # Ok::<(), keyrx_daemon::platform::DeviceError>(())
+    /// ```
+    pub fn destroy(&mut self) -> Result<(), DeviceError> {
+        // Take ownership of the device (if not already destroyed)
+        let Some(device) = self.device.take() else {
+            // Already destroyed, nothing to do
+            return Ok(());
+        };
+
+        // Collect held keys to release (clone to avoid borrow issues)
+        let keys_to_release: Vec<KeyCode> = self.held_keys.iter().copied().collect();
+
+        // Release any held keys before destroying
+        // We need to temporarily put the device back to use it
+        self.device = Some(device);
+
+        for keycode in keys_to_release {
+            let key = keycode_to_uinput_key(keycode);
+
+            // Try to release the key, log errors but continue cleanup
+            if let Some(ref mut dev) = self.device {
+                if let Err(e) = dev.release(&key) {
+                    // Log at debug level - cleanup errors shouldn't be fatal
+                    eprintln!(
+                        "Warning: failed to release key {:?} during cleanup: {}",
+                        keycode, e
+                    );
+                }
+                // Try to synchronize after each release
+                if let Err(e) = dev.synchronize() {
+                    eprintln!(
+                        "Warning: failed to synchronize after releasing {:?}: {}",
+                        keycode, e
+                    );
+                }
+            }
+        }
+
+        // Clear the held keys set
+        self.held_keys.clear();
+
+        // Now take the device again to let it be dropped (which calls UI_DEV_DESTROY)
+        let _ = self.device.take();
+
+        Ok(())
     }
 }
 
@@ -870,7 +981,13 @@ impl OutputDevice for UinputOutput {
     /// # Returns
     ///
     /// * `Ok(())` - Event successfully injected
-    /// * `Err(DeviceError::InjectionFailed)` - Failed to inject the event
+    /// * `Err(DeviceError::InjectionFailed)` - Failed to inject the event or device destroyed
+    ///
+    /// # Key Tracking
+    ///
+    /// This method tracks which keys are currently held (pressed but not released).
+    /// This information is used during `destroy()` to release any held keys before
+    /// removing the virtual device.
     ///
     /// # Synchronization
     ///
@@ -878,31 +995,60 @@ impl OutputDevice for UinputOutput {
     /// delivery. This matches the behavior expected by applications which
     /// typically receive events with EV_SYN/SYN_REPORT markers.
     fn inject_event(&mut self, event: KeyEvent) -> Result<(), DeviceError> {
+        // Get a mutable reference to the device, failing if destroyed
+        let device = self
+            .device
+            .as_mut()
+            .ok_or_else(|| DeviceError::InjectionFailed("device has been destroyed".to_string()))?;
+
         let key = match &event {
             KeyEvent::Press(keycode) | KeyEvent::Release(keycode) => {
                 keycode_to_uinput_key(*keycode)
             }
         };
 
-        match event {
-            KeyEvent::Press(_) => {
-                self.device.press(&key).map_err(|e| {
+        match &event {
+            KeyEvent::Press(keycode) => {
+                device.press(&key).map_err(|e| {
                     DeviceError::InjectionFailed(format!("failed to press key: {}", e))
                 })?;
+                // Track this key as held
+                self.held_keys.insert(*keycode);
             }
-            KeyEvent::Release(_) => {
-                self.device.release(&key).map_err(|e| {
+            KeyEvent::Release(keycode) => {
+                device.release(&key).map_err(|e| {
                     DeviceError::InjectionFailed(format!("failed to release key: {}", e))
                 })?;
+                // Remove from held keys
+                self.held_keys.remove(keycode);
             }
         }
 
         // Synchronize to ensure event is delivered immediately
-        self.device.synchronize().map_err(|e| {
+        device.synchronize().map_err(|e| {
             DeviceError::InjectionFailed(format!("failed to synchronize events: {}", e))
         })?;
 
         Ok(())
+    }
+}
+
+/// Drop implementation to ensure automatic cleanup.
+///
+/// When a `UinputOutput` is dropped (goes out of scope, or program panics),
+/// this implementation ensures that:
+/// 1. Any held keys are released
+/// 2. The virtual device is properly destroyed via `UI_DEV_DESTROY` ioctl
+///
+/// This prevents orphaned virtual devices in `/dev/input/` and ensures that
+/// applications don't see stuck keys after the daemon exits.
+impl Drop for UinputOutput {
+    fn drop(&mut self) {
+        // Call destroy to release held keys and cleanup
+        // Errors during drop are logged but cannot be propagated
+        if let Err(e) = self.destroy() {
+            eprintln!("Warning: error during UinputOutput cleanup: {}", e);
+        }
     }
 }
 
@@ -1812,5 +1958,170 @@ mod tests {
         }
 
         panic!("No accessible input devices for testing");
+    }
+
+    // ============================================
+    // UinputOutput Tests
+    // ============================================
+
+    /// Test that UinputOutput::create returns PermissionDenied when not running as root
+    /// Note: This test only works when NOT running as root without udev rules
+    #[test]
+    #[ignore = "requires non-root user without uinput access - run manually"]
+    fn test_uinputoutput_create_permission_denied() {
+        let result = UinputOutput::create("test-keyboard");
+
+        match result {
+            Err(DeviceError::PermissionDenied(msg)) => {
+                assert!(msg.contains("permission denied"));
+                assert!(msg.contains("udev rules") || msg.contains("uinput"));
+            }
+            Ok(_) => {
+                // We have permission, test is inconclusive
+                println!("User has uinput access, cannot test permission denied");
+            }
+            Err(e) => panic!("Expected PermissionDenied or Ok, got {:?}", e),
+        }
+    }
+
+    /// Test that UinputOutput::create creates a virtual device
+    /// Note: Requires root or udev rules for uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually with: sudo cargo test -p keyrx_daemon --features linux test_uinputoutput_create -- --ignored"]
+    fn test_uinputoutput_create() {
+        let output =
+            UinputOutput::create("keyrx-test-keyboard").expect("Failed to create uinput device");
+
+        assert_eq!(output.name(), "keyrx-test-keyboard");
+        assert!(!output.is_destroyed());
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test that inject_event fails after destroy
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_inject_after_destroy_fails() {
+        let mut output =
+            UinputOutput::create("keyrx-test-inject-fail").expect("Failed to create uinput device");
+
+        // Destroy the device
+        output.destroy().expect("Failed to destroy device");
+        assert!(output.is_destroyed());
+
+        // Try to inject after destroy - should fail
+        let result = output.inject_event(KeyEvent::Press(KeyCode::A));
+        assert!(result.is_err());
+        match result {
+            Err(DeviceError::InjectionFailed(msg)) => {
+                assert!(msg.contains("destroyed"));
+            }
+            Err(e) => panic!("Expected InjectionFailed, got {:?}", e),
+            Ok(_) => panic!("Expected error, got Ok"),
+        }
+    }
+
+    /// Test that held_keys tracks pressed keys
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_held_keys_tracking() {
+        let mut output =
+            UinputOutput::create("keyrx-test-held").expect("Failed to create uinput device");
+
+        // Initially no held keys
+        assert!(output.held_keys().is_empty());
+
+        // Press A
+        output
+            .inject_event(KeyEvent::Press(KeyCode::A))
+            .expect("Failed to press A");
+        assert!(output.held_keys().contains(&KeyCode::A));
+        assert_eq!(output.held_keys().len(), 1);
+
+        // Press B
+        output
+            .inject_event(KeyEvent::Press(KeyCode::B))
+            .expect("Failed to press B");
+        assert!(output.held_keys().contains(&KeyCode::A));
+        assert!(output.held_keys().contains(&KeyCode::B));
+        assert_eq!(output.held_keys().len(), 2);
+
+        // Release A
+        output
+            .inject_event(KeyEvent::Release(KeyCode::A))
+            .expect("Failed to release A");
+        assert!(!output.held_keys().contains(&KeyCode::A));
+        assert!(output.held_keys().contains(&KeyCode::B));
+        assert_eq!(output.held_keys().len(), 1);
+
+        // Release B
+        output
+            .inject_event(KeyEvent::Release(KeyCode::B))
+            .expect("Failed to release B");
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test that destroy releases held keys
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_destroy_releases_held_keys() {
+        let mut output =
+            UinputOutput::create("keyrx-test-destroy").expect("Failed to create uinput device");
+
+        // Press some keys but don't release
+        output
+            .inject_event(KeyEvent::Press(KeyCode::A))
+            .expect("Failed to press A");
+        output
+            .inject_event(KeyEvent::Press(KeyCode::LShift))
+            .expect("Failed to press LShift");
+
+        assert_eq!(output.held_keys().len(), 2);
+
+        // Destroy should clear held keys
+        output.destroy().expect("Failed to destroy device");
+
+        assert!(output.is_destroyed());
+        assert!(output.held_keys().is_empty());
+    }
+
+    /// Test that calling destroy twice is safe
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_destroy_twice_is_safe() {
+        let mut output = UinputOutput::create("keyrx-test-destroy-twice")
+            .expect("Failed to create uinput device");
+
+        // First destroy
+        output.destroy().expect("First destroy failed");
+        assert!(output.is_destroyed());
+
+        // Second destroy should be a no-op
+        output.destroy().expect("Second destroy failed");
+        assert!(output.is_destroyed());
+    }
+
+    /// Test that Drop trait calls destroy
+    /// Note: Requires uinput access
+    #[test]
+    #[ignore = "requires uinput access - run manually"]
+    fn test_uinputoutput_drop_calls_destroy() {
+        // Create a device with some held keys
+        {
+            let mut output =
+                UinputOutput::create("keyrx-test-drop").expect("Failed to create uinput device");
+
+            output
+                .inject_event(KeyEvent::Press(KeyCode::A))
+                .expect("Failed to press A");
+
+            // Drop will be called at end of scope
+        }
+
+        // If we get here without panic, Drop worked correctly
+        // We can't easily verify the device was destroyed, but no panic is good
     }
 }

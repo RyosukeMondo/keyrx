@@ -78,7 +78,7 @@
   - _Requirements: 2.2, 2.3_
   - _Prompt: Role: Rust Systems Programmer with expertise in Linux input injection | Task: Implement OutputDevice trait for UinputOutput with event injection and sync following requirements 2.2 and 2.3 | Restrictions: Must convert KeyEvent::Press to EV_KEY with value 1, KeyEvent::Release to EV_KEY with value 0, write EV_SYN/SYN_REPORT after each key event to flush, use keycode_to_evdev for code conversion, return DeviceError::InjectionFailed on write errors, add doc comments explaining sync requirement | Success: inject_event writes correct uinput events, EV_SYN ensures immediate delivery, Press events result in key down in applications, Release events result in key up, compiles and injects keys visible in xev or evtest_
 
-- [ ] 8. Implement UinputOutput cleanup
+- [x] 8. Implement UinputOutput cleanup
   - File: `keyrx_daemon/src/platform/linux.rs` (continue)
   - Add `destroy(&mut self) -> Result<(), DeviceError>` method
   - Release any held keys before destroying
