@@ -22,6 +22,7 @@ rkyv = { version = "0.7", features = ["validation"] }
 boomphf = "0.6"
 fixedbitset = "0.4"
 arrayvec = "0.7"
+bitvec = "1.0"
 
 # Scripting and serialization
 rhai = "1.15"
