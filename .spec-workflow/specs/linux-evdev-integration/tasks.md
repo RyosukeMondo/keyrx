@@ -224,7 +224,7 @@
 
 ## Phase 5: CLI and systemd Integration
 
-- [ ] 21. Implement CLI with clap
+- [x] 21. Implement CLI with clap
   - File: `keyrx_daemon/src/main.rs` (MODIFY)
   - Define CLI with subcommands: run, list-devices, validate
   - `run --config <path> [--debug]`: Start daemon
@@ -234,8 +234,9 @@
   - _Leverage: clap derive API, matching keyrx_compiler pattern_
   - _Requirements: 4.1, 4.5, Usability_
   - _Prompt: Role: Rust Developer with expertise in CLI design and clap | Task: Implement CLI for keyrx_daemon with run, list-devices, and validate subcommands using clap derive API following requirements 4.1, 4.5, and Usability section | Restrictions: Must use #[derive(Parser)] and #[derive(Subcommand)], run subcommand takes --config path and optional --debug flag, list-devices takes no arguments, validate takes --config path, add help text for all commands, set appropriate default values, follow keyrx_compiler CLI pattern for consistency | Success: CLI parses all subcommands correctly, help text is informative, run starts daemon, list-devices shows available keyboards, validate checks config without grabbing, exit codes are appropriate (0=success, 1=config error, 2=permission error)_
+  - **Completed**: Implemented comprehensive CLI with clap derive API. Added `run` (--config, --debug), `list-devices`, and `validate` (--config) subcommands. Includes proper exit codes (0=success, 1=config, 2=permission), env_logger integration, helpful error messages, and platform-aware stub functions for non-Linux builds.
 
-- [ ] 22. Implement list-devices subcommand
+- [x] 22. Implement list-devices subcommand
   - File: `keyrx_daemon/src/main.rs` (continue)
   - Enumerate all input devices
   - Print device name, path, serial number
@@ -244,8 +245,9 @@
   - _Leverage: enumerate_keyboards from device_manager_
   - _Requirements: Usability: Device Listing_
   - _Prompt: Role: Rust Developer with expertise in user-facing output | Task: Implement list-devices subcommand that enumerates and displays input devices with useful information following Usability: Device Listing requirement | Restrictions: Must list all /dev/input/event* devices, indicate which are keyboards, show name, path, and serial (if available), format output clearly with columns or indentation, handle permission errors gracefully (show which devices couldn't be read), exit code 0 on success | Success: list-devices shows all input devices, keyboards are clearly marked, serial numbers displayed when available, permission denied devices noted, output is clear and helpful for configuration_
+  - **Completed**: Implemented as part of Task 21. Displays keyboard devices in tabular format (PATH, NAME, SERIAL), includes helpful tips for pattern configuration, and handles empty device list with troubleshooting guidance.
 
-- [ ] 23. Implement validate subcommand
+- [x] 23. Implement validate subcommand
   - File: `keyrx_daemon/src/main.rs` (continue)
   - Load and validate .krx configuration
   - Enumerate devices and show matches
@@ -254,6 +256,7 @@
   - _Leverage: load_config, DeviceManager pattern matching_
   - _Requirements: Usability: Dry-Run Mode_
   - _Prompt: Role: Rust Developer with expertise in validation and diagnostics | Task: Implement validate subcommand that loads config, enumerates devices, shows matches without grabbing following Usability: Dry-Run Mode requirement | Restrictions: Must load and validate .krx file, enumerate keyboards, run pattern matching, print which devices match which configs, don't call grab() (dry-run only), show warnings for unmatched devices, exit code 0 if config valid and devices match, exit code 1 if config invalid or no matches | Success: validate loads config successfully, shows matched devices, shows unmatched devices as warnings, doesn't grab devices, exit codes are appropriate, helpful for debugging configuration_
+  - **Completed**: Implemented as part of Task 21. Provides 3-step validation output (load config, enumerate devices, match patterns), shows [MATCH] and [SKIP] markers for devices, displays device patterns with mapping counts, and provides helpful next-step guidance.
 
 - [ ] 24. Create udev rules file
   - File: `keyrx_daemon/udev/99-keyrx.rules` (NEW)
