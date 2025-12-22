@@ -259,7 +259,7 @@
     Success: Tests verify Shift+Key, Ctrl+Key, multi-modifier sequences with correct ordering
     After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record what was built, then mark [x] as complete_
 
-- [-] 17. Add multi-event sequence tests
+- [x] 17. Add multi-event sequence tests
   - File: `keyrx_daemon/tests/virtual_e2e_tests.rs` (continue)
   - Test typing pattern (multiple taps in sequence)
   - Test modifier hold during typing
