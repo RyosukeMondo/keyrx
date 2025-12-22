@@ -45,7 +45,7 @@
   - _Requirements: 1.2, 1.4_
   - _Prompt: Role: Rust Systems Programmer with expertise in Linux evdev subsystem | Task: Implement InputDevice trait for EvdevInput with event reading, exclusive grab, and release functionality following requirements 1.2 and 1.4 | Restrictions: Must use evdev::Device::fetch_events or next_event for reading, filter for EV_KEY events only, map value 1 to KeyEvent::Press and value 0 to KeyEvent::Release, ignore value 2 (repeat), use EVIOCGRAB ioctl (via evdev or nix) for grab/release, update grabbed flag on success, return DeviceError::Io for read errors, return DeviceError::EndOfStream when appropriate | Success: next_event returns KeyEvent::Press/Release for key events, grab acquires exclusive access (other programs don't receive events), release restores normal access, repeat events are filtered out, compiles and works with real keyboard on Linux_
 
-- [ ] 5. Write EvdevInput unit tests
+- [x] 5. Write EvdevInput unit tests
   - File: `keyrx_daemon/src/platform/linux.rs` (add tests module)
   - Test KeyCode mapping functions (evdev_to_keycode, keycode_to_evdev)
   - Test round-trip conversion for all keys
