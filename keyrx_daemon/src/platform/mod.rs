@@ -21,8 +21,8 @@ pub use linux::LinuxPlatform;
 #[cfg(feature = "windows")]
 pub use windows::WindowsPlatform;
 
-// Mock implementations will be exported in tasks #14 and #15
-// pub use mock::{MockInput, MockOutput};
+#[allow(unused_imports)] // Will be used in tasks #17-20
+pub use mock::{MockInput, MockOutput};
 
 /// Errors that can occur during device operations.
 #[derive(Debug, Error)]
