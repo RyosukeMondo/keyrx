@@ -9,5 +9,8 @@ pub mod device_manager;
 pub mod platform;
 pub mod processor;
 
+#[cfg(feature = "linux")]
+pub mod test_utils;
+
 #[cfg(feature = "web")]
 pub mod web;
