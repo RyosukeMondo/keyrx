@@ -8,7 +8,7 @@ repository.workspace = true
 
 [features]
 default = ["web"]
-linux = ["dep:evdev", "dep:uinput", "dep:nix"]
+linux = ["dep:evdev", "dep:uinput", "dep:nix", "dep:signal-hook"]
 windows = ["dep:windows-sys"]
 web = ["dep:axum", "dep:tower-http", "dep:tokio", "dep:serde", "dep:serde_json"]
 
@@ -20,9 +20,14 @@ thiserror = "2.0"
 log = "0.4"
 
 # Linux-specific dependencies
+# evdev: Access to raw keyboard input devices via /dev/input/event*
 evdev = { version = "0.12", optional = true }
+# uinput: Create virtual keyboard for injecting remapped key events
 uinput = { version = "0.1", optional = true }
+# nix: Unix utilities for ioctls (EVIOCGRAB for exclusive device access)
 nix = { version = "0.29", features = ["ioctl"], optional = true }
+# signal-hook: Signal handling for graceful shutdown (SIGTERM/SIGINT) and reload (SIGHUP)
+signal-hook = { version = "0.3", optional = true }
 
 # Windows-specific dependencies
 windows-sys = { version = "0.59", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_Foundation"], optional = true }
