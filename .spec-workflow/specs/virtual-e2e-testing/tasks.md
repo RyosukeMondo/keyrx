@@ -341,7 +341,7 @@
     Success: cargo doc generates clean documentation, examples compile, all public items documented
     After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record what was built, then mark [x] as complete_
 
-- [ ] 22. Update existing e2e_tests.rs with references
+- [x] 22. Update existing e2e_tests.rs with references
   - File: `keyrx_daemon/tests/e2e_tests.rs` (MODIFY)
   - Add comment pointing to virtual_e2e_tests.rs for CI-compatible tests
   - Document which tests require real hardware vs virtual devices
