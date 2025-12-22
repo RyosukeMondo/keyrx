@@ -220,7 +220,7 @@
 
 ## Phase 6: Testing and Validation
 
-- [ ] 21. Add property-based tests for DeviceState
+- [x] 21. Add property-based tests for DeviceState
   - File: `keyrx_core/src/runtime/state.rs` (add proptest tests)
   - Add `proptest` dev-dependency to keyrx_core/Cargo.toml
   - Test: modifier state always valid (bits 0-254, never 255)
