@@ -4,26 +4,116 @@
 //! without requiring physical keyboard hardware. It leverages Linux's uinput subsystem
 //! to create virtual input devices that can inject key events into the kernel.
 //!
+//! # Overview
+//!
+//! The virtual E2E testing framework enables automated testing of keyboard remapping
+//! by creating software-based input/output devices. This allows tests to run in CI
+//! environments without physical hardware access.
+//!
 //! # Components
 //!
 //! - [`VirtualKeyboard`]: Creates a virtual input device for injecting test key events
 //! - [`OutputCapture`]: Captures events from the daemon's virtual output device
+//! - [`VirtualDeviceError`]: Error type with actionable fix instructions
+//! - [`assert_events`], [`compare_events`]: Assertion helpers for comparing captured vs expected events
 //!
 //! # Requirements
 //!
 //! - Linux with uinput support (`/dev/uinput`)
 //! - Read/write access to uinput (typically requires `input` group membership or root)
 //!
-//! # Example
+//! # Running Tests
+//!
+//! Tests that require uinput access are marked with `#[ignore]` and must be run with
+//! elevated privileges:
+//!
+//! ```bash
+//! # Run all virtual E2E tests (requires uinput access)
+//! sudo cargo test -p keyrx_daemon --features linux -- --ignored
+//!
+//! # Run a specific test
+//! sudo cargo test -p keyrx_daemon --features linux test_virtual_keyboard_inject -- --ignored
+//!
+//! # Run regular unit tests (no sudo required)
+//! cargo test -p keyrx_daemon --features linux
+//! ```
+//!
+//! # Example: Basic Usage
 //!
 //! ```ignore
 //! use keyrx_daemon::test_utils::{VirtualKeyboard, OutputCapture, VirtualDeviceError};
+//! use keyrx_core::config::KeyCode;
+//! use keyrx_core::runtime::event::KeyEvent;
+//! use std::time::Duration;
 //!
 //! // Create a virtual keyboard for input injection
-//! let keyboard = VirtualKeyboard::create("test-keyboard")?;
+//! let mut keyboard = VirtualKeyboard::create("test-keyboard")?;
 //!
-//! // Inject a key press
+//! // Inject key events
 //! keyboard.inject(KeyEvent::Press(KeyCode::A))?;
+//! keyboard.inject(KeyEvent::Release(KeyCode::A))?;
+//!
+//! // Device is automatically cleaned up when dropped
+//! ```
+//!
+//! # Example: Full E2E Test Flow
+//!
+//! ```ignore
+//! use keyrx_daemon::test_utils::{VirtualKeyboard, OutputCapture, assert_events};
+//! use keyrx_core::config::KeyCode;
+//! use keyrx_core::runtime::event::KeyEvent;
+//! use std::time::Duration;
+//!
+//! // 1. Create virtual keyboard
+//! let mut keyboard = VirtualKeyboard::create("e2e-test")?;
+//!
+//! // 2. Wait for the device to be registered
+//! std::thread::sleep(Duration::from_millis(100));
+//!
+//! // 3. Find and open the device for output capture
+//! let mut capture = OutputCapture::find_by_name(
+//!     keyboard.name(),
+//!     Duration::from_secs(5)
+//! )?;
+//!
+//! // 4. Drain any pending events
+//! capture.drain()?;
+//!
+//! // 5. Inject test input
+//! keyboard.inject(KeyEvent::Press(KeyCode::A))?;
+//! keyboard.inject(KeyEvent::Release(KeyCode::A))?;
+//!
+//! // 6. Capture output events
+//! let captured = capture.collect_events(Duration::from_millis(100))?;
+//!
+//! // 7. Verify captured events match expected
+//! let expected = vec![
+//!     KeyEvent::Press(KeyCode::A),
+//!     KeyEvent::Release(KeyCode::A),
+//! ];
+//! assert_events(&captured, &expected);
+//! ```
+//!
+//! # Example: Using Assertion Helpers
+//!
+//! ```ignore
+//! use keyrx_daemon::test_utils::{compare_events, assert_events_msg};
+//! use keyrx_core::config::KeyCode;
+//! use keyrx_core::runtime::event::KeyEvent;
+//!
+//! let captured = vec![KeyEvent::Press(KeyCode::B)];
+//! let expected = vec![KeyEvent::Press(KeyCode::B)];
+//!
+//! // Get detailed comparison result
+//! let result = compare_events(&captured, &expected);
+//! if result.passed {
+//!     println!("Test passed: {} matches", result.matches);
+//! } else {
+//!     println!("{}", result.format_diff());
+//! }
+//!
+//! // Or use the assertion helper with custom message
+//! assert_events_msg(&captured, &expected, "Testing A→B remapping");
 //! ```
 
 use std::io;
