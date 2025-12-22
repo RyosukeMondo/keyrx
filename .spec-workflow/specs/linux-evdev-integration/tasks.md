@@ -34,7 +34,7 @@
   - _Requirements: 1.1, 1.3_
   - _Prompt: Role: Rust Systems Programmer with expertise in Linux device access | Task: Implement EvdevInput struct wrapping evdev::Device with constructor and accessor methods for device metadata, following requirements 1.1 and 1.3 | Restrictions: Must use evdev::Device::open for path-based opening, handle io::Error and convert to DeviceError::NotFound or DeviceError::PermissionDenied based on error kind, serial() should return Option<&str> (not all devices have serial), store grabbed flag for tracking state, add doc comments with usage examples | Success: EvdevInput::open opens device by path, returns PermissionDenied for EACCES, returns NotFound for ENOENT, from_device wraps existing device, name/serial/path accessors work correctly, compiles and can open /dev/input/event* on Linux_
 
-- [ ] 4. Implement InputDevice trait for EvdevInput
+- [x] 4. Implement InputDevice trait for EvdevInput
   - File: `keyrx_daemon/src/platform/linux.rs` (continue)
   - Implement `next_event(&mut self) -> Result<KeyEvent, DeviceError>`
   - Implement `grab(&mut self) -> Result<(), DeviceError>` using EVIOCGRAB

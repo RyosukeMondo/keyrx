@@ -5,12 +5,13 @@
 
 use std::path::{Path, PathBuf};
 
-use evdev::{Device, Key};
+use evdev::{Device, InputEventKind, Key};
 use uinput::Device as UInputDevice;
 
 use keyrx_core::config::KeyCode;
+use keyrx_core::runtime::event::KeyEvent;
 
-use crate::platform::DeviceError;
+use crate::platform::{DeviceError, InputDevice};
 
 /// Linux platform structure for keyboard input/output operations.
 ///
@@ -312,6 +313,172 @@ impl EvdevInput {
     /// through the `EvdevInput` interface.
     pub fn device_mut(&mut self) -> &mut Device {
         &mut self.device
+    }
+}
+
+/// InputDevice trait implementation for EvdevInput.
+///
+/// Enables keyboard event capture from real Linux input devices using the evdev subsystem.
+///
+/// # Event Filtering
+///
+/// Only EV_KEY events are processed:
+/// - value=1: Key press (→ `KeyEvent::Press`)
+/// - value=0: Key release (→ `KeyEvent::Release`)
+/// - value=2: Key repeat (ignored - handled by applications)
+///
+/// # Exclusive Access
+///
+/// The `grab()` method uses the `EVIOCGRAB` ioctl to obtain exclusive access
+/// to the device. While grabbed, other applications (including X11/Wayland)
+/// will not receive events from this device.
+///
+/// # Example
+///
+/// ```no_run
+/// use std::path::Path;
+/// use keyrx_daemon::platform::linux::EvdevInput;
+/// use keyrx_daemon::platform::{InputDevice, DeviceError};
+///
+/// let mut keyboard = EvdevInput::open(Path::new("/dev/input/event0"))?;
+///
+/// // Grab exclusive access for remapping
+/// keyboard.grab()?;
+///
+/// loop {
+///     match keyboard.next_event() {
+///         Ok(event) => {
+///             println!("Event: {:?}", event);
+///             // Process and remap the event...
+///         }
+///         Err(DeviceError::EndOfStream) => break,
+///         Err(e) => return Err(e),
+///     }
+/// }
+///
+/// keyboard.release()?;
+/// # Ok::<(), DeviceError>(())
+/// ```
+#[allow(dead_code)] // Will be used in task #17 (Daemon event loop)
+impl InputDevice for EvdevInput {
+    /// Reads the next keyboard event from the device.
+    ///
+    /// This method blocks until a key press or release event is available.
+    /// Repeat events (value=2) are automatically filtered out.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(KeyEvent::Press(keycode))` for key press events
+    /// - `Ok(KeyEvent::Release(keycode))` for key release events
+    /// - `Err(DeviceError::EndOfStream)` when no more events (device disconnected)
+    /// - `Err(DeviceError::Io)` on I/O errors
+    ///
+    /// # Unknown Keys
+    ///
+    /// Keys that don't map to a `KeyCode` are skipped (the method continues
+    /// reading until it finds a known key). This allows unknown keys to be
+    /// handled at a higher level (passthrough to output).
+    fn next_event(&mut self) -> Result<KeyEvent, DeviceError> {
+        loop {
+            // Fetch events from the device
+            // evdev::Device::fetch_events returns an iterator over events
+            let events = self.device.fetch_events().map_err(|e| {
+                if e.kind() == std::io::ErrorKind::WouldBlock {
+                    DeviceError::EndOfStream
+                } else {
+                    DeviceError::Io(e)
+                }
+            })?;
+
+            for event in events {
+                // Only process EV_KEY events (keyboard key presses/releases)
+                if let InputEventKind::Key(key) = event.kind() {
+                    let value = event.value();
+
+                    // value: 0 = release, 1 = press, 2 = repeat (ignored)
+                    match value {
+                        1 => {
+                            // Key press
+                            if let Some(keycode) = evdev_to_keycode(key.code()) {
+                                return Ok(KeyEvent::Press(keycode));
+                            }
+                            // Unknown key - continue reading for known keys
+                        }
+                        0 => {
+                            // Key release
+                            if let Some(keycode) = evdev_to_keycode(key.code()) {
+                                return Ok(KeyEvent::Release(keycode));
+                            }
+                            // Unknown key - continue reading for known keys
+                        }
+                        2 => {
+                            // Key repeat - ignore, continue reading
+                        }
+                        _ => {
+                            // Unknown event value - ignore
+                        }
+                    }
+                }
+                // Non-key events (EV_SYN, EV_MSC, etc.) are ignored
+            }
+            // If we processed all events and found no key events, loop to fetch more
+        }
+    }
+
+    /// Grabs exclusive access to the device using EVIOCGRAB ioctl.
+    ///
+    /// After calling this method, the kernel will not deliver events from this
+    /// device to other applications. This is essential for key remapping to
+    /// prevent the original keystrokes from reaching applications.
+    ///
+    /// # Platform Details
+    ///
+    /// Uses the evdev crate's built-in grab functionality which wraps the
+    /// `EVIOCGRAB` ioctl with value 1 to acquire exclusive access.
+    ///
+    /// # Errors
+    ///
+    /// - `DeviceError::PermissionDenied` if the process lacks CAP_SYS_ADMIN
+    /// - `DeviceError::Io` for other ioctl failures
+    fn grab(&mut self) -> Result<(), DeviceError> {
+        if self.grabbed {
+            return Ok(()); // Already grabbed
+        }
+
+        self.device.grab().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                DeviceError::PermissionDenied(format!(
+                    "cannot grab device {}: permission denied. \
+                     Try running as root or with CAP_SYS_ADMIN",
+                    self.path.display()
+                ))
+            } else {
+                DeviceError::Io(e)
+            }
+        })?;
+
+        self.grabbed = true;
+        Ok(())
+    }
+
+    /// Releases exclusive access to the device.
+    ///
+    /// After calling this method, other applications will receive events from
+    /// this device again. This should be called during graceful shutdown to
+    /// restore normal keyboard operation.
+    ///
+    /// # Platform Details
+    ///
+    /// Uses the evdev crate's ungrab functionality which wraps the
+    /// `EVIOCGRAB` ioctl with value 0 to release exclusive access.
+    fn release(&mut self) -> Result<(), DeviceError> {
+        if !self.grabbed {
+            return Ok(()); // Not grabbed
+        }
+
+        self.device.ungrab().map_err(DeviceError::Io)?;
+        self.grabbed = false;
+        Ok(())
     }
 }
 
@@ -1112,8 +1279,6 @@ mod tests {
     #[test]
     #[ignore = "requires real input device - run manually with: cargo test -p keyrx_daemon --features linux test_evdevinput_from_device -- --ignored"]
     fn test_evdevinput_from_device() {
-        use std::path::Path;
-
         // Try to open the first available event device
         for i in 0..20 {
             let path = format!("/dev/input/event{}", i);
