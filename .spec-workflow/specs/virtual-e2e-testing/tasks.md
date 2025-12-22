@@ -308,7 +308,7 @@
     Success: CI job runs virtual E2E tests without hardware, reports clear pass/fail
     After completion: Mark task [-] as in-progress before starting, use log-implementation tool to record what was built, then mark [x] as complete_
 
-- [-] 20. Add test timeout handling
+- [x] 20. Add test timeout handling
   - File: `keyrx_daemon/tests/e2e_harness.rs` (MODIFY)
   - Add test-level timeout wrapper
   - Force cleanup if test exceeds timeout
