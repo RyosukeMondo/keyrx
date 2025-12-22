@@ -470,6 +470,89 @@ impl Daemon {
         Arc::clone(&self.running)
     }
 
+    /// Reloads the configuration from disk.
+    ///
+    /// This method reloads the .krx configuration file and rebuilds the lookup
+    /// tables for all managed devices. Device state (modifiers, locks) is preserved
+    /// to ensure seamless continuation of event processing.
+    ///
+    /// # Behavior
+    ///
+    /// - Reloads the .krx file from the path specified during daemon initialization
+    /// - Rebuilds [`KeyLookup`] tables for all managed devices
+    /// - Preserves [`DeviceState`] (modifier/lock state is not reset)
+    /// - Does not release/re-grab devices (they stay grabbed)
+    ///
+    /// # Error Handling
+    ///
+    /// If the reload fails (file not found, parse error, etc.), the old configuration
+    /// is retained and the daemon continues operating with the previous mappings.
+    /// This ensures the daemon remains functional even if a bad config is deployed.
+    ///
+    /// # Memory Note
+    ///
+    /// Each call to `reload()` leaks a small amount of memory due to how the
+    /// configuration loader works (see [`load_config`] documentation). For typical
+    /// usage (occasional reloads on SIGHUP), this is negligible.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use keyrx_daemon::daemon::Daemon;
+    ///
+    /// let mut daemon = Daemon::new(Path::new("config.krx"))?;
+    ///
+    /// // Later, after modifying the config file...
+    /// match daemon.reload() {
+    ///     Ok(()) => println!("Configuration reloaded successfully"),
+    ///     Err(e) => eprintln!("Reload failed (keeping old config): {}", e),
+    /// }
+    /// # Ok::<(), keyrx_daemon::daemon::DaemonError>(())
+    /// ```
+    pub fn reload(&mut self) -> Result<(), DaemonError> {
+        info!(
+            "Reloading configuration from: {}",
+            self.config_path.display()
+        );
+
+        // Step 1: Load and validate the new configuration
+        let config = match load_config(&self.config_path) {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                warn!(
+                    "Failed to reload configuration: {}. Keeping old configuration.",
+                    e
+                );
+                return Err(DaemonError::Config(e));
+            }
+        };
+
+        info!(
+            "New configuration loaded: {} device configuration(s)",
+            config.devices.len()
+        );
+
+        // Step 2: Convert archived device configs to owned for DeviceManager
+        let device_configs: Vec<DeviceConfig> = config
+            .devices
+            .iter()
+            .map(convert_archived_device_config)
+            .collect();
+
+        // Step 3: Rebuild lookup tables for all managed devices
+        // This preserves DeviceState (modifier/lock state is not reset)
+        // Devices stay grabbed (no release/re-grab)
+        self.device_manager.rebuild_lookups(&device_configs);
+
+        info!(
+            "Configuration reload complete. {} device(s) updated.",
+            self.device_manager.device_count()
+        );
+
+        Ok(())
+    }
+
     /// Runs the main event processing loop.
     ///
     /// This method polls all managed input devices for keyboard events, processes
@@ -494,7 +577,7 @@ impl Daemon {
     /// # Signal Handling
     ///
     /// - **SIGTERM/SIGINT**: Sets the running flag to false, causing graceful exit
-    /// - **SIGHUP**: Triggers configuration reload (implemented in task #18)
+    /// - **SIGHUP**: Triggers configuration reload via [`Self::reload`]
     ///
     /// # Errors
     ///
@@ -530,8 +613,11 @@ impl Daemon {
         while self.is_running() {
             // Check for SIGHUP (reload request)
             if self.signal_handler.check_reload() {
-                info!("Reload signal received (reload will be implemented in task #18)");
-                // TODO: Call self.reload() when implemented in task #18
+                info!("Reload signal received (SIGHUP)");
+                if let Err(e) = self.reload() {
+                    // Log the error but continue running with old config
+                    warn!("Configuration reload failed: {}", e);
+                }
             }
 
             // Poll devices for available events
@@ -872,6 +958,190 @@ mod tests {
             let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "test");
             let daemon_err = DaemonError::SignalError(io_err);
             assert!(daemon_err.to_string().contains("signal handlers"));
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_reload_success() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create initial config (A -> B)
+            let initial_config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "initial".to_string(),
+                },
+            };
+
+            // Create temp file with initial config
+            let bytes = serialize(&initial_config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            // Try to create daemon
+            let mut daemon = match Daemon::new(temp_file.path()) {
+                Ok(d) => d,
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                    return;
+                }
+            };
+
+            // Create updated config (A -> C)
+            let updated_config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::C)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 1,
+                    compiler_version: "test".to_string(),
+                    source_hash: "updated".to_string(),
+                },
+            };
+
+            // Overwrite the config file
+            let updated_bytes =
+                serialize(&updated_config).expect("Failed to serialize updated config");
+            std::fs::write(temp_file.path(), &updated_bytes)
+                .expect("Failed to write updated config");
+
+            // Reload should succeed
+            let result = daemon.reload();
+            assert!(result.is_ok(), "Reload should succeed: {:?}", result.err());
+
+            println!("Configuration reloaded successfully");
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_reload_preserves_device_count() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            let mut daemon = match Daemon::new(temp_file.path()) {
+                Ok(d) => d,
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                    return;
+                }
+            };
+
+            let device_count_before = daemon.device_count();
+
+            // Reload (same config, device count should remain)
+            let result = daemon.reload();
+            assert!(result.is_ok());
+
+            let device_count_after = daemon.device_count();
+            assert_eq!(
+                device_count_before, device_count_after,
+                "Device count should remain same after reload"
+            );
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input and /dev/uinput devices"]
+        fn test_daemon_reload_missing_file() {
+            use keyrx_compiler::serialize::serialize;
+            use keyrx_core::config::{
+                ConfigRoot, DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping, Metadata, Version,
+            };
+            use std::io::Write;
+            use tempfile::NamedTempFile;
+
+            // Create config
+            let config = ConfigRoot {
+                version: Version::current(),
+                devices: vec![DeviceConfig {
+                    identifier: DeviceIdentifier {
+                        pattern: "*".to_string(),
+                    },
+                    mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+                }],
+                metadata: Metadata {
+                    compilation_timestamp: 0,
+                    compiler_version: "test".to_string(),
+                    source_hash: "test".to_string(),
+                },
+            };
+
+            let bytes = serialize(&config).expect("Failed to serialize config");
+            let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+            temp_file.write_all(&bytes).expect("Failed to write config");
+            temp_file.flush().expect("Failed to flush");
+
+            let mut daemon = match Daemon::new(temp_file.path()) {
+                Ok(d) => d,
+                Err(e) => {
+                    println!("Daemon creation failed (expected if no permissions): {}", e);
+                    return;
+                }
+            };
+
+            // Delete the config file
+            std::fs::remove_file(temp_file.path()).expect("Failed to remove config file");
+
+            // Reload should fail but daemon should continue
+            let result = daemon.reload();
+            assert!(
+                result.is_err(),
+                "Reload should fail when config file is missing"
+            );
+
+            match result {
+                Err(DaemonError::Config(_)) => {} // Expected
+                Err(e) => panic!("Expected Config error, got: {}", e),
+                Ok(_) => panic!("Expected error, got Ok"),
+            }
+
+            // Daemon should still be running
+            assert!(
+                daemon.is_running(),
+                "Daemon should still be running after failed reload"
+            );
         }
     }
 }
