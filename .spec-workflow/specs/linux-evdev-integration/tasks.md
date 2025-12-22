@@ -123,7 +123,7 @@
   - _Requirements: 3.1, 3.3_
   - _Prompt: Role: Rust Developer with expertise in pattern matching and string handling | Task: Implement device pattern matching supporting wildcards and prefix patterns, matching against device name and serial following requirements 3.1 and 3.3 | Restrictions: Wildcard "*" must match all devices, prefix patterns (ending with *) match device name or serial starting with prefix, exact patterns require exact match, case-insensitive matching for robustness, use glob crate if needed for complex patterns, add doc comments with pattern examples | Success: match_device("*") returns true for all devices, match_device("USB*") matches devices with USB in name or serial, exact match works for specific devices, case-insensitive matching works, returns false for non-matching devices_
 
-- [ ] 12. Implement DeviceManager struct
+- [x] 12. Implement DeviceManager struct
   - File: `keyrx_daemon/src/device_manager.rs` (continue)
   - Define `DeviceManager` struct managing multiple devices
   - Define `ManagedDevice` struct bundling device with config

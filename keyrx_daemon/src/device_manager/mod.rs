@@ -2,6 +2,16 @@
 //!
 //! This module provides functionality for discovering available keyboard devices,
 //! matching them against configuration patterns, and managing device lifecycle.
+//!
+//! # Overview
+//!
+//! The device management system consists of several components:
+//!
+//! - [`KeyboardInfo`]: Information about a discovered keyboard device
+//! - [`enumerate_keyboards`]: Discovers available keyboard devices
+//! - [`match_device`]: Matches devices against configuration patterns
+//! - [`DeviceManager`]: Manages multiple devices and matches them to configurations
+//! - [`ManagedDevice`]: A device paired with its configuration and runtime state
 
 use crate::platform::DeviceError;
 
@@ -9,7 +19,7 @@ use crate::platform::DeviceError;
 mod linux;
 
 #[cfg(feature = "linux")]
-pub use linux::{enumerate_keyboards, match_device};
+pub use linux::{enumerate_keyboards, match_device, DeviceManager, ManagedDevice};
 
 /// Errors that can occur during device discovery.
 #[derive(Debug, thiserror::Error)]

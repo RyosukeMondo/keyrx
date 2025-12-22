@@ -3,14 +3,45 @@
 //! This module scans `/dev/input/event*` devices and identifies keyboards
 //! based on their capabilities (presence of alphabetic keys). It also
 //! provides pattern matching for selecting devices based on configuration.
+//!
+//! # Device Management
+//!
+//! The [`DeviceManager`] struct orchestrates multi-device management:
+//!
+//! 1. Enumerate available keyboards via [`enumerate_keyboards`]
+//! 2. Match each device against configuration patterns via [`match_device`]
+//! 3. Create [`ManagedDevice`] instances for matched devices
+//! 4. Provide access to managed devices for event processing
+//!
+//! # Example
+//!
+//! ```ignore
+//! use keyrx_daemon::device_manager::{DeviceManager, enumerate_keyboards};
+//! use keyrx_core::config::DeviceConfig;
+//!
+//! // Create device configurations
+//! let configs = vec![/* ... */];
+//!
+//! // Discover and match devices
+//! let manager = DeviceManager::discover(&configs)?;
+//!
+//! // Access managed devices
+//! for device in manager.devices() {
+//!     println!("Managing: {}", device.info().name);
+//! }
+//! ```
 
 use std::fs;
 use std::path::Path;
 
 use evdev::{Device, EventType, Key};
-use log::debug;
+use log::{debug, info, warn};
+
+use keyrx_core::config::DeviceConfig;
+use keyrx_core::runtime::{DeviceState, KeyLookup};
 
 use super::{DiscoveryError, KeyboardInfo};
+use crate::platform::linux::EvdevInput;
 
 /// Required alphabetic keys that a keyboard must have.
 /// If a device has EV_KEY capability and these keys, it's considered a keyboard.
@@ -334,6 +365,348 @@ pub fn match_device(device: &KeyboardInfo, pattern: &str) -> bool {
     false
 }
 
+/// A managed device with its associated configuration and runtime state.
+///
+/// `ManagedDevice` bundles together:
+/// - The device information ([`KeyboardInfo`])
+/// - The evdev input device ([`EvdevInput`])
+/// - The key lookup table ([`KeyLookup`]) built from the device's configuration
+/// - The device state ([`DeviceState`]) for tracking modifiers and locks
+///
+/// This struct is created by [`DeviceManager::discover`] when a device matches
+/// a configuration pattern.
+///
+/// # Example
+///
+/// ```ignore
+/// let manager = DeviceManager::discover(&configs)?;
+/// for device in manager.devices() {
+///     println!("Device: {}", device.info().name);
+///     // Process events through device.lookup() and device.state()
+/// }
+/// ```
+pub struct ManagedDevice {
+    /// Information about the keyboard device.
+    info: KeyboardInfo,
+    /// The evdev input device for reading events.
+    input: EvdevInput,
+    /// Key lookup table for mapping resolution.
+    lookup: KeyLookup,
+    /// Runtime state tracking modifiers and locks.
+    state: DeviceState,
+    /// Index of the matching configuration (for reference).
+    config_index: usize,
+}
+
+impl ManagedDevice {
+    /// Creates a new managed device.
+    ///
+    /// # Arguments
+    ///
+    /// * `info` - Information about the keyboard device
+    /// * `input` - The evdev input device
+    /// * `config` - The device configuration to use for lookup table
+    /// * `config_index` - Index of the configuration in the original config list
+    fn new(
+        info: KeyboardInfo,
+        input: EvdevInput,
+        config: &DeviceConfig,
+        config_index: usize,
+    ) -> Self {
+        Self {
+            info,
+            input,
+            lookup: KeyLookup::from_device_config(config),
+            state: DeviceState::new(),
+            config_index,
+        }
+    }
+
+    /// Returns information about the keyboard device.
+    #[must_use]
+    pub fn info(&self) -> &KeyboardInfo {
+        &self.info
+    }
+
+    /// Returns a mutable reference to the evdev input device.
+    pub fn input_mut(&mut self) -> &mut EvdevInput {
+        &mut self.input
+    }
+
+    /// Returns a reference to the evdev input device.
+    #[must_use]
+    pub fn input(&self) -> &EvdevInput {
+        &self.input
+    }
+
+    /// Returns the key lookup table for this device.
+    #[must_use]
+    pub fn lookup(&self) -> &KeyLookup {
+        &self.lookup
+    }
+
+    /// Returns a mutable reference to the device state.
+    pub fn state_mut(&mut self) -> &mut DeviceState {
+        &mut self.state
+    }
+
+    /// Returns a reference to the device state.
+    #[must_use]
+    pub fn state(&self) -> &DeviceState {
+        &self.state
+    }
+
+    /// Returns the index of the matching configuration.
+    #[must_use]
+    pub fn config_index(&self) -> usize {
+        self.config_index
+    }
+
+    /// Rebuilds the lookup table from a new configuration.
+    ///
+    /// This is used during configuration reload to update mappings
+    /// without recreating the device.
+    pub fn rebuild_lookup(&mut self, config: &DeviceConfig) {
+        self.lookup = KeyLookup::from_device_config(config);
+    }
+}
+
+/// Manager for multiple keyboard devices with configuration matching.
+///
+/// `DeviceManager` discovers available keyboard devices and matches them
+/// against provided configurations. It creates [`ManagedDevice`] instances
+/// for each matched device and provides access to them for event processing.
+///
+/// # Discovery Process
+///
+/// 1. Enumerate all keyboard devices on the system
+/// 2. For each device, iterate through configurations in order
+/// 3. First matching configuration wins (priority order)
+/// 4. Create a `ManagedDevice` for matched devices
+/// 5. Unmatched devices are logged but not grabbed
+///
+/// # Example
+///
+/// ```ignore
+/// use keyrx_daemon::device_manager::DeviceManager;
+/// use keyrx_core::config::{DeviceConfig, DeviceIdentifier, KeyMapping, KeyCode};
+///
+/// // Create configurations
+/// let configs = vec![
+///     DeviceConfig {
+///         identifier: DeviceIdentifier { pattern: "USB Keyboard".to_string() },
+///         mappings: vec![/* ... */],
+///     },
+///     DeviceConfig {
+///         identifier: DeviceIdentifier { pattern: "*".to_string() },
+///         mappings: vec![/* ... */],
+///     },
+/// ];
+///
+/// // Discover and match devices
+/// let manager = DeviceManager::discover(&configs)?;
+///
+/// println!("Managing {} device(s)", manager.device_count());
+/// for device in manager.devices() {
+///     println!("  - {}", device.info().name);
+/// }
+/// ```
+pub struct DeviceManager {
+    /// Managed devices with their configurations and state.
+    devices: Vec<ManagedDevice>,
+}
+
+impl DeviceManager {
+    /// Discovers keyboard devices and matches them against configurations.
+    ///
+    /// This method enumerates all available keyboard devices, attempts to match
+    /// each against the provided configurations in priority order (first match wins),
+    /// and creates managed devices for those that match.
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - Device configurations to match against, in priority order
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(DeviceManager)` - Successfully discovered and matched at least one device
+    /// * `Err(DiscoveryError::NoDevicesFound)` - No keyboard devices found on the system
+    /// * `Err(DiscoveryError)` - If no devices match any configuration
+    ///
+    /// # Device Matching
+    ///
+    /// Devices are matched against configurations in the order provided.
+    /// The first matching configuration for each device wins. This allows
+    /// specific device configurations to take precedence over wildcards.
+    ///
+    /// Example configuration order:
+    /// 1. "USB\\VID_04D9*" - Specific vendor match
+    /// 2. "AT Translated*" - Laptop keyboard match
+    /// 3. "*" - Catch-all for remaining keyboards
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let configs = vec![
+    ///     DeviceConfig {
+    ///         identifier: DeviceIdentifier { pattern: "*".to_string() },
+    ///         mappings: vec![/* ... */],
+    ///     },
+    /// ];
+    ///
+    /// match DeviceManager::discover(&configs) {
+    ///     Ok(manager) => {
+    ///         println!("Managing {} devices", manager.device_count());
+    ///     }
+    ///     Err(DiscoveryError::NoDevicesFound) => {
+    ///         eprintln!("No keyboards found");
+    ///     }
+    ///     Err(e) => {
+    ///         eprintln!("Discovery error: {}", e);
+    ///     }
+    /// }
+    /// ```
+    pub fn discover(configs: &[DeviceConfig]) -> Result<Self, DiscoveryError> {
+        // Enumerate available keyboards
+        let keyboards = enumerate_keyboards()?;
+
+        if keyboards.is_empty() {
+            warn!("No keyboard devices found on the system");
+            return Err(DiscoveryError::NoDevicesFound);
+        }
+
+        info!("Found {} keyboard device(s)", keyboards.len());
+
+        let mut managed_devices = Vec::new();
+        let mut unmatched_devices = Vec::new();
+
+        // Try to match each keyboard against configurations
+        for keyboard_info in keyboards {
+            let mut matched = false;
+
+            // Iterate through configs in priority order
+            for (config_idx, config) in configs.iter().enumerate() {
+                let pattern = &config.identifier.pattern;
+
+                if match_device(&keyboard_info, pattern) {
+                    info!(
+                        "Device '{}' matches pattern '{}' (config #{})",
+                        keyboard_info.name, pattern, config_idx
+                    );
+
+                    // Try to open the device
+                    match EvdevInput::open(&keyboard_info.path) {
+                        Ok(input) => {
+                            let managed = ManagedDevice::new(
+                                keyboard_info.clone(),
+                                input,
+                                config,
+                                config_idx,
+                            );
+                            managed_devices.push(managed);
+                            matched = true;
+                            break; // First matching config wins
+                        }
+                        Err(e) => {
+                            warn!("Failed to open device '{}': {}", keyboard_info.name, e);
+                            // Continue to try other devices even if one fails
+                        }
+                    }
+                }
+            }
+
+            if !matched {
+                debug!(
+                    "Device '{}' does not match any configuration pattern",
+                    keyboard_info.name
+                );
+                unmatched_devices.push(keyboard_info);
+            }
+        }
+
+        // Check if we matched any devices
+        if managed_devices.is_empty() {
+            // Build helpful error message with available devices
+            let available: Vec<_> = unmatched_devices.iter().map(|d| d.name.as_str()).collect();
+
+            warn!(
+                "No devices matched any configuration. Available devices: {:?}",
+                available
+            );
+
+            return Err(DiscoveryError::NoDevicesFound);
+        }
+
+        info!(
+            "Successfully matched {} device(s), {} unmatched",
+            managed_devices.len(),
+            unmatched_devices.len()
+        );
+
+        Ok(Self {
+            devices: managed_devices,
+        })
+    }
+
+    /// Returns the number of managed devices.
+    #[must_use]
+    pub fn device_count(&self) -> usize {
+        self.devices.len()
+    }
+
+    /// Returns an iterator over managed devices.
+    pub fn devices(&self) -> impl Iterator<Item = &ManagedDevice> {
+        self.devices.iter()
+    }
+
+    /// Returns a mutable iterator over managed devices.
+    pub fn devices_mut(&mut self) -> impl Iterator<Item = &mut ManagedDevice> {
+        self.devices.iter_mut()
+    }
+
+    /// Returns a reference to a specific managed device by index.
+    #[must_use]
+    pub fn get_device(&self, index: usize) -> Option<&ManagedDevice> {
+        self.devices.get(index)
+    }
+
+    /// Returns a mutable reference to a specific managed device by index.
+    pub fn get_device_mut(&mut self, index: usize) -> Option<&mut ManagedDevice> {
+        self.devices.get_mut(index)
+    }
+
+    /// Rebuilds all lookup tables from the provided configurations.
+    ///
+    /// This is used during configuration reload to update mappings
+    /// for all managed devices without recreating them.
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - The new device configurations
+    ///
+    /// # Note
+    ///
+    /// Each device's lookup table is rebuilt using the configuration
+    /// at its stored `config_index`. If the configuration at that index
+    /// has changed, the device will use the new mappings.
+    pub fn rebuild_lookups(&mut self, configs: &[DeviceConfig]) {
+        for device in &mut self.devices {
+            if let Some(config) = configs.get(device.config_index) {
+                device.rebuild_lookup(config);
+                debug!(
+                    "Rebuilt lookup table for '{}' using config #{}",
+                    device.info.name, device.config_index
+                );
+            } else {
+                warn!(
+                    "Config index {} out of bounds for device '{}', keeping old lookup",
+                    device.config_index, device.info.name
+                );
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -601,6 +974,304 @@ mod tests {
             // Both should match the same prefix pattern
             for device in &devices {
                 assert!(match_device(device, "USB*"));
+            }
+        }
+    }
+
+    // DeviceManager tests - pattern matching logic tests (no real devices needed)
+    mod device_manager {
+        use super::*;
+        use keyrx_core::config::{DeviceConfig, DeviceIdentifier, KeyCode, KeyMapping};
+
+        /// Helper to create a test device config with a pattern
+        fn create_config(pattern: &str) -> DeviceConfig {
+            DeviceConfig {
+                identifier: DeviceIdentifier {
+                    pattern: pattern.to_string(),
+                },
+                mappings: vec![KeyMapping::simple(KeyCode::A, KeyCode::B)],
+            }
+        }
+
+        /// Helper to create a test device config with specific mapping
+        fn create_config_with_mapping(pattern: &str, from: KeyCode, to: KeyCode) -> DeviceConfig {
+            DeviceConfig {
+                identifier: DeviceIdentifier {
+                    pattern: pattern.to_string(),
+                },
+                mappings: vec![KeyMapping::simple(from, to)],
+            }
+        }
+
+        #[test]
+        fn test_config_pattern_matching_priority() {
+            // Test that pattern matching priority is correct
+            // More specific patterns should be checked before wildcards
+            let configs = vec![
+                create_config("USB Keyboard"), // Specific match
+                create_config("USB*"),         // Prefix match
+                create_config("*"),            // Wildcard match
+            ];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "USB Keyboard".to_string(),
+                serial: None,
+                phys: None,
+            };
+
+            // Device should match the specific pattern first
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert_eq!(
+                matched_index,
+                Some(0),
+                "Should match specific pattern first"
+            );
+        }
+
+        #[test]
+        fn test_config_pattern_matching_prefix_before_wildcard() {
+            let configs = vec![
+                create_config("USB*"), // Prefix match
+                create_config("*"),    // Wildcard match
+            ];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "USB Gaming Keyboard".to_string(),
+                serial: None,
+                phys: None,
+            };
+
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert_eq!(
+                matched_index,
+                Some(0),
+                "Should match prefix pattern before wildcard"
+            );
+        }
+
+        #[test]
+        fn test_config_pattern_matching_fallback_to_wildcard() {
+            let configs = vec![
+                create_config("Logitech*"), // Won't match
+                create_config("*"),         // Wildcard should match
+            ];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "Generic Keyboard".to_string(),
+                serial: None,
+                phys: None,
+            };
+
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert_eq!(matched_index, Some(1), "Should fall back to wildcard");
+        }
+
+        #[test]
+        fn test_config_pattern_no_match() {
+            let configs = vec![create_config("Logitech*"), create_config("Razer*")];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "Generic Keyboard".to_string(),
+                serial: None,
+                phys: None,
+            };
+
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert!(matched_index.is_none(), "Should not match any pattern");
+        }
+
+        #[test]
+        fn test_multiple_devices_different_configs() {
+            // Simulate matching multiple devices to different configs
+            let configs = vec![
+                create_config_with_mapping("USB*", KeyCode::A, KeyCode::B),
+                create_config_with_mapping("AT*", KeyCode::A, KeyCode::C),
+                create_config_with_mapping("*", KeyCode::A, KeyCode::D),
+            ];
+
+            let devices = vec![
+                KeyboardInfo {
+                    path: PathBuf::from("/dev/input/event0"),
+                    name: "USB Keyboard".to_string(),
+                    serial: None,
+                    phys: None,
+                },
+                KeyboardInfo {
+                    path: PathBuf::from("/dev/input/event1"),
+                    name: "AT Translated Set 2 keyboard".to_string(),
+                    serial: None,
+                    phys: None,
+                },
+                KeyboardInfo {
+                    path: PathBuf::from("/dev/input/event2"),
+                    name: "Random Keyboard".to_string(),
+                    serial: None,
+                    phys: None,
+                },
+            ];
+
+            let expected_config_indices = vec![0, 1, 2];
+
+            for (device_idx, device) in devices.iter().enumerate() {
+                let mut matched_config_idx = None;
+                for (config_idx, config) in configs.iter().enumerate() {
+                    if match_device(device, &config.identifier.pattern) {
+                        matched_config_idx = Some(config_idx);
+                        break;
+                    }
+                }
+
+                assert_eq!(
+                    matched_config_idx,
+                    Some(expected_config_indices[device_idx]),
+                    "Device {} should match config {}",
+                    device.name,
+                    expected_config_indices[device_idx]
+                );
+            }
+        }
+
+        #[test]
+        fn test_empty_configs_no_match() {
+            let configs: Vec<DeviceConfig> = vec![];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "USB Keyboard".to_string(),
+                serial: None,
+                phys: None,
+            };
+
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert!(
+                matched_index.is_none(),
+                "Empty configs should not match anything"
+            );
+        }
+
+        #[test]
+        fn test_serial_based_matching() {
+            let configs = vec![
+                create_config("SERIAL123"), // Exact serial match
+                create_config("*"),
+            ];
+
+            let device = KeyboardInfo {
+                path: PathBuf::from("/dev/input/event0"),
+                name: "Generic Keyboard".to_string(),
+                serial: Some("SERIAL123".to_string()),
+                phys: None,
+            };
+
+            let mut matched_index = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if match_device(&device, &config.identifier.pattern) {
+                    matched_index = Some(idx);
+                    break;
+                }
+            }
+
+            assert_eq!(matched_index, Some(0), "Should match by serial number");
+        }
+
+        // Integration tests that require real devices
+        #[test]
+        #[ignore = "Requires access to /dev/input devices"]
+        fn test_device_manager_discover_real_devices() {
+            let configs = vec![create_config("*")];
+
+            match DeviceManager::discover(&configs) {
+                Ok(manager) => {
+                    println!("Discovered {} device(s)", manager.device_count());
+                    for device in manager.devices() {
+                        println!(
+                            "  - {} (config #{})",
+                            device.info().name,
+                            device.config_index()
+                        );
+                    }
+                    assert!(
+                        manager.device_count() > 0,
+                        "Should find at least one device"
+                    );
+                }
+                Err(e) => {
+                    // This is expected if we don't have permission or no keyboards
+                    println!("Discovery error (expected if no permissions): {}", e);
+                }
+            }
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input devices"]
+        fn test_device_manager_specific_pattern() {
+            // Test with a specific pattern that might not match any device
+            let configs = vec![create_config("NonExistentKeyboard")];
+
+            let result = DeviceManager::discover(&configs);
+
+            // Should fail because no device matches
+            assert!(
+                matches!(result, Err(DiscoveryError::NoDevicesFound)),
+                "Should return NoDevicesFound for non-matching pattern"
+            );
+        }
+
+        #[test]
+        #[ignore = "Requires access to /dev/input devices"]
+        fn test_device_manager_rebuild_lookups() {
+            let initial_configs = vec![create_config_with_mapping("*", KeyCode::A, KeyCode::B)];
+
+            let updated_configs = vec![create_config_with_mapping("*", KeyCode::A, KeyCode::C)];
+
+            match DeviceManager::discover(&initial_configs) {
+                Ok(mut manager) => {
+                    // Rebuild with new configs
+                    manager.rebuild_lookups(&updated_configs);
+                    println!("Successfully rebuilt lookup tables");
+                }
+                Err(e) => {
+                    println!("Discovery error (expected if no permissions): {}", e);
+                }
             }
         }
     }
