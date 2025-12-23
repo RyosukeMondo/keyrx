@@ -98,7 +98,7 @@
 
 ## Phase 4: Testing
 
-- [ ] 10. Unit tests for state machine
+- [x] 10. Unit tests for state machine
   - File: `keyrx_core/src/runtime/tap_hold.rs` (tests module)
   - Test Tap path: Press → Release(quick) → outputs tap key
   - Test Hold path: Press → timeout → Hold active → Release → deactivate
