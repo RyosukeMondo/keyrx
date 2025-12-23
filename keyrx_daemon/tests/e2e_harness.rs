@@ -513,6 +513,103 @@ impl E2EConfig {
         }
     }
 
+    /// Creates a configuration with a tap-hold mapping.
+    ///
+    /// When the key is tapped (quick press and release), it outputs `tap_key`.
+    /// When held beyond `threshold_ms`, it activates `hold_modifier`.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - Source key (e.g., CapsLock)
+    /// * `tap_key` - Key to output on tap (e.g., Escape)
+    /// * `hold_modifier` - Modifier ID to activate on hold (0-254)
+    /// * `threshold_ms` - Time in milliseconds to distinguish tap from hold
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // CapsLock: tap=Escape, hold=Ctrl (modifier 0), 200ms threshold
+    /// let config = E2EConfig::tap_hold(
+    ///     KeyCode::CapsLock,
+    ///     KeyCode::Escape,
+    ///     0,
+    ///     200,
+    /// );
+    /// ```
+    #[allow(dead_code)]
+    pub fn tap_hold(from: KeyCode, tap_key: KeyCode, hold_modifier: u8, threshold_ms: u16) -> Self {
+        Self {
+            device_pattern: "*".to_string(),
+            mappings: vec![KeyMapping::tap_hold(
+                from,
+                tap_key,
+                hold_modifier,
+                threshold_ms,
+            )],
+        }
+    }
+
+    /// Creates a configuration with a tap-hold mapping and conditional layer.
+    ///
+    /// Combines tap-hold with a layer of conditional mappings that activate
+    /// when the hold modifier is active.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - Source key for tap-hold
+    /// * `tap_key` - Key to output on tap
+    /// * `hold_modifier` - Modifier ID to activate on hold
+    /// * `threshold_ms` - Time in milliseconds to distinguish tap from hold
+    /// * `layer_mappings` - List of (from, to) pairs active when modifier is held
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // CapsLock: tap=Escape, hold=navigation layer with HJKL arrows
+    /// let config = E2EConfig::tap_hold_with_layer(
+    ///     KeyCode::CapsLock,
+    ///     KeyCode::Escape,
+    ///     0,
+    ///     200,
+    ///     vec![
+    ///         (KeyCode::H, KeyCode::Left),
+    ///         (KeyCode::J, KeyCode::Down),
+    ///         (KeyCode::K, KeyCode::Up),
+    ///         (KeyCode::L, KeyCode::Right),
+    ///     ],
+    /// );
+    /// ```
+    #[allow(dead_code)]
+    pub fn tap_hold_with_layer(
+        from: KeyCode,
+        tap_key: KeyCode,
+        hold_modifier: u8,
+        threshold_ms: u16,
+        layer_mappings: Vec<(KeyCode, KeyCode)>,
+    ) -> Self {
+        let mut mappings = vec![KeyMapping::tap_hold(
+            from,
+            tap_key,
+            hold_modifier,
+            threshold_ms,
+        )];
+
+        for (layer_from, layer_to) in layer_mappings {
+            mappings.push(KeyMapping::conditional(
+                Condition::AllActive(vec![ConditionItem::ModifierActive(hold_modifier)]),
+                vec![BaseKeyMapping::Simple {
+                    from: layer_from,
+                    to: layer_to,
+                }],
+            ));
+        }
+
+        Self {
+            device_pattern: "*".to_string(),
+            mappings,
+        }
+    }
+
     /// Adds additional mappings to this configuration.
     ///
     /// # Example

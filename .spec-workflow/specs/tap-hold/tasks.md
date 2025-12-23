@@ -140,7 +140,7 @@
 
 ## Phase 5: Virtual E2E and Documentation
 
-- [ ] 14. Virtual E2E tests for tap-hold
+- [-] 14. Virtual E2E tests for tap-hold
   - File: `keyrx_daemon/tests/tap_hold_e2e.rs` (new file)
   - Use VirtualKeyboard to inject tap-hold key presses
   - Use OutputCapture to verify output timing and keys
