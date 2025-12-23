@@ -29,6 +29,7 @@ pub mod clock;
 pub mod event;
 pub mod lookup;
 pub mod state;
+pub mod tap_hold;
 
 // Re-export public API
 pub use clock::{Clock, SystemClock, VirtualClock};

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/tap-hold/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-23T04:32:34.754Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766464354744_18gn2phpi",
+      "approvalTitle": "Tap-Hold Requirements Document"
+    }
+  ]
+}
