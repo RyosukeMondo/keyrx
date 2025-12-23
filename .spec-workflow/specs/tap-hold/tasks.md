@@ -44,7 +44,7 @@
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer specializing in embedded collections | Task: Implement PendingKeyRegistry using ArrayVec in keyrx_core/src/runtime/tap_hold.rs with O(n) lookup but cache-friendly iteration | Restrictions: Max 32 concurrent tap-holds, no heap, handle registry full gracefully | Success: Registry works with concurrent keys, timeout checking is efficient | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [-] 5. Implement TapHoldProcessor core logic
+- [x] 5. Implement TapHoldProcessor core logic
   - File: `keyrx_core/src/runtime/tap_hold.rs` (extend)
   - Create TapHoldProcessor struct
   - Implement process_event() for Press, Release, Repeat handling
