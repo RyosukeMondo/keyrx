@@ -128,7 +128,7 @@
   - _Requirements: 2.1, 2.4, 5.1, 5.4_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Test Engineer | Task: Create integration tests that compile tap_hold Rhai config, load .krx, and verify event processing in keyrx_core/tests/tap_hold_integration.rs | Restrictions: Use real compiler output, test realistic key sequences | Success: Integration tests pass with compiled configs, end-to-end behavior verified | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 13. Property-based tests for determinism
+- [x] 13. Property-based tests for determinism
   - File: `keyrx_core/tests/tap_hold_proptest.rs` (new file)
   - Generate random key event sequences
   - Verify same sequence always produces same output
