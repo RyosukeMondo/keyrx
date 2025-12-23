@@ -108,7 +108,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 4.1_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with Rust testing expertise | Task: Write comprehensive unit tests for TapHoldProcessor in keyrx_core/src/runtime/tap_hold.rs covering tap, hold, and edge cases | Restrictions: Use VirtualClock for determinism, test both success and error paths | Success: 100% branch coverage on state machine, all timing edge cases covered | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 11. Unit tests for Permissive Hold
+- [x] 11. Unit tests for Permissive Hold
   - File: `keyrx_core/src/runtime/tap_hold.rs` (tests module)
   - Test interrupted tap-hold confirms Hold immediately
   - Test modifier active before interrupted key processed
