@@ -313,6 +313,38 @@ pub fn process_event(
     }
 }
 
+/// Checks for tap-hold timeouts and returns resulting events.
+///
+/// This function should be called periodically (e.g., every 10-100ms) by the
+/// daemon to detect keys that have been held past their threshold time.
+/// When a timeout occurs, the key transitions from Pending to Hold state
+/// and the associated modifier is activated.
+///
+/// # Arguments
+///
+/// * `current_time_us` - Current time in microseconds (same timescale as KeyEvent timestamps)
+/// * `state` - Mutable reference to the device state containing the tap-hold processor
+///
+/// # Returns
+///
+/// A vector of `KeyEvent`s to inject (typically empty, as timeout only activates modifiers).
+/// The state is also updated to activate the hold modifiers.
+///
+/// # Example
+///
+/// ```ignore
+/// // In daemon event loop, after processing events:
+/// let current_time = get_current_time_us();
+/// let timeout_events = check_tap_hold_timeouts(current_time, &mut device_state);
+/// for event in timeout_events {
+///     output.inject_event(event)?;
+/// }
+/// ```
+pub fn check_tap_hold_timeouts(current_time_us: u64, state: &mut DeviceState) -> Vec<KeyEvent> {
+    let outputs = state.tap_hold_processor().check_timeouts(current_time_us);
+    convert_tap_hold_outputs(outputs, state, current_time_us)
+}
+
 /// Converts TapHoldOutput events to KeyEvents and applies state changes
 ///
 /// This helper handles the conversion of tap-hold processor outputs:
@@ -956,6 +988,63 @@ mod tests {
                 .iter()
                 .any(|e| e.keycode() == KeyCode::B && e.is_press()),
             "Should output Press(B)"
+        );
+    }
+
+    #[test]
+    fn test_check_tap_hold_timeouts_triggers_hold() {
+        // Test that check_tap_hold_timeouts properly detects timeout and triggers hold
+        let config = create_test_config(vec![KeyMapping::tap_hold(
+            KeyCode::CapsLock,
+            KeyCode::Escape,
+            0,
+            200, // 200ms threshold
+        )]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Press CapsLock at t=0 (enters pending state)
+        let input_press = KeyEvent::press(KeyCode::CapsLock).with_timestamp(0);
+        let output = process_event(input_press, &lookup, &mut state);
+
+        // Initial press should produce no output (pending state)
+        assert!(
+            output.is_empty(),
+            "Press should produce no output in pending state"
+        );
+        assert!(
+            !state.is_modifier_active(0),
+            "Modifier should not be active yet"
+        );
+
+        // Check timeouts at t=150ms (before threshold) - should not trigger
+        let timeout_events = check_tap_hold_timeouts(150_000, &mut state);
+        assert!(
+            timeout_events.is_empty(),
+            "Should not trigger timeout before threshold"
+        );
+        assert!(!state.is_modifier_active(0), "Modifier still not active");
+
+        // Check timeouts at t=250ms (after threshold) - should trigger hold
+        let timeout_events = check_tap_hold_timeouts(250_000, &mut state);
+        assert!(
+            state.is_modifier_active(0),
+            "Modifier should be active after timeout"
+        );
+        // The timeout check may or may not produce events depending on implementation
+        // The key assertion is that the modifier is now active
+    }
+
+    #[test]
+    fn test_check_tap_hold_timeouts_no_pending() {
+        // Test that check_tap_hold_timeouts returns empty when no pending keys
+        let mut state = DeviceState::new();
+
+        // No pending tap-hold keys, should return empty
+        let timeout_events = check_tap_hold_timeouts(1_000_000, &mut state);
+        assert!(
+            timeout_events.is_empty(),
+            "Should be empty with no pending keys"
         );
     }
 

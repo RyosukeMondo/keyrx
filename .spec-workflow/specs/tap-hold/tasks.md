@@ -86,7 +86,7 @@
   - _Requirements: 4.3, 4.4_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with Linux evdev experience | Task: Extract timestamps from evdev events in keyrx_daemon/src/platform/linux.rs and pass to KeyEvent constructor | Restrictions: Handle missing timestamps by falling back to monotonic clock, no panics | Success: KeyEvents from Linux have accurate timestamps in microseconds | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 9. Add timer checking to daemon event loop
+- [x] 9. Add timer checking to daemon event loop
   - File: `keyrx_daemon/src/daemon/mod.rs`
   - Call check_timeouts() periodically (every 10ms or on event)
   - Process timeout-triggered Hold activations

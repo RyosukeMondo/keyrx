@@ -33,7 +33,7 @@ pub mod tap_hold;
 
 // Re-export public API
 pub use clock::{Clock, SystemClock, VirtualClock};
-pub use event::{process_event, KeyEvent, KeyEventType};
+pub use event::{check_tap_hold_timeouts, process_event, KeyEvent, KeyEventType};
 pub use lookup::KeyLookup;
 pub use state::DeviceState;
 pub use tap_hold::{

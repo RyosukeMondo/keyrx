@@ -42,7 +42,7 @@ use std::os::fd::{AsRawFd, BorrowedFd};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 use log::{debug, info, trace, warn};
@@ -52,13 +52,23 @@ use crate::config_loader::{load_config, ConfigError};
 use crate::device_manager::DeviceManager;
 use crate::platform::linux::UinputOutput;
 use crate::platform::{DeviceError, InputDevice, OutputDevice};
-use keyrx_core::runtime::event::process_event;
+use keyrx_core::runtime::event::{check_tap_hold_timeouts, process_event};
 
 #[cfg(feature = "linux")]
 mod linux;
 
 #[cfg(feature = "linux")]
 pub use linux::{install_signal_handlers, SignalHandler};
+
+/// Returns the current time in microseconds since UNIX epoch.
+///
+/// This is used for tap-hold timeout checking.
+fn current_time_us() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_micros() as u64)
+        .unwrap_or(0)
+}
 
 /// Errors that can occur during daemon operations.
 #[derive(Debug, Error)]
@@ -646,6 +656,11 @@ impl Daemon {
                 }
             }
 
+            // Check for tap-hold timeouts on all devices
+            if let Err(e) = self.check_tap_hold_timeouts() {
+                warn!("Error checking tap-hold timeouts: {}", e);
+            }
+
             // Periodic stats logging
             if last_stats_time.elapsed() >= STATS_INTERVAL {
                 info!(
@@ -871,6 +886,47 @@ impl Daemon {
         }
 
         Ok(processed_count)
+    }
+
+    /// Checks for tap-hold timeouts on all devices and injects resulting events.
+    ///
+    /// This method should be called periodically (after each poll cycle) to detect
+    /// tap-hold keys that have been held past their threshold time. When a timeout
+    /// is detected, the tap-hold processor transitions the key to Hold state and
+    /// generates modifier activation events.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if event injection fails.
+    fn check_tap_hold_timeouts(&mut self) -> Result<(), DaemonError> {
+        let current_time = current_time_us();
+
+        // Check each device for tap-hold timeouts
+        for device_idx in 0..self.device_manager.device_count() {
+            // Get timeout events for this device
+            let timeout_events = {
+                let device = match self.device_manager.get_device_mut(device_idx) {
+                    Some(d) => d,
+                    None => continue,
+                };
+
+                // Check for timeouts and get resulting events
+                check_tap_hold_timeouts(current_time, device.state_mut())
+            };
+
+            // Inject any timeout-triggered events
+            for event in timeout_events {
+                trace!("Tap-hold timeout event: {:?}", event);
+                self.output.inject_event(event).map_err(|e| {
+                    DaemonError::RuntimeError(format!(
+                        "failed to inject tap-hold timeout event: {}",
+                        e
+                    ))
+                })?;
+            }
+        }
+
+        Ok(())
     }
 }
 
