@@ -160,7 +160,7 @@
   - _Requirements: 2.1, 2.4_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical Writer with keyboard expertise | Task: Update examples/04-dual-function-keys.rhai with working tap-hold examples and comprehensive comments | Restrictions: Ensure examples compile and work correctly, explain behavior clearly | Success: Example file is self-documenting, all configurations work as described | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 16. Add debug logging for state transitions
+- [x] 16. Add debug logging for state transitions
   - File: `keyrx_core/src/runtime/tap_hold.rs`
   - Add trace-level logging for state transitions
   - Include key, old state, new state, elapsed time
