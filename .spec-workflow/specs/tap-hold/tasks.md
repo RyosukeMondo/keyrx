@@ -150,7 +150,7 @@
   - _Requirements: 1.1, 1.2, 3.1, 5.3_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: E2E Test Engineer | Task: Create virtual E2E tests for tap-hold using VirtualKeyboard and OutputCapture in keyrx_daemon/tests/tap_hold_e2e.rs | Restrictions: Use skip_if_no_uinput macro for CI compatibility, test realistic sequences | Success: E2E tests pass locally with uinput access, skip gracefully in CI | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 15. Update example configurations
+- [x] 15. Update example configurations
   - File: `examples/04-dual-function-keys.rhai`
   - Verify example works with new implementation
   - Add comments explaining tap vs hold behavior
