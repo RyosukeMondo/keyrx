@@ -6,7 +6,7 @@
 //! - Error handling for invalid arguments
 //! - Exit code verification
 //!
-//! Tests that require real devices are marked with `#[ignore]` for CI compatibility.
+//! Tests that require real devices use runtime skip macros for CI compatibility.
 //! To run ignored tests locally: `cargo test --package keyrx_daemon -- --ignored`
 
 use assert_cmd::cargo::cargo_bin_cmd;
@@ -232,11 +232,11 @@ fn test_list_devices_help() {
 }
 
 /// Test list-devices with real devices.
-/// Marked as ignored since it requires access to /dev/input.
+/// Skips at runtime if /dev/input access is not available.
 #[test]
 #[cfg(all(target_os = "linux", feature = "linux"))]
-#[ignore = "Requires access to /dev/input devices"]
 fn test_list_devices_execution() {
+    keyrx_daemon::skip_if_no_input_access!();
     cmd()
         .arg("list-devices")
         .assert()
@@ -304,11 +304,11 @@ fn test_validate_config_short_flag() {
 }
 
 /// Test validate with a valid config file on Linux.
-/// Marked as ignored since it requires access to /dev/input.
+/// Skips at runtime if /dev/input access is not available.
 #[test]
 #[cfg(all(target_os = "linux", feature = "linux"))]
-#[ignore = "Requires access to /dev/input devices"]
 fn test_validate_valid_config() {
+    keyrx_daemon::skip_if_no_input_access!();
     let temp_file = create_valid_krx_file();
 
     cmd()
@@ -451,11 +451,11 @@ fn test_run_debug_before_config() {
 // ============================================================================
 
 /// Verify list-devices output format when devices are present.
-/// Marked as ignored since it requires access to /dev/input.
+/// Skips at runtime if /dev/input access is not available.
 #[test]
 #[cfg(all(target_os = "linux", feature = "linux"))]
-#[ignore = "Requires access to /dev/input devices"]
 fn test_list_devices_output_format() {
+    keyrx_daemon::skip_if_no_input_access!();
     cmd()
         .arg("list-devices")
         .assert()
@@ -469,11 +469,11 @@ fn test_list_devices_output_format() {
 }
 
 /// Verify validate output shows step numbers.
-/// Marked as ignored since it requires access to /dev/input.
+/// Skips at runtime if /dev/input access is not available.
 #[test]
 #[cfg(all(target_os = "linux", feature = "linux"))]
-#[ignore = "Requires access to /dev/input devices"]
 fn test_validate_output_shows_steps() {
+    keyrx_daemon::skip_if_no_input_access!();
     let temp_file = create_valid_krx_file();
 
     cmd()

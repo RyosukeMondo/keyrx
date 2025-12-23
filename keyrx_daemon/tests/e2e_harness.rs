@@ -2377,10 +2377,9 @@ mod tests {
     }
 
     /// Test that E2EHarness::setup creates all components correctly
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_setup -- --ignored"]
     fn test_e2e_harness_setup() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2397,10 +2396,9 @@ mod tests {
     }
 
     /// Test that E2EHarness cleanup works on drop
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_cleanup -- --ignored"]
     fn test_e2e_harness_cleanup() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config_path;
 
         {
@@ -2448,10 +2446,9 @@ mod tests {
     // ------------------------------------------------------------------------
 
     /// Test that inject, capture, and verify methods can be called on harness
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_capture_verify -- --ignored"]
     fn test_e2e_harness_inject_capture_verify() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2471,10 +2468,9 @@ mod tests {
     }
 
     /// Test the test_mapping convenience method
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_test_mapping -- --ignored"]
     fn test_e2e_harness_test_mapping() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2489,10 +2485,9 @@ mod tests {
     }
 
     /// Test inject_with_delay method
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_with_delay -- --ignored"]
     fn test_e2e_harness_inject_with_delay() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2524,10 +2519,9 @@ mod tests {
     }
 
     /// Test capture_n method
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_capture_n -- --ignored"]
     fn test_e2e_harness_capture_n() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2553,10 +2547,9 @@ mod tests {
     }
 
     /// Test inject_and_capture_n method
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_inject_and_capture_n -- --ignored"]
     fn test_e2e_harness_inject_and_capture_n() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2575,10 +2568,9 @@ mod tests {
     }
 
     /// Test drain method
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_drain -- --ignored"]
     fn test_e2e_harness_drain() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2602,10 +2594,9 @@ mod tests {
     }
 
     /// Test verify returns error on mismatch
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_verify_mismatch -- --ignored"]
     fn test_e2e_harness_verify_mismatch() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2625,10 +2616,9 @@ mod tests {
     }
 
     /// Test passthrough behavior for unmapped keys
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_passthrough -- --ignored"]
     fn test_e2e_harness_passthrough() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2743,10 +2733,9 @@ mod tests {
     }
 
     /// Test that explicit teardown works correctly
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_explicit_teardown -- --ignored"]
     fn test_e2e_harness_explicit_teardown() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2774,10 +2763,9 @@ mod tests {
     }
 
     /// Test teardown with custom timeout
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_teardown_with_timeout -- --ignored"]
     fn test_e2e_harness_teardown_with_timeout() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
         let harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -2794,10 +2782,9 @@ mod tests {
     }
 
     /// Test that Drop cleans up properly when harness is simply dropped
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_e2e_harness_drop_cleanup -- --ignored"]
     fn test_e2e_harness_drop_cleanup() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config_path;
 
         {
@@ -3226,10 +3213,9 @@ mod tests {
     }
 
     /// Test that the timeout wrapper runs on E2E tests when available
-    /// Note: Marked #[ignore] because it requires uinput access and daemon binary
     #[test]
-    #[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux test_timeout_wrapper_with_real_harness -- --ignored"]
     fn test_timeout_wrapper_with_real_harness() {
+        keyrx_daemon::skip_if_no_uinput!();
         let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
 
         let result = with_timeout(Duration::from_secs(30), config, |harness, set_phase| {

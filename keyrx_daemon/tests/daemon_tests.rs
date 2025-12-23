@@ -5,7 +5,8 @@
 //! - Signal handling (SIGTERM, SIGINT, SIGHUP)
 //! - Configuration reload functionality
 //!
-//! Tests that require real devices are marked with `#[ignore]` for CI compatibility.
+//! Tests that require real devices use runtime skip macros for CI compatibility.
+//! Signal handling tests require process isolation and remain marked with `#[ignore]`.
 //! To run ignored tests locally: `cargo test --package keyrx_daemon -- --ignored`
 
 #![cfg(all(target_os = "linux", feature = "linux"))]
@@ -312,8 +313,8 @@ fn test_daemon_new_empty_config() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_full_initialization() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -343,8 +344,8 @@ fn test_daemon_full_initialization() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_shutdown_releases_resources() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -379,8 +380,8 @@ fn test_daemon_shutdown_releases_resources() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_shutdown_idempotent() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -407,8 +408,8 @@ fn test_daemon_shutdown_idempotent() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_drop_calls_shutdown() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -446,8 +447,8 @@ fn test_daemon_drop_calls_shutdown() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_reload_success() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -501,8 +502,8 @@ fn test_daemon_reload_success() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_reload_missing_file() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
@@ -539,8 +540,8 @@ fn test_daemon_reload_missing_file() {
 ///
 /// Requires: Access to /dev/input and /dev/uinput devices.
 #[test]
-#[ignore = "Requires access to /dev/input and /dev/uinput devices"]
 fn test_daemon_reload_invalid_file() {
+    keyrx_daemon::skip_if_no_uinput!();
     use keyrx_daemon::daemon::Daemon;
 
     let temp_file = create_temp_config_file(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);

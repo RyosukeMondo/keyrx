@@ -14,9 +14,15 @@
 //! - Development without physical keyboard access
 //! - Automated testing of key remapping logic
 //!
-//! Run virtual tests with:
+//! Virtual tests use runtime permission checking and will automatically skip if uinput
+//! is not accessible. Run them with:
 //! ```bash
-//! sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests -- --ignored
+//! # Tests auto-skip if uinput not accessible
+//! cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests
+//!
+//! # To run E2E tests, ensure uinput access:
+//! sudo usermod -aG uinput $USER  # Then log out/in
+//! cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests
 //! ```
 //!
 //! # When to Use Hardware Tests (This File)

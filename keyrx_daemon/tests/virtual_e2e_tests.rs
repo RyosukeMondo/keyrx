@@ -7,17 +7,22 @@
 //!
 //! These tests require:
 //! - Linux with uinput module loaded (`sudo modprobe uinput`)
-//! - Write access to `/dev/uinput` (usually requires root or uinput group)
+//! - Read/write access to `/dev/uinput` (add user to 'uinput' group)
+//! - Read access to `/dev/input/event*` (add user to 'input' group)
 //! - The keyrx_daemon binary built
 //!
 //! Run with:
 //! ```bash
-//! sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests -- --ignored
+//! cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests
 //! ```
 //!
-//! Or run all E2E tests:
+//! Tests automatically skip with a message if uinput/input access is not available.
+//!
+//! # Granting Access
+//!
 //! ```bash
-//! sudo cargo test -p keyrx_daemon --features linux -- --ignored
+//! sudo usermod -aG uinput,input $USER
+//! # Log out and back in for changes to take effect
 //! ```
 
 #![cfg(all(target_os = "linux", feature = "linux"))]
@@ -38,8 +43,8 @@ use keyrx_core::runtime::KeyEvent;
 ///
 /// Verifies that when A is pressed, B is output instead.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_simple_remap_press -- --ignored"]
 fn test_simple_remap_press() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -60,8 +65,8 @@ fn test_simple_remap_press() {
 ///
 /// Verifies that when A is released, B release is output instead.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_simple_remap_release -- --ignored"]
 fn test_simple_remap_release() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -90,8 +95,8 @@ fn test_simple_remap_release() {
 /// Verifies that a complete tap (press + release) of A produces
 /// a complete tap of B.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_simple_remap_tap -- --ignored"]
 fn test_simple_remap_tap() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -117,8 +122,8 @@ fn test_simple_remap_tap() {
 /// Verifies that when multiple remaps are configured (A→B, C→D),
 /// each key is correctly remapped.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_multiple_remaps_different_keys -- --ignored"]
 fn test_multiple_remaps_different_keys() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Configure A→B and C→D
     let config = E2EConfig::simple_remaps(vec![(KeyCode::A, KeyCode::B), (KeyCode::C, KeyCode::D)]);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -144,8 +149,8 @@ fn test_multiple_remaps_different_keys() {
 ///
 /// Verifies that repeatedly pressing the same remapped key works correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_repeated_remap_sequence -- --ignored"]
 fn test_repeated_remap_sequence() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -166,8 +171,8 @@ fn test_repeated_remap_sequence() {
 ///
 /// Verifies that alternating between different remapped keys works correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_alternating_remapped_keys -- --ignored"]
 fn test_alternating_remapped_keys() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remaps(vec![(KeyCode::A, KeyCode::B), (KeyCode::C, KeyCode::D)]);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -193,8 +198,8 @@ fn test_alternating_remapped_keys() {
 /// Verifies that when A→B is configured, pressing an unmapped key (C)
 /// produces C without modification.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_unmapped_key_passthrough -- --ignored"]
 fn test_unmapped_key_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Only A→B is configured
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -216,8 +221,8 @@ fn test_unmapped_key_passthrough() {
 ///
 /// Verifies that a sequence of unmapped keys all pass through correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_multiple_unmapped_keys_passthrough -- --ignored"]
 fn test_multiple_unmapped_keys_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Only A→B is configured
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -240,8 +245,8 @@ fn test_multiple_unmapped_keys_passthrough() {
 /// Verifies that remapped keys are transformed while unmapped keys
 /// pass through in the same sequence.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_mixed_mapped_unmapped_keys -- --ignored"]
 fn test_mixed_mapped_unmapped_keys() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A→B configured, but not C
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -264,8 +269,8 @@ fn test_mixed_mapped_unmapped_keys() {
 /// Verifies that special keys like Shift, Ctrl, F-keys pass through
 /// when not explicitly mapped.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_special_keys_passthrough -- --ignored"]
 fn test_special_keys_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Only A→B configured
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -306,8 +311,8 @@ fn test_special_keys_passthrough() {
 ///
 /// This is a very common remapping that many users want.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_capslock_to_escape -- --ignored"]
 fn test_capslock_to_escape() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::CapsLock, KeyCode::Escape);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -327,8 +332,8 @@ fn test_capslock_to_escape() {
 ///
 /// Verifies that with no mappings configured, all keys pass through.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_empty_config_passthrough -- --ignored"]
 fn test_empty_config_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // No mappings
     let config = E2EConfig::default();
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -346,8 +351,8 @@ fn test_empty_config_passthrough() {
 ///
 /// Verifies that rapid key presses are all captured and remapped correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_rapid_key_taps -- --ignored"]
 fn test_rapid_key_taps() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -374,8 +379,8 @@ fn test_rapid_key_taps() {
 /// When a key is configured as a modifier (state change only), pressing it
 /// should not produce any output events.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modifier_no_output -- --ignored"]
 fn test_modifier_no_output() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0 (no output)
     let config = E2EConfig::modifier(KeyCode::CapsLock, 0);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -399,8 +404,8 @@ fn test_modifier_no_output() {
 /// Verifies that pressing a modifier sets internal state, and releasing it
 /// clears the state, all without producing any output.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modifier_hold_release_no_output -- --ignored"]
 fn test_modifier_hold_release_no_output() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::modifier(KeyCode::CapsLock, 0);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -437,8 +442,8 @@ fn test_modifier_hold_release_no_output() {
 ///
 /// Lock keys toggle internal state on press. The first press activates the lock.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_lock_toggle_no_output -- --ignored"]
 fn test_lock_toggle_no_output() {
+    keyrx_daemon::skip_if_no_uinput!();
     // ScrollLock toggles lock 0 (no output)
     let config = E2EConfig::lock(KeyCode::ScrollLock, 0);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -462,8 +467,8 @@ fn test_lock_toggle_no_output() {
 /// The second press of a lock key should toggle the lock off.
 /// Neither press nor release should produce output.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_lock_double_toggle_no_output -- --ignored"]
 fn test_lock_double_toggle_no_output() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::lock(KeyCode::ScrollLock, 0);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -497,8 +502,8 @@ fn test_lock_double_toggle_no_output() {
 /// Unlike modifiers (which are momentary), locks only toggle on press.
 /// Release should be ignored and produce no output.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_lock_release_ignored -- --ignored"]
 fn test_lock_release_ignored() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::lock(KeyCode::ScrollLock, 0);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -533,8 +538,8 @@ fn test_lock_release_ignored() {
 ///
 /// When modifier is held, the conditional mapping should be applied.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_with_modifier_active -- --ignored"]
 fn test_conditional_with_modifier_active() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0, H→Left when modifier 0 is active
     let config =
         E2EConfig::with_modifier_layer(KeyCode::CapsLock, 0, vec![(KeyCode::H, KeyCode::Left)]);
@@ -569,8 +574,8 @@ fn test_conditional_with_modifier_active() {
 /// When modifier is not active, the conditional mapping should not apply,
 /// and the key should pass through unchanged.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_without_modifier_passthrough -- --ignored"]
 fn test_conditional_without_modifier_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0, H→Left when modifier 0 is active
     let config =
         E2EConfig::with_modifier_layer(KeyCode::CapsLock, 0, vec![(KeyCode::H, KeyCode::Left)]);
@@ -592,8 +597,8 @@ fn test_conditional_without_modifier_passthrough() {
 ///
 /// When lock is toggled on, the conditional mapping should be applied.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_with_lock_active -- --ignored"]
 fn test_conditional_with_lock_active() {
+    keyrx_daemon::skip_if_no_uinput!();
     // ScrollLock toggles lock 0, 1→F1 when lock 0 is active
     let config =
         E2EConfig::with_lock_layer(KeyCode::ScrollLock, 0, vec![(KeyCode::Num1, KeyCode::F1)]);
@@ -622,8 +627,8 @@ fn test_conditional_with_lock_active() {
 ///
 /// When lock is toggled off, the conditional mapping should not apply.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_without_lock_passthrough -- --ignored"]
 fn test_conditional_without_lock_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // ScrollLock toggles lock 0, 1→F1 when lock 0 is active
     let config =
         E2EConfig::with_lock_layer(KeyCode::ScrollLock, 0, vec![(KeyCode::Num1, KeyCode::F1)]);
@@ -645,8 +650,8 @@ fn test_conditional_without_lock_passthrough() {
 ///
 /// After toggling lock off, the conditional mapping should no longer apply.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_after_lock_toggle_off -- --ignored"]
 fn test_conditional_after_lock_toggle_off() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config =
         E2EConfig::with_lock_layer(KeyCode::ScrollLock, 0, vec![(KeyCode::Num1, KeyCode::F1)]);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -686,8 +691,8 @@ fn test_conditional_after_lock_toggle_off() {
 ///
 /// After releasing modifier, the conditional mapping should no longer apply.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_conditional_after_modifier_released -- --ignored"]
 fn test_conditional_after_modifier_released() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config =
         E2EConfig::with_modifier_layer(KeyCode::CapsLock, 0, vec![(KeyCode::H, KeyCode::Left)]);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
@@ -727,8 +732,8 @@ fn test_conditional_after_modifier_released() {
 ///
 /// Verifies that multiple keys can be remapped within the same modifier layer.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_multiple_conditionals_same_layer -- --ignored"]
 fn test_multiple_conditionals_same_layer() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Vim-style navigation: CapsLock + HJKL → arrows
     let config = E2EConfig::with_modifier_layer(
         KeyCode::CapsLock,
@@ -785,8 +790,8 @@ fn test_multiple_conditionals_same_layer() {
 /// Press: Press(LShift) → Press(key)
 /// Release: Release(key) → Release(LShift)
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_shift -- --ignored"]
 fn test_modified_output_shift() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Shift+1 (outputs '!' on most layouts)
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -829,8 +834,8 @@ fn test_modified_output_shift() {
 ///
 /// Verifies that Ctrl modifier is correctly applied to the output.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_ctrl -- --ignored"]
 fn test_modified_output_ctrl() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Ctrl+C (copy shortcut)
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -870,8 +875,8 @@ fn test_modified_output_ctrl() {
 ///
 /// Verifies that Alt modifier is correctly applied to the output.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_alt -- --ignored"]
 fn test_modified_output_alt() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Alt+Tab (window switcher)
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -916,8 +921,8 @@ fn test_modified_output_alt() {
 /// Press order: LShift → LCtrl → key
 /// Release order: key → LCtrl → LShift
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_ctrl_shift -- --ignored"]
 fn test_modified_output_ctrl_shift() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Ctrl+Shift+S (save as shortcut)
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -964,8 +969,8 @@ fn test_modified_output_ctrl_shift() {
 ///
 /// Verifies correct ordering for Ctrl+Alt combinations.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_ctrl_alt -- --ignored"]
 fn test_modified_output_ctrl_alt() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Ctrl+Alt+Delete style shortcut
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -1010,8 +1015,8 @@ fn test_modified_output_ctrl_alt() {
 ///
 /// Verifies correct ordering when all four modifiers are used.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_all_modifiers -- --ignored"]
 fn test_modified_output_all_modifiers() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Shift+Ctrl+Alt+Win+Z (hypothetical super shortcut)
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -1060,8 +1065,8 @@ fn test_modified_output_all_modifiers() {
 ///
 /// Verifies that a full tap (press+release) produces the complete correct sequence.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_complete_tap -- --ignored"]
 fn test_modified_output_complete_tap() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Shift+1 complete tap
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -1095,8 +1100,8 @@ fn test_modified_output_complete_tap() {
 ///
 /// Verifies that multiple modified output mappings work correctly in sequence.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_multiple_taps -- --ignored"]
 fn test_modified_output_multiple_taps() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Shift+1
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -1146,8 +1151,8 @@ fn test_modified_output_multiple_taps() {
 ///
 /// Verifies that modified output mappings don't affect unmapped keys.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modified_output_with_passthrough -- --ignored"]
 fn test_modified_output_with_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // A → Shift+1, but B is unmapped
     let config = E2EConfig::modified_output(
         KeyCode::A,
@@ -1199,8 +1204,8 @@ fn test_modified_output_with_passthrough() {
 /// Verifies that complex typing patterns work correctly - multiple keys
 /// tapped in sequence without any event loss or reordering.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_typing_pattern_sequence -- --ignored"]
 fn test_typing_pattern_sequence() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Multiple remaps: A→1, B→2, C→3
     let config = E2EConfig::simple_remaps(vec![
         (KeyCode::A, KeyCode::Num1),
@@ -1226,8 +1231,8 @@ fn test_typing_pattern_sequence() {
 ///
 /// Verifies that typing with interleaved mapped/unmapped keys works correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_typing_mixed_mapped_unmapped -- --ignored"]
 fn test_typing_mixed_mapped_unmapped() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Only A→1, B→2 mapped; X, Y unmapped
     let config = E2EConfig::simple_remaps(vec![
         (KeyCode::A, KeyCode::Num1),
@@ -1253,8 +1258,8 @@ fn test_typing_mixed_mapped_unmapped() {
 /// Verifies that holding a modifier while typing multiple keys applies
 /// the modifier layer to all subsequent keys.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modifier_hold_during_typing -- --ignored"]
 fn test_modifier_hold_during_typing() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0
     // H→Left, J→Down, K→Up, L→Right when modifier 0 is active
     let config = E2EConfig::with_modifier_layer(
@@ -1299,8 +1304,8 @@ fn test_modifier_hold_during_typing() {
 /// Verifies that lock state persists correctly across many key events
 /// and that state changes are properly maintained.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_state_accumulation_lock -- --ignored"]
 fn test_state_accumulation_lock() {
+    keyrx_daemon::skip_if_no_uinput!();
     // ScrollLock toggles lock 0, Num1→F1 when lock 0 is active
     let config =
         E2EConfig::with_lock_layer(KeyCode::ScrollLock, 0, vec![(KeyCode::Num1, KeyCode::F1)]);
@@ -1354,8 +1359,8 @@ fn test_state_accumulation_lock() {
 ///
 /// Verifies that state changes during rapid typing don't cause issues.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_state_transition_rapid_typing -- --ignored"]
 fn test_state_transition_rapid_typing() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0, H→Left when modifier 0 is active
     let config =
         E2EConfig::with_modifier_layer(KeyCode::CapsLock, 0, vec![(KeyCode::H, KeyCode::Left)]);
@@ -1400,8 +1405,8 @@ fn test_state_transition_rapid_typing() {
 /// Verifies that a full vim navigation layer works correctly with
 /// multiple navigation keys used in sequence.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_vim_navigation_layer_complex -- --ignored"]
 fn test_vim_navigation_layer_complex() {
+    keyrx_daemon::skip_if_no_uinput!();
     // CapsLock activates modifier 0
     // Vim-style: HJKL → arrows, W/B → Ctrl+Right/Left (word navigation)
     let config = E2EConfig::with_modifier_layer(
@@ -1458,8 +1463,8 @@ fn test_vim_navigation_layer_complex() {
 ///
 /// Verifies that rapid key sequences don't lose any events.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_no_event_loss_rapid_sequence -- --ignored"]
 fn test_no_event_loss_rapid_sequence() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remap(KeyCode::A, KeyCode::B);
     let mut harness = E2EHarness::setup(config).expect("Failed to setup E2E harness");
 
@@ -1488,8 +1493,8 @@ fn test_no_event_loss_rapid_sequence() {
 ///
 /// Verifies that events are not reordered during processing.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_event_ordering_preserved -- --ignored"]
 fn test_event_ordering_preserved() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Map A→1, B→2, C→3 to easily track ordering
     let config = E2EConfig::simple_remaps(vec![
         (KeyCode::A, KeyCode::Num1),
@@ -1530,8 +1535,8 @@ fn test_event_ordering_preserved() {
 ///
 /// Verifies that overlapping key presses work correctly.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_overlapping_key_presses -- --ignored"]
 fn test_overlapping_key_presses() {
+    keyrx_daemon::skip_if_no_uinput!();
     let config = E2EConfig::simple_remaps(vec![
         (KeyCode::W, KeyCode::Up),
         (KeyCode::A, KeyCode::Left),
@@ -1569,8 +1574,8 @@ fn test_overlapping_key_presses() {
 /// Simulates an extended typing session with lock layer active,
 /// verifying state persists through many key events.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_extended_lock_session -- --ignored"]
 fn test_extended_lock_session() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Lock layer: numbers become function keys
     let config = E2EConfig::with_lock_layer(
         KeyCode::ScrollLock,
@@ -1643,8 +1648,8 @@ fn test_extended_lock_session() {
 /// Verifies that keys not in the modifier layer pass through unchanged
 /// even when the modifier is active.
 #[test]
-#[ignore = "requires uinput access and daemon binary - run with: sudo cargo test -p keyrx_daemon --features linux --test virtual_e2e_tests test_modifier_layer_passthrough -- --ignored"]
 fn test_modifier_layer_passthrough() {
+    keyrx_daemon::skip_if_no_uinput!();
     // Only HJKL mapped in the layer, other keys should pass through
     let config = E2EConfig::with_modifier_layer(
         KeyCode::CapsLock,
