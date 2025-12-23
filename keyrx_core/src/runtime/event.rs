@@ -1,7 +1,8 @@
 //! Keyboard event types and processing logic
 //!
 //! This module provides:
-//! - `KeyEvent`: Type-safe keyboard event representation
+//! - `KeyEvent`: Type-safe keyboard event representation with timestamps
+//! - `KeyEventType`: Enum for press/release event types
 //! - `process_event`: Core event processing function
 
 extern crate alloc;
@@ -10,7 +11,20 @@ use alloc::vec::Vec;
 use crate::config::KeyCode;
 use crate::runtime::{DeviceState, KeyLookup};
 
-/// Keyboard event representing a key press or release
+/// Type of keyboard event (press or release)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KeyEventType {
+    /// Key press event
+    Press,
+    /// Key release event
+    Release,
+}
+
+/// Keyboard event representing a key press or release with timestamp
+///
+/// The timestamp is in microseconds and is used for timing-based decisions
+/// such as tap-hold functionality. A timestamp of 0 indicates no timestamp
+/// is available (legacy compatibility).
 ///
 /// # Example
 ///
@@ -18,31 +32,122 @@ use crate::runtime::{DeviceState, KeyLookup};
 /// use keyrx_core::runtime::KeyEvent;
 /// use keyrx_core::config::KeyCode;
 ///
-/// let event = KeyEvent::Press(KeyCode::A);
+/// // Create a press event with timestamp
+/// let event = KeyEvent::press(KeyCode::A).with_timestamp(1000);
 /// assert_eq!(event.keycode(), KeyCode::A);
+/// assert!(event.is_press());
+/// assert_eq!(event.timestamp_us(), 1000);
+///
+/// // Legacy style (shorthand constructors)
+/// let press = KeyEvent::Press(KeyCode::A);
+/// let release = KeyEvent::Release(KeyCode::A);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum KeyEvent {
-    /// Key press event
-    Press(KeyCode),
-    /// Key release event
-    Release(KeyCode),
+pub struct KeyEvent {
+    /// The type of event (press or release)
+    event_type: KeyEventType,
+    /// The keycode for this event
+    keycode: KeyCode,
+    /// Timestamp in microseconds (0 = no timestamp)
+    timestamp_us: u64,
 }
 
 impl KeyEvent {
-    /// Returns the keycode for this event
+    /// Creates a new key press event
     ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let event = KeyEvent::Press(KeyCode::A);
-    /// assert_eq!(event.keycode(), KeyCode::A);
-    /// ```
-    pub fn keycode(&self) -> KeyCode {
-        match self {
-            KeyEvent::Press(k) => *k,
-            KeyEvent::Release(k) => *k,
+    /// The timestamp defaults to 0 (no timestamp).
+    /// Use `with_timestamp()` to set a specific timestamp.
+    #[must_use]
+    pub const fn press(keycode: KeyCode) -> Self {
+        Self {
+            event_type: KeyEventType::Press,
+            keycode,
+            timestamp_us: 0,
         }
+    }
+
+    /// Creates a new key release event
+    ///
+    /// The timestamp defaults to 0 (no timestamp).
+    /// Use `with_timestamp()` to set a specific timestamp.
+    #[must_use]
+    pub const fn release(keycode: KeyCode) -> Self {
+        Self {
+            event_type: KeyEventType::Release,
+            keycode,
+            timestamp_us: 0,
+        }
+    }
+
+    /// Legacy constructor for press events (enum-style syntax)
+    #[must_use]
+    #[allow(non_snake_case)]
+    pub const fn Press(keycode: KeyCode) -> Self {
+        Self::press(keycode)
+    }
+
+    /// Legacy constructor for release events (enum-style syntax)
+    #[must_use]
+    #[allow(non_snake_case)]
+    pub const fn Release(keycode: KeyCode) -> Self {
+        Self::release(keycode)
+    }
+
+    /// Creates a new event with the specified timestamp
+    #[must_use]
+    pub const fn with_timestamp(mut self, timestamp_us: u64) -> Self {
+        self.timestamp_us = timestamp_us;
+        self
+    }
+
+    /// Returns the keycode for this event
+    #[must_use]
+    pub const fn keycode(&self) -> KeyCode {
+        self.keycode
+    }
+
+    /// Returns the event type (Press or Release)
+    #[must_use]
+    pub const fn event_type(&self) -> KeyEventType {
+        self.event_type
+    }
+
+    /// Returns the timestamp in microseconds (0 = no timestamp)
+    #[must_use]
+    pub const fn timestamp_us(&self) -> u64 {
+        self.timestamp_us
+    }
+
+    /// Returns true if this is a press event
+    #[must_use]
+    pub const fn is_press(&self) -> bool {
+        matches!(self.event_type, KeyEventType::Press)
+    }
+
+    /// Returns true if this is a release event
+    #[must_use]
+    pub const fn is_release(&self) -> bool {
+        matches!(self.event_type, KeyEventType::Release)
+    }
+
+    /// Creates a new event with the same keycode and timestamp but opposite type
+    #[must_use]
+    pub const fn opposite(&self) -> Self {
+        Self {
+            event_type: match self.event_type {
+                KeyEventType::Press => KeyEventType::Release,
+                KeyEventType::Release => KeyEventType::Press,
+            },
+            keycode: self.keycode,
+            timestamp_us: self.timestamp_us,
+        }
+    }
+
+    /// Creates a new event with a different keycode but same type and timestamp
+    #[must_use]
+    pub const fn with_keycode(mut self, keycode: KeyCode) -> Self {
+        self.keycode = keycode;
+        self
     }
 }
 
@@ -88,33 +193,22 @@ pub fn process_event(
     // Process the mapping based on its type
     match mapping {
         BaseKeyMapping::Simple { to, .. } => {
-            // Simple remapping: replace keycode while preserving Press/Release
-            match event {
-                KeyEvent::Press(_) => alloc::vec![KeyEvent::Press(*to)],
-                KeyEvent::Release(_) => alloc::vec![KeyEvent::Release(*to)],
-            }
+            // Simple remapping: replace keycode while preserving Press/Release and timestamp
+            alloc::vec![event.with_keycode(*to)]
         }
         BaseKeyMapping::Modifier { modifier_id, .. } => {
             // Modifier mapping: update state, no output events
-            match event {
-                KeyEvent::Press(_) => {
-                    state.set_modifier(*modifier_id);
-                }
-                KeyEvent::Release(_) => {
-                    state.clear_modifier(*modifier_id);
-                }
+            if event.is_press() {
+                state.set_modifier(*modifier_id);
+            } else {
+                state.clear_modifier(*modifier_id);
             }
             Vec::new()
         }
         BaseKeyMapping::Lock { lock_id, .. } => {
             // Lock mapping: toggle on press, ignore release, no output events
-            match event {
-                KeyEvent::Press(_) => {
-                    state.toggle_lock(*lock_id);
-                }
-                KeyEvent::Release(_) => {
-                    // Do nothing on release
-                }
+            if event.is_press() {
+                state.toggle_lock(*lock_id);
             }
             Vec::new()
         }
@@ -134,39 +228,37 @@ pub fn process_event(
             use crate::config::KeyCode;
 
             let mut events = Vec::new();
+            let ts = event.timestamp_us();
 
-            match event {
-                KeyEvent::Press(_) => {
-                    // Press modifiers first, then the key
-                    if *shift {
-                        events.push(KeyEvent::Press(KeyCode::LShift));
-                    }
-                    if *ctrl {
-                        events.push(KeyEvent::Press(KeyCode::LCtrl));
-                    }
-                    if *alt {
-                        events.push(KeyEvent::Press(KeyCode::LAlt));
-                    }
-                    if *win {
-                        events.push(KeyEvent::Press(KeyCode::LMeta));
-                    }
-                    events.push(KeyEvent::Press(*to));
+            if event.is_press() {
+                // Press modifiers first, then the key
+                if *shift {
+                    events.push(KeyEvent::press(KeyCode::LShift).with_timestamp(ts));
                 }
-                KeyEvent::Release(_) => {
-                    // Release key first, then modifiers in reverse order
-                    events.push(KeyEvent::Release(*to));
-                    if *win {
-                        events.push(KeyEvent::Release(KeyCode::LMeta));
-                    }
-                    if *alt {
-                        events.push(KeyEvent::Release(KeyCode::LAlt));
-                    }
-                    if *ctrl {
-                        events.push(KeyEvent::Release(KeyCode::LCtrl));
-                    }
-                    if *shift {
-                        events.push(KeyEvent::Release(KeyCode::LShift));
-                    }
+                if *ctrl {
+                    events.push(KeyEvent::press(KeyCode::LCtrl).with_timestamp(ts));
+                }
+                if *alt {
+                    events.push(KeyEvent::press(KeyCode::LAlt).with_timestamp(ts));
+                }
+                if *win {
+                    events.push(KeyEvent::press(KeyCode::LMeta).with_timestamp(ts));
+                }
+                events.push(KeyEvent::press(*to).with_timestamp(ts));
+            } else {
+                // Release key first, then modifiers in reverse order
+                events.push(KeyEvent::release(*to).with_timestamp(ts));
+                if *win {
+                    events.push(KeyEvent::release(KeyCode::LMeta).with_timestamp(ts));
+                }
+                if *alt {
+                    events.push(KeyEvent::release(KeyCode::LAlt).with_timestamp(ts));
+                }
+                if *ctrl {
+                    events.push(KeyEvent::release(KeyCode::LCtrl).with_timestamp(ts));
+                }
+                if *shift {
+                    events.push(KeyEvent::release(KeyCode::LShift).with_timestamp(ts));
                 }
             }
 
@@ -218,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_process_event_simple_mapping() {
-        // Test Simple mapping: A → B
+        // Test Simple mapping: A -> B
         let config = create_test_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
         let lookup = KeyLookup::from_device_config(&config);
         let mut state = DeviceState::new();
@@ -401,7 +493,7 @@ mod tests {
         let config = create_test_config(vec![
             // CapsLock activates MD_00
             KeyMapping::modifier(KeyCode::CapsLock, 0),
-            // when(MD_00): H → Left
+            // when(MD_00): H -> Left
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -434,7 +526,7 @@ mod tests {
         let config = create_test_config(vec![
             // CapsLock activates MD_00
             KeyMapping::modifier(KeyCode::CapsLock, 0),
-            // when(MD_00): H → Left
+            // when(MD_00): H -> Left
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -462,7 +554,7 @@ mod tests {
     fn test_process_event_conditional_with_unconditional_fallback() {
         // Test conditional with fallback: if condition false, use unconditional mapping
         let config = create_test_config(vec![
-            // when(MD_00): H → Left (conditional)
+            // when(MD_00): H -> Left (conditional)
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -470,13 +562,13 @@ mod tests {
                     to: KeyCode::Left,
                 }],
             ),
-            // H → Down (unconditional fallback)
+            // H -> Down (unconditional fallback)
             KeyMapping::simple(KeyCode::H, KeyCode::Down),
         ]);
         let lookup = KeyLookup::from_device_config(&config);
         let mut state = DeviceState::new();
 
-        // Modifier NOT active: should use unconditional mapping (H → Down)
+        // Modifier NOT active: should use unconditional mapping (H -> Down)
         let input_press = KeyEvent::Press(KeyCode::H);
         let output = process_event(input_press, &lookup, &mut state);
         assert_eq!(output.len(), 1);
@@ -485,7 +577,7 @@ mod tests {
         // Activate modifier
         state.set_modifier(0);
 
-        // Modifier active: should use conditional mapping (H → Left)
+        // Modifier active: should use conditional mapping (H -> Left)
         let input_press = KeyEvent::Press(KeyCode::H);
         let output = process_event(input_press, &lookup, &mut state);
         assert_eq!(output.len(), 1);
@@ -494,11 +586,11 @@ mod tests {
 
     #[test]
     fn test_process_event_vim_navigation_layer() {
-        // Test realistic Vim navigation: CapsLock as layer, HJKL → arrow keys
+        // Test realistic Vim navigation: CapsLock as layer, HJKL -> arrow keys
         let config = create_test_config(vec![
             // CapsLock activates MD_00
             KeyMapping::modifier(KeyCode::CapsLock, 0),
-            // when(MD_00): H → Left
+            // when(MD_00): H -> Left
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -506,7 +598,7 @@ mod tests {
                     to: KeyCode::Left,
                 }],
             ),
-            // when(MD_00): J → Down
+            // when(MD_00): J -> Down
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -514,7 +606,7 @@ mod tests {
                     to: KeyCode::Down,
                 }],
             ),
-            // when(MD_00): K → Up
+            // when(MD_00): K -> Up
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -522,7 +614,7 @@ mod tests {
                     to: KeyCode::Up,
                 }],
             ),
-            // when(MD_00): L → Right
+            // when(MD_00): L -> Right
             KeyMapping::conditional(
                 Condition::ModifierActive(0),
                 vec![BaseKeyMapping::Simple {
@@ -538,19 +630,19 @@ mod tests {
         let _ = process_event(KeyEvent::Press(KeyCode::CapsLock), &lookup, &mut state);
         assert!(state.is_modifier_active(0));
 
-        // Test H → Left
+        // Test H -> Left
         let output = process_event(KeyEvent::Press(KeyCode::H), &lookup, &mut state);
         assert_eq!(output[0], KeyEvent::Press(KeyCode::Left));
 
-        // Test J → Down
+        // Test J -> Down
         let output = process_event(KeyEvent::Press(KeyCode::J), &lookup, &mut state);
         assert_eq!(output[0], KeyEvent::Press(KeyCode::Down));
 
-        // Test K → Up
+        // Test K -> Up
         let output = process_event(KeyEvent::Press(KeyCode::K), &lookup, &mut state);
         assert_eq!(output[0], KeyEvent::Press(KeyCode::Up));
 
-        // Test L → Right
+        // Test L -> Right
         let output = process_event(KeyEvent::Press(KeyCode::L), &lookup, &mut state);
         assert_eq!(output[0], KeyEvent::Press(KeyCode::Right));
 
@@ -623,6 +715,54 @@ mod tests {
         assert_eq!(hasher1.finish(), hasher2.finish());
     }
 
+    #[test]
+    fn test_keyevent_timestamp() {
+        // Test timestamp functionality
+        let event = KeyEvent::press(KeyCode::A);
+        assert_eq!(event.timestamp_us(), 0); // Default is 0
+
+        let event_with_ts = event.with_timestamp(1000);
+        assert_eq!(event_with_ts.timestamp_us(), 1000);
+        assert_eq!(event_with_ts.keycode(), KeyCode::A);
+        assert!(event_with_ts.is_press());
+    }
+
+    #[test]
+    fn test_keyevent_with_keycode() {
+        // Test with_keycode preserves type and timestamp
+        let event = KeyEvent::press(KeyCode::A).with_timestamp(500);
+        let remapped = event.with_keycode(KeyCode::B);
+
+        assert_eq!(remapped.keycode(), KeyCode::B);
+        assert!(remapped.is_press());
+        assert_eq!(remapped.timestamp_us(), 500);
+    }
+
+    #[test]
+    fn test_keyevent_opposite() {
+        // Test opposite preserves keycode and timestamp
+        let press = KeyEvent::press(KeyCode::A).with_timestamp(1000);
+        let release = press.opposite();
+
+        assert!(release.is_release());
+        assert_eq!(release.keycode(), KeyCode::A);
+        assert_eq!(release.timestamp_us(), 1000);
+
+        // Opposite of opposite is original type
+        let press_again = release.opposite();
+        assert!(press_again.is_press());
+    }
+
+    #[test]
+    fn test_keyevent_type() {
+        // Test event_type accessor
+        let press = KeyEvent::press(KeyCode::A);
+        assert_eq!(press.event_type(), KeyEventType::Press);
+
+        let release = KeyEvent::release(KeyCode::A);
+        assert_eq!(release.event_type(), KeyEventType::Release);
+    }
+
     // Property-based tests using proptest
     #[cfg(test)]
     mod proptests {
@@ -674,43 +814,29 @@ mod tests {
 
         proptest! {
             /// Property test: No event loss for Simple mappings
-            ///
-            /// Invariant: For Simple mappings (1:1), the number of input events
-            /// must equal the number of output events. Every input event produces
-            /// exactly one output event, no events are lost or duplicated.
             #[test]
             fn prop_no_event_loss(events in prop::collection::vec(keyevent_strategy(), 1..100)) {
-                // Create config with Simple mapping A → B
                 let config = create_test_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
                 let lookup = KeyLookup::from_device_config(&config);
                 let mut state = DeviceState::new();
 
-                // Process all events
                 let mut total_output_count = 0;
                 for event in &events {
                     let outputs = process_event(*event, &lookup, &mut state);
                     total_output_count += outputs.len();
                 }
 
-                // For Simple mapping (1:1), input count must equal output count
-                // (passthrough also produces 1 output per 1 input)
                 prop_assert_eq!(events.len(), total_output_count,
                     "Event loss detected: {} inputs produced {} outputs",
                     events.len(), total_output_count);
             }
 
             /// Property test: Deterministic execution
-            ///
-            /// Invariant: Processing the same event sequence twice with the same
-            /// initial state must produce identical outputs. The event processing
-            /// is deterministic and has no hidden state or randomness.
             #[test]
             fn prop_deterministic(events in prop::collection::vec(keyevent_strategy(), 1..50)) {
-                // Create config with Simple mapping A → B
                 let config = create_test_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
                 let lookup = KeyLookup::from_device_config(&config);
 
-                // First run
                 let mut state1 = DeviceState::new();
                 let mut outputs1 = Vec::new();
                 for event in &events {
@@ -718,7 +844,6 @@ mod tests {
                     outputs1.extend(result);
                 }
 
-                // Second run (identical initial state)
                 let mut state2 = DeviceState::new();
                 let mut outputs2 = Vec::new();
                 for event in &events {
@@ -726,31 +851,20 @@ mod tests {
                     outputs2.extend(result);
                 }
 
-                // Outputs must be byte-for-byte identical
                 prop_assert_eq!(outputs1, outputs2,
                     "Non-deterministic behavior: same inputs produced different outputs");
-
-                // Final states must also be identical
-                // (We can't directly compare DeviceState since it doesn't implement PartialEq,
-                // but we can verify that the outputs are identical, which is sufficient for determinism)
             }
 
             /// Property test: Modifier events produce no output
-            ///
-            /// Invariant: Modifier mappings never produce output events, they only
-            /// update internal state. This ensures modifiers are purely stateful.
             #[test]
             fn prop_modifier_no_output(events in prop::collection::vec(keyevent_strategy(), 1..50)) {
-                // Create config with Modifier mapping: A activates MD_00
                 let config = create_test_config(vec![KeyMapping::modifier(KeyCode::A, 0)]);
                 let lookup = KeyLookup::from_device_config(&config);
                 let mut state = DeviceState::new();
 
-                // Process all events
                 for event in &events {
                     let outputs = process_event(*event, &lookup, &mut state);
 
-                    // If event is for key A (modifier key), output must be empty
                     if event.keycode() == KeyCode::A {
                         prop_assert!(outputs.is_empty(),
                             "Modifier mapping produced output: {:?}", outputs);
@@ -759,21 +873,15 @@ mod tests {
             }
 
             /// Property test: Lock events produce no output
-            ///
-            /// Invariant: Lock mappings never produce output events, they only
-            /// toggle internal state. This ensures locks are purely stateful.
             #[test]
             fn prop_lock_no_output(events in prop::collection::vec(keyevent_strategy(), 1..50)) {
-                // Create config with Lock mapping: A activates LK_00
                 let config = create_test_config(vec![KeyMapping::lock(KeyCode::A, 0)]);
                 let lookup = KeyLookup::from_device_config(&config);
                 let mut state = DeviceState::new();
 
-                // Process all events
                 for event in &events {
                     let outputs = process_event(*event, &lookup, &mut state);
 
-                    // If event is for key A (lock key), output must be empty
                     if event.keycode() == KeyCode::A {
                         prop_assert!(outputs.is_empty(),
                             "Lock mapping produced output: {:?}", outputs);
@@ -782,63 +890,41 @@ mod tests {
             }
 
             /// Property test: Passthrough preserves event type
-            ///
-            /// Invariant: When no mapping exists, the output event must have the
-            /// same keycode and type (Press/Release) as the input event.
             #[test]
             fn prop_passthrough_preserves_event(events in prop::collection::vec(keyevent_strategy(), 1..50)) {
-                // Create empty config (all events passthrough)
                 let config = create_test_config(vec![]);
                 let lookup = KeyLookup::from_device_config(&config);
                 let mut state = DeviceState::new();
 
-                // Process all events
                 for event in &events {
                     let outputs = process_event(*event, &lookup, &mut state);
 
-                    // Must produce exactly one output
                     prop_assert_eq!(outputs.len(), 1,
                         "Passthrough produced {} outputs for 1 input", outputs.len());
 
-                    // Output must be identical to input
                     prop_assert_eq!(outputs[0], *event,
                         "Passthrough modified event: {:?} became {:?}", event, outputs[0]);
                 }
             }
 
             /// Property test: Simple mapping preserves event type
-            ///
-            /// Invariant: Simple mappings change the keycode but preserve the
-            /// event type (Press stays Press, Release stays Release).
             #[test]
             fn prop_simple_preserves_type(events in prop::collection::vec(keyevent_strategy(), 1..50)) {
-                // Create config with Simple mapping A → B
                 let config = create_test_config(vec![KeyMapping::simple(KeyCode::A, KeyCode::B)]);
                 let lookup = KeyLookup::from_device_config(&config);
                 let mut state = DeviceState::new();
 
-                // Process all events
                 for event in &events {
                     let outputs = process_event(*event, &lookup, &mut state);
 
-                    // Must produce exactly one output (simple is 1:1)
                     prop_assert_eq!(outputs.len(), 1,
                         "Simple mapping produced {} outputs for 1 input", outputs.len());
 
                     // Verify event type is preserved
-                    match (event, &outputs[0]) {
-                        (KeyEvent::Press(_), KeyEvent::Press(_)) => {
-                            // Press → Press: OK
-                        }
-                        (KeyEvent::Release(_), KeyEvent::Release(_)) => {
-                            // Release → Release: OK
-                        }
-                        _ => {
-                            return Err(proptest::test_runner::TestCaseError::fail(
-                                alloc::format!("Event type not preserved: {:?} became {:?}", event, outputs[0])
-                            ));
-                        }
-                    }
+                    let same_type = (event.is_press() && outputs[0].is_press()) ||
+                                   (event.is_release() && outputs[0].is_release());
+                    prop_assert!(same_type,
+                        "Event type not preserved: {:?} became {:?}", event, outputs[0]);
                 }
             }
         }

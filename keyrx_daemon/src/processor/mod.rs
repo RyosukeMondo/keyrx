@@ -137,15 +137,20 @@ impl<I: InputDevice, O: OutputDevice> EventProcessor<I, O> {
 
         let mapping = self.lookup.find_mapping(event.keycode(), &self.state)?;
 
-        match (mapping, event) {
-            (BaseKeyMapping::Modifier { modifier_id, .. }, KeyEvent::Press(_)) => {
-                Some(logging::format_modifier_activated(*modifier_id))
+        match mapping {
+            BaseKeyMapping::Modifier { modifier_id, .. } => {
+                if event.is_press() {
+                    Some(logging::format_modifier_activated(*modifier_id))
+                } else {
+                    Some(logging::format_modifier_deactivated(*modifier_id))
+                }
             }
-            (BaseKeyMapping::Modifier { modifier_id, .. }, KeyEvent::Release(_)) => {
-                Some(logging::format_modifier_deactivated(*modifier_id))
-            }
-            (BaseKeyMapping::Lock { lock_id, .. }, KeyEvent::Press(_)) => {
-                Some(logging::format_lock_toggled(*lock_id))
+            BaseKeyMapping::Lock { lock_id, .. } => {
+                if event.is_press() {
+                    Some(logging::format_lock_toggled(*lock_id))
+                } else {
+                    None
+                }
             }
             _ => None,
         }

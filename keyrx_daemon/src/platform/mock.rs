@@ -30,8 +30,11 @@ use super::{DeviceError, InputDevice, OutputDevice};
 /// let mut input = MockInput::new(events);
 ///
 /// // Events are returned in FIFO order
-/// assert!(matches!(input.next_event(), Ok(KeyEvent::Press(KeyCode::A))));
-/// assert!(matches!(input.next_event(), Ok(KeyEvent::Release(KeyCode::A))));
+/// let event1 = input.next_event().unwrap();
+/// assert!(event1.is_press() && event1.keycode() == KeyCode::A);
+///
+/// let event2 = input.next_event().unwrap();
+/// assert!(event2.is_release() && event2.keycode() == KeyCode::A);
 ///
 /// // EndOfStream when exhausted
 /// assert!(matches!(input.next_event(), Err(DeviceError::EndOfStream)));

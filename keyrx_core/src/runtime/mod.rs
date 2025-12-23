@@ -29,6 +29,6 @@ pub mod lookup;
 pub mod state;
 
 // Re-export public API
-pub use event::{process_event, KeyEvent};
+pub use event::{process_event, KeyEvent, KeyEventType};
 pub use lookup::KeyLookup;
 pub use state::DeviceState;
