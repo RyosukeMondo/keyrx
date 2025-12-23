@@ -590,6 +590,329 @@ impl<const N: usize> PendingKeyRegistry<N> {
     }
 }
 
+/// Maximum output events from a single tap-hold event processing.
+///
+/// Tap: 2 events (press + release of tap key)
+/// Hold activation: 0 events (modifier state change only)
+/// Hold deactivation: 0 events (modifier state change only)
+pub const MAX_OUTPUT_EVENTS: usize = 4;
+
+/// Output event from tap-hold processing.
+///
+/// This represents an action that should be taken by the caller,
+/// either emitting a key event or modifying the device state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TapHoldOutput {
+    /// Emit a key event (press or release)
+    KeyEvent {
+        /// The key to emit
+        key: KeyCode,
+        /// True for press, false for release
+        is_press: bool,
+        /// Timestamp to use for the output event
+        timestamp_us: u64,
+    },
+    /// Activate a hold modifier
+    ActivateModifier {
+        /// The modifier ID to activate
+        modifier_id: u8,
+    },
+    /// Deactivate a hold modifier
+    DeactivateModifier {
+        /// The modifier ID to deactivate
+        modifier_id: u8,
+    },
+}
+
+impl TapHoldOutput {
+    /// Creates a key press output event.
+    pub const fn key_press(key: KeyCode, timestamp_us: u64) -> Self {
+        Self::KeyEvent {
+            key,
+            is_press: true,
+            timestamp_us,
+        }
+    }
+
+    /// Creates a key release output event.
+    pub const fn key_release(key: KeyCode, timestamp_us: u64) -> Self {
+        Self::KeyEvent {
+            key,
+            is_press: false,
+            timestamp_us,
+        }
+    }
+
+    /// Creates a modifier activation output.
+    pub const fn activate_modifier(modifier_id: u8) -> Self {
+        Self::ActivateModifier { modifier_id }
+    }
+
+    /// Creates a modifier deactivation output.
+    pub const fn deactivate_modifier(modifier_id: u8) -> Self {
+        Self::DeactivateModifier { modifier_id }
+    }
+}
+
+/// Tap-hold event processor.
+///
+/// Manages the state machine for all tap-hold keys and processes input events.
+/// This processor handles the core logic of determining whether a key press
+/// should result in a tap (quick release) or hold (sustained press) action.
+///
+/// # Type Parameters
+///
+/// * `N` - Maximum number of concurrent tap-hold keys (default: 32)
+///
+/// # Example
+///
+/// ```rust
+/// use keyrx_core::runtime::tap_hold::{TapHoldProcessor, TapHoldConfig, TapHoldOutput, DEFAULT_MAX_PENDING};
+/// use keyrx_core::config::KeyCode;
+///
+/// let mut processor: TapHoldProcessor<DEFAULT_MAX_PENDING> = TapHoldProcessor::new();
+///
+/// // Register a tap-hold configuration: CapsLock = tap:Escape, hold:modifier 0
+/// let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+/// processor.register_tap_hold(KeyCode::CapsLock, config);
+///
+/// // Process a press event at time 0
+/// let outputs = processor.process_press(KeyCode::CapsLock, 0);
+/// assert!(outputs.is_empty()); // No immediate output, waiting for release or timeout
+///
+/// // Quick release at 100ms (under 200ms threshold) - this is a tap
+/// let outputs = processor.process_release(KeyCode::CapsLock, 100_000);
+/// assert_eq!(outputs.len(), 2); // Press and release of Escape
+/// ```
+#[derive(Debug, Clone)]
+pub struct TapHoldProcessor<const N: usize = DEFAULT_MAX_PENDING> {
+    /// Registry of pending tap-hold states
+    pending: PendingKeyRegistry<N>,
+    /// Registered tap-hold configurations (key -> config)
+    /// Using ArrayVec for no_std compatibility
+    configs: ArrayVec<(KeyCode, TapHoldConfig), N>,
+}
+
+impl<const N: usize> Default for TapHoldProcessor<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const N: usize> TapHoldProcessor<N> {
+    /// Creates a new tap-hold processor.
+    pub const fn new() -> Self {
+        Self {
+            pending: PendingKeyRegistry::new(),
+            configs: ArrayVec::new_const(),
+        }
+    }
+
+    /// Registers a tap-hold configuration for a key.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The physical key that triggers this tap-hold
+    /// * `config` - Configuration for tap/hold behavior
+    ///
+    /// # Returns
+    ///
+    /// `true` if registration succeeded, `false` if at capacity or key already registered
+    pub fn register_tap_hold(&mut self, key: KeyCode, config: TapHoldConfig) -> bool {
+        // Check if already registered
+        if self.get_config(key).is_some() {
+            return false;
+        }
+
+        // Try to add
+        self.configs.try_push((key, config)).is_ok()
+    }
+
+    /// Gets the tap-hold configuration for a key.
+    pub fn get_config(&self, key: KeyCode) -> Option<&TapHoldConfig> {
+        self.configs.iter().find(|(k, _)| *k == key).map(|(_, c)| c)
+    }
+
+    /// Checks if a key is a registered tap-hold key.
+    pub fn is_tap_hold_key(&self, key: KeyCode) -> bool {
+        self.get_config(key).is_some()
+    }
+
+    /// Checks if a key is currently in pending state.
+    pub fn is_pending(&self, key: KeyCode) -> bool {
+        self.pending
+            .get(key)
+            .map(|s| s.phase().is_pending())
+            .unwrap_or(false)
+    }
+
+    /// Checks if a key is currently in hold state.
+    pub fn is_hold(&self, key: KeyCode) -> bool {
+        self.pending
+            .get(key)
+            .map(|s| s.phase().is_hold())
+            .unwrap_or(false)
+    }
+
+    /// Returns the number of currently pending tap-hold keys.
+    pub fn pending_count(&self) -> usize {
+        self.pending.pending_keys().count()
+    }
+
+    /// Returns the number of currently active hold states.
+    pub fn hold_count(&self) -> usize {
+        self.pending.iter().filter(|s| s.phase().is_hold()).count()
+    }
+
+    /// Processes a key press event.
+    ///
+    /// If the key is a registered tap-hold key:
+    /// - Transitions from Idle to Pending
+    /// - Records the press timestamp
+    /// - No output events are generated (waiting for release or timeout)
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key that was pressed
+    /// * `timestamp_us` - The press timestamp in microseconds
+    ///
+    /// # Returns
+    ///
+    /// Output events to be processed by the caller (usually empty for press).
+    pub fn process_press(
+        &mut self,
+        key: KeyCode,
+        timestamp_us: u64,
+    ) -> ArrayVec<TapHoldOutput, MAX_OUTPUT_EVENTS> {
+        let outputs = ArrayVec::new();
+
+        // Check if this is a registered tap-hold key
+        let Some(config) = self.get_config(key).copied() else {
+            return outputs;
+        };
+
+        // Check if already in pending registry (shouldn't happen, but handle gracefully)
+        if self.pending.contains(key) {
+            return outputs;
+        }
+
+        // Create new pending state and add to registry
+        let mut state = TapHoldState::new(key, config);
+        state.transition_to_pending(timestamp_us);
+
+        if !self.pending.add(state) {
+            // Registry full - caller should handle this as passthrough
+            // No outputs, key will be handled as normal key
+        }
+
+        outputs
+    }
+
+    /// Processes a key release event.
+    ///
+    /// Determines whether the release constitutes a tap or hold release:
+    /// - If Pending and elapsed < threshold: TAP (emit tap key press + release)
+    /// - If Pending and elapsed >= threshold: Delayed HOLD (activate modifier, then immediately deactivate)
+    /// - If Hold: Deactivate the hold modifier
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key that was released
+    /// * `timestamp_us` - The release timestamp in microseconds
+    ///
+    /// # Returns
+    ///
+    /// Output events to be processed by the caller.
+    pub fn process_release(
+        &mut self,
+        key: KeyCode,
+        timestamp_us: u64,
+    ) -> ArrayVec<TapHoldOutput, MAX_OUTPUT_EVENTS> {
+        let mut outputs = ArrayVec::new();
+
+        // Get the pending state
+        let Some(state) = self.pending.get(key).copied() else {
+            return outputs;
+        };
+
+        match state.phase() {
+            TapHoldPhase::Idle => {
+                // Shouldn't be in registry if Idle, but handle gracefully
+                self.pending.remove(key);
+            }
+            TapHoldPhase::Pending => {
+                // Determine tap vs hold based on elapsed time
+                if state.is_threshold_exceeded(timestamp_us) {
+                    // Threshold exceeded during pending - this is a hold that wasn't detected
+                    // Activate modifier briefly then deactivate (user held key but we didn't catch timeout)
+                    let _ =
+                        outputs.try_push(TapHoldOutput::activate_modifier(state.hold_modifier()));
+                    let _ =
+                        outputs.try_push(TapHoldOutput::deactivate_modifier(state.hold_modifier()));
+                } else {
+                    // Quick release - this is a TAP
+                    // Emit press and release of the tap key
+                    let _ =
+                        outputs.try_push(TapHoldOutput::key_press(state.tap_key(), timestamp_us));
+                    let _ =
+                        outputs.try_push(TapHoldOutput::key_release(state.tap_key(), timestamp_us));
+                }
+                self.pending.remove(key);
+            }
+            TapHoldPhase::Hold => {
+                // Release from hold state - deactivate the modifier
+                let _ = outputs.try_push(TapHoldOutput::deactivate_modifier(state.hold_modifier()));
+                self.pending.remove(key);
+            }
+        }
+
+        outputs
+    }
+
+    /// Checks for timeout-triggered hold activations.
+    ///
+    /// This should be called periodically (e.g., every 10ms or on each event)
+    /// to detect when pending keys have exceeded their hold threshold.
+    ///
+    /// # Arguments
+    ///
+    /// * `current_time` - Current timestamp in microseconds
+    ///
+    /// # Returns
+    ///
+    /// Output events for keys that transitioned to hold state.
+    pub fn check_timeouts(
+        &mut self,
+        current_time: u64,
+    ) -> ArrayVec<TapHoldOutput, MAX_OUTPUT_EVENTS> {
+        let mut outputs = ArrayVec::new();
+
+        // Use the registry's check_timeouts which transitions states internally
+        let timeouts = self.pending.check_timeouts(current_time);
+
+        for timeout in timeouts {
+            let _ = outputs.try_push(TapHoldOutput::activate_modifier(timeout.hold_modifier));
+        }
+
+        outputs
+    }
+
+    /// Clears all pending states.
+    ///
+    /// This is useful for error recovery or when reloading configuration.
+    /// Note: This does NOT emit deactivation events. Caller is responsible
+    /// for handling any active modifiers.
+    pub fn clear(&mut self) {
+        self.pending.clear();
+    }
+
+    /// Clears all configurations and pending states.
+    pub fn reset(&mut self) {
+        self.pending.clear();
+        self.configs.clear();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate alloc;
@@ -1252,5 +1575,486 @@ mod tests {
         // Large capacity
         let large: PendingKeyRegistry<64> = PendingKeyRegistry::new();
         assert_eq!(large.capacity(), 64);
+    }
+
+    // --- TapHoldOutput Tests ---
+
+    #[test]
+    fn test_tap_hold_output_key_press() {
+        let output = TapHoldOutput::key_press(KeyCode::Escape, 1000);
+        match output {
+            TapHoldOutput::KeyEvent {
+                key,
+                is_press,
+                timestamp_us,
+            } => {
+                assert_eq!(key, KeyCode::Escape);
+                assert!(is_press);
+                assert_eq!(timestamp_us, 1000);
+            }
+            _ => panic!("Expected KeyEvent"),
+        }
+    }
+
+    #[test]
+    fn test_tap_hold_output_key_release() {
+        let output = TapHoldOutput::key_release(KeyCode::Tab, 2000);
+        match output {
+            TapHoldOutput::KeyEvent {
+                key,
+                is_press,
+                timestamp_us,
+            } => {
+                assert_eq!(key, KeyCode::Tab);
+                assert!(!is_press);
+                assert_eq!(timestamp_us, 2000);
+            }
+            _ => panic!("Expected KeyEvent"),
+        }
+    }
+
+    #[test]
+    fn test_tap_hold_output_activate_modifier() {
+        let output = TapHoldOutput::activate_modifier(5);
+        match output {
+            TapHoldOutput::ActivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 5);
+            }
+            _ => panic!("Expected ActivateModifier"),
+        }
+    }
+
+    #[test]
+    fn test_tap_hold_output_deactivate_modifier() {
+        let output = TapHoldOutput::deactivate_modifier(10);
+        match output {
+            TapHoldOutput::DeactivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 10);
+            }
+            _ => panic!("Expected DeactivateModifier"),
+        }
+    }
+
+    // --- TapHoldProcessor Tests ---
+
+    #[test]
+    fn test_processor_new() {
+        let processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+        assert_eq!(processor.pending_count(), 0);
+        assert_eq!(processor.hold_count(), 0);
+    }
+
+    #[test]
+    fn test_processor_default() {
+        let processor: TapHoldProcessor<8> = TapHoldProcessor::default();
+        assert_eq!(processor.pending_count(), 0);
+    }
+
+    #[test]
+    fn test_processor_register_tap_hold() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        assert!(processor.register_tap_hold(KeyCode::CapsLock, config));
+        assert!(processor.is_tap_hold_key(KeyCode::CapsLock));
+        assert!(!processor.is_tap_hold_key(KeyCode::Tab));
+    }
+
+    #[test]
+    fn test_processor_register_duplicate_fails() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config1 = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        let config2 = TapHoldConfig::from_ms(KeyCode::Tab, 1, 300);
+
+        assert!(processor.register_tap_hold(KeyCode::CapsLock, config1));
+        assert!(!processor.register_tap_hold(KeyCode::CapsLock, config2)); // Duplicate
+    }
+
+    #[test]
+    fn test_processor_register_at_capacity() {
+        let mut processor: TapHoldProcessor<2> = TapHoldProcessor::new();
+
+        let config1 = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        let config2 = TapHoldConfig::from_ms(KeyCode::Tab, 1, 200);
+        let config3 = TapHoldConfig::from_ms(KeyCode::Space, 2, 200);
+
+        assert!(processor.register_tap_hold(KeyCode::CapsLock, config1));
+        assert!(processor.register_tap_hold(KeyCode::Tab, config2));
+        assert!(!processor.register_tap_hold(KeyCode::Space, config3)); // At capacity
+    }
+
+    #[test]
+    fn test_processor_get_config() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 5, 250);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        let retrieved = processor.get_config(KeyCode::CapsLock);
+        assert!(retrieved.is_some());
+        assert_eq!(retrieved.unwrap().tap_key(), KeyCode::Escape);
+        assert_eq!(retrieved.unwrap().hold_modifier(), 5);
+        assert_eq!(retrieved.unwrap().threshold_us(), 250_000);
+
+        assert!(processor.get_config(KeyCode::Tab).is_none());
+    }
+
+    #[test]
+    fn test_processor_press_non_tap_hold_key() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        // Press a key that's not registered as tap-hold
+        let outputs = processor.process_press(KeyCode::A, 0);
+        assert!(outputs.is_empty());
+        assert_eq!(processor.pending_count(), 0);
+    }
+
+    #[test]
+    fn test_processor_press_tap_hold_key() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press the tap-hold key
+        let outputs = processor.process_press(KeyCode::CapsLock, 0);
+        assert!(outputs.is_empty()); // No immediate output
+        assert!(processor.is_pending(KeyCode::CapsLock));
+        assert_eq!(processor.pending_count(), 1);
+    }
+
+    #[test]
+    fn test_processor_tap_quick_release() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert!(processor.is_pending(KeyCode::CapsLock));
+
+        // Quick release at t=100ms (under 200ms threshold)
+        let outputs = processor.process_release(KeyCode::CapsLock, 100_000);
+
+        // Should emit tap key press + release
+        assert_eq!(outputs.len(), 2);
+
+        match outputs[0] {
+            TapHoldOutput::KeyEvent {
+                key,
+                is_press,
+                timestamp_us,
+            } => {
+                assert_eq!(key, KeyCode::Escape);
+                assert!(is_press);
+                assert_eq!(timestamp_us, 100_000);
+            }
+            _ => panic!("Expected key press"),
+        }
+
+        match outputs[1] {
+            TapHoldOutput::KeyEvent {
+                key,
+                is_press,
+                timestamp_us,
+            } => {
+                assert_eq!(key, KeyCode::Escape);
+                assert!(!is_press);
+                assert_eq!(timestamp_us, 100_000);
+            }
+            _ => panic!("Expected key release"),
+        }
+
+        // Should no longer be pending
+        assert!(!processor.is_pending(KeyCode::CapsLock));
+        assert_eq!(processor.pending_count(), 0);
+    }
+
+    #[test]
+    fn test_processor_tap_at_threshold_boundary() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+
+        // Release at t=199,999μs (just under 200ms threshold)
+        let outputs = processor.process_release(KeyCode::CapsLock, 199_999);
+
+        // Should still be a tap
+        assert_eq!(outputs.len(), 2);
+        match outputs[0] {
+            TapHoldOutput::KeyEvent { key, is_press, .. } => {
+                assert_eq!(key, KeyCode::Escape);
+                assert!(is_press);
+            }
+            _ => panic!("Expected key press"),
+        }
+    }
+
+    #[test]
+    fn test_processor_hold_via_timeout() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert!(processor.is_pending(KeyCode::CapsLock));
+
+        // Check timeouts at t=100ms - should not trigger
+        let outputs = processor.check_timeouts(100_000);
+        assert!(outputs.is_empty());
+        assert!(processor.is_pending(KeyCode::CapsLock));
+
+        // Check timeouts at t=250ms - should trigger hold
+        let outputs = processor.check_timeouts(250_000);
+        assert_eq!(outputs.len(), 1);
+        match outputs[0] {
+            TapHoldOutput::ActivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected activate modifier"),
+        }
+
+        // Should now be in hold state
+        assert!(processor.is_hold(KeyCode::CapsLock));
+        assert!(!processor.is_pending(KeyCode::CapsLock));
+    }
+
+    #[test]
+    fn test_processor_hold_release() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+
+        // Timeout to enter hold state
+        let _ = processor.check_timeouts(250_000);
+        assert!(processor.is_hold(KeyCode::CapsLock));
+
+        // Release from hold state
+        let outputs = processor.process_release(KeyCode::CapsLock, 300_000);
+        assert_eq!(outputs.len(), 1);
+        match outputs[0] {
+            TapHoldOutput::DeactivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected deactivate modifier"),
+        }
+
+        // Should be gone from processor
+        assert!(!processor.is_pending(KeyCode::CapsLock));
+        assert!(!processor.is_hold(KeyCode::CapsLock));
+        assert_eq!(processor.pending_count(), 0);
+        assert_eq!(processor.hold_count(), 0);
+    }
+
+    #[test]
+    fn test_processor_delayed_hold_release() {
+        // Test case where key is released after threshold but timeout wasn't checked
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+
+        // Release at t=300ms (after threshold) WITHOUT calling check_timeouts
+        // This simulates a case where timeout checking was delayed
+        let outputs = processor.process_release(KeyCode::CapsLock, 300_000);
+
+        // Should activate then immediately deactivate (delayed hold)
+        assert_eq!(outputs.len(), 2);
+        match outputs[0] {
+            TapHoldOutput::ActivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected activate modifier"),
+        }
+        match outputs[1] {
+            TapHoldOutput::DeactivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected deactivate modifier"),
+        }
+    }
+
+    #[test]
+    fn test_processor_multiple_concurrent_tap_holds() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        // Register two tap-hold keys
+        let config_caps = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        let config_tab = TapHoldConfig::from_ms(KeyCode::Tab, 1, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config_caps);
+        processor.register_tap_hold(KeyCode::Tab, config_tab);
+
+        // Press CapsLock at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert_eq!(processor.pending_count(), 1);
+
+        // Press Tab at t=50ms
+        let _ = processor.process_press(KeyCode::Tab, 50_000);
+        assert_eq!(processor.pending_count(), 2);
+
+        // Quick release Tab at t=100ms (tap)
+        let outputs = processor.process_release(KeyCode::Tab, 100_000);
+        assert_eq!(outputs.len(), 2);
+        match outputs[0] {
+            TapHoldOutput::KeyEvent { key, is_press, .. } => {
+                assert_eq!(key, KeyCode::Tab);
+                assert!(is_press);
+            }
+            _ => panic!("Expected tab press"),
+        }
+        assert_eq!(processor.pending_count(), 1);
+
+        // CapsLock times out at t=250ms
+        let outputs = processor.check_timeouts(250_000);
+        assert_eq!(outputs.len(), 1);
+        assert!(processor.is_hold(KeyCode::CapsLock));
+        assert_eq!(processor.hold_count(), 1);
+    }
+
+    #[test]
+    fn test_processor_release_non_pending_key() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        // Release a key that was never pressed
+        let outputs = processor.process_release(KeyCode::CapsLock, 0);
+        assert!(outputs.is_empty());
+    }
+
+    #[test]
+    fn test_processor_double_press_ignored() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // First press
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert_eq!(processor.pending_count(), 1);
+
+        // Second press (shouldn't change anything)
+        let outputs = processor.process_press(KeyCode::CapsLock, 50_000);
+        assert!(outputs.is_empty());
+        assert_eq!(processor.pending_count(), 1);
+    }
+
+    #[test]
+    fn test_processor_clear() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert_eq!(processor.pending_count(), 1);
+
+        processor.clear();
+        assert_eq!(processor.pending_count(), 0);
+        assert!(processor.is_tap_hold_key(KeyCode::CapsLock)); // Config preserved
+    }
+
+    #[test]
+    fn test_processor_reset() {
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        assert_eq!(processor.pending_count(), 1);
+        assert!(processor.is_tap_hold_key(KeyCode::CapsLock));
+
+        processor.reset();
+        assert_eq!(processor.pending_count(), 0);
+        assert!(!processor.is_tap_hold_key(KeyCode::CapsLock)); // Config cleared too
+    }
+
+    #[test]
+    fn test_processor_exact_threshold_is_hold() {
+        // At exactly the threshold, it should be a hold, not a tap
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Press at t=0
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+
+        // Release at exactly 200ms (threshold)
+        let outputs = processor.process_release(KeyCode::CapsLock, 200_000);
+
+        // Should be treated as hold (activate then deactivate)
+        assert_eq!(outputs.len(), 2);
+        match outputs[0] {
+            TapHoldOutput::ActivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected activate modifier at exact threshold"),
+        }
+    }
+
+    #[test]
+    fn test_processor_realistic_ctrl_escape_scenario() {
+        // CapsLock: tap = Escape, hold = Ctrl (modifier 0)
+        let mut processor: TapHoldProcessor<8> = TapHoldProcessor::new();
+
+        let config = TapHoldConfig::from_ms(KeyCode::Escape, 0, 200);
+        processor.register_tap_hold(KeyCode::CapsLock, config);
+
+        // Scenario 1: Quick tap for Escape
+        let _ = processor.process_press(KeyCode::CapsLock, 0);
+        let outputs = processor.process_release(KeyCode::CapsLock, 50_000); // 50ms
+
+        assert_eq!(outputs.len(), 2);
+        match &outputs[0] {
+            TapHoldOutput::KeyEvent { key, is_press, .. } => {
+                assert_eq!(*key, KeyCode::Escape);
+                assert!(*is_press);
+            }
+            _ => panic!("Expected Escape press"),
+        }
+        match &outputs[1] {
+            TapHoldOutput::KeyEvent { key, is_press, .. } => {
+                assert_eq!(*key, KeyCode::Escape);
+                assert!(!*is_press);
+            }
+            _ => panic!("Expected Escape release"),
+        }
+
+        // Scenario 2: Hold for Ctrl
+        let _ = processor.process_press(KeyCode::CapsLock, 1_000_000); // t=1s
+        let outputs = processor.check_timeouts(1_250_000); // 250ms later
+
+        assert_eq!(outputs.len(), 1);
+        match outputs[0] {
+            TapHoldOutput::ActivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0); // Ctrl
+            }
+            _ => panic!("Expected Ctrl activation"),
+        }
+
+        // Release Ctrl
+        let outputs = processor.process_release(KeyCode::CapsLock, 1_500_000);
+        assert_eq!(outputs.len(), 1);
+        match outputs[0] {
+            TapHoldOutput::DeactivateModifier { modifier_id } => {
+                assert_eq!(modifier_id, 0);
+            }
+            _ => panic!("Expected Ctrl deactivation"),
+        }
     }
 }
