@@ -182,7 +182,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Lead | Task: Run full test suite with coverage, verify 80%+ on tap_hold module, fix any issues | Restrictions: All tests must pass, coverage threshold must be met | Success: All tests green, coverage >= 80%, no regressions in other modules | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [ ] 18. Manual UAT with real keyboard
+- [x] 18. Manual UAT with real keyboard
   - Files: None (manual testing)
   - Build release daemon with tap-hold config
   - Test CapsLock as tap=Escape, hold=Ctrl
