@@ -22,7 +22,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec tap-hold, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Rust Developer with testing expertise | Task: Create Clock trait in new file keyrx_core/src/runtime/clock.rs with SystemClock and VirtualClock implementations | Restrictions: Must be no_std compatible, VirtualClock must be thread-safe for parallel tests | Success: Clock trait defined, both implementations work, VirtualClock can advance time programmatically | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts, then mark [x] when done_
 
-- [-] 3. Create TapHoldState enum and struct
+- [x] 3. Create TapHoldState enum and struct
   - File: `keyrx_core/src/runtime/tap_hold.rs` (new file)
   - Define TapHoldPhase enum: Idle, Pending, Hold
   - Define TapHoldState struct with key, phase, config fields
