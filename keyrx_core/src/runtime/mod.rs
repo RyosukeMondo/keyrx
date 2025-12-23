@@ -5,6 +5,7 @@
 //! - `KeyLookup`: O(1) key-to-mapping resolution using HashMap
 //! - `KeyEvent`: Type-safe keyboard event representation (Press/Release)
 //! - `process_event`: Core event processing logic
+//! - `Clock`: Time abstraction for tap-hold and timing-sensitive features
 //!
 //! # Example
 //!
@@ -24,11 +25,13 @@
 //! let outputs = process_event(input, &lookup, &mut state);
 //! ```
 
+pub mod clock;
 pub mod event;
 pub mod lookup;
 pub mod state;
 
 // Re-export public API
+pub use clock::{Clock, SystemClock, VirtualClock};
 pub use event::{process_event, KeyEvent, KeyEventType};
 pub use lookup::KeyLookup;
 pub use state::DeviceState;
