@@ -86,7 +86,7 @@
   - _Requirements: 5.1, 5.2_
   - _Prompt: Role: Full-stack Developer with expertise in REST API design and axum framework | Task: Implement /api/devices endpoint following requirements 5.1-5.2, returning JSON list of connected input devices | Restrictions: Must use existing axum router configuration, ensure CORS headers if needed, handle empty device list gracefully, return 200 OK with empty array if no devices | Success: GET /api/devices returns valid JSON, includes all enumerated devices, response matches schema in design.md, endpoint accessible from React frontend_
 
-- [ ] 9. Create React component for device list in UI
+- [x] 9. Create React component for device list in UI
   - File: keyrx_ui/src/components/DeviceList.tsx (new file)
   - Fetch device list from /api/devices on mount
   - Display table with columns: Name, Serial, Path, Status

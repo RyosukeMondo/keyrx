@@ -1,4 +1,5 @@
 import './App.css'
+import { DeviceList } from './components/DeviceList'
 
 function App() {
   return (
@@ -8,9 +9,7 @@ function App() {
         <p>Advanced Keyboard Remapping</p>
       </header>
       <main>
-        <div className="placeholder">
-          <p>UI placeholder - WASM integration coming soon</p>
-        </div>
+        <DeviceList />
       </main>
     </div>
   )
