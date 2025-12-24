@@ -1,11 +1,12 @@
 //! Keyboard event types and processing logic
 //!
 //! This module provides:
-//! - `KeyEvent`: Type-safe keyboard event representation with timestamps
+//! - `KeyEvent`: Type-safe keyboard event representation with timestamps and device ID
 //! - `KeyEventType`: Enum for press/release event types
 //! - `process_event`: Core event processing function
 
 extern crate alloc;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::config::KeyCode;
@@ -22,11 +23,15 @@ pub enum KeyEventType {
     Release,
 }
 
-/// Keyboard event representing a key press or release with timestamp
+/// Keyboard event representing a key press or release with timestamp and optional device ID
 ///
 /// The timestamp is in microseconds and is used for timing-based decisions
 /// such as tap-hold functionality. A timestamp of 0 indicates no timestamp
 /// is available (legacy compatibility).
+///
+/// The device_id is optional and allows discrimination between multiple input
+/// devices (e.g., laptop keyboard vs USB numpad). When None, the event is
+/// treated as coming from the default device (backward compatible).
 ///
 /// # Example
 ///
@@ -40,11 +45,16 @@ pub enum KeyEventType {
 /// assert!(event.is_press());
 /// assert_eq!(event.timestamp_us(), 1000);
 ///
+/// // Create event with device ID for multi-device support
+/// let event = KeyEvent::press(KeyCode::A)
+///     .with_device_id("usb-NumericKeypad-123".to_string());
+/// assert_eq!(event.device_id(), Some("usb-NumericKeypad-123"));
+///
 /// // Legacy style (shorthand constructors)
 /// let press = KeyEvent::Press(KeyCode::A);
 /// let release = KeyEvent::Release(KeyCode::A);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct KeyEvent {
     /// The type of event (press or release)
     event_type: KeyEventType,
@@ -52,53 +62,76 @@ pub struct KeyEvent {
     keycode: KeyCode,
     /// Timestamp in microseconds (0 = no timestamp)
     timestamp_us: u64,
+    /// Optional device identifier for multi-device support
+    /// When None, event is treated as coming from default device
+    device_id: Option<String>,
 }
 
 impl KeyEvent {
     /// Creates a new key press event
     ///
-    /// The timestamp defaults to 0 (no timestamp).
-    /// Use `with_timestamp()` to set a specific timestamp.
+    /// The timestamp defaults to 0 (no timestamp) and device_id defaults to None.
+    /// Use `with_timestamp()` and `with_device_id()` to set specific values.
     #[must_use]
-    pub const fn press(keycode: KeyCode) -> Self {
+    pub fn press(keycode: KeyCode) -> Self {
         Self {
             event_type: KeyEventType::Press,
             keycode,
             timestamp_us: 0,
+            device_id: None,
         }
     }
 
     /// Creates a new key release event
     ///
-    /// The timestamp defaults to 0 (no timestamp).
-    /// Use `with_timestamp()` to set a specific timestamp.
+    /// The timestamp defaults to 0 (no timestamp) and device_id defaults to None.
+    /// Use `with_timestamp()` and `with_device_id()` to set specific values.
     #[must_use]
-    pub const fn release(keycode: KeyCode) -> Self {
+    pub fn release(keycode: KeyCode) -> Self {
         Self {
             event_type: KeyEventType::Release,
             keycode,
             timestamp_us: 0,
+            device_id: None,
         }
     }
 
     /// Legacy constructor for press events (enum-style syntax)
     #[must_use]
     #[allow(non_snake_case)]
-    pub const fn Press(keycode: KeyCode) -> Self {
+    pub fn Press(keycode: KeyCode) -> Self {
         Self::press(keycode)
     }
 
     /// Legacy constructor for release events (enum-style syntax)
     #[must_use]
     #[allow(non_snake_case)]
-    pub const fn Release(keycode: KeyCode) -> Self {
+    pub fn Release(keycode: KeyCode) -> Self {
         Self::release(keycode)
     }
 
     /// Creates a new event with the specified timestamp
     #[must_use]
-    pub const fn with_timestamp(mut self, timestamp_us: u64) -> Self {
+    pub fn with_timestamp(mut self, timestamp_us: u64) -> Self {
         self.timestamp_us = timestamp_us;
+        self
+    }
+
+    /// Creates a new event with the specified device ID
+    ///
+    /// The device ID allows discrimination between multiple input devices
+    /// (e.g., "usb-NumericKeypad-123" vs "platform-keyboard-0").
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let event = KeyEvent::press(KeyCode::A)
+    ///     .with_device_id("usb-NumericKeypad-123".to_string());
+    /// assert_eq!(event.device_id(), Some("usb-NumericKeypad-123"));
+    /// ```
+    #[must_use]
+    pub fn with_device_id(mut self, device_id: String) -> Self {
+        self.device_id = Some(device_id);
         self
     }
 
@@ -120,6 +153,15 @@ impl KeyEvent {
         self.timestamp_us
     }
 
+    /// Returns the device ID if set, or None for default device
+    ///
+    /// The device ID allows scripts and handlers to apply different
+    /// remapping rules based on which physical device generated the event.
+    #[must_use]
+    pub fn device_id(&self) -> Option<&str> {
+        self.device_id.as_deref()
+    }
+
     /// Returns true if this is a press event
     #[must_use]
     pub const fn is_press(&self) -> bool {
@@ -132,9 +174,9 @@ impl KeyEvent {
         matches!(self.event_type, KeyEventType::Release)
     }
 
-    /// Creates a new event with the same keycode and timestamp but opposite type
+    /// Creates a new event with the same keycode, timestamp, and device_id but opposite type
     #[must_use]
-    pub const fn opposite(&self) -> Self {
+    pub fn opposite(&self) -> Self {
         Self {
             event_type: match self.event_type {
                 KeyEventType::Press => KeyEventType::Release,
@@ -142,12 +184,13 @@ impl KeyEvent {
             },
             keycode: self.keycode,
             timestamp_us: self.timestamp_us,
+            device_id: self.device_id.clone(),
         }
     }
 
-    /// Creates a new event with a different keycode but same type and timestamp
+    /// Creates a new event with a different keycode but same type, timestamp, and device_id
     #[must_use]
-    pub const fn with_keycode(mut self, keycode: KeyCode) -> Self {
+    pub fn with_keycode(mut self, keycode: KeyCode) -> Self {
         self.keycode = keycode;
         self
     }
@@ -908,8 +951,8 @@ mod tests {
         let event2 = KeyEvent::Press(KeyCode::A);
         let event3 = KeyEvent::Release(KeyCode::A);
 
-        // Test Clone (Copy trait)
-        let cloned = event1;
+        // Test Clone trait
+        let cloned = event1.clone();
         assert_eq!(cloned, event1);
 
         // Test PartialEq and Eq
@@ -962,29 +1005,61 @@ mod tests {
     }
 
     #[test]
+    fn test_keyevent_device_id() {
+        // Test device_id functionality
+        let event = KeyEvent::press(KeyCode::A);
+        assert_eq!(event.device_id(), None); // Default is None
+
+        let event_with_device = event.with_device_id(String::from("usb-NumericKeypad-123"));
+        assert_eq!(event_with_device.device_id(), Some("usb-NumericKeypad-123"));
+        assert_eq!(event_with_device.keycode(), KeyCode::A);
+        assert!(event_with_device.is_press());
+    }
+
+    #[test]
+    fn test_keyevent_device_id_with_timestamp() {
+        // Test combining device_id with timestamp
+        let event = KeyEvent::press(KeyCode::B)
+            .with_timestamp(5000)
+            .with_device_id(String::from("laptop-keyboard"));
+
+        assert_eq!(event.keycode(), KeyCode::B);
+        assert_eq!(event.timestamp_us(), 5000);
+        assert_eq!(event.device_id(), Some("laptop-keyboard"));
+        assert!(event.is_press());
+    }
+
+    #[test]
     fn test_keyevent_with_keycode() {
-        // Test with_keycode preserves type and timestamp
-        let event = KeyEvent::press(KeyCode::A).with_timestamp(500);
+        // Test with_keycode preserves type, timestamp, and device_id
+        let event = KeyEvent::press(KeyCode::A)
+            .with_timestamp(500)
+            .with_device_id(String::from("test-device"));
         let remapped = event.with_keycode(KeyCode::B);
 
         assert_eq!(remapped.keycode(), KeyCode::B);
         assert!(remapped.is_press());
         assert_eq!(remapped.timestamp_us(), 500);
+        assert_eq!(remapped.device_id(), Some("test-device"));
     }
 
     #[test]
     fn test_keyevent_opposite() {
-        // Test opposite preserves keycode and timestamp
-        let press = KeyEvent::press(KeyCode::A).with_timestamp(1000);
+        // Test opposite preserves keycode, timestamp, and device_id
+        let press = KeyEvent::press(KeyCode::A)
+            .with_timestamp(1000)
+            .with_device_id(String::from("numpad"));
         let release = press.opposite();
 
         assert!(release.is_release());
         assert_eq!(release.keycode(), KeyCode::A);
         assert_eq!(release.timestamp_us(), 1000);
+        assert_eq!(release.device_id(), Some("numpad"));
 
         // Opposite of opposite is original type
         let press_again = release.opposite();
         assert!(press_again.is_press());
+        assert_eq!(press_again.device_id(), Some("numpad"));
     }
 
     #[test]
@@ -1359,7 +1434,7 @@ mod tests {
 
                 let mut total_output_count = 0;
                 for event in &events {
-                    let outputs = process_event(*event, &lookup, &mut state);
+                    let outputs = process_event(event.clone(), &lookup, &mut state);
                     total_output_count += outputs.len();
                 }
 
@@ -1377,14 +1452,14 @@ mod tests {
                 let mut state1 = DeviceState::new();
                 let mut outputs1 = Vec::new();
                 for event in &events {
-                    let result = process_event(*event, &lookup, &mut state1);
+                    let result = process_event(event.clone(), &lookup, &mut state1);
                     outputs1.extend(result);
                 }
 
                 let mut state2 = DeviceState::new();
                 let mut outputs2 = Vec::new();
                 for event in &events {
-                    let result = process_event(*event, &lookup, &mut state2);
+                    let result = process_event(event.clone(), &lookup, &mut state2);
                     outputs2.extend(result);
                 }
 
@@ -1400,7 +1475,7 @@ mod tests {
                 let mut state = DeviceState::new();
 
                 for event in &events {
-                    let outputs = process_event(*event, &lookup, &mut state);
+                    let outputs = process_event(event.clone(), &lookup, &mut state);
 
                     if event.keycode() == KeyCode::A {
                         prop_assert!(outputs.is_empty(),
@@ -1417,7 +1492,7 @@ mod tests {
                 let mut state = DeviceState::new();
 
                 for event in &events {
-                    let outputs = process_event(*event, &lookup, &mut state);
+                    let outputs = process_event(event.clone(), &lookup, &mut state);
 
                     if event.keycode() == KeyCode::A {
                         prop_assert!(outputs.is_empty(),
@@ -1434,12 +1509,12 @@ mod tests {
                 let mut state = DeviceState::new();
 
                 for event in &events {
-                    let outputs = process_event(*event, &lookup, &mut state);
+                    let outputs = process_event(event.clone(), &lookup, &mut state);
 
                     prop_assert_eq!(outputs.len(), 1,
                         "Passthrough produced {} outputs for 1 input", outputs.len());
 
-                    prop_assert_eq!(outputs[0], *event,
+                    prop_assert_eq!(&outputs[0], event,
                         "Passthrough modified event: {:?} became {:?}", event, outputs[0]);
                 }
             }
@@ -1452,7 +1527,7 @@ mod tests {
                 let mut state = DeviceState::new();
 
                 for event in &events {
-                    let outputs = process_event(*event, &lookup, &mut state);
+                    let outputs = process_event(event.clone(), &lookup, &mut state);
 
                     prop_assert_eq!(outputs.len(), 1,
                         "Simple mapping produced {} outputs for 1 input", outputs.len());

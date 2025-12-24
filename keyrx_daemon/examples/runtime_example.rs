@@ -179,7 +179,7 @@ fn example_event_processing() {
     // Test 1: Simple mapping (A → B)
     println!("Processing Press(A) with simple mapping:");
     let input = KeyEvent::Press(KeyCode::A);
-    let output = process_event(input, &lookup, &mut state);
+    let output = process_event(input.clone(), &lookup, &mut state);
     println!("  Input: {:?}", input);
     println!("  Output: {:?}", output);
     assert_eq!(output.len(), 1);
@@ -188,7 +188,7 @@ fn example_event_processing() {
     // Test 2: Modifier mapping (CapsLock → MD_00, no output)
     println!("Processing Press(CapsLock) with modifier mapping:");
     let input = KeyEvent::Press(KeyCode::CapsLock);
-    let output = process_event(input, &lookup, &mut state);
+    let output = process_event(input.clone(), &lookup, &mut state);
     println!("  Input: {:?}", input);
     println!("  Output: {:?} (no output, state updated)", output);
     assert_eq!(output.len(), 0);
@@ -197,7 +197,7 @@ fn example_event_processing() {
     // Test 3: ModifiedOutput (Shift+1)
     println!("Processing Press(Num1) with ModifiedOutput (Shift+1):");
     let input = KeyEvent::Press(KeyCode::Num1);
-    let output = process_event(input, &lookup, &mut state);
+    let output = process_event(input.clone(), &lookup, &mut state);
     println!("  Input: {:?}", input);
     println!("  Output: {:?}", output);
     assert_eq!(output.len(), 2);
@@ -207,7 +207,7 @@ fn example_event_processing() {
     // Test 4: Passthrough (unmapped key)
     println!("Processing Press(Z) with no mapping (passthrough):");
     let input = KeyEvent::Press(KeyCode::Z);
-    let output = process_event(input, &lookup, &mut state);
+    let output = process_event(input.clone(), &lookup, &mut state);
     println!("  Input: {:?}", input);
     println!("  Output: {:?}", output);
     assert_eq!(output.len(), 1);

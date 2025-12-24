@@ -323,7 +323,7 @@ mod tests {
         ];
 
         for event in &sequence {
-            output.inject_event(*event).unwrap();
+            output.inject_event(event.clone()).unwrap();
         }
 
         // Verify order preserved

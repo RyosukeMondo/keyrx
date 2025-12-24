@@ -90,8 +90,8 @@ impl<I: InputDevice, O: OutputDevice> EventProcessor<I, O> {
         let start = Instant::now();
 
         let event = self.read_input_event()?;
-        let transition_context = self.detect_state_transition(event);
-        let output_events = process_event(event, &self.lookup, &mut self.state);
+        let transition_context = self.detect_state_transition(event.clone());
+        let output_events = process_event(event.clone(), &self.lookup, &mut self.state);
 
         if let Some(context) = transition_context {
             logging::log_state_transition(&context);
@@ -158,7 +158,7 @@ impl<I: InputDevice, O: OutputDevice> EventProcessor<I, O> {
 
     fn inject_output_events(&mut self, events: &[KeyEvent]) -> Result<(), ProcessorError> {
         for event in events {
-            self.output.inject_event(*event).map_err(|e| {
+            self.output.inject_event(event.clone()).map_err(|e| {
                 logging::log_platform_error(&e.to_string(), "output");
                 ProcessorError::Output(e)
             })?;
