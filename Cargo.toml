@@ -14,12 +14,12 @@ version = "0.1.0"
 edition = "2021"
 authors = ["keyrx contributors"]
 license = "AGPL-3.0-or-later"
-repository = "https://github.com/RyosukeMondo/keyrx2"
+repository = "https://github.com/RyosukeMondo/keyrx"
 description = "Advanced keyboard remapping with layers, tap-hold, and conditional mappings"
 keywords = ["keyboard", "remapping", "input", "evdev", "uinput"]
 categories = ["hardware-support", "command-line-utilities"]
 documentation = "https://docs.rs/keyrx_core"
-homepage = "https://github.com/RyosukeMondo/keyrx2"
+homepage = "https://github.com/RyosukeMondo/keyrx"
 readme = "README.md"
 
 [workspace.dependencies]

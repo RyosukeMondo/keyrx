@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `docs/research/` - Research notes and investigations
   - `docs/archive/` - Historical documents
 - **Cargo.toml metadata**: Updated repository URL and added crates.io metadata
-  - Repository: https://github.com/RyosukeMondo/keyrx2
+  - Repository: https://github.com/RyosukeMondo/keyrx
   - Added description, keywords, categories, documentation links
 
 ### Added
@@ -299,5 +299,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 255-bit modifier/lock state tracking
 - Web server with REST API and WebSocket support
 
-[Unreleased]: https://github.com/yourusername/keyrx2/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/keyrx2/releases/tag/v0.1.0
+[Unreleased]: https://github.com/RyosukeMondo/keyrx/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/RyosukeMondo/keyrx/releases/tag/v0.1.0
