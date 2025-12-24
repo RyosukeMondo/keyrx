@@ -76,7 +76,7 @@
   - _Requirements: 2.5_
   - _Prompt: Role: System Integration Engineer with expertise in daemon lifecycle management | Task: Integrate LinuxSystemTray into LinuxPlatform following requirement 2.5, handling tray unavailable gracefully with degraded mode | Restrictions: Must not crash if tray init fails, log clear warning for headless environments, poll_event() must be non-blocking (<1μs overhead), ensure tray cleanup on shutdown | Success: Tray appears on GUI systems, daemon continues without tray on headless servers, Reload triggers config reload, Exit performs clean shutdown_
 
-- [ ] 8. Add /api/devices endpoint to web server
+- [x] 8. Add /api/devices endpoint to web server
   - File: keyrx_daemon/src/web/api.rs (or create if doesn't exist)
   - Create GET /api/devices endpoint returning JSON device list
   - Endpoint calls platform layer to get device info
