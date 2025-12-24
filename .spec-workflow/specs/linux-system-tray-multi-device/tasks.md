@@ -11,7 +11,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
   - _Prompt: Role: Rust Developer specializing in data structures and backward compatibility | Task: Extend KeyEvent structure with optional device_id field following requirement 3.1-3.4, using the existing with_timestamp() builder pattern from keyrx_core/src/runtime/event.rs | Restrictions: Must maintain backward compatibility, do not change existing constructor signatures, ensure None default for device_id | Success: KeyEvent compiles with new field, existing code unaffected, with_device_id() and device_id() methods work correctly, all existing tests pass_
 
-- [ ] 2. Create cross-platform SystemTray trait
+- [x] 2. Create cross-platform SystemTray trait
   - File: keyrx_daemon/src/platform/mod.rs
   - Define `TrayControlEvent` enum (Reload, Exit)
   - Define `SystemTray` trait with methods: new(), poll_event(), shutdown()
@@ -21,7 +21,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Role: Software Architect specializing in trait design and cross-platform abstractions | Task: Design and implement SystemTray trait following requirements 1.1-1.4, moving TrayControlEvent from windows/tray.rs to platform/mod.rs for cross-platform use | Restrictions: Must not break existing Windows tray code, keep trait minimal and focused, ensure trait methods are implementable on both Linux and Windows | Success: Trait compiles, TrayControlEvent accessible from both platforms, trait contract is clear and documented_
 
-- [ ] 3. Refactor Windows tray to implement SystemTray trait
+- [x] 3. Refactor Windows tray to implement SystemTray trait
   - File: keyrx_daemon/src/platform/windows/tray.rs
   - Implement `SystemTray` trait for `TrayIconController`
   - Ensure no behavior changes (trait is pure refactor)
@@ -31,7 +31,7 @@
   - _Requirements: 1.3_
   - _Prompt: Role: Rust Developer with expertise in trait implementation and refactoring | Task: Refactor existing TrayIconController to implement the SystemTray trait following requirement 1.3, ensuring zero behavior changes | Restrictions: Do not change menu structure or event handling logic, only add trait implementation, maintain existing functionality exactly | Success: TrayIconController implements SystemTray trait, all Windows tray tests pass, no behavior regressions_
 
-- [ ] 4. Implement Linux system tray using ksni
+- [x] 4. Implement Linux system tray using ksni
   - File: keyrx_daemon/src/platform/linux/tray.rs (new file)
   - Add ksni dependency to Cargo.toml
   - Create LinuxSystemTray struct implementing SystemTray trait
