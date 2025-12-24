@@ -27,7 +27,7 @@ pub mod mock;
 
 #[cfg(feature = "linux")]
 #[allow(unused_imports)] // EvdevInput/UinputOutput will be used in task #17
-pub use linux::{EvdevInput, LinuxPlatform, UinputOutput};
+pub use linux::{EvdevInput, LinuxPlatform, LinuxSystemTray, UinputOutput};
 
 #[cfg(feature = "windows")]
 pub use windows::WindowsPlatform;

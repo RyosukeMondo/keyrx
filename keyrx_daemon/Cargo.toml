@@ -8,7 +8,7 @@ repository.workspace = true
 
 [features]
 default = ["web"]
-linux = ["dep:evdev", "dep:uinput", "dep:nix", "dep:signal-hook"]
+linux = ["dep:evdev", "dep:uinput", "dep:nix", "dep:signal-hook", "dep:ksni", "dep:crossbeam-channel", "dep:image"]
 windows = [
     "dep:windows-sys",
     "dep:tray-icon",
@@ -37,6 +37,8 @@ uinput = { version = "0.1", optional = true }
 nix = { version = "0.29", features = ["ioctl", "poll"], optional = true }
 # signal-hook: Signal handling for graceful shutdown (SIGTERM/SIGINT) and reload (SIGHUP)
 signal-hook = { version = "0.3", optional = true }
+# ksni: StatusNotifierItem (system tray) support for Linux desktop environments
+ksni = { version = "0.3", features = ["blocking"], optional = true }
 
 # Windows-specific dependencies
 windows-sys = { version = "0.59", features = [

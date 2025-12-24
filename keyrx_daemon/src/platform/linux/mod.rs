@@ -2,8 +2,16 @@
 //!
 //! This module provides the Linux-specific implementation for keyboard input capture
 //! and event injection using the evdev and uinput kernel interfaces.
+//!
+//! # System Tray Support
+//!
+//! The [`tray`] module provides system tray functionality via the StatusNotifierItem
+//! D-Bus protocol (using the `ksni` crate).
 
 mod keycode_map;
+pub mod tray;
+
+pub use tray::LinuxSystemTray;
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
