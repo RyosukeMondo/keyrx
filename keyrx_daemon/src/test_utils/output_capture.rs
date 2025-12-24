@@ -573,22 +573,22 @@ impl EventAssertionResult {
         for i in 0..max_len {
             match (captured.get(i), expected.get(i)) {
                 (Some(c), Some(e)) if c == e => {
-                    comparisons.push(EventComparison::Match(*c));
+                    comparisons.push(EventComparison::Match(c.clone()));
                     matches += 1;
                 }
                 (Some(c), Some(e)) => {
                     comparisons.push(EventComparison::Mismatch {
-                        captured: *c,
-                        expected: *e,
+                        captured: c.clone(),
+                        expected: e.clone(),
                     });
                     mismatches += 1;
                 }
                 (Some(c), None) => {
-                    comparisons.push(EventComparison::Extra(*c));
+                    comparisons.push(EventComparison::Extra(c.clone()));
                     extras += 1;
                 }
                 (None, Some(e)) => {
-                    comparisons.push(EventComparison::Missing(*e));
+                    comparisons.push(EventComparison::Missing(e.clone()));
                     missing += 1;
                 }
                 (None, None) => unreachable!(),

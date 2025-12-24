@@ -5,10 +5,9 @@
 //! provides pattern matching for selecting devices based on configuration.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use evdev::{Device, EventType, Key};
-use log::{debug, info, warn};
 
 use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
@@ -148,6 +147,15 @@ impl ManagedDevice {
 
     pub fn rebuild_lookup(&mut self, config: &DeviceConfig) {
         self.lookup = KeyLookup::from_device_config(config);
+    }
+
+    /// Returns mutable references to both lookup and state simultaneously.
+    ///
+    /// This combined accessor is necessary because both are needed during
+    /// event processing, but we can't borrow both separately from a mutable
+    /// reference to ManagedDevice.
+    pub fn lookup_and_state_mut(&mut self) -> (&KeyLookup, &mut DeviceState) {
+        (&self.lookup, &mut self.state)
     }
 }
 
