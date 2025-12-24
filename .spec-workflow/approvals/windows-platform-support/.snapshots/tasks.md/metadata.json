@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/windows-platform-support/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-24T14:36:50.376Z",
+      "trigger": "initial",
+      "approvalId": "approval_1766587010370_ksnay4858",
+      "approvalTitle": "Tasks: Windows Platform Support"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-24T14:52:30.271Z",
+      "trigger": "approved",
+      "approvalId": "approval_1766587010370_ksnay4858",
+      "approvalTitle": "Tasks: Windows Platform Support"
+    }
+  ]
+}
