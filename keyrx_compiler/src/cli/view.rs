@@ -104,6 +104,14 @@ fn get_layer_name(condition: &Condition) -> String {
             format!("MULTI_{}", items.len())
         }
         Condition::NotActive(_) => "NOT".to_string(),
+        Condition::DeviceMatches(pattern) => {
+            // Truncate long patterns for display
+            if pattern.len() > 15 {
+                format!("DEV_{}", &pattern[..12])
+            } else {
+                format!("DEV_{}", pattern)
+            }
+        }
     }
 }
 

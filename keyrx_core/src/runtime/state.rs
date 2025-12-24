@@ -3,6 +3,8 @@
 //! This module provides `DeviceState` for tracking modifier and lock state
 //! using efficient 255-bit vectors, plus tap-hold processor state.
 
+extern crate alloc;
+
 use bitvec::prelude::*;
 
 use crate::config::{Condition, ConditionItem};
@@ -201,6 +203,13 @@ impl DeviceState {
 
     /// Evaluates a condition against the current device state
     ///
+    /// This is a convenience method that calls `evaluate_condition_with_device`
+    /// with `device_id = None`. Use this for conditions that don't involve
+    /// device matching (ModifierActive, LockActive, AllActive, NotActive).
+    ///
+    /// Note: DeviceMatches conditions will always return false when called
+    /// without a device_id. Use `evaluate_condition_with_device` for those.
+    ///
     /// # Arguments
     ///
     /// * `condition` - The condition to evaluate
@@ -234,6 +243,42 @@ impl DeviceState {
     /// assert!(state.evaluate_condition(&not_cond)); // MD_02 is not active
     /// ```
     pub fn evaluate_condition(&self, condition: &Condition) -> bool {
+        self.evaluate_condition_with_device(condition, None)
+    }
+
+    /// Evaluates a condition against the current device state and optional device ID
+    ///
+    /// This is the full version of condition evaluation that supports device matching.
+    /// For conditions that don't involve device matching, you can use `evaluate_condition()`.
+    ///
+    /// # Arguments
+    ///
+    /// * `condition` - The condition to evaluate
+    /// * `device_id` - Optional device ID from the current event
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the condition is satisfied, `false` otherwise
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use keyrx_core::runtime::DeviceState;
+    /// use keyrx_core::config::Condition;
+    ///
+    /// let state = DeviceState::new();
+    ///
+    /// // Device matching condition
+    /// let cond = Condition::DeviceMatches("numpad".to_string());
+    /// assert!(state.evaluate_condition_with_device(&cond, Some("numpad")));
+    /// assert!(!state.evaluate_condition_with_device(&cond, Some("keyboard")));
+    /// assert!(!state.evaluate_condition_with_device(&cond, None));
+    /// ```
+    pub fn evaluate_condition_with_device(
+        &self,
+        condition: &Condition,
+        device_id: Option<&str>,
+    ) -> bool {
         match condition {
             // Single modifier active
             Condition::ModifierActive(id) => self.is_modifier_active(*id),
@@ -250,6 +295,96 @@ impl DeviceState {
             Condition::NotActive(items) => {
                 items.iter().all(|item| !self.evaluate_condition_item(item))
             }
+
+            // Device ID matches pattern
+            Condition::DeviceMatches(pattern) => Self::matches_device_pattern(device_id, pattern),
+        }
+    }
+
+    /// Matches a device ID against a pattern
+    ///
+    /// Supports simple glob patterns with `*` wildcard:
+    /// - Exact match: "device-123" matches only "device-123"
+    /// - Prefix: "usb-*" matches "usb-keyboard", "usb-numpad", etc.
+    /// - Suffix: "*-keyboard" matches "usb-keyboard", "bt-keyboard", etc.
+    /// - Contains: "*numpad*" matches "usb-numpad-123", "my-numpad", etc.
+    ///
+    /// Returns false if device_id is None.
+    fn matches_device_pattern(device_id: Option<&str>, pattern: &str) -> bool {
+        let Some(id) = device_id else {
+            return false;
+        };
+
+        // Handle glob patterns with *
+        if pattern.contains('*') {
+            let parts: alloc::vec::Vec<&str> = pattern.split('*').collect();
+            match parts.len() {
+                1 => {
+                    // No actual * (shouldn't happen but handle it)
+                    id == pattern
+                }
+                2 => {
+                    // Single * - either prefix, suffix, or empty on one side
+                    let (prefix, suffix) = (parts[0], parts[1]);
+                    if prefix.is_empty() && suffix.is_empty() {
+                        // Pattern is just "*" - matches everything
+                        true
+                    } else if prefix.is_empty() {
+                        // *suffix
+                        id.ends_with(suffix)
+                    } else if suffix.is_empty() {
+                        // prefix*
+                        id.starts_with(prefix)
+                    } else {
+                        // prefix*suffix
+                        id.starts_with(prefix) && id.ends_with(suffix)
+                    }
+                }
+                3 => {
+                    // Two *s - typically *contains*
+                    let (prefix, middle, suffix) = (parts[0], parts[1], parts[2]);
+                    if prefix.is_empty() && suffix.is_empty() {
+                        // *middle*
+                        id.contains(middle)
+                    } else {
+                        // More complex pattern - do simple check
+                        id.starts_with(prefix) && id.ends_with(suffix) && id.contains(middle)
+                    }
+                }
+                _ => {
+                    // Complex pattern with multiple * - just check if all parts exist in order
+                    // This is a simplified implementation
+                    let mut remaining = id;
+                    for (i, part) in parts.iter().enumerate() {
+                        if part.is_empty() {
+                            continue;
+                        }
+                        if i == 0 {
+                            // First part must be prefix
+                            if !remaining.starts_with(part) {
+                                return false;
+                            }
+                            remaining = &remaining[part.len()..];
+                        } else if i == parts.len() - 1 {
+                            // Last part must be suffix
+                            if !remaining.ends_with(part) {
+                                return false;
+                            }
+                        } else {
+                            // Middle parts must exist somewhere
+                            if let Some(pos) = remaining.find(part) {
+                                remaining = &remaining[pos + part.len()..];
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                    true
+                }
+            }
+        } else {
+            // Exact match
+            id == pattern
         }
     }
 
@@ -654,5 +789,158 @@ mod tests {
             .tap_hold_processor_ref()
             .is_tap_hold_key(KeyCode::CapsLock));
         assert!(!state.tap_hold_processor_ref().is_tap_hold_key(KeyCode::A));
+    }
+
+    // Device pattern matching tests
+    mod device_pattern_tests {
+        use super::*;
+        use alloc::string::String;
+
+        #[test]
+        fn test_exact_match() {
+            // Exact match should work
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-numpad-123"),
+                "usb-numpad-123"
+            ));
+            // Different string should not match
+            assert!(!DeviceState::matches_device_pattern(
+                Some("usb-keyboard-456"),
+                "usb-numpad-123"
+            ));
+            // None device_id should not match
+            assert!(!DeviceState::matches_device_pattern(None, "usb-numpad-123"));
+        }
+
+        #[test]
+        fn test_wildcard_matches_all() {
+            // Pattern "*" matches everything
+            assert!(DeviceState::matches_device_pattern(Some("anything"), "*"));
+            assert!(DeviceState::matches_device_pattern(Some(""), "*"));
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-numpad-123"),
+                "*"
+            ));
+            // But still not None
+            assert!(!DeviceState::matches_device_pattern(None, "*"));
+        }
+
+        #[test]
+        fn test_prefix_pattern() {
+            // Pattern "usb-*" matches anything starting with "usb-"
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-numpad"),
+                "usb-*"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-keyboard"),
+                "usb-*"
+            ));
+            assert!(DeviceState::matches_device_pattern(Some("usb-"), "usb-*"));
+            // But not things that don't start with "usb-"
+            assert!(!DeviceState::matches_device_pattern(
+                Some("bt-keyboard"),
+                "usb-*"
+            ));
+            assert!(!DeviceState::matches_device_pattern(
+                Some("keyboard-usb"),
+                "usb-*"
+            ));
+        }
+
+        #[test]
+        fn test_suffix_pattern() {
+            // Pattern "*-keyboard" matches anything ending with "-keyboard"
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-keyboard"),
+                "*-keyboard"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("bt-keyboard"),
+                "*-keyboard"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("-keyboard"),
+                "*-keyboard"
+            ));
+            // But not things that don't end with "-keyboard"
+            assert!(!DeviceState::matches_device_pattern(
+                Some("keyboard-usb"),
+                "*-keyboard"
+            ));
+            assert!(!DeviceState::matches_device_pattern(
+                Some("usb-numpad"),
+                "*-keyboard"
+            ));
+        }
+
+        #[test]
+        fn test_contains_pattern() {
+            // Pattern "*numpad*" matches anything containing "numpad"
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-numpad-123"),
+                "*numpad*"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("numpad"),
+                "*numpad*"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("my-numpad-device"),
+                "*numpad*"
+            ));
+            // But not things that don't contain "numpad"
+            assert!(!DeviceState::matches_device_pattern(
+                Some("usb-keyboard"),
+                "*numpad*"
+            ));
+            assert!(!DeviceState::matches_device_pattern(
+                Some("numpd"),
+                "*numpad*"
+            ));
+        }
+
+        #[test]
+        fn test_prefix_and_suffix_pattern() {
+            // Pattern "usb-*-keyboard" matches "usb-...-keyboard"
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-logitech-keyboard"),
+                "usb-*-keyboard"
+            ));
+            assert!(DeviceState::matches_device_pattern(
+                Some("usb-keyboard"),
+                "usb-*-keyboard"
+            ));
+            // But not mismatched
+            assert!(!DeviceState::matches_device_pattern(
+                Some("bt-logitech-keyboard"),
+                "usb-*-keyboard"
+            ));
+            assert!(!DeviceState::matches_device_pattern(
+                Some("usb-logitech-numpad"),
+                "usb-*-keyboard"
+            ));
+        }
+
+        #[test]
+        fn test_evaluate_condition_device_matches() {
+            let state = DeviceState::new();
+
+            // Exact match condition
+            let cond = Condition::DeviceMatches(String::from("usb-numpad-123"));
+            assert!(state.evaluate_condition_with_device(&cond, Some("usb-numpad-123")));
+            assert!(!state.evaluate_condition_with_device(&cond, Some("usb-keyboard")));
+            assert!(!state.evaluate_condition_with_device(&cond, None));
+
+            // Wildcard pattern condition
+            let cond_wildcard = Condition::DeviceMatches(String::from("*numpad*"));
+            assert!(state.evaluate_condition_with_device(&cond_wildcard, Some("usb-numpad-123")));
+            assert!(state.evaluate_condition_with_device(&cond_wildcard, Some("my-numpad")));
+            assert!(!state.evaluate_condition_with_device(&cond_wildcard, Some("keyboard")));
+
+            // evaluate_condition (without device) always returns false for DeviceMatches
+            assert!(!state.evaluate_condition(&cond));
+            assert!(!state.evaluate_condition(&cond_wildcard));
+        }
     }
 }

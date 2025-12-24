@@ -101,9 +101,12 @@ impl KeyLookup {
 
     /// Finds the appropriate mapping for a key based on current device state
     ///
-    /// Searches for mappings for the given key and evaluates conditions to find
-    /// the first matching mapping. Conditional mappings are checked first (in
-    /// registration order), followed by unconditional mappings.
+    /// This is a convenience method that calls `find_mapping_with_device`
+    /// without a device_id. Use this for lookups that don't involve
+    /// device-specific conditions (DeviceMatches).
+    ///
+    /// Note: DeviceMatches conditions will never match when using this method.
+    /// Use `find_mapping_with_device` for device-aware lookups.
     ///
     /// # Arguments
     ///
@@ -125,14 +128,58 @@ impl KeyLookup {
     /// }
     /// ```
     pub fn find_mapping(&self, key: KeyCode, state: &DeviceState) -> Option<&BaseKeyMapping> {
+        self.find_mapping_with_device(key, state, None)
+    }
+
+    /// Finds the appropriate mapping for a key based on current device state and device ID
+    ///
+    /// This is the full version of mapping lookup that supports device-specific
+    /// conditions. For lookups that don't involve device matching, you can use
+    /// `find_mapping()`.
+    ///
+    /// Searches for mappings for the given key and evaluates conditions to find
+    /// the first matching mapping. Conditional mappings are checked first (in
+    /// registration order), followed by unconditional mappings.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The input key code to look up
+    /// * `state` - The current device state for condition evaluation
+    /// * `device_id` - Optional device ID from the current event (for DeviceMatches conditions)
+    ///
+    /// # Returns
+    ///
+    /// * `Some(&BaseKeyMapping)` - Reference to the first matching mapping
+    /// * `None` - No mapping found (key should be passed through)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // Lookup with device context
+    /// let mapping = lookup.find_mapping_with_device(
+    ///     KeyCode::Numpad1,
+    ///     &state,
+    ///     Some("usb-numpad-123")
+    /// );
+    /// match mapping {
+    ///     Some(m) => // Process mapping (may be device-specific)
+    ///     None => // Pass through key unchanged
+    /// }
+    /// ```
+    pub fn find_mapping_with_device(
+        &self,
+        key: KeyCode,
+        state: &DeviceState,
+        device_id: Option<&str>,
+    ) -> Option<&BaseKeyMapping> {
         // Get the Vec of entries for this key
         let entries = self.table.get(&key)?;
 
         // Iterate through entries in order (conditionals first, then unconditional)
         for entry in entries {
-            // If there's a condition, evaluate it
+            // If there's a condition, evaluate it with device context
             if let Some(condition) = &entry.condition {
-                if state.evaluate_condition(condition) {
+                if state.evaluate_condition_with_device(condition, device_id) {
                     return Some(&entry.mapping);
                 }
             } else {
@@ -426,5 +473,142 @@ mod tests {
             win: false,
         };
         assert_eq!(KeyLookup::extract_input_key(&modified), Some(KeyCode::A));
+    }
+
+    #[test]
+    fn test_find_mapping_with_device_matches() {
+        use alloc::string::String;
+
+        // Create config with device-specific mapping and fallback
+        let config = create_test_device_config(vec![
+            // Device-specific: Numpad1 -> F13 when on numpad device
+            KeyMapping::conditional(
+                Condition::DeviceMatches(String::from("*numpad*")),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::Numpad1,
+                    to: KeyCode::F13,
+                }],
+            ),
+            // Fallback: Numpad1 unchanged (pass through via no mapping)
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let state = DeviceState::new();
+
+        // Test with matching device - should get device-specific mapping
+        let result =
+            lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+        assert!(result.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result.unwrap() {
+            assert_eq!(*to, KeyCode::F13);
+        } else {
+            panic!("Expected Simple mapping");
+        }
+
+        // Test with non-matching device - should find no mapping
+        let result2 =
+            lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-keyboard-456"));
+        assert!(result2.is_none());
+
+        // Test without device_id - should find no mapping (DeviceMatches never matches)
+        let result3 = lookup.find_mapping(KeyCode::Numpad1, &state);
+        assert!(result3.is_none());
+    }
+
+    #[test]
+    fn test_find_mapping_device_with_fallback() {
+        use alloc::string::String;
+
+        // Create config with device-specific mapping AND unconditional fallback
+        let config = create_test_device_config(vec![
+            // Device-specific: Numpad1 -> F13 when on numpad device
+            KeyMapping::conditional(
+                Condition::DeviceMatches(String::from("*numpad*")),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::Numpad1,
+                    to: KeyCode::F13,
+                }],
+            ),
+            // Fallback: Numpad1 -> Numpad1 for all other devices
+            KeyMapping::simple(KeyCode::Numpad1, KeyCode::Numpad1),
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let state = DeviceState::new();
+
+        // Test with matching device - should get device-specific mapping
+        let result =
+            lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+        assert!(result.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result.unwrap() {
+            assert_eq!(*to, KeyCode::F13);
+        } else {
+            panic!("Expected Simple mapping");
+        }
+
+        // Test with non-matching device - should get fallback
+        let result2 =
+            lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-keyboard-456"));
+        assert!(result2.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result2.unwrap() {
+            assert_eq!(*to, KeyCode::Numpad1);
+        } else {
+            panic!("Expected Simple mapping");
+        }
+
+        // Test without device_id - should get fallback
+        let result3 = lookup.find_mapping(KeyCode::Numpad1, &state);
+        assert!(result3.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result3.unwrap() {
+            assert_eq!(*to, KeyCode::Numpad1);
+        } else {
+            panic!("Expected Simple mapping");
+        }
+    }
+
+    #[test]
+    fn test_find_mapping_device_and_modifier_combined() {
+        use alloc::string::String;
+
+        // Create config where both device AND modifier must match
+        // Note: Currently, conditions are single - for combined conditions,
+        // we would need AllActive with ConditionItem::DeviceMatches
+        // For now, test that device condition works alongside modifier conditions
+
+        let config = create_test_device_config(vec![
+            // Modifier-based: H -> Left when MD_00 active
+            KeyMapping::conditional(
+                Condition::ModifierActive(0),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::H,
+                    to: KeyCode::Left,
+                }],
+            ),
+            // Device-based: Numpad1 -> F13 when on numpad
+            KeyMapping::conditional(
+                Condition::DeviceMatches(String::from("*numpad*")),
+                vec![BaseKeyMapping::Simple {
+                    from: KeyCode::Numpad1,
+                    to: KeyCode::F13,
+                }],
+            ),
+        ]);
+        let lookup = KeyLookup::from_device_config(&config);
+        let mut state = DeviceState::new();
+
+        // Test modifier condition (independent of device)
+        state.set_modifier(0);
+        let result_h = lookup.find_mapping_with_device(KeyCode::H, &state, Some("any-device"));
+        assert!(result_h.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result_h.unwrap() {
+            assert_eq!(*to, KeyCode::Left);
+        }
+
+        // Test device condition (independent of modifiers)
+        state.clear_modifier(0);
+        let result_numpad =
+            lookup.find_mapping_with_device(KeyCode::Numpad1, &state, Some("usb-numpad-123"));
+        assert!(result_numpad.is_some());
+        if let BaseKeyMapping::Simple { to, .. } = result_numpad.unwrap() {
+            assert_eq!(*to, KeyCode::F13);
+        }
     }
 }

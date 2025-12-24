@@ -2332,3 +2332,269 @@ mod when_not_function_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod when_device_function_tests {
+    use super::*;
+    use keyrx_core::config::Condition;
+
+    /// Test when_device_start() with exact pattern
+    #[test]
+    fn test_when_device_exact_pattern() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("usb-numpad-123");
+            map("Numpad1", "VK_F13");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+        let config = result.unwrap();
+        assert_eq!(config.devices.len(), 1);
+        assert_eq!(config.devices[0].mappings.len(), 1);
+
+        match &config.devices[0].mappings[0] {
+            KeyMapping::Conditional {
+                condition,
+                mappings,
+            } => {
+                match condition {
+                    Condition::DeviceMatches(pattern) => {
+                        assert_eq!(pattern, "usb-numpad-123");
+                    }
+                    _ => panic!("Expected DeviceMatches condition"),
+                }
+                assert_eq!(mappings.len(), 1);
+                match &mappings[0] {
+                    BaseKeyMapping::Simple { from, to } => {
+                        assert_eq!(*from, KeyCode::Numpad1);
+                        assert_eq!(*to, KeyCode::F13);
+                    }
+                    _ => panic!("Expected Simple mapping"),
+                }
+            }
+            _ => panic!("Expected Conditional mapping"),
+        }
+    }
+
+    /// Test when_device_start() with wildcard pattern
+    #[test]
+    fn test_when_device_wildcard_pattern() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("*numpad*");
+            map("Numpad1", "VK_F13");
+            map("Numpad2", "VK_F14");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+        let config = result.unwrap();
+        assert_eq!(config.devices.len(), 1);
+        assert_eq!(config.devices[0].mappings.len(), 1);
+
+        match &config.devices[0].mappings[0] {
+            KeyMapping::Conditional {
+                condition,
+                mappings,
+            } => {
+                match condition {
+                    Condition::DeviceMatches(pattern) => {
+                        assert_eq!(pattern, "*numpad*");
+                    }
+                    _ => panic!("Expected DeviceMatches condition"),
+                }
+                assert_eq!(mappings.len(), 2);
+            }
+            _ => panic!("Expected Conditional mapping"),
+        }
+    }
+
+    /// Test when_device_start() with prefix pattern
+    #[test]
+    fn test_when_device_prefix_pattern() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("usb-*");
+            map("A", "VK_B");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+        let config = result.unwrap();
+        match &config.devices[0].mappings[0] {
+            KeyMapping::Conditional { condition, .. } => match condition {
+                Condition::DeviceMatches(pattern) => {
+                    assert_eq!(pattern, "usb-*");
+                }
+                _ => panic!("Expected DeviceMatches condition"),
+            },
+            _ => panic!("Expected Conditional mapping"),
+        }
+    }
+
+    /// Test empty pattern returns error
+    #[test]
+    fn test_when_device_empty_pattern_error() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("");
+            map("A", "VK_B");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_err(), "Should fail with empty pattern");
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("empty"),
+            "Error should mention empty pattern: {}",
+            err_msg
+        );
+    }
+
+    /// Test when_device_end() without when_device_start() returns error
+    #[test]
+    fn test_when_device_end_without_start_error() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(
+            result.is_err(),
+            "Should fail without matching when_device_start"
+        );
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("without") || err_msg.contains("matching"),
+            "Error should mention missing when_device_start: {}",
+            err_msg
+        );
+    }
+
+    /// Test when_device_start() outside device block returns error
+    #[test]
+    fn test_when_device_outside_device_block_error() {
+        let mut parser = Parser::new();
+        let script = r#"
+            when_device_start("*numpad*");
+            map("A", "VK_B");
+            when_device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_err(), "Should fail outside device block");
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("device"),
+            "Error should mention device block requirement: {}",
+            err_msg
+        );
+    }
+
+    /// Test multiple device conditions in same device block
+    #[test]
+    fn test_multiple_device_conditions() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("*numpad*");
+            map("Numpad1", "VK_F13");
+            when_device_end();
+            when_device_start("*keyboard*");
+            map("A", "VK_B");
+            when_device_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+        let config = result.unwrap();
+        assert_eq!(config.devices[0].mappings.len(), 2);
+
+        // First condition: *numpad*
+        match &config.devices[0].mappings[0] {
+            KeyMapping::Conditional { condition, .. } => match condition {
+                Condition::DeviceMatches(pattern) => {
+                    assert_eq!(pattern, "*numpad*");
+                }
+                _ => panic!("Expected DeviceMatches condition"),
+            },
+            _ => panic!("Expected Conditional mapping"),
+        }
+
+        // Second condition: *keyboard*
+        match &config.devices[0].mappings[1] {
+            KeyMapping::Conditional { condition, .. } => match condition {
+                Condition::DeviceMatches(pattern) => {
+                    assert_eq!(pattern, "*keyboard*");
+                }
+                _ => panic!("Expected DeviceMatches condition"),
+            },
+            _ => panic!("Expected Conditional mapping"),
+        }
+    }
+
+    /// Test when_device alongside modifier conditions
+    #[test]
+    fn test_when_device_alongside_modifier() {
+        let mut parser = Parser::new();
+        let script = r#"
+            device_start("Test");
+            when_device_start("*numpad*");
+            map("Numpad1", "VK_F13");
+            when_device_end();
+            when_start("MD_00");
+            map("H", "VK_Left");
+            when_end();
+            device_end();
+        "#;
+
+        let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
+        assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
+
+        let config = result.unwrap();
+        assert_eq!(config.devices[0].mappings.len(), 2);
+
+        // First: DeviceMatches
+        match &config.devices[0].mappings[0] {
+            KeyMapping::Conditional { condition, .. } => {
+                assert!(matches!(condition, Condition::DeviceMatches(_)));
+            }
+            _ => panic!("Expected Conditional mapping"),
+        }
+
+        // Second: ModifierActive
+        match &config.devices[0].mappings[1] {
+            KeyMapping::Conditional { condition, .. } => {
+                assert!(matches!(
+                    condition,
+                    Condition::ModifierActive(_) | Condition::AllActive(_)
+                ));
+            }
+            _ => panic!("Expected Conditional mapping"),
+        }
+    }
+}

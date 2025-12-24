@@ -70,6 +70,42 @@ pub fn register_when_functions(engine: &mut Engine, state: Arc<Mutex<ParserState
     engine.register_fn("when_not_end", move || -> Result<(), Box<EvalAltResult>> {
         end_conditional_block(&state_clone_not_end)
     });
+
+    // when_device_start(pattern) - start device-specific conditional block
+    //
+    // Creates a conditional block that only applies to devices matching the pattern.
+    // The pattern supports glob-style matching with * wildcard:
+    // - Exact match: "usb-numpad-123"
+    // - Prefix match: "usb-*"
+    // - Suffix match: "*-keyboard"
+    // - Contains: "*numpad*"
+    //
+    // Example:
+    //   when_device_start("*numpad*");
+    //   map(Numpad1, VK_F13);  // Only applies to numpad devices
+    //   when_device_end();
+    let state_clone_device = Arc::clone(&state);
+    engine.register_fn(
+        "when_device_start",
+        move |pattern: &str| -> Result<(), Box<EvalAltResult>> {
+            if pattern.is_empty() {
+                return Err("Device pattern cannot be empty".into());
+            }
+            start_conditional_block(
+                &state_clone_device,
+                Condition::DeviceMatches(pattern.to_string()),
+            )
+        },
+    );
+
+    // when_device_end() - finalize device conditional block
+    let state_clone_device_end = Arc::clone(&state);
+    engine.register_fn(
+        "when_device_end",
+        move || -> Result<(), Box<EvalAltResult>> {
+            end_conditional_block(&state_clone_device_end)
+        },
+    );
 }
 
 /// Start a conditional block - push a new conditional stack entry
