@@ -98,6 +98,22 @@ pub enum TrayControlEvent {
     Exit,
 }
 
+/// Result of a single iteration of event processing.
+///
+/// This enum indicates whether the event loop should continue normally,
+/// reload configuration, or exit gracefully. It is used by platform
+/// implementations to signal control events from the system tray or
+/// other sources.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessResult {
+    /// Continue processing events normally.
+    Continue,
+    /// User requested configuration reload (e.g., via tray menu).
+    ReloadRequested,
+    /// User requested exit (e.g., via tray menu).
+    ExitRequested,
+}
+
 /// Cross-platform system tray interface.
 ///
 /// This trait abstracts the system tray functionality, allowing platform-specific
@@ -342,13 +358,40 @@ impl Platform {
         }
     }
 
+    /// Processes events from the platform (keyboard input and tray menu events).
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(ProcessResult::Continue)`: Normal operation, continue processing
+    /// - `Ok(ProcessResult::ReloadRequested)`: User requested config reload
+    /// - `Ok(ProcessResult::ExitRequested)`: User requested exit
+    /// - `Err(...)`: An error occurred during processing
     #[allow(dead_code)]
-    pub fn process_events(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn process_events(&mut self) -> Result<ProcessResult, Box<dyn std::error::Error>> {
         match self {
             #[cfg(feature = "linux")]
             Platform::Linux(p) => p.process_events(),
             #[cfg(feature = "windows")]
-            Platform::Windows(p) => p.process_events(),
+            Platform::Windows(p) => {
+                p.process_events()?;
+                Ok(ProcessResult::Continue)
+            }
+            #[cfg(not(any(feature = "linux", feature = "windows")))]
+            Platform::Unsupported => Ok(ProcessResult::Continue),
+        }
+    }
+
+    /// Shuts down the platform, releasing all resources.
+    ///
+    /// This should be called when the daemon is exiting to ensure
+    /// proper cleanup of input devices and the system tray.
+    #[allow(dead_code)]
+    pub fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            #[cfg(feature = "linux")]
+            Platform::Linux(p) => p.shutdown(),
+            #[cfg(feature = "windows")]
+            Platform::Windows(_p) => Ok(()),
             #[cfg(not(any(feature = "linux", feature = "windows")))]
             Platform::Unsupported => Ok(()),
         }

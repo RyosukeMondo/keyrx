@@ -24,7 +24,9 @@ use keyrx_core::config::{DeviceConfig, KeyCode};
 use keyrx_core::runtime::event::KeyEvent;
 
 use crate::device_manager::DeviceManager;
-use crate::platform::{DeviceError, InputDevice, OutputDevice};
+use crate::platform::{
+    DeviceError, InputDevice, OutputDevice, ProcessResult, SystemTray, TrayControlEvent,
+};
 
 // Re-export key mapping functions for public use
 #[allow(unused_imports)] // keycode_to_evdev will be used for output injection
@@ -42,6 +44,13 @@ pub use keycode_map::{evdev_to_keycode, keycode_to_evdev, keycode_to_uinput_key}
 /// its own device ID. Events from each device are tagged with the device ID
 /// using `KeyEvent::with_device_id()`, enabling per-device configuration in
 /// Rhai scripts.
+///
+/// # System Tray Support
+///
+/// The platform optionally manages a system tray icon that provides "Reload"
+/// and "Exit" menu items. The tray is initialized during `init()` and is
+/// optional - the daemon will continue to function on headless systems where
+/// the tray is not available.
 ///
 /// # Example
 ///
@@ -67,6 +76,9 @@ pub struct LinuxPlatform {
     device_manager: Option<DeviceManager>,
     /// Virtual output device for injecting remapped events.
     output_device: Option<UinputOutput>,
+    /// Optional system tray for GUI control.
+    /// None if the tray is not available (e.g., headless environment).
+    system_tray: Option<LinuxSystemTray>,
 }
 
 impl LinuxPlatform {
@@ -76,6 +88,7 @@ impl LinuxPlatform {
         Self {
             device_manager: None,
             output_device: None,
+            system_tray: None,
         }
     }
 
@@ -130,6 +143,23 @@ impl LinuxPlatform {
             "[keyrx] Created virtual output device: {}",
             output_device.name()
         );
+
+        // Initialize system tray (optional - continues without it if unavailable)
+        match LinuxSystemTray::new() {
+            Ok(tray) => {
+                eprintln!("[keyrx] System tray initialized successfully");
+                self.system_tray = Some(tray);
+            }
+            Err(e) => {
+                // Log warning but don't fail - daemon can run without tray
+                eprintln!(
+                    "[keyrx] Warning: System tray not available ({}). \
+                     Running in headless mode.",
+                    e
+                );
+                self.system_tray = None;
+            }
+        }
 
         self.device_manager = Some(device_manager);
         self.output_device = Some(output_device);
@@ -196,7 +226,8 @@ impl LinuxPlatform {
     ///
     /// This method polls all managed input devices for events, tags each event
     /// with the source device's ID, processes it through the runtime, and injects
-    /// the output events via the virtual output device.
+    /// the output events via the virtual output device. It also polls the system
+    /// tray (if available) for menu events.
     ///
     /// # Event Processing
     ///
@@ -205,6 +236,17 @@ impl LinuxPlatform {
     /// 2. Tags the event with the device ID using `with_device_id()`
     /// 3. Processes the event through the device's key lookup and state
     /// 4. Injects output events to the virtual output device
+    ///
+    /// Additionally, the system tray is polled for menu events:
+    /// - `TrayControlEvent::Reload` returns `ProcessResult::ReloadRequested`
+    /// - `TrayControlEvent::Exit` returns `ProcessResult::ExitRequested`
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(ProcessResult::Continue)`: Normal operation, continue processing
+    /// - `Ok(ProcessResult::ReloadRequested)`: User clicked "Reload" in tray menu
+    /// - `Ok(ProcessResult::ExitRequested)`: User clicked "Exit" in tray menu
+    /// - `Err(...)`: An error occurred during processing
     ///
     /// # Errors
     ///
@@ -215,17 +257,47 @@ impl LinuxPlatform {
     /// # Example
     ///
     /// ```no_run
-    /// use keyrx_daemon::platform::linux::LinuxPlatform;
+    /// use keyrx_daemon::platform::linux::{LinuxPlatform, ProcessResult};
     /// use keyrx_core::config::DeviceConfig;
     ///
     /// let configs = vec![DeviceConfig::default()];
     /// let mut platform = LinuxPlatform::new();
     /// platform.init(&configs)?;
-    /// platform.process_events()?;
+    ///
+    /// loop {
+    ///     match platform.process_events()? {
+    ///         ProcessResult::Continue => {}
+    ///         ProcessResult::ReloadRequested => {
+    ///             println!("Reload requested");
+    ///             // Reload configuration...
+    ///         }
+    ///         ProcessResult::ExitRequested => {
+    ///             println!("Exit requested");
+    ///             platform.shutdown()?;
+    ///             break;
+    ///         }
+    ///     }
+    /// }
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn process_events(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn process_events(&mut self) -> Result<ProcessResult, Box<dyn std::error::Error>> {
         use keyrx_core::runtime::event::process_event;
+
+        // Poll system tray for menu events (non-blocking, <1μs overhead)
+        if let Some(ref tray) = self.system_tray {
+            if let Some(event) = tray.poll_event() {
+                match event {
+                    TrayControlEvent::Reload => {
+                        eprintln!("[keyrx] Configuration reload requested via tray menu");
+                        return Ok(ProcessResult::ReloadRequested);
+                    }
+                    TrayControlEvent::Exit => {
+                        eprintln!("[keyrx] Exit requested via tray menu");
+                        return Ok(ProcessResult::ExitRequested);
+                    }
+                }
+            }
+        }
 
         let device_manager = self
             .device_manager
@@ -266,7 +338,60 @@ impl LinuxPlatform {
             }
         }
 
+        Ok(ProcessResult::Continue)
+    }
+
+    /// Shuts down the platform, releasing all resources.
+    ///
+    /// This method:
+    /// 1. Shuts down the system tray (if available)
+    /// 2. Releases exclusive access to all input devices
+    /// 3. Destroys the virtual output device
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if releasing devices fails.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_daemon::platform::linux::LinuxPlatform;
+    /// use keyrx_core::config::DeviceConfig;
+    ///
+    /// let configs = vec![DeviceConfig::default()];
+    /// let mut platform = LinuxPlatform::new();
+    /// platform.init(&configs)?;
+    /// // ... process events ...
+    /// platform.shutdown()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Shutdown system tray first
+        if let Some(ref mut tray) = self.system_tray {
+            if let Err(e) = tray.shutdown() {
+                eprintln!("[keyrx] Warning: Error shutting down system tray: {}", e);
+            }
+        }
+        self.system_tray = None;
+
+        // Release exclusive access to input devices
+        self.release_all_devices()?;
+
+        // Output device cleanup happens automatically via Drop
+
+        eprintln!("[keyrx] Daemon shutdown complete");
         Ok(())
+    }
+
+    /// Returns whether the system tray is available.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the system tray was successfully initialized, `false` if
+    /// running in headless mode without a tray.
+    #[must_use]
+    pub fn has_system_tray(&self) -> bool {
+        self.system_tray.is_some()
     }
 }
 

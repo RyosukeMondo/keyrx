@@ -65,7 +65,7 @@
   - _Requirements: 4.3_
   - _Prompt: Role: Backend Developer with expertise in Rust async I/O and event loop design | Task: Integrate DeviceManager into LinuxPlatform following requirement 4.3, updating init() and process_events() to handle multiple devices | Restrictions: Must maintain existing event processing logic, preserve <1ms latency, handle device enumeration errors at startup, ensure graceful shutdown releases all devices | Success: Daemon opens multiple devices, events tagged with correct device_id, main loop processes events from all devices, no latency regression_
 
-- [ ] 7. Add tray support to Linux platform
+- [x] 7. Add tray support to Linux platform
   - File: keyrx_daemon/src/platform/linux/mod.rs
   - Add LinuxSystemTray field to LinuxPlatform struct (Option type for graceful fallback)
   - Initialize tray in init() with error handling (log warning if fails)
