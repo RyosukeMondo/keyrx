@@ -9,6 +9,7 @@ docs/
 ├── user-guide/          # End-user documentation
 │   ├── dsl-manual.md    # Complete DSL reference
 │   ├── linux-setup.md   # Linux installation and setup
+│   ├── multi-device-configuration.md  # Multi-device setup guide
 │   ├── setup.md         # General setup instructions
 │   └── uat-guide.md     # User acceptance testing guide
 ├── development/         # Developer documentation
@@ -63,6 +64,7 @@ Historical documents kept for reference:
 **Getting Started:**
 - [Setup Guide](user-guide/setup.md)
 - [Linux Setup](user-guide/linux-setup.md)
+- [Multi-Device Configuration](user-guide/multi-device-configuration.md)
 - [DSL Manual](user-guide/dsl-manual.md)
 
 **For Developers:**
