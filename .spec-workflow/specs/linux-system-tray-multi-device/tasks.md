@@ -132,13 +132,16 @@
   - _Leverage: Existing integration test framework, mock platform from platform/mock.rs_
   - _Requirements: All_
 
-- [ ] 12. Update documentation with multi-device examples
-  - File: docs/multi-device-configuration.md (new file) or update existing docs
-  - Document how to identify device IDs (serial numbers vs paths)
-  - Provide example Rhai config for "numpad as Stream Deck"
-  - Document tray menu usage (Reload, Exit)
-  - Troubleshooting: permissions, headless mode, device hot-plug
+- [x] 12. Update documentation with multi-device examples
+  - File: docs/user-guide/multi-device-configuration.md (new file)
+  - Comprehensive guide covering:
+    - Device identification (serial numbers, path-based IDs, device names)
+    - Pattern matching with glob patterns (exact, prefix, suffix, contains)
+    - Example configurations (numpad as Stream Deck, split keyboard, gaming keyboard)
+    - System tray usage (Linux tray with ksni, reload, exit)
+    - Web interface for device monitoring
+    - Troubleshooting (permissions, headless mode, hot-plug, pattern matching)
+  - Updated docs/README.md with links to new guide
   - Purpose: Guide users through multi-device setup
   - _Leverage: Existing documentation structure_
   - _Requirements: All_
-  - _Prompt: Role: Technical Writer with expertise in system administration and user guides | Task: Create comprehensive multi-device configuration guide with examples, troubleshooting, and best practices covering all requirements | Restrictions: Must use clear, beginner-friendly language, provide copy-paste examples, include permission setup commands for Linux, explain serial number vs path-based IDs | Success: Documentation covers device identification, example configs, tray usage, troubleshooting, reviewed for clarity and completeness_
