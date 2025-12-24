@@ -20,9 +20,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use evdev::{Device, InputEventKind};
 use uinput::Device as UInputDevice;
 
-use keyrx_core::config::KeyCode;
+use keyrx_core::config::{DeviceConfig, KeyCode};
 use keyrx_core::runtime::event::KeyEvent;
 
+use crate::device_manager::DeviceManager;
 use crate::platform::{DeviceError, InputDevice, OutputDevice};
 
 // Re-export key mapping functions for public use
@@ -31,12 +32,41 @@ pub use keycode_map::{evdev_to_keycode, keycode_to_evdev, keycode_to_uinput_key}
 
 /// Linux platform structure for keyboard input/output operations.
 ///
-/// This struct wraps the evdev input device and uinput output device,
-/// providing a unified interface for keyboard remapping on Linux.
-#[allow(dead_code)] // Fields will be used in tasks #3-4 (EvdevInput) and #6-8 (UinputOutput)
+/// This struct manages multiple keyboard input devices via `DeviceManager` and
+/// a single uinput output device for event injection. It provides a unified
+/// interface for keyboard remapping on Linux with multi-device support.
+///
+/// # Multi-Device Support
+///
+/// The platform can manage multiple input keyboards simultaneously, each with
+/// its own device ID. Events from each device are tagged with the device ID
+/// using `KeyEvent::with_device_id()`, enabling per-device configuration in
+/// Rhai scripts.
+///
+/// # Example
+///
+/// ```no_run
+/// use keyrx_daemon::platform::linux::LinuxPlatform;
+/// use keyrx_core::config::DeviceConfig;
+///
+/// let configs = vec![/* device configurations */];
+/// let mut platform = LinuxPlatform::new();
+///
+/// // Initialize with device configurations
+/// platform.init(&configs)?;
+///
+/// // Get list of device IDs for Rhai scripts
+/// let device_ids = platform.device_ids();
+///
+/// // Process events from all devices
+/// platform.process_events()?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub struct LinuxPlatform {
-    input_device: Option<Device>,
-    output_device: Option<UInputDevice>,
+    /// Device manager for handling multiple input keyboards.
+    device_manager: Option<DeviceManager>,
+    /// Virtual output device for injecting remapped events.
+    output_device: Option<UinputOutput>,
 }
 
 impl LinuxPlatform {
@@ -44,30 +74,198 @@ impl LinuxPlatform {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            input_device: None,
+            device_manager: None,
             output_device: None,
         }
     }
 
     /// Initializes the platform with input and output devices.
     ///
+    /// This method discovers keyboards matching the provided device configurations,
+    /// creates a virtual output device for event injection, and grabs exclusive
+    /// access to all managed input devices.
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - Slice of device configurations to match against discovered keyboards
+    ///
     /// # Errors
     ///
-    /// Returns an error if device initialization fails.
-    pub fn init(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Placeholder for Linux input/output device initialization
-        // Will be implemented in tasks #3-4 (EvdevInput) and #6-8 (UinputOutput)
+    /// Returns an error if:
+    /// - No matching keyboard devices are found
+    /// - Cannot access input devices (permission denied)
+    /// - Cannot create virtual output device
+    /// - Cannot grab exclusive access to devices
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_daemon::platform::linux::LinuxPlatform;
+    /// use keyrx_core::config::DeviceConfig;
+    ///
+    /// let configs = vec![DeviceConfig::default()];
+    /// let mut platform = LinuxPlatform::new();
+    /// platform.init(&configs)?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn init(&mut self, configs: &[DeviceConfig]) -> Result<(), Box<dyn std::error::Error>> {
+        // Discover and open all matching keyboard devices
+        let device_manager = DeviceManager::discover(configs)?;
+
+        eprintln!(
+            "[keyrx] Discovered {} keyboard device(s)",
+            device_manager.device_count()
+        );
+        for device in device_manager.devices() {
+            eprintln!(
+                "[keyrx]   - {} ({})",
+                device.info().name,
+                device.device_id()
+            );
+        }
+
+        // Create virtual output device for event injection
+        let output_device = UinputOutput::create("keyrx")?;
+        eprintln!(
+            "[keyrx] Created virtual output device: {}",
+            output_device.name()
+        );
+
+        self.device_manager = Some(device_manager);
+        self.output_device = Some(output_device);
+
+        // Grab exclusive access to all input devices
+        self.grab_all_devices()?;
+
         Ok(())
+    }
+
+    /// Grabs exclusive access to all managed input devices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if grabbing any device fails.
+    fn grab_all_devices(&mut self) -> Result<(), DeviceError> {
+        let device_manager = self
+            .device_manager
+            .as_mut()
+            .ok_or_else(|| DeviceError::NotFound("device manager not initialized".to_string()))?;
+
+        for device in device_manager.devices_mut() {
+            device.input_mut().grab()?;
+        }
+
+        Ok(())
+    }
+
+    /// Releases exclusive access to all managed input devices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if releasing any device fails.
+    pub fn release_all_devices(&mut self) -> Result<(), DeviceError> {
+        if let Some(ref mut device_manager) = self.device_manager {
+            for device in device_manager.devices_mut() {
+                device.input_mut().release()?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Returns the list of device IDs for all managed devices.
+    ///
+    /// These IDs can be used in Rhai scripts for per-device configuration.
+    #[must_use]
+    pub fn device_ids(&self) -> Vec<String> {
+        self.device_manager
+            .as_ref()
+            .map(|dm| dm.device_ids())
+            .unwrap_or_default()
+    }
+
+    /// Returns the number of managed devices.
+    #[must_use]
+    pub fn device_count(&self) -> usize {
+        self.device_manager
+            .as_ref()
+            .map(|dm| dm.device_count())
+            .unwrap_or(0)
     }
 
     /// Runs the main event processing loop.
     ///
+    /// This method polls all managed input devices for events, tags each event
+    /// with the source device's ID, processes it through the runtime, and injects
+    /// the output events via the virtual output device.
+    ///
+    /// # Event Processing
+    ///
+    /// For each device, the method:
+    /// 1. Reads the next event from the input device
+    /// 2. Tags the event with the device ID using `with_device_id()`
+    /// 3. Processes the event through the device's key lookup and state
+    /// 4. Injects output events to the virtual output device
+    ///
     /// # Errors
     ///
-    /// Returns an error if event processing fails.
+    /// Returns an error if:
+    /// - Reading from an input device fails
+    /// - Injecting an output event fails
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use keyrx_daemon::platform::linux::LinuxPlatform;
+    /// use keyrx_core::config::DeviceConfig;
+    ///
+    /// let configs = vec![DeviceConfig::default()];
+    /// let mut platform = LinuxPlatform::new();
+    /// platform.init(&configs)?;
+    /// platform.process_events()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn process_events(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Placeholder for event processing loop
-        // Will be implemented in task #17 (Daemon event loop)
+        use keyrx_core::runtime::event::process_event;
+
+        let device_manager = self
+            .device_manager
+            .as_mut()
+            .ok_or_else(|| DeviceError::NotFound("device manager not initialized".to_string()))?;
+
+        let output_device = self
+            .output_device
+            .as_mut()
+            .ok_or_else(|| DeviceError::NotFound("output device not initialized".to_string()))?;
+
+        // Process one event from each device that has events available
+        for device in device_manager.devices_mut() {
+            // Try to get the next event from this device (non-blocking would be ideal)
+            match device.input_mut().next_event() {
+                Ok(event) => {
+                    // Tag the event with the device ID
+                    let device_id = device.device_id();
+                    let tagged_event = event.with_device_id(device_id);
+
+                    // Process the event through the device's lookup and state
+                    let (lookup, state) = device.lookup_and_state_mut();
+                    let output_events = process_event(tagged_event, lookup, state);
+
+                    // Inject output events
+                    for output_event in output_events {
+                        output_device.inject_event(output_event)?;
+                    }
+                }
+                Err(DeviceError::EndOfStream) => {
+                    // No more events from this device right now
+                    continue;
+                }
+                Err(e) => {
+                    // Log error but continue with other devices
+                    eprintln!("[keyrx] Error reading from device: {}", e);
+                }
+            }
+        }
+
         Ok(())
     }
 }

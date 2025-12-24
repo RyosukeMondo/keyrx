@@ -10,10 +10,7 @@
 //! - `list-devices`: List available input devices
 //! - `validate`: Validate configuration and device matching without grabbing
 
-mod platform;
-
-#[cfg(feature = "web")]
-mod web;
+// Note: platform and web modules are used via the library (keyrx_daemon::platform)
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;

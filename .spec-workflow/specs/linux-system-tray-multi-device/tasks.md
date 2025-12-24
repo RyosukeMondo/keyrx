@@ -54,7 +54,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - _Prompt: Role: Linux Systems Developer with expertise in evdev and device management | Task: Implement DeviceManager to enumerate and manage multiple input devices following requirements 4.1-4.4, leveraging EvdevInput methods from linux/mod.rs | Restrictions: Must filter for keyboard devices only (ignore mice), use serial() when available or fallback to stable path-based ID, handle permission errors gracefully | Success: Enumerates all keyboards, assigns unique IDs, next_event() returns device_id with each event, handles devices without serial numbers_
 
-- [ ] 6. Integrate DeviceManager into Linux platform
+- [x] 6. Integrate DeviceManager into Linux platform
   - File: keyrx_daemon/src/platform/linux/mod.rs
   - Update LinuxPlatform to use DeviceManager instead of single device
   - Modify init() to enumerate devices via DeviceManager

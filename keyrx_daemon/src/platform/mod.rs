@@ -14,6 +14,7 @@
 //!
 //! The tray provides "Reload Config" and "Exit" menu items via [`TrayControlEvent`].
 
+use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::event::KeyEvent;
 use thiserror::Error;
 
@@ -313,15 +314,31 @@ impl Platform {
         }
     }
 
+    /// Initializes the platform with device configurations.
+    ///
+    /// # Arguments
+    ///
+    /// * `configs` - Slice of device configurations to initialize with
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if platform initialization fails.
     #[allow(dead_code)]
-    pub fn init(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn init(&mut self, configs: &[DeviceConfig]) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             #[cfg(feature = "linux")]
-            Platform::Linux(p) => p.init(),
+            Platform::Linux(p) => p.init(configs),
             #[cfg(feature = "windows")]
-            Platform::Windows(p) => p.init(),
+            Platform::Windows(p) => {
+                // Windows platform doesn't use configs yet
+                let _ = configs;
+                p.init()
+            }
             #[cfg(not(any(feature = "linux", feature = "windows")))]
-            Platform::Unsupported => Ok(()),
+            Platform::Unsupported => {
+                let _ = configs;
+                Ok(())
+            }
         }
     }
 
