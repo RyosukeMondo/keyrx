@@ -28,8 +28,9 @@
 use std::os::fd::BorrowedFd;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
-use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+#[cfg(target_os = "linux")]
+use std::time::Instant;
 
 #[cfg(target_os = "linux")]
 use evdev::{Device, InputEventKind};
@@ -42,7 +43,7 @@ use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::GetCurrentThreadId;
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
+// use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
@@ -53,6 +54,7 @@ use super::VirtualDeviceError;
 use crate::platform::linux::evdev_to_keycode;
 
 /// Polling interval when waiting for a device to appear.
+#[cfg(target_os = "linux")]
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// Marker for events injected by the daemon

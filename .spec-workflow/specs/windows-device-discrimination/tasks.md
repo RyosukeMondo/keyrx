@@ -1,6 +1,6 @@
 # Tasks Document
 
-- [ ] 1. Create DeviceMap module for handle-to-serial mapping
+- [x] 1. Create DeviceMap module for handle-to-serial mapping
   - File: keyrx_daemon/src/platform/windows/device_map.rs (new file)
   - Define DeviceInfo struct with handle, device_id, name, path fields
   - Implement DeviceMap with HashMap cache for O(1) lookup
@@ -12,7 +12,7 @@
   - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3, 3.4, 7.1, 7.2_
   - _Prompt: Role: Windows Systems Developer with expertise in HID APIs and device enumeration | Task: Implement DeviceMap module following requirements 2.1-3.4 and 7.1-7.2, using GetRawInputDeviceList and GetRawInputDeviceInfo to map device handles to serial numbers | Restrictions: Must cache device info for O(1) lookup, handle missing serial numbers gracefully (use path fallback), parse device paths correctly (format: \\?\HID#VID&PID#Serial#{GUID}), limit cache to 50 devices max | Success: DeviceMap enumerates all keyboards, get_device_id() returns serial or fallback, cache hits are <10ns, unit tests cover serial extraction and fallback logic_
 
-- [ ] 2. Create RawInputManager for WM_INPUT event processing
+- [x] 2. Create RawInputManager for WM_INPUT event processing
   - File: keyrx_daemon/src/platform/windows/rawinput.rs (new file)
   - Create hidden window for receiving WM_INPUT messages
   - Implement RegisterRawInputDevices with RIDEV_INPUTSINK and RIDEV_NOLEGACY
@@ -25,7 +25,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4_
   - _Prompt: Role: Windows API Expert with expertise in Raw Input and Win32 message loops | Task: Implement RawInputManager following requirements 1.1-2.4, creating hidden window for WM_INPUT messages and extracting device handles | Restrictions: Must use RIDEV_INPUTSINK for background capture, filter injected events (check dwFlags for MOUSE_MOVE_RELATIVE), ensure <100μs processing time in window_proc, call DefWindowProcW for unhandled messages | Success: RegisterRawInputDevices succeeds, WM_INPUT messages received, hDevice extracted correctly, events sent to channel with <100μs latency, graceful shutdown unregisters devices_
 
-- [ ] 3. Refactor WindowsKeyboardInput to use RawInputManager
+- [x] 3. Refactor WindowsKeyboardInput to use RawInputManager
   - File: keyrx_daemon/src/platform/windows/input.rs
   - Replace hook-based implementation with RawInputManager
   - Update grab() to create RawInputManager instance
@@ -37,7 +37,7 @@
   - _Requirements: 2.4_
   - _Prompt: Role: Rust Developer with expertise in trait implementation and Windows platform integration | Task: Refactor WindowsKeyboardInput to use RawInputManager following requirement 2.4, replacing hook-based event capture | Restrictions: Must maintain InputDevice trait contract exactly, preserve error handling semantics, ensure backward compatibility (existing code using InputDevice sees no API changes), handle channel disconnection gracefully | Success: WindowsKeyboardInput compiles, implements InputDevice trait, events include device_id, no breaking changes to public API, existing tests pass_
 
-- [ ] 4. Add WM_INPUT_DEVICE_CHANGE handling for hot-plug
+- [x] 4. Add WM_INPUT_DEVICE_CHANGE handling for hot-plug
   - File: keyrx_daemon/src/platform/windows/rawinput.rs (modify from task 2)
   - Add WM_INPUT_DEVICE_CHANGE case to window_proc
   - Detect GIDC_ARRIVAL (device connected) and GIDC_REMOVAL (device disconnected)
@@ -48,7 +48,7 @@
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
   - _Prompt: Role: Windows Device Driver Developer with expertise in hot-plug notification handling | Task: Implement WM_INPUT_DEVICE_CHANGE handling following requirements 8.1-8.5 to detect keyboard hot-plug events | Restrictions: Must not block window_proc (refresh should be fast <1ms), handle spurious notifications gracefully, log device name and ID when added/removed, update web UI device list via internal event | Success: WM_INPUT_DEVICE_CHANGE messages received, DeviceMap refreshes on arrival/removal, new devices immediately usable, daemon continues if device unplugged, logs show device changes_
 
-- [ ] 5. Delete WH_KEYBOARD_LL hook implementation
+- [x] 5. Delete WH_KEYBOARD_LL hook implementation
   - File: keyrx_daemon/src/platform/windows/hook.rs (delete file)
   - Remove hook.rs from mod.rs
   - Remove any remaining references to WindowsKeyboardHook
@@ -58,7 +58,7 @@
   - _Requirements: 1.4_
   - _Prompt: Role: Rust Developer specializing in code cleanup and refactoring | Task: Delete obsolete hook.rs file following requirement 1.4 after verifying RawInputManager replacement is complete | Restrictions: Must verify no remaining references to hook.rs code exist (grep for "hook::" or "WindowsKeyboardHook"), update mod.rs to remove module declaration, ensure all tests pass without hook code | Success: hook.rs deleted, no compilation errors, no references to old hook code remain, all tests pass_
 
-- [ ] 6. Update WindowsPlatform to use new input implementation
+- [x] 6. Update WindowsPlatform to use new input implementation
   - File: keyrx_daemon/src/platform/windows/mod.rs
   - Ensure WindowsPlatform::init() works with new RawInputManager
   - Ensure process_events() runs message loop if needed
@@ -68,7 +68,7 @@
   - _Requirements: 4.1, 4.2_
   - _Prompt: Role: Platform Integration Engineer with expertise in Windows daemon architecture | Task: Update WindowsPlatform to integrate RawInputManager following requirements 4.1-4.2, ensuring tray and input coexist | Restrictions: Must preserve system tray functionality exactly, ensure message loop processes both WM_INPUT and tray messages, handle init failures gracefully (log error, exit cleanly), maintain public API compatibility | Success: WindowsPlatform compiles, init() succeeds with raw input, process_events() handles both input and tray, existing daemon startup code works unchanged_
 
-- [ ] 7. Add device enumeration logging at startup
+- [x] 7. Add device enumeration logging at startup
   - File: keyrx_daemon/src/platform/windows/rawinput.rs (modify)
   - On RawInputManager::new(), enumerate devices via DeviceMap
   - Log each device: INFO level with name, serial (or fallback ID), handle

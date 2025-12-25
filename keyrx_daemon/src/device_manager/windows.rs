@@ -1,5 +1,7 @@
 use super::{DiscoveryError, KeyboardInfo};
-use crate::platform::windows::WindowsKeyboardInput;
+use crate::platform::windows::{
+    device_map::DeviceMap, rawinput::RawInputManager, WindowsKeyboardInput,
+};
 use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::{DeviceState, KeyLookup};
 use log::info;
@@ -11,6 +13,7 @@ pub struct ManagedDevice {
     lookup: KeyLookup,
     state: DeviceState,
     config_index: usize,
+    device_handle: usize, // Keep track to unsubscribe
 }
 
 impl ManagedDevice {
@@ -19,6 +22,7 @@ impl ManagedDevice {
         input: WindowsKeyboardInput,
         config: &DeviceConfig,
         config_index: usize,
+        device_handle: usize,
     ) -> Self {
         Self {
             info,
@@ -26,6 +30,7 @@ impl ManagedDevice {
             lookup: KeyLookup::from_device_config(config),
             state: DeviceState::new(),
             config_index,
+            device_handle,
         }
     }
 
@@ -68,6 +73,8 @@ impl ManagedDevice {
 
 pub struct DeviceManager {
     devices: Vec<ManagedDevice>,
+    device_map: DeviceMap,
+    raw_input_manager: RawInputManager,
 }
 
 pub struct RefreshResult {
@@ -77,33 +84,29 @@ pub struct RefreshResult {
 
 impl DeviceManager {
     pub fn discover(configs: &[DeviceConfig]) -> Result<Self, DiscoveryError> {
-        info!("Windows platform detected: using global keyboard hook");
+        info!("Initializing Windows Raw Input Device Manager");
 
-        // On Windows, we treat the global keyboard hook as a single managed device.
-        // We match it against the first configuration (or the one that matches "*").
-        let keyboard_info = KeyboardInfo {
-            path: PathBuf::from("windows-global-hook"),
-            name: "Windows Global Keyboard Hook".to_string(),
-            serial: None,
-            phys: None,
+        let device_map = DeviceMap::new();
+        // RawInputManager registers for WM_INPUT upon creation
+        // We pass a dummy sender since DeviceManager uses per-device subscriptions
+        let (sender, _) = crossbeam_channel::unbounded();
+        let raw_input_manager = RawInputManager::new(device_map.clone(), sender)
+            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+
+        // Populate initial device list
+        device_map
+            .enumerate()
+            .map_err(|e| DiscoveryError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+
+        let mut manager = Self {
+            devices: Vec::new(),
+            device_map,
+            raw_input_manager,
         };
 
-        let mut matched_config = None;
-        for (idx, config) in configs.iter().enumerate() {
-            if super::match_device(&keyboard_info, &config.identifier.pattern) {
-                matched_config = Some((idx, config));
-                break;
-            }
-        }
+        manager.refresh(configs)?;
 
-        let (config_idx, config) = matched_config.ok_or_else(|| DiscoveryError::NoDevicesFound)?;
-
-        let input = WindowsKeyboardInput::new();
-        let managed = ManagedDevice::new(keyboard_info, input, config, config_idx);
-
-        Ok(Self {
-            devices: vec![managed],
-        })
+        Ok(manager)
     }
 
     pub fn device_count(&self) -> usize {
@@ -134,11 +137,93 @@ impl DeviceManager {
         }
     }
 
-    pub fn refresh(&mut self, _configs: &[DeviceConfig]) -> Result<RefreshResult, DiscoveryError> {
-        // Hot-plug not really applicable to global hook on Windows
-        Ok(RefreshResult {
-            added: 0,
-            removed: 0,
-        })
+    pub fn refresh(&mut self, configs: &[DeviceConfig]) -> Result<RefreshResult, DiscoveryError> {
+        let mut added = 0;
+        let mut removed = 0;
+
+        let detected_devices = self.device_map.all();
+
+        // 1. Identify removed devices
+        // A device is removed if its handle is no longer in the map's current list.
+        // Wait, device_map handles might be reused? Windows handles are pointers or similar.
+        // Using handle as identity is standard for Raw Input session.
+
+        let current_handles: Vec<usize> =
+            detected_devices.iter().map(|d| d.handle as usize).collect();
+
+        let mut retained_indices = Vec::new();
+        let mut devices_to_drop = Vec::new();
+
+        for (i, device) in self.devices.iter().enumerate() {
+            if current_handles.contains(&device.device_handle) {
+                retained_indices.push(i);
+            } else {
+                devices_to_drop.push(i);
+            }
+        }
+
+        // Process removals
+        // We iterate backwards to remove safely if modifying in place, but here we reconstruct or retain.
+        // Let's filter in place.
+        let raw_input = &self.raw_input_manager;
+        self.devices.retain(|d| {
+            if current_handles.contains(&d.device_handle) {
+                true
+            } else {
+                info!("Device removed: {} ({:?})", d.info.name, d.info.path);
+                raw_input.unsubscribe(d.device_handle);
+                removed += 1;
+                false
+            }
+        });
+
+        // 2. Identify new devices
+        // A device is new if no ManagedDevice has its handle.
+        let existing_handles: Vec<usize> = self.devices.iter().map(|d| d.device_handle).collect();
+
+        for device_info in detected_devices {
+            let handle = device_info.handle as usize;
+            if existing_handles.contains(&handle) {
+                continue;
+            }
+
+            // Convert DeviceInfo to KeyboardInfo used by linker
+            let keyboard_info = KeyboardInfo {
+                path: PathBuf::from(&device_info.path), // Use path as unique ID usually, but here path string
+                name: format!("Device {:x}", handle), // We might want better name if API gives it? currently path is \\?\...
+                serial: device_info.serial.clone(),
+                phys: None,
+            };
+
+            // Attempt to match
+            let mut matched_config = None;
+            for (idx, config) in configs.iter().enumerate() {
+                if super::match_device(&keyboard_info, &config.identifier.pattern) {
+                    matched_config = Some((idx, config));
+                    break;
+                }
+            }
+
+            if let Some((config_idx, config)) = matched_config {
+                info!(
+                    "Device matched: {} -> {}",
+                    keyboard_info.path.display(),
+                    config.identifier.pattern
+                );
+
+                // create subscription
+                let receiver = self.raw_input_manager.subscribe(handle);
+                let input = WindowsKeyboardInput::new(receiver);
+
+                let managed = ManagedDevice::new(keyboard_info, input, config, config_idx, handle);
+
+                self.devices.push(managed);
+                added += 1;
+            } else {
+                // info!("Device ignored (no match): {:?}", device_info.path);
+            }
+        }
+
+        Ok(RefreshResult { added, removed })
     }
 }

@@ -158,6 +158,23 @@ pub fn vk_to_keycode(vk: u16) -> Option<KeyCode> {
     None
 }
 
+pub fn scancode_to_keycode(scancode: u32) -> Option<KeyCode> {
+    // For now, map scancode to VK then to KeyCode as a simplified implementation.
+    // In reality, MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX) should be used,
+    // but strict scancode mapping table is better for raw input consistency.
+    // This is a placeholder to get it compiling; a full table is needed.
+
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{MapVirtualKeyW, MAPVK_VSC_TO_VK_EX};
+
+    unsafe {
+        let vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX);
+        if vk == 0 {
+            return None;
+        }
+        vk_to_keycode(vk as u16)
+    }
+}
+
 #[allow(dead_code)]
 pub fn keycode_to_vk(keycode: KeyCode) -> Option<u16> {
     for (v, k) in VK_TO_KEYCODE.iter() {
