@@ -1,5 +1,5 @@
 use rhai::{Engine, EvalAltResult, Scope};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -28,12 +28,15 @@ impl ParserState {
 pub struct Parser {
     pub engine: Engine,
     pub state: Arc<Mutex<ParserState>>,
+    /// Current source file being parsed (for import resolution)
+    source_file: Arc<Mutex<PathBuf>>,
 }
 
 impl Parser {
     pub fn new() -> Self {
         let mut engine = Engine::new();
         let state = Arc::new(Mutex::new(ParserState::new()));
+        let source_file = Arc::new(Mutex::new(PathBuf::new()));
 
         engine.set_max_operations(10_000);
         engine.set_max_expr_depths(100, 100);
@@ -50,11 +53,23 @@ impl Parser {
         );
         crate::parser::functions::modifiers::register_modifier_functions(&mut engine);
         crate::parser::functions::device::register_device_function(&mut engine, Arc::clone(&state));
+        crate::parser::functions::import::register_import_function(
+            &mut engine,
+            Arc::clone(&state),
+            Arc::clone(&source_file),
+        );
 
-        Self { engine, state }
+        Self {
+            engine,
+            state,
+            source_file,
+        }
     }
 
     pub fn parse_script(&mut self, path: &Path) -> Result<ConfigRoot, ParseError> {
+        // Update the source file path for import resolution
+        *self.source_file.lock().unwrap() = path.to_path_buf();
+
         let script = std::fs::read_to_string(path).map_err(|_e| ParseError::ImportNotFound {
             path: path.to_path_buf(),
             searched_paths: vec![path.to_path_buf()],
