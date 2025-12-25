@@ -24,12 +24,11 @@
 //! - Linux with evdev support
 //! - Read access to `/dev/input/event*` devices (typically requires `input` group)
 
-#[cfg(target_os = "linux")]
-use std::os::fd::BorrowedFd;
+use std::fs;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
-use std::time::Duration;
-use std::time::Instant;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 #[cfg(target_os = "linux")]
 use evdev::{Device, InputEventKind};
@@ -159,7 +158,7 @@ impl OutputCapture {
     ///
     /// println!("Found: {} at {}", capture.name(), capture.device_path());
     /// ```
-    pub fn find_by_name(name: &str, _timeout: Duration) -> Result<Self, VirtualDeviceError> {
+    pub fn find_by_name(name: &str, timeout: Duration) -> Result<Self, VirtualDeviceError> {
         #[cfg(target_os = "linux")]
         {
             let start = Instant::now();
@@ -635,7 +634,6 @@ impl OutputCapture {
                                 // Count all events (including non-key events)
                                 count += events.count();
                             }
-                            Ok(None) => return Ok(count), // Should not happen after poll
                             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                                 return Ok(count);
                             }

@@ -38,8 +38,6 @@
 //! ```
 
 use std::io;
-#[cfg(target_os = "linux")]
-use std::os::fd::{AsRawFd, BorrowedFd};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -49,15 +47,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 use log::{debug, info, trace, warn};
-#[cfg(target_os = "linux")]
-use nix::poll::{poll, PollFd, PollFlags};
 
 use crate::config_loader::{load_config, ConfigError};
 use crate::device_manager::DeviceManager;
 #[cfg(target_os = "linux")]
 use crate::platform::linux::UinputOutput;
 use crate::platform::{DeviceError, InputDevice, OutputDevice};
-use keyrx_core::runtime::event::{check_tap_hold_timeouts, process_event};
+use keyrx_core::runtime::event::check_tap_hold_timeouts;
 
 #[cfg(target_os = "linux")]
 mod linux;
@@ -640,6 +636,7 @@ impl Daemon {
     /// ```
     /// Blocks until a shutdown signal is received.
     #[cfg(target_os = "linux")]
+    #[allow(unused_mut)]
     pub fn run(&mut self) -> Result<(), DaemonError> {
         info!("Starting event processing loop");
 
