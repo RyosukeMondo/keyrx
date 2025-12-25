@@ -7,10 +7,9 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-default = ["web"]
+default = []
 linux = []
 windows = []
-web = ["dep:axum", "dep:tower-http", "dep:tokio"]
 
 [dependencies]
 keyrx_core = { path = "../keyrx_core" }
@@ -22,6 +21,14 @@ log = "0.4"
 clap = { version = "4.5", features = ["derive"] }
 # Logging facade implementation for CLI
 env_logger = "0.11"
+
+# Web server dependencies
+axum = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+humantime = "2.3.0"
 
 # Linux-specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -46,14 +53,6 @@ windows-sys = { version = "0.59", features = [
 tray-icon = "0.19"
 crossbeam-channel = "0.5"
 image = "0.25"
-
-# Web server dependencies
-axum = { version = "0.7", optional = true }
-tower-http = { version = "0.6", features = ["fs", "cors"], optional = true }
-tokio = { version = "1", features = ["full"], optional = true }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-humantime = "2.3.0"
 
 [dev-dependencies]
 tempfile = "3.14"

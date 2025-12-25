@@ -2661,7 +2661,10 @@ mod when_device_function_tests {
             matches!(m, KeyMapping::Conditional { condition, .. }
                 if matches!(condition, Condition::DeviceMatches(_)))
         });
-        assert!(has_device_conditional, "Should have DeviceMatches conditional");
+        assert!(
+            has_device_conditional,
+            "Should have DeviceMatches conditional"
+        );
 
         // Should have modifier conditional mapping
         let has_modifier_conditional = config.devices[0].mappings.iter().any(|m| {
@@ -2693,7 +2696,10 @@ mod when_device_function_tests {
 
         // Verify the device conditional wraps the tap-hold
         match &config.devices[0].mappings[0] {
-            KeyMapping::Conditional { condition, mappings } => {
+            KeyMapping::Conditional {
+                condition,
+                mappings,
+            } => {
                 match condition {
                     Condition::DeviceMatches(pattern) => {
                         assert_eq!(pattern, "*gaming*");
@@ -2701,7 +2707,10 @@ mod when_device_function_tests {
                     _ => panic!("Expected DeviceMatches condition"),
                 }
                 // Tap-hold should be inside the conditional
-                assert!(mappings.len() > 0, "Should have mappings inside conditional");
+                assert!(
+                    mappings.len() > 0,
+                    "Should have mappings inside conditional"
+                );
             }
             _ => panic!("Expected Conditional mapping wrapping tap-hold"),
         }
@@ -2751,27 +2760,47 @@ mod when_device_function_tests {
         "#;
 
         let result = parser.parse_string(script, &PathBuf::from("test.rhai"));
-        assert!(result.is_ok(), "Failed to parse complex config: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse complex config: {:?}",
+            result.err()
+        );
 
         let config = result.unwrap();
         assert_eq!(config.devices.len(), 1);
 
         // Should have device conditionals
-        let device_conditionals = config.devices[0].mappings.iter()
-            .filter(|m| matches!(m, KeyMapping::Conditional { condition, .. }
-                if matches!(condition, Condition::DeviceMatches(_))))
+        let device_conditionals = config.devices[0]
+            .mappings
+            .iter()
+            .filter(|m| {
+                matches!(m, KeyMapping::Conditional { condition, .. }
+                if matches!(condition, Condition::DeviceMatches(_)))
+            })
             .count();
-        assert_eq!(device_conditionals, 2, "Should have 2 device conditionals (numpad + gaming)");
+        assert_eq!(
+            device_conditionals, 2,
+            "Should have 2 device conditionals (numpad + gaming)"
+        );
 
         // Should have modifier conditional
-        let modifier_conditionals = config.devices[0].mappings.iter()
-            .filter(|m| matches!(m, KeyMapping::Conditional { condition, .. }
-                if matches!(condition, Condition::AllActive(_) | Condition::ModifierActive(_))))
+        let modifier_conditionals = config.devices[0]
+            .mappings
+            .iter()
+            .filter(|m| {
+                matches!(m, KeyMapping::Conditional { condition, .. }
+                if matches!(condition, Condition::AllActive(_) | Condition::ModifierActive(_)))
+            })
             .count();
-        assert_eq!(modifier_conditionals, 1, "Should have 1 modifier conditional");
+        assert_eq!(
+            modifier_conditionals, 1,
+            "Should have 1 modifier conditional"
+        );
 
         // Should have base mappings (Escape, CapsLock)
-        let base_mappings = config.devices[0].mappings.iter()
+        let base_mappings = config.devices[0]
+            .mappings
+            .iter()
             .filter(|m| matches!(m, KeyMapping::Base(_)))
             .count();
         assert!(base_mappings >= 2, "Should have at least 2 base mappings");

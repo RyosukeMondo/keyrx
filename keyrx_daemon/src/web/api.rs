@@ -1,12 +1,8 @@
-#[cfg(feature = "web")]
 use axum::{routing::get, Json, Router};
-#[cfg(feature = "web")]
 use serde::Serialize;
-#[cfg(feature = "web")]
 use serde_json::{json, Value};
 
 /// Device information returned by the /api/devices endpoint.
-#[cfg(feature = "web")]
 #[derive(Debug, Clone, Serialize)]
 pub struct DeviceResponse {
     /// Unique device identifier (serial-based or path-based).
@@ -22,14 +18,12 @@ pub struct DeviceResponse {
 }
 
 /// Response wrapper for the devices list.
-#[cfg(feature = "web")]
 #[derive(Debug, Clone, Serialize)]
 pub struct DevicesListResponse {
     /// List of discovered keyboard devices.
     pub devices: Vec<DeviceResponse>,
 }
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 pub fn create_router() -> Router {
     Router::new()
@@ -38,7 +32,6 @@ pub fn create_router() -> Router {
         .route("/devices", get(get_devices))
 }
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 async fn get_status() -> Json<Value> {
     Json(json!({
@@ -47,7 +40,6 @@ async fn get_status() -> Json<Value> {
     }))
 }
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 async fn get_config() -> Json<Value> {
     Json(json!({
@@ -76,28 +68,7 @@ async fn get_config() -> Json<Value> {
 ///   ]
 /// }
 /// ```
-/// GET /api/devices - Returns list of connected keyboard devices.
-///
-/// This endpoint enumerates all keyboard input devices available on the system.
-/// Each device includes its unique ID, name, path, serial number (if available),
-/// and active status.
-///
-/// # Response Format
-///
-/// ```json
-/// {
-///   "devices": [
-///     {
-///       "id": "serial-ABC123",
-///       "name": "USB Keyboard",
-///       "path": "/dev/input/event0",
-///       "serial": "ABC123",
-///       "active": true
-///     }
-///   ]
-/// }
-/// ```
-#[cfg(all(feature = "web", any(target_os = "linux", target_os = "windows")))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 #[allow(dead_code)]
 async fn get_devices() -> Json<DevicesListResponse> {
     use crate::device_manager::enumerate_keyboards;
@@ -136,7 +107,7 @@ async fn get_devices() -> Json<DevicesListResponse> {
 }
 
 /// Fallback for unsupported platforms.
-#[cfg(all(feature = "web", not(any(target_os = "linux", target_os = "windows"))))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 #[allow(dead_code)]
 async fn get_devices() -> Json<DevicesListResponse> {
     // On unsupported platforms, return empty device list
@@ -145,7 +116,7 @@ async fn get_devices() -> Json<DevicesListResponse> {
     })
 }
 
-#[cfg(all(test, feature = "web"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -13,6 +13,4 @@ pub mod daemon;
 pub mod device_manager;
 pub mod platform;
 pub mod processor;
-
-#[cfg(feature = "web")]
 pub mod web;

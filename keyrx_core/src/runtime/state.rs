@@ -966,7 +966,8 @@ mod tests {
             assert!(state.evaluate_condition_with_device(&cond, Some("at-translated-keyboard")));
             assert!(state.evaluate_condition_with_device(&cond, Some("-keyboard")));
             assert!(!state.evaluate_condition_with_device(&cond, Some("keyboard-usb")));
-            assert!(!state.evaluate_condition_with_device(&cond, Some("keyboard"))); // No hyphen
+            assert!(!state.evaluate_condition_with_device(&cond, Some("keyboard")));
+            // No hyphen
         }
 
         #[test]
@@ -1029,29 +1030,17 @@ mod tests {
 
             // Special characters should work (path-like patterns)
             let cond = Condition::DeviceMatches(String::from("usb-0000:00:14.0-1/input0"));
-            assert!(state.evaluate_condition_with_device(
-                &cond,
-                Some("usb-0000:00:14.0-1/input0")
-            ));
-            assert!(!state.evaluate_condition_with_device(
-                &cond,
-                Some("usb-0000:00:14.0-2/input0")
-            ));
+            assert!(state.evaluate_condition_with_device(&cond, Some("usb-0000:00:14.0-1/input0")));
+            assert!(!state.evaluate_condition_with_device(&cond, Some("usb-0000:00:14.0-2/input0")));
 
             // Pattern with special chars and wildcard
             let cond_wildcard = Condition::DeviceMatches(String::from("usb-*:00:14.0-*/input0"));
-            assert!(state.evaluate_condition_with_device(
-                &cond_wildcard,
-                Some("usb-0000:00:14.0-1/input0")
-            ));
-            assert!(state.evaluate_condition_with_device(
-                &cond_wildcard,
-                Some("usb-1234:00:14.0-5/input0")
-            ));
-            assert!(!state.evaluate_condition_with_device(
-                &cond_wildcard,
-                Some("usb-0000:00:14.0-1/input1")
-            ));
+            assert!(state
+                .evaluate_condition_with_device(&cond_wildcard, Some("usb-0000:00:14.0-1/input0")));
+            assert!(state
+                .evaluate_condition_with_device(&cond_wildcard, Some("usb-1234:00:14.0-5/input0")));
+            assert!(!state
+                .evaluate_condition_with_device(&cond_wildcard, Some("usb-0000:00:14.0-1/input1")));
         }
 
         #[test]
@@ -1065,7 +1054,9 @@ mod tests {
 
             // Unicode with wildcard
             let cond_wildcard = Condition::DeviceMatches(String::from("*キーボード*"));
-            assert!(state.evaluate_condition_with_device(&cond_wildcard, Some("usb-キーボード-123")));
+            assert!(
+                state.evaluate_condition_with_device(&cond_wildcard, Some("usb-キーボード-123"))
+            );
             assert!(state.evaluate_condition_with_device(&cond_wildcard, Some("キーボード")));
             assert!(!state.evaluate_condition_with_device(&cond_wildcard, Some("keyboard")));
         }
@@ -1088,14 +1079,7 @@ mod tests {
             let state = DeviceState::new();
 
             // None device_id should never match any pattern
-            let patterns = vec![
-                "*",
-                "usb-*",
-                "*-keyboard",
-                "*numpad*",
-                "",
-                "exact-match",
-            ];
+            let patterns = vec!["*", "usb-*", "*-keyboard", "*numpad*", "", "exact-match"];
 
             for pattern_str in patterns {
                 let cond = Condition::DeviceMatches(String::from(pattern_str));
@@ -1115,14 +1099,10 @@ mod tests {
 
             // Linux evdev path
             let linux_pattern = Condition::DeviceMatches(String::from("/dev/input/event*"));
-            assert!(state.evaluate_condition_with_device(
-                &linux_pattern,
-                Some("/dev/input/event0")
-            ));
-            assert!(state.evaluate_condition_with_device(
-                &linux_pattern,
-                Some("/dev/input/event15")
-            ));
+            assert!(state.evaluate_condition_with_device(&linux_pattern, Some("/dev/input/event0")));
+            assert!(
+                state.evaluate_condition_with_device(&linux_pattern, Some("/dev/input/event15"))
+            );
 
             // Windows HID path
             let windows_pattern = Condition::DeviceMatches(String::from("*VID_046D&PID_C52B*"));
@@ -1133,10 +1113,8 @@ mod tests {
 
             // Serial number match
             let serial_pattern = Condition::DeviceMatches(String::from("*SN12345*"));
-            assert!(state.evaluate_condition_with_device(
-                &serial_pattern,
-                Some("USB-Keyboard-SN12345-v2")
-            ));
+            assert!(state
+                .evaluate_condition_with_device(&serial_pattern, Some("USB-Keyboard-SN12345-v2")));
         }
     }
 }

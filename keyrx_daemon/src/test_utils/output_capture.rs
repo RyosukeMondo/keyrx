@@ -24,9 +24,9 @@
 //! - Linux with evdev support
 //! - Read access to `/dev/input/event*` devices (typically requires `input` group)
 
+use std::fs;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
-#[cfg(target_os = "linux")]
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 #[cfg(target_os = "linux")]

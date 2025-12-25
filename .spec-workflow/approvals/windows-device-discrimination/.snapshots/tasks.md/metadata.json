@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/windows-device-discrimination/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2025-12-24T16:49:07.443Z",
       "trigger": "initial",
+      "approvalId": "approval_1766594947438_xw3arrc3f",
+      "approvalTitle": "Windows Device Discrimination Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-25T02:37:54.291Z",
+      "trigger": "approved",
       "approvalId": "approval_1766594947438_xw3arrc3f",
       "approvalTitle": "Windows Device Discrimination Tasks"
     }

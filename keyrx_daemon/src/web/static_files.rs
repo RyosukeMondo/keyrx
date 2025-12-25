@@ -1,16 +1,13 @@
-#[cfg(feature = "web")]
 use axum::Router;
-#[cfg(feature = "web")]
 use tower_http::services::ServeDir;
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 pub fn serve_static() -> Router {
     let serve_dir = ServeDir::new("ui_dist");
     Router::new().nest_service("/", serve_dir)
 }
 
-#[cfg(all(test, feature = "web"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

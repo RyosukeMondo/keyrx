@@ -1,16 +1,10 @@
-#[cfg(feature = "web")]
 pub mod api;
-#[cfg(feature = "web")]
 pub mod static_files;
-#[cfg(feature = "web")]
 pub mod ws;
 
-#[cfg(feature = "web")]
 use axum::{routing::get, Router};
-#[cfg(feature = "web")]
 use std::net::SocketAddr;
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 pub async fn create_app() -> Router {
     Router::new()
@@ -20,7 +14,6 @@ pub async fn create_app() -> Router {
         .fallback_service(static_files::serve_static())
 }
 
-#[cfg(feature = "web")]
 #[allow(dead_code)]
 pub async fn serve(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_app().await;
