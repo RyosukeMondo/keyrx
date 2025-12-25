@@ -27,12 +27,23 @@
 
 use std::time::SystemTime;
 
+#[cfg(target_os = "linux")]
 use uinput::Device as UInputDevice;
 
+#[cfg(target_os = "linux")]
 use crate::platform::linux::keycode_to_uinput_key;
+#[cfg(target_os = "windows")]
+use crate::platform::windows::keycode::keycode_to_vk;
 use crate::test_utils::VirtualDeviceError;
 use keyrx_core::config::KeyCode;
 use keyrx_core::runtime::event::KeyEvent;
+
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
+
+/// Markers for events during E2E testing
+#[cfg(target_os = "windows")]
+const TEST_SIMULATED_PHYSICAL_MARKER: usize = 0x54455354; // "TEST"
 
 /// A virtual keyboard device for injecting test key events.
 ///
@@ -68,6 +79,7 @@ use keyrx_core::runtime::event::KeyEvent;
 pub struct VirtualKeyboard {
     /// The underlying uinput device handle.
     /// Wrapped in Option to allow taking ownership during destroy.
+    #[cfg(target_os = "linux")]
     device: Option<UInputDevice>,
     /// Full name of the virtual device (includes unique suffix).
     name: String,
@@ -108,37 +120,49 @@ impl VirtualKeyboard {
 
         let unique_name = format!("{}-{}", base_name, timestamp);
 
-        // Create uinput device with keyboard capabilities
-        let device = uinput::default()
-            .map_err(|e| {
-                let err_str = e.to_string();
-                if err_str.contains("Permission denied") || err_str.contains("EACCES") {
-                    VirtualDeviceError::uinput_permission_denied()
-                } else {
-                    VirtualDeviceError::CreationFailed {
-                        message: format!("failed to open uinput: {}", e),
+        #[cfg(target_os = "linux")]
+        {
+            // Create uinput device with keyboard capabilities
+            let device = uinput::default()
+                .map_err(|e| {
+                    let err_str = e.to_string();
+                    if err_str.contains("Permission denied") || err_str.contains("EACCES") {
+                        VirtualDeviceError::uinput_permission_denied()
+                    } else {
+                        VirtualDeviceError::CreationFailed {
+                            message: format!("failed to open uinput: {}", e),
+                        }
                     }
-                }
-            })?
-            .name(&unique_name)
-            .map_err(|e| VirtualDeviceError::creation_failed(format!("failed to set name: {}", e)))?
-            // Enable all keyboard events for full capability
-            .event(uinput::event::Keyboard::All)
-            .map_err(|e| {
-                VirtualDeviceError::creation_failed(format!(
-                    "failed to enable keyboard events: {}",
-                    e
-                ))
-            })?
-            .create()
-            .map_err(|e| {
-                VirtualDeviceError::creation_failed(format!("failed to create device: {}", e))
-            })?;
+                })?
+                .name(&unique_name)
+                .map_err(|e| {
+                    VirtualDeviceError::creation_failed(format!("failed to set name: {}", e))
+                })?
+                // Enable all keyboard events for full capability
+                .event(uinput::event::Keyboard::All)
+                .map_err(|e| {
+                    VirtualDeviceError::creation_failed(format!(
+                        "failed to enable keyboard events: {}",
+                        e
+                    ))
+                })?
+                .create()
+                .map_err(|e| {
+                    VirtualDeviceError::creation_failed(format!("failed to create device: {}", e))
+                })?;
 
-        Ok(Self {
-            device: Some(device),
-            name: unique_name,
-        })
+            Ok(Self {
+                device: Some(device),
+                name: unique_name,
+            })
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows, we don't need to create a device node,
+            // we'll just use SendInput with a special marker.
+            Ok(Self { name: unique_name })
+        }
     }
 
     /// Returns the full name of the virtual device.
@@ -162,7 +186,14 @@ impl VirtualKeyboard {
     /// After calling `destroy()` or when the device is dropped, this returns `true`.
     #[must_use]
     pub fn is_destroyed(&self) -> bool {
-        self.device.is_none()
+        #[cfg(target_os = "linux")]
+        {
+            self.device.is_none()
+        }
+        #[cfg(target_os = "windows")]
+        {
+            false
+        }
     }
 
     /// Destroys the virtual device.
@@ -176,10 +207,13 @@ impl VirtualKeyboard {
     ///
     /// Returns an error if the device was already destroyed.
     pub fn destroy(&mut self) -> Result<(), VirtualDeviceError> {
-        if self.device.take().is_none() {
-            return Err(VirtualDeviceError::creation_failed(
-                "device already destroyed",
-            ));
+        #[cfg(target_os = "linux")]
+        {
+            if self.device.take().is_none() {
+                return Err(VirtualDeviceError::creation_failed(
+                    "device already destroyed",
+                ));
+            }
         }
         Ok(())
     }
@@ -211,31 +245,93 @@ impl VirtualKeyboard {
     /// keyboard.inject(KeyEvent::Release(KeyCode::A))?;
     /// ```
     pub fn inject(&mut self, event: KeyEvent) -> Result<(), VirtualDeviceError> {
-        let device = self
-            .device
-            .as_mut()
-            .ok_or_else(|| VirtualDeviceError::creation_failed("device has been destroyed"))?;
+        #[cfg(target_os = "linux")]
+        {
+            let device = self
+                .device
+                .as_mut()
+                .ok_or_else(|| VirtualDeviceError::creation_failed("device has been destroyed"))?;
 
-        let key = keycode_to_uinput_key(event.keycode());
+            let key = keycode_to_uinput_key(event.keycode());
 
-        if event.is_press() {
-            device.press(&key).map_err(|e| {
-                VirtualDeviceError::Io(std::io::Error::other(format!("press failed: {}", e)))
-            })?;
-        } else {
-            device.release(&key).map_err(|e| {
-                VirtualDeviceError::Io(std::io::Error::other(format!("release failed: {}", e)))
+            if event.is_press() {
+                device.press(&key).map_err(|e| {
+                    VirtualDeviceError::Io(std::io::Error::other(format!("press failed: {}", e)))
+                })?;
+            } else {
+                device.release(&key).map_err(|e| {
+                    VirtualDeviceError::Io(std::io::Error::other(format!("release failed: {}", e)))
+                })?;
+            }
+
+            // Synchronize to ensure the event is delivered immediately
+            device.synchronize().map_err(|e| {
+                VirtualDeviceError::Io(std::io::Error::other(format!("synchronize failed: {}", e)))
             })?;
         }
 
-        // Synchronize to ensure the event is delivered immediately
-        device.synchronize().map_err(|e| {
-            VirtualDeviceError::Io(std::io::Error::other(format!("synchronize failed: {}", e)))
-        })?;
+        #[cfg(target_os = "windows")]
+        {
+            let keycode = event.keycode();
+            let is_release = event.is_release();
+
+            let vk = keycode_to_vk(keycode).ok_or_else(|| {
+                VirtualDeviceError::creation_failed(format!("Unmapped keycode: {:?}", keycode))
+            })?;
+
+            unsafe {
+                let mut input = INPUT {
+                    r#type: INPUT_KEYBOARD,
+                    Anonymous: std::mem::zeroed(),
+                };
+
+                input.Anonymous.ki = KEYBDINPUT {
+                    wVk: vk,
+                    wScan: 0,
+                    dwFlags: if is_release { KEYEVENTF_KEYUP } else { 0 },
+                    time: 0,
+                    dwExtraInfo: TEST_SIMULATED_PHYSICAL_MARKER,
+                };
+
+                // Set extended key flag for certain keys
+                if is_extended_key(vk) {
+                    input.Anonymous.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+                }
+
+                if SendInput(1, &input, std::mem::size_of::<INPUT>() as i32) == 0 {
+                    return Err(VirtualDeviceError::Io(std::io::Error::other(
+                        "SendInput failed",
+                    )));
+                }
+            }
+        }
 
         Ok(())
     }
+}
 
+#[cfg(target_os = "windows")]
+pub fn is_extended_key(vk: u16) -> bool {
+    matches!(
+        vk,
+        VK_RMENU
+            | VK_RCONTROL
+            | VK_INSERT
+            | VK_DELETE
+            | VK_HOME
+            | VK_END
+            | VK_PRIOR
+            | VK_NEXT
+            | VK_LEFT
+            | VK_RIGHT
+            | VK_UP
+            | VK_DOWN
+            | VK_NUMLOCK
+            | VK_SNAPSHOT
+    )
+}
+
+impl VirtualKeyboard {
     /// Injects a sequence of key events with optional delay between them.
     ///
     /// This is a convenience method for injecting multiple events. If `delay`
@@ -312,8 +408,11 @@ impl VirtualKeyboard {
 
 impl Drop for VirtualKeyboard {
     fn drop(&mut self) {
-        // Take ownership of device to let it be dropped (destroys the uinput device)
-        let _ = self.device.take();
+        #[cfg(target_os = "linux")]
+        {
+            // Take ownership of device to let it be dropped (destroys the uinput device)
+            let _ = self.device.take();
+        }
     }
 }
 

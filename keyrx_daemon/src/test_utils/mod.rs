@@ -153,17 +153,27 @@ pub use virtual_keyboard::VirtualKeyboard;
 /// }
 /// ```
 pub fn can_access_uinput() -> bool {
-    // Check uinput access (for creating virtual devices)
-    let uinput_ok = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open("/dev/uinput")
-        .is_ok();
+    #[cfg(target_os = "linux")]
+    {
+        // Check uinput access (for creating virtual devices)
+        let uinput_ok = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/uinput")
+            .is_ok();
 
-    // Check input device access (for reading events from virtual devices)
-    let input_ok = can_access_input_devices();
+        // Check input device access (for reading events from virtual devices)
+        let input_ok = can_access_input_devices();
 
-    uinput_ok && input_ok
+        uinput_ok && input_ok
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, we assume SendInput is always available.
+        // In the future, we could check for UIPI or other restrictions.
+        true
+    }
 }
 
 /// Checks if input devices are accessible for reading.
@@ -171,13 +181,21 @@ pub fn can_access_uinput() -> bool {
 /// Returns `true` if any `/dev/input/event*` device is readable by the current process.
 /// This is used to determine whether tests requiring input device access can run.
 pub fn can_access_input_devices() -> bool {
-    for i in 0..20 {
-        let path = format!("/dev/input/event{}", i);
-        if OpenOptions::new().read(true).open(&path).is_ok() {
-            return true;
+    #[cfg(target_os = "linux")]
+    {
+        for i in 0..20 {
+            let path = format!("/dev/input/event{}", i);
+            if OpenOptions::new().read(true).open(&path).is_ok() {
+                return true;
+            }
         }
+        false
     }
-    false
+
+    #[cfg(target_os = "windows")]
+    {
+        true
+    }
 }
 
 /// Skips the current test if uinput is not accessible.

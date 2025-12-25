@@ -18,19 +18,19 @@ use keyrx_core::config::DeviceConfig;
 use keyrx_core::runtime::event::KeyEvent;
 use thiserror::Error;
 
-#[cfg(feature = "linux")]
+#[cfg(target_os = "linux")]
 pub mod linux;
 
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 pub mod windows;
 
 pub mod mock;
 
-#[cfg(feature = "linux")]
+#[cfg(target_os = "linux")]
 #[allow(unused_imports)] // EvdevInput/UinputOutput will be used in task #17
 pub use linux::{EvdevInput, LinuxPlatform, LinuxSystemTray, UinputOutput};
 
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 pub use windows::WindowsPlatform;
 
 #[allow(unused_imports)] // Will be used in tasks #17-20
@@ -305,26 +305,26 @@ pub trait OutputDevice {
 #[allow(dead_code)]
 #[allow(clippy::large_enum_variant)] // LinuxPlatform is large but this enum is a placeholder
 pub enum Platform {
-    #[cfg(feature = "linux")]
+    #[cfg(target_os = "linux")]
     Linux(LinuxPlatform),
-    #[cfg(feature = "windows")]
+    #[cfg(target_os = "windows")]
     Windows(WindowsPlatform),
-    #[cfg(not(any(feature = "linux", feature = "windows")))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
     Unsupported,
 }
 
 impl Platform {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        #[cfg(feature = "linux")]
+        #[cfg(target_os = "linux")]
         {
             Platform::Linux(LinuxPlatform::new())
         }
-        #[cfg(all(feature = "windows", not(feature = "linux")))]
+        #[cfg(all(target_os = "windows", not(target_os = "linux")))]
         {
             Platform::Windows(WindowsPlatform::new())
         }
-        #[cfg(not(any(feature = "linux", feature = "windows")))]
+        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
         {
             Platform::Unsupported
         }
@@ -342,15 +342,15 @@ impl Platform {
     #[allow(dead_code)]
     pub fn init(&mut self, configs: &[DeviceConfig]) -> Result<(), Box<dyn std::error::Error>> {
         match self {
-            #[cfg(feature = "linux")]
+            #[cfg(target_os = "linux")]
             Platform::Linux(p) => p.init(configs),
-            #[cfg(feature = "windows")]
+            #[cfg(target_os = "windows")]
             Platform::Windows(p) => {
                 // Windows platform doesn't use configs yet
                 let _ = configs;
                 p.init()
             }
-            #[cfg(not(any(feature = "linux", feature = "windows")))]
+            #[cfg(not(any(target_os = "linux", target_os = "windows")))]
             Platform::Unsupported => {
                 let _ = configs;
                 Ok(())
@@ -369,14 +369,14 @@ impl Platform {
     #[allow(dead_code)]
     pub fn process_events(&mut self) -> Result<ProcessResult, Box<dyn std::error::Error>> {
         match self {
-            #[cfg(feature = "linux")]
+            #[cfg(target_os = "linux")]
             Platform::Linux(p) => p.process_events(),
-            #[cfg(feature = "windows")]
+            #[cfg(target_os = "windows")]
             Platform::Windows(p) => {
                 p.process_events()?;
                 Ok(ProcessResult::Continue)
             }
-            #[cfg(not(any(feature = "linux", feature = "windows")))]
+            #[cfg(not(any(target_os = "linux", target_os = "windows")))]
             Platform::Unsupported => Ok(ProcessResult::Continue),
         }
     }
@@ -388,11 +388,11 @@ impl Platform {
     #[allow(dead_code)]
     pub fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         match self {
-            #[cfg(feature = "linux")]
+            #[cfg(target_os = "linux")]
             Platform::Linux(p) => p.shutdown(),
-            #[cfg(feature = "windows")]
+            #[cfg(target_os = "windows")]
             Platform::Windows(_p) => Ok(()),
-            #[cfg(not(any(feature = "linux", feature = "windows")))]
+            #[cfg(not(any(target_os = "linux", target_os = "windows")))]
             Platform::Unsupported => Ok(()),
         }
     }

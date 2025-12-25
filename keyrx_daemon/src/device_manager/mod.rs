@@ -15,14 +15,14 @@
 
 use crate::platform::DeviceError;
 
-#[cfg(feature = "linux")]
+#[cfg(target_os = "linux")]
 mod linux;
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 mod windows;
 
-#[cfg(feature = "linux")]
+#[cfg(target_os = "linux")]
 pub use linux::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 pub use windows::{DeviceManager, ManagedDevice, RefreshResult};
 
 /// Matches a device against a pattern string.

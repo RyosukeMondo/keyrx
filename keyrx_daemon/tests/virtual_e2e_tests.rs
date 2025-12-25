@@ -25,7 +25,7 @@
 //! # Log out and back in for changes to take effect
 //! ```
 
-#![cfg(all(target_os = "linux", feature = "linux"))]
+#![cfg(any(target_os = "linux", target_os = "windows"))]
 
 mod e2e_harness;
 

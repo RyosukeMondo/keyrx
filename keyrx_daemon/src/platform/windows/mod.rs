@@ -11,14 +11,14 @@ use crate::platform::InputDevice;
 pub use input::WindowsKeyboardInput;
 pub use output::WindowsKeyboardOutput;
 
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 pub struct WindowsPlatform {
     pub input: WindowsKeyboardInput,
     #[allow(dead_code)]
     pub output: WindowsKeyboardOutput,
 }
 
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 impl WindowsPlatform {
     pub fn new() -> Self {
         Self {
@@ -42,7 +42,7 @@ impl WindowsPlatform {
     }
 }
 
-#[cfg(feature = "windows")]
+#[cfg(target_os = "windows")]
 impl Default for WindowsPlatform {
     fn default() -> Self {
         Self::new()
