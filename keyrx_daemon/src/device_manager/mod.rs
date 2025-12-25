@@ -32,7 +32,60 @@ pub fn match_device(device: &KeyboardInfo, pattern: &str) -> bool {
         return true;
     }
 
-    // Check for prefix pattern (ends with *)
+    // Check for contains pattern (*substring*)
+    if pattern.starts_with('*') && pattern.ends_with('*') && pattern.len() > 2 {
+        let substring = &pattern[1..pattern.len() - 1];
+        let substring_lower = substring.to_lowercase();
+
+        // Match against device name
+        if device.name.to_lowercase().contains(&substring_lower) {
+            return true;
+        }
+
+        // Match against serial if available
+        if let Some(ref serial) = device.serial {
+            if serial.to_lowercase().contains(&substring_lower) {
+                return true;
+            }
+        }
+
+        // Match against physical path if available
+        if let Some(ref phys) = device.phys {
+            if phys.to_lowercase().contains(&substring_lower) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Check for suffix pattern (*suffix)
+    if let Some(suffix) = pattern.strip_prefix('*') {
+        let suffix_lower = suffix.to_lowercase();
+
+        // Match against device name
+        if device.name.to_lowercase().ends_with(&suffix_lower) {
+            return true;
+        }
+
+        // Match against serial if available
+        if let Some(ref serial) = device.serial {
+            if serial.to_lowercase().ends_with(&suffix_lower) {
+                return true;
+            }
+        }
+
+        // Match against physical path if available
+        if let Some(ref phys) = device.phys {
+            if phys.to_lowercase().ends_with(&suffix_lower) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Check for prefix pattern (prefix*)
     if let Some(prefix) = pattern.strip_suffix('*') {
         let prefix_lower = prefix.to_lowercase();
 

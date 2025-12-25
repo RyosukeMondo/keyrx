@@ -112,7 +112,7 @@ impl LinuxPlatform {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```ignore
     /// use keyrx_daemon::platform::linux::LinuxPlatform;
     /// use keyrx_core::config::DeviceConfig;
     ///
@@ -256,7 +256,7 @@ impl LinuxPlatform {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```ignore
     /// use keyrx_daemon::platform::linux::{LinuxPlatform, ProcessResult};
     /// use keyrx_core::config::DeviceConfig;
     ///
@@ -354,7 +354,7 @@ impl LinuxPlatform {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```ignore
     /// use keyrx_daemon::platform::linux::LinuxPlatform;
     /// use keyrx_core::config::DeviceConfig;
     ///

@@ -84,6 +84,12 @@ pub fn enumerate_keyboards() -> Result<Vec<KeyboardInfo>, DiscoveryError> {
         }
 
         let name = device.name().unwrap_or("Unknown Device").to_string();
+
+        // Skip the daemon's own virtual output device to prevent grabbing it
+        if name == "keyrx Virtual Keyboard" {
+            continue;
+        }
+
         let serial = device.unique_name().map(|s| s.to_string());
         let phys = device.physical_path().map(|s| s.to_string());
 

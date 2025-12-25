@@ -21,7 +21,7 @@
 //! let harness = E2EHarness::setup(config)?;
 //! ```
 
-// #![cfg(all(target_os = "linux", feature = "linux"))]
+#![cfg(all(target_os = "linux", feature = "linux"))]
 
 use std::fmt;
 use std::fs::{self, File};
