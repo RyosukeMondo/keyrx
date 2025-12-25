@@ -29,7 +29,6 @@ use std::os::fd::BorrowedFd;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
-#[cfg(target_os = "linux")]
 use std::time::Instant;
 
 #[cfg(target_os = "linux")]
@@ -54,7 +53,6 @@ use super::VirtualDeviceError;
 use crate::platform::linux::evdev_to_keycode;
 
 /// Polling interval when waiting for a device to appear.
-#[cfg(target_os = "linux")]
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// Marker for events injected by the daemon

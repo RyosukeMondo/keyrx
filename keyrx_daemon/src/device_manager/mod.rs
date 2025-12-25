@@ -23,7 +23,7 @@ mod windows;
 #[cfg(target_os = "linux")]
 pub use linux::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
 #[cfg(target_os = "windows")]
-pub use windows::{DeviceManager, ManagedDevice, RefreshResult};
+pub use windows::{enumerate_keyboards, DeviceManager, ManagedDevice, RefreshResult};
 
 /// Matches a device against a pattern string.
 pub fn match_device(device: &KeyboardInfo, pattern: &str) -> bool {

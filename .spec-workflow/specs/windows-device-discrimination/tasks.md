@@ -110,7 +110,7 @@
   - _Requirements: All RawInputManager-related requirements_
   - _Prompt: Role: Windows Platform Test Engineer with expertise in Win32 API testing | Task: Write integration tests for RawInputManager covering event processing and hot-plug handling | Restrictions: Tests must run without real keyboards if possible (use virtual HID or message injection), verify channel receives events, test shutdown cleanup, ensure tests don't require administrator privileges unless necessary | Success: RawInputManager tests cover registration, message handling, hot-plug, shutdown; events verified in channel; tests pass consistently in CI_
 
-- [ ] 11. Performance benchmarks for Raw Input vs LL Hooks
+- [x] 11. Performance benchmarks for Raw Input vs LL Hooks
   - File: keyrx_daemon/benches/input_latency.rs (new file or modify existing)
   - Measure latency: hardware event → KeyEvent in channel
   - Compare Raw Input implementation to baseline (if LL Hooks still available for comparison)
@@ -121,7 +121,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
   - _Prompt: Role: Performance Engineer with expertise in Windows timing APIs and benchmarking | Task: Create performance benchmarks following requirements 5.1-5.4, measuring Raw Input latency and comparing to baseline | Restrictions: Use QueryPerformanceCounter for microsecond timing, run benchmarks with real keyboard input (may need manual trigger), measure multiple percentiles (p50/p95/p99), compare against <1ms requirement, document methodology | Success: Benchmark shows <1ms end-to-end latency, p50 <100μs, p95 <500μs, results documented with comparison to LL Hooks baseline if available_
 
-- [ ] 12. Update Windows platform documentation
+- [x] 12. Update Windows platform documentation
   - File: docs/windows-setup.md (new or modify existing)
   - Document Raw Input API usage (removed LL Hooks)
   - Document administrator privilege requirement for RIDEV_INPUTSINK

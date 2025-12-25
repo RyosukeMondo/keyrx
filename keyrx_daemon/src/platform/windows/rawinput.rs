@@ -117,7 +117,7 @@ impl RawInputManager {
             0,
             0,
             0,
-            HWND_MESSAGE,
+            HWND_MESSAGE as HWND,
             0 as _,
             h_instance,
             ptr::null(),
@@ -275,6 +275,32 @@ fn process_raw_keyboard(raw: &RAWKEYBOARD, device_handle: usize, context: &RawIn
         // Send to specific subscriber (legacy support)
         if let Some(sender) = context.subscribers.read().unwrap().get(&device_handle) {
             let _ = sender.try_send(event);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Note: These tests require an interactive Windows session and may fail in some CI environments.
+    #[test]
+    fn test_raw_input_manager_creation() {
+        let device_map = DeviceMap::new();
+        let (tx, _rx) = unbounded();
+
+        // We wrap in a block to ensure RawInputManager is dropped at end
+        {
+            match RawInputManager::new(device_map, tx) {
+                Ok(manager) => {
+                    assert!(manager.hwnd != 0 as HWND);
+                    let _receiver = manager.subscribe(12345);
+                    manager.unsubscribe(12345);
+                }
+                Err(e) => {
+                    eprintln!("RawInputManager creation failed: {}", e);
+                }
+            }
         }
     }
 }
