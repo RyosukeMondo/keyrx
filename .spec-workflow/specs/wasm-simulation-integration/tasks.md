@@ -156,7 +156,7 @@
   - _Requirements: 7.1-7.5 (Web UI Integration), 5.1-5.6 (Output Visualization)_
   - _Prompt: Role: React Developer with expertise in component architecture and state management | Task: Create SimulatorPanel container component in keyrx_ui/src/components/Simulator/SimulatorPanel.tsx following requirements 7.1-7.5, managing config loading and simulation state with proper loading/error handling | Restrictions: File ≤250 lines, must handle all async operations with try/catch, show loading spinners during WASM calls, display errors clearly to user, follow existing component styling patterns | Success: Component renders correctly with all child components, config loading works, simulation executes and displays results, errors handled gracefully_
 
-- [ ] 13. Create ConfigLoader component in keyrx_ui/src/components/Simulator/ConfigLoader.tsx
+- [x] 13. Create ConfigLoader component in keyrx_ui/src/components/Simulator/ConfigLoader.tsx
   - File: keyrx_ui/src/components/Simulator/ConfigLoader.tsx
   - Create UI for loading Rhai configs (textarea input or file upload)
   - Add "Load Configuration" button calling onLoad(rhaiSource: string) prop

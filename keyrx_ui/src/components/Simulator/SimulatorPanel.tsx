@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { wasmCore, WasmError } from '../../wasm/core';
 import type { ConfigHandle, EventSequence, SimulationResult } from '../../wasm/core';
+import { ConfigLoader } from './ConfigLoader';
 import './SimulatorPanel.css';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
@@ -21,9 +22,7 @@ export function SimulatorPanel() {
 
   /**
    * Handle configuration loading from Rhai source.
-   * TODO: Wire to ConfigLoader component (Task 13)
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleLoadConfig = useCallback(async (rhaiSource: string) => {
     try {
       setLoadingState('loading');
@@ -88,22 +87,14 @@ export function SimulatorPanel() {
         <p>Test your keyboard remapping configurations in the browser</p>
       </header>
 
-      {/* Error display */}
-      {error && (
-        <div className="error-banner">
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
       {/* Config Loader Section */}
       <section className="simulator-section config-loader-section">
         <h3>1. Load Configuration</h3>
-        <div className="placeholder-message">
-          ConfigLoader component will be inserted here (Task 13)
-        </div>
-        {loadingState === 'loading' && (
-          <div className="loading-spinner">Loading configuration...</div>
-        )}
+        <ConfigLoader
+          onLoad={handleLoadConfig}
+          isLoading={loadingState === 'loading'}
+          error={error}
+        />
       </section>
 
       {/* Scenario Selector Section */}
