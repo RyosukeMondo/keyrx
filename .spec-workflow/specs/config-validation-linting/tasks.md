@@ -44,7 +44,7 @@
   - _Requirements: 1.1-1.5 (Real-time validation), 6.1-6.5 (Linting)_
   - _Prompt: Role: TypeScript Service Developer with WASM integration expertise | Task: Implement ConfigValidator class in keyrx_ui/src/utils/validator.ts following requirements 1.1-1.5 and 6.1-6.5, wrapping WasmCore.loadConfig() with error parsing and optional linting rules | **validate() method**: Call await WasmCore.loadConfig(rhaiSource), catch errors and parse with regex `/line (\d+), column (\d+): (.+)/`, return ValidationResult with errors array | **parseWasmError()**: Extract line/column from WASM error message, create ValidationError with code "WASM_ERROR", handle unparseable errors gracefully | **runLintingRules()**: Check for unused layers (defined but never activated), inconsistent naming (mix of camelCase and snake_case), large configs (>500 lines warning) | Restrictions: File ≤300 lines, TypeScript strict mode, no `any` types, all async functions must have explicit Promise<> return types, handle WASM crashes gracefully (try/catch with fallback error), export singleton instance `export const validator = new ConfigValidator()` | Success: ✅ validate() returns ValidationResult with parsed errors, ✅ Line numbers extracted correctly from WASM errors, ✅ Linting rules detect unused layers and naming issues, ✅ WASM crashes handled without UI crash, ✅ All methods have unit tests_
 
-- [ ] 5. Create useConfigValidator React hook in keyrx_ui/src/hooks/useConfigValidator.ts
+- [x] 5. Create useConfigValidator React hook in keyrx_ui/src/hooks/useConfigValidator.ts
   - File: keyrx_ui/src/hooks/useConfigValidator.ts
   - Implement useConfigValidator custom hook with debounced validation
   - Manage validation state (validationResult, isValidating)
