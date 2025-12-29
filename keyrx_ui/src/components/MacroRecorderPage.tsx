@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { useMacroRecorder, type MacroEvent } from '../hooks/useMacroRecorder';
 import { useSimulator } from '../hooks/useSimulator';
 import { EventTimeline } from './EventTimeline';
+import { TemplateLibrary } from './TemplateLibrary';
 import {
   eventCodeToVK,
   generateRhaiMacro,
@@ -75,6 +76,7 @@ export function MacroRecorderPage() {
   const [showTestPanel, setShowTestPanel] = useState<boolean>(false);
   const [textSnippet, setTextSnippet] = useState<string>('');
   const [showTextSnippet, setShowTextSnippet] = useState<boolean>(false);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState<boolean>(false);
 
   // Sync edited events with recorded events
   useEffect(() => {
@@ -162,6 +164,11 @@ export function MacroRecorderPage() {
   const handleLoadTemplate = (templateKey: keyof typeof TEXT_SNIPPET_TEMPLATES) => {
     const template = TEXT_SNIPPET_TEMPLATES[templateKey];
     setTextSnippet(template.template);
+  };
+
+  const handleSelectFromLibrary = (events: MacroEvent[], templateName: string) => {
+    setEditedEvents(events);
+    setShowTemplateLibrary(false);
   };
 
   return (
@@ -296,6 +303,25 @@ export function MacroRecorderPage() {
           </div>
         )}
       </div>
+
+      {/* Template Library Button */}
+      <div className="library-section">
+        <button
+          onClick={() => setShowTemplateLibrary(!showTemplateLibrary)}
+          className="btn btn-primary"
+        >
+          {showTemplateLibrary ? 'Close' : 'Open'} Template Library
+        </button>
+      </div>
+
+      {/* Template Library */}
+      {showTemplateLibrary && (
+        <TemplateLibrary
+          onSelectTemplate={handleSelectFromLibrary}
+          isOpen={showTemplateLibrary}
+          onClose={() => setShowTemplateLibrary(false)}
+        />
+      )}
 
       {/* Event Timeline Editor */}
       {editedEvents.length > 0 && (
