@@ -68,12 +68,21 @@ function SortableLayerItem({
       ref={setNodeRef}
       style={style}
       className={`layer-item ${isActive ? 'active' : ''} ${layer.isBase ? 'base' : ''}`}
-      {...attributes}
     >
-      <div className="layer-drag-handle" {...listeners}>
-        <span className="drag-icon">⋮⋮</span>
-      </div>
-      <div className="layer-info" onClick={onSelect}>
+      <button
+        className="layer-drag-handle"
+        {...attributes}
+        {...listeners}
+        aria-label={`Drag to reorder ${layer.name}`}
+      >
+        <span className="drag-icon" aria-hidden="true">⋮⋮</span>
+      </button>
+      <div className="layer-info" onClick={onSelect} role="button" tabIndex={0} onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}>
         <span className="layer-name">{layer.name}</span>
         <span className="layer-mapping-count">
           {layer.mappings.length} mapping{layer.mappings.length !== 1 ? 's' : ''}
@@ -83,17 +92,19 @@ function SortableLayerItem({
         <button
           className="layer-action-btn rename-btn"
           onClick={onRename}
+          aria-label={`Rename ${layer.name}`}
           title="Rename layer"
         >
-          ✏️
+          <span aria-hidden="true">✏️</span>
         </button>
         {!layer.isBase && (
           <button
             className="layer-action-btn delete-btn"
             onClick={onDelete}
+            aria-label={`Delete ${layer.name}`}
             title="Delete layer"
           >
-            🗑️
+            <span aria-hidden="true">🗑️</span>
           </button>
         )}
       </div>

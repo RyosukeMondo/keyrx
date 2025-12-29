@@ -1,0 +1,288 @@
+/**
+ * MacroRecorderPage styles
+ */
+
+.macro-recorder-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.recorder-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.recorder-header h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #333);
+}
+
+.recorder-header p {
+  color: var(--text-secondary, #666);
+  font-size: 1rem;
+}
+
+.error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c33;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #c33;
+  padding: 0 0.5rem;
+}
+
+.error-close:hover {
+  opacity: 0.7;
+}
+
+.recorder-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary, #f9f9f9);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.control-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #545b62;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.status-indicator {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.status-recording {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #dc3545;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.status-stopped {
+  color: #6c757d;
+}
+
+.status-idle {
+  color: #28a745;
+}
+
+.recorder-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .recorder-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.events-panel,
+.code-panel {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--bg-tertiary, #f0f0f0);
+  border-bottom: 1px solid #ddd;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary, #333);
+}
+
+.btn-export,
+.btn-copy {
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btn-export:hover:not(:disabled),
+.btn-copy:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.btn-export:disabled,
+.btn-copy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.events-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.events-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary, #666);
+}
+
+.events-empty p {
+  margin: 0.5rem 0;
+}
+
+.events-hint {
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-table thead {
+  background-color: var(--bg-tertiary, #f0f0f0);
+  position: sticky;
+  top: 0;
+}
+
+.events-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  border-bottom: 2px solid #ddd;
+}
+
+.events-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.events-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.key-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.action-press {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.action-release {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.code-preview {
+  padding: 1.5rem;
+  background-color: #1e1e1e;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.code-preview pre {
+  margin: 0;
+  color: #d4d4d4;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.code-preview code {
+  display: block;
+  white-space: pre;
+}

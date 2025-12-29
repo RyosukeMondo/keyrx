@@ -71,7 +71,7 @@
   - Test drag-and-drop interactions
   - _Prompt: Role: React Test Engineer | Task: Test visual builder UI | Success: ✅ Tests pass_
 
-- [ ] 14. Write accessibility tests
+- [x] 14. Write accessibility tests
   - Test keyboard navigation for drag-and-drop
   - _Prompt: Role: Accessibility QA | Task: Test WCAG compliance | Success: ✅ 0 axe violations_
 

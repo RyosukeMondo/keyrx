@@ -38,7 +38,10 @@ export function generateRhaiCode(
   }
   config.modifiers.forEach((modifier, index) => {
     const modifierId = `MD_${index.toString(16).padStart(2, '0').toUpperCase()}`;
-    lines.push(indent + generateModifier(modifier, modifierId));
+    const mapping = generateModifier(modifier, modifierId);
+    if (mapping) {
+      lines.push(indent + mapping);
+    }
   });
   if (config.modifiers.length > 0 && pretty) lines.push('');
 
@@ -48,7 +51,10 @@ export function generateRhaiCode(
   }
   config.locks.forEach((lock, index) => {
     const lockId = `LK_${index.toString(16).padStart(2, '0').toUpperCase()}`;
-    lines.push(indent + generateLock(lock, lockId));
+    const mapping = generateLock(lock, lockId);
+    if (mapping) {
+      lines.push(indent + mapping);
+    }
   });
   if (config.locks.length > 0 && pretty) lines.push('');
 
@@ -97,7 +103,10 @@ export function generateRhaiCode(
  * Generate a modifier mapping
  * Maps the trigger key to a custom modifier ID (MD_XX)
  */
-function generateModifier(modifier: Modifier, modifierId: string): string {
+function generateModifier(modifier: Modifier, modifierId: string): string | null {
+  if (!modifier.triggerKey) {
+    return null; // Skip modifiers without trigger keys
+  }
   return `map("${normalizeKeyCode(modifier.triggerKey)}", "${modifierId}");`;
 }
 
@@ -105,7 +114,10 @@ function generateModifier(modifier: Modifier, modifierId: string): string {
  * Generate a lock mapping
  * Maps the trigger key to a custom lock ID (LK_XX)
  */
-function generateLock(lock: Lock, lockId: string): string {
+function generateLock(lock: Lock, lockId: string): string | null {
+  if (!lock.triggerKey) {
+    return null; // Skip locks without trigger keys
+  }
   return `map("${normalizeKeyCode(lock.triggerKey)}", "${lockId}");`;
 }
 
@@ -152,7 +164,10 @@ function generateMapping(mapping: Mapping, config: Pick<ConfigState, 'modifiers'
  * Normalize key code by removing KEY_ prefix if present
  * Input keys should not have prefixes in Rhai
  */
-function normalizeKeyCode(keyCode: string): string {
+function normalizeKeyCode(keyCode: string | undefined | null | any): string {
+  if (!keyCode || typeof keyCode !== 'string') {
+    return '';
+  }
   if (keyCode.startsWith('KEY_')) {
     return keyCode.substring(4);
   }
@@ -166,7 +181,10 @@ function normalizeKeyCode(keyCode: string): string {
  * Add VK_ prefix to output key if not already present
  * Output keys must have VK_ prefix (or MD_/LK_ for modifiers/locks)
  */
-function addVKPrefix(keyCode: string): string {
+function addVKPrefix(keyCode: string | undefined | null | any): string {
+  if (!keyCode || typeof keyCode !== 'string') {
+    return 'VK_UNKNOWN';
+  }
   // Already has a prefix (VK_, MD_, LK_)
   if (keyCode.startsWith('VK_') || keyCode.startsWith('MD_') || keyCode.startsWith('LK_')) {
     return keyCode;

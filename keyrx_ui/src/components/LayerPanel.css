@@ -89,14 +89,26 @@
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 100%;
+  min-height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: grab;
   color: var(--text-secondary, #999);
   user-select: none;
 }
 
+.layer-drag-handle:hover {
+  color: var(--text-primary, #e0e0e0);
+}
+
 .layer-drag-handle:active {
   cursor: grabbing;
+}
+
+.layer-drag-handle:focus {
+  outline: 2px solid var(--accent-color, #007acc);
+  outline-offset: 2px;
 }
 
 .drag-icon {
