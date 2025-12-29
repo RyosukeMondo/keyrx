@@ -182,23 +182,26 @@ export const ProfilesPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-lg p-lg">
+    <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-100">Profiles</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
+          Profiles
+        </h1>
         <Button
           variant="primary"
           size="md"
           onClick={() => setCreateModalOpen(true)}
           aria-label="Create new profile"
+          className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
         >
           <Plus size={20} className="mr-2" aria-hidden="true" />
           Create Profile
         </Button>
       </div>
 
-      {/* Profile Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+      {/* Profile Grid - responsive: 1 col mobile, 2 cols tablet, 3 cols desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {profiles.map((profile) => (
           <ProfileCard
             key={profile.id}

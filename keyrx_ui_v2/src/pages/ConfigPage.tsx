@@ -56,19 +56,21 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   const modifiedKeysCount = 37;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold text-slate-100">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
             Configuration Editor
           </h1>
-          <span className="text-slate-400">—</span>
-          <span className="text-slate-300">Profile: {profileName}</span>
+          <span className="hidden sm:inline text-slate-400">—</span>
+          <span className="text-sm sm:text-base text-slate-300">
+            Profile: {profileName}
+          </span>
         </div>
         <button
           onClick={togglePreviewMode}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
+          className={`px-4 py-3 md:py-2 rounded-md font-medium transition-colors min-h-[44px] md:min-h-0 ${
             previewMode
               ? 'bg-green-600 text-white'
               : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -98,8 +100,8 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
             </div>
           </div>
 
-          {/* Keyboard Visualizer */}
-          <div className="py-4">
+          {/* Keyboard Visualizer - horizontal scroll on mobile */}
+          <div className="py-4 overflow-x-auto md:overflow-x-visible">
             <KeyboardVisualizer
               layout={selectedLayout}
               keyMappings={keyMappings}
@@ -119,25 +121,25 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
       <Card variant="default" padding="lg">
         <div className="flex flex-col gap-4">
           {/* Card Header */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <h2 className="text-base sm:text-lg font-medium text-slate-100">
               Active Layer: MD_00 ({selectedLayer})
             </h2>
             <button
-              className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
+              className="text-sm text-primary-500 hover:text-primary-400 transition-colors self-start sm:self-auto min-h-[44px] sm:min-h-0 flex items-center"
               aria-label="Open layer list"
             >
               Layer List ▼
             </button>
           </div>
 
-          {/* Layer Buttons */}
-          <div className="flex gap-2 flex-wrap">
+          {/* Layer Buttons - responsive grid on mobile */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             {layerOptions.map((layer) => (
               <button
                 key={layer.value}
                 onClick={() => handleLayerChange(layer.value)}
-                className={`px-4 py-2 rounded-md font-medium transition-all ${
+                className={`px-4 py-3 sm:py-2 rounded-md font-medium transition-all min-h-[44px] sm:min-h-0 ${
                   selectedLayer === layer.value
                     ? 'bg-primary-500 text-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'

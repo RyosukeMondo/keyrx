@@ -16,17 +16,22 @@ import { QuickStatsCard } from '../components/QuickStatsCard';
  */
 export const HomePage: React.FC = () => {
   return (
-    <div className="flex flex-col gap-lg p-lg">
-      <h1 className="text-2xl font-semibold text-slate-100">Dashboard</h1>
+    <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+      <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
+        Dashboard
+      </h1>
 
-      {/* Active Profile Card */}
-      <ActiveProfileCard />
+      {/* Cards stack vertically on mobile, can be side-by-side on larger screens */}
+      <div className="flex flex-col gap-4 md:gap-6">
+        {/* Active Profile Card */}
+        <ActiveProfileCard />
 
-      {/* Connected Devices Card */}
-      <DeviceListCard />
+        {/* Connected Devices Card */}
+        <DeviceListCard />
 
-      {/* Quick Stats Card */}
-      <QuickStatsCard />
+        {/* Quick Stats Card */}
+        <QuickStatsCard />
+      </div>
     </div>
   );
 };

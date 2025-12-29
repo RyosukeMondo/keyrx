@@ -261,24 +261,25 @@ export const SimulatorPage: React.FC = () => {
   }, [holdTimers]);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
             Keyboard Simulator
           </h1>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-sm md:text-base text-slate-400 mt-2">
             Test your configuration by clicking keys or typing. Changes are not
             saved to your keyboard.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="secondary"
             size="md"
             onClick={handleCopyLog}
             aria-label="Copy event log to clipboard"
             disabled={events.length === 0}
+            className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
             Copy Event Log
           </Button>
@@ -287,6 +288,7 @@ export const SimulatorPage: React.FC = () => {
             size="md"
             onClick={handleReset}
             aria-label="Reset simulator state"
+            className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
           >
             Reset Simulator
           </Button>
@@ -306,12 +308,12 @@ export const SimulatorPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* State Display */}
         <Card className="lg:col-span-1">
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-slate-100 mb-3">
+              <h3 className="text-base md:text-lg font-semibold text-slate-100 mb-3">
                 State
               </h3>
               <div className="space-y-2">
@@ -375,13 +377,13 @@ export const SimulatorPage: React.FC = () => {
 
         {/* Event Log */}
         <Card className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-slate-100 mb-3">
+          <h3 className="text-base md:text-lg font-semibold text-slate-100 mb-3">
             Event Log
-            <span className="text-sm font-normal text-slate-400 ml-2">
+            <span className="text-xs md:text-sm font-normal text-slate-400 ml-2">
               (last {Math.min(events.length, MAX_EVENTS)} events)
             </span>
           </h3>
-          <div className="bg-slate-900 rounded-md p-4 h-64 overflow-y-auto font-mono text-xs">
+          <div className="bg-slate-900 rounded-md p-3 md:p-4 h-48 md:h-64 overflow-y-auto font-mono text-xs">
             {events.length === 0 ? (
               <div className="flex items-center justify-center h-full text-slate-500">
                 No events yet. Click a key to start.
@@ -420,10 +422,10 @@ export const SimulatorPage: React.FC = () => {
 
       {/* Keyboard Visualizer */}
       <Card>
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">
+        <h3 className="text-base md:text-lg font-semibold text-slate-100 mb-4">
           Interactive Keyboard
         </h3>
-        <div className="flex justify-center">
+        <div className="flex justify-center overflow-x-auto md:overflow-x-visible">
           <KeyboardVisualizer
             layout="ANSI_104"
             keyMappings={keyMappings}

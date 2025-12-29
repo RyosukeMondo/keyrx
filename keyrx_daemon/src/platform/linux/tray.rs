@@ -1,119 +1,24 @@
-//! Linux system tray implementation using the `ksni` crate.
+//! Linux system tray implementation using the `appindicator3` crate.
 //!
 //! This module provides a Linux-specific implementation of the [`SystemTray`] trait,
-//! using the StatusNotifierItem (SNI) D-Bus protocol via the `ksni` crate.
-//! This works with most modern Linux desktop environments including KDE Plasma,
-//! GNOME (with AppIndicator extension), and others.
+//! using the AppIndicator library via GTK bindings. This works with GNOME Shell
+//! (with AppIndicator extension), KDE Plasma, and other desktop environments.
 
-use crossbeam_channel::{Receiver, Sender};
-use ksni::blocking::TrayMethods;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use appindicator3::{prelude::*, Indicator, IndicatorCategory, IndicatorStatus};
+use crossbeam_channel::Receiver;
+use gtk::prelude::{GtkMenuItemExt, MenuShellExt, WidgetExt};
 
 use crate::platform::{SystemTray, TrayControlEvent, TrayError};
 
-/// Internal tray service that implements the ksni::Tray trait.
-///
-/// This struct is spawned in a background thread and communicates
-/// with the main daemon via a crossbeam channel.
-struct TrayService {
-    /// Channel sender for communicating menu events back to the daemon.
-    event_sender: Sender<TrayControlEvent>,
-    /// Icon data in ARGB32 format.
-    icon_data: Vec<u8>,
-    /// Icon width in pixels.
-    icon_width: i32,
-    /// Icon height in pixels.
-    icon_height: i32,
-}
-
-impl ksni::Tray for TrayService {
-    fn id(&self) -> String {
-        "keyrx-daemon".into()
-    }
-
-    fn icon_pixmap(&self) -> Vec<ksni::Icon> {
-        vec![ksni::Icon {
-            width: self.icon_width,
-            height: self.icon_height,
-            data: self.icon_data.clone(),
-        }]
-    }
-
-    fn title(&self) -> String {
-        "KeyRx Daemon".into()
-    }
-
-    fn tool_tip(&self) -> ksni::ToolTip {
-        ksni::ToolTip {
-            title: "KeyRx Daemon".into(),
-            description: "Keyboard remapping daemon".into(),
-            icon_name: String::new(),
-            icon_pixmap: Vec::new(),
-        }
-    }
-
-    fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
-        use ksni::menu::*;
-
-        let reload_sender = self.event_sender.clone();
-        let exit_sender = self.event_sender.clone();
-
-        vec![
-            StandardItem {
-                label: "Reload Config".into(),
-                activate: Box::new(move |_this: &mut Self| {
-                    log::info!("Tray menu: Reload Config clicked");
-                    let result = reload_sender.send(TrayControlEvent::Reload);
-                    log::info!("Tray menu: Reload event sent: {:?}", result);
-                }),
-                ..Default::default()
-            }
-            .into(),
-            MenuItem::Separator,
-            StandardItem {
-                label: "Exit".into(),
-                activate: Box::new(move |_this: &mut Self| {
-                    log::info!("Tray menu: Exit clicked");
-                    let result = exit_sender.send(TrayControlEvent::Exit);
-                    log::info!("Tray menu: Exit event sent: {:?}", result);
-                }),
-                ..Default::default()
-            }
-            .into(),
-        ]
-    }
-}
-
-/// Loads an icon from PNG bytes and converts to ARGB32 format.
-///
-/// The ksni crate expects icons in ARGB32 format (network byte order),
-/// which means each pixel is 4 bytes: [A, R, G, B].
-fn load_icon(bytes: &[u8]) -> Result<(Vec<u8>, i32, i32), TrayError> {
-    let image = image::load_from_memory(bytes)
-        .map_err(|e| TrayError::IconLoadFailed(e.to_string()))?
-        .into_rgba8();
-
-    let (width, height) = image.dimensions();
-
-    // Convert RGBA to ARGB (network byte order for D-Bus)
-    let rgba_data = image.into_raw();
-    let mut argb_data = Vec::with_capacity(rgba_data.len());
-
-    for chunk in rgba_data.chunks(4) {
-        // RGBA -> ARGB
-        argb_data.push(chunk[3]); // A
-        argb_data.push(chunk[0]); // R
-        argb_data.push(chunk[1]); // G
-        argb_data.push(chunk[2]); // B
-    }
-
-    Ok((argb_data, width as i32, height as i32))
-}
-
-/// Linux system tray controller using the ksni crate.
+/// Linux system tray controller using the appindicator3 crate.
 ///
 /// Implements [`SystemTray`] for cross-platform compatibility.
-/// The tray icon is displayed using the StatusNotifierItem D-Bus protocol,
-/// which is supported by most modern Linux desktop environments.
+/// The tray icon is displayed using the AppIndicator library,
+/// which is supported by GNOME (with AppIndicator extension), KDE Plasma,
+/// and most modern Linux desktop environments.
 ///
 /// # Menu Items
 ///
@@ -146,123 +51,151 @@ fn load_icon(bytes: &[u8]) -> Result<(Vec<u8>, i32, i32), TrayError> {
 /// # Ok::<(), keyrx_daemon::platform::TrayError>(())
 /// ```
 pub struct LinuxSystemTray {
-    /// Handle to the ksni tray service for shutdown.
-    handle: ksni::blocking::Handle<TrayService>,
     /// Channel receiver for menu events.
     event_receiver: Receiver<TrayControlEvent>,
+    /// AppIndicator instance (kept alive for the lifetime of the tray).
+    /// Uses Rc<RefCell<>> since GTK is single-threaded.
+    _indicator: Rc<RefCell<Indicator>>,
 }
 
 impl SystemTray for LinuxSystemTray {
     fn new() -> Result<Self, TrayError> {
-        // Load the icon from embedded bytes
-        let icon_bytes = include_bytes!("../../../assets/icon.png");
-        let (icon_data, icon_width, icon_height) = load_icon(icon_bytes)?;
+        // Initialize GTK on the main thread if not already initialized
+        if gtk::is_initialized() {
+            log::debug!("GTK already initialized");
+        } else {
+            gtk::init().map_err(|_| {
+                TrayError::NotAvailable(
+                    "Failed to initialize GTK. Ensure you are running in a graphical session."
+                        .to_string(),
+                )
+            })?;
+            log::debug!("GTK initialized successfully");
+        }
 
-        // Create a channel for communicating events from the tray service
+        // Create a channel for communicating events from menu callbacks
         let (event_sender, event_receiver) = crossbeam_channel::unbounded();
 
-        // Create the tray service
-        let tray_service = TrayService {
-            event_sender,
-            icon_data,
-            icon_width,
-            icon_height,
-        };
+        // Create the AppIndicator
+        let indicator = Indicator::new("keyrx-daemon", "", IndicatorCategory::ApplicationStatus);
+        indicator.set_status(IndicatorStatus::Active);
+        indicator.set_title(Some("KeyRx Daemon"));
 
-        // Spawn the tray service in blocking mode
-        // The ksni blocking API spawns a background thread internally
-        let handle = tray_service.spawn().map_err(|e| {
-            // Check for common error cases
-            let err_str = e.to_string();
-            if err_str.contains("org.freedesktop.DBus.Error.ServiceUnknown")
-                || err_str.contains("StatusNotifierWatcher")
-                || err_str.contains("No StatusNotifier")
-            {
-                TrayError::NotAvailable(
-                    "StatusNotifierItem not available. \
-                     Ensure a system tray is running (e.g., GNOME with AppIndicator extension, KDE Plasma)."
-                        .to_string(),
-                )
-            } else if err_str.contains("Connection refused")
-                || err_str.contains("org.freedesktop.DBus.Error.NoServer")
-            {
-                TrayError::NotAvailable(
-                    "D-Bus session bus not available. \
-                     Ensure you are running in a graphical session."
-                        .to_string(),
-                )
+        // Load icon from embedded bytes
+        let icon_bytes = include_bytes!("../../../assets/icon.png");
+        let icon_path = save_icon_to_temp(icon_bytes)?;
+        indicator.set_icon_full(&icon_path, "KeyRx");
+
+        // Create menu
+        let menu = gtk::Menu::new();
+
+        // Reload menu item
+        let reload_item = gtk::MenuItem::with_label("Reload Config");
+        let reload_sender = event_sender.clone();
+        reload_item.connect_activate(move |_| {
+            log::info!("Tray menu: Reload Config clicked");
+            if let Err(e) = reload_sender.send(TrayControlEvent::Reload) {
+                log::error!("Failed to send reload event: {}", e);
             } else {
-                TrayError::Other(format!("Failed to spawn tray service: {}", e))
+                log::info!("Tray menu: Reload event sent successfully");
             }
-        })?;
+        });
+        menu.append(&reload_item);
+
+        // Separator
+        let separator = gtk::SeparatorMenuItem::new();
+        menu.append(&separator);
+
+        // Exit menu item
+        let exit_item = gtk::MenuItem::with_label("Exit");
+        let exit_sender = event_sender.clone();
+        exit_item.connect_activate(move |_| {
+            log::info!("Tray menu: Exit clicked");
+            if let Err(e) = exit_sender.send(TrayControlEvent::Exit) {
+                log::error!("Failed to send exit event: {}", e);
+            } else {
+                log::info!("Tray menu: Exit event sent successfully");
+            }
+        });
+        menu.append(&exit_item);
+
+        menu.show_all();
+        indicator.set_menu(Some(&menu));
+
+        log::info!("System tray initialized with AppIndicator");
+
+        // Keep indicator alive (single-threaded GTK)
+        let indicator = Rc::new(RefCell::new(indicator));
 
         Ok(Self {
-            handle,
             event_receiver,
+            _indicator: indicator,
         })
     }
 
     fn poll_event(&self) -> Option<TrayControlEvent> {
+        // Process pending GTK events (must be called from main thread)
+        while gtk::events_pending() {
+            gtk::main_iteration();
+        }
+
         // Non-blocking check for events
         self.event_receiver.try_recv().ok()
     }
 
     fn shutdown(&mut self) -> Result<(), TrayError> {
-        // Request shutdown of the tray service
-        let awaiter = self.handle.shutdown();
-        // Wait for the service to shut down
-        awaiter.wait();
+        log::info!("Shutting down system tray");
         Ok(())
     }
+}
+
+/// Saves icon bytes to a temporary file and returns the path.
+///
+/// GTK/AppIndicator requires a file path for icons, not raw image data.
+fn save_icon_to_temp(bytes: &[u8]) -> Result<String, TrayError> {
+    use std::io::Write;
+
+    // Create temp directory if it doesn't exist
+    let temp_dir = std::env::temp_dir().join("keyrx");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| TrayError::IconLoadFailed(format!("Failed to create temp dir: {}", e)))?;
+
+    // Write icon to temp file
+    let icon_path = temp_dir.join("icon.png");
+    let mut file = std::fs::File::create(&icon_path)
+        .map_err(|e| TrayError::IconLoadFailed(format!("Failed to create icon file: {}", e)))?;
+    file.write_all(bytes)
+        .map_err(|e| TrayError::IconLoadFailed(format!("Failed to write icon data: {}", e)))?;
+
+    Ok(icon_path
+        .to_str()
+        .ok_or_else(|| TrayError::IconLoadFailed("Icon path is not valid UTF-8".to_string()))?
+        .to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Test that load_icon converts PNG to ARGB correctly.
+    /// Test that save_icon_to_temp works correctly.
     #[test]
-    fn test_load_icon() {
+    fn test_save_icon_to_temp() {
         let icon_bytes = include_bytes!("../../../assets/icon.png");
-        let result = load_icon(icon_bytes);
+        let result = save_icon_to_temp(icon_bytes);
 
-        assert!(result.is_ok(), "Icon should load successfully");
+        assert!(result.is_ok(), "Icon should save successfully");
 
-        let (data, width, height) = result.unwrap();
-
-        // Icon should have dimensions > 0
-        assert!(width > 0, "Icon width should be positive");
-        assert!(height > 0, "Icon height should be positive");
-
-        // Data length should be width * height * 4 (ARGB32)
-        let expected_len = (width * height * 4) as usize;
-        assert_eq!(
-            data.len(),
-            expected_len,
-            "ARGB data should have correct length"
+        let path = result.unwrap();
+        assert!(
+            std::path::Path::new(&path).exists(),
+            "Icon file should exist"
         );
     }
 
-    /// Test that load_icon fails gracefully with invalid data.
-    #[test]
-    fn test_load_icon_invalid_data() {
-        let invalid_bytes = b"not a valid png";
-        let result = load_icon(invalid_bytes);
-
-        assert!(result.is_err(), "Invalid data should return error");
-
-        match result {
-            Err(TrayError::IconLoadFailed(msg)) => {
-                assert!(!msg.is_empty(), "Error message should not be empty");
-            }
-            Err(e) => panic!("Expected IconLoadFailed, got {:?}", e),
-            Ok(_) => panic!("Expected error, got Ok"),
-        }
-    }
-
-    /// Test that LinuxSystemTray::new() returns appropriate error when D-Bus unavailable.
+    /// Test that LinuxSystemTray::new() returns appropriate error when GTK unavailable.
     /// Note: This test will succeed or fail depending on the environment.
     #[test]
+    #[ignore] // Ignored by default as it requires a graphical session
     fn test_linux_system_tray_new() {
         // Try to create a tray - this will fail in headless CI environments
         // but should succeed in a desktop session

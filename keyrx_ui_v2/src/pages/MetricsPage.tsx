@@ -194,27 +194,27 @@ export const MetricsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-100">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-100">
           Performance Metrics
         </h1>
-        <p className="text-slate-400 mt-2">
+        <p className="text-sm md:text-base text-slate-400 mt-2">
           Real-time monitoring and debugging tools
         </p>
       </div>
 
-      {/* Latency Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Latency Statistics Cards - responsive grid */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card padding="md">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/10 rounded-lg">
-              <Activity className="w-6 h-6 text-blue-500" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg">
+              <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Current</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-xs sm:text-sm text-slate-400">Current</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-100">
                 {formatLatency(stats.current)}
               </p>
             </div>
@@ -222,13 +222,13 @@ export const MetricsPage: React.FC = () => {
         </Card>
 
         <Card padding="md">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-500/10 rounded-lg">
-              <Clock className="w-6 h-6 text-green-500" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-green-500/10 rounded-lg">
+              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Average</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-xs sm:text-sm text-slate-400">Average</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-100">
                 {formatLatency(stats.avg)}
               </p>
             </div>
@@ -236,13 +236,13 @@ export const MetricsPage: React.FC = () => {
         </Card>
 
         <Card padding="md">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-yellow-500/10 rounded-lg">
-              <Zap className="w-6 h-6 text-yellow-500" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-yellow-500/10 rounded-lg">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Min</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-xs sm:text-sm text-slate-400">Min</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-100">
                 {formatLatency(stats.min)}
               </p>
             </div>
@@ -250,13 +250,13 @@ export const MetricsPage: React.FC = () => {
         </Card>
 
         <Card padding="md">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-500/10 rounded-lg">
-              <Cpu className="w-6 h-6 text-red-500" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-red-500/10 rounded-lg">
+              <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-400">Max</p>
-              <p className="text-2xl font-bold text-slate-100">
+              <p className="text-xs sm:text-sm text-slate-400">Max</p>
+              <p className="text-lg sm:text-2xl font-bold text-slate-100">
                 {formatLatency(stats.max)}
               </p>
             </div>
@@ -267,13 +267,13 @@ export const MetricsPage: React.FC = () => {
       {/* Latency Chart */}
       <Card>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-slate-100">
+          <h2 className="text-lg md:text-xl font-semibold text-slate-100">
             Latency Over Time
           </h2>
-          <p className="text-sm text-slate-400 mt-1">Last 60 seconds</p>
+          <p className="text-xs md:text-sm text-slate-400 mt-1">Last 60 seconds</p>
         </div>
 
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
           <LineChart data={latencyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis
@@ -324,14 +324,14 @@ export const MetricsPage: React.FC = () => {
       {/* Event Log */}
       <Card>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-slate-100">Event Log</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-lg md:text-xl font-semibold text-slate-100">Event Log</h2>
+          <p className="text-xs md:text-sm text-slate-400 mt-1">
             Recent keyboard events ({eventLog.length} total)
           </p>
         </div>
 
-        {/* Table Header */}
-        <div className="flex items-center gap-4 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300">
+        {/* Table Header - hide some columns on mobile */}
+        <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-slate-800 border-b border-slate-700 text-sm font-semibold text-slate-300">
           <span className="w-32">Timestamp</span>
           <span className="w-24">Type</span>
           <span className="w-32">Key Code</span>
@@ -341,7 +341,7 @@ export const MetricsPage: React.FC = () => {
 
         {/* Virtual Scrolling List */}
         <List
-          height={400}
+          height={300}
           itemCount={eventLog.length}
           itemSize={40}
           width="100%"
@@ -354,15 +354,15 @@ export const MetricsPage: React.FC = () => {
       {/* State Inspector */}
       <Card>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-slate-100">
+          <h2 className="text-lg md:text-xl font-semibold text-slate-100">
             State Inspector
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs md:text-sm text-slate-400 mt-1">
             Current daemon internal state
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           <div className="bg-slate-800 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-slate-300 mb-2">
               Active Layer

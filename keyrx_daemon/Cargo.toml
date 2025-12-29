@@ -43,7 +43,9 @@ evdev = "0.12"
 uinput = "0.1"
 nix = { version = "0.29", features = ["ioctl", "poll"] }
 signal-hook = "0.3"
-ksni = { version = "0.3", features = ["blocking"] }
+appindicator3 = "0.3"
+gtk = "0.18"
+glib = "0.20"
 crossbeam-channel = "0.5"
 image = "0.25"
 

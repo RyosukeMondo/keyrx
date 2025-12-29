@@ -134,10 +134,12 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
   const forgetDevice = devices.find((d) => d.id === forgetDeviceId);
 
   return (
-    <div className={`flex flex-col gap-lg p-lg ${className}`}>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-100">Devices</h1>
-        <div className="flex gap-sm">
+    <div className={`flex flex-col gap-4 md:gap-6 p-4 md:p-6 lg:p-8 ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-slate-100">
+          Devices
+        </h1>
+        <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -199,12 +201,12 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                       </div>
 
                       {/* Rename section */}
-                      <div className="flex flex-col gap-sm">
+                      <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-slate-300">Name</label>
-                        <div className="flex items-start gap-sm">
+                        <div className="flex flex-col sm:flex-row items-start gap-2">
                           {isEditing ? (
                             <>
-                              <div className="flex-1">
+                              <div className="flex-1 w-full">
                                 <div
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -224,26 +226,30 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                                   />
                                 </div>
                               </div>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleRenameSave(device.id)}
-                                aria-label="Save device name"
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleRenameCancel}
-                                aria-label="Cancel rename"
-                              >
-                                Cancel
-                              </Button>
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleRenameSave(device.id)}
+                                  aria-label="Save device name"
+                                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleRenameCancel}
+                                  aria-label="Cancel rename"
+                                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
                             </>
                           ) : (
                             <>
-                              <div className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100">
+                              <div className="flex-1 w-full rounded-md border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100">
                                 {device.name}
                               </div>
                               <Button
@@ -251,6 +257,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                                 size="sm"
                                 onClick={() => handleRenameClick(device)}
                                 aria-label={`Rename device ${device.name}`}
+                                className="w-full sm:w-auto min-h-[44px] sm:min-h-0"
                               >
                                 Rename
                               </Button>
@@ -260,12 +267,12 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                       </div>
 
                       {/* Scope selector */}
-                      <div className="flex flex-col gap-sm">
+                      <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-slate-300">Scope</label>
-                        <div className="flex gap-md">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                           <button
                             onClick={() => handleScopeChange(device.id, 'global')}
-                            className={`flex items-center gap-sm rounded-md border px-4 py-2 text-sm transition-colors ${
+                            className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 ${
                               device.scope === 'global'
                                 ? 'border-primary-500 bg-primary-500/10 text-primary-500'
                                 : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
@@ -273,7 +280,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                             aria-label="Set scope to global"
                           >
                             <span
-                              className={`h-4 w-4 rounded-full border-2 ${
+                              className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
                                 device.scope === 'global'
                                   ? 'border-primary-500 bg-primary-500'
                                   : 'border-slate-500'
@@ -288,7 +295,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                           </button>
                           <button
                             onClick={() => handleScopeChange(device.id, 'device-specific')}
-                            className={`flex items-center gap-sm rounded-md border px-4 py-2 text-sm transition-colors ${
+                            className={`flex items-center gap-2 rounded-md border px-4 py-3 sm:py-2 text-sm transition-colors min-h-[44px] sm:min-h-0 ${
                               device.scope === 'device-specific'
                                 ? 'border-primary-500 bg-primary-500/10 text-primary-500'
                                 : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-300'
@@ -296,7 +303,7 @@ export const DevicesPage: React.FC<DevicesPageProps> = ({ className = '' }) => {
                             aria-label="Set scope to device-specific"
                           >
                             <span
-                              className={`h-4 w-4 rounded-full border-2 ${
+                              className={`h-4 w-4 rounded-full border-2 flex-shrink-0 ${
                                 device.scope === 'device-specific'
                                   ? 'border-primary-500 bg-primary-500'
                                   : 'border-slate-500'
