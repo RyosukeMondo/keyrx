@@ -1105,7 +1105,7 @@
   - _Requirements: Req 1 (consistent visual design)_
   - _Success: ✅ All screenshots match baseline, ✅ No unexpected diffs
 
-- [ ] 36. Performance testing
+- [x] 36. Performance testing
   - Files: `tests/performance/*.spec.ts`
   - Metrics: LCP, FCP, TTI, CLS, FID
   - Budgets:
