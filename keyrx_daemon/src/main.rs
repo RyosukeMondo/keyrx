@@ -78,6 +78,11 @@ enum Commands {
     /// Simulation commands for testing configurations with event replay.
     Simulate(keyrx_daemon::cli::simulate::SimulateArgs),
 
+    /// Run built-in test scenarios.
+    ///
+    /// Test commands for autonomous configuration validation with scenarios.
+    Test(keyrx_daemon::cli::test::TestArgs),
+
     /// List available input devices on the system.
     ///
     /// Displays all input devices with their names, paths, and serial numbers.
@@ -162,6 +167,10 @@ fn main() {
             Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
         },
         Commands::Simulate(args) => match keyrx_daemon::cli::simulate::execute(args) {
+            Ok(()) => Ok(()),
+            Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
+        },
+        Commands::Test(args) => match keyrx_daemon::cli::test::execute(args) {
             Ok(()) => Ok(()),
             Err(e) => Err((exit_codes::CONFIG_ERROR, e.to_string())),
         },

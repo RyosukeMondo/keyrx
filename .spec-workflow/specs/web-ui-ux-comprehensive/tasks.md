@@ -407,7 +407,7 @@
   - _Requirements: 7.1-7.6_
   - _Prompt: Role: Rust CLI developer with testing expertise | Task: Implement `keyrx simulate` command in keyrx_daemon/src/cli/simulate.rs | Restrictions: Parse event DSL, JSON output with input/output, seed-based determinism | Success: Same seed = identical output, event file replay works, integration tests pass | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 12. Implement `keyrx test` command
+- [x] 12. Implement `keyrx test` command
   - File: `keyrx_daemon/src/cli/test.rs` (new file)
   - Implement built-in scenarios (tap-hold-under-threshold, etc.)
   - Support `--scenario all` to run all scenarios

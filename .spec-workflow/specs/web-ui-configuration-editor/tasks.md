@@ -3,25 +3,148 @@
 ## Phase 0: Environment Setup
 
 - [ ] 0. Initialize React + TypeScript + Vite project
-  - Files: `keyrx_ui_v2/` (new directory), `package.json`, `tsconfig.json`, `vite.config.ts`
-  - Initialize Vite with React-TS template
-  - Install core dependencies:
-    - `react` 18.2+, `react-dom` 18.2+
-    - `react-router-dom` 6.20+ (routing)
-    - `zustand` 4.4+ (state management)
-    - `tailwindcss` 3.4+ (styling)
-    - `@tanstack/react-query` 5.0+ (API caching)
-  - Install dev dependencies:
-    - `vitest` (testing)
-    - `@testing-library/react` (component testing)
-    - `playwright` (E2E testing)
-    - `@axe-core/react` (accessibility testing)
-  - Configure Tailwind with design tokens from design.md
-  - Set up ESLint + Prettier
-  - Purpose: Prepare development environment
-  - _Leverage: Vite (fast HMR), Tailwind (utility-first CSS)_
-  - _Requirements: Design.md dependencies_
-  - _Success: ✅ `npm run dev` starts dev server, ✅ Hot reload works, ✅ TypeScript compiles without errors
+  - Files: `keyrx_ui_v2/` (new directory), `package.json`, `tsconfig.json`, `vite.config.ts`, `tailwind.config.js`, `.eslintrc.js`, `.prettierrc`
+  - Purpose: Prepare complete development environment with build tooling, testing infrastructure, and code quality tools. This foundation supports all future development with fast iteration, type safety, and automated quality gates.
+  - Requirements: Design.md Dependencies section, Req 4 (Performance Budget)
+  - Prompt: Role: Frontend Infrastructure Developer | Task: Set up modern React development environment with:
+
+    **Project Initialization**:
+    ```bash
+    npm create vite@latest keyrx_ui_v2 -- --template react-ts
+    cd keyrx_ui_v2
+    ```
+
+    **Production Dependencies** (install with exact versions):
+    ```bash
+    npm install react@18.2.0 react-dom@18.2.0
+    npm install react-router-dom@6.20.0
+    npm install zustand@4.4.5
+    npm install tailwindcss@3.4.0 postcss@8.4.32 autoprefixer@10.4.16
+    npm install @tanstack/react-query@5.17.0
+    ```
+
+    **Dev Dependencies**:
+    ```bash
+    npm install -D vitest@1.0.4 @testing-library/react@14.1.2 @testing-library/jest-dom@6.1.5
+    npm install -D playwright@1.40.1 @playwright/test@1.40.1
+    npm install -D @axe-core/react@4.8.3
+    npm install -D eslint@8.56.0 prettier@3.1.1
+    npm install -D @typescript-eslint/eslint-plugin@6.16.0 @typescript-eslint/parser@6.16.0
+    npm install -D vite-plugin-compression@0.5.1
+    ```
+
+    **Tailwind Configuration** (tailwind.config.js):
+    ```javascript
+    export default {
+      content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              500: '#3B82F6',
+              600: '#2563EB',
+            },
+            // ... all design tokens from design.md
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+          },
+          spacing: {
+            xs: '4px',
+            sm: '8px',
+            md: '16px',
+            lg: '24px',
+            xl: '32px',
+            '2xl': '48px',
+          },
+        },
+      },
+    };
+    ```
+
+    **TypeScript Configuration** (tsconfig.json):
+    ```json
+    {
+      "compilerOptions": {
+        "target": "ES2020",
+        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "baseUrl": ".",
+        "paths": {
+          "@/*": ["./src/*"]
+        }
+      },
+      "include": ["src"],
+      "exclude": ["node_modules"]
+    }
+    ```
+
+    **ESLint Configuration** (.eslintrc.js):
+    ```javascript
+    module.exports = {
+      extends: [
+        'eslint:recommended',
+        'plugin:@typescript-eslint/recommended',
+        'plugin:react-hooks/recommended',
+      ],
+      rules: {
+        'no-console': ['error', { allow: ['warn', 'error'] }],
+        '@typescript-eslint/no-explicit-any': 'error',
+      },
+    };
+    ```
+
+    **Prettier Configuration** (.prettierrc):
+    ```json
+    {
+      "semi": true,
+      "singleQuote": true,
+      "tabWidth": 2,
+      "trailingComma": "es5"
+    }
+    ```
+
+    **Vite Configuration** (vite.config.ts):
+    ```typescript
+    import { defineConfig } from 'vite';
+    import react from '@vitejs/plugin-react';
+    import compression from 'vite-plugin-compression';
+
+    export default defineConfig({
+      plugins: [react(), compression()],
+      resolve: {
+        alias: {
+          '@': '/src',
+        },
+      },
+      build: {
+        target: 'es2020',
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              react: ['react', 'react-dom', 'react-router-dom'],
+              zustand: ['zustand'],
+            },
+          },
+        },
+      },
+    });
+    ```
+
+  | Restrictions: TypeScript strict mode REQUIRED, no `any` types allowed, all dependencies must have exact versions (no ^), ESLint 0 errors 0 warnings, Prettier must format all files
+  | Success: ✅ `npm run dev` starts dev server on http://localhost:5173, ✅ Hot reload works (changes reflect <100ms), ✅ TypeScript compiles without errors, ✅ ESLint shows 0 errors, ✅ Prettier formats all files, ✅ Tailwind generates utility classes, ✅ All dependencies installed with correct versions, ✅ `npm run build` succeeds without warnings
 
 ---
 

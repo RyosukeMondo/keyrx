@@ -12,6 +12,320 @@ This design spec provides **detailed ASCII art layouts** for a world-class web-b
 
 ---
 
+## Dependencies
+
+### Production Dependencies
+
+- **react** 18.2+
+  - Latest React with concurrent features, automatic batching
+  - Rationale: Industry standard, excellent TypeScript support, concurrent rendering for better UX
+
+- **react-dom** 18.2+
+  - React DOM renderer
+  - Rationale: Required for React web applications
+
+- **react-router-dom** 6.20+
+  - Type-safe routing with data APIs
+  - Rationale: Declarative routing, data loading, nested routes, TypeScript support
+
+- **zustand** 4.4+
+  - Lightweight state management (3KB vs Redux 20KB)
+  - Rationale: Simple API, no boilerplate, TypeScript-first, 93% smaller than Redux
+
+- **tailwindcss** 3.4+
+  - Utility-first CSS framework
+  - Rationale: Design token integration, small bundle size (only used classes), fast iteration
+
+- **@tanstack/react-query** 5.0+
+  - Server state management with caching
+  - Rationale: Automatic refetching, cache invalidation, optimistic updates, error handling
+
+### Dev Dependencies
+
+- **vite** 5.0+
+  - Fast build tool and dev server
+  - Rationale: 10-100x faster than Webpack, native ESM, instant HMR
+
+- **vitest** 1.0+
+  - Fast unit testing framework
+  - Rationale: Vite-native, 10x faster than Jest, native ESM support, compatible with @testing-library
+
+- **@testing-library/react** 14.0+
+  - Component testing utilities
+  - Rationale: Accessibility-focused testing, encourages best practices, widely adopted
+
+- **playwright** 1.40+
+  - End-to-end and visual regression testing
+  - Rationale: Cross-browser support, reliable selectors, screenshot comparison, network mocking
+
+- **@axe-core/react** 4.8+
+  - Automated accessibility testing
+  - Rationale: WCAG 2.1 AA compliance verification, real-time violation detection
+
+- **eslint** 8.0+ + **prettier** 3.0+
+  - Code quality and formatting
+  - Rationale: Enforce coding standards, prevent bugs, consistent formatting
+
+- **typescript** 5.0+
+  - Static type checking
+  - Rationale: Catch errors at compile time, better IDE support, self-documenting code
+
+### Optional Dependencies (for production features)
+
+- **@floating-ui/react** 0.26+
+  - Tooltip and dropdown positioning
+  - Rationale: Smart positioning, viewport-aware, accessible
+
+- **framer-motion** 10.0+ (optional)
+  - Animation library
+  - Rationale: Declarative animations, gesture support, reduced motion support
+
+- **react-window** 1.8+
+  - Virtual scrolling for event log
+  - Rationale: Render 1000s of items without performance degradation
+
+- **recharts** 2.10+ or **chart.js** 4.0+
+  - Charting library for latency graph
+  - Rationale: SVG-based charts, responsive, accessible
+
+---
+
+## Code Quality Metrics
+
+**Enforced by ESLint, Prettier, and CI:**
+
+- **File size limit**: ≤500 lines (excluding comments and blank lines)
+  - If exceeded: Extract sub-components or helper modules
+  - Example: KeyboardVisualizer ≤500 lines → extract KeyButton to separate component
+
+- **Function size limit**: ≤50 lines
+  - If exceeded: Extract helper functions, apply SLAP (Single Level of Abstraction Principle)
+  - Example: Complex form validation → extract to validateProfileName() helper
+
+- **Test coverage**: ≥80% minimum (≥90% for critical components)
+  - Critical components: Button, Input, Modal, Dropdown, KeyboardVisualizer, Zustand stores
+  - Coverage measured by Vitest with c8
+
+- **Bundle size budget**:
+  - Initial JS bundle: ≤250KB gzipped
+  - Initial CSS: ≤50KB gzipped
+  - Enforced by vite-plugin-compression with build failure on exceed
+
+- **Accessibility**:
+  - 0 axe-core violations (automated scan)
+  - Lighthouse accessibility score ≥95
+  - Manual testing with NVDA/JAWS screen readers
+
+- **Performance**:
+  - Lighthouse performance score ≥90
+  - All Core Web Vitals in "Good" range (LCP <2.5s, FID <100ms, CLS <0.1)
+  - 60fps animations (no dropped frames)
+
+- **Code quality gates** (enforced in CI):
+  - ESLint: 0 errors, 0 warnings
+  - Prettier: All files formatted
+  - TypeScript: Strict mode, 0 errors
+  - No console.log in production code (use proper logging)
+
+---
+
+## Test Strategy
+
+### Unit Tests (Vitest + @testing-library/react)
+
+**Scope**: All components in `src/components/`
+
+**Coverage**: ≥80% lines, ≥90% for Button, Input, Modal, Dropdown, KeyboardVisualizer
+
+**What to test**:
+- Rendering with different props (variants, sizes, states)
+- Event handlers (onClick, onChange, onSubmit, onKeyDown)
+- Accessibility (ARIA attributes, keyboard events, focus management)
+- Edge cases (empty state, error state, loading state, disabled state)
+- Conditional rendering (tooltip shows on hover, error message appears)
+
+**Example test structure**:
+```typescript
+// src/components/Button.test.tsx
+describe('Button', () => {
+  it('renders with primary variant', () => { /* ... */ });
+  it('calls onClick when clicked', () => { /* ... */ });
+  it('shows loading spinner when loading prop is true', () => { /* ... */ });
+  it('has aria-label attribute', () => { /* ... */ });
+  it('is keyboard accessible (Enter/Space)', () => { /* ... */ });
+});
+```
+
+### Integration Tests (Vitest + MSW)
+
+**Scope**: All pages in `src/pages/`
+
+**API Mocking**: Mock Service Worker (MSW) for deterministic API responses
+
+**What to test**:
+- User flows end-to-end within a page (rename device → API call → state update → UI update)
+- Error handling (API failure → error message displayed → retry works)
+- State synchronization (Zustand store ↔ React components)
+- Form submissions with validation
+
+**Example test scenario**:
+```typescript
+// src/pages/DevicesPage.test.tsx
+it('renames device successfully', async () => {
+  // Setup: Mock API to return success
+  server.use(
+    rest.put('/api/devices/:id/name', (req, res, ctx) => {
+      return res(ctx.json({ success: true }));
+    })
+  );
+
+  // Action: User clicks rename, enters name, presses Enter
+  render(<DevicesPage />);
+  const renameButton = screen.getByLabelText('Rename device Main Keyboard');
+  await userEvent.click(renameButton);
+  const input = screen.getByRole('textbox');
+  await userEvent.clear(input);
+  await userEvent.type(input, 'New Name{Enter}');
+
+  // Assert: UI updates with new name
+  await waitFor(() => {
+    expect(screen.getByText('New Name')).toBeInTheDocument();
+  });
+});
+```
+
+### E2E Tests (Playwright)
+
+**Scope**: Critical user flows across multiple pages
+
+**Scenarios**:
+1. **Create profile → configure key → activate → verify in simulator** (happy path)
+2. **Rename device → change scope → verify persistence** (device management)
+3. **Full keyboard navigation test** (accessibility: Tab, Enter, Escape, Arrow keys)
+4. **Profile activation with compilation error** (error handling)
+
+**Environments**: Chrome, Firefox, Safari (desktop + mobile viewports)
+
+**Example E2E test**:
+```typescript
+// tests/e2e/profile-creation.spec.ts
+test('create and activate profile', async ({ page }) => {
+  await page.goto('/profiles');
+  await page.click('text=Create Profile');
+  await page.fill('input[name="profileName"]', 'Test Profile');
+  await page.click('text=Create');
+  await expect(page.locator('text=Test Profile')).toBeVisible();
+  await page.click('text=Activate');
+  await expect(page.locator('text=ACTIVE')).toBeVisible();
+});
+```
+
+### Visual Regression Tests (Playwright)
+
+**Scope**: All pages at 3 breakpoints (mobile 375px, tablet 768px, desktop 1280px)
+
+**Baseline**: Screenshots stored in `tests/visual/baselines/`
+
+**Comparison**: Pixel-perfect diff, threshold 0.1% (allow for anti-aliasing)
+
+**Example visual test**:
+```typescript
+// tests/visual/pages.spec.ts
+test('HomePage matches baseline', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveScreenshot('home-desktop.png', {
+    fullPage: true,
+    threshold: 0.001,
+  });
+});
+```
+
+### Accessibility Tests
+
+**Automated**: @axe-core/react (0 violations required)
+
+**Manual**: NVDA/JAWS screen readers, keyboard-only navigation
+
+**Tools**: Lighthouse accessibility audit (≥95 score)
+
+**Continuous**: axe-core runs in development mode, violations logged to console
+
+### Performance Tests (Lighthouse CI)
+
+**Metrics**:
+- LCP (Largest Contentful Paint): <2.5s
+- FCP (First Contentful Paint): <1.5s
+- TTI (Time to Interactive): <3.0s
+- CLS (Cumulative Layout Shift): <0.1
+- FID (First Input Delay): <100ms
+
+**Bundle Size**: vite-plugin-compression, rollup-plugin-visualizer
+
+**Frequency**: Every CI run, fails build if budgets exceeded
+
+**Profiling**: Chrome DevTools Performance tab, React DevTools Profiler
+
+---
+
+## Error Code Enumeration
+
+**UI Error Codes** (5000-7999):
+
+### 5000-5999: UI Validation Errors
+
+- **5001**: Invalid input (empty profile name, device name)
+- **5002**: Input length exceeded (device name >64 chars, profile name >32 chars)
+- **5003**: Invalid characters (profile name contains special chars, only a-z 0-9 - _ allowed)
+- **5004**: Invalid threshold (tap-hold <10ms or >2000ms)
+- **5005**: Macro sequence too large (>100 steps)
+- **5006**: Circular dependency detected (key mapping creates loop)
+- **5007**: Profile limit reached (100 profiles maximum)
+- **5008**: Heading hierarchy skipped (h1 → h3, accessibility warning)
+- **5009**: aria-label too long (>100 characters, suggest aria-describedby)
+
+### 6000-6999: API Communication Errors
+
+- **6001**: Network error (fetch failed, no response)
+- **6002**: API timeout (request took >5 seconds)
+- **6003**: API error 4xx (client error from daemon: 400 Bad Request, 404 Not Found, etc.)
+- **6004**: API error 5xx (server error from daemon: 500 Internal Server Error, etc.)
+- **6005**: WebSocket disconnected (real-time metrics unavailable)
+- **6006**: WebSocket reconnect failed (after 5 retries with exponential backoff)
+- **6007**: CORS error (same-origin policy violation)
+- **6008**: API response malformed (JSON parse error)
+
+### 7000-7999: Performance/Resource Errors
+
+- **7001**: WASM failed to load (keyrx_core WASM module, simulator disabled)
+- **7002**: Bundle size exceeded (webpack/vite compilation failed, >250KB JS)
+- **7003**: Performance budget exceeded (Lighthouse score <90, build warning)
+- **7004**: Accessibility violation detected (axe-core found WCAG 2.1 AA violation)
+- **7005**: Memory leak detected (React DevTools Profiler shows growing heap)
+- **7006**: Layout shift detected (CLS >0.1, visual instability)
+- **7007**: Slow render detected (component took >16ms to render, 60fps dropped)
+- **7008**: Font loading failed (Inter or JetBrains Mono failed to load, fallback to system font)
+
+**Error Handling Pattern**:
+```typescript
+// Centralized error handler
+export function handleError(error: Error, code: number) {
+  console.error(`[${code}] ${error.message}`, error);
+
+  // User-friendly message
+  const userMessage = getUserFriendlyMessage(code);
+
+  // Display in ErrorDialog
+  errorStore.setError({ code, message: userMessage, details: error.message });
+
+  // Optional: Send to error tracking (Sentry, etc.)
+  if (import.meta.env.PROD) {
+    trackError(code, error);
+  }
+}
+```
+
+---
+
 ## Screen Layouts (ASCII Art)
 
 ### Layout 1: Dashboard / Home Screen (Desktop 1280px+)
