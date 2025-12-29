@@ -51,7 +51,7 @@
 
 ## Phase 4: Import/Export
 
-- [ ] 10. Implement Rhai parser in keyrx_ui/src/utils/rhaiParser.ts
+- [x] 10. Implement Rhai parser in keyrx_ui/src/utils/rhaiParser.ts
   - Parse Rhai to ConfigState (basic support)
   - Warn on unsupported features
   - _Prompt: Role: Parser Developer | Task: Parse Rhai to visual state | Restrictions: File ≤400 lines, handle basic mappings only | Success: ✅ Basic parsing works_
