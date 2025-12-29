@@ -645,7 +645,7 @@
   - _Requirements: Design.md Layout 1_
   - _Success: ✅ Logo and buttons align correctly, ✅ Buttons have hover states, ✅ Title hides on mobile
 
-- [ ] 10. Create Sidebar navigation
+- [x] 10. Create Sidebar navigation
   - File: `src/components/Sidebar.tsx`
   - Navigation items: Home, Devices, Profiles, Config, Metrics, Simulator
   - Active state: highlighted with indicator
