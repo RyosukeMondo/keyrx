@@ -44,7 +44,7 @@
   - Generate layer definitions, mappings, modifiers
   - _Prompt: Role: Code Generation Expert | Task: Implement Rhai code generator | Restrictions: File ≤400 lines, generate valid Rhai syntax, format with indentation | Success: ✅ Valid Rhai generated_
 
-- [ ] 9. Integrate validator with code preview
+- [x] 9. Integrate validator with code preview
   - Validate generated Rhai with WASM validator
   - Show errors if invalid
   - _Prompt: Role: Integration Developer | Task: Validate generated Rhai | Success: ✅ Validation works_
