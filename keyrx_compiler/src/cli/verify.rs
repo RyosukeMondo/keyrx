@@ -70,6 +70,15 @@ pub fn handle_verify(file: &Path) -> Result<(), VerifyError> {
             let total_mappings: usize = config.devices.iter().map(|d| d.mappings.len()).sum();
             eprintln!("  - Total mappings: {}", total_mappings);
 
+            // Display metadata
+            eprintln!("\n📋 Metadata:");
+            eprintln!("  - Compiler version: {}", config.metadata.compiler_version);
+            eprintln!("  - Source hash (SHA256): {}", config.metadata.source_hash);
+            eprintln!(
+                "  - Compilation timestamp: {}",
+                config.metadata.compilation_timestamp
+            );
+
             eprintln!("\n✓ Verification passed");
             Ok(())
         }
