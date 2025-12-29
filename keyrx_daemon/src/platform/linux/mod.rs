@@ -291,6 +291,10 @@ impl LinuxPlatform {
                         eprintln!("[keyrx] Configuration reload requested via tray menu");
                         return Ok(ProcessResult::ReloadRequested);
                     }
+                    TrayControlEvent::OpenWebUI => {
+                        // OpenWebUI is handled in main.rs, just log here
+                        log::debug!("OpenWebUI event received (handled in main)");
+                    }
                     TrayControlEvent::Exit => {
                         eprintln!("[keyrx] Exit requested via tray menu");
                         return Ok(ProcessResult::ExitRequested);

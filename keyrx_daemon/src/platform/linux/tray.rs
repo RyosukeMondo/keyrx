@@ -89,6 +89,19 @@ impl SystemTray for LinuxSystemTray {
         // Create menu
         let menu = gtk::Menu::new();
 
+        // Open Web UI menu item
+        let webui_item = gtk::MenuItem::with_label("Open Web UI");
+        let webui_sender = event_sender.clone();
+        webui_item.connect_activate(move |_| {
+            log::info!("Tray menu: Open Web UI clicked");
+            if let Err(e) = webui_sender.send(TrayControlEvent::OpenWebUI) {
+                log::error!("Failed to send OpenWebUI event: {}", e);
+            } else {
+                log::info!("Tray menu: OpenWebUI event sent successfully");
+            }
+        });
+        menu.append(&webui_item);
+
         // Reload menu item
         let reload_item = gtk::MenuItem::with_label("Reload Config");
         let reload_sender = event_sender.clone();

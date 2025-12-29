@@ -217,6 +217,29 @@ fn main() {
     }
 }
 
+/// Opens a URL in the default web browser.
+fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(url)
+            .spawn()?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(&["/c", "start", url])
+            .spawn()?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(url)
+            .spawn()?;
+    }
+    Ok(())
+}
+
 /// Handles the `run` subcommand - starts the daemon.
 #[cfg(target_os = "linux")]
 fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, String)> {
@@ -240,6 +263,19 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
         "Daemon initialized with {} device(s)",
         daemon.device_count()
     );
+
+    // Start web server in background (optional)
+    std::thread::spawn(|| {
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+        rt.block_on(async {
+            let addr: std::net::SocketAddr = ([127, 0, 0, 1], 9867).into();
+            log::info!("Starting web server on http://{}", addr);
+            match keyrx_daemon::web::serve(addr).await {
+                Ok(()) => log::info!("Web server stopped"),
+                Err(e) => log::error!("Web server error: {}", e),
+            }
+        });
+    });
 
     // Try to create system tray (optional - gracefully handle if not available)
     let mut tray = match LinuxSystemTray::new() {
@@ -316,6 +352,12 @@ fn handle_run(config_path: &std::path::Path, debug: bool) -> Result<(), (i32, St
                         log::info!("Reload requested from system tray");
                         if let Err(e) = daemon.reload() {
                             log::warn!("Configuration reload failed: {}", e);
+                        }
+                    }
+                    TrayControlEvent::OpenWebUI => {
+                        log::info!("Open Web UI requested from system tray");
+                        if let Err(e) = open_browser("http://localhost:9867") {
+                            log::warn!("Failed to open browser: {}", e);
                         }
                     }
                     TrayControlEvent::Exit => {

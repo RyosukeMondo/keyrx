@@ -93,6 +93,10 @@ pub enum TrayControlEvent {
     /// The daemon should re-read and apply the `.krx` config file.
     Reload,
 
+    /// User requested to open the web UI configuration editor.
+    /// The daemon should open the default browser to the web UI URL.
+    OpenWebUI,
+
     /// User requested to exit the daemon.
     /// The daemon should perform a clean shutdown.
     Exit,
