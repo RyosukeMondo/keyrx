@@ -12,6 +12,7 @@ import { ConfigLoader } from './ConfigLoader';
 import { ScenarioSelector } from './ScenarioSelector';
 import { EventSequenceEditor } from './EventSequenceEditor';
 import SimulationResults from './SimulationResults';
+import { LatencyStats } from './LatencyStats';
 import './SimulatorPanel.css';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
@@ -129,10 +130,7 @@ export function SimulatorPanel() {
           </section>
 
           <section className="simulator-section latency-section">
-            <h3>4. Performance Metrics</h3>
-            <div className="placeholder-message">
-              LatencyStats component will be inserted here (Task 17)
-            </div>
+            <LatencyStats stats={simulationResult.latency_stats} />
           </section>
         </>
       )}
