@@ -3,8 +3,9 @@ import './App.css'
 import { DeviceList } from './components/DeviceList'
 import { SimulatorPanel } from './components/Simulator/SimulatorPanel'
 import { ConfigurationPage } from './components/ConfigurationPage'
+import { MacroRecorderPage } from './components/MacroRecorderPage'
 
-type ActiveView = 'devices' | 'simulator' | 'config'
+type ActiveView = 'devices' | 'simulator' | 'config' | 'macros'
 
 function App() {
   const [activeView, setActiveView] = useState<ActiveView>('devices')
@@ -33,12 +34,19 @@ function App() {
           >
             Config Editor
           </button>
+          <button
+            className={activeView === 'macros' ? 'nav-button active' : 'nav-button'}
+            onClick={() => setActiveView('macros')}
+          >
+            Macro Recorder
+          </button>
         </nav>
       </header>
       <main>
         {activeView === 'devices' && <DeviceList />}
         {activeView === 'simulator' && <SimulatorPanel />}
         {activeView === 'config' && <ConfigurationPage />}
+        {activeView === 'macros' && <MacroRecorderPage />}
       </main>
     </div>
   )

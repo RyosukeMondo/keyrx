@@ -1,0 +1,300 @@
+.macro-recorder-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.recorder-header {
+  margin-bottom: 2rem;
+}
+
+.recorder-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.recorder-header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.error-banner {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #c33;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #c33;
+  padding: 0 0.5rem;
+}
+
+.recorder-controls {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.control-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #545b62;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.status-recording {
+  color: #dc3545;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.status-stopped {
+  color: #6c757d;
+}
+
+.status-idle {
+  color: #28a745;
+}
+
+.recorder-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.events-panel,
+.code-panel {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-header {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.btn-export,
+.btn-copy {
+  background: none;
+  border: 1px solid #007bff;
+  color: #007bff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-export:hover:not(:disabled),
+.btn-copy:hover:not(:disabled) {
+  background: #007bff;
+  color: white;
+}
+
+.btn-export:disabled,
+.btn-copy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.events-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.events-empty {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.events-empty p {
+  margin: 0.5rem 0;
+}
+
+.events-hint {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-table thead {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+}
+
+.events-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.events-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.events-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.key-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.action-press {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.action-release {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.code-preview {
+  padding: 1.5rem;
+  background: #282c34;
+  color: #abb2bf;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-height: 600px;
+  overflow: auto;
+}
+
+.code-preview pre {
+  margin: 0;
+}
+
+.code-preview code {
+  color: #abb2bf;
+}
+
+/* Responsive layout */
+@media (max-width: 1200px) {
+  .recorder-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .macro-recorder-page {
+    padding: 1rem;
+  }
+
+  .recorder-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .control-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .control-group .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
