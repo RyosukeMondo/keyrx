@@ -1,0 +1,32 @@
+{
+  "description": "Cross-device modifier test: Verifies that modifiers (like Shift) pressed on one device correctly affect keys pressed on another device. Tests multi-device state synchronization.",
+  "seed": 42,
+  "events": [
+    {
+      "device_id": "device1",
+      "timestamp_us": 0,
+      "key": "Shift",
+      "event_type": "press"
+    },
+    {
+      "device_id": "device2",
+      "timestamp_us": 50000,
+      "key": "A",
+      "event_type": "press"
+    },
+    {
+      "device_id": "device2",
+      "timestamp_us": 100000,
+      "key": "A",
+      "event_type": "release"
+    },
+    {
+      "device_id": "device1",
+      "timestamp_us": 150000,
+      "key": "Shift",
+      "event_type": "release"
+    }
+  ],
+  "expected_behavior": "Key 'A' pressed on device2 should output as Shift+A (uppercase A) because Shift is held on device1. Global modifier state must be shared across devices.",
+  "test_config": "Requires global device scope for modifiers (not device-specific)"
+}

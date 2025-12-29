@@ -475,7 +475,7 @@
   - _Requirements: All_
   - _Prompt: Role: DevOps engineer | Task: Create CLI test workflow in .github/workflows/cli-tests.yml | Restrictions: Test on Linux and Windows matrix, use jq for JSON assertions, fail on any command error | Success: CI passes for all CLI commands, determinism verified, runs on push/PR | Instructions: Set task status to [-] in tasks.md before starting, use log-implementation tool after completion with detailed artifacts_
 
-- [ ] 18. Create test scenario library
+- [x] 18. Create test scenario library
   - File: `keyrx_daemon/tests/scenarios/*.json` (multiple files)
   - Scenario: tap-hold-under-threshold.json
   - Scenario: tap-hold-over-threshold.json

@@ -1,0 +1,20 @@
+{
+  "description": "Macro sequence test: Verifies that pressing a macro key triggers the configured sequence of key events. Tests macro playback functionality.",
+  "seed": 42,
+  "events": [
+    {
+      "device_id": null,
+      "timestamp_us": 0,
+      "key": "F13",
+      "event_type": "press"
+    },
+    {
+      "device_id": null,
+      "timestamp_us": 50000,
+      "key": "F13",
+      "event_type": "release"
+    }
+  ],
+  "expected_behavior": "F13 key should trigger a macro sequence (e.g., typing 'hello' or executing a multi-key shortcut). Output should contain the macro's key events in sequence.",
+  "test_config": "Requires F13 configured as a macro key with a defined sequence (e.g., 'press:H,press:E,press:L,press:L,press:O,release:O,release:L,release:L,release:E,release:H')"
+}

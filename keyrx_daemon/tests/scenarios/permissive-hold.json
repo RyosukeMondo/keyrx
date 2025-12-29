@@ -1,0 +1,32 @@
+{
+  "description": "Permissive-hold behavior: when another key is pressed while holding a tap-hold key, the tap-hold key should trigger hold action even if released before threshold. This tests the permissive-hold feature.",
+  "seed": 42,
+  "events": [
+    {
+      "device_id": null,
+      "timestamp_us": 0,
+      "key": "CapsLock",
+      "event_type": "press"
+    },
+    {
+      "device_id": null,
+      "timestamp_us": 100000,
+      "key": "A",
+      "event_type": "press"
+    },
+    {
+      "device_id": null,
+      "timestamp_us": 150000,
+      "key": "A",
+      "event_type": "release"
+    },
+    {
+      "device_id": null,
+      "timestamp_us": 300000,
+      "key": "CapsLock",
+      "event_type": "release"
+    }
+  ],
+  "expected_behavior": "CapsLock should trigger hold action because another key (A) was pressed while holding, even though CapsLock was released before typical threshold",
+  "test_config": "Requires CapsLock configured as tap-hold with permissive-hold enabled"
+}

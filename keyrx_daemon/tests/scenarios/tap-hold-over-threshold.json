@@ -1,0 +1,20 @@
+{
+  "description": "Tap-hold behavior when key is held beyond threshold (typically 200ms). Should trigger hold action.",
+  "seed": 42,
+  "events": [
+    {
+      "device_id": null,
+      "timestamp_us": 0,
+      "key": "CapsLock",
+      "event_type": "press"
+    },
+    {
+      "device_id": null,
+      "timestamp_us": 250000,
+      "key": "CapsLock",
+      "event_type": "release"
+    }
+  ],
+  "expected_behavior": "CapsLock hold action should trigger (e.g., activate layer or modifier)",
+  "test_config": "Requires CapsLock configured as tap-hold with ~200ms threshold"
+}
