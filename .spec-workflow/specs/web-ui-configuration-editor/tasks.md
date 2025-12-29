@@ -1153,7 +1153,7 @@
   - _Requirements: Design philosophy (embedded UI)_
   - _Success: ✅ UI files embedded in binary, ✅ Served from http://localhost:9867, ✅ No external dependencies
 
-- [ ] 40. Add CI/CD pipeline
+- [x] 40. Add CI/CD pipeline
   - Files: `.github/workflows/ui-tests.yml`
   - Steps:
     - Install dependencies
