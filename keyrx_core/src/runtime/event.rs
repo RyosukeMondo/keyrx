@@ -227,6 +227,19 @@ pub fn process_event(
 ) -> Vec<KeyEvent> {
     use crate::config::BaseKeyMapping;
 
+    // For RELEASE events: Check if we have a tracked press mapping
+    // This ensures releases match their presses even if mapping changed
+    if event.is_release() {
+        let tracked_output = state.get_release_key(event.keycode());
+        if tracked_output != event.keycode() {
+            // We have a tracked mapping! Use it instead of normal lookup
+            state.clear_press(event.keycode());
+            return alloc::vec![event.with_keycode(tracked_output)];
+        }
+        // No tracked mapping or it matches input - proceed with normal lookup
+        state.clear_press(event.keycode()); // Clean up tracking anyway
+    }
+
     // Look up the mapping for this key
     let mapping = lookup.find_mapping(event.keycode(), state);
 

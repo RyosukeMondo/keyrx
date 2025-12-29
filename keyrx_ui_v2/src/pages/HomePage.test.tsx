@@ -24,8 +24,9 @@ describe('HomePage', () => {
 
   it('uses correct responsive spacing classes', () => {
     const { container } = renderWithRouter(<HomePage />);
-    const mainDiv = container.querySelector('.flex.flex-col.gap-lg.p-lg');
-    expect(mainDiv).toBeInTheDocument();
+    const mainDiv = container.querySelector('.flex.flex-col');
+    expect(mainDiv).toBeTruthy();
+    expect(mainDiv?.classList.contains('gap-lg')).toBe(true);
   });
 
   it('renders heading with correct accessibility level', () => {

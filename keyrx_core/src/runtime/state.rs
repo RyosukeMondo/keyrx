@@ -5,21 +5,33 @@
 
 extern crate alloc;
 
+use arrayvec::ArrayVec;
 use bitvec::prelude::*;
 
-use crate::config::{Condition, ConditionItem};
+use crate::config::{Condition, ConditionItem, KeyCode};
 use crate::runtime::tap_hold::{TapHoldProcessor, DEFAULT_MAX_PENDING};
 
 /// Maximum valid modifier/lock ID (0-254, ID 255 is reserved)
 const MAX_VALID_ID: u8 = 254;
 
-/// Device state tracking modifier and lock state
+/// Maximum number of simultaneously pressed keys to track
+/// This should cover even the most extreme cases (10-finger roll)
+const MAX_PRESSED_KEYS: usize = 32;
+
+/// Device state tracking modifier, lock, and pressed key state
 ///
 /// Uses 255-bit vectors for efficient state management:
 /// - Modifiers: Temporary state (set on press, clear on release)
 /// - Locks: Toggle state (toggle on press, ignore release)
+/// - Pressed keys: Maps input keys to output keys for press/release consistency
 ///
 /// Bit layout: IDs 0-254 are valid, ID 255 is reserved and will be rejected.
+///
+/// # Press/Release Consistency
+///
+/// When a key press is remapped (e.g., A→B), we track this mapping.
+/// When A is released, we ensure B is released, even if the mapping
+/// has changed due to modifier state changes. This prevents stuck keys.
 ///
 /// # Example
 ///
@@ -37,6 +49,9 @@ pub struct DeviceState {
     locks: BitVec<u8, Lsb0>,
     /// Tap-hold processor for dual-function keys
     tap_hold: TapHoldProcessor<DEFAULT_MAX_PENDING>,
+    /// Pressed key tracking: (input_key, output_key) pairs
+    /// This ensures release events match their corresponding press events
+    pressed_keys: ArrayVec<(KeyCode, KeyCode), MAX_PRESSED_KEYS>,
 }
 
 impl DeviceState {
@@ -54,6 +69,7 @@ impl DeviceState {
             modifiers: bitvec![u8, Lsb0; 0; 255],
             locks: bitvec![u8, Lsb0; 0; 255],
             tap_hold: TapHoldProcessor::new(),
+            pressed_keys: ArrayVec::new(),
         }
     }
 
@@ -408,6 +424,77 @@ impl DeviceState {
     /// Returns an immutable reference to the tap-hold processor
     pub fn tap_hold_processor_ref(&self) -> &TapHoldProcessor<DEFAULT_MAX_PENDING> {
         &self.tap_hold
+    }
+
+    /// Records that an input key was pressed and remapped to an output key
+    ///
+    /// This ensures that when the input key is released, we release the output key,
+    /// even if the mapping has changed due to modifier state changes.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The physical key that was pressed
+    /// * `output` - The key that was sent to the OS
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // User pressed A, but MD_02 was active, so we sent B
+    /// state.record_press(KeyCode::A, KeyCode::B);
+    /// // Later, when A is released, we'll release B (even if MD_02 is now inactive)
+    /// ```
+    pub fn record_press(&mut self, input: KeyCode, output: KeyCode) {
+        // If this input key is already tracked, update its output
+        // This handles the case where the same key is pressed multiple times
+        if let Some(entry) = self.pressed_keys.iter_mut().find(|(k, _)| *k == input) {
+            entry.1 = output;
+            return;
+        }
+
+        // Add new tracking entry (ignore if array is full - unlikely scenario)
+        let _ = self.pressed_keys.try_push((input, output));
+    }
+
+    /// Gets the output key that should be released for a given input key
+    ///
+    /// Returns the tracked output key if found, otherwise returns the input key itself.
+    /// This ensures press/release consistency even when mappings change.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The physical key that is being released
+    ///
+    /// # Returns
+    ///
+    /// The output key that should be released (either tracked or input itself)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// state.record_press(KeyCode::A, KeyCode::B);
+    /// let output = state.get_release_key(KeyCode::A); // Returns KeyCode::B
+    /// state.clear_press(KeyCode::A);
+    /// ```
+    pub fn get_release_key(&self, input: KeyCode) -> KeyCode {
+        self.pressed_keys
+            .iter()
+            .find(|(k, _)| *k == input)
+            .map(|(_, output)| *output)
+            .unwrap_or(input)
+    }
+
+    /// Clears the press tracking for an input key after it's been released
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The physical key that was released
+    pub fn clear_press(&mut self, input: KeyCode) {
+        self.pressed_keys.retain(|(k, _)| *k != input);
+    }
+
+    /// Clears all pressed key tracking (for testing or emergency reset)
+    pub fn clear_all_pressed(&mut self) {
+        self.pressed_keys.clear();
     }
 }
 

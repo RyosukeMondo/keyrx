@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProfilesPage } from './ProfilesPage';
 
@@ -141,9 +141,12 @@ describe('ProfilesPage', () => {
       screen.getByRole('button', { name: /Cancel creating profile/i })
     );
 
-    expect(
-      screen.queryByRole('heading', { name: 'Create New Profile' })
-    ).not.toBeInTheDocument();
+    // Wait for modal to close (animation takes time)
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Create New Profile' })
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('activates a profile when Activate button is clicked', async () => {
@@ -234,9 +237,12 @@ describe('ProfilesPage', () => {
       screen.getByRole('button', { name: /Cancel editing profile/i })
     );
 
-    expect(
-      screen.queryByRole('heading', { name: 'Edit Profile' })
-    ).not.toBeInTheDocument();
+    // Wait for modal to close (animation takes time)
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Edit Profile' })
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('opens delete confirmation modal when Delete button is clicked', async () => {
@@ -273,8 +279,10 @@ describe('ProfilesPage', () => {
       screen.getByRole('button', { name: /Confirm delete profile/i })
     );
 
-    // Verify profile is removed
-    expect(screen.queryByText('Gaming')).not.toBeInTheDocument();
+    // Wait for profile to be removed and modal to close
+    await waitFor(() => {
+      expect(screen.queryByText('Gaming')).not.toBeInTheDocument();
+    });
   });
 
   it('closes delete modal when Cancel is clicked', async () => {
@@ -295,9 +303,12 @@ describe('ProfilesPage', () => {
       screen.getByRole('button', { name: /Cancel deleting profile/i })
     );
 
-    expect(
-      screen.queryByRole('heading', { name: 'Delete Profile' })
-    ).not.toBeInTheDocument();
+    // Wait for modal to close (animation takes time)
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('heading', { name: 'Delete Profile' })
+      ).not.toBeInTheDocument();
+    });
 
     // Verify profile still exists
     expect(screen.getByText('Gaming')).toBeInTheDocument();
