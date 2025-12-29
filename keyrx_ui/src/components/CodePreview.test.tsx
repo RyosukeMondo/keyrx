@@ -7,6 +7,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CodePreview } from './CodePreview';
 import { useConfigBuilderStore } from '../store/configBuilderStore';
+import type { UseConfigValidatorReturn } from '../hooks/useConfigValidator';
 
 // Mock Monaco editor
 vi.mock('@monaco-editor/react', () => ({
@@ -23,8 +24,26 @@ vi.mock('../utils/rhaiGenerator', () => ({
   }),
 }));
 
+// Mock useConfigValidator hook
+const mockValidate = vi.fn();
+const mockClearValidation = vi.fn();
+
+vi.mock('../hooks/useConfigValidator', () => ({
+  useConfigValidator: vi.fn((): UseConfigValidatorReturn => ({
+    validationResult: null,
+    isValidating: false,
+    wasmAvailable: true,
+    validate: mockValidate,
+    clearValidation: mockClearValidation,
+  })),
+}));
+
 describe('CodePreview', () => {
   beforeEach(() => {
+    // Reset mocks
+    mockValidate.mockClear();
+    mockClearValidation.mockClear();
+
     useConfigBuilderStore.setState({
       layers: [
         {
@@ -141,5 +160,14 @@ describe('CodePreview', () => {
     });
 
     writeTextSpy.mockRestore();
+  });
+
+  it('calls validation when generated code changes', async () => {
+    render(<CodePreview />);
+
+    // Should validate on mount
+    await waitFor(() => {
+      expect(mockValidate).toHaveBeenCalledWith(expect.stringContaining('Generated code'));
+    });
   });
 });
