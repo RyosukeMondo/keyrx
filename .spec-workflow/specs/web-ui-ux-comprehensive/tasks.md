@@ -453,7 +453,7 @@
 
 ## Phase 5: Integration & Testing
 
-- [ ] 16. Integration test suite for CLI
+- [x] 16. Integration test suite for CLI
   - File: `keyrx_daemon/tests/cli_integration.rs` (new file)
   - Test all commands with JSON parsing
   - Test error scenarios (profile not found, invalid JSON, etc.)
