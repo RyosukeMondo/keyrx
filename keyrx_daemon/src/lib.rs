@@ -14,6 +14,7 @@ pub mod config_loader;
 pub mod daemon;
 pub mod device_manager;
 pub mod ipc;
+pub mod macro_recorder;
 pub mod platform;
 pub mod processor;
 pub mod web;

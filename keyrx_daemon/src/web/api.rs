@@ -121,6 +121,11 @@ pub fn create_router() -> Router {
         // Simulator
         .route("/simulator/events", post(simulate_events))
         .route("/simulator/reset", post(reset_simulator))
+        // Macro recorder
+        .route("/macros/start-recording", post(start_macro_recording))
+        .route("/macros/stop-recording", post(stop_macro_recording))
+        .route("/macros/recorded-events", get(get_recorded_events))
+        .route("/macros/clear", post(clear_recorded_events))
 }
 
 // ============================================================================
@@ -1031,6 +1036,74 @@ fn query_active_profile() -> Option<String> {
     query_daemon_status()
         .ok()
         .and_then(|(_, profile, _)| profile)
+}
+
+// ============================================================================
+// Macro Recorder
+// ============================================================================
+
+use crate::macro_recorder::MacroRecorder;
+use std::sync::OnceLock;
+
+/// Global macro recorder instance
+static MACRO_RECORDER: OnceLock<MacroRecorder> = OnceLock::new();
+
+/// Get or initialize the global macro recorder
+fn get_macro_recorder() -> &'static MacroRecorder {
+    MACRO_RECORDER.get_or_init(MacroRecorder::new)
+}
+
+/// POST /api/macros/start-recording - Start recording macro
+async fn start_macro_recording() -> Result<Json<Value>, ApiError> {
+    let recorder = get_macro_recorder();
+    recorder.start_recording().map_err(ApiError::BadRequest)?;
+
+    Ok(Json(json!({
+        "success": true,
+        "message": "Recording started"
+    })))
+}
+
+/// POST /api/macros/stop-recording - Stop recording macro
+async fn stop_macro_recording() -> Result<Json<Value>, ApiError> {
+    let recorder = get_macro_recorder();
+    recorder.stop_recording().map_err(ApiError::BadRequest)?;
+
+    let event_count = recorder.event_count();
+
+    Ok(Json(json!({
+        "success": true,
+        "message": "Recording stopped",
+        "event_count": event_count
+    })))
+}
+
+/// GET /api/macros/recorded-events - Get recorded events
+async fn get_recorded_events() -> Result<Json<Value>, ApiError> {
+    let recorder = get_macro_recorder();
+    let events = recorder
+        .get_recorded_events()
+        .map_err(ApiError::InternalError)?;
+
+    let recording = recorder.is_recording();
+
+    Ok(Json(json!({
+        "success": true,
+        "recording": recording,
+        "event_count": events.len(),
+        "events": events
+    })))
+}
+
+/// POST /api/macros/clear - Clear recorded events
+async fn clear_recorded_events() -> Result<Json<Value>, ApiError> {
+    let recorder = get_macro_recorder();
+    recorder.clear_events().map_err(ApiError::InternalError)?;
+
+    Ok(Json(json!({
+        "success": true,
+        "message": "Events cleared"
+    })))
 }
 
 // ============================================================================

@@ -2,12 +2,12 @@
 
 ## Phase 1: Backend Macro Recording (Rust)
 
-- [ ] 1. Create macro recorder in keyrx_daemon/src/macro_recorder.rs
+- [x] 1. Create macro recorder in keyrx_daemon/src/macro_recorder.rs
   - Recording mode: capture all key events with timestamps
   - Store events in buffer
   - _Prompt: Role: Rust Developer | Task: Create macro recorder with event capture | Restrictions: File ≤400 lines, capture press/release with μs timestamps, recording mode toggleable | Success: ✅ Events captured_
 
-- [ ] 2. Add macro API endpoints in keyrx_daemon/src/web/api.rs
+- [x] 2. Add macro API endpoints in keyrx_daemon/src/web/api.rs
   - POST /api/macros/start-recording, POST /api/macros/stop-recording, GET /api/macros/recorded-events
   - _Prompt: Role: Rust API Developer | Task: Add macro REST endpoints | Success: ✅ Recording controlled via API_
 
