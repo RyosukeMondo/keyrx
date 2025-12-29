@@ -22,7 +22,7 @@
   - Highlight mapped keys
   - _Prompt: Role: React UI Developer | Task: Create virtual keyboard with drag-and-drop | Restrictions: File ≤400 lines, use @dnd-kit, QWERTY layout, highlight mappings | Success: ✅ Keyboard renders, ✅ Drag works_
 
-- [ ] 5. Create LayerPanel component in keyrx_ui/src/components/LayerPanel.tsx
+- [x] 5. Create LayerPanel component in keyrx_ui/src/components/LayerPanel.tsx
   - List layers with drag-to-reorder
   - Add/delete/rename buttons
   - _Prompt: Role: React UI Developer | Task: Create layer management panel | Restrictions: File ≤250 lines, use @dnd-kit/sortable | Success: ✅ Layers manageable_
