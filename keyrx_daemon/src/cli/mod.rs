@@ -4,3 +4,4 @@
 //! configuration, layers, layouts, simulation, and monitoring.
 
 pub mod devices;
+pub mod profiles;

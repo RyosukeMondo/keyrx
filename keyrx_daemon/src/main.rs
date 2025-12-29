@@ -53,6 +53,11 @@ enum Commands {
     /// Device management commands for persistent metadata storage.
     Devices(keyrx_daemon::cli::devices::DevicesArgs),
 
+    /// Manage configuration profiles (create, activate, delete, etc.).
+    ///
+    /// Profile management commands for Rhai configuration files.
+    Profiles(keyrx_daemon::cli::profiles::ProfilesArgs),
+
     /// List available input devices on the system.
     ///
     /// Displays all input devices with their names, paths, and serial numbers.
@@ -112,6 +117,12 @@ fn main() {
         Commands::Run { config, debug } => handle_run(&config, debug),
         Commands::Devices(args) => {
             match keyrx_daemon::cli::devices::execute(args, None) {
+                Ok(()) => Ok(()),
+                Err(code) => Err((code, String::new())), // Error already printed by execute
+            }
+        }
+        Commands::Profiles(args) => {
+            match keyrx_daemon::cli::profiles::execute(args, None) {
                 Ok(()) => Ok(()),
                 Err(code) => Err((code, String::new())), // Error already printed by execute
             }
