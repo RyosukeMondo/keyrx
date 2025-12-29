@@ -8,7 +8,3 @@ pub mod error;
 pub mod import_resolver;
 pub mod parser;
 pub mod serialize;
-
-// Modules that will be implemented later
-// pub mod mphf_gen;
-// pub mod dfa_gen;

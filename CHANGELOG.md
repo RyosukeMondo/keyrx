@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Established a baseline of 10 new regression tests in `keyrx_daemon/tests/windows_bugs` covering all identified vulnerabilities.
   - Implemented `VirtualWindowsKeyboard` for automated stimulus injection.
 
+#### Low-Priority Improvements
+- **Source Hash Metadata**: Compiler now calculates SHA256 hash of source Rhai file and stores it in `.krx` metadata for traceability (keyrx_compiler/src/parser/core.rs:126-138).
+- **Test Documentation**: Improved documentation for deferred tests:
+  - BUG #37 hot-unplug regression test documented as Windows-only (manual testing alternative provided).
+  - Signal handling tests (SIGTERM, SIGINT, SIGHUP) marked as ignored with clear deferral rationale (subprocess spawning required).
+- **Feature Candidate Documentation**:
+  - Created CheckBytes security validation feature candidate (docs/features_candidate/checkbytes-security.md).
+  - Documents why CheckBytes implementation is deferred (SHA256 validation + panic recovery sufficient for current use case).
 
 ## [0.1.0] - 2024-12-25
 
