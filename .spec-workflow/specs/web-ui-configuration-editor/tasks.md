@@ -699,7 +699,7 @@
   - _Requirements: Req 6 (User Flows - Profile Management)_
   - _Success: ✅ Grid layout matches design.md, ✅ Active profile highlighted, ✅ Create modal works
 
-- [ ] 15. Create ConfigPage / Editor
+- [x] 15. Create ConfigPage / Editor
   - File: `src/pages/ConfigPage.tsx`
   - Features: keyboard visualizer, layer selector, key config dialog
   - Layout: from design.md Layout 4
