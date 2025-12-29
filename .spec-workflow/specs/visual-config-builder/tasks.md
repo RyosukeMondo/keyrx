@@ -27,7 +27,7 @@
   - Add/delete/rename buttons
   - _Prompt: Role: React UI Developer | Task: Create layer management panel | Restrictions: File ≤250 lines, use @dnd-kit/sortable | Success: ✅ Layers manageable_
 
-- [ ] 6. Create ModifierPanel component in keyrx_ui/src/components/ModifierPanel.tsx
+- [x] 6. Create ModifierPanel component in keyrx_ui/src/components/ModifierPanel.tsx
   - List modifiers/locks
   - Drag key to assign
   - _Prompt: Role: React UI Developer | Task: Create modifier management panel | Restrictions: File ≤200 lines | Success: ✅ Modifiers work_
