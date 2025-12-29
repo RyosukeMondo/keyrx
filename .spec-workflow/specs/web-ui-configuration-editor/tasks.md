@@ -455,7 +455,7 @@
   - _Requirements: Req 3 (Accessibility)_
   - _Success: ✅ Error state shows red border and message, ✅ Character counter updates, ✅ Focus outline visible, ✅ aria-invalid set on error
 
-- [ ] 4. Create Card component
+- [x] 4. Create Card component
   - File: `src/components/Card.tsx`
   - Variants: default, elevated (higher shadow)
   - Optional: header, footer slots
