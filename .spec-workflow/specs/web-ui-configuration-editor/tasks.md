@@ -902,7 +902,7 @@
   - _Requirements: Req 7.4-7.6 (action type forms)_
   - _Success: ✅ Action type selector works, ✅ Forms render correctly, ✅ Preview updates, ✅ Save calls API
 
-- [ ] 18. Create MetricsPage
+- [x] 18. Create MetricsPage
   - File: `src/pages/MetricsPage.tsx`
   - Components: LatencyCard, EventLogTable, StateInspectorCard
   - Chart: latency over time (last 60s)
