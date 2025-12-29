@@ -31,10 +31,18 @@ export default defineConfig({
   build: {
     target: 'es2020',
     minify: 'terser',
+    sourcemap: true, // Generate source maps for debugging production issues
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true,
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true, // Remove debugger statements
+        passes: 2, // Multiple passes for better compression
+      },
+      mangle: {
+        safari10: true, // Safari 10+ compatibility
+      },
+      format: {
+        comments: false, // Remove all comments
       },
     },
     rollupOptions: {
