@@ -110,6 +110,7 @@ fn start_daemon(krx_path: &std::path::Path) -> Result<Child, std::io::Error> {
 }
 
 #[test]
+#[cfg_attr(tarpaulin, ignore)] // Skip under tarpaulin - test takes too long with coverage instrumentation
 fn test_bug36_sigterm_stops_daemon() -> Result<(), Box<dyn std::error::Error>> {
     use keyrx_daemon::test_utils::VirtualKeyboard;
 
@@ -197,6 +198,7 @@ fn test_bug36_sigterm_stops_daemon() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+#[cfg_attr(tarpaulin, ignore)] // Skip under tarpaulin - test takes too long with coverage instrumentation
 fn test_bug36_sigint_stops_daemon() -> Result<(), Box<dyn std::error::Error>> {
     use keyrx_daemon::test_utils::VirtualKeyboard;
 
