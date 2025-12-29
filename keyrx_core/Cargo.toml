@@ -43,6 +43,7 @@ wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook", "once_
 [dev-dependencies]
 proptest = { workspace = true }
 criterion = { workspace = true }
+wasm-bindgen-test = { workspace = true }
 
 [[bench]]
 name = "core_bench"
