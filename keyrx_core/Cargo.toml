@@ -8,7 +8,6 @@ repository.workspace = true
 
 [dependencies]
 rkyv = { workspace = true }
-boomphf = { workspace = true }
 fixedbitset = { workspace = true }
 arrayvec = { workspace = true }
 serde = { workspace = true }

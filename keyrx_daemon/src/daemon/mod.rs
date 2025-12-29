@@ -55,8 +55,10 @@ use crate::platform::linux::UinputOutput;
 use crate::platform::{DeviceError, InputDevice, OutputDevice};
 use keyrx_core::runtime::event::check_tap_hold_timeouts;
 
-// Linux-specific imports for polling and process_event
+// Platform-specific imports
+#[cfg(any(target_os = "windows", feature = "linux"))]
 use keyrx_core::runtime::process_event;
+
 #[cfg(feature = "linux")]
 use nix::poll::{poll, PollFd, PollFlags};
 #[cfg(feature = "linux")]

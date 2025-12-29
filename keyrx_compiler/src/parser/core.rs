@@ -1,4 +1,5 @@
 use rhai::{Engine, EvalAltResult, Scope};
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -92,7 +93,10 @@ impl Parser {
             .map_err(|e| Self::convert_rhai_error(e, source_path))?;
 
         self.validate_timeout(start_time)?;
-        self.finalize_config(source_path)
+
+        // Hash the script content for traceability
+        let source_bytes = script.as_bytes();
+        self.finalize_config(source_path, source_bytes)
     }
 
     fn validate_timeout(&self, start_time: SystemTime) -> Result<(), ParseError> {
@@ -110,7 +114,11 @@ impl Parser {
         Ok(())
     }
 
-    fn finalize_config(&self, source_path: &Path) -> Result<ConfigRoot, ParseError> {
+    fn finalize_config(
+        &self,
+        source_path: &Path,
+        source_bytes: &[u8],
+    ) -> Result<ConfigRoot, ParseError> {
         let state = self.state.lock().unwrap();
         if state.current_device.is_some() {
             return Err(ParseError::SyntaxError {
@@ -122,13 +130,19 @@ impl Parser {
             });
         }
 
+        // Calculate SHA256 hash of source script for traceability
+        let mut hasher = Sha256::new();
+        hasher.update(source_bytes);
+        let hash_result = hasher.finalize();
+        let source_hash = hex::encode(hash_result);
+
         let metadata = Metadata {
             compilation_timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs(),
             compiler_version: env!("CARGO_PKG_VERSION").to_string(),
-            source_hash: "TODO".to_string(),
+            source_hash,
         };
 
         Ok(ConfigRoot {

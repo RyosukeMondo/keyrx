@@ -11,7 +11,6 @@ mod cli;
 mod dfa_gen;
 mod error;
 mod import_resolver;
-mod mphf_gen;
 mod parser;
 mod serialize;
 
