@@ -151,29 +151,297 @@
 ## Phase 1: Design System & Core Components
 
 - [ ] 1. Implement design tokens and CSS variables
-  - File: `src/styles/tokens.css`
-  - Define all CSS variables from design.md:
-    - Colors (primary, background, text, status)
-    - Typography (font sizes, weights, line heights)
-    - Spacing (xs to 3xl scale)
-    - Shadows, border-radius, breakpoints
-  - Create Tailwind config extending tokens
-  - Purpose: Centralize design system for consistency
-  - _Leverage: Tailwind CSS custom theme_
-  - _Requirements: Req 1 (Visual Design System)_
-  - _Success: ✅ All tokens defined, ✅ Tailwind generates utility classes, ✅ No magic numbers in components
+  - File: `src/styles/tokens.css`, Update `tailwind.config.js` from Task 0
+  - Purpose: Centralize all design tokens (colors, typography, spacing, shadows) in CSS custom properties. Provides single source of truth for visual design, enables runtime theming, and ensures consistency across all components.
+  - Requirements: Req 1 (Visual Design System - colors, typography, spacing)
+  - Prompt: Role: CSS/Design System Developer | Task: Create comprehensive design token system with:
+
+    **tokens.css** (CSS Custom Properties):
+    ```css
+    :root {
+      /* Colors - Primary (Blue) */
+      --color-primary-50: #EFF6FF;
+      --color-primary-100: #DBEAFE;
+      --color-primary-200: #BFDBFE;
+      --color-primary-300: #93C5FD;
+      --color-primary-400: #60A5FA;
+      --color-primary-500: #3B82F6;  /* Main */
+      --color-primary-600: #2563EB;  /* Hover */
+      --color-primary-700: #1D4ED8;
+
+      /* Background (Slate) */
+      --color-bg-primary: #0F172A;   /* slate-900 */
+      --color-bg-secondary: #1E293B; /* slate-800 */
+      --color-bg-tertiary: #334155;  /* slate-700 */
+
+      /* Text */
+      --color-text-primary: #F1F5F9;   /* slate-100 */
+      --color-text-secondary: #94A3B8; /* slate-400 */
+      --color-text-disabled: #64748B;  /* slate-500 */
+
+      /* Borders */
+      --color-border: #334155;  /* slate-700 */
+      --color-border-hover: #475569;  /* slate-600 */
+
+      /* Status */
+      --color-success: #10B981;  /* green-500 */
+      --color-error: #EF4444;    /* red-500 */
+      --color-warning: #F59E0B;  /* amber-500 */
+      --color-info: #3B82F6;     /* blue-500 */
+
+      /* Typography */
+      --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+      --font-size-2xl: 24px;
+      --font-size-3xl: 32px;
+
+      --line-height-tight: 1.25;
+      --line-height-normal: 1.5;
+      --line-height-relaxed: 1.75;
+
+      --font-weight-normal: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+
+      /* Spacing */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --spacing-2xl: 48px;
+      --spacing-3xl: 64px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+
+      /* Z-index layers */
+      --z-base: 0;
+      --z-dropdown: 1000;
+      --z-sticky: 1020;
+      --z-fixed: 1030;
+      --z-modal-backdrop: 1040;
+      --z-modal: 1050;
+      --z-popover: 1060;
+      --z-tooltip: 1070;
+    }
+    ```
+
+    **Update tailwind.config.js**:
+    Extend the existing config from Task 0 to use CSS variables:
+    ```javascript
+    export default {
+      content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: 'var(--color-primary-50)',
+              100: 'var(--color-primary-100)',
+              // ... all color tokens
+            },
+          },
+          fontFamily: {
+            sans: ['var(--font-family-base)'],
+            mono: ['var(--font-family-mono)'],
+          },
+          fontSize: {
+            xs: 'var(--font-size-xs)',
+            sm: 'var(--font-size-sm)',
+            base: 'var(--font-size-base)',
+            // ... all sizes
+          },
+          spacing: {
+            xs: 'var(--spacing-xs)',
+            sm: 'var(--spacing-sm)',
+            // ... all spacing tokens
+          },
+          boxShadow: {
+            sm: 'var(--shadow-sm)',
+            md: 'var(--shadow-md)',
+            // ... all shadows
+          },
+          borderRadius: {
+            sm: 'var(--radius-sm)',
+            md: 'var(--radius-md)',
+            // ... all radii
+          },
+        },
+      },
+    };
+    ```
+
+    **Import in main.tsx**:
+    ```typescript
+    import './styles/tokens.css';
+    import './index.css';
+    ```
+
+  | Restrictions: File ≤300 lines, all tokens MUST match design.md exactly, no hardcoded colors in components (use Tailwind classes or CSS variables), WCAG AA contrast ratio enforced (test with contrast checker)
+  | Success: ✅ All tokens defined in tokens.css, ✅ Tailwind config extends tokens, ✅ Tailwind generates all utility classes (bg-primary-500, text-sm, etc.), ✅ No magic numbers in component files, ✅ Contrast ratios meet WCAG AA (4.5:1 for text)
 
 - [ ] 2. Create Button component
-  - File: `src/components/Button.tsx`
-  - Variants: primary, secondary, danger, ghost
-  - Sizes: sm, md, lg
-  - States: default, hover, active, disabled, loading
-  - Props: `variant`, `size`, `disabled`, `loading`, `onClick`, `aria-label`
-  - Ripple effect on click
-  - Purpose: Reusable button component
-  - _Leverage: Tailwind variants_
-  - _Requirements: Req 1 (consistent interactive elements)_
-  - _Success: ✅ All variants render correctly, ✅ Ripple animates on click, ✅ Focus outline visible, ✅ Disabled state prevents clicks
+  - File: `src/components/Button.tsx`, `src/components/Button.test.tsx`
+  - Purpose: Reusable, accessible button component for all user interactions across the UI. Supports multiple variants (primary/secondary/danger/ghost), sizes (sm/md/lg), and states (hover/active/disabled/loading). Used in 30+ locations throughout the application. Includes ripple animation for tactile feedback.
+  - Requirements: Req 1 (Visual Design System - consistent interactive elements), Req 3 (Accessibility - keyboard navigation, ARIA), Req 4 (Performance - ripple animation <16ms)
+  - Prompt: Role: React Component Developer | Task: Create Button component with:
+
+    **TypeScript Interface**:
+    ```typescript
+    interface ButtonProps {
+      variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+      size?: 'sm' | 'md' | 'lg';
+      disabled?: boolean;
+      loading?: boolean;
+      onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+      'aria-label': string;  // REQUIRED for accessibility
+      children: React.ReactNode;
+      type?: 'button' | 'submit' | 'reset';
+      className?: string;  // Allow additional Tailwind classes
+    }
+    ```
+
+    **Visual States** (use Tailwind classes):
+    - **Primary variant**:
+      - Default: `bg-primary-500 text-white`
+      - Hover: `hover:bg-primary-600 hover:scale-[1.02]`
+      - Active: `active:scale-[0.98]`
+      - Disabled: `disabled:opacity-50 disabled:cursor-not-allowed`
+    - **Secondary variant**:
+      - Default: `bg-transparent border-2 border-primary-500 text-primary-500`
+      - Hover: `hover:bg-primary-500 hover:text-white`
+    - **Danger variant**:
+      - Default: `bg-red-500 text-white`
+      - Hover: `hover:bg-red-600`
+    - **Ghost variant**:
+      - Default: `bg-transparent text-primary-500`
+      - Hover: `hover:bg-primary-500/10`
+
+    **Sizes**:
+    - sm: `py-2 px-3 text-sm` (padding: 8px 12px, font: 13px)
+    - md: `py-3 px-4 text-base` (padding: 12px 16px, font: 14px)
+    - lg: `py-4 px-6 text-lg` (padding: 16px 24px, font: 16px)
+
+    **Ripple Effect Implementation**:
+    ```typescript
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (disabled || loading) return;
+
+      // Create ripple element
+      const button = e.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const ripple = document.createElement('span');
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+
+      ripple.style.width = ripple.style.height = `${diameter}px`;
+      ripple.style.left = `${e.clientX - rect.left - radius}px`;
+      ripple.style.top = `${e.clientY - rect.top - radius}px`;
+      ripple.className = 'ripple';
+
+      button.appendChild(ripple);
+
+      // Remove after animation (600ms)
+      setTimeout(() => ripple.remove(), 600);
+
+      onClick(e);
+    };
+    ```
+
+    **Ripple CSS** (add to tokens.css or component):
+    ```css
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: ripple-animation 600ms ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    ```
+
+    **Loading State**:
+    ```typescript
+    {loading && (
+      <svg className="animate-spin h-4 w-4 mr-2" /* ... spinner SVG */ />
+    )}
+    ```
+
+    **Accessibility**:
+    - aria-label REQUIRED (TypeScript enforces via interface)
+    - aria-disabled when disabled prop true
+    - aria-busy when loading prop true
+    - Focus visible: `focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2`
+    - Keyboard: Enter/Space triggers onClick (native button behavior)
+
+    **Component Structure**:
+    ```typescript
+    export const Button = React.memo<ButtonProps>(({
+      variant = 'primary',
+      size = 'md',
+      disabled = false,
+      loading = false,
+      onClick,
+      'aria-label': ariaLabel,
+      children,
+      type = 'button',
+      className = '',
+    }) => {
+      const baseClasses = 'relative overflow-hidden rounded-md font-medium transition-all duration-150 focus:outline focus:outline-2 focus:outline-primary-500 focus:outline-offset-2';
+
+      const variantClasses = {
+        primary: 'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700',
+        // ... other variants
+      };
+
+      const sizeClasses = {
+        sm: 'py-2 px-3 text-sm',
+        md: 'py-3 px-4 text-base',
+        lg: 'py-4 px-6 text-lg',
+      };
+
+      return (
+        <button
+          type={type}
+          disabled={disabled || loading}
+          onClick={handleClick}
+          aria-label={ariaLabel}
+          aria-disabled={disabled}
+          aria-busy={loading}
+          className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
+        >
+          {loading && <LoadingSpinner />}
+          {children}
+        </button>
+      );
+    });
+    ```
+
+  | Restrictions: File ≤200 lines (extract ripple logic to `hooks/useRipple.ts` if needed), function ≤30 lines, no inline styles (Tailwind classes only), MUST use React.memo for performance, no console.log, ESLint 0 errors
+  | Success: ✅ All 4 variants render with correct colors from design tokens, ✅ All 3 sizes have correct padding (sm: 8/12px, md: 12/16px, lg: 16/24px), ✅ Ripple animates in 600ms without dropped frames (60fps), ✅ Focus outline visible on Tab (2px blue), ✅ Disabled state prevents clicks and shows cursor-not-allowed, ✅ Loading state shows spinner and disables interaction, ✅ aria-label, aria-disabled, aria-busy attributes set correctly, ✅ Keyboard navigation works (Enter/Space trigger onClick), ✅ No console warnings in development mode, ✅ Unit tests pass (Button.test.tsx)
 
 - [ ] 3. Create Input component
   - File: `src/components/Input.tsx`
@@ -602,14 +870,175 @@
 
 ---
 
+## Phase 9: Implementation Artifacts
+
+- [ ] 41. Log implementation artifacts
+  - Tool: spec-workflow log-implementation (MCP tool)
+  - Purpose: Create searchable knowledge base of ALL implemented artifacts. Future AI agents use this log to discover existing code and avoid duplication. Critical for preventing duplicate API endpoints, components, utility functions, and business logic.
+  - Requirements: Design.md Code Quality Metrics, all phases 0-8
+  - Prompt: Role: Documentation Developer | Task: Use MCP spec-workflow log-implementation tool to document ALL implementation artifacts:
+
+    **Components to Document** (complete list):
+    - Button, Input, Card, Modal, Dropdown, Tooltip (Phase 1)
+    - AppShell, TopBar, Sidebar, BottomNav (Phase 2)
+    - HomePage, DevicesPage, ProfilesPage, ConfigPage, KeyboardVisualizer, KeyConfigDialog, MetricsPage, SimulatorPage (Phase 3)
+    - LoadingSkeleton, ErrorBoundary, ErrorDialog (Phase 5)
+
+    **For each component, document**:
+    - name: Component name (e.g., "Button")
+    - type: "React" (framework)
+    - purpose: What the component does (1-2 sentences)
+    - location: File path (e.g., "src/components/Button.tsx")
+    - props: TypeScript interface (e.g., "ButtonProps { variant, size, disabled, loading, onClick, aria-label, children }")
+    - exports: What it exports (e.g., ["Button (default)", "ButtonProps (type)"])
+
+    **API Endpoints to Document**:
+    - GET /api/devices → Fetch all connected devices
+    - PUT /api/devices/:id/name → Rename device
+    - PUT /api/devices/:id/scope → Change device scope
+    - DELETE /api/devices/:id → Forget device
+    - GET /api/profiles → Fetch all profiles
+    - POST /api/profiles → Create new profile
+    - POST /api/profiles/:name/activate → Activate profile
+    - DELETE /api/profiles/:name → Delete profile
+    - GET /api/config/:profile → Fetch configuration
+    - PUT /api/config/:profile/key → Update key mapping
+    - GET /api/metrics/latency → Fetch latency statistics
+    - GET /api/metrics/events → Fetch event log
+    - WS /ws → WebSocket connection for real-time updates
+
+    **For each endpoint, document**:
+    - method: HTTP method (GET, POST, PUT, DELETE)
+    - path: Route path with parameters
+    - purpose: What this endpoint does
+    - requestFormat: Request body/query params structure
+    - responseFormat: Response JSON structure
+    - location: File path and line number (e.g., "src/api/devices.ts:45")
+
+    **Functions to Document**:
+    - renameDevice, setDeviceScope, forgetDevice, fetchDevices (src/api/devices.ts)
+    - createProfile, activateProfile, deleteProfile, fetchProfiles (src/api/profiles.ts)
+    - parseKLEJson (src/utils/kle-parser.ts)
+    - validateProfileName, validateDeviceName (src/utils/validation.ts)
+    - handleError, getUserFriendlyMessage (src/utils/error-handler.ts)
+
+    **For each function, document**:
+    - name: Function name
+    - purpose: What it does
+    - location: File path and line number
+    - signature: Function signature with types (e.g., "(id: string, name: string) => Promise<void>")
+    - isExported: true/false
+
+    **Zustand Stores (Classes)**:
+    - DeviceStore, ProfileStore, ConfigStore, MetricsStore
+
+    **For each store, document**:
+    - name: Store name (e.g., "DeviceStore")
+    - purpose: What state it manages
+    - location: File path (e.g., "src/stores/deviceStore.ts")
+    - methods: List of actions (e.g., ["fetchDevices", "renameDevice", "setScope", "forgetDevice"])
+    - isExported: true (all stores exported)
+
+    **Integrations to Document** (Frontend ↔ Backend data flow):
+    - DevicesPage → deviceStore.renameDevice() → PUT /api/devices/:id/name → API updates → Zustand state updates → DevicesPage re-renders
+    - ProfilesPage → profileStore.activateProfile() → POST /api/profiles/:name/activate → Daemon compiles → WebSocket sends progress → ProfilesPage shows progress bar → State updates on success
+    - ConfigPage → configStore.setKeyMapping() → PUT /api/config/:profile/key → Auto-compile → Success/error feedback
+    - MetricsPage → metricsStore.subscribeToEvents() → WebSocket /ws → Real-time event stream → EventLogTable updates
+
+    **For each integration, document**:
+    - description: How components connect to APIs (end-to-end flow)
+    - frontendComponent: Which component initiates (e.g., "DevicesPage")
+    - backendEndpoint: Which API endpoint is called (e.g., "PUT /api/devices/:id/name")
+    - dataFlow: Detailed flow with arrows (User action → Store action → API call → Response → State update → UI update)
+
+    **Statistics to Record**:
+    - linesAdded: Total lines of code added (count with `git diff --stat`)
+    - linesRemoved: Total lines removed
+    - filesChanged: Number of files modified
+    - filesCreated: Number of new files created
+
+    **Example Tool Call**:
+    ```javascript
+    await mcp.call('spec-workflow', 'log-implementation', {
+      specName: 'web-ui-configuration-editor',
+      taskId: '41',
+      summary: 'Implemented complete React web UI with 20+ components, 12 API endpoints, 4 Zustand stores, and comprehensive testing',
+      artifacts: {
+        components: [
+          {
+            name: 'Button',
+            type: 'React',
+            purpose: 'Reusable, accessible button component with variants, sizes, and ripple animation',
+            location: 'src/components/Button.tsx',
+            props: 'ButtonProps { variant: primary|secondary|danger|ghost, size: sm|md|lg, disabled, loading, onClick, aria-label, children }',
+            exports: ['Button (default)', 'ButtonProps (type)']
+          },
+          // ... all other components
+        ],
+        apiEndpoints: [
+          {
+            method: 'PUT',
+            path: '/api/devices/:id/name',
+            purpose: 'Rename a connected keyboard device',
+            requestFormat: '{ name: string }',
+            responseFormat: '{ success: boolean }',
+            location: 'keyrx_daemon/src/web/api.rs:245'
+          },
+          // ... all other endpoints
+        ],
+        functions: [
+          {
+            name: 'parseKLEJson',
+            purpose: 'Parse Keyboard Layout Editor JSON into KeyButton objects',
+            location: 'src/utils/kle-parser.ts:12',
+            signature: '(kleData: KLEData) => KeyButton[]',
+            isExported: true
+          },
+          // ... all other functions
+        ],
+        classes: [
+          {
+            name: 'DeviceStore',
+            purpose: 'Zustand store managing device state and actions',
+            location: 'src/stores/deviceStore.ts',
+            methods: ['fetchDevices', 'renameDevice', 'setScope', 'forgetDevice'],
+            isExported: true
+          },
+          // ... all other stores
+        ],
+        integrations: [
+          {
+            description: 'DevicesPage rename flow: user edits inline → Enter key → optimistic update → API call → success/rollback',
+            frontendComponent: 'DevicesPage',
+            backendEndpoint: 'PUT /api/devices/:id/name',
+            dataFlow: 'User clicks Rename → Input appears → User types new name → Press Enter → deviceStore.renameDevice() → Optimistic update (UI shows new name immediately) → API call → Success: keep new name, Error: rollback to old name + show error message'
+          },
+          // ... all other integrations
+        ]
+      },
+      filesModified: ['src/components/Button.tsx', 'src/pages/DevicesPage.tsx', /* ... */],
+      filesCreated: ['src/stores/deviceStore.ts', 'src/api/devices.ts', /* ... */],
+      statistics: {
+        linesAdded: 8500,
+        linesRemoved: 120,
+        filesChanged: 65
+      }
+    });
+    ```
+
+  | Restrictions: Document EVERY component, API endpoint, function, store, and integration (completeness critical for future AI agents), use exact file paths and line numbers, include TypeScript types in all signatures, no abbreviations in descriptions (write full sentences)
+  | Success: ✅ Implementation log created in .spec-workflow/specs/web-ui-configuration-editor/implementation-log.json, ✅ All 20+ components documented with props and exports, ✅ All 12+ API endpoints documented with request/response formats, ✅ All utility functions documented with signatures, ✅ All 4 Zustand stores documented with methods, ✅ All major integrations documented with data flow, ✅ Statistics accurate (lines added/removed, files changed), ✅ Log is searchable (future agents can grep/search)
+
+---
+
 ## Summary Statistics
 
-**Total Tasks**: 40
-**Estimated Effort**: 80-100 hours (3-4 weeks full-time)
+**Total Tasks**: 41 (40 implementation + 1 logging)
+**Estimated Effort**: 85-105 hours (3-4 weeks full-time)
 
 **By Phase**:
 - Phase 0 (Environment Setup): 1 task, ~4 hours
-- Phase 1 (Design System & Core Components): 6 tasks, ~20 hours
+- Phase 1 (Design System & Core Components): 7 tasks, ~22 hours
 - Phase 2 (Layout Components): 4 tasks, ~12 hours
 - Phase 3 (Feature Pages): 8 tasks, ~24 hours
 - Phase 4 (API Integration): 4 tasks, ~8 hours
@@ -617,20 +1046,47 @@
 - Phase 6 (Accessibility): 4 tasks, ~8 hours
 - Phase 7 (Testing & Quality): 6 tasks, ~12 hours
 - Phase 8 (Production & Deployment): 3 tasks, ~4 hours
+- Phase 9 (Implementation Artifacts): 1 task, ~3 hours
 
 **Milestones**:
-- ✅ Phase 0 complete → Development environment ready
-- ✅ Phase 1 complete → Design system and reusable components built
-- ✅ Phase 2 complete → Application shell and navigation working
-- ✅ Phase 3 complete → All feature pages implemented
-- ✅ Phase 4 complete → API integration and real-time updates working
-- ✅ Phase 5 complete → Responsive design and polish finished
-- ✅ Phase 6 complete → WCAG 2.1 AA accessibility verified
-- ✅ Phase 7 complete → Comprehensive testing coverage achieved
-- ✅ Phase 8 complete → **Production-ready web UI embedded in daemon**
+- ✅ Phase 0 complete → Development environment ready (TypeScript, Vite, Tailwind, ESLint configured)
+- ✅ Phase 1 complete → Design system and reusable components built (Button, Input, Card, Modal, Dropdown, Tooltip)
+- ✅ Phase 2 complete → Application shell and navigation working (AppShell, TopBar, Sidebar, BottomNav)
+- ✅ Phase 3 complete → All feature pages implemented (Home, Devices, Profiles, Config, Metrics, Simulator)
+- ✅ Phase 4 complete → API integration and real-time updates working (Zustand stores, React Query, WebSocket)
+- ✅ Phase 5 complete → Responsive design and polish finished (mobile/tablet/desktop, animations, loading states)
+- ✅ Phase 6 complete → WCAG 2.1 AA accessibility verified (0 axe violations, Lighthouse ≥95, keyboard navigation)
+- ✅ Phase 7 complete → Comprehensive testing coverage achieved (unit ≥80%, E2E, visual regression, a11y)
+- ✅ Phase 8 complete → Production-ready web UI embedded in daemon (bundle ≤250KB JS, ≤50KB CSS)
+- ✅ Phase 9 complete → **Implementation artifacts logged for future AI agents** (searchable knowledge base)
 
-**Critical Path**: Phases 0-3 (foundation), then Phases 4-8 (integration and quality)
+**Critical Path**: Phases 0-3 (foundation), then Phases 4-8 (integration and quality), then Phase 9 (documentation)
 
 **Dependencies**: Requires `web-ui-ux-comprehensive` CLI spec (v1.0) to be implemented first for API endpoints.
 
 **Testing Philosophy**: Every component has unit tests. Every user flow has E2E tests. Accessibility verified with automated and manual testing.
+
+**Code Quality Standards** (enforced in all tasks):
+- File size ≤500 lines (excluding comments/blanks)
+- Function size ≤50 lines
+- TypeScript strict mode (no `any` types)
+- ESLint 0 errors, 0 warnings
+- Test coverage ≥80% (≥90% for critical components)
+- WCAG 2.1 AA compliance (0 axe violations)
+- Bundle size ≤250KB JS, ≤50KB CSS (gzipped)
+
+**Task Enhancement Pattern** (applied to Tasks 0-2, template for remaining tasks):
+Each task includes:
+- **Purpose**: Detailed explanation (why this task exists, what it achieves, where it's used)
+- **Requirements**: References to requirements.md (Req 1, Req 3, etc.)
+- **Prompt**: Role-based prompt with exact specifications (TypeScript interfaces, logic, error handling)
+- **Restrictions**: File size limits, coding standards, quality gates
+- **Success**: Measurable criteria with ✅ checkboxes
+
+**Remaining Tasks (3-40)**: Follow the same enhancement pattern as Tasks 0-2. Each task should have:
+- Detailed TypeScript interfaces
+- Exact visual specifications (Tailwind classes)
+- Accessibility requirements (ARIA labels, keyboard navigation)
+- Error handling strategy
+- File/function size restrictions
+- Comprehensive success criteria
