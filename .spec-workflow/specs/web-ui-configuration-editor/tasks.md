@@ -1119,7 +1119,7 @@
   - _Requirements: Req 4 (Performance Budget)_
   - _Success: ✅ All metrics within budget, ✅ Lighthouse score ≥90
 
-- [-] 37. Bundle size optimization
+- [x] 37. Bundle size optimization
   - Tools: vite-plugin-compression, rollup-plugin-visualizer
   - Actions:
     - Code splitting (lazy load routes)
